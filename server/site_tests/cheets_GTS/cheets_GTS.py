@@ -20,7 +20,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
 from autotest_lib.server.cros import tradefed_test
 
-_PARTNER_GTS_LOCATION = 'gs://chromeos-partner-gts/gts-4.1_r1-3556119.zip'
+_PARTNER_GTS_LOCATION = 'gs://chromeos-partner-gts/gts-4.1_r2-3911033.zip'
 
 
 class cheets_GTS(tradefed_test.TradefedTest):
@@ -85,7 +85,7 @@ class cheets_GTS(tradefed_test.TradefedTest):
         # Result parsing must come after all other essential operations as test
         # warnings, errors and failures can be raised here.
         tests, passed, failed, not_executed, waived = self._parse_result_v2(
-            output, accumulative_count=True, waivers=self.waivers)
+            output, waivers=self.waivers)
         passed += waived
         failed -= waived
         if tests != passed or failed > 0 or not_executed > 0:

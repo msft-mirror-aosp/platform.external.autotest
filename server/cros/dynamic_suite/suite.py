@@ -460,8 +460,38 @@ class _SuiteChildJobCreator(object):
 
 
 def _get_cf_retriever(cf_getter):
-    """Returns the correct _ControlFileRetriever instance."""
-    return _ControlFileRetriever(cf_getter)
+    """Return the correct _ControlFileRetriever instance.
+
+    If cf_getter is a File system ControlFileGetter, return a
+    _ControlFileRetriever.  This performs a full parse of the root
+    directory associated with the getter. This is the case when it's
+    invoked from suite_preprocessor.
+
+    If cf_getter is a devserver getter, return a
+    _BatchControlFileRetriever.  This looks up the suite_name in a suite
+    to control file map generated at build time, and parses the relevant
+    control files alone. This lookup happens on the devserver, so as far
+    as this method is concerned, both cases are equivalent. If
+    enable_controls_in_batch is switched on, this function will call
+    cf_getter.get_suite_info() to get a dict of control files and
+    contents in batch.
+    """
+    if _should_batch_with(cf_getter):
+        return _BatchControlFileRetriever(cf_getter)
+    else:
+        return _ControlFileRetriever(cf_getter)
+
+
+def _should_batch_with(cf_getter):
+    """Return whether control files should be fetched in batch.
+
+    This depends on the control file getter and configuration options.
+
+    @param cf_getter: a control_file_getter.ControlFileGetter used to list
+           and fetch the content of control files
+    """
+    return (ENABLE_CONTROLS_IN_BATCH
+            and isinstance(cf_getter, control_file_getter.DevServerGetter))
 
 
 class _ControlFileRetriever(object):
@@ -480,27 +510,10 @@ class _ControlFileRetriever(object):
         self._cf_getter = cf_getter
 
 
-    def find_test_control_data_for_suite(
+    def retrieve_for_suite(
             self, suite_name='',
             forgiving_parser=True, run_prod_code=False, test_args=None):
-        """
-        Function to scan through all tests and find all tests.
-
-        When this method is called with a file system ControlFileGetter, or
-        enable_controls_in_batch is set as false, this function will looks at
-        control files returned by cf_getter.get_control_file_list() for tests.
-
-        If cf_getter is a File system ControlFileGetter, it performs a full
-        parse of the root directory associated with the getter. This is the
-        case when it's invoked from suite_preprocessor.
-
-        If cf_getter is a devserver getter it looks up the suite_name in a
-        suite to control file map generated at build time, and parses the
-        relevant control files alone. This lookup happens on the devserver,
-        so as far as this method is concerned, both cases are equivalent. If
-        enable_controls_in_batch is switched on, this function will call
-        cf_getter.get_suite_info() to get a dict of control files and contents
-        in batch.
+        """Scan through all tests and find all tests.
 
         @param suite_name: If specified, this method will attempt to restrain
                            the search space to just this suite's control files.
@@ -522,19 +535,7 @@ class _ControlFileRetriever(object):
         @returns a dictionary of ControlData objects that based on given
                  parameters.
         """
-        if _should_batch_with(self._cf_getter):
-            suite_info = self._cf_getter.get_suite_info(suite_name=suite_name)
-            files = suite_info.keys()
-        else:
-            files = self._cf_getter.get_control_file_list(suite_name=suite_name)
-
-        matcher = re.compile(r'[^/]+/(deps|profilers)/.+')
-        filtered_files = (path for path in files if not matcher.match(path))
-        if _should_batch_with(self._cf_getter):
-            control_file_texts = self._batch_get_control_file_texts(
-                    suite_info, filtered_files)
-        else:
-            control_file_texts = self._get_control_file_texts(filtered_files)
+        control_file_texts = self._get_control_file_texts_for_suite(suite_name)
         return _parse_control_file_texts(
                 control_file_texts=control_file_texts,
                 forgiving_parser=forgiving_parser,
@@ -542,25 +543,45 @@ class _ControlFileRetriever(object):
                 test_args=test_args)
 
 
-    def _batch_get_control_file_texts(self, suite_info, paths):
-        """Get control file content for given files.
+    def _filter_cf_paths(self, paths):
+        """Remove certain control file paths
 
-        @param suite_info: dict mapping paths to control file text
-        @param paths: iterable of control file paths
+        @param paths: Iterable of paths
+        @returns: generator yielding paths
+        """
+        matcher = re.compile(r'[^/]+/(deps|profilers)/.+')
+        return (path for path in paths if not matcher.match(path))
+
+
+    def _get_control_file_texts_for_suite(self, suite_name):
+        """Get control file content for given suite.
+
+        @param suite_name: If specified, this method will attempt to restrain
+                           the search space to just this suite's control files.
         @returns: generator yielding (path, text) tuples
         """
-        for path in paths:
-            yield path, suite_info[path]
-
-
-    def _get_control_file_texts(self, paths):
-        """Get control file content for given files.
-
-        @param paths: iterable of control file paths
-        @returns: generator yielding (path, text) tuples
-        """
-        for path in paths:
+        files = self._cf_getter.get_control_file_list(suite_name=suite_name)
+        filtered_files = self._filter_cf_paths(files)
+        for path in filtered_files:
             yield path, self._cf_getter.get_control_file_contents(path)
+
+
+class _BatchControlFileRetriever(_ControlFileRetriever):
+    """Subclass that can retrieve suite control files in batch."""
+
+
+    def _get_control_file_texts_for_suite(self, suite_name):
+        """Get control file content for given suite.
+
+        @param suite_name: If specified, this method will attempt to restrain
+                           the search space to just this suite's control files.
+        @returns: generator yielding (path, text) tuples
+        """
+        suite_info = self._cf_getter.get_suite_info(suite_name=suite_name)
+        files = suite_info.keys()
+        filtered_files = self._filter_cf_paths(files)
+        for path in filtered_files:
+            yield path, suite_info[path]
 
 
 def _parse_control_file_texts(control_file_texts,
@@ -604,18 +625,6 @@ def _parse_control_file_texts(control_file_texts,
                 found_test.require_ssp = False
             tests[path] = found_test
     return tests
-
-
-def _should_batch_with(cf_getter):
-    """Return whether control files should be fetched in batch.
-
-    This depends on the control file getter and configuration options.
-
-    @param cf_getter: a control_file_getter.ControlFileGetter used to list
-           and fetch the content of control files
-    """
-    return (ENABLE_CONTROLS_IN_BATCH
-            and isinstance(cf_getter, control_file_getter.DevServerGetter))
 
 
 def get_test_source_build(builds, **dargs):
@@ -858,7 +867,7 @@ def find_and_parse_tests(cf_getter, predicate, suite_name='',
             on the TIME setting in control file, slowest test comes first.
     """
     logging.debug('Getting control file list for suite: %s', suite_name)
-    tests = _get_cf_retriever(cf_getter).find_test_control_data_for_suite(
+    tests = _get_cf_retriever(cf_getter).retrieve_for_suite(
         suite_name, forgiving_parser, run_prod_code=run_prod_code,
         test_args=test_args)
     if not add_experimental:
@@ -895,7 +904,7 @@ def find_possible_tests(cf_getter, predicate, suite_name='', count=10):
             match ratio.
     """
     logging.debug('Getting control file list for suite: %s', suite_name)
-    tests = _get_cf_retriever(cf_getter).find_test_control_data_for_suite(
+    tests = _get_cf_retriever(cf_getter).retrieve_for_suite(
         suite_name, forgiving_parser=True)
     logging.debug('Parsed %s control files.', len(tests))
     similarities = {}

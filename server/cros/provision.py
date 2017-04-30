@@ -2,20 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
+import collections
 import re
 import sys
+import warnings
 
 import common
 from autotest_lib.server.cros import provision_actionables as actionables
+from autotest_lib.utils import labellib
+from autotest_lib.utils.labellib import Key
 
 
 ### Constants for label prefixes
-CROS_VERSION_PREFIX = 'cros-version'
-ANDROID_BUILD_VERSION_PREFIX = 'ab-version'
-TESTBED_BUILD_VERSION_PREFIX = 'testbed-version'
-FW_RW_VERSION_PREFIX = 'fwrw-version'
-FW_RO_VERSION_PREFIX = 'fwro-version'
+CROS_VERSION_PREFIX = Key.CROS_VERSION
+ANDROID_BUILD_VERSION_PREFIX = Key.ANDROID_BUILD_VERSION
+TESTBED_BUILD_VERSION_PREFIX = Key.TESTBED_VERSION
+FW_RW_VERSION_PREFIX = Key.FIRMWARE_RW_VERSION
+FW_RO_VERSION_PREFIX = Key.FIRMWARE_RO_VERSION
 
 _ANDROID_BUILD_REGEX = r'.+/.+/P?([0-9]+|LATEST)'
 _ANDROID_TESTBED_BUILD_REGEX = _ANDROID_BUILD_REGEX + '(,|(#[0-9]+))'
@@ -26,6 +29,26 @@ SKIP_PROVISION = 'skip_provision'
 # Default number of provisions attempts to try if we believe the devserver is
 # flaky.
 FLAKY_DEVSERVER_ATTEMPTS = 2
+
+
+_Action = collections.namedtuple('_Action', 'name, value')
+
+
+def _get_label_action(str_label):
+    """Get action represented by the label.
+
+    This is used for determine actions to perform based on labels, for
+    example for provisioning or repair.
+
+    @param str_label: label string
+    @returns: _Action instance
+    """
+    try:
+        keyval_label = labellib.parse_keyval_label(str_label)
+    except ValueError:
+        return _Action(str_label, None)
+    else:
+        return _Action(keyval_label.key, keyval_label.value)
 
 
 ### Helpers to convert value to label
@@ -83,7 +106,9 @@ def cros_version_to_label(image):
     @returns: A string that is the appropriate label name.
 
     """
-    return CROS_VERSION_PREFIX + ':' + image
+    warnings.warn('cros_version_to_label is deprecated', stacklevel=2)
+    keyval_label = labellib.KeyvalLabel(Key.CROS_VERSION, image)
+    return labellib.format_keyval_label(keyval_label)
 
 
 def fwro_version_to_label(image):
@@ -94,7 +119,9 @@ def fwro_version_to_label(image):
     @returns: A string that is the appropriate label name.
 
     """
-    return FW_RO_VERSION_PREFIX + ':' + image
+    warnings.warn('fwro_version_to_label is deprecated', stacklevel=2)
+    keyval_label = labellib.KeyvalLabel(Key.FIRMWARE_RO_VERSION, image)
+    return labellib.format_keyval_label(keyval_label)
 
 
 def fwrw_version_to_label(image):
@@ -105,7 +132,9 @@ def fwrw_version_to_label(image):
     @returns: A string that is the appropriate label name.
 
     """
-    return FW_RW_VERSION_PREFIX + ':' + image
+    warnings.warn('fwrw_version_to_label is deprecated', stacklevel=2)
+    keyval_label = labellib.KeyvalLabel(Key.FIRMWARE_RW_VERSION, image)
+    return labellib.format_keyval_label(keyval_label)
 
 
 class _SpecialTaskAction(object):

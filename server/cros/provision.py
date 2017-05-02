@@ -2,20 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
+import collections
 import re
 import sys
+import warnings
 
 import common
 from autotest_lib.server.cros import provision_actionables as actionables
+from autotest_lib.utils import labellib
+from autotest_lib.utils.labellib import Key
 
 
 ### Constants for label prefixes
-CROS_VERSION_PREFIX = 'cros-version'
-ANDROID_BUILD_VERSION_PREFIX = 'ab-version'
-TESTBED_BUILD_VERSION_PREFIX = 'testbed-version'
-FW_RW_VERSION_PREFIX = 'fwrw-version'
-FW_RO_VERSION_PREFIX = 'fwro-version'
+CROS_VERSION_PREFIX = Key.CROS_VERSION
+ANDROID_BUILD_VERSION_PREFIX = Key.ANDROID_BUILD_VERSION
+TESTBED_BUILD_VERSION_PREFIX = Key.TESTBED_VERSION
+FW_RW_VERSION_PREFIX = Key.FIRMWARE_RW_VERSION
+FW_RO_VERSION_PREFIX = Key.FIRMWARE_RO_VERSION
 
 _ANDROID_BUILD_REGEX = r'.+/.+/P?([0-9]+|LATEST)'
 _ANDROID_TESTBED_BUILD_REGEX = _ANDROID_BUILD_REGEX + '(,|(#[0-9]+))'
@@ -26,6 +29,26 @@ SKIP_PROVISION = 'skip_provision'
 # Default number of provisions attempts to try if we believe the devserver is
 # flaky.
 FLAKY_DEVSERVER_ATTEMPTS = 2
+
+
+_Action = collections.namedtuple('_Action', 'name, value')
+
+
+def _get_label_action(str_label):
+    """Get action represented by the label.
+
+    This is used for determine actions to perform based on labels, for
+    example for provisioning or repair.
+
+    @param str_label: label string
+    @returns: _Action instance
+    """
+    try:
+        keyval_label = labellib.parse_keyval_label(str_label)
+    except ValueError:
+        return _Action(str_label, None)
+    else:
+        return _Action(keyval_label.key, keyval_label.value)
 
 
 ### Helpers to convert value to label
@@ -83,7 +106,9 @@ def cros_version_to_label(image):
     @returns: A string that is the appropriate label name.
 
     """
-    return CROS_VERSION_PREFIX + ':' + image
+    warnings.warn('cros_version_to_label is deprecated', stacklevel=2)
+    keyval_label = labellib.KeyvalLabel(Key.CROS_VERSION, image)
+    return labellib.format_keyval_label(keyval_label)
 
 
 def fwro_version_to_label(image):
@@ -94,7 +119,9 @@ def fwro_version_to_label(image):
     @returns: A string that is the appropriate label name.
 
     """
-    return FW_RO_VERSION_PREFIX + ':' + image
+    warnings.warn('fwro_version_to_label is deprecated', stacklevel=2)
+    keyval_label = labellib.KeyvalLabel(Key.FIRMWARE_RO_VERSION, image)
+    return labellib.format_keyval_label(keyval_label)
 
 
 def fwrw_version_to_label(image):
@@ -105,7 +132,9 @@ def fwrw_version_to_label(image):
     @returns: A string that is the appropriate label name.
 
     """
-    return FW_RW_VERSION_PREFIX + ':' + image
+    warnings.warn('fwrw_version_to_label is deprecated', stacklevel=2)
+    keyval_label = labellib.KeyvalLabel(Key.FIRMWARE_RW_VERSION, image)
+    return labellib.format_keyval_label(keyval_label)
 
 
 class _SpecialTaskAction(object):
@@ -136,22 +165,22 @@ class _SpecialTaskAction(object):
 
         @param label: The label as a string.
         @returns: True if there exists a test to run for this label.
-
         """
-        return label.split(':')[0] in cls._actions
+        action = _get_label_action(label)
+        return action.name in cls._actions
 
 
     @classmethod
-    def test_for(cls, label):
+    def action_for(cls, name):
         """
-        Returns the test associated with the given (string) label name.
+        Returns the action associated with the given (string) name.
 
-        @param label: The label for which the action is being requested.
-        @returns: The string name of the test that should be run.
+        @param name: The name associated with the action requested.
+        @returns: The requested Actionable.
         @raises KeyError: If the name was not recognized as one we care about.
 
         """
-        return cls._actions[label]
+        return cls._actions[name]
 
 
     @classmethod
@@ -165,8 +194,8 @@ class _SpecialTaskAction(object):
                   labels, and the second element is a set of the actionable
                   labels.
         """
-        capabilities = set()
-        configurations = set()
+        unactionable = set()
+        actionable = set()
 
         for label in labels:
             if label == SKIP_PROVISION:
@@ -174,19 +203,19 @@ class _SpecialTaskAction(object):
                 # It doesn't need any handling.
                 continue
             elif cls.acts_on(label):
-                configurations.add(label)
+                actionable.add(label)
             else:
-                capabilities.add(label)
+                unactionable.add(label)
 
-        return capabilities, configurations
+        return unactionable, actionable
 
 
     @classmethod
-    def sort_configurations(cls, configurations):
+    def sort_actionable_labels(cls, labels):
         """
         Sort configurations based on the priority defined in cls._priorities.
 
-        @param configurations: A list of actionable labels.
+        @param labels: A list of actionable labels.
 
         @return: A sorted list of tuple of (label_prefix, value), the tuples are
                 sorted based on the label_prefix's index in cls._priorities.
@@ -196,13 +225,15 @@ class _SpecialTaskAction(object):
         # For example, label 'cros-version:lumpy-release/R28-3993.0.0' is split
         # to  {'cros-version': 'lumpy-release/R28-3993.0.0'}
         split_configurations = dict()
-        for label in configurations:
+        for label in labels:
             name, _, value = label.partition(':')
             split_configurations[name] = value
 
-        sort_key = (lambda config:
-                (cls._priorities.index(config[0])
-                 if (config[0] in cls._priorities) else sys.maxint))
+        def sort_key(config):
+            if config[0] in cls._priorities:
+                return cls._priorities.index(config[0])
+            else:
+                return sys.maxint
         return sorted(split_configurations.items(), key=sort_key)
 
 
@@ -355,16 +386,16 @@ def run_special_task_actions(job, host, labels, task):
     @raises: SpecialTaskActionException if a test fails.
 
     """
-    capabilities, configurations = task.partition(labels)
+    unactionable, actionable = task.partition(labels)
 
-    for label in capabilities:
+    for label in unactionable:
         job.record('INFO', None, task.name,
                    "Can't %s label '%s'." % (task.name, label))
 
     # Sort the configuration labels based on `task._priorities`.
-    sorted_configurations = task.sort_configurations(configurations)
-    for name, value in sorted_configurations:
-        action_item = task.test_for(name)
+    sorted_actionable = task.sort_actionable_labels(actionable)
+    for name, value in sorted_actionable:
+        action_item = task.action_for(name)
         success = action_item.execute(job=job, host=host, value=value)
         if not success:
             raise SpecialTaskActionException()

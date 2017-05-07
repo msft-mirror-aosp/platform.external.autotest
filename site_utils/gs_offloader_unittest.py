@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -46,7 +47,10 @@ def _get_options(argv):
 
 
 def is_fifo(path):
-  """Determines whether a path is a fifo."""
+  """Determines whether a path is a fifo.
+
+  @param path: fifo path string.
+  """
   return stat.S_ISFIFO(os.lstat(path).st_mode)
 
 
@@ -755,6 +759,10 @@ class FailedOffloadsLogTest(_TempResultsDirTestBase):
 
 
     def assert_report_well_formatted(self, report_file):
+        """Assert that report file is well formatted.
+
+        @param report_file: Path to report file
+        """
         with open(report_file, 'r') as f:
             report_lines = f.read().split()
 

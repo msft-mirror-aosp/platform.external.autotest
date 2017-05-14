@@ -27,6 +27,14 @@ class graphics_Gralloc(arc.ArcTest):
     def initialize(self):
         super(graphics_Gralloc, self).initialize(autotest_ext=True)
 
+    def cleanup(self):
+        self.output_perf_value(
+            description='Failures',
+            value=len(self._failures),
+            units='count',
+            higher_is_better=False
+        )
+
     def arc_setup(self):
         super(graphics_Gralloc, self).arc_setup()
         # Get the executable from CrOS and copy it to Android container. Due to
@@ -46,12 +54,11 @@ class graphics_Gralloc(arc.ArcTest):
         super(graphics_Gralloc, self).arc_teardown()
 
     def run_once(self):
-        failures = []
+        self._failures = []
         # TODO(ihf): shard this test into multiple control files.
         test_names = [
-            'alloc_varying_sizes', 'alloc_usage', 'api', 'gralloc_order',
-            'uninitialized_handle', 'freed_handle', 'mapping', 'perform',
-            'ycbcr', 'async'
+            'alloc_varying_sizes', 'alloc_combinations', 'api', 'gralloc_order',
+            'mapping', 'perform', 'ycbcr', 'async'
         ]
 
         # Run the tests and capture stdout.
@@ -64,12 +71,12 @@ class graphics_Gralloc(arc.ArcTest):
             # Look for the regular expression indicating success.
             match = re.search(r'\[  PASSED  \]', stdout)
             if not match:
-                failures.append(test_name)
+                self._failures.append(test_name)
                 logging.error(stdout)
             else:
                 logging.debug(stdout)
 
-        if failures:
+        if self._failures:
             gpu_family = utils.get_gpu_family()
             raise error.TestFail('Failed: gralloc on %s in %s.' %
-                                 (gpu_family, failures))
+                                 (gpu_family, self._failures))

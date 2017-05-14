@@ -11,6 +11,7 @@ import time
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp
+from autotest_lib.client.common_lib import decorators
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
@@ -328,6 +329,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     self._plankton_host.get_servod_server_proxy())
         else:
             self.plankton = None
+
+
+    @decorators.cached_property
+    def _lsb_release_content(self):
+        """Return lsb_release_content of the host.
+
+        @return the string of the content in /etc/lsb-release file
+        """
+        return self.run(
+                'cat "%s"' % client_constants.LSB_RELEASE).stdout.strip()
 
 
     def _get_cros_repair_image_name(self):
@@ -651,6 +662,46 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return monarch_fields
 
 
+    def _retry_auto_update_with_new_devserver(self, build, last_devserver,
+                                              force_update, force_full_update):
+        """Kick off auto-update by devserver and send metrics.
+
+        @param build: the build to update.
+        @param last_devserver: the last devserver that failed to provision.
+        @param force_update: see |machine_install_by_devserver|'s force_udpate
+                             for details.
+        @param force_full_update: see |machine_install_by_devserver|'s
+                                  force_full_update for details.
+
+        @return the result of |auto_update| in dev_server.
+        """
+        devserver = dev_server.resolve(
+                build, self.hostname, ban_list=[last_devserver.url()])
+        devserver.trigger_download(build, synchronous=False)
+        monarch_fields = self._get_au_monarch_fields(devserver, build)
+        logging.debug('Retry auto_update: resolved devserver for '
+                      'auto-update: %s', devserver.url())
+
+        # Add metrics
+        install_with_dev_counter = metrics.Counter(
+                'chromeos/autotest/provision/install_with_devserver')
+        install_with_dev_counter.increment(fields=monarch_fields)
+        c = metrics.Counter(
+                'chromeos/autotest/provision/retry_by_devserver')
+        monarch_fields['last_devserver'] = last_devserver.hostname
+        monarch_fields['host'] = self.hostname
+        c.increment(fields=monarch_fields)
+
+        return devserver.auto_update(
+                self.hostname, build,
+                original_board=self.get_board().replace(
+                        ds_constants.BOARD_PREFIX, ''),
+                original_release_version=self.get_release_version(),
+                log_dir=self.job.resultdir,
+                force_update=force_update,
+                full_update=force_full_update)
+
+
     def machine_install_by_devserver(self, update_url=None, force_update=False,
                     local_devserver=False, repair=False,
                     force_full_update=False):
@@ -757,29 +808,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
           # the following provision tries.
           logging.debug('Checking whether host %s is online.', self.hostname)
           if utils.ping(self.hostname, tries=1, deadline=1) == 0:
-              devserver = dev_server.resolve(
-                      build, self.hostname, ban_list=[devserver.url()])
-              devserver.trigger_download(build, synchronous=False)
-              monarch_fields = self._get_au_monarch_fields(devserver, build)
-              logging.debug('Retry auto_update: resolved devserver for '
-                            'auto-update: %s', devserver.url())
-
-              # Add metrics
-              install_with_dev_counter.increment(fields=monarch_fields)
-              c = metrics.Counter(
-                      'chromeos/autotest/provision/retry_by_devserver')
-              monarch_fields['last_devserver'] = server_name
-              monarch_fields['host'] = self.hostname
-              c.increment(fields=monarch_fields)
-
-              devserver.auto_update(
-                      self.hostname, build,
-                      original_board=self.get_board().replace(
-                              ds_constants.BOARD_PREFIX, ''),
-                      original_release_version=self.get_release_version(),
-                      log_dir=self.job.resultdir,
-                      force_update=force_update,
-                      full_update=force_full_update)
+              self._retry_auto_update_with_new_devserver(
+                      build, devserver, force_update, force_full_update)
+          else:
+              raise error.AutoservError(
+                      'No answer to ping from %s' % self.hostname)
 
         # The reason to resolve a new devserver in function machine_install
         # is mostly because that the update_url there may has a strange format,
@@ -1327,10 +1360,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @returns The version string in lsb-release, under attribute
                  CHROMEOS_RELEASE_VERSION.
         """
-        lsb_release_content = self.run(
-                    'cat "%s"' % client_constants.LSB_RELEASE).stdout.strip()
         return lsbrelease_utils.get_chromeos_release_version(
-                    lsb_release_content=lsb_release_content)
+                lsb_release_content=self._lsb_release_content)
 
 
     def verify_cros_version_label(self):

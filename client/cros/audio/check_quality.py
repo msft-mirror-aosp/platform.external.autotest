@@ -10,13 +10,23 @@ import argparse
 import logging
 import math
 import numpy
+import os
 import pprint
+import subprocess
+import tempfile
 import wave
 
-import common
-from autotest_lib.client.cros.audio import audio_analysis
-from autotest_lib.client.cros.audio import audio_data
-from autotest_lib.client.cros.audio import audio_quality_measurement
+# Normal autotest environment.
+try:
+    import common
+    from autotest_lib.client.cros.audio import audio_analysis
+    from autotest_lib.client.cros.audio import audio_data
+    from autotest_lib.client.cros.audio import audio_quality_measurement
+# Standalone execution without autotest environment.
+except ImportError:
+    import audio_analysis
+    import audio_data
+    import audio_quality_measurement
 
 
 def add_args(parser):
@@ -25,24 +35,23 @@ def add_args(parser):
                         help='The wave file to check.')
     parser.add_argument('--debug', action='store_true', default=False,
                         help='Show debug message.')
-    parser.add_argument('--spectral', action='store_true', default=False,
-                        help='Spectral analysis on each channel.')
-    parser.add_argument('--quality', action='store_true', default=False,
-                        help='Quality analysis on each channel. Implies '
-                             '--spectral')
+    parser.add_argument('--spectral-only', action='store_true', default=False,
+                        help='Only do spectral analysis on each channel.')
 
 
 def parse_args(parser):
     """Parses args."""
     args = parser.parse_args()
-    # Quality is checked within spectral analysis.
-    if args.quality:
-        args.spectral = True
     return args
 
 
 class WaveFileException(Exception):
     """Error in WaveFile."""
+    pass
+
+
+class WaveFormatExtensibleException(Exception):
+    """Wave file is in WAVE_FORMAT_EXTENSIBLE format which is not supported."""
     pass
 
 
@@ -63,33 +72,67 @@ class WaveFile(object):
         self.raw_data = None
         self.rate = None
 
-        self._filename = filename
         self._wave_reader = None
         self._n_channels = None
         self._sample_width_bits = None
         self._n_frames = None
         self._binary = None
 
-        self._read_wave_file()
+        try:
+            self._read_wave_file(filename)
+        except WaveFormatExtensibleException:
+            logging.warning(
+                    'WAVE_FORMAT_EXTENSIBLE is not supproted. '
+                    'Try command "sox in.wav -t wavpcm out.wav" to convert '
+                    'the file to WAVE_FORMAT_PCM format.')
+            self._convert_and_read_wav_file(filename)
 
 
-    def _read_wave_file(self):
+    def _convert_and_read_wav_file(self, filename):
+        """Converts the wav file and read it.
+
+        Converts the file into WAVE_FORMAT_PCM format using sox command and
+        reads its content.
+
+        @param filename: The wave file to be read.
+
+        @raises: RuntimeError: sox is not installed.
+
+        """
+        # Checks if sox is installed.
+        try:
+            subprocess.check_output(['sox', '--version'])
+        except:
+            raise RuntimeError('sox command is not installed. '
+                               'Try sudo apt-get install sox')
+
+        with tempfile.NamedTemporaryFile(suffix='.wav') as converted_file:
+            command = ['sox', filename, '-t', 'wavpcm', converted_file.name]
+            logging.debug('Convert the file using sox: %s', command)
+            subprocess.check_call(command)
+            self._read_wave_file(converted_file.name)
+
+
+    def _read_wave_file(self, filename):
         """Reads wave file header and samples.
 
-        @raises:
-            WaveFileException: Wave format is not supported.
+        @param filename: The wave file to be read.
+
+        @raises WaveFormatExtensibleException: Wave file is in
+                                               WAVE_FORMAT_EXTENSIBLE format.
+        @raises WaveFileException: Wave file format is not supported.
 
         """
         try:
-            self._wave_reader = wave.open(self._filename, 'r')
+            self._wave_reader = wave.open(filename, 'r')
             self._read_wave_header()
             self._read_wave_binary()
         except wave.Error as e:
             if 'unknown format: 65534' in str(e):
-                raise WaveFileException(
-                        'WAVE_FORMAT_EXTENSIBLE is not supproted. '
-                        'Try command "sox in.wav -t wavpcm out.wav" to convert '
-                        'the file to WAVE_FORMAT_PCM format.')
+                raise WaveFormatExtensibleException()
+            else:
+                logging.exception('Unsupported wave format')
+                raise WaveFileException()
         finally:
             if self._wave_reader:
                 self._wave_reader.close()
@@ -206,5 +249,4 @@ if __name__ == "__main__":
 
     checker = QualityChecker(wavefile.raw_data, wavefile.rate)
 
-    if args.spectral:
-        checker.do_spectral_analysis(check_quality=args.quality)
+    checker.do_spectral_analysis(check_quality=(not args.spectral_only))

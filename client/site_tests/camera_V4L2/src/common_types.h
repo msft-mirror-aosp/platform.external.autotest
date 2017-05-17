@@ -31,10 +31,14 @@ struct DeviceInfo {
   // The camera doesn't support 1280x960 resolution when the maximum resolution
   // of the camear is larger than 1080p.
   bool resolution_1280x960_unsupported;
+  // The camera doesn't support 1600x1200 resolution.
+  bool resolution_1600x1200_unsupported;
   // The camera doesn't support constant frame rate. That means HAL cannot set
   // V4L2_CID_EXPOSURE_AUTO_PRIORITY to 0 to have constant frame rate in low
   // light environment.
   bool constant_framerate_unsupported;
+  uint32_t sensor_info_pixel_array_size_width;
+  uint32_t sensor_info_pixel_array_size_height;
 };
 
 typedef std::vector<DeviceInfo> DeviceInfos;
@@ -52,7 +56,7 @@ struct SupportedFormat {
   // pixelformat. This is not sorted. For example, suppose width, height, and
   // fourcc are 640x480 YUYV. If frameRates are 15.0 and 30.0, the camera
   // supports outputting  640X480 YUYV in 15fps or 30fps.
-  std::vector<uint32_t> frame_rates;
+  std::vector<float> frame_rates;
 };
 
 typedef std::vector<SupportedFormat> SupportedFormats;

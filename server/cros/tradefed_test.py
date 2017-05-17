@@ -84,7 +84,7 @@ class _ChromeLogin(object):
         logging.info('Ensure Android is running...')
         # If we can't login to Chrome and launch Android we want this job to
         # die roughly after 5 minutes instead of hanging for the duration.
-        autotest.Autotest(self._host).run_timed_test('cheets_CTSHelper',
+        autotest.Autotest(self._host).run_timed_test('cheets_StartAndroid',
                                                      timeout=300,
                                                      check_client_result=True,
                                                      **self._cts_helper_kwargs)
@@ -272,10 +272,13 @@ def parse_tradefed_v2_result(result, accumulative_count=False, waivers=None):
                           result.count(testname + ' fail'))
             if fail_count:
                 if fail_count > len(abis):
-                    raise error.TestFail('Error: Found %d failures for %s '
-                                         'but there are only %d abis: %s' %
-                                         (fail_count, testname, len(abis),
-                                         abis))
+                    # This should be an error.TestFail, but unfortunately
+                    # tradefed has a bug that emits "fail" twice when a
+                    # test failed during teardown. It will anyway causes
+                    # a test count inconsistency and visible on the dashboard.
+                    logging.error('Found %d failures for %s '
+                                  'but there are only %d abis: %s',
+                                  fail_count, testname, len(abis), abis)
                 waived += fail_count
                 logging.info('Waived failure for %s %d time(s)',
                              testname, fail_count)
@@ -340,7 +343,7 @@ class TradefedTest(test.test):
     def _login_chrome(self, **cts_helper_kwargs):
         """Returns Chrome log-in context manager.
 
-        Please see also cheets_CTSHelper for details about how this works.
+        Please see also cheets_StartAndroid for details about how this works.
         """
         return _ChromeLogin(self._host, cts_helper_kwargs)
 

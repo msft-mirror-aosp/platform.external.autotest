@@ -487,7 +487,7 @@ def main():
 
         host_scheduler = HostScheduler()
         minimum_tick_sec = global_config.global_config.get_config_value(
-                'SCHEDULER', 'minimum_tick_sec', type=float)
+                'SCHEDULER', 'host_scheduler_minimum_tick_sec', type=float)
         while not _shutdown:
             start = time.time()
             host_scheduler.tick()
@@ -501,7 +501,7 @@ def main():
         # for host-scheduler role. Thus do not send email for it.
         raise
     except Exception:
-        metrics('%s/uncaught_exception' % _METRICS_PREFIX).increment()
+        metrics.Counter('%s/uncaught_exception' % _METRICS_PREFIX).increment()
         raise
     finally:
         email_manager.manager.send_queued_emails()

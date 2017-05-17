@@ -32,7 +32,7 @@ from autotest_lib.scheduler import postjob_task
 from autotest_lib.scheduler import query_managers
 from autotest_lib.scheduler import scheduler_lib
 from autotest_lib.scheduler import scheduler_models
-from autotest_lib.scheduler import status_server, scheduler_config
+from autotest_lib.scheduler import scheduler_config
 from autotest_lib.server import autoserv_utils
 from autotest_lib.server import system_utils
 from autotest_lib.server import utils as server_utils
@@ -47,7 +47,6 @@ except ImportError:
     ts_mon_config = utils.metrics_mock
 
 
-BABYSITTER_PID_FILE_PREFIX = 'monitor_db_babysitter'
 PID_FILE_PREFIX = 'monitor_db'
 
 RESULTS_DIR = '.'
@@ -165,9 +164,6 @@ def main_without_exception_handling():
         global _testing_mode
         _testing_mode = True
 
-    server = status_server.StatusServer()
-    server.start()
-
     # Start the thread to report metadata.
     metadata_reporter.start()
 
@@ -180,7 +176,7 @@ def main_without_exception_handling():
           minimum_tick_sec = global_config.global_config.get_config_value(
                   scheduler_config.CONFIG_SECTION, 'minimum_tick_sec', type=float)
 
-          while not _shutdown and not server._shutdown_scheduler:
+          while not _shutdown:
               start = time.time()
               dispatcher.tick()
               curr_tick_sec = time.time() - start
@@ -193,12 +189,12 @@ def main_without_exception_handling():
           # for scheduler role. Thus do not send email for it.
           logging.exception(e)
       except Exception:
+          logging.exception('Uncaught exception, terminating monitor_db.')
           metrics.Counter('chromeos/autotest/scheduler/uncaught_exception'
                           ).increment()
 
     metadata_reporter.abort()
     email_manager.manager.send_queued_emails()
-    server.shutdown()
     _drone_manager.shutdown()
     _db_manager.disconnect()
 

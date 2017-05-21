@@ -27,13 +27,10 @@ unregistered continuously.
 This autotest include the following test cases:
      self.test_case_SI200_RA1_CD_UA1()
      self.test_case_SI200_RA1_CD_RS()
-     self.test_case_SI200_RA1_CD_SR_CD_UA1()
      self.test_case_RA1_CD_SI200_CD_UA1()
      self.test_case_RA1_CD_SI200_CD_RS()
      self.test_case_RA1_CD_SI200_CD_FSI10_UA1_RA1_CD_UA1()
      self.test_case_RA1_CD_SI200_CD_FSI20000_UA1_RA1_CD_UA1()
-     self.test_case_RA1_CD_SI200_CD_PC_CD_UA1()
-     self.test_case_RA1_CD_SI200_CD_SR_CD_UA1()
 
 Specifically, the subtests included in this autotest verify the
 following operations and parameters.
@@ -67,19 +64,13 @@ Mnemonics of the test cases:
 
 """
 
-
-MIN_ADV_INTERVAL_MS = 300
-MAX_ADV_INTERVAL_MS = 400
-
-
 args_dict = utils.args_to_dict(args)
 
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test('bluetooth_AdapterLEAdvertising', host=host,
+    job.run_test('bluetooth_AdapterLEAdvertising',
+                 host=host,
                  advertisements=advertisements_data.ADVERTISEMENTS,
-                 multi_advertising=False,
-                 min_adv_interval_ms=MIN_ADV_INTERVAL_MS,
-                 max_adv_interval_ms=MAX_ADV_INTERVAL_MS)
+                 test_type='single_advertising')
 
 parallel_simple(run, machines)

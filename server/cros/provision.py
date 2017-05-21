@@ -98,19 +98,6 @@ def image_version_to_label(image):
     return get_version_label_prefix(image) + ':' + image
 
 
-def cros_version_to_label(image):
-    """
-    Returns the proper label name for a ChromeOS build of |image|.
-
-    @param image: A string of the form 'lumpy-release/R28-3993.0.0'
-    @returns: A string that is the appropriate label name.
-
-    """
-    warnings.warn('cros_version_to_label is deprecated', stacklevel=2)
-    keyval_label = labellib.KeyvalLabel(Key.CROS_VERSION, image)
-    return labellib.format_keyval_label(keyval_label)
-
-
 def fwro_version_to_label(image):
     """
     Returns the proper label name for a RO firmware build of |image|.
@@ -171,6 +158,34 @@ class _SpecialTaskAction(object):
 
 
     @classmethod
+    def run_task_actions(cls, job, host, labels):
+        """
+        Run task actions on host that correspond to the labels.
+
+        Emits status lines for each run test, and INFO lines for each
+        skipped label.
+
+        @param job: A job object from a control file.
+        @param host: The host to run actions on.
+        @param labels: The list of job labels to work on.
+        @raises: SpecialTaskActionException if a test fails.
+        """
+        unactionable, actionable = cls.partition(labels)
+
+        for label in unactionable:
+            job.record('INFO', None, cls.name,
+                       "Can't %s label '%s'." % (cls.name, label))
+
+        # Sort the configuration labels based on `cls._priorities`.
+        sorted_actionable = cls._sort_actionable_labels(actionable)
+        for name, value in sorted_actionable:
+            action_item = cls.action_for(name)
+            success = action_item.execute(job=job, host=host, value=value)
+            if not success:
+                raise SpecialTaskActionException()
+
+
+    @classmethod
     def action_for(cls, name):
         """
         Returns the action associated with the given (string) name.
@@ -211,7 +226,7 @@ class _SpecialTaskAction(object):
 
 
     @classmethod
-    def sort_actionable_labels(cls, labels):
+    def _sort_actionable_labels(cls, labels):
         """
         Sort configurations based on the priority defined in cls._priorities.
 
@@ -386,16 +401,5 @@ def run_special_task_actions(job, host, labels, task):
     @raises: SpecialTaskActionException if a test fails.
 
     """
-    unactionable, actionable = task.partition(labels)
-
-    for label in unactionable:
-        job.record('INFO', None, task.name,
-                   "Can't %s label '%s'." % (task.name, label))
-
-    # Sort the configuration labels based on `task._priorities`.
-    sorted_actionable = task.sort_actionable_labels(actionable)
-    for name, value in sorted_actionable:
-        action_item = task.action_for(name)
-        success = action_item.execute(job=job, host=host, value=value)
-        if not success:
-            raise SpecialTaskActionException()
+    warnings.warn('run_special_task_actions is deprecated')
+    task.run_task_actions(job, host, labels)

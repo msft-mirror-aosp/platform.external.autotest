@@ -43,6 +43,7 @@ except ImportError:
 
 import common
 
+from autotest_lib.client.common_lib import env
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import logging_manager
@@ -324,7 +325,8 @@ class BgJob(object):
 
 
     def _reset_sigpipe(self):
-        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+        if not env.IN_MOD_WSGI:
+            signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
 def ip_to_long(ip):
@@ -1973,13 +1975,21 @@ def get_moblab_id():
     @returns the moblab random id.
     """
     moblab_id_filepath = '/home/moblab/.moblab_id'
-    if os.path.exists(moblab_id_filepath):
+    try:
+        if os.path.exists(moblab_id_filepath):
+            with open(moblab_id_filepath, 'r') as moblab_id_file:
+                random_id = moblab_id_file.read()
+        else:
+            random_id = uuid.uuid1().hex
+            with open(moblab_id_filepath, 'w') as moblab_id_file:
+                moblab_id_file.write('%s' % random_id)
+    except IOError as e:
+        # Possible race condition, another process has created the file.
+        # Sleep a second to make sure the file gets closed.
+        logging.info(e)
+        time.sleep(1)
         with open(moblab_id_filepath, 'r') as moblab_id_file:
             random_id = moblab_id_file.read()
-    else:
-        random_id = uuid.uuid1()
-        with open(moblab_id_filepath, 'w') as moblab_id_file:
-            moblab_id_file.write('%s' % random_id)
     return random_id
 
 

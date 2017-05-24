@@ -17,6 +17,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cros_logging, service_stopper
 from autotest_lib.client.cros.graphics import graphics_utils
 
+RERUN_RATIO = 0.02  # Ratio to rerun failing test for hasty mode
+
 
 class graphics_dEQP(test.test):
     """Run the drawElements Quality Program test suite.
@@ -50,6 +52,11 @@ class graphics_dEQP(test.test):
         'dEQP-VK': 'vk',
     }
 
+    TEST_RESULT_FILTER = [
+        'pass', 'notsupported', 'internalerror', 'qualitywarning',
+        'compatibilitywarning', 'skipped'
+    ]
+
     def initialize(self):
         self._api_helper = graphics_utils.GraphicsApiHelper()
         self._board = utils.get_board()
@@ -73,10 +80,13 @@ class graphics_dEQP(test.test):
         if self._services:
             self._services.restore_services()
 
-    def _parse_test_results(self, result_filename, test_results=None):
+    def _parse_test_results(self, result_filename,
+                            test_results=None, failing_test=None):
         """Handles result files with one or more test results.
 
         @param result_filename: log file to parse.
+        @param test_results: Result parsed will be appended to it.
+        @param failing_test: Tests considered failed will append to it.
 
         @return: dictionary of parsed test results.
         """
@@ -91,7 +101,7 @@ class graphics_dEQP(test.test):
 
         if not os.path.isfile(result_filename):
             return test_results
-        # TODO(ihf): Add names of failing tests to a list in the results.
+
         with open(result_filename) as result_file:
             for line in result_file.readlines():
                 # If the test terminates early, the XML will be incomplete
@@ -117,9 +127,13 @@ class graphics_dEQP(test.test):
                     if xml_complete:
                         myparser = et.XMLParser(encoding='ISO-8859-1')
                         root = et.fromstring(xml, parser=myparser)
+                        test_case = root.attrib['CasePath']
                         result = root.find('Result').get('StatusCode').strip()
                         xml_complete = False
                     test_results[result] = test_results.get(result, 0) + 1
+                    if (result.lower() not in self.TEST_RESULT_FILTER and
+                        failing_test != None):
+                        failing_test.append(test_case)
                     xml_bad = False
                     xml_start = False
                     result = 'ParseTestResultFail'
@@ -393,7 +407,7 @@ class graphics_dEQP(test.test):
 
         return test_results
 
-    def run_tests_hasty(self, test_cases):
+    def run_tests_hasty(self, test_cases, failing_test=None):
         """Runs tests as quickly as possible.
 
         This function runs all the test cases, but does not isolate tests and
@@ -401,6 +415,7 @@ class graphics_dEQP(test.test):
         minumum runtime.
 
         @param test_cases: List of dEQP test case strings.
+        @param failing_test: Test considered failed will append to it.
 
         @return: dictionary of test results.
         """
@@ -477,7 +492,8 @@ class graphics_dEQP(test.test):
                 except Exception:
                     pass
                 # We are trying to handle all errors by parsing the log file.
-                results = self._parse_test_results(log_file, results)
+                results = self._parse_test_results(log_file, results,
+                                                   failing_test)
                 logging.info(results)
         return results
 
@@ -544,7 +560,25 @@ class graphics_dEQP(test.test):
         test_results = {}
         if self._hasty:
             logging.info('Running in hasty mode.')
-            test_results = self.run_tests_hasty(test_cases)
+            failing_test = []
+            test_results = self.run_tests_hasty(test_cases, failing_test)
+
+            logging.info("Failing Tests: %s", str(failing_test))
+            if len(failing_test) > 0:
+                if len(failing_test) < sum(test_results.values()) * RERUN_RATIO:
+                    logging.info("Because we are in hasty mode, we will rerun"
+                                 "the failing tests one at a time")
+                    rerun_results = self.run_tests_individually(failing_test)
+                    # Update failing test result from the test_results
+                    for result in test_results:
+                        if result.lower() not in self.TEST_RESULT_FILTER:
+                            test_results[result] = 0
+                    for result in rerun_results:
+                        test_results[result] = (test_results.get(result, 0) +
+                                                rerun_results[result])
+                else:
+                    logging.info("There are too many failing tests. It would "
+                                 "take too long to rerun them. Giving up.")
         else:
             logging.info('Running each test individually.')
             test_results = self.run_tests_individually(test_cases)
@@ -561,10 +595,7 @@ class graphics_dEQP(test.test):
             test_count += test_results[result]
             if result.lower() in ['pass']:
                 test_passes += test_results[result]
-            if result.lower() not in [
-                    'pass', 'notsupported', 'internalerror', 'qualitywarning',
-                    'compatibilitywarning', 'skipped'
-            ]:
+            if result.lower() not in self.TEST_RESULT_FILTER:
                 test_failures += test_results[result]
             if result.lower() in ['skipped']:
                 test_skipped += test_results[result]

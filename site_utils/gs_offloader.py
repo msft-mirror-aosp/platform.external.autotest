@@ -186,11 +186,15 @@ def _get_metrics_fields(dir_entry):
             keyval = models.test.parse_job_keyval(host)
             build = keyval.get('build')
             if build:
-                board, milestone = labellib.get_board_milestone_from_build(
-                        build)
-                fields['board'] = board
-                fields['milestone'] = milestone
-                break
+                try:
+                    cros_version = labellib.parse_cros_version(build)
+                    fields['board'] = cros_version.board
+                    fields['milestone'] = cros_version.milestone
+                    break
+                except ValueError:
+                    # Ignore version parsing error so it won't crash
+                    # gs_offloader.
+                    pass
 
     return fields;
 
@@ -614,7 +618,8 @@ def get_offload_dir_func(gs_uri, multiprocessing, delete_age, pubsub_topic=None)
                     if pubsub_topic:
                         message = _create_test_result_notification(
                                 gs_path, dir_entry)
-                        msg_ids = pubsub_utils.publish_notifications(
+                        pubsub_client = pubsub_utils.PubSubClient()
+                        msg_ids = pubsub_client.publish_notifications(
                                 pubsub_topic, [message])
                         if not msg_ids:
                             error = True

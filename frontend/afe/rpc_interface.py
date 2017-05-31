@@ -576,14 +576,15 @@ def get_tests_status_counts_by_job_name_label(job_name_prefix, label_name):
     """Gets the counts of all passed and failed tests from the matching jobs.
 
     @param job_name_prefix: Name prefix of the jobs to get the summary
-           from, e.g., 'butterfly-release/R40-6457.21.0/bvt-cq/'.
+           from, e.g., 'butterfly-release/r40-6457.21.0/bvt-cq/'. Prefix
+           matching is case insensitive.
     @param label_name: Label that must be set in the jobs, e.g.,
             'cros-version:butterfly-release/R40-6457.21.0'.
 
     @returns A summary of the counts of all the passed and failed tests.
     """
     job_ids = list(models.Job.objects.filter(
-            name__startswith=job_name_prefix,
+            name__istartswith=job_name_prefix,
             dependency_labels__name=label_name).values_list(
                 'pk', flat=True))
     summary = {'passed': 0, 'failed': 0}
@@ -1182,6 +1183,48 @@ def _get_image_for_job(job, hostless):
             logging.warning('Failed to parse control file for job: %s',
                             job.name)
     return image
+
+
+def get_host_queue_entries_by_insert_time(
+    insert_time_after=None, insert_time_before=None, **filter_data):
+    """Like get_host_queue_entries, but using the insert index table.
+
+    @param insert_time_after: A lower bound on insert_time
+    @param insert_time_before: An upper bound on insert_time
+    @returns A sequence of nested dictionaries of host and job information.
+    """
+    assert insert_time_after is not None or insert_time_before is not None, \
+      ('Caller to get_host_queue_entries_by_insert_time must provide either'
+       ' insert_time_after or insert_time_before.')
+    # Get insert bounds on the index of the host queue entries.
+    if insert_time_after:
+        query = models.HostQueueEntryStartTimes.objects.filter(
+            # Note: '-insert_time' means descending. We want the largest
+            # insert time smaller than the insert time.
+            insert_time__lte=insert_time_after).order_by('-insert_time')
+        try:
+            constraint = query[0].highest_hqe_id
+            if 'id__gte' in filter_data:
+                constraint = max(constraint, filter_data['id__gte'])
+            filter_data['id__gte'] = constraint
+        except IndexError:
+            pass
+
+    # Get end bounds.
+    if insert_time_before:
+        query = models.HostQueueEntryStartTimes.objects.filter(
+            insert_time__gte=insert_time_before).order_by('insert_time')
+        try:
+            constraint = query[0].highest_hqe_id
+            if 'id__lte' in filter_data:
+                constraint = min(constraint, filter_data['id__lte'])
+            filter_data['id__lte'] = constraint
+        except IndexError:
+            pass
+
+    return rpc_utils.prepare_rows_as_nested_dicts(
+            models.HostQueueEntry.query_objects(filter_data),
+            ('host', 'job'))
 
 
 def get_host_queue_entries(start_time=None, end_time=None, **filter_data):

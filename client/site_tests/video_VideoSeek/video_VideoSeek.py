@@ -9,6 +9,7 @@ import os
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.cros.video import helper_logger
 
 WAIT_TIMEOUT_S = 180
 
@@ -29,7 +30,7 @@ class video_VideoSeek(test.test):
 
                 # Disable vp8 switchres for nyan devices temporarily due to:
                 # crbug/699260
-                ('nyan', 'vp8', True), ('nyan-*', 'vp8', True)
+                ('nyan', 'vp8', True), ('nyan_*', 'vp8', True)
         ]
 
         board = utils.get_current_board()
@@ -42,6 +43,8 @@ class video_VideoSeek(test.test):
 
         return False
 
+
+    @helper_logger.video_log_wrapper
     def run_once(self, codec, is_switchres, video):
         """Tests whether video seek works by random seeks forward and backward.
 
@@ -52,7 +55,9 @@ class video_VideoSeek(test.test):
         if self.is_skipping_test(codec, is_switchres):
             raise error.TestNAError('Skipping test run on this board.')
 
-        with chrome.Chrome(init_network_controller=True) as cr:
+        with chrome.Chrome(
+                extra_browser_args=helper_logger.chrome_vmodule_flag(),
+                init_network_controller=True) as cr:
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)
             tab = cr.browser.tabs[0]
             tab.Navigate(cr.browser.platform.http_server.UrlOf(

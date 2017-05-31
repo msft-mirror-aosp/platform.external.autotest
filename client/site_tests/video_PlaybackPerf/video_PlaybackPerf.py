@@ -14,6 +14,7 @@ from autotest_lib.client.cros import power_status, power_utils
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.video import histogram_verifier
 from autotest_lib.client.cros.video import constants
+from autotest_lib.client.cros.video import helper_logger
 
 
 DISABLE_ACCELERATED_VIDEO_DECODE_BROWSER_ARGS = [
@@ -78,6 +79,7 @@ class video_PlaybackPerf(test.test):
                                "loop=true")
 
 
+    @helper_logger.video_log_wrapper
     def run_once(self, video_name, video_description, power_test=False,
                  arc_mode=None):
         """
@@ -200,8 +202,13 @@ class video_PlaybackPerf(test.test):
         self._service_stopper.stop_services()
 
         self._power_status = power_status.get_status()
-        # Verify that we are running on battery and the battery is sufficiently
-        # charged.
+        # We expect the DUT is powered by battery now. But this is not always
+        # true due to other bugs. Disable this test temporarily as workaround.
+        # TODO(kcwu): remove this workaround after AC control is stable
+        #             crbug.com/723968
+        if self._power_status.on_ac():
+            raise error.TestNAError('Still powered by AC. Skip this test')
+        # Verify that the battery is sufficiently charged.
         self._power_status.assert_battery_state(BATTERY_INITIAL_CHARGED_MIN)
 
         measurements = [power_status.SystemPower(
@@ -233,8 +240,10 @@ class video_PlaybackPerf(test.test):
         """
         keyvals = {}
 
-        with chrome.Chrome(arc_mode=self.arc_mode,
-                           init_network_controller=True) as cr:
+        with chrome.Chrome(
+                extra_browser_args=helper_logger.chrome_vmodule_flag(),
+                arc_mode=self.arc_mode,
+                init_network_controller=True) as cr:
             # Open the video playback page and start playing.
             self.start_playback(cr, local_path)
             result = gather_result(cr)

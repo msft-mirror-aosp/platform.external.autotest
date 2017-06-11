@@ -31,12 +31,43 @@ except ImportError:
 
 def add_args(parser):
     """Adds command line arguments."""
-    parser.add_argument('filename', metavar='WAV_FILE', type=str,
-                        help='The wave file to check.')
+    parser.add_argument('filename', metavar='FILE', type=str,
+                        help='The wav or raw file to check.'
+                             'The file format is determined by file extension.'
+                             'For raw format, user must also pass -b, -r, -c'
+                             'for bit width, rate, and number of channels.')
     parser.add_argument('--debug', action='store_true', default=False,
                         help='Show debug message.')
     parser.add_argument('--spectral-only', action='store_true', default=False,
                         help='Only do spectral analysis on each channel.')
+    parser.add_argument('--freqs', metavar='FREQ', type=float,
+                        nargs='*',
+                        help='Expected frequencies in the channels. '
+                             'Frequencies are separated by space. '
+                             'E.g.: --freqs 1000 2000. '
+                             'It means only the first two '
+                             'channels (1000Hz, 2000Hz) are to be checked. '
+                             'Unwanted channels can be specified by 0. '
+                             'E.g.: --freqs 1000 0 2000 0 3000. '
+                             'It means only channe 0,2,4 are to be examined.')
+    parser.add_argument('--freq_threshold', metavar='FREQ_THRESHOLD', type=float,
+                        default=5,
+                        help='Frequency difference threshold in Hz. '
+                             'Default is 5Hz')
+    parser.add_argument('-b', '--bit-width', metavar='BIT_WIDTH', type=int,
+                        default=32,
+                        help='For raw file. Bit width of a sample. '
+                             'Assume sample format is little-endian signed int. '
+                             'Default is 32')
+    parser.add_argument('-r', '--rate', metavar='RATE', type=int,
+                        default=48000,
+                        help='For raw file. Sampling rate. Default is 48000')
+    parser.add_argument('-c', '--channel', metavar='CHANNEL', type=int,
+                        default=8,
+                        help='For raw file. Number of channels. '
+                             'Default is 8.')
+
+
 
 
 def parse_args(parser):
@@ -175,6 +206,11 @@ class QualityCheckerError(Exception):
     pass
 
 
+class CompareFailure(QualityCheckerError):
+    """Exception when frequency comparison failes."""
+    pass
+
+
 class QualityChecker(object):
     """Quality checker controls the flow of checking quality of raw data."""
     def __init__(self, raw_data, rate):
@@ -186,6 +222,7 @@ class QualityChecker(object):
         """
         self._raw_data = raw_data
         self._rate = rate
+        self._spectrals = []
 
 
     def do_spectral_analysis(self, check_quality=False):
@@ -223,6 +260,8 @@ class QualityChecker(object):
                 logging.info('Channel %d quality:\n%s', channel_idx,
                              pprint.pformat(quality))
 
+            self._spectrals.append(spectral)
+
 
     def has_data(self):
         """Checks if data has been set.
@@ -232,6 +271,60 @@ class QualityChecker(object):
         """
         if not self._raw_data or not self._rate:
             raise QualityCheckerError('Data and rate is not set yet')
+
+
+    def check_freqs(self, expected_freqs, freq_threshold):
+        """Checks the dominant frequencies in the channels.
+
+        @param expected_freq: A list of frequencies. If frequency is 0, it
+                              means this channel should be ignored.
+        @param freq_threshold: The difference threshold to compare two
+                               frequencies.
+
+        """
+        logging.debug('expected_freqs: %s', expected_freqs)
+        for idx, expected_freq in enumerate(expected_freqs):
+            if expected_freq == 0:
+                continue
+            dominant_freq = self._spectrals[idx][0][0]
+            if abs(dominant_freq - expected_freq) > freq_threshold:
+                raise CompareFailure(
+                        'Failed at channel %d: %f is too far away from %f' % (
+                                idx, dominant_freq, expected_freq))
+
+class CheckQualityError(Exception):
+    """Error in check_quality main function."""
+    pass
+
+
+def read_audio_file(args):
+    """Reads audio file.
+
+    @param args: The namespace parsed from command line arguments.
+
+    @returns: A tuple (raw_data, rate) where raw_data is
+              audio_data.AudioRawData, rate is sampling rate.
+
+    """
+    if args.filename.endswith('.wav'):
+        wavefile = WaveFile(args.filename)
+        raw_data = wavefile.raw_data
+        rate = wavefile.rate
+    elif args.filename.endswith('.raw'):
+        binary = None
+        with open(args.filename, 'r') as f:
+            binary = f.read()
+
+        raw_data = audio_data.AudioRawData(
+                binary=binary,
+                channel=args.channel,
+                sample_format='S%d_LE' % args.bit_width)
+        rate = args.rate
+    else:
+        raise CheckQualityError(
+                'File format for %s is not supported' % args.filename)
+
+    return raw_data, rate
 
 
 if __name__ == "__main__":
@@ -245,8 +338,11 @@ if __name__ == "__main__":
     format = '%(asctime)-15s:%(levelname)s:%(pathname)s:%(lineno)d: %(message)s'
     logging.basicConfig(format=format, level=level)
 
-    wavefile = WaveFile(args.filename)
+    raw_data, rate = read_audio_file(args)
 
-    checker = QualityChecker(wavefile.raw_data, wavefile.rate)
+    checker = QualityChecker(raw_data, rate)
 
     checker.do_spectral_analysis(check_quality=(not args.spectral_only))
+
+    if args.freqs:
+        checker.check_freqs(args.freqs, args.freq_threshold)

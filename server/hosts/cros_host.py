@@ -192,9 +192,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     '! test -f /mnt/stateful_partition/.android_tester && '
                     '! grep -q moblab /etc/lsb-release',
                     ignore_status=True, timeout=timeout)
+            if result.exit_status == 0:
+                lsb_release_content = host.run(
+                    'grep CHROMEOS_RELEASE_BOARD /etc/lsb-release',
+                    timeout=timeout).stdout
+                return not lsbrelease_utils.is_jetstream(
+                    lsb_release_content=lsb_release_content)
         except (error.AutoservRunError, error.AutoservSSHTimeout):
             return False
-        return result.exit_status == 0
+
+        return False
 
 
     @staticmethod
@@ -362,8 +369,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @raises urllib2.URLError: If the devserver embedded in job_repo_url
                                   doesn't respond within the timeout.
         """
-        job_repo_url = afe_utils.get_host_attribute(self,
-                                                    ds_constants.JOB_REPO_URL)
+        info = self.host_info_store.get()
+        job_repo_url = info.attributes.get(ds_constants.JOB_REPO_URL, '')
         if not job_repo_url:
             logging.warning('No job repo url set on host %s', self.hostname)
             return
@@ -440,8 +447,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             ds = dev_server.ImageServer.resolve(image_name, hostname)
         else:
             info = self.host_info_store.get()
-            job_repo_url = afe_utils.get_host_attribute(
-                    self, ds_constants.JOB_REPO_URL)
+            job_repo_url = info.attributes.get(ds_constants.JOB_REPO_URL, '')
             if job_repo_url:
                 devserver_url, image_name = (
                     tools.get_devserver_build_from_package_url(job_repo_url))
@@ -454,6 +460,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     ds = dev_server.ImageServer.resolve(image_name)
             elif info.build is not None:
                 ds = dev_server.ImageServer.resolve(info.build, hostname)
+                image_name = info.build
             else:
                 raise error.AutoservError(
                         'Failed to stage server-side package. The host has '
@@ -824,10 +831,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         Subclasses may override this to perform any special actions
         required before updating.
         """
-        # Stop service ap-update-manager to prevent rebooting during autoupdate.
-        # The service is used in jetstream boards, but not other CrOS devices.
-        # TODO(lgoodby): Remove this when jetstream hosts are specialized.
-        self.run('sudo stop ap-update-manager', ignore_status=True)
+        pass
 
 
     def machine_install(self, update_url=None, force_update=False,

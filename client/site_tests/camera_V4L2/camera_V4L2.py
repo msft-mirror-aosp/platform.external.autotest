@@ -10,7 +10,6 @@ import re
 import stat
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros.graphics import graphics_utils
 
 
 class camera_V4L2(test.test):
@@ -19,6 +18,7 @@ class camera_V4L2(test.test):
     v4l2_major_dev_num = 81
     v4l2_minor_dev_num_min = 0
     v4l2_minor_dev_num_max = 64
+    test_constant_framerate = False
 
     def setup(self):
         # TODO(jiesun): make binary here when cross compile issue is resolved.
@@ -26,18 +26,15 @@ class camera_V4L2(test.test):
         utils.make('clean')
         utils.make()
 
-    def run_once(self, run_unit_tests=True, run_capture_tests=True,
-                 assert_mandatory_controls=False):
+    def run_once(self, test_constant_framerate=False):
 
-        self.assert_mandatory_controls = assert_mandatory_controls
+        self.test_constant_framerate = test_constant_framerate
         self.find_video_capture_devices()
 
         for device in self.v4l2_devices:
             self.usb_info = self.get_camera_device_usb_info(device)
-            if run_unit_tests:
-                self.run_v4l2_unittests(device)
-            if run_capture_tests:
-                self.run_v4l2_capture_test(device)
+            self.run_v4l2_unittests(device)
+            self.run_v4l2_capture_test(device)
 
     def get_camera_device_usb_info(self, device):
         device_name = ntpath.basename(device)
@@ -69,79 +66,17 @@ class camera_V4L2(test.test):
         if not self.v4l2_devices:
             raise error.TestFail("No V4L2 devices found!")
 
-    def unittest_passed(self, testname, stdout):
-        return re.search(r"OK \] V4L2DeviceTest\." + testname, stdout)
-
     def run_v4l2_unittests(self, device):
-        self.executable = os.path.join(self.bindir, "media_v4l2_unittest")
-        cmd = "%s --device=%s" % (self.executable, device)
+        options = ["--device=%s" % device, "--usb-info=%s" % self.usb_info]
+        executable = os.path.join(self.bindir, "media_v4l2_unittest")
+        cmd = "%s %s" % (executable, " ".join(options))
         logging.info("Running %s" % cmd)
         stdout = utils.system_output(cmd, retain_output=True)
 
-        # Check the result of unittests.
-        # We had exercise all the optional ioctls in unittest which maybe
-        # optional by V4L2 Specification.  Therefore we need to check those
-        # tests that we thought are mandatory.
-        # 1. Multiple open should be supported for panel application.
-        if not self.unittest_passed("MultipleOpen", stdout):
-            raise error.TestError(device + " does not support multiple open!")
-
-        # 2. Need to make sure this is really support or just driver error.
-        if not self.unittest_passed("MultipleInit", stdout):
-            raise error.TestError(device + " does support multiple init!")
-
-        # 3. EnumInput and EnumStandard is optional.
-
-        # 4. EnumControl is mandatory.
-        if not self.unittest_passed("EnumControl", stdout):
-            raise error.TestError(device + " does support enum controls!")
-        pattern = re.compile(r"Control (\w+) is enabled\((\d+)-(\d+):(\d+)\)")
-        control_info = pattern.findall(stdout)
-        self.supported_controls = [x[0] for x in control_info]
-        logging.info("Supported Controls: %s\n" % self.supported_controls)
-
-        # TODO(jiesun): what is required?
-        mandatory_controls = [
-            "Brightness",
-            "Contrast",
-            "Saturation",
-            "Hue",
-            "Gamma"]
-        for control in mandatory_controls:
-            if self.assert_mandatory_controls and \
-                    control not in self.supported_controls:
-                raise error.TestError(device + " does not support " + control)
-
-        # 5. SetControl is mandatory.
-        if not self.unittest_passed("SetControl", stdout):
-            raise error.TestError(device + " does not support set controls!")
-
-        # 6. 7. Set/GetCrop are both optional.
-
-        # 8. ProbeCaps is mandatory.
-        if not self.unittest_passed("ProbeCaps", stdout):
-            raise error.TestError(device + " does not support probe caps!")
-
-        if not re.search(r"support video capture interface.>>>", stdout):
-            raise error.TestFail(device + " does not support video capture!")
-
-        # 9. EnumFormats is always mandatory.
-        if not self.unittest_passed("EnumFormats", stdout):
-            raise error.TestError(device + " does not support enum formats!")
-
-        pattern = re.compile(r"supported format #\d+: .* \((....)\)")
-        format_info = pattern.findall(stdout)
-        # Remove duplicated pixel formats from list.
-        self.supported_formats = list(set(format_info))
-        logging.info("Supported pixel format: %s\n", self.supported_formats)
-
-        # 10. Get/SetParam for framerate is optional.
-        # 11. EnumFrameSize is optional.
-
     def run_v4l2_capture_test(self, device):
-        options = ["--device=%s" % device]
-        options += ["--usb-info=%s" % self.usb_info]
-
+        options = ["--device=%s" % device, "--usb-info=%s" % self.usb_info]
+        if self.test_constant_framerate:
+            options += ["--constant-framerate"]
         executable = os.path.join(self.bindir, "media_v4l2_test")
         cmd = "%s %s" % (executable, " ".join(options))
         logging.info("Running %s" % cmd)

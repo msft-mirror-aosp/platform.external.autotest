@@ -37,9 +37,9 @@ def afe_rpc_call(hostname):
     try:
         afe_monitor.run()
     except Exception as e:
-        with metrics.Counter(METRIC_MONITOR_ERROR).increment(
-                fields={'target_hostname': hostname}):
-            logging.exception(e)
+        metrics.Counter(METRIC_MONITOR_ERROR).increment(
+                fields={'target_hostname': hostname})
+        logging.exception(e)
 
 
 class RpcFlightRecorder(object):
@@ -95,7 +95,7 @@ class AfeMonitor(object):
         metric_fields['failure_reason'] = ''
 
         with metrics.SecondsTimer(METRIC_RPC_CALL_DURATIONS,
-                fields=dict(self._metric_fields)) as f:
+                fields=dict(metric_fields)) as f:
             try:
                 result = self._afe.run(cmd)
                 f['success'] = True
@@ -107,7 +107,7 @@ class AfeMonitor(object):
                 logging.warning("%s:%s:failed - %s", self._hostname, cmd,
                         f['failure_reason'])
             except Exception as e:
-                f['failure_reason'] = FAILURE_REASONS.get(type(e), 'Uknown')
+                f['failure_reason'] = FAILURE_REASONS.get(type(e), 'Unknown')
                 logging.warning("%s:%s:failed - %s",
                                 self._hostname,
                                 cmd,

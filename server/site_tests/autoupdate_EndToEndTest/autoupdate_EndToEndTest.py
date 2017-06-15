@@ -14,7 +14,7 @@ import urlparse
 from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error, global_config
 from autotest_lib.client.common_lib.cros import autoupdater, dev_server
-from autotest_lib.server import afe_utils, autotest, hosts, test
+from autotest_lib.server import autotest, hosts, test
 from autotest_lib.server.cros.dynamic_suite import tools
 
 
@@ -1040,8 +1040,9 @@ class ChromiumOSTestPlatform(TestPlatform):
         else:
             # Attempt to get the job_repo_url to find the stateful payload for
             # the target image.
-            job_repo_url = afe_utils.get_host_attribute(
-                    self._host, self._host.job_repo_url_attribute)
+            info = self._host.host_info_store.get()
+            job_repo_url = info.attributes.get(
+                    self._host.job_repo_url_attribute, '')
             if not job_repo_url:
                 target_stateful_uri = self._payload_to_stateful_uri(
                     target_payload_uri)
@@ -1443,7 +1444,8 @@ class autoupdate_EndToEndTest(test.test):
     # TODO(sosa): Investigate why this needs to be so long (this used to be
     # 120 and regressed).
     _WAIT_FOR_DOWNLOAD_STARTED_SECONDS = 4 * 60
-    _WAIT_FOR_DOWNLOAD_COMPLETED_SECONDS = 10 * 60
+    # See https://crbug.com/731214 before changing WAIT_FOR_DOWNLOAD
+    _WAIT_FOR_DOWNLOAD_COMPLETED_SECONDS = 20 * 60
     _WAIT_FOR_UPDATE_COMPLETED_SECONDS = 4 * 60
     _WAIT_FOR_UPDATE_CHECK_AFTER_REBOOT_SECONDS = 15 * 60
     _DEVSERVER_HOSTLOG_REQUEST_TIMEOUT_SECONDS = 30

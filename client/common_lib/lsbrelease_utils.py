@@ -13,6 +13,9 @@ import common
 from autotest_lib.client.cros import constants
 
 
+JETSTREAM_BOARDS = frozenset(['arkham', 'gale', 'whirlwind'])
+
+
 def _lsbrelease_search(regex, group_id=0, lsb_release_content=None):
     """Searches /etc/lsb-release for a regex match.
 
@@ -83,15 +86,31 @@ def is_moblab(lsb_release_content=None):
 
     @return the board string if this is a Moblab device or None if it is not.
     """
+    if lsb_release_content is not None:
+        return _lsbrelease_search(r'.*moblab',
+                                  lsb_release_content=lsb_release_content)
+
     if os.path.exists(constants.LSB_RELEASE):
-        return _lsbrelease_search(
-                r'.*moblab', lsb_release_content=lsb_release_content)
+        return _lsbrelease_search(r'.*moblab')
+
     try:
         from chromite.lib import cros_build_lib
         if cros_build_lib.IsInsideChroot():
             return None
     except ImportError as e:
         logging.error('Unable to determine if this is a moblab system: %s', e)
+
+
+def is_jetstream(lsb_release_content=None):
+    """Parses lsb_contents to determine if the host is a Jetstream host.
+
+    @param lsb_release_content: The string contents of lsb-release.
+            If None, the local lsb-release is used.
+
+    @return True if the host is a Jetstream device, otherwise False.
+    """
+    board = get_current_board(lsb_release_content=lsb_release_content)
+    return board in JETSTREAM_BOARDS
 
 
 def get_chrome_milestone(lsb_release_content=None):

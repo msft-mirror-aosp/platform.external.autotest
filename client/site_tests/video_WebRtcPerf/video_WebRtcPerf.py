@@ -292,8 +292,9 @@ class video_WebRtcPerf(test.test):
         # true due to other bugs. Disable this test temporarily as workaround.
         # TODO(kcwu): remove this workaround after AC control is stable
         #             crbug.com/723968
-        if self.current_power_status.on_ac():
-            raise error.TestNAError('Still powered by AC. Skip this test')
+        if current_power_status.on_ac():
+            logging.warning('Still powered by AC. Skip this test')
+            return {}
         # Verify that the battery is sufficiently charged.
         current_power_status.assert_battery_state(BATTERY_INITIAL_CHARGED_MIN)
 

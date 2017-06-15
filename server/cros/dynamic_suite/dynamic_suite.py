@@ -17,6 +17,7 @@ from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
+from autotest_lib.server.cros.dynamic_suite.suite import ProvisionSuite
 from autotest_lib.server.cros.dynamic_suite.suite import Suite
 from autotest_lib.tko import utils as tko_utils
 
@@ -425,6 +426,67 @@ def skip_reimage(g):
     return False
 
 
+def run_provision_suite(**dargs):
+    """
+    Run a provision suite.
+
+    Will re-image a number of devices (of the specified board) with the
+    provided builds by scheduling dummy_Pass.
+
+    @param job: an instance of client.common_lib.base_job representing the
+                currently running suite job.
+    @param suite_args: keyword arguments passed to suite.
+
+    @raises AsynchronousBuildFailure: if there was an issue finishing staging
+                                      from the devserver.
+    @raises MalformedDependenciesException: if the dependency_info file for
+                                            the required build fails to parse.
+    """
+    spec = SuiteSpec(**dargs)
+
+    afe = frontend_wrappers.RetryingAFE(timeout_min=30, delay_sec=10,
+                                        user=spec.job.user, debug=False)
+    tko = frontend_wrappers.RetryingTKO(timeout_min=30, delay_sec=10,
+                                        user=spec.job.user, debug=False)
+
+    try:
+        my_job_id = int(tko_utils.get_afe_job_id(spec.job.tag))
+        logging.debug('Determined own job id: %d', my_job_id)
+    except ValueError:
+        my_job_id = None
+        logging.warning('Could not determine own job id.')
+
+    suite = ProvisionSuite(
+            tag=spec.name,
+            builds=spec.builds,
+            board=spec.board,
+            devserver=spec.devserver,
+            count=1,
+            afe=afe,
+            tko=tko,
+            pool=spec.pool,
+            results_dir=spec.job.resultdir,
+            max_runtime_mins=spec.max_runtime_mins,
+            timeout_mins=spec.timeout_mins,
+            file_bugs=spec.file_bugs,
+            file_experimental_bugs=spec.file_experimental_bugs,
+            suite_job_id=my_job_id,
+            extra_deps=spec.suite_dependencies,
+            priority=spec.priority,
+            wait_for_results=spec.wait_for_results,
+            job_retry=spec.job_retry,
+            max_retries=spec.max_retries,
+            offload_failures_only=spec.offload_failures_only,
+            test_source_build=spec.test_source_build,
+            run_prod_code=spec.run_prod_code,
+            job_keyvals=spec.job_keyvals,
+            test_args=spec.test_args)
+
+    _run_suite_with_spec(suite, spec)
+
+    logging.debug('Returning from dynamic_suite.run_provision_suite')
+
+
 def reimage_and_run(**dargs):
     """
     Backward-compatible API for dynamic_suite.
@@ -468,17 +530,6 @@ def _perform_reimage_and_run(spec, afe, tko, suite_job_id=None):
     @param suite_job_id: Job id that will act as parent id to all sub jobs.
                          Default: None
     """
-    # We can't do anything else until the devserver has finished downloading
-    # control_files and test_suites packages so that we can get the control
-    # files we should schedule.
-    if not spec.run_prod_code:
-        _stage_artifacts(spec)
-
-    timestamp = datetime.datetime.now().strftime(time_utils.TIME_FMT)
-    utils.write_keyval(
-        spec.job.resultdir,
-        {constants.ARTIFACT_FINISHED_TIME: timestamp})
-
     suite = Suite.create_from_predicates(
             predicates=[spec.predicate],
             name=spec.name,
@@ -504,20 +555,72 @@ def _perform_reimage_and_run(spec, afe, tko, suite_job_id=None):
             run_prod_code=spec.run_prod_code,
             job_keyvals=spec.job_keyvals,
             test_args=spec.test_args)
+    _run_suite_with_spec(suite, spec)
 
-    if spec.delay_minutes:
+
+def _run_suite_with_spec(suite, spec):
+    """
+    Do the work of reimaging hosts and running tests.
+
+    @param suite: _BaseSuite instance to run.
+    @param spec: a populated SuiteSpec object.
+    """
+    _run_suite(
+        suite=suite,
+        job=spec.job,
+        run_prod_code=spec.run_prod_code,
+        devserver=spec.devserver,
+        build=spec.test_source_build,
+        delay_minutes=spec.delay_minutes,
+        bug_template=spec.bug_template)
+
+
+def _run_suite(
+        suite,
+        job,
+        run_prod_code,
+        devserver,
+        build,
+        delay_minutes,
+        bug_template):
+    """
+    Run a suite.
+
+    @param suite: _BaseSuite instance.
+    @param job: an instance of client.common_lib.base_job representing the
+                currently running suite job.
+    @param run_prod_code: whether to use prod test code.
+    @param devserver: devserver for staging artifacts.
+    @param build: the build to install e.g. 'x86-alex-release/R18-1655.0.0'
+    @param delay_minutes: Delay the creation of test jobs for a given number
+                          of minutes.
+    @param bug_template: A template dictionary specifying the default bug
+                         filing options for failures in this suite.
+    """
+    # We can't do anything else until the devserver has finished downloading
+    # control_files and test_suites packages so that we can get the control
+    # files we should schedule.
+    if not run_prod_code:
+        _stage_artifacts_for_build(devserver, build)
+
+    timestamp = datetime.datetime.now().strftime(time_utils.TIME_FMT)
+    utils.write_keyval(
+        job.resultdir,
+        {constants.ARTIFACT_FINISHED_TIME: timestamp})
+
+    if delay_minutes:
         logging.debug('delay_minutes is set. Sleeping %d minutes before '
-                      'creating test jobs.', spec.delay_minutes)
-        time.sleep(spec.delay_minutes*60)
+                      'creating test jobs.', delay_minutes)
+        time.sleep(delay_minutes*60)
         logging.debug('Finished waiting for %d minutes before creating test '
-                      'jobs.', spec.delay_minutes)
+                      'jobs.', delay_minutes)
 
     # Now we get to asychronously schedule tests.
-    suite.schedule(spec.job.record_entry, spec.add_experimental)
+    suite.schedule(job.record_entry)
 
     if suite.wait_for_results:
         logging.debug('Waiting on suite.')
-        suite.wait(spec.job.record_entry, spec.bug_template)
+        suite.wait(job.record_entry, bug_template)
         logging.debug('Finished waiting on suite. '
                       'Returning from _perform_reimage_and_run.')
     else:
@@ -525,14 +628,15 @@ def _perform_reimage_and_run(spec, afe, tko, suite_job_id=None):
                      'without waiting for test jobs to finish.')
 
 
-def _stage_artifacts(suite_spec):
+def _stage_artifacts_for_build(devserver, build):
     """Stage artifacts for a suite job.
 
-    @param suite_spec: a populated SuiteSpec object.
+    @param devserver: devserver to stage artifacts with.
+    @param build: image to stage artifacts for.
     """
     try:
-        suite_spec.devserver.stage_artifacts(
-                image=suite_spec.test_source_build,
+        devserver.stage_artifacts(
+                image=build,
                 artifacts=['control_files', 'test_suites'])
     except dev_server.DevServerException as e:
         # If we can't get the control files, there's nothing to run.

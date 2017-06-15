@@ -207,7 +207,8 @@ class video_PlaybackPerf(test.test):
         # TODO(kcwu): remove this workaround after AC control is stable
         #             crbug.com/723968
         if self._power_status.on_ac():
-            raise error.TestNAError('Still powered by AC. Skip this test')
+            logging.warning('Still powered by AC. Skip this test')
+            return {}
         # Verify that the battery is sufficiently charged.
         self._power_status.assert_battery_state(BATTERY_INITIAL_CHARGED_MIN)
 
@@ -295,10 +296,11 @@ class video_PlaybackPerf(test.test):
                     description= 'hw_' + description, value=result_with_hw,
                     units=units, higher_is_better=False)
 
-        result_without_hw = keyvals[PLAYBACK_WITHOUT_HW_ACCELERATION]
-        self.output_perf_value(
-                description= 'sw_' + description, value=result_without_hw,
-                units=units, higher_is_better=False)
+        result_without_hw = keyvals.get(PLAYBACK_WITHOUT_HW_ACCELERATION)
+        if result_without_hw is not None:
+            self.output_perf_value(
+                    description= 'sw_' + description, value=result_without_hw,
+                    units=units, higher_is_better=False)
 
 
     def cleanup(self):

@@ -8,6 +8,9 @@
 #include <time.h>
 #include <sys/stat.h>
 
+#include <string>
+#include <utility>
+
 #define CHECK(a) assert(a)
 #define MAJOR(dev) (((uint32_t)(dev)) >> 8)
 #define MINOR(dev) (((uint32_t)(dev)) & 0xff)
@@ -83,7 +86,9 @@ bool V4L2Device::InitDevice(IOMethod io,
                             uint32_t width,
                             uint32_t height,
                             uint32_t pixfmt,
-                            float fps) {
+                            float fps,
+                            ConstantFramerate constant_framerate,
+                            uint32_t num_skip_frames) {
   io_ = io;
   // Crop/Format setting could live across session.
   // We should always initialized them when supported.
@@ -143,10 +148,34 @@ bool V4L2Device::InitDevice(IOMethod io,
   }
   float actual_fps = GetFrameRate();
 
-  printf("actual format for capture %dx%d %c%c%c%c picture at %.2f fps\n",
+  int32_t constant_framerate_setting;
+  std::string constant_framerate_msg = "";
+  switch (constant_framerate) {
+    case DEFAULT_FRAMERATE_SETTING:
+      constant_framerate_setting = 1;
+      break;
+    case ENABLE_CONSTANT_FRAMERATE:
+      constant_framerate_setting = 0;
+      constant_framerate_msg = " with constant framerate";
+      break;
+    case DISABLE_CONSTANT_FRAMERATE:
+      constant_framerate_setting = 1;
+      constant_framerate_msg = " without constant framerate";
+      break;
+    default:
+      printf("<<< Error: Invalid constant framerate setting: %d. >>>\n",
+          constant_framerate);
+      return false;
+  }
+  SetControl(V4L2_CID_EXPOSURE_AUTO_PRIORITY, constant_framerate_setting);
+
+  printf("actual format for capture %dx%d %c%c%c%c picture at %.2f fps%s\n",
          fmt.fmt.pix.width, fmt.fmt.pix.height,
          (pixfmt >> 0) & 0xff, (pixfmt >> 8) & 0xff,
-         (pixfmt >> 16) & 0xff, (pixfmt >> 24 ) & 0xff, actual_fps);
+         (pixfmt >> 16) & 0xff, (pixfmt >> 24 ) & 0xff, actual_fps,
+         constant_framerate_msg.c_str());
+  frame_timestamps_.clear();
+  num_skip_frames_ = num_skip_frames;
 
   bool ret = false;
   switch (io_) {
@@ -205,50 +234,24 @@ bool V4L2Device::UninitDevice() {
 }
 
 bool V4L2Device::StartCapture() {
-  v4l2_buffer buf;
-  uint32_t i;
-  v4l2_buf_type type;
-  switch (io_) {
-    case IO_METHOD_MMAP:
-      for (i = 0; i < num_buffers_; ++i) {
-        memset(&buf, 0, sizeof(buf));
-        buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        buf.memory = V4L2_MEMORY_MMAP;
-        buf.index  = i;
-        if (-1 == DoIoctl(VIDIOC_QBUF, &buf)) {
-          printf("<<< Error: VIDIOC_QBUF on %s.>>>\n", dev_name_);
-          return false;
-        }
-      }
-      type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-      if (-1 == DoIoctl(VIDIOC_STREAMON, &type)) {
-        printf("<<< Error: VIDIOC_STREAMON on %s.>>>\n", dev_name_);
-        return false;
-      }
-      break;
-    case IO_METHOD_USERPTR:
-      for (i = 0; i < num_buffers_; ++i) {
-        memset(&buf, 0, sizeof(buf));
-        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        buf.memory = V4L2_MEMORY_USERPTR;
-        buf.index = i;
-        buf.m.userptr = (unsigned long) v4l2_buffers_[i].start;
-        buf.length = v4l2_buffers_[i].length;
-        if (-1 == DoIoctl(VIDIOC_QBUF, &buf)) {
-          printf("<<< Error: VIDIOC_QBUF on %s.>>>\n", dev_name_);
-          return false;
-        }
-      }
-      type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-      if (-1 == DoIoctl(VIDIOC_STREAMON, &type)) {
-        printf("<<< Error: VIDIOC_STREAMON on %s.>>>\n", dev_name_);
-        return false;
-      }
-      break;
-    default:
-      printf("<<< Error: IO method should be defined.>>>\n");
+  for (uint32_t i = 0; i < num_buffers_; ++i) {
+    if (!EnqueueBuffer(i))
       return false;
   }
+  v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  if (-1 == DoIoctl(VIDIOC_STREAMON, &type)) {
+    printf("<<< Error: VIDIOC_STREAMON on %s.>>>\n", dev_name_);
+    return false;
+  }
+
+  uint32_t buf_index, data_size;
+  for (size_t i = 0; i < num_skip_frames_; i++) {
+    if (!ReadOneFrame(&buf_index, &data_size))
+      return false;
+    if (!EnqueueBuffer(buf_index))
+      return false;
+  }
+
   return true;
 }
 
@@ -277,45 +280,27 @@ void V4L2Device::ProcessImage(const void* p) {
 
 // Do capture for duration of |time_in_sec|.
 bool V4L2Device::Run(uint32_t time_in_sec) {
-  uint32_t frames = 0;
   stopped_ = false;
   if (!time_in_sec)
     return false;
 
-  uint64_t start_in_sec = Now();
-  int32_t timeout = 5;  // Used 5 seconds for initial delay.
+  uint64_t start_in_nanosec = Now();
+  uint32_t buffer_index, data_size;
   while (!stopped_) {
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(fd_, &fds);
-    timeval tv;
-    tv.tv_sec = timeout;
-    tv.tv_usec = 0;
-    timeout = 2;  // Normal timeout will be 2 seconds.
-    int32_t r = select(fd_ + 1, &fds, NULL, NULL, &tv);
-    if (-1 == r) {
-      if (EINTR == errno)  // If interrupted, continue.
-        continue;
-      printf("<<< Error: select() failed on %s.>>>\n", dev_name_);
-      return false;
-    }
-    if (0 == r) {
-      printf("<<< Error: select() timeout on %s.>>>\n", dev_name_);
-      return false;
-    }
-    r = ReadOneFrame();
+    int32_t r = ReadOneFrame(&buffer_index, &data_size);
     if (r < 0)
       return false;
-    if (r)
-      frames++;
-    if (time_in_sec) {
-      uint64_t end_in_sec = Now();
-      if ( end_in_sec - start_in_sec >= time_in_sec )
-        break;
+    if (r) {
+      ProcessImage(v4l2_buffers_[buffer_index].start);
+      if (!EnqueueBuffer(buffer_index))
+        return false;
     }
+    uint64_t end_in_nanosec = Now();
+    if ( end_in_nanosec - start_in_nanosec >= time_in_sec * 1000000000ULL)
+      break;
   }
   // All resolutions should have at least 1 fps.
-  float actual_fps = static_cast<float>(frames) / time_in_sec;
+  float actual_fps = static_cast<float>(GetNumFrames()) / time_in_sec;
   printf("\n<<< Info: Actual fps is %f on %s.>>>\n", actual_fps, dev_name_);
   if (actual_fps < 1.0) {
     printf("<<< Error: The actual fps is too low on %s.>>>\n", dev_name_);
@@ -340,10 +325,27 @@ int32_t V4L2Device::DoIoctl(int32_t request, void* arg) {
 // return 1 : successful to retrieve a frame from device
 // return 0 : EAGAIN
 // negative : error
-int32_t V4L2Device::ReadOneFrame() {
+int32_t V4L2Device::ReadOneFrame(uint32_t* buffer_index, uint32_t* data_size) {
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(fd_, &fds);
+  timeval tv;
+  tv.tv_sec = 2;  // Normal timeout will be 2 seconds.
+  tv.tv_usec = 0;
+  int32_t r = select(fd_ + 1, &fds, NULL, NULL, &tv);
+  if (-1 == r) {
+    if (EINTR == errno)  // If interrupted, try again.
+      return 0;
+    printf("<<< Error: select() failed on %s.>>>\n", dev_name_);
+    return -1;
+  }
+  if (0 == r) {
+    printf("<<< Error: select() timeout on %s.>>>\n", dev_name_);
+    return -1;
+  }
+
   v4l2_buffer buf;
   memset(&buf, 0, sizeof(buf));
-  uint32_t i;
   switch (io_) {
     case IO_METHOD_MMAP:
       buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -360,15 +362,18 @@ int32_t V4L2Device::ReadOneFrame() {
             return -2;
         }
       }
+      // We cannot use the timestamp in v4l2_buffer because
+      // 1. The time delta between the first and the second frame may be bigger
+      //    because it includes sensor initialization time.
+      // 2. Even if we ignore the first frame timestamp, v4l2_buffer timestamps
+      //    on Kevin are totally wrong for unknown reasons.
+      // 3. Kernel version <= 3.18 doesn't have the fix to disable hardware
+      //    timestamp. https://patchwork.kernel.org/patch/6874491/
+      frame_timestamps_.push_back(Now());
       CHECK(buf.index < num_buffers_);
       // TODO: uvcvideo driver ignores this field. This is negligible,
       // so disabling this for now until we get a fix into the upstream driver.
       // CHECK(buf.field == V4L2_FIELD_NONE);  // progressive only.
-      ProcessImage(v4l2_buffers_[buf.index].start);
-      if (-1 == DoIoctl(VIDIOC_QBUF, &buf)) {
-        printf("<<< Error: VIDIOC_QBUF failed on %s.>>>\n", dev_name_);
-        return -3;
-      }
       break;
     case IO_METHOD_USERPTR:
       buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -385,23 +390,49 @@ int32_t V4L2Device::ReadOneFrame() {
             return -2;
         }
       }
-      for (i = 0; i < num_buffers_; ++i) {
-        if (buf.m.userptr == (unsigned long) v4l2_buffers_[i].start
-            && buf.length == v4l2_buffers_[i].length)
-          break;
-      }
-      CHECK(i < num_buffers_);
-      ProcessImage(reinterpret_cast<void*>(buf.m.userptr));
-      if (-1 == DoIoctl(VIDIOC_QBUF, &buf)) {
-        printf("<<< Error: VIDIOC_QBUF failed on %s.>>>\n", dev_name_);
-        return -3;
-      }
+      frame_timestamps_.push_back(Now());
+      CHECK(buf.index < num_buffers_);
       break;
     default:
       printf("<<< Error: IO method should be defined.>>>\n");
       return -1;
   }
+  if (buffer_index)
+    *buffer_index = buf.index;
+  if (data_size)
+    *data_size = buf.bytesused;
   return 1;
+}
+
+bool V4L2Device::EnqueueBuffer(uint32_t buffer_index) {
+  v4l2_buffer buf;
+  memset(&buf, 0, sizeof(buf));
+  switch (io_) {
+    case IO_METHOD_MMAP:
+      buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      buf.memory = V4L2_MEMORY_MMAP;
+      buf.index = buffer_index;
+      if (-1 == DoIoctl(VIDIOC_QBUF, &buf)) {
+        printf("<<< Error: VIDIOC_QBUF failed on %s.>>>\n", dev_name_);
+        return false;
+      }
+      break;
+    case IO_METHOD_USERPTR:
+      buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      buf.memory = V4L2_MEMORY_USERPTR;
+      buf.index = buffer_index;
+      buf.m.userptr = (unsigned long) v4l2_buffers_[buffer_index].start;
+      buf.length = v4l2_buffers_[buffer_index].length;
+      if (-1 == DoIoctl(VIDIOC_QBUF, &buf)) {
+        printf("<<< Error: VIDIOC_QBUF failed on %s.>>>\n", dev_name_);
+        return false;
+      }
+      break;
+    default:
+      printf("<<< Error: IO method should be defined.>>>\n");
+      return false;
+  }
+  return true;
 }
 
 bool V4L2Device::AllocateBuffer(uint32_t buffer_count) {
@@ -559,22 +590,30 @@ bool V4L2Device::EnumStandard() {
 bool V4L2Device::EnumControl(bool show_menu) {
   v4l2_queryctrl query_ctrl;
   memset(&query_ctrl, 0, sizeof(query_ctrl));
-  for (query_ctrl.id = V4L2_CID_BASE;
-       query_ctrl.id < V4L2_CID_LASTP1;
-       ++query_ctrl.id) {
-    if (0 == DoIoctl(VIDIOC_QUERYCTRL, &query_ctrl)) {
-      if (query_ctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
-          printf("Control %s is disabled\n", query_ctrl.name);
-      } else {
-          printf("Control %s is enabled(%d-%d:%d)\n",
-                 query_ctrl.name, query_ctrl.minimum,
-                 query_ctrl.maximum, query_ctrl.default_value);
+  // Query V4L2_CID_CAMERA_CLASS_BASE is for V4L2_CID_EXPOSURE_AUTO_PRIORITY.
+  std::vector<std::pair<uint32_t, uint32_t>> query_ctrl_sets;
+  query_ctrl_sets.push_back(std::make_pair(V4L2_CID_BASE, V4L2_CID_LASTP1));
+  query_ctrl_sets.push_back(std::make_pair(V4L2_CID_CAMERA_CLASS_BASE,
+                                           V4L2_CID_TILT_SPEED));
+
+  for (int i = 0; i < query_ctrl_sets.size(); i++) {
+    for (query_ctrl.id = query_ctrl_sets[i].first;
+         query_ctrl.id < query_ctrl_sets[i].second;
+         ++query_ctrl.id) {
+      if (0 == DoIoctl(VIDIOC_QUERYCTRL, &query_ctrl)) {
+        if (query_ctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
+            printf("Control %s is disabled\n", query_ctrl.name);
+        } else {
+            printf("Control %s is enabled(%d-%d:%d)\n",
+                   query_ctrl.name, query_ctrl.minimum,
+                   query_ctrl.maximum, query_ctrl.default_value);
+        }
+        if (query_ctrl.type == V4L2_CTRL_TYPE_MENU && show_menu)
+          EnumControlMenu(query_ctrl);
+      } else if (errno != EINVAL) {
+        printf("<<< Info: VIDIOC_query_ctrl not supported.>>>\n");
+        return false;
       }
-      if (query_ctrl.type == V4L2_CTRL_TYPE_MENU && show_menu)
-        EnumControlMenu(query_ctrl);
-    } else if (errno != EINVAL) {
-      printf("<<< Info: VIDIOC_query_ctrl not supported.>>>\n");
-      return false;
     }
   }
 
@@ -852,7 +891,7 @@ bool V4L2Device::SetControl(uint32_t id, int32_t value) {
   control.id = id;
   control.value = value;
   if (-1 == DoIoctl(VIDIOC_S_CTRL, &control)) {
-    printf("<<< Info: VIDIOC_S_CTRL failed. %d>>>\n", errno);
+    printf("<<< Error: VIDIOC_S_CTRL failed. %d>>>\n", errno);
     return false;
   }
   return true;
@@ -964,5 +1003,5 @@ uint64_t V4L2Device::Now() {
   struct timespec ts;
   int res = clock_gettime(CLOCK_MONOTONIC, &ts);
   CHECK(res == 0);
-  return static_cast<uint64_t>(ts.tv_sec);
+  return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
 }

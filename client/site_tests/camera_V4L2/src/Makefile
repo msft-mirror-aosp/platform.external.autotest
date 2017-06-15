@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 PKG_CONFIG ?= pkg-config
-DEP_LIBS = libchrome-$(BASE_VER)
-CXXFLAGS += $(shell $(PKG_CONFIG) --cflags $(DEP_LIBS))
+DEP_LIBS = libchrome-$(BASE_VER) libyuv
+CXXFLAGS += $(shell $(PKG_CONFIG) --cflags $(DEP_LIBS)) -std=c++11
 
-LDFLAGS = -lrt -ldl -std=c++11
+LDFLAGS = -lrt -ldl -ljpeg
 LDFLAGS += $(shell $(PKG_CONFIG) --libs $(DEP_LIBS))
 
-LDFLAGS_UNITTEST = -lrt -std=c++11
+LDFLAGS_UNITTEST = -lrt
 LDFLAGS_UNITTEST += $(shell $(PKG_CONFIG) --libs $(DEP_LIBS))
 
 LDFLAGS_HELPER = -lrt

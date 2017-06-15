@@ -82,7 +82,7 @@ DEVSERVER_IS_STAGING_RETRY_MIN = 100
 DEVSERVER_IS_CROS_AU_FINISHED_TIMEOUT_MIN = 100
 
 # The total times of devserver triggering CrOS auto-update.
-AU_RETRY_LIMIT = 3
+AU_RETRY_LIMIT = 2
 
 # Number of seconds for caller to poll devserver's get_au_status call to
 # check if cros auto-update is finished.
@@ -1711,6 +1711,18 @@ class ImageServer(ImageServerBase):
         return os.path.join(log_dir, CROS_AU_LOG_FILENAME % (
                     host_name, pid))
 
+    def _read_json_response_from_devserver(self, response):
+        """Reads the json response from the devserver.
+
+        This is extracted to its own function so that it can be easily mocked.
+        @param response: the response for a devserver.
+        """
+        try:
+            return json.loads(response)
+        except ValueError as e:
+            raise DevServerException(e)
+
+
     @remote_devserver_call()
     def _collect_au_log(self, log_dir, **kwargs):
         """Collect logs from devserver after cros-update process is finished.
@@ -1734,23 +1746,21 @@ class ImageServer(ImageServerBase):
                 log_dir, kwargs['host_name'], kwargs['pid'])
         logging.debug('Saving auto-update logs into %s', write_file)
 
+        au_logs = self._read_json_response_from_devserver(response)
+
         try:
-            au_logs = json.loads(response)
             for k, v in au_logs['host_logs'].items():
                 log_name = '%s_%s_%s' % (k, kwargs['host_name'], kwargs['pid'])
                 log_path = os.path.join(log_dir, log_name)
                 with open(log_path, 'w') as out_log:
                     out_log.write(v)
-            cros_au_log = au_logs['cros_au_log']
-        except ValueError:
-            logging.debug('collect_cros_au_log response was not json.')
-            cros_au_log = response
-        except:
-          raise DevServerException('Failed to write auto-update hostlogs')
+        except IOError as e:
+            raise DevServerException('Failed to write auto-update hostlogs: '
+                                     '%s' % e)
 
         try:
             with open(write_file, 'w') as out_log:
-                out_log.write(cros_au_log)
+                out_log.write(au_logs['cros_au_log'])
         except:
             raise DevServerException('Failed to write auto-update logs into '
                                      '%s' % write_file)
@@ -1981,7 +1991,7 @@ class ImageServer(ImageServerBase):
         # For now we just hard-code the error message we think it's suspicious.
         # When we get more date about what's the json response when devserver
         # is overloaded, we can update this part.
-        retryable_error_patterns = ['No JSON object could be decoded',
+        retryable_error_patterns = [ERR_MSG_FOR_INVALID_DEVSERVER_RESPONSE,
                                     'is not pingable']
         return self._check_error_message(retryable_error_patterns, error_msg)
 
@@ -2070,9 +2080,7 @@ class ImageServer(ImageServerBase):
             try:
                 # Try update with stateful.tgz of old release version in the
                 # last try of auto-update.
-                if (force_original or
-                    (au_attempt > 0 and au_attempt  == AU_RETRY_LIMIT - 1 and
-                     original_release_version)):
+                if force_original and original_release_version:
                     # Monitor this case in monarch
                     original_build = '%s/%s' % (original_board,
                                                 original_release_version)

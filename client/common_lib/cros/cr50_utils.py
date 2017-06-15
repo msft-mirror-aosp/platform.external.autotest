@@ -19,19 +19,21 @@ UPDATE_FAILURE = 'unexpected cr50-update exit code'
 DUMMY_VER = '-1.-1.-1'
 # This dictionary is used to search the usb_updater output for the version
 # strings. There are two usb_updater commands that will return versions:
-# 'fwver' and 'binver'.
+# 'fwver' and 'binvers'.
 #
 # 'fwver'   is used to get the running RO and RW versions from cr50
-# 'binver'  gets the version strings for each RO and RW region in the given
-#           file
+# 'binvers'  gets the version strings for each RO and RW region in the given
+#            file
 #
 # The value in the dictionary is the regular expression that can be used to
 # find the version strings for each region.
 VERSION_RE = {
     "--fwver" : '\nRO (?P<ro>\S+).*\nRW (?P<rw>\S+)',
-    "--binver" : 'RO_A:(?P<ro_a>\S+).*RW_A:(?P<rw_a>\S+).*' \
+    "--binvers" : 'RO_A:(?P<ro_a>\S+).*RW_A:(?P<rw_a>\S+).*' \
            'RO_B:(?P<ro_b>\S+).*RW_B:(?P<rw_b>\S+)',
 }
+UPDATE_TIMEOUT = 60
+UPDATE_OK = 1
 
 
 def AssertVersionsAreEqual(name_a, ver_a, name_b, ver_b):
@@ -97,7 +99,7 @@ def FindVersion(output, arg):
 
     @param output: The string to search
     @param arg: string representing the usb_updater option, either
-                '--binver' or '--fwver'
+                '--binvers' or '--fwver'
     @param compare: raise an error if the ro or rw versions don't match
     """
     versions = re.search(VERSION_RE[arg], output)
@@ -113,6 +115,67 @@ def GetSavedVersion(client):
     return FindVersion(result, "--fwver")
 
 
+def CheckArg(arg, shortopt, longopt):
+    """Return True if arg equals longopt or shortopt"""
+    return arg == shortopt or arg == longopt
+
+
+def ParseArgs(args):
+    """Parse the args and determine what the intent of the usb_update command is
+
+    Check each arg and determine if the command will cause a reboot, uses
+    /dev/tpm0, or is getting the running version or the version of a .bin.
+
+    Returns a tuple of bools expect_reboot, systemdev, get_ver
+    """
+    systemdev = False
+    post_reset = False
+    get_ver = False
+    for arg in args:
+        arg = arg.strip()
+        systemdev |= CheckArg(arg, '-s', '--systemdev')
+        get_ver |= CheckArg(arg, '-b', '--binvers')
+        get_ver |= CheckArg(arg, '-f', '--fwver')
+        post_reset |= CheckArg(arg, '-p', '--post_reset')
+        post_reset |= CheckArg(arg, '-u', '--upstart')
+
+    # immediate reboots are only honored if the command is sent using /dev/tpm0
+    expect_reboot = systemdev and not post_reset and not get_ver
+    return expect_reboot, systemdev, get_ver
+
+
+def UsbUpdate(client, args):
+    """Run usb_update with the given args.
+
+    Args:
+        a list of strings that contiain the usb_update args
+
+    Returns:
+        the result of usb_update
+    """
+    expect_reboot, systemdev, get_ver = ParseArgs(args)
+
+    result = client.run("status trunksd")
+    if systemdev and 'running' in result.stdout:
+        client.run("stop trunksd")
+
+    # If we are updating the cr50 image, usb_update will return a non-zero exit
+    # status so we should ignore it.
+    ignore_status = not get_ver
+
+    result = client.run("usb_updater %s" % ' '.join(args),
+                        ignore_status=ignore_status,
+                        ignore_timeout=expect_reboot,
+                        timeout=UPDATE_TIMEOUT)
+
+    # After a posted reboot, the usb_update exit code should equal 1.
+    if result.exit_status and result.exit_status != UPDATE_OK:
+        logging.debug(result)
+        raise error.TestError("Unexpected usb_update exit code after %s %d" %
+                              ' '.join(args), result.exit_status)
+    return result
+
+
 def GetVersionFromUpdater(client, args):
     """Return the version from usb_updater"""
     result = client.run("usb_updater %s" % ' '.join(args)).stdout.strip()
@@ -125,10 +188,10 @@ def GetFwVersion(client):
 
 
 def GetBinVersion(client, image=CR50_FILE):
-    """Get the image version using 'usb_updater --binver image'"""
-    # TODO(mruthven) b/37958867: change to ["--binver", image] when usb_updater
+    """Get the image version using 'usb_updater --binvers image'"""
+    # TODO(mruthven) b/37958867: change to ["--binvers", image] when usb_updater
     # is fixed
-    return GetVersionFromUpdater(client, ["--binver", image, image])
+    return GetVersionFromUpdater(client, ["--binvers", image, image])
 
 
 def GetVersionString(ver):

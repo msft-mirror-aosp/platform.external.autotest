@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _DL_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-    'arm': _DL_CTS + 'android-cts-7.1_r5-linux_x86-arm.zip',
-    'x86': _DL_CTS + 'android-cts-7.1_r5-linux_x86-x86.zip',
+    'arm': _DL_CTS + 'android-cts-7.1_r6-linux_x86-arm.zip',
+    'x86': _DL_CTS + 'android-cts-7.1_r6-linux_x86-x86.zip',
     'media': _DL_CTS + 'android-cts-media-1.2.zip',
 }
 
@@ -195,7 +195,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
         if not datetime_id:
             # Parse stdout to obtain datetime of the session. This is needed to
             # locate result xml files and logs.
-            datetime_id = self._parse_tradefed_datetime_N(output, self.summary)
+            datetime_id = self._parse_tradefed_datetime_v2(output, self.summary)
         # Collect tradefed logs for autotest.
         tradefed = os.path.join(self._android_cts, 'android-cts')
         self._collect_logs(tradefed, datetime_id, result_destination)

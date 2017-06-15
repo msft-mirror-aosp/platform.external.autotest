@@ -693,8 +693,7 @@ def list_all_suites(build, devserver, cf_getter=None):
 
     suites = set()
     predicate = lambda t: True
-    for test in find_and_parse_tests(cf_getter, predicate,
-                                     add_experimental=True):
+    for test in find_and_parse_tests(cf_getter, predicate):
         suites.update(test.suite_tag_parts)
     return list(suites)
 
@@ -1200,7 +1199,13 @@ class _BaseSuite(object):
             if self._job_keyvals:
                 utils.write_keyval(self._results_dir, self._job_keyvals)
 
-            for test in test_filter.get_tests_to_schedule():
+            tests = test_filter.get_tests_to_schedule()
+            # TODO(crbug.com/730885): This is a hack to protect tests that are
+            # not usually retried from getting hit by a provision error when run
+            # as part of a suite. Remove this hack once provision is separated
+            # out in its own suite.
+            self._bump_up_test_retries(tests)
+            for test in tests:
                 scheduled_job = self._schedule_test(record, test)
                 if scheduled_job is not None:
                     scheduled_test_names.append(test.name)
@@ -1221,6 +1226,21 @@ class _BaseSuite(object):
                     initial_jobs_to_tests=self._jobs_to_tests,
                     max_retries=self._max_retries)
         return len(scheduled_test_names)
+
+
+    def _bump_up_test_retries(self, tests):
+        """Bump up individual test retries to match suite retry options."""
+        if not self._job_retry:
+            return
+
+        for test in tests:
+            if not test.job_retries:
+                logging.debug(
+                        'Test %s requested no retries, but suite requires '
+                        'retries. Bumping retries up to 1. '
+                        '(See crbug.com/730885)',
+                        test.name)
+                test.job_retries = 1
 
 
     def _make_scheduled_tests_keyvals(self, scheduled_test_names):
@@ -1682,7 +1702,6 @@ class Suite(_BaseSuite):
                 cf_getter,
                 _ComposedPredicate(predicates),
                 tag,
-                add_experimental=True,
                 forgiving_parser=forgiving_parser,
                 run_prod_code=run_prod_code,
                 test_args=test_args,
@@ -1710,6 +1729,85 @@ class Suite(_BaseSuite):
                 offload_failures_only=offload_failures_only,
                 test_source_build=test_source_build,
                 job_keyvals=job_keyvals)
+
+
+class ProvisionSuite(_BaseSuite):
+    """
+    A suite for provisioning DUTs.
+
+    This is done by creating dummy_Pass tests.
+    """
+
+
+    def __init__(
+            self,
+            tag,
+            builds,
+            board,
+            count,
+            devserver,
+            cf_getter=None,
+            run_prod_code=False,
+            test_args=None,
+            test_source_build=None,
+            **suite_args):
+        """
+        Constructor
+
+        @param tag: a string with which to tag jobs run in this suite.
+        @param builds: the builds on which we're running this suite.
+        @param board: the board on which we're running this suite.
+        @param count: number of dummy tests to make
+        @param devserver: the devserver which contains the build.
+        @param cf_getter: a control_file_getter.ControlFileGetter.
+        @param test_args: A dict of args passed all the way to each individual
+                          test that will be actually ran.
+        @param test_source_build: Build that contains the server-side test code.
+        @param suite_args: Various keyword arguments passed to
+                           _BaseSuite constructor.
+        """
+        dummy_test = _load_dummy_test(
+                builds, devserver, cf_getter,
+                run_prod_code, test_args, test_source_build)
+
+        super(ProvisionSuite, self).__init__(
+                tests=[dummy_test] * count,
+                tag=tag,
+                builds=builds,
+                board=board,
+                **suite_args)
+
+
+def _load_dummy_test(
+        builds,
+        devserver,
+        cf_getter=None,
+        run_prod_code=False,
+        test_args=None,
+        test_source_build=None):
+    """
+    Load and return the dummy pass test.
+
+    @param builds: the builds on which we're running this suite.
+    @param devserver: the devserver which contains the build.
+    @param cf_getter: a control_file_getter.ControlFileGetter.
+    @param test_args: A dict of args passed all the way to each individual
+                      test that will be actually ran.
+    @param test_source_build: Build that contains the server-side test code.
+    @param suite_args: Various keyword arguments passed to
+                       _BaseSuite constructor.
+    """
+    if cf_getter is None:
+        if run_prod_code:
+            cf_getter = create_fs_getter(_AUTOTEST_DIR)
+        else:
+            build = get_test_source_build(
+                    builds, test_source_build=test_source_build)
+            cf_getter = _create_ds_getter(build, devserver)
+    retriever = _get_cf_retriever(cf_getter,
+                                  run_prod_code=run_prod_code,
+                                  test_args=test_args)
+    return retriever.retrieve('dummy_Pass')
 
 
 class _ComposedPredicate(object):

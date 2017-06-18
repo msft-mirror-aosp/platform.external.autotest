@@ -251,52 +251,6 @@ class RetryHandler(object):
         return self._retry_map[job_id]['retry_max']
 
 
-class _ExperimentalTestFilter(object):
-    """Filter experimental tests."""
-
-
-    def __init__(self, tests, add_experimental=True):
-        """Initialize instance.
-
-        @param tests: iterable of tests (ControlData objects)
-        @param add_experimental: schedule experimental tests as well, or not.
-        """
-        self._tests = list(tests)
-        self._add_experimental = add_experimental
-
-
-    def get_tests_to_schedule(self):
-        """Return a list of tests to be scheduled for this suite.
-
-        @returns: list of tests (ControlData objects)
-        """
-        tests = self.stable_tests
-        if self._add_experimental:
-            for test in self.unstable_tests:
-                if not test.name.startswith(constants.EXPERIMENTAL_PREFIX):
-                    test.name = constants.EXPERIMENTAL_PREFIX + test.name
-                tests.append(test)
-        return tests
-
-
-    @property
-    def stable_tests(self):
-        """Non-experimental tests.
-
-        @returns: list
-        """
-        return filter(lambda t: not t.experimental, self._tests)
-
-
-    @property
-    def unstable_tests(self):
-        """Experimental tests.
-
-        @returns: list
-        """
-        return filter(lambda t: t.experimental, self._tests)
-
-
 class _SuiteChildJobCreator(object):
     """Create test jobs for a suite."""
 
@@ -313,7 +267,8 @@ class _SuiteChildJobCreator(object):
             extra_deps=(),
             priority=priorities.Priority.DEFAULT,
             offload_failures_only=False,
-            test_source_build=None):
+            test_source_build=None,
+            job_keyvals=None):
         """
         Constructor
 
@@ -334,6 +289,8 @@ class _SuiteChildJobCreator(object):
         @param offload_failures_only: Only enable gs_offloading for failed
                                       jobs.
         @param test_source_build: Build that contains the server-side test code.
+        @param job_keyvals: General job keyvals to be inserted into keyval file,
+                            which will be used by tko/parse later.
         """
         self._tag = tag
         self._builds = builds
@@ -349,6 +306,7 @@ class _SuiteChildJobCreator(object):
         self._priority = priority
         self._offload_failures_only = offload_failures_only
         self._test_source_build = test_source_build
+        self._job_keyvals = job_keyvals
 
 
     @property
@@ -456,6 +414,10 @@ class _SuiteChildJobCreator(object):
             keyvals[constants.RETRY_ORIGINAL_JOB_ID] = retry_for
         if self._offload_failures_only:
             keyvals[constants.JOB_OFFLOAD_FAILURES_KEY] = True
+        if self._job_keyvals:
+            for key in constants.INHERITED_KEYVALS:
+                if key in self._job_keyvals:
+                    keyvals[key] = self._job_keyvals[key]
         return keyvals
 
 
@@ -955,6 +917,7 @@ def _deprecated_suite_method(func):
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        """Wraps |func| for warning."""
         warnings.warn('Calling this method from Suite is deprecated')
         return func(*args, **kwargs)
     return staticmethod(wrapper)
@@ -1093,6 +1056,7 @@ class _BaseSuite(object):
             priority=priority,
             offload_failures_only=offload_failures_only,
             test_source_build=test_source_build,
+            job_keyvals=job_keyvals,
         )
 
 
@@ -1171,7 +1135,7 @@ class _BaseSuite(object):
             return job
 
 
-    def schedule(self, record, add_experimental=True):
+    def schedule(self, record):
         #pylint: disable-msg=C0111
         """
         Schedule jobs using |self._afe|.
@@ -1181,17 +1145,10 @@ class _BaseSuite(object):
 
         @param record: A callable to use for logging.
                        prototype: record(base_job.status_log_entry)
-        @param add_experimental: schedule experimental tests as well, or not.
         @returns: The number of tests that were scheduled.
         """
         scheduled_test_names = []
-        test_filter = _ExperimentalTestFilter(
-                tests=self.tests,
-                add_experimental=add_experimental)
-        logging.debug('Discovered %d stable tests.',
-                      len(test_filter.stable_tests))
-        logging.debug('Discovered %d unstable tests.',
-                      len(test_filter.unstable_tests))
+        logging.debug('Discovered %d tests.', len(self.tests))
 
         Status('INFO', 'Start %s' % self._tag).record_result(record)
         try:
@@ -1199,13 +1156,12 @@ class _BaseSuite(object):
             if self._job_keyvals:
                 utils.write_keyval(self._results_dir, self._job_keyvals)
 
-            tests = test_filter.get_tests_to_schedule()
             # TODO(crbug.com/730885): This is a hack to protect tests that are
             # not usually retried from getting hit by a provision error when run
             # as part of a suite. Remove this hack once provision is separated
             # out in its own suite.
-            self._bump_up_test_retries(tests)
-            for test in tests:
+            self._bump_up_test_retries(self.tests)
+            for test in self.tests:
                 scheduled_job = self._schedule_test(record, test)
                 if scheduled_job is not None:
                     scheduled_test_names.append(test.name)

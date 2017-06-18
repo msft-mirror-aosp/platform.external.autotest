@@ -107,6 +107,20 @@ class LsbreleaseUtilsTestCase(unittest.TestCase):
         self.assertTrue(lsbrelease_utils.is_jetstream(
             _WHIRLWIND_LSB_RELEASE_REDACTED))
 
+    def test_is_moblab_with_empty_lsbrelease(self):
+        """is_moblab correctly validates trivial lsb-release information."""
+        self.assertFalse(lsbrelease_utils.is_moblab(''))
+
+    def test_is_moblab_with_link_lsbrelease(self):
+        """is_moblab correctly validates the contents from some other board."""
+        self.assertFalse(lsbrelease_utils.is_moblab(
+                _LINK_LSB_RELEASE_REDACTED))
+
+    def test_is_moblab_with_moblab_lsbrelease(self):
+        """is_moblab correctly validates the contents from a moblab device."""
+        self.assertTrue(lsbrelease_utils.is_moblab(
+                _GUADO_MOBLAB_LSB_RELEASE_REDACTED))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -30,9 +30,6 @@ def _wait(secs, desc=None):
 class ExpectedUpdateEventChainFailed(error.TestFail):
     """Raised if we fail to receive an expected event in a chain."""
 
-class RequiredArgumentMissing(error.TestError):
-    """Raised if the test is missing a required argument."""
-
 
 # Update event types.
 EVENT_TYPE_DOWNLOAD_COMPLETE = '1'
@@ -838,7 +835,6 @@ class ChromiumOSTestPlatform(TestPlatform):
     """A TestPlatform implementation for Chromium OS."""
 
     _STATEFUL_UPDATE_FILENAME = 'stateful.tgz'
-    _LOGINABLE_MINIMUM_RELEASE = 5110
 
     def __init__(self, host):
         self._host = host
@@ -1091,21 +1087,13 @@ class ChromiumOSTestPlatform(TestPlatform):
 
 
     def _run_login_test(self, release_string):
-        """Runs login_LoginSuccess test if it is supported by the release."""
-        # Only do login tests with recent builds, since they depend on
-        # some binary compatibility with the build itself.
-        # '5116.0.0' -> ('5116', '0', '0') -> 5116
+        """Runs login_LoginSuccess test on the DUT."""
         if not release_string:
             logging.info('No release provided, skipping login test.')
-        elif int(release_string.split('.')[0]) > self._LOGINABLE_MINIMUM_RELEASE:
-            # Login, to prove we can before/after the update.
+        else:
             logging.info('Attempting to login (release %s).', release_string)
-
             client_at = autotest.Autotest(self._host)
             client_at.run_test('login_LoginSuccess', arc_mode='enabled')
-        else:
-            logging.info('Not attempting login test because %s is older than '
-                         '%d.', release_string, self._LOGINABLE_MINIMUM_RELEASE)
 
 
     def _start_perf_mon(self, bindir):
@@ -1618,14 +1606,11 @@ class autoupdate_EndToEndTest(test.test):
         logging.info('Update successful, test completed')
 
 
-    # TODO(garnold) Remove the use_servo argument once control files on all
-    # release branches have caught up.
-    def run_once(self, host, test_conf, use_servo=False):
+    def run_once(self, host, test_conf):
         """Performs a complete auto update test.
 
         @param host: a host object representing the DUT
         @param test_conf: a dictionary containing test configuration values
-        @param use_servo: DEPRECATED
 
         @raise error.TestError if anything went wrong with setting up the test;
                error.TestFail if any part of the test has failed.

@@ -36,8 +36,24 @@
     "master_name": "ChromeOSPower"
   },
   {
-    "autotest_name": "graphics_dEQP",
-    "master_name": "ChromeOS_Graphics"
+    "autotest_name": "graphics_dEQP.bvt",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_dEQP.gles2-master",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_dEQP.gles3-master",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_dEQP.vk-master",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
   },
   {
     "autotest_name": "graphics_Drm",
@@ -128,8 +144,14 @@
     "master_name": "ChromeOSPerf"
   },
   {
-    "autotest_name": "enterprise_LongevityTrackerServer",
-    "master_name": "ChromeOS_Enterprise"
+    "autotest_name": "enterprise_LongevityTrackerServer.chromesign",
+    "master_name": "ChromeOS_Enterprise",
+    "dashboard_test_name": "enterprise_LongevityTrackerServer"
+  },
+  {
+    "autotest_name": "enterprise_LongevityTrackerServer.riseplayer",
+    "master_name": "ChromeOS_Enterprise",
+    "dashboard_test_name": "enterprise_LongevityTrackerServer"
   },
   {
     "autotest_name": "network_WiFi_AttenuatedPerf.ht40_ch001",
@@ -592,15 +614,35 @@
     "master_name": "ChromeOSVideo"
   },
   {
-    "autotest_name": "video_VDAPerf",
+    "autotest_name": "video_VDAPerf.h264",
     "master_name": "ChromeOSVideo"
   },
   {
-    "autotest_name": "video_VEAPerf",
+    "autotest_name": "video_VDAPerf.vp8",
     "master_name": "ChromeOSVideo"
   },
   {
-    "autotest_name": "video_VideoDecodeMemoryUsage",
+    "autotest_name": "video_VDAPerf.vp9",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VEAPerf.h264",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VEAPerf.vp8",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VideoDecodeMemoryUsage.h264",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VideoDecodeMemoryUsage.vp8",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VideoDecodeMemoryUsage.vp9",
     "master_name": "ChromeOSVideo"
   },
   {

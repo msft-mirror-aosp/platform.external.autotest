@@ -150,6 +150,9 @@ class DevServerException(Exception):
     """Raised when the dev server returns a non-200 HTTP response."""
     pass
 
+class RetryableProvisionException(DevServerException):
+    """Raised when provision fails due to a retryable reason."""
+    pass
 
 class DevServerOverloadException(Exception):
     """Raised when the dev server returns a 502 HTTP response."""
@@ -672,13 +675,16 @@ class DevServer(object):
                 healthy devserver is found.
 
         """
+        logging.debug('Pick one healthy devserver from %r', devservers)
         while devservers:
             hash_index = hash(build) % len(devservers)
             devserver = devservers.pop(hash_index)
+            logging.debug('Check health for %s', devserver)
             if ban_list and devserver in ban_list:
                 continue
 
             if cls.devserver_healthy(devserver):
+                logging.debug('Pick %s', devserver)
                 return cls(devserver)
 
 
@@ -2046,12 +2052,12 @@ class ImageServer(ImageServerBase):
         @param force_original: Whether to force stateful update with the
                                original payload.
 
-        @return A set (is_success, is_retryable) in which:
+        @return A set (is_success, pid) in which:
             1. is_success indicates whether this auto_update succeeds.
-            2. is_retryable indicates whether we should retry auto_update if
-               if it fails.
+            2. pid is the process id of the successful autoupdate run.
 
         @raise DevServerException if auto_update fails and is not retryable.
+        @raise RetryableProvisionException if it fails and is retryable.
         """
         kwargs = {'host_name': host_name,
                   'build_name': build_name,
@@ -2193,8 +2199,8 @@ class ImageServer(ImageServerBase):
              'dut_host_name': host_name}
         c.increment(fields=f)
 
-        if is_au_success or retry_with_another_devserver:
-            return (is_au_success, retry_with_another_devserver)
+        if is_au_success:
+            return (is_au_success, pid)
 
         # If errors happen in the CrOS AU process, report the first error
         # since the following errors might be caused by the first error.
@@ -2202,7 +2208,12 @@ class ImageServer(ImageServerBase):
         # auto-update logs, or killing auto-update processes, just report
         # them together.
         if error_list:
-            raise DevServerException(error_msg % (host_name, error_list[0]))
+            if retry_with_another_devserver:
+                raise RetryableProvisionException(
+                        error_msg % (host_name, error_list[0]))
+            else:
+                raise DevServerException(
+                        error_msg % (host_name, error_list[0]))
         else:
             raise DevServerException(error_msg % (
                         host_name, ('RPC calls after the whole auto-update '
@@ -2513,6 +2524,7 @@ def get_least_loaded_devserver(devserver_type=ImageServer, hostname=None):
     @return: Name of the devserver with the least load.
 
     """
+    logging.debug('Get the least loaded %r', devserver_type)
     devservers, can_retry = devserver_type.get_available_devservers(
             hostname)
     # If no healthy devservers available and can_retry is False, return None.

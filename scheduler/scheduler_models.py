@@ -868,13 +868,12 @@ class HostQueueEntry(DBObject):
         assert self.aborted and not self.complete
 
         Status = models.HostQueueEntry.Status
-        if self.status in (Status.GATHERING, Status.PARSING, Status.ARCHIVING):
+        if self.status in {Status.GATHERING, Status.PARSING}:
             # do nothing; post-job tasks will finish and then mark this entry
             # with status "Aborted" and take care of the host
             return
 
-        if self.status in (Status.STARTING, Status.PENDING, Status.RUNNING,
-                           Status.WAITING):
+        if self.status in {Status.STARTING, Status.PENDING, Status.RUNNING}:
             # If hqe is in any of these status, it should not have any
             # unfinished agent before it can be aborted.
             agents = dispatcher.get_agents_for_entry(self)

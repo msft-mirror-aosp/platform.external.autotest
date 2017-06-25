@@ -11,7 +11,10 @@ import time
 import traceback
 
 import common
-from autotest_lib.client.common_lib import base_job, error, autotemp
+from autotest_lib.client.bin.result_tools import runner as result_tools_runner
+from autotest_lib.client.common_lib import autotemp
+from autotest_lib.client.common_lib import base_job
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import packages
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import utils as client_utils
@@ -28,13 +31,12 @@ except ImportError:
 AUTOTEST_SVN = 'svn://test.kernel.org/autotest/trunk/client'
 AUTOTEST_HTTP = 'http://test.kernel.org/svn/autotest/trunk/client'
 
-BUILD_DIR_SUMMARY_CMD = '%s/bin/result_utils.py -p %s'
-BUILD_DIR_SUMMARY_TIMEOUT = 120
+CONFIG = global_config.global_config
+AUTOSERV_PREBUILD = CONFIG.get_config_value(
+        'AUTOSERV', 'enable_server_prebuild', type=bool, default=False)
 
-get_value = global_config.global_config.get_config_value
-autoserv_prebuild = get_value('AUTOSERV', 'enable_server_prebuild',
-                              type=bool, default=False)
-
+ENABLE_RESULT_THROTTLING = CONFIG.get_config_value(
+        'AUTOSERV', 'enable_result_throttling', type=bool, default=False)
 
 class AutodirNotFoundError(Exception):
     """No Autotest installation could be found."""
@@ -995,7 +997,6 @@ class log_collector(object):
         client job into the results dir. By default does nothing as no
         client job is running, but when running a client job you can override
         this with something that will actually do something. """
-
         # make an effort to wait for the machine to come up
         try:
             self.host.wait_up(timeout=30)
@@ -1006,21 +1007,10 @@ class log_collector(object):
 
         # Copy all dirs in default to results_dir
         try:
-            with metrics.SecondsTimer(
-                    'chromeos/autotest/job/dir_summary_collection_duration',
-                    fields={'dut_host_name': self.host.hostname}):
-                try:
-                    # Build test result directory summary
-                    logging.debug('Getting directory summary for %s.',
-                                  self.client_results_dir)
-                    cmd = (BUILD_DIR_SUMMARY_CMD %
-                           (self.host.autodir, self.client_results_dir + '/'))
-                    self.host.run(cmd, ignore_status=False,
-                                  timeout=BUILD_DIR_SUMMARY_TIMEOUT)
-                except error.AutoservRunError:
-                    logging.exception(
-                            'Failed to create directory summary for %s.',
-                            self.client_results_dir)
+            # Build test result directory summary
+            result_tools_runner.run_on_client(
+                    self.host, self.client_results_dir,
+                    ENABLE_RESULT_THROTTLING)
 
             with metrics.SecondsTimer(
                     'chromeos/autotest/job/log_collection_duration',
@@ -1185,12 +1175,12 @@ class BaseClientLogger(object):
                 src_dir = os.path.join(self.job.clientdir, test_dir, name)
                 if os.path.exists(src_dir):
                     src_dirs += [src_dir]
-                    if autoserv_prebuild:
+                    if AUTOSERV_PREBUILD:
                         prebuild.setup(self.job.clientdir, src_dir)
                     break
         elif pkg_type == 'profiler':
             src_dirs += [os.path.join(self.job.clientdir, 'profilers', name)]
-            if autoserv_prebuild:
+            if AUTOSERV_PREBUILD:
                 prebuild.setup(self.job.clientdir, src_dir)
         elif pkg_type == 'dep':
             src_dirs += [os.path.join(self.job.clientdir, 'deps', name)]

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime, timedelta
 import collections
 import json
 import logging
@@ -203,12 +204,12 @@ class ExpectedUpdateEvent(object):
         """Returns a dictionary of expected attributes."""
         return dict(self._expected_attrs)
 
-# TODO(dhaddock): Update timeout here to compare timeout against event
-# timestamp instead of how long it took to read from the file hostlog file.
+
 class ExpectedUpdateEventChain(object):
     """Defines a chain of expected update events."""
     def __init__(self):
         self._expected_events_chain = []
+        self._current_timestamp = None
 
 
     def add_event(self, expected_events, timeout, on_timeout=None):
@@ -265,8 +266,7 @@ class ExpectedUpdateEventChain(object):
                 raise ExpectedUpdateEventChainFailed(err_msg)
 
 
-    @staticmethod
-    def _verify_event_with_timeout(expected_events, timeout, on_timeout,
+    def _verify_event_with_timeout(self, expected_events, timeout, on_timeout,
                                    get_next_event):
         """Verify an expected event occurs within a given timeout.
 
@@ -278,20 +278,29 @@ class ExpectedUpdateEventChain(object):
         @return None if event complies, an error string otherwise.
 
         """
-        base_timestamp = curr_timestamp = time.time()
-        expired_timestamp = base_timestamp + timeout
-        while curr_timestamp <= expired_timestamp:
-            new_event = get_next_event()
-            if new_event:
-                logging.info('Event received after %s seconds',
-                             round(curr_timestamp - base_timestamp, 1))
-                results = [event.verify(new_event) for event in expected_events]
-                return None if None in results else ' AND '.join(results)
+        new_event = get_next_event()
+        if new_event:
+            # If this is the first event, set it as the current time
+            if self._current_timestamp is None:
+                self._current_timestamp = datetime.strptime(new_event[
+                                                                'timestamp'],
+                                                            '%Y-%m-%d %H:%M:%S')
 
-            # No new events, sleep for one second only (so we don't miss
-            # events at the end of the allotted timeout).
-            time.sleep(1)
-            curr_timestamp = time.time()
+            # Get the time stamp for the current event and convert to datetime
+            timestamp = new_event['timestamp']
+            event_timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+
+            # Add the timeout onto the timestamp to get its expiry
+            event_timeout = self._current_timestamp + timedelta(seconds=timeout)
+
+            # If the event happened before the timeout
+            if event_timestamp < event_timeout:
+                difference = event_timestamp - self._current_timestamp
+                logging.info('Event took %s seconds to fire during the '
+                             'update', difference.seconds)
+                results = [event.verify(new_event) for event in expected_events]
+                self._current_timestamp = event_timestamp
+                return None if None in results else ' AND '.join(results)
 
         logging.error('Timeout expired')
         if on_timeout is None:
@@ -336,7 +345,7 @@ class UpdateEventLogVerifier(object):
                   self._event_log = json.loads(out_log.read())
             except Exception as e:
                 raise error.TestFail('Error while reading the hostlogs '
-                                     'from devserver: %s', e)
+                                     'from devserver: %s' % e)
 
         # Return next new event, if one is found.
         if len(self._event_log) > self._num_consumed_events:
@@ -679,19 +688,8 @@ class ChromiumOSTestPlatform(TestPlatform):
         if target_archive_uri:
             target_stateful_uri = self._get_stateful_uri(target_archive_uri)
         else:
-            # Attempt to get the job_repo_url to find the stateful payload for
-            # the target image.
-            info = self._host.host_info_store.get()
-            job_repo_url = info.attributes.get(
-                    self._host.job_repo_url_attribute, '')
-            if not job_repo_url:
-                target_stateful_uri = self._payload_to_stateful_uri(
+            target_stateful_uri = self._payload_to_stateful_uri(
                     target_payload_uri)
-            else:
-                _, devserver_label = tools.get_devserver_build_from_package_url(
-                        job_repo_url)
-                staged_target_stateful_url = self._stage_payload(
-                        devserver_label, self._STATEFUL_UPDATE_FILENAME)
 
         if not staged_target_stateful_url and target_stateful_uri:
             staged_target_stateful_url = self._stage_payload_by_uri(
@@ -702,8 +700,7 @@ class ChromiumOSTestPlatform(TestPlatform):
                      test_conf['update_type'], target_payload_uri,
                      staged_target_url)
         logging.info('Target stateful update from %s staged at %s',
-                     target_stateful_uri or 'standard location',
-                     staged_target_stateful_url)
+                     target_stateful_uri, staged_target_stateful_url)
 
         return self.StagedURLs(staged_source_url, staged_source_stateful_url,
                                staged_target_url, staged_target_stateful_url)
@@ -862,10 +859,6 @@ class autoupdate_EndToEndTest(test.test):
     version = 1
 
     # Timeout periods, given in seconds.
-    _WAIT_AFTER_SHUTDOWN_SECONDS = 10
-    _WAIT_AFTER_UPDATE_SECONDS = 20
-    _WAIT_FOR_USB_INSTALL_SECONDS = 4 * 60
-    _WAIT_FOR_MP_RECOVERY_SECONDS = 8 * 60
     _WAIT_FOR_INITIAL_UPDATE_CHECK_SECONDS = 12 * 60
     # TODO(sosa): Investigate why this needs to be so long (this used to be
     # 120 and regressed).
@@ -894,6 +887,24 @@ class autoupdate_EndToEndTest(test.test):
             self._omaha_devserver.stop_devserver()
 
         self._omaha_devserver = None
+
+
+    def _get_hostlog_file(self, filename, pid):
+        """Return the hostlog file location.
+
+        @param filename: The partial filename to look for.
+        @param pid: The pid of the update.
+
+        """
+        hosts = [self._host.hostname, self._host.ip]
+        for host in hosts:
+            hostlog = '%s_%s_%s' % (filename, host, pid)
+            file_url = os.path.join(self.job.resultdir,
+                                    dev_server.AUTO_UPDATE_LOG_DIR,
+                                    hostlog)
+            if os.path.exists(file_url):
+                return file_url
+        raise error.TestFail('Could not find %s for pid %s' % (filename, pid))
 
 
     def _dump_update_engine_log(self, test_platform):
@@ -1061,11 +1072,7 @@ class autoupdate_EndToEndTest(test.test):
             pid = test_platform.trigger_update(test_conf['target_payload_uri'])
 
             # Verify the host log that was returned from the update.
-            rootfs_hostlog = '%s_%s_%s' % ('devserver_hostlog_rootfs',
-                                           self._host.hostname, pid)
-            file_url = os.path.join(self.job.resultdir,
-                                    dev_server.AUTO_UPDATE_LOG_DIR,
-                                    rootfs_hostlog)
+            file_url = self._get_hostlog_file('devserver_hostlog_rootfs', pid)
 
             logging.info('Checking update steps with devserver hostlog file: '
                          '%s' % file_url)
@@ -1132,11 +1139,7 @@ class autoupdate_EndToEndTest(test.test):
             # Observe post-reboot update check, which should indicate that the
             # image version has been updated.
             # Verify the host log that was returned from the update.
-            reboot_hostlog = '%s_%s_%s' % ('devserver_hostlog_reboot',
-                                           self._host.hostname, pid)
-            file_url = os.path.join(self.job.resultdir,
-                                    dev_server.AUTO_UPDATE_LOG_DIR,
-                                    reboot_hostlog)
+            file_url = self._get_hostlog_file('devserver_hostlog_reboot', pid)
 
             logging.info('Checking post-reboot devserver hostlogs: %s' %
                          file_url)

@@ -279,7 +279,7 @@ def make_parser():
         help=('A dict of args passed all the way to each individual test that '
               'will be actually ran.'))
     parser.add_argument(
-        '--require_log', action='store_true',
+        '--require_logfile', action='store_true',
         help=('Stream logs of run_suite.py to a local file named '
               'run_suite-<build name>.log.'))
 
@@ -297,7 +297,7 @@ def make_parser():
     return parser
 
 
-def verify_options(options):
+def verify_and_clean_options(options):
     """Verify the validity of options.
 
     @param options: The parsed options to verify.
@@ -556,7 +556,6 @@ class LogLink(object):
         """
         return '%s %s' % (self.anchor, self.url)
 
-
     def GenerateWmatrixRetryLink(self):
         """Generate a link to the wmatrix retry dashboard.
 
@@ -567,6 +566,17 @@ class LogLink(object):
         return annotations.StepLink(
             text='[Flake-Dashboard]: %s' % self.testname,
             url=reporting_utils.link_retry_url(self.testname))
+
+    def GenerateWmatrixHistoryLink(self):
+        """Generate a link to the wmatrix test history dashboard.
+
+        @return A link formatted for the buildbot log annotator.
+        """
+        if not self.testname or self.testname in self._SKIP_RETRY_DASHBOARD:
+            return None
+        return annotations.StepLink(
+            text='[Test-History]: %s' % self.testname,
+            url=reporting_utils.link_test_history(self.testname))
 
 
 class Timings(object):
@@ -1030,9 +1040,99 @@ def log_buildbot_links(log_func, links):
     for link in links:
         for generated_link in link.GenerateBuildbotLinks():
             log_func(generated_link)
-        wmatrix_link = link.GenerateWmatrixRetryLink()
-        if wmatrix_link:
-            log_func(wmatrix_link)
+        wmatrix_retry_link = link.GenerateWmatrixRetryLink()
+        if wmatrix_retry_link:
+            log_func(wmatrix_retry_link)
+        wmatrix_history_link = link.GenerateWmatrixHistoryLink()
+        if wmatrix_history_link:
+            log_func(wmatrix_history_link)
+
+
+class _ReturnCodeComputer(object):
+
+    def __init__(self, ignore_test_results=False):
+        """Initialize instance.
+
+        If ignore_test_results is True, don't check the test jobs for
+        failure.
+        """
+        self._ignore_test_results = ignore_test_results
+
+    def __call__(self, test_views):
+        """Compute the exit code based on test results."""
+        code = RETURN_CODES.OK
+        tests_passed_after_retry = False
+
+        for v in test_views:
+            # The order of checking each case is important.
+            if v.get_testname() == TestView.SUITE_JOB:
+                if v.is_aborted() and v.hit_timeout():
+                    current_code = RETURN_CODES.SUITE_TIMEOUT
+                elif v.is_in_fail_status():
+                    current_code = RETURN_CODES.INFRA_FAILURE
+                elif v['status'] == 'WARN':
+                    current_code = RETURN_CODES.WARNING
+                else:
+                    current_code = RETURN_CODES.OK
+            elif self._ignore_test_results:
+                pass
+            else:
+                if v.is_aborted() and v.is_relevant_suite_view():
+                    # The test was aborted before started
+                    # This gurantees that the suite has timed out.
+                    current_code = RETURN_CODES.SUITE_TIMEOUT
+                elif v.is_aborted() and not v.hit_timeout():
+                    # The test was aborted, but
+                    # not due to a timeout. This is most likely
+                    # because the suite has timed out, but may
+                    # also because it was aborted by the user.
+                    # Since suite timing out is determined by checking
+                    # the suite job view, we simply ignore this view here.
+                    current_code = RETURN_CODES.OK
+                elif v.is_in_fail_status():
+                    # The test job failed.
+                    if v.is_infra_test():
+                        current_code = RETURN_CODES.INFRA_FAILURE
+                    else:
+                        current_code = RETURN_CODES.ERROR
+                elif v['status'] == 'WARN':
+                    # The test/suite job raised a wanrning.
+                    current_code = RETURN_CODES.WARNING
+                elif v.is_retry():
+                    # The test is a passing retry.
+                    current_code = RETURN_CODES.WARNING
+                    tests_passed_after_retry = True
+                else:
+                    current_code = RETURN_CODES.OK
+            code = get_worse_code(code, current_code)
+
+        return code, _get_return_msg(code, tests_passed_after_retry)
+
+
+def _get_return_msg(code, tests_passed_after_retry):
+    """Return the proper message for a given return code.
+
+    @param code: An enum value of RETURN_CODES
+    @param test_passed_after_retry: True/False, indicating
+        whether there are test(s) that have passed after retry.
+
+    @returns: A string, representing the message.
+
+    """
+    if code == RETURN_CODES.INFRA_FAILURE:
+        return 'Suite job failed or provisioning failed.'
+    elif code == RETURN_CODES.SUITE_TIMEOUT:
+        return ('Some test(s) was aborted before running,'
+                ' suite must have timed out.')
+    elif code == RETURN_CODES.WARNING:
+        if tests_passed_after_retry:
+            return 'Some test(s) passed after retry.'
+        else:
+            return 'Some test(s) raised a warning.'
+    elif code == RETURN_CODES.ERROR:
+        return 'Some test(s) failed.'
+    else:
+        return ''
 
 
 class ResultCollector(object):
@@ -1075,6 +1175,8 @@ class ResultCollector(object):
     @var _original_suite_name: The suite name we record timing would be
                                different from _suite_name when running
                                suite_attr_wrapper.
+    @var _return_code_function: Called to return what the overall result of
+                                the suite is.
     @var _suite_views: A list of TestView objects, representing relevant
                        test views of the suite job.
     @var _child_views: A list of TestView objects, representing test views
@@ -1095,7 +1197,9 @@ class ResultCollector(object):
 
 
     def __init__(self, instance_server, afe, tko, build, board,
-                 suite_name, suite_job_id, original_suite_name=None,
+                 suite_name, suite_job_id,
+                 return_code_function,
+                 original_suite_name=None,
                  user=None, solo_test_run=False):
         self._instance_server = instance_server
         self._afe = afe
@@ -1105,6 +1209,7 @@ class ResultCollector(object):
         self._suite_name = suite_name
         self._suite_job_id = suite_job_id
         self._original_suite_name = original_suite_name or suite_name
+        self._return_code_function = return_code_function
         self._suite_views = []
         self._child_views = []
         self._test_views = []
@@ -1272,81 +1377,11 @@ class ResultCollector(object):
             self.timings.RecordTiming(v)
 
 
-    def _get_return_msg(self, code, tests_passed_after_retry):
-        """Return the proper message for a given return code.
-
-        @param code: An enum value of RETURN_CODES
-        @param test_passed_after_retry: True/False, indicating
-            whether there are test(s) that have passed after retry.
-
-        @returns: A string, representing the message.
-
-        """
-        if code == RETURN_CODES.INFRA_FAILURE:
-            return 'Suite job failed or provisioning failed.'
-        elif code == RETURN_CODES.SUITE_TIMEOUT:
-            return ('Some test(s) was aborted before running,'
-                    ' suite must have timed out.')
-        elif code == RETURN_CODES.WARNING:
-            if tests_passed_after_retry:
-                return 'Some test(s) passed after retry.'
-            else:
-                return 'Some test(s) raised a warning.'
-        elif code == RETURN_CODES.ERROR:
-            return 'Some test(s) failed.'
-        else:
-            return ''
-
-
     def _compute_return_code(self):
         """Compute the exit code based on test results."""
-        code = RETURN_CODES.OK
-        tests_passed_after_retry = False
-
-        for v in self._test_views:
-            # The order of checking each case is important.
-            if v.get_testname() == TestView.SUITE_JOB:
-                if v.is_aborted() and v.hit_timeout():
-                    current_code = RETURN_CODES.SUITE_TIMEOUT
-                elif v.is_in_fail_status():
-                    current_code = RETURN_CODES.INFRA_FAILURE
-                elif v['status'] == 'WARN':
-                    current_code = RETURN_CODES.WARNING
-                else:
-                    current_code = RETURN_CODES.OK
-            else:
-                if v.is_aborted() and v.is_relevant_suite_view():
-                    # The test was aborted before started
-                    # This gurantees that the suite has timed out.
-                    current_code = RETURN_CODES.SUITE_TIMEOUT
-                elif v.is_aborted() and not v.hit_timeout():
-                    # The test was aborted, but
-                    # not due to a timeout. This is most likely
-                    # because the suite has timed out, but may
-                    # also because it was aborted by the user.
-                    # Since suite timing out is determined by checking
-                    # the suite job view, we simply ignore this view here.
-                    current_code = RETURN_CODES.OK
-                elif v.is_in_fail_status():
-                    # The test job failed.
-                    if v.is_infra_test():
-                        current_code = RETURN_CODES.INFRA_FAILURE
-                    else:
-                        current_code = RETURN_CODES.ERROR
-                elif v['status'] == 'WARN':
-                    # The test/suite job raised a wanrning.
-                    current_code = RETURN_CODES.WARNING
-                elif v.is_retry():
-                    # The test is a passing retry.
-                    current_code = RETURN_CODES.WARNING
-                    tests_passed_after_retry = True
-                else:
-                    current_code = RETURN_CODES.OK
-            code = get_worse_code(code, current_code)
-
-        self.return_code = code
-        self.return_message = self._get_return_msg(
-                code, tests_passed_after_retry)
+        return_code, message = self._return_code_function(self._test_views)
+        self.return_code = return_code
+        self.return_message = message
 
 
     def _make_test_results(self):
@@ -1461,7 +1496,7 @@ class ResultCollector(object):
 
         """
         if self._solo_test_run:
-            self._test_views, self.retry_count, self._missing_results = (
+            self._test_views, self._retry_counts, self._missing_results = (
                   self._fetch_test_views_of_child_jobs(
                           jobs=self._afe.get_jobs(id=self._suite_job_id)))
         else:
@@ -1497,6 +1532,7 @@ class ResultCollector(object):
 
         job_overhead.record_suite_runtime(self._suite_job_id, self._suite_name,
                 self._board, self._build, self._num_child_jobs, runtime_in_secs)
+
 
 
 def _make_builds_from_options(options):
@@ -1557,10 +1593,16 @@ def create_suite(afe, options):
     )
 
 
-SuiteResult = namedtuple('SuiteResult', ['return_code', 'output_dict'])
+class SuiteResult(namedtuple('SuiteResult', ['return_code', 'output_dict'])):
+    """Result of running a suite to return."""
+
+    def __new__(cls, return_code, output_dict):
+        output_dict = output_dict.copy()
+        output_dict['return_cde'] = return_code
+        return super(SuiteResult, cls).__new__(cls, return_code, output_dict)
 
 
-def main_without_exception_handling(options):
+def _run_suite(options):
     """
     run_suite script without exception handling.
 
@@ -1574,16 +1616,8 @@ def main_without_exception_handling(options):
     if options.use_suite_attr:
         options = change_options_for_suite_attr(options)
 
-    log_name = 'run_suite-default.log'
-    if options.build:
-        # convert build name from containing / to containing only _
-        log_name = 'run_suite-%s.log' % options.build.replace('/', '_')
-        log_dir = os.path.join(common.autotest_dir, 'logs')
-        if os.path.exists(log_dir):
-            log_name = os.path.join(log_dir, log_name)
-
-    if options.require_log:
-        utils.setup_logging(logfile=log_name)
+    log_name = _get_log_name(options)
+    utils.setup_logging(logfile=log_name)
 
     if not options.bypass_labstatus and not options.web:
         utils.check_lab_status(options.build)
@@ -1626,9 +1660,10 @@ def main_without_exception_handling(options):
         except (error.CrosDynamicSuiteException,
                 error.RPCException, proxy.JSONRPCException) as e:
             logging.exception('Error Message: %s', e)
-            return (RETURN_CODES.INFRA_FAILURE, {'return_message': str(e)})
+            return SuiteResult(RETURN_CODES.INFRA_FAILURE,
+                               {'return_message': str(e)})
         except AttributeError:
-            return (RETURN_CODES.INVALID_OPTIONS, {})
+            return SuiteResult(RETURN_CODES.INVALID_OPTIONS, {})
 
     job_timer = diagnosis_utils.JobTimer(
             job_created_on, float(options.timeout_mins))
@@ -1644,12 +1679,32 @@ def main_without_exception_handling(options):
     if options.create_and_return:
         msg = '--create_and_return was specified, terminating now.'
         logging.info(msg)
-        return (RETURN_CODES.OK, {'return_message':msg})
+        return SuiteResult(RETURN_CODES.OK, {'return_message':msg})
 
     if options.no_wait:
         return _handle_job_nowait(job_id, options, instance_server)
     else:
         return _handle_job_wait(afe, job_id, options, job_timer, is_real_time)
+
+
+def _get_log_name(options):
+    """Return local log file's name.
+
+    @param options:         Parsed options.
+
+    @return log_name, a string file name.
+    """
+    if options.require_logfile:
+        # options.build is verified to exist in verify_options.
+        # convert build name from containing / to containing only _.
+        log_name = 'run_suite-%s.log' % options.build.replace('/', '_')
+        log_dir = os.path.join(common.autotest_dir, 'logs')
+        if os.path.exists(log_dir):
+            log_name = os.path.join(log_dir, log_name)
+
+        return log_name
+    else:
+        return None
 
 
 def _create_afe(options):
@@ -1679,19 +1734,13 @@ def _handle_job_wait(afe, job_id, options, job_timer, is_real_time):
 
     @return SuiteResult of suite job.
     """
-    output_dict = {}
     rpc_helper = diagnosis_utils.RPCHelper(afe)
     instance_server = afe.server
     while not afe.get_jobs(id=job_id, finished=True):
-        # Note that this call logs output, preventing buildbot's
-        # 9000 second silent timeout from kicking in. Let there be no
-        # doubt, this is a hack. The timeout is from upstream buildbot and
-        # this is the easiest work around.
-        if job_timer.first_past_halftime():
-            rpc_helper.diagnose_job(job_id, instance_server)
+        _poke_buildbot_with_output(afe, job_id, job_timer)
         if job_timer.debug_output_timer.poll():
             logging.info('The suite job has another %s till timeout.',
-                            job_timer.timeout_hours - job_timer.elapsed_time())
+                         job_timer.timeout_hours - job_timer.elapsed_time())
         time.sleep(10)
     logging.info('%s Suite job is finished.',
                  diagnosis_utils.JobTimer.format_time(datetime.now()))
@@ -1712,7 +1761,7 @@ def _handle_job_wait(afe, job_id, options, job_timer, is_real_time):
 
     # Extract the original suite name to record timing.
     original_suite_name = get_original_suite_name(options.name,
-                                                    options.suite_args)
+                                                  options.suite_args)
     # Start collecting test results.
     logging.info('%s Start collecting test results and dump them to json.',
                  diagnosis_utils.JobTimer.format_time(datetime.now()))
@@ -1724,6 +1773,16 @@ def _handle_job_wait(afe, job_id, options, job_timer, is_real_time):
                                 board=options.board,
                                 suite_name=options.name,
                                 suite_job_id=job_id,
+                                # TODO(ayatane): It needs to be possible
+                                # for provision suite to pass if only a
+                                # few tests fail.  Otherwise, a single
+                                # failing test will be reported as
+                                # failure even if the suite reports
+                                # success.
+                                return_code_function=_ReturnCodeComputer(
+                                    ignore_test_results=(options.name
+                                                         == 'provision'),
+                                ),
                                 original_suite_name=original_suite_name)
     collector.run()
     # Dump test outputs into json.
@@ -1766,8 +1825,7 @@ def _handle_job_wait(afe, job_id, options, job_timer, is_real_time):
         try:
             # Add some jitter to make up for any latency in
             # aborting the suite or checking for results.
-            cutoff = (job_timer.timeout_hours +
-                      timedelta(hours=0.3))
+            cutoff = job_timer.timeout_hours + timedelta(hours=0.3)
             rpc_helper.diagnose_pool(
                     options.board, options.pool, cutoff)
         except proxy.JSONRPCException:
@@ -1795,12 +1853,12 @@ def _handle_job_nowait(job_id, options, instance_server):
     """
     logging.info('Created suite job: %r', job_id)
     link = LogLink(options.name, instance_server,
-                    '%s-%s' % (job_id, getpass.getuser()))
+                   '%s-%s' % (job_id, getpass.getuser()))
     for generate_link in link.GenerateBuildbotLinks():
         logging.info(generate_link)
     logging.info('--no_wait specified; Exiting.')
     return SuiteResult(RETURN_CODES.OK,
-                        {'return_message': '--no_wait specified; Exiting.'})
+                       {'return_message': '--no_wait specified; Exiting.'})
 
 
 def _should_run(options):
@@ -1826,6 +1884,70 @@ def _should_run(options):
             created_on__gte=start_time,
             min_rpc_timeout=_MIN_RPC_TIMEOUT)
 
+
+def _poke_buildbot_with_output(afe, job_id, job_timer):
+    """Poke buildbot so it doesn't timeout from silence.
+
+    @param afe              AFE instance.
+    @param job_id           Suite job id.
+    @param job_timer        JobTimer for suite job.
+    """
+    rpc_helper = diagnosis_utils.RPCHelper(afe)
+    # Note that this call logs output, preventing buildbot's
+    # 9000 second silent timeout from kicking in. Let there be no
+    # doubt, this is a hack. The timeout is from upstream buildbot and
+    # this is the easiest work around.
+    if job_timer.first_past_halftime():
+        rpc_helper.diagnose_job(job_id, afe.server)
+
+
+
+def _run_task(options):
+    """Perform this script's function minus setup.
+
+    Boilerplate like argument parsing, logging, output formatting happen
+    elsewhere.
+
+    Returns a SuiteResult instance.
+
+    TODO(ayatane): The try/except should be moved into _run_suite().
+    Good luck trying to figure out which function calls are supposed to
+    raise which of the exceptions.
+    """
+    try:
+        return _run_suite(options)
+    except diagnosis_utils.BoardNotAvailableError as e:
+        result = SuiteResult(
+            RETURN_CODES.BOARD_NOT_AVAILABLE,
+            {'return_message': 'Skipping testing: %s' % e.message})
+        logging.info(result.output_dict['return_message'])
+        return result
+    except utils.TestLabException as e:
+        result = SuiteResult(
+            RETURN_CODES.INFRA_FAILURE,
+            {'return_message': 'TestLabException: %s' % e})
+        logging.exception(result.output_dict['return_message'])
+        return result
+
+
+class _ExceptionHandler(object):
+    """Global exception handler replacement."""
+
+    def __init__(self, dump_json):
+        """Initialize instance.
+
+        @param dump_json: Whether to print a JSON dump of the result dict to
+                          stdout.
+        """
+        self._should_dump_json = dump_json
+
+    def __call__(self, exc_type, value, traceback):
+        if self._should_dump_json:
+            _dump_json({'return_message': ('Unhandled run_suite exception: %s'
+                                           % value)})
+        sys.exit(RETURN_CODES.INFRA_FAILURE)
+
+
 def main():
     """Entry point."""
     utils.verify_not_root_user()
@@ -1833,52 +1955,43 @@ def main():
     parser = make_parser()
     options = parser.parse_args()
     if options.do_nothing:
-        return
+        return 0
 
-    try:
-        # Silence the log when dumping outputs into json
-        if options.json_dump:
-            logging.disable(logging.CRITICAL)
-
-        if not verify_options(options):
-            parser.print_help()
-            code = RETURN_CODES.INVALID_OPTIONS
-            output_dict = {'return_code': RETURN_CODES.INVALID_OPTIONS}
-        else:
-            if options.pre_check and not _should_run(options):
-                logging.info('Lab is closed, OR build %s is blocked, OR suite '
-                             '%s for this build has already been kicked off '
-                             'once in past %d days.',
-                             options.test_source_build, options.name,
-                             _SEARCH_JOB_MAX_DAYS)
-                return
-
-            code, output_dict = main_without_exception_handling(options)
-    except diagnosis_utils.BoardNotAvailableError as e:
-        output_dict = {'return_message': 'Skipping testing: %s' % e.message}
-        code = RETURN_CODES.BOARD_NOT_AVAILABLE
-        logging.info(output_dict['return_message'])
-    except utils.TestLabException as e:
-        output_dict = {'return_message': 'TestLabException: %s' % e}
-        code = RETURN_CODES.INFRA_FAILURE
-        logging.exception(output_dict['return_message'])
-    except Exception as e:
-        output_dict = {
-            'return_message': 'Unhandled run_suite exception: %s' % e
-        }
-        code = RETURN_CODES.INFRA_FAILURE
-        logging.exception(output_dict['return_message'])
-
-    # Dump test outputs into json.
-    output_dict['return_code'] = code
+    sys.exceptionhandler = _ExceptionHandler(dump_json=options.json_dump)
     if options.json_dump:
-        output_json = json.dumps(output_dict, sort_keys=True)
-        output_json_marked = '#JSON_START#%s#JSON_END#' % output_json.strip()
-        sys.stdout.write(output_json_marked)
+        logging.disable(logging.CRITICAL)
+
+    options_okay = verify_and_clean_options(options)
+    if not options_okay:
+        parser.print_help()
+        result = SuiteResult(
+            RETURN_CODES.INVALID_OPTIONS,
+            {'return_code': RETURN_CODES.INVALID_OPTIONS})
+    elif options.pre_check and not _should_run(options):
+        logging.info('Lab is closed, OR build %s is blocked, OR suite '
+                     '%s for this build has already been kicked off '
+                     'once in past %d days.',
+                     options.test_source_build, options.name,
+                     _SEARCH_JOB_MAX_DAYS)
+        result = SuiteResult(
+            RETURN_CODES.ERROR,
+            {'return_message': ("Lab is closed OR other reason"
+                                " (see code, it's complicated)")})
+    else:
+        result = _run_task(options)
+
+    if options.json_dump:
+        _dump_json(result.output_dict)
 
     logging.info('Will return from run_suite with status: %s',
-                  RETURN_CODES.get_string(code))
-    return code
+                  RETURN_CODES.get_string(result.return_code))
+    return result.return_code
+
+
+def _dump_json(obj):
+    """Write obj JSON to stdout."""
+    output_json = json.dumps(obj, sort_keys=True)
+    sys.stdout.write('#JSON_START#%s#JSON_END#' % output_json.strip())
 
 
 if __name__ == "__main__":

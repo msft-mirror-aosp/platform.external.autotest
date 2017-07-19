@@ -444,16 +444,6 @@ class LogLink(object):
     _LOG_LINK_PREFIX = 'Test-Logs'
 
 
-    @classmethod
-    def get_bug_link(cls, bug_id):
-        """Generate a bug link for the given bug_id.
-
-        @param bug_id: The id of the bug.
-        @return: A link, eg: https://crbug.com/<bug_id>.
-        """
-        return reporting_utils.link_crbug(bug_id)
-
-
     def __init__(self, anchor, server, job_string, bug_info=None, reason=None,
                  retry_count=0, testname=None):
         """Initialize the LogLink by generating the log URL.
@@ -503,50 +493,58 @@ class LogLink(object):
         """Generate a link formatted to meet buildbot expectations.
 
         If there is a bug associated with this link, report a link to the bug
-        and a link to the job logs;
-        otherwise report a link to the job logs.
+        and a link to the job logs; otherwise report a link to the job logs.
 
-        @return A list of links formatted for the buildbot log annotator.
+        @return A generator of links formatted for the buildbot log annotator.
         """
-        bug_info_strings = []
-        info_strings = []
+        if self.bug_url:
+            yield self._get_link_to_bug()
+        yield self._get_link_to_job_logs()
 
+
+    def _get_link_to_bug(self):
+        """Return buildbot link to bug.
+
+        @return A link formatted for the buildbot log annotator.
+        """
+        info_strings = self._get_info_strings()
+        info_strings.append(self._bug_count_text)
+        anchor_text = self._format_anchor_text(self._BUG_LINK_PREFIX,
+                                               info_strings)
+        return annotations.StepLink(anchor_text, self.bug_url)
+
+
+    def _get_link_to_job_logs(self):
+        """Return buildbot link to job logs.
+
+        @return A link formatted for the buildbot log annotator.
+        """
+        anchor_text = self._format_anchor_text(self._LOG_LINK_PREFIX,
+                                               self._get_info_strings())
+        return annotations.StepLink(anchor_text, self.url)
+
+
+    def _get_info_strings(self):
+        """Return a list of info strings for _format_anchor_text()."""
+        info_strings = []
         if self.retry_count > 0:
             info_strings.append('retry_count: %d' % self.retry_count)
-            bug_info_strings.append('retry_count: %d' % self.retry_count)
-
         if self.reason:
-            bug_info_strings.append(self.reason)
             info_strings.append(self.reason)
-
-        # Add the bug link to buildbot_links
-        if self.bug_url:
-            bug_info_strings.append(self._bug_count_text)
-
-            bug_anchor_text = self._format_anchor_text(self._BUG_LINK_PREFIX,
-                                                       bug_info_strings)
-
-            yield annotations.StepLink(bug_anchor_text, self.bug_url)
-
-        anchor_text = self._format_anchor_text(self._LOG_LINK_PREFIX,
-                                               info_strings)
-        yield annotations.StepLink(anchor_text, self.url)
+        return info_strings
 
 
     def _format_anchor_text(self, prefix, info_strings):
         """Format anchor text given a prefix and info strings.
 
         @param prefix        The prefix of the anchor text.
-        @param info_strings  The infos presented in the anchor text.
+        @param info_strings  Iterable of strings.
         @return A anchor_text with the right prefix and info strings.
         """
-        anchor_text = '[{prefix}]: {anchor}'.format(
+        return '[{prefix}]: {anchor}: {info}'.format(
             prefix=prefix,
-            anchor=self.anchor.strip())
-        if info_strings:
-            info_text = ', '.join(info_strings)
-            anchor_text += ': ' + info_text
-        return anchor_text
+            anchor=self.anchor.strip(),
+            info=', '.join(info_strings))
 
     @property
     def text_link(self):

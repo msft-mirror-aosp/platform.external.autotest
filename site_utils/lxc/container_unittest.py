@@ -15,9 +15,12 @@ from contextlib import contextmanager
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.site_utils import lxc
+from autotest_lib.site_utils.lxc import constants
+from autotest_lib.site_utils.lxc import unittest_http
 from autotest_lib.site_utils.lxc import unittest_logging
 from autotest_lib.site_utils.lxc import utils as lxc_utils
-
+from autotest_lib.site_utils.lxc.unittest_container_bucket \
+        import FastContainerBucket
 
 options = None
 
@@ -26,13 +29,12 @@ class ContainerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        logging.debug('setupclass')
         cls.test_dir = tempfile.mkdtemp(dir=lxc.DEFAULT_CONTAINER_PATH,
                                         prefix='container_unittest_')
         cls.shared_host_path = os.path.join(cls.test_dir, 'host')
 
         # Use a container bucket just to download and set up the base image.
-        cls.bucket = lxc.ContainerBucket(cls.test_dir, cls.shared_host_path)
+        cls.bucket = FastContainerBucket(cls.test_dir, cls.shared_host_path)
 
         if cls.bucket.base_container is None:
             logging.debug('Base container not found - reinitializing')
@@ -144,6 +146,33 @@ class ContainerTests(unittest.TestCase):
             clone1.attach_run('test -f %s' % tmpfile)
 
 
+    def testInstallSsp(self):
+        """Verifies that installing the ssp in the container works."""
+        # Hard-coded path to some golden data for this test.
+        test_ssp = os.path.join(
+                common.autotest_dir,
+                'site_utils', 'lxc', 'test', 'test_ssp.tar.bz2')
+        # Create a container, install the self-served ssp, then check that it is
+        # installed into the container correctly.
+        with self.createContainer() as container:
+            with unittest_http.serve_locally(test_ssp) as url:
+                container.install_ssp(url)
+            container.start(wait_for_network=False)
+
+            # The test ssp just contains a couple of text files, in known
+            # locations.  Verify the location and content of those files in the
+            # container.
+            cat = lambda path: container.attach_run('cat %s' % path).stdout
+            test0 = cat(os.path.join(constants.CONTAINER_AUTOTEST_DIR,
+                                     'test.0'))
+            test1 = cat(os.path.join(constants.CONTAINER_AUTOTEST_DIR,
+                                     'dir0', 'test.1'))
+            self.assertEquals('the five boxing wizards jumped quickly',
+                              test0)
+            self.assertEquals('the quick brown fox jumps over the lazy dog',
+                              test1)
+
+
     def testInstallControlFile(self):
         """Verifies that installing a control file in the container works."""
         _unused, tmpfile = tempfile.mkstemp()
@@ -167,8 +196,10 @@ class ContainerTests(unittest.TestCase):
         if name is None:
             name = self.id().split('.')[-1]
         container = self.bucket.create_from_base(name)
-        yield container
-        container.destroy()
+        try:
+            yield container
+        finally:
+            container.destroy()
 
 
 def parse_options():

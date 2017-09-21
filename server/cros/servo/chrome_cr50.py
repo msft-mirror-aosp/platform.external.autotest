@@ -39,6 +39,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     UNLOCK = ['Unlock sequence starting. Continue until (\S+)']
     FWMP_LOCKED_PROD = ["Managed device console can't be unlocked"]
     FWMP_LOCKED_DBG = ['Ignoring FWMP unlock setting']
+    MAX_RETRY_COUNT = 5
+    START_STR = ['(.*Console is enabled;)']
 
 
     def __init__(self, servo):
@@ -105,22 +107,50 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def reboot(self):
         """Reboot Cr50 and wait for CCD to be enabled"""
         self.send_command('reboot')
-        self.wait_for_ccd_disable()
-        self.ccd_enable()
+        self.wait_for_reboot()
 
 
-    def rollback(self):
+    def wait_for_reboot(self, timeout=60):
+        """Wait for cr50 to reboot"""
+        if self.using_ccd():
+            # Cr50 USB is reset when it reboots. Wait for the CCD connection to
+            # go down to detect the reboot.
+            self.wait_for_ccd_disable(timeout, raise_error=False)
+            self.ccd_enable()
+        else:
+            # Look for the boot string declaring the console is ready. If we
+            # don't find it, its ok. The command will timeout after 3 seconds
+            # which is longer than the time it takes for cr50 to reboot.
+            try:
+                rv = self.send_command_get_output('\n\n', self.START_STR)
+                logging.debug(rv[0][0])
+            except:
+                pass
+
+
+    def rollback(self, eraseflashinfo=True):
         """Set the reset counter high enough to force a rollback then reboot"""
         if not self.has_command('rw') or not self.has_command('eraseflashinfo'):
             raise error.TestError("need image with 'rw' and 'eraseflashinfo'")
 
+        inactive_partition = self.get_inactive_version_info()[0]
         # Increase the reset count to above the rollback threshold
         self.send_command('rw 0x40000128 1')
-        self.send_command('rw 0x4000012c 15')
+        self.send_command('rw 0x4000012c %d' % (self.MAX_RETRY_COUNT + 2))
 
-        self.send_command('eraseflashinfo')
+        if eraseflashinfo:
+            self.send_command('eraseflashinfo')
 
         self.reboot()
+
+        running_partition = self.get_active_version_info()[0]
+        if inactive_partition != running_partition:
+            raise error.TestError("Failed to rollback to inactive image")
+
+
+    def rolledback(self):
+        """Returns true if cr50 just rolled back"""
+        return int(self._servo.get('cr50_reset_count')) > self.MAX_RETRY_COUNT
 
 
     def get_version_info(self, regexp):
@@ -136,6 +166,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def get_active_version_info(self):
         """Get the active partition, version, and hash"""
         return self.get_version_info(self.ACTIVE)
+
+
+    def get_version(self):
+        """Get the RW version"""
+        return self.get_active_version_info()[1].strip()
 
 
     def using_servo_v4(self):

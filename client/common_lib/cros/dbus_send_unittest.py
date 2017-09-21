@@ -7,10 +7,13 @@
 import unittest
 
 import common
+import dbus
 from autotest_lib.client.common_lib.cros import dbus_send
 
-EXAMPLE_SHILL_GET_PROPERTIES_OUTPUT = \
-"""method return sender=org.freedesktop.DBus -> dest=:1.37 reply_serial=2
+EXAMPLE_SHILL_GET_PROPERTIES_OUTPUT = (
+'method return sender=org.freedesktop.DBus -> destination=:1.37 serial=3 '
+'reply_serial=2\n'
+"""
    array [
       dict entry(
          string "ActiveProfile"
@@ -140,7 +143,7 @@ EXAMPLE_SHILL_GET_PROPERTIES_OUTPUT = \
          variant             boolean true
       )
    ]
-"""
+""")
 
 PARSED_SHILL_GET_PROPERTIES_OUTPUT = {
     'ActiveProfile': '/profile/default',
@@ -172,10 +175,10 @@ PARSED_SHILL_GET_PROPERTIES_OUTPUT = {
     'WakeOnLanEnabled': True,
 }
 
-EXAMPLE_AVAHI_GET_STATE_OUTPUT = \
-"""method return sender=org.freedesktop.DBus -> dest=:1.40 reply_serial=2
-   int32 2
-"""
+EXAMPLE_AVAHI_GET_STATE_OUTPUT = (
+'method return sender=org.freedesktop.DBus -> destination=:1.40 serial=3 '
+'reply_serial=2\n'
+'   int32 2')
 
 class DBusSendTest(unittest.TestCase):
     """Check that we're correctly parsing dbus-send output."""
@@ -209,6 +212,18 @@ class DBusSendTest(unittest.TestCase):
             assert actual_v == v, 'Expected %r, got %r' % (v, actual_v)
         assert len(result.response) == 0, (
             'Got extra response: %r' % result.response)
+
+    def testBuildArgString(self):
+        """Test that we correctly form argument strings from dbus.* types."""
+        self.assertEquals(dbus_send._build_arg_string(
+            [dbus.Int16(42)]),
+            'int16:42')
+        self.assertEquals(dbus_send._build_arg_string(
+            [dbus.Int16(42), dbus.Boolean(True)]),
+            'int16:42 boolean:true')
+        self.assertEquals(dbus_send._build_arg_string(
+            [dbus.Int16(42), dbus.Boolean(True), dbus.String("foo")]),
+            'int16:42 boolean:true string:foo')
 
 
 if __name__ == "__main__":

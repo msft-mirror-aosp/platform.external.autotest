@@ -37,13 +37,12 @@ import logging
 import os
 import sys
 
+from django.db import connection as db_connection
 from django.db import transaction
 from django.db.models import Count
+from django.db.utils import DatabaseError
 
 import common
-# TODO(akeshet): Replace with monarch stats once we know how to instrument rpc
-# server with ts_mon.
-from autotest_lib.client.common_lib.cros.graphite import autotest_stats
 from autotest_lib.client.common_lib import control_data
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
@@ -66,7 +65,6 @@ from autotest_lib.server.cros.dynamic_suite import suite as SuiteBase
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.dynamic_suite.suite import Suite
 from autotest_lib.server.lib import status_history
-from autotest_lib.site_utils import host_history
 from autotest_lib.site_utils import job_history
 from autotest_lib.site_utils import server_manager_utils
 from autotest_lib.site_utils import stable_version_utils
@@ -1596,6 +1594,15 @@ def get_server_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
+def ping_db():
+    """Simple connection test to db"""
+    try:
+        db_connection.cursor()
+    except DatabaseError:
+        return [False]
+    return [True]
+
+
 def get_hosts_by_attribute(attribute, value):
     """
     Get the list of valid hosts that share the same host attribute value.
@@ -1644,14 +1651,9 @@ def _get_control_file_by_build(build, ds, suite_name):
     """
     getter = control_file_getter.DevServerGetter.create(build, ds)
     devserver_name = ds.hostname
-    timer = autotest_stats.Timer('control_files.parse.%s.%s' %
-                                 (devserver_name.replace('.', '_'),
-                                  suite_name.rsplit('.')[-1]))
     # Get the control file for the suite.
     try:
-        with timer:
-            control_file_in = getter.get_control_file_contents_by_name(
-                    suite_name)
+        control_file_in = getter.get_control_file_contents_by_name(suite_name)
     except error.CrosDynamicSuiteException as e:
         raise type(e)('Failed to get control file for %s '
                       '(devserver: %s) (error: %s)' %
@@ -1702,11 +1704,8 @@ def _stage_build_artifacts(build, hostname=None):
     ds = dev_server.resolve(build, hostname=hostname)
     ds_name = ds.hostname
     timings[constants.DOWNLOAD_STARTED_TIME] = formatted_now()
-    timer = autotest_stats.Timer('control_files.stage.%s' % (
-            ds_name.replace('.', '_')))
     try:
-        with timer:
-            ds.stage_artifacts(image=build, artifacts=['test_suites'])
+        ds.stage_artifacts(image=build, artifacts=['test_suites'])
     except dev_server.DevServerException as e:
         raise error.StageControlFileFailure(
                 "Failed to stage %s on %s: %s" % (build, ds_name, e))
@@ -1912,35 +1911,9 @@ def get_job_history(**filter_data):
 
 
 def get_host_history(start_time, end_time, hosts=None, board=None, pool=None):
-    """Get history of a list of host.
-
-    The return is a JSON string of host history for each host, for example,
-    {'172.22.33.51': [{'status': 'Resetting'
-                       'start_time': '2014-08-07 10:02:16',
-                       'end_time': '2014-08-07 10:03:16',
-                       'log_url': 'http://autotest/reset-546546/debug',
-                       'dbg_str': 'Task: Special Task 19441991 (host ...)'},
-                       {'status': 'Running'
-                       'start_time': '2014-08-07 10:03:18',
-                       'end_time': '2014-08-07 10:13:00',
-                       'log_url': 'http://autotest/reset-546546/debug',
-                       'dbg_str': 'HQE: 15305005, for job: 14995562'}
-                     ]
-    }
-    @param start_time: start time to search for history, can be string value or
-                       epoch time.
-    @param end_time: end time to search for history, can be string value or
-                     epoch time.
-    @param hosts: A list of hosts to search for history. Default is None.
-    @param board: board type of hosts. Default is None.
-    @param pool: pool type of hosts. Default is None.
-    @returns: JSON string of the host history.
-    """
-    return rpc_utils.prepare_for_serialization(
-            host_history.get_history_details(
-                    start_time=start_time, end_time=end_time,
-                    hosts=hosts, board=board, pool=pool,
-                    process_pool_size=4))
+    """Deprecated."""
+    raise ValueError('get_host_history rpc is deprecated '
+                     'and no longer implemented.')
 
 
 def shard_heartbeat(shard_hostname, jobs=(), hqes=(), known_job_ids=(),
@@ -1992,26 +1965,24 @@ def shard_heartbeat(shard_hostname, jobs=(), hqes=(), known_job_ids=(),
     # A NOT IN query with 5000 ids took about 30ms in tests made.
     # These numbers seem low enough to outweigh the disadvantages of the
     # solutions described above.
-    timer = autotest_stats.Timer('shard_heartbeat')
-    with timer:
-        shard_obj = rpc_utils.retrieve_shard(shard_hostname=shard_hostname)
-        rpc_utils.persist_records_sent_from_shard(shard_obj, jobs, hqes)
-        assert len(known_host_ids) == len(known_host_statuses)
-        for i in range(len(known_host_ids)):
-            host_model = models.Host.objects.get(pk=known_host_ids[i])
-            if host_model.status != known_host_statuses[i]:
-                host_model.status = known_host_statuses[i]
-                host_model.save()
+    shard_obj = rpc_utils.retrieve_shard(shard_hostname=shard_hostname)
+    rpc_utils.persist_records_sent_from_shard(shard_obj, jobs, hqes)
+    assert len(known_host_ids) == len(known_host_statuses)
+    for i in range(len(known_host_ids)):
+        host_model = models.Host.objects.get(pk=known_host_ids[i])
+        if host_model.status != known_host_statuses[i]:
+            host_model.status = known_host_statuses[i]
+            host_model.save()
 
-        hosts, jobs, suite_keyvals, inc_ids = rpc_utils.find_records_for_shard(
-                shard_obj, known_job_ids=known_job_ids,
-                known_host_ids=known_host_ids)
-        return {
-            'hosts': [host.serialize() for host in hosts],
-            'jobs': [job.serialize() for job in jobs],
-            'suite_keyvals': [kv.serialize() for kv in suite_keyvals],
-            'incorrect_host_ids': [int(i) for i in inc_ids],
-        }
+    hosts, jobs, suite_keyvals, inc_ids = rpc_utils.find_records_for_shard(
+            shard_obj, known_job_ids=known_job_ids,
+            known_host_ids=known_host_ids)
+    return {
+        'hosts': [host.serialize() for host in hosts],
+        'jobs': [job.serialize() for job in jobs],
+        'suite_keyvals': [kv.serialize() for kv in suite_keyvals],
+        'incorrect_host_ids': [int(i) for i in inc_ids],
+    }
 
 
 def get_shards(**filter_data):

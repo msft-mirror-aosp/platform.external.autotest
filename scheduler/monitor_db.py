@@ -78,10 +78,6 @@ _testing_mode = False
 _drone_manager = None
 
 
-def _site_init_monitor_db_dummy():
-    return {}
-
-
 def _verify_default_drone_set_exists():
     if (models.DroneSet.drone_sets_enabled() and
             not models.DroneSet.default_drone_set_name()):
@@ -143,11 +139,6 @@ def main_without_exception_handling():
 
     global RESULTS_DIR
     RESULTS_DIR = args[0]
-
-    site_init = utils.import_site_function(__file__,
-        "autotest_lib.scheduler.site_monitor_db", "site_init_monitor_db",
-        _site_init_monitor_db_dummy)
-    site_init()
 
     # Change the cwd while running to avoid issues incase we were launched from
     # somewhere odd (such as a random NFS home directory of the person running
@@ -360,6 +351,8 @@ class Dispatcher(object):
                 self._schedule_special_tasks()
             with breakdown_timer.Step('schedule_new_jobs'):
                 self._schedule_new_jobs()
+            with breakdown_timer.Step('gather_tick_metrics'):
+                self._gather_tick_metrics()
             with breakdown_timer.Step('sync_refresh'):
                 self._log_tick_msg('Starting _drone_manager.sync_refresh')
                 _drone_manager.sync_refresh()
@@ -415,6 +408,13 @@ class Dispatcher(object):
         logging.info('Logging garbage collector stats on tick %d.',
                      self._tick_count)
         gc_stats._log_garbage_collector_stats()
+
+
+    def _gather_tick_metrics(self):
+        """Gather metrics during tick, after all tasks have been scheduled."""
+        metrics.Gauge(
+            'chromeos/autotest/scheduler/agent_count'
+        ).set(len(self._agents))
 
 
     def _register_agent_for_ids(self, agent_dict, object_ids, agent):
@@ -519,8 +519,7 @@ class Dispatcher(object):
         statuses = (models.HostQueueEntry.Status.STARTING,
                     models.HostQueueEntry.Status.RUNNING,
                     models.HostQueueEntry.Status.GATHERING,
-                    models.HostQueueEntry.Status.PARSING,
-                    models.HostQueueEntry.Status.ARCHIVING)
+                    models.HostQueueEntry.Status.PARSING)
         status_list = ','.join("'%s'" % status for status in statuses)
         queue_entries = scheduler_models.HostQueueEntry.fetch(
                 where='status IN (%s)' % status_list)
@@ -529,17 +528,27 @@ class Dispatcher(object):
         used_queue_entries = set()
         hqe_count_by_status = {}
         for entry in queue_entries:
-            hqe_count_by_status[entry.status] = (
-                hqe_count_by_status.get(entry.status, 0) + 1)
-            if self.get_agents_for_entry(entry):
-                # already being handled
-                continue
-            if entry in used_queue_entries:
-                # already picked up by a synchronous job
-                continue
-            agent_task = self._get_agent_task_for_queue_entry(entry)
-            agent_tasks.append(agent_task)
-            used_queue_entries.update(agent_task.queue_entries)
+            try:
+                hqe_count_by_status[entry.status] = (
+                    hqe_count_by_status.get(entry.status, 0) + 1)
+                if self.get_agents_for_entry(entry):
+                    # already being handled
+                    continue
+                if entry in used_queue_entries:
+                    # already picked up by a synchronous job
+                    continue
+                agent_task = self._get_agent_task_for_queue_entry(entry)
+                agent_tasks.append(agent_task)
+                used_queue_entries.update(agent_task.queue_entries)
+            except scheduler_lib.MalformedRecordError as e:
+                logging.exception('Skipping agent task for a malformed hqe.')
+                # TODO(akeshet): figure out a way to safely permanently discard
+                # this errant HQE. It appears that calling entry.abort() is not
+                # sufficient, as that already makes some assumptions about
+                # record sanity that may be violated. See crbug.com/739530 for
+                # context.
+                m = 'chromeos/autotest/scheduler/skipped_malformed_hqe'
+                metrics.Counter(m).increment()
 
         for status, count in hqe_count_by_status.iteritems():
             metrics.Gauge(
@@ -575,8 +584,6 @@ class Dispatcher(object):
             return postjob_task.GatherLogsTask(queue_entries=task_entries)
         if queue_entry.status == models.HostQueueEntry.Status.PARSING:
             return postjob_task.FinalReparseTask(queue_entries=task_entries)
-        if queue_entry.status == models.HostQueueEntry.Status.ARCHIVING:
-            return postjob_task.ArchiveResultsTask(queue_entries=task_entries)
 
         raise scheduler_lib.SchedulerError(
                 '_get_agent_task_for_queue_entry got entry with '
@@ -584,8 +591,7 @@ class Dispatcher(object):
 
 
     def _check_for_duplicate_host_entries(self, task_entries):
-        non_host_statuses = (models.HostQueueEntry.Status.PARSING,
-                             models.HostQueueEntry.Status.ARCHIVING)
+        non_host_statuses = {models.HostQueueEntry.Status.PARSING}
         for task_entry in task_entries:
             using_host = (task_entry.host is not None
                           and task_entry.status not in non_host_statuses)
@@ -882,15 +888,6 @@ class Dispatcher(object):
         metrics.Counter(
             'chromeos/autotest/scheduler/scheduled_jobs_with_hosts'
         ).increment_by(new_jobs_with_hosts)
-        # TODO(pprabhu): Decide what to do about this metric. Million dollar
-        # question: What happens to jobs that were not matched. Do they stay in
-        # the queue, and get processed right here in the next tick (then we want
-        # a guage corresponding to the number of outstanding unmatched host
-        # jobs), or are they handled somewhere else (then we need a counter
-        # corresponding to failed_to_match_with_hosts jobs).
-        #autotest_stats.Gauge(key).send('new_jobs_without_hosts',
-        #                               new_jobs_need_hosts -
-        #                               new_jobs_with_hosts)
 
 
     @_calls_log_tick_msg
@@ -906,7 +903,7 @@ class Dispatcher(object):
         calling the Agents tick().
 
         This method creates an agent for each HQE in one of (starting, running,
-        gathering, parsing, archiving) states, and adds it to the dispatcher so
+        gathering, parsing) states, and adds it to the dispatcher so
         it is handled by _handle_agents.
         """
         for agent_task in self._get_queue_entry_agent_tasks():
@@ -1182,8 +1179,6 @@ class AbstractQueueTask(agent_task.AgentTask, agent_task.TaskWithJobKeyvals):
             ['-P', execution_tag, '-n',
              _drone_manager.absolute_path(control_path)],
             job=self.job, verbose=False)
-        if self.job.is_image_update_job():
-            params += ['--image', self.job.update_image_path]
 
         return params
 

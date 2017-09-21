@@ -21,7 +21,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
-from autotest_lib.server import afe_utils
 from autotest_lib.server import autoserv_parser
 from autotest_lib.server import constants as server_constants
 from autotest_lib.server import utils
@@ -31,6 +30,7 @@ from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import adb_label
 from autotest_lib.server.hosts import base_label
+from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import teststation_host
 
 
@@ -660,10 +660,11 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         self.adb_run('reboot', timeout=10, ignore_timeout=True)
         if not self.wait_down(boot_id=boot_id):
             raise error.AutoservRebootError(
-                    'ADB Device is still up after reboot')
+                    'ADB Device %s is still up after reboot' % self.adb_serial)
         if not self.wait_up():
             raise error.AutoservRebootError(
-                    'ADB Device failed to return from reboot.')
+                    'ADB Device %s failed to return from reboot.' %
+                    self.adb_serial)
         self._reset_adbd_connection()
 
 
@@ -675,10 +676,12 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         self.fastboot_run('reboot')
         if not self.wait_down(command=FASTBOOT_CMD):
             raise error.AutoservRebootError(
-                    'Device is still in fastboot mode after reboot')
+                    'Device %s is still in fastboot mode after reboot' %
+                    self.fastboot_serial)
         if not self.wait_up():
             raise error.AutoservRebootError(
-                    'Device failed to boot to adb after fastboot reboot.')
+                    'Device %s failed to boot to adb after fastboot reboot.' %
+                    self.adb_serial)
         self._reset_adbd_connection()
 
 
@@ -1248,7 +1251,8 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         self.adb_run('reboot bootloader')
         if not self.wait_up(command=FASTBOOT_CMD):
             raise error.AutoservError(
-                    'The device failed to reboot into bootloader mode.')
+                    'Device %s failed to reboot into bootloader mode.' %
+                    self.fastboot_serial)
 
 
     def ensure_adb_mode(self, timeout=DEFAULT_WAIT_UP_TIME_SECONDS):
@@ -1267,7 +1271,8 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         self.fastboot_run('reboot', timeout=timeout, ignore_timeout=True)
         if not self.wait_up(timeout=timeout):
             raise error.AutoservError(
-                    'The device failed to reboot into adb mode.')
+                    'Device %s failed to reboot into adb mode.' %
+                    self.adb_serial)
         self._reset_adbd_connection()
 
 
@@ -1679,10 +1684,22 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         if include_build_info:
             teststation_temp_dir = self.teststation.get_tmp_dir()
 
-            job_repo_url = afe_utils.get_host_attribute(
-                    self, self.job_repo_url_attribute)
-            build_info = ADBHost.get_build_info_from_build_url(
-                    job_repo_url)
+            try:
+                info = self.host_info_store.get()
+            except host_info.StoreError:
+                logging.warning(
+                    'Device %s could not get repo url for build info.',
+                    self.adb_serial)
+                return
+
+            job_repo_url = info.attributes.get(self.job_repo_url_attribute, '')
+            if not job_repo_url:
+                logging.warning(
+                    'Device %s could not get repo url for build info.',
+                    self.adb_serial)
+                return
+
+            build_info = ADBHost.get_build_info_from_build_url(job_repo_url)
 
             target = build_info['target']
             branch = build_info['branch']

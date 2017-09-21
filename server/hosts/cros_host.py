@@ -17,7 +17,6 @@ from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import autoupdater
 from autotest_lib.client.common_lib.cros import dev_server
-from autotest_lib.client.common_lib.cros.graphite import autotest_es
 from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.client.cros import cros_ui
 from autotest_lib.client.cros.audio import cras_utils
@@ -689,7 +688,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         monarch_fields['host'] = self.hostname
         c.increment(fields=monarch_fields)
 
-        return devserver.auto_update(
+        # Won't retry auto_update in a retry of auto-update.
+        # In other words, we only retry auto-update once with a different
+        # devservers.
+        devserver.auto_update(
                 self.hostname, build,
                 original_board=self.get_board().replace(
                         ds_constants.BOARD_PREFIX, ''),
@@ -789,32 +791,33 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         force_original = self.get_chromeos_release_milestone() is None
 
-        success, retryable = devserver.auto_update(
-                self.hostname, build,
-                original_board=self.get_board().replace(
-                        ds_constants.BOARD_PREFIX, ''),
-                original_release_version=self.get_release_version(),
-                log_dir=self.job.resultdir,
-                force_update=force_update,
-                full_update=force_full_update,
-                force_original=force_original)
-        if not success and retryable:
-          # It indicates that last provision failed due to devserver load
-          # issue, so another devserver is resolved to kick off provision
-          # job once again and only once.
-          logging.debug('Provision failed due to devserver issue,'
-                        'retry it with another devserver.')
+        try:
+            devserver.auto_update(
+                    self.hostname, build,
+                    original_board=self.get_board().replace(
+                            ds_constants.BOARD_PREFIX, ''),
+                    original_release_version=self.get_release_version(),
+                    log_dir=self.job.resultdir,
+                    force_update=force_update,
+                    full_update=force_full_update,
+                    force_original=force_original)
+        except dev_server.RetryableProvisionException:
+            # It indicates that last provision failed due to devserver load
+            # issue, so another devserver is resolved to kick off provision
+            # job once again and only once.
+            logging.debug('Provision failed due to devserver issue,'
+                          'retry it with another devserver.')
 
-          # Check first whether this DUT is completely offline. If so, skip
-          # the following provision tries.
-          logging.debug('Checking whether host %s is online.', self.hostname)
-          if utils.ping(self.hostname, tries=1, deadline=1) == 0:
-              self._retry_auto_update_with_new_devserver(
-                      build, devserver, force_update, force_full_update,
-                      force_original)
-          else:
-              raise error.AutoservError(
-                      'No answer to ping from %s' % self.hostname)
+            # Check first whether this DUT is completely offline. If so, skip
+            # the following provision tries.
+            logging.debug('Checking whether host %s is online.', self.hostname)
+            if utils.ping(self.hostname, tries=1, deadline=1) == 0:
+                self._retry_auto_update_with_new_devserver(
+                        build, devserver, force_update, force_full_update,
+                        force_original)
+            else:
+                raise error.AutoservError(
+                        'No answer to ping from %s' % self.hostname)
 
         # The reason to resolve a new devserver in function machine_install
         # is mostly because that the update_url there may has a strange format,
@@ -1314,9 +1317,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         except rpm_client.RemotePowerException:
             logging.error('Failed to turn Power On for this host after '
                           'cleanup through the RPM Infrastructure.')
-            autotest_es.post(
-                    type_str='RPM_poweron_failure',
-                    metadata={'hostname': self.hostname})
 
             battery_percentage = self.get_battery_percentage()
             if battery_percentage and battery_percentage < 50:
@@ -1423,9 +1423,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     label.remove_hosts(hosts=host_list)
                     mismatch_found = True
         if mismatch_found:
-            autotest_es.post(use_http=True,
-                             type_str='cros_version_label_mismatch',
-                             metadata={'hostname': self.hostname})
             raise error.AutoservError('The host has wrong cros-version label.')
 
 
@@ -1985,6 +1982,29 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         version_string = self.run(client_constants.CHROME_VERSION_COMMAND).stdout
         return utils.parse_chrome_version(version_string)
+
+
+    def is_chrome_switch_present(self, switch):
+        """Returns True if the specified switch was provided to Chrome.
+
+        @param switch The chrome switch to search for.
+        """
+
+        command = 'pgrep -x -f -c "/opt/google/chrome/chrome.*%s.*"' % switch
+        return self.run(command, ignore_status=True).exit_status == 0
+
+
+    def oobe_triggers_update(self):
+        """Returns True if this host has an OOBE flow during which
+        it will perform an update check and perhaps an update.
+        One example of such a flow is Hands-Off Zero-Touch Enrollment.
+        As more such flows are developed, code handling them needs
+        to be added here.
+
+        @return Boolean indicating whether this host's OOBE triggers an update.
+        """
+        return self.is_chrome_switch_present(
+            '--enterprise-enable-zero-touch-enrollment=hands-off')
 
 
     # TODO(kevcheng): change this to just return the board without the

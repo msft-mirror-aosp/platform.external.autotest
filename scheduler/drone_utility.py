@@ -36,9 +36,7 @@ from autotest_lib.client.common_lib import logging_manager
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.scheduler import drone_logging_config
-from autotest_lib.scheduler import email_manager
 from autotest_lib.scheduler import scheduler_config
-from autotest_lib.server import hosts
 from autotest_lib.server import subcommand
 
 
@@ -244,8 +242,7 @@ class DroneUtility(object):
                 out_file.write("%s> %s\n" % (time.strftime("%X %x"), command))
                 out_file.write(separator)
             except (OSError, IOError):
-                email_manager.manager.log_stacktrace(
-                    'Error opening log file %s' % log_file)
+                pass
 
         if not out_file:
             out_file = open('/dev/null', 'w')
@@ -525,8 +522,8 @@ class ProcessRefresher(object):
         autoserv_processes, extra_warnings = self._filter_proc_infos(
                 proc_infos, 'autoserv')
         warnings += extra_warnings
-        parse_processes, extra_warnings = self._filter_proc_infos(
-                proc_infos, 'parse')
+        parse_processes, extra_warnings = self._filter_proc_infos(proc_infos,
+                                                                  'parse')
         warnings += extra_warnings
         site_parse_processes, extra_warnings = self._filter_proc_infos(
                 proc_infos, 'site_parse')
@@ -576,19 +573,31 @@ class ProcessRefresher(object):
         if not self._check_mark:
             return proc_infos, []
 
+        if self._use_pool:
+            dark_marks = self._pool.map(
+                    _process_has_dark_mark,
+                    [info['pid'] for info in proc_infos]
+            )
+        else:
+            dark_marks = [_process_has_dark_mark(info['pid'])
+                          for info in proc_infos]
+
         marked_proc_infos = []
-        unmarked_proc_infos = []
-        for info in proc_infos:
-            if _process_has_dark_mark(info['pid']):
+        warnings = []
+        for marked, info in itertools.izip(dark_marks, proc_infos):
+            if marked:
                 marked_proc_infos.append(info)
             else:
-                unmarked_proc_infos.append(info)
-        warnings = ['%(comm)s process pid %(pid)s has no dark mark; ignoring.' %
-                    info for info in unmarked_proc_infos]
+                warnings.append(
+                        '%(comm)s process pid %(pid)s has no dark mark; '
+                        'ignoring.' % info)
         return marked_proc_infos, warnings
 
 
 def create_host(hostname):
+    # TODO(crbug.com/739466) Delay import to avoid a ~0.7 second penalty
+    # drone_utility calls that don't actually interact with DUTs.
+    from autotest_lib.server import hosts
     username = global_config.global_config.get_config_value(
         'SCHEDULER', hostname + '_username', default=getpass.getuser())
     return hosts.SSHHost(hostname, user=username)
@@ -624,7 +633,6 @@ def _parse_args(args):
 
 def return_data(data):
     print pickle.dumps(data)
-
 
 def _process_has_dark_mark(pid):
     """Checks if a process was launched earlier by drone_utility.

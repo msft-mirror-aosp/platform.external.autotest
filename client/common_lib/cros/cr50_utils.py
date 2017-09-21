@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import argparse
 import logging
 import os
 import re
@@ -34,6 +35,23 @@ VERSION_RE = {
 }
 UPDATE_TIMEOUT = 60
 UPDATE_OK = 1
+
+ERASED_BID_INT = 0xffffffff
+# With an erased bid, the flags and board id will both be erased
+ERASED_BID = (ERASED_BID_INT, ERASED_BID_INT)
+
+usb_update = argparse.ArgumentParser()
+# use /dev/tpm0 to send the command
+usb_update.add_argument('-s', '--systemdev', dest='systemdev',
+                        action='store_true')
+# fwver, binver, and board id are used to get information about cr50 or an
+# image.
+usb_update.add_argument('-b', '--binvers', '-f', '--fwver', '-i', '--board_id',
+                        dest='info_cmd', action='store_true')
+# upstart and post_reset will post resets instead of rebooting immediately
+usb_update.add_argument('-u', '--upstart', '-p', '--post_reset',
+                        dest='post_reset', action='store_true')
+usb_update.add_argument('extras', nargs=argparse.REMAINDER)
 
 
 def AssertVersionsAreEqual(name_a, ver_a, name_b, ver_b):
@@ -76,6 +94,7 @@ def GetVersion(versions, name):
         version: dictionary with the partition names as keys and the
                  partition version strings as values.
         name: the string used to find the relevant items in versions.
+
     Returns:
         the version from versions or "-1.-1.-1" if an invalid RO was detected.
     """
@@ -97,10 +116,13 @@ def GetVersion(versions, name):
 def FindVersion(output, arg):
     """Find the ro and rw versions.
 
-    @param output: The string to search
-    @param arg: string representing the usb_updater option, either
-                '--binvers' or '--fwver'
-    @param compare: raise an error if the ro or rw versions don't match
+    Args:
+        output: The string to search
+        arg: string representing the usb_updater option, either '--binvers' or
+             '--fwver'
+
+    Returns:
+        a tuple of the ro and rw versions
     """
     versions = re.search(VERSION_RE[arg], output)
     versions = versions.groupdict()
@@ -115,53 +137,28 @@ def GetSavedVersion(client):
     return FindVersion(result, "--fwver")
 
 
-def CheckArg(arg, shortopt, longopt):
-    """Return True if arg equals longopt or shortopt"""
-    return arg == shortopt or arg == longopt
-
-
-def ParseArgs(args):
-    """Parse the args and determine what the intent of the usb_update command is
-
-    Check each arg and determine if the command will cause a reboot, uses
-    /dev/tpm0, or is getting the running version or the version of a .bin.
-
-    Returns a tuple of bools expect_reboot, systemdev, get_ver
-    """
-    systemdev = False
-    post_reset = False
-    get_ver = False
-    for arg in args:
-        arg = arg.strip()
-        systemdev |= CheckArg(arg, '-s', '--systemdev')
-        get_ver |= CheckArg(arg, '-b', '--binvers')
-        get_ver |= CheckArg(arg, '-f', '--fwver')
-        post_reset |= CheckArg(arg, '-p', '--post_reset')
-        post_reset |= CheckArg(arg, '-u', '--upstart')
-
-    # immediate reboots are only honored if the command is sent using /dev/tpm0
-    expect_reboot = systemdev and not post_reset and not get_ver
-    return expect_reboot, systemdev, get_ver
-
-
-def UsbUpdate(client, args):
+def UsbUpdater(client, args):
     """Run usb_update with the given args.
 
     Args:
-        a list of strings that contiain the usb_update args
+        client: the object to run commands on
+        args: a list of strings that contiain the usb_updater args
 
     Returns:
         the result of usb_update
     """
-    expect_reboot, systemdev, get_ver = ParseArgs(args)
+    options = usb_update.parse_args(args)
 
     result = client.run("status trunksd")
-    if systemdev and 'running' in result.stdout:
+    if options.systemdev and 'running' in result.stdout:
         client.run("stop trunksd")
 
     # If we are updating the cr50 image, usb_update will return a non-zero exit
     # status so we should ignore it.
-    ignore_status = not get_ver
+    ignore_status = not options.info_cmd
+    # immediate reboots are only honored if the command is sent using /dev/tpm0
+    expect_reboot = (options.systemdev and not options.post_reset and
+                     not options.info_cmd)
 
     result = client.run("usb_updater %s" % ' '.join(args),
                         ignore_status=ignore_status,
@@ -171,27 +168,27 @@ def UsbUpdate(client, args):
     # After a posted reboot, the usb_update exit code should equal 1.
     if result.exit_status and result.exit_status != UPDATE_OK:
         logging.debug(result)
-        raise error.TestError("Unexpected usb_update exit code after %s %d" %
-                              ' '.join(args), result.exit_status)
+        raise error.TestFail("Unexpected usb_update exit code after %s %d" %
+                             (' '.join(args), result.exit_status))
     return result
 
 
 def GetVersionFromUpdater(client, args):
     """Return the version from usb_updater"""
-    result = client.run("usb_updater %s" % ' '.join(args)).stdout.strip()
+    result = UsbUpdater(client, args).stdout.strip()
     return FindVersion(result, args[0])
 
 
 def GetFwVersion(client):
     """Get the running version using 'usb_updater --fwver'"""
-    return GetVersionFromUpdater(client, ["--fwver"])
+    return GetVersionFromUpdater(client, ['--fwver', '-s'])
 
 
 def GetBinVersion(client, image=CR50_FILE):
     """Get the image version using 'usb_updater --binvers image'"""
     # TODO(mruthven) b/37958867: change to ["--binvers", image] when usb_updater
     # is fixed
-    return GetVersionFromUpdater(client, ["--binvers", image, image])
+    return GetVersionFromUpdater(client, ['--binvers', image, image, '-s'])
 
 
 def GetVersionString(ver):
@@ -204,8 +201,12 @@ def GetRunningVersion(client):
     The version from usb_updater and /var/cache/cr50-version should be the
     same. Get both versions and make sure they match.
 
+    Args:
+        client: the object to run commands on
+
     Returns:
         running_ver: a tuple with the ro and rw version strings
+
     Raises:
         TestFail
         - If the version in /var/cache/cr50-version is not the same as the
@@ -226,6 +227,7 @@ def CheckForFailures(client, last_message):
     last_message. If a unexpected exit code is detected it will raise an error>
 
     Args:
+        client: the object to run commands on
         last_message: the last cr50 message from the last update run
 
     Returns:
@@ -238,16 +240,26 @@ def CheckForFailures(client, last_message):
     """
     messages = client.run(GET_CR50_MESSAGES).stdout.strip()
     if last_message:
-        messages = messages.rsplit(last_message, 1)[-1]
-        if UPDATE_FAILURE in messages:
-            logging.debug(messages)
-            raise error.TestFail("Detected unexpected exit code during update")
-    return messages.rsplit('\n', 1)[-1]
+        messages = messages.rsplit(last_message, 1)[-1].split('\n')
+        failures = []
+        for message in messages:
+            if UPDATE_FAILURE in message:
+                failures.append(message)
+        if len(failures):
+            logging.info(messages)
+            raise error.TestFail("Detected unexpected exit code during update: "
+                                 "%s" % failures)
+    return messages[-1]
 
 
 def VerifyUpdate(client, ver='', last_message=''):
     """Verify that the saved update state is correct and there were no
     unexpected cr50-update exit codes since the last update.
+
+    Args:
+        client: the object to run commands on
+        ver: the expected version tuple (ro ver, rw ver)
+        last_message: the last cr50 message from the last update run
 
     Returns:
         new_ver: a tuple containing the running ro and rw versions
@@ -273,9 +285,12 @@ def ClearUpdateStateAndReboot(client):
 
 def InstallImage(client, src, dest=CR50_FILE):
     """Copy the image at src to dest on the dut
+
     Args:
+        client: the object to run commands on
         src: the image location of the server
         dest: the desired location on the dut
+
     Returns:
         The filename where the image was copied to on the dut, a tuple
         containing the RO and RW version of the file
@@ -286,3 +301,124 @@ def InstallImage(client, src, dest=CR50_FILE):
     ver = GetBinVersion(client, dest)
     client.run("sync")
     return dest, ver
+
+
+def GetSymbolicBoardId(symbolic_board_id):
+    """Convert the symbolic board id str to an int
+
+    Args:
+        symbolic_board_id: a ASCII string. It can be up to 4 characters
+
+    Returns:
+        the symbolic board id string converted to an int
+    """
+    board_id = 0
+    for c in symbolic_board_id:
+        board_id = ord(c) | (board_id << 8)
+    return board_id
+
+
+def GetExpectedBoardId(board_id):
+    """"Return the usb_updater interpretation of board_id
+
+    Args:
+        board_id: a int or string value of the board id
+
+    Returns:
+        a int representation of the board id
+    """
+    if type(board_id) == int:
+        return board_id
+
+    if len(board_id) <= 4:
+        return GetSymbolicBoardId(board_id)
+
+    return int(board_id, 16)
+
+
+def GetExpectedFlags(flags):
+    """If flags are not specified, usb_updater will set them to 0xff00
+
+    Args:
+        flags: The int value or None
+
+    Returns:
+        the original flags or 0xff00 if flags is None
+    """
+    return flags if flags != None else 0xff00
+
+
+def GetBoardId(client):
+    """Return the board id and flags
+
+    Args:
+        client: the object to run commands on
+
+    Returns:
+        a tuple with the hex value board id, flags
+
+    Raises:
+        TestFail if the second board id response field is not ~board_id
+    """
+    result = UsbUpdater(client, ["-i"]).stdout.strip()
+    board_id_info = result.split("Board ID space: ")[-1].strip().split(":")
+    board_id, board_id_inv, flags = [int(val, 16) for val in board_id_info]
+    logging.info('BOARD_ID: %x:%x:%x', board_id, board_id_inv, flags)
+
+    if board_id == board_id_inv == flags == ERASED_BID_INT:
+        logging.info('board id is erased')
+    elif board_id & board_id_inv:
+        raise error.TestFail('board_id_inv should be ~board_id got %x %x' %
+                             (board_id, board_id_inv))
+    return board_id, flags
+
+
+def CheckBoardId(client, board_id, flags):
+    """Compare the given board_id and flags to the running board_id and flags
+
+    Interpret board_id and flags how usb_updater would interpret them, then
+    compare those interpreted values to the running board_id and flags.
+
+    Args:
+        client: the object to run commands on
+        board_id: a hex, symbolic or int value for board_id
+        flags: the int value of flags or None
+
+    Raises:
+        TestFail if the new board id info does not match
+    """
+    # Read back the board id and flags
+    new_board_id, new_flags = GetBoardId(client)
+
+    expected_board_id = GetExpectedBoardId(board_id)
+    expected_flags = GetExpectedFlags(flags)
+
+    if new_board_id != expected_board_id or new_flags != expected_flags:
+        raise error.TestFail('Failed to set board id expected %x:%x, but got '
+                             '%x:%x' % (expected_board_id, expected_flags,
+                             new_board_id, new_flags))
+
+
+def SetBoardId(client, board_id, flags=None):
+    """Sets the board id and flags
+
+    Args:
+        client: the object to run commands on
+        board_id: a string of the symbolic board id or board id hex value. If
+                  the string is less than 4 characters long it will be
+                  considered a symbolic value
+        flags: the desired flag value. If board_id is a symbolic value, then
+               this will be ignored.
+
+    Raises:
+        TestFail if we were unable to set the flags to the correct value
+    """
+
+    board_id_arg = board_id
+    if flags != None:
+        board_id_arg += ':' + hex(flags)
+
+    # Set the board id using the given board id and flags
+    result = UsbUpdater(client, ["-s", "-i", board_id_arg]).stdout.strip()
+
+    CheckBoardId(client, board_id, flags)

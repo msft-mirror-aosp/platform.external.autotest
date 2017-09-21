@@ -21,10 +21,16 @@ import common
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.site_utils.chromeos_proxy import swarming_bots
 
+from chromite.lib import metrics
+from chromite.lib import ts_mon_config
+
+
 # The seconds between consequent bot check.
 CHECK_INTERVAL = 180
 
 _shut_down = False
+
+metrics_template = 'chromeos/autotest/swarming/bot_manager/%s'
 
 def _parse_args(args):
     """Parse system arguments."""
@@ -80,15 +86,29 @@ def is_server_in_prod(server_name, afe):
     logging.info('Validating server: %s', server_name)
     afe = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10,
                                         server=afe)
+    is_prod_proxy_server = False
     try:
         if afe.run('get_servers', hostname=server_name,
                    status='primary', role='golo_proxy'):
-            return True
-        else:
-            return False
+            is_prod_proxy_server = True
+
     except urllib2.URLError as e:
         logging.warning('RPC get_servers failed on afe %s: %s', afe, str(e))
-        return False
+    finally:
+        metrics.Counter(metrics_template % 'server_in_prod_check').increment(
+                fields={'success': is_prod_proxy_server})
+        return is_prod_proxy_server
+
+
+@metrics.SecondsTimerDecorator(metrics_template % 'tick')
+def tick(afe, bot_manager):
+    """One tick for swarming bot manager.
+
+    @param afe: the afe to check server role.
+    @param bot_manager: a swarming_bots.BotManager instance.
+    """
+    if is_server_in_prod(socket.getfqdn(), afe):
+        bot_manager.check()
 
 
 def main(args):
@@ -122,11 +142,10 @@ def main(args):
             args.swarming_proxy)
     is_prod = False
     retryable = True
-    while not _shut_down:
-        if is_server_in_prod(socket.getfqdn(), args.afe):
-            bot_manager.check()
-
-        time.sleep(CHECK_INTERVAL)
+    with ts_mon_config.SetupTsMonGlobalState('swarming_bots', indirect=True):
+        while not _shut_down:
+            tick(args.afe, bot_manager)
+            time.sleep(CHECK_INTERVAL)
 
 
 if __name__ == '__main__':

@@ -738,25 +738,6 @@ class JsonRPCLib(ExternalPackage):
                         ExternalPackage._build_and_install_current_dir_noegg)
 
 
-class Httplib2Package(ExternalPackage):
-    """httplib2 package"""
-    version = '0.6.0'
-    local_filename = 'httplib2-%s.tar.gz' % version
-    # Cannot use the newest httplib2 package 0.9.2 since it cannot be installed
-    # directly in a temp folder. So keep it as 0.6.0.
-    urls = ('https://launchpad.net/ubuntu/+archive/primary/+files/'
-            'python-httplib2_' + version + '.orig.tar.gz',)
-    hex_sum = '995344b2704826cc0d61a266e995b328d92445a5'
-
-    def _get_installed_version_from_module(self, module):
-        # httplib2 doesn't contain a proper version
-        return self.version
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-
 class GwtPackage(ExternalPackage):
     """Fetch and extract a local copy of GWT used to build the frontend."""
 
@@ -802,39 +783,6 @@ class GwtPackage(ExternalPackage):
         return True
 
 
-class GVizAPIPackage(ExternalPackage):
-    """gviz package"""
-    module_name = 'gviz_api'
-    version = '1.8.2'
-    local_filename = 'google-visualization-python.zip'
-    urls = ('https://github.com/google/google-visualization-python/'
-            'archive/master.zip',)
-    hex_sum = 'ec70fb8b874eae21e331332065415318f6fe4882'
-    extracted_package_path = 'google-visualization-python-master'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-    def _get_installed_version_from_module(self, module):
-        # gviz doesn't contain a proper version
-        return self.version
-
-
-class StatsdPackage(ExternalPackage):
-    """python-statsd package"""
-    version = '1.7.2'
-    url_filename = 'python-statsd-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/p/python-statsd/%s' % (
-        url_filename),)
-    hex_sum = '2cc186ebdb723e2420b432ab71639786d877694b'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_setup_py)
-
-
 class GdataPackage(ExternalPackage):
     """
     Pulls the GData library, giving us an API to query tracker.
@@ -853,35 +801,6 @@ class GdataPackage(ExternalPackage):
     def _get_installed_version_from_module(self, module):
         # gdata doesn't contain a proper version
         return self.version
-
-
-class DnsPythonPackage(ExternalPackage):
-    """
-    dns module
-
-    Used in unittests.
-    """
-    module_name = 'dns'
-    version = '1.3.5'
-    url_filename = 'dnspython-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://www.dnspython.org/kits/%s/%s' % (
-        version, url_filename),)
-
-    hex_sum = '06314dad339549613435470c6add992910e26e5d'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-    def _get_installed_version_from_module(self, module):
-        """Ask our module its version string and return it or '' if unknown."""
-        try:
-            __import__(self.module_name + '.version')
-            return module.version.version
-        except AttributeError:
-            logging.error('could not get version from %s', module)
-            return ''
 
 
 class PyudevPackage(ExternalPackage):

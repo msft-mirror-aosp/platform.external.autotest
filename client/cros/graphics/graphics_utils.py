@@ -26,7 +26,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import test as test_utils
 from autotest_lib.client.cros import power_utils
-from autotest_lib.client.cros.graphics import drm
+from autotest_lib.client.cros.graphics import gbm
 from functools import wraps
 
 
@@ -409,7 +409,7 @@ def take_screenshot(resultsdir, fname_prefix, extension='png'):
     logging.info('Saving screenshot to %s.', screenshot_file)
 
     try:
-        image = drm.crtcScreenshot()
+        image = gbm.crtcScreenshot()
         image.save(screenshot_file)
     except Exception as err:
         # Do not raise an exception if the screenshot fails while processing
@@ -434,7 +434,7 @@ def take_screenshot_crop_by_height(fullpath, final_height, x_offset_pixels,
     @param y_offset_pixels: integer, number of pixels from top margin
                             to begin cropping.
     """
-    image = drm.crtcScreenshot()
+    image = gbm.crtcScreenshot()
     image.crop()
     width, height = image.size
     # Preserve aspect ratio: Wf / Wi == Hf / Hi
@@ -478,9 +478,9 @@ def take_screenshot_crop(fullpath, box=None, crtc_id=None):
     @param box: 4-tuple giving the upper left and lower right pixel coordinates.
     """
     if crtc_id is not None:
-        image = drm.crtcScreenshot(crtc_id)
+        image = gbm.crtcScreenshot(crtc_id)
     else:
-        image = drm.crtcScreenshot(get_internal_crtc())
+        image = gbm.crtcScreenshot(get_internal_crtc())
     if box:
         image = image.crop(box)
     image.save(fullpath)
@@ -553,20 +553,6 @@ def get_num_outputs_on():
     """
 
     return _get_num_outputs_connected()
-
-
-def call_xrandr(args_string=''):
-    """
-    Calls xrandr with the args given by args_string.
-
-    e.g. call_xrandr('--output LVDS1 --off') will invoke:
-        'xrandr --output LVDS1 --off'
-
-    @param args_string: A single string containing all arguments.
-
-    Return value: Output of xrandr
-    """
-    return utils.system_output(xcommand('xrandr %s' % args_string))
 
 
 def get_modetest_connectors():

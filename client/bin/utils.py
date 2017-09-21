@@ -812,7 +812,9 @@ def get_disk_model(disk_name):
     return utils.system_output(cmd)
 
 
-_DISK_DEV_RE = re.compile(r'/dev/sd[a-z]|/dev/mmcblk[0-9]*|/dev/nvme[0-9]*')
+_DISK_DEV_RE = re.compile(r'/dev/sd[a-z]|'
+                          r'/dev/mmcblk[0-9]+|'
+                          r'/dev/nvme[0-9]+n[0-9]+')
 
 
 def get_disk_from_filename(filename):
@@ -2077,8 +2079,7 @@ def get_gpu_family():
 # src/third_party/chromiumos-overlay/eclass/appid.eclass
 _BOARDS_WITHOUT_MONITOR = [
     'anglar', 'mccloud', 'monroe', 'ninja', 'rikku', 'guado', 'jecht', 'tidus',
-    'veyron_brian', 'beltino', 'panther', 'stumpy', 'panther', 'tricky', 'zako',
-    'veyron_rialto'
+    'beltino', 'panther', 'stumpy', 'panther', 'tricky', 'zako', 'veyron_rialto'
 ]
 
 

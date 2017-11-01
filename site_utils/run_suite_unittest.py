@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import datetime as datetime_base
 from datetime import datetime
 import mock
@@ -14,6 +15,41 @@ import common
 from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.site_utils import run_suite
 from autotest_lib.site_utils import diagnosis_utils
+
+
+class ReturnResultUnittest(unittest.TestCase):
+    """_ReturnResult tests."""
+
+    def setUp(self):
+        super(ReturnResultUnittest, self).setUp()
+        patcher = mock.patch.object(run_suite, '_RETURN_RESULTS',
+                                    collections.OrderedDict())
+        self.results = results = patcher.start()
+        self.addCleanup(patcher.stop)
+        results['small'] = run_suite._ReturnResult(0, 'small')
+        results['big'] = run_suite._ReturnResult(1, 'big')
+
+        patcher = mock.patch.object(run_suite, '_RETURN_RESULTS_LIST',
+                                    list(results.values()))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_equal(self):
+        """Test _ReturnResult equal."""
+        self.assertEqual(self.results['small'], self.results['small'])
+
+    def test_unequal(self):
+        """Test _ReturnResult unequal."""
+        self.assertNotEqual(self.results['big'], self.results['small'])
+
+    def test_greater_than(self):
+        """Test _ReturnResult greater than."""
+        self.assertGreater(self.results['big'], self.results['small'])
+
+    def test_bitwise_or(self):
+        """Test _ReturnResult bitwise or."""
+        self.assertEqual(self.results['big'],
+                         self.results['big'] | self.results['small'])
 
 
 class ResultCollectorUnittest(unittest.TestCase):
@@ -67,7 +103,8 @@ class ResultCollectorUnittest(unittest.TestCase):
                 'job_finished_time': job_finished_time}
 
 
-    def _mock_tko_get_detailed_test_views(self, test_views):
+    def _mock_tko_get_detailed_test_views(self, test_views,
+                                          missing_results=[]):
         """Mock tko method get_detailed_test_views call.
 
         @param test_views: A list of test views that will be returned
@@ -78,6 +115,9 @@ class ResultCollectorUnittest(unittest.TestCase):
             views_of_job = return_values.setdefault(
                     ('get_detailed_test_views', v['afe_job_id']), [])
             views_of_job.append(v)
+        for job_id in missing_results:
+            views_of_job = return_values.setdefault(
+                    ('get_detailed_test_views', job_id), [])
 
         def side_effect(*args, **kwargs):
             """Maps args and kwargs to the mocked return values."""
@@ -103,6 +143,7 @@ class ResultCollectorUnittest(unittest.TestCase):
         for job_id in child_job_ids:
             new_job = mock.MagicMock()
             new_job.id = job_id
+            new_job.name = 'test.%d' % job_id
             new_job.max_runtime_mins = self.JOB_MAX_RUNTIME_MINS
             new_job.parent_job = suite_job
             return_values[suite_job_id].append(new_job)
@@ -128,13 +169,20 @@ class ResultCollectorUnittest(unittest.TestCase):
                 'GOOD', suite_job_id)
         test_to_include = self._build_view(
                 12, 'dummy_Pass.bluetooth', None, 'TEST_NA', suite_job_id)
+        test_missing = self._build_view(
+                13, 'dummy_Missing', None, 'ABORT', suite_job_id)
         self._mock_afe_get_jobs(suite_job_id, [])
         self._mock_tko_get_detailed_test_views(
-                [server_job_view, test_to_ignore, test_to_include])
+                [server_job_view, test_to_ignore, test_to_include,
+                 test_missing])
         collector = run_suite.ResultCollector(
                 'fake_server', self.afe, self.tko,
-                build='fake/build', board='fake', suite_name='dummy',
-                suite_job_id=suite_job_id)
+                build=build, board='fake', suite_name=suite_name,
+                suite_job_id=suite_job_id,
+                return_code_function=run_suite._ReturnCodeComputer())
+        collector._missing_results = {
+                test_missing['test_name']: [14, 15],
+        }
         suite_views = collector._fetch_relevant_test_views_of_suite()
         suite_views = sorted(suite_views, key=lambda view: view['test_idx'])
         # Verify that SERVER_JOB is renamed to 'Suite job'
@@ -143,6 +191,11 @@ class ResultCollectorUnittest(unittest.TestCase):
         # Verify that the test with a subidr is not included.
         self.assertEqual(suite_views[0]['test_idx'], 10)
         self.assertEqual(suite_views[1]['test_idx'], 12)
+        self.assertEqual(suite_views[1]['afe_job_id'], suite_job_id)
+        # Verify that the test with missing results had it's AFE job id
+        # replaced.
+        self.assertEqual(suite_views[2]['test_idx'], 13)
+        self.assertEqual(suite_views[2]['afe_job_id'], 14)
 
 
     def testFetchTestViewOfChildJobs(self):
@@ -157,6 +210,7 @@ class ResultCollectorUnittest(unittest.TestCase):
         good_job_name = '%s/%s/test_Pass' % (build, suite_name)
         bad_job_id = 103
         bad_job_name = '%s/%s/test_ServerJobFail' % (build, suite_name)
+        missing_job_id = 104
 
         invalid_test = self._build_view(
                 19, 'test_Pass_Old', 'fake/subdir',
@@ -174,17 +228,22 @@ class ResultCollectorUnittest(unittest.TestCase):
                 bad_job_id, bad_job_name)
         self._mock_tko_get_detailed_test_views(
                 [good_job_server_job, good_job_test,
-                 bad_job_server_job, bad_job_test, invalid_test])
-        self._mock_afe_get_jobs(suite_job_id, [good_job_id, bad_job_id])
+                 bad_job_server_job, bad_job_test, invalid_test],
+                [missing_job_id])
+        self._mock_afe_get_jobs(suite_job_id,
+                                [good_job_id, bad_job_id, missing_job_id])
         collector = run_suite.ResultCollector(
                 'fake_server', self.afe, self.tko,
-                build, board, suite_name, suite_job_id)
-        child_views, retry_counts = collector._fetch_test_views_of_child_jobs()
+                build, board, suite_name, suite_job_id,
+                return_code_function=run_suite._ReturnCodeComputer())
+        child_views, retry_counts, missing_results = (
+                collector._fetch_test_views_of_child_jobs())
         # child_views should contain tests 21, 22, 23
         child_views = sorted(child_views, key=lambda view: view['test_idx'])
         # Verify that the SERVER_JOB has been renamed properly
         self.assertEqual(child_views[1].get_testname(),
                          'test_ServerJobFail_SERVER_JOB')
+        self.assertEqual(missing_results, {'test.104': [104]})
         # Verify that failed SERVER_JOB and actual invalid tests are included,
         expected = [good_job_test['test_idx'], bad_job_server_job['test_idx'],
                     bad_job_test['test_idx']]
@@ -205,22 +264,28 @@ class ResultCollectorUnittest(unittest.TestCase):
         board = 'lumpy'
         fake_job = mock.MagicMock()
         fake_job.parent = suite_job_id
+        test_sponge_url = 'http://test_url'
+        job_keyvals = {'sponge_url': test_sponge_url}
         suite_job_view = run_suite.TestView(
                 self._build_view(
-                    20, 'Suite job', '----', 'GOOD', suite_job_id),
+                    20, 'Suite job', '----', 'GOOD', suite_job_id,
+                    job_keyvals=job_keyvals),
                 fake_job, suite_name, build, 'chromeos-test')
         good_test = run_suite.TestView(
                 self._build_view(
-                    21, 'test_Pass', 'fake/subdir', 'GOOD', 101),
+                    21, 'test_Pass', 'fake/subdir', 'GOOD', 101,
+                    job_keyvals=job_keyvals),
                 fake_job, suite_name, build, 'chromeos-test')
         bad_test = run_suite.TestView(
                 self._build_view(
-                    23, 'test_Fail', 'fake/subdir', 'FAIL', 102),
+                    23, 'test_Fail', 'fake/subdir', 'FAIL', 102,
+                    job_keyvals=job_keyvals),
                 fake_job, suite_name, build, 'chromeos-test')
 
         collector = run_suite.ResultCollector(
                 'fake_server', self.afe, self.tko,
-                build, board, suite_name, suite_job_id, user='chromeos-test')
+                build, board, suite_name, suite_job_id, user='chromeos-test',
+                return_code_function=run_suite._ReturnCodeComputer())
         collector._suite_views = [suite_job_view]
         collector._test_views = [suite_job_view, good_test, bad_test]
         collector._max_testname_width = max(
@@ -232,13 +297,15 @@ class ResultCollectorUnittest(unittest.TestCase):
         expected_web_links = [
                  (v.get_testname(),
                   URL_PATTERN % ('fake_server',
-                                '%s-%s' % (v['afe_job_id'], 'chromeos-test')))
+                                '%s-%s' % (v['afe_job_id'], 'chromeos-test')),
+                  test_sponge_url)
                  for v in collector._test_views]
         # Verify web links are generated correctly.
         for i in range(len(collector._web_links)):
             expect = expected_web_links[i]
             self.assertEqual(collector._web_links[i].anchor, expect[0])
             self.assertEqual(collector._web_links[i].url, expect[1])
+            self.assertEqual(collector._web_links[i].sponge_url, expect[2])
 
         expected_buildbot_links = [
                  (v.get_testname(),
@@ -246,22 +313,26 @@ class ResultCollectorUnittest(unittest.TestCase):
                                 '%s-%s' % (v['afe_job_id'], 'chromeos-test')))
                  for v in collector._test_views if v['status'] != 'GOOD']
         # Verify buildbot links are generated correctly.
-        for i in range(len(collector._buildbot_links)):
+        for i in range(len(collector.buildbot_links)):
             expect = expected_buildbot_links[i]
-            self.assertEqual(collector._buildbot_links[i].anchor, expect[0])
-            self.assertEqual(collector._buildbot_links[i].url, expect[1])
-            self.assertEqual(collector._buildbot_links[i].retry_count, 0)
+            self.assertEqual(collector.buildbot_links[i].anchor, expect[0])
+            self.assertEqual(collector.buildbot_links[i].url, expect[1])
+            self.assertEqual(collector.buildbot_links[i].retry_count, 0)
             # Assert that a wmatrix retry dashboard link is created.
             self.assertNotEqual(
-                    collector._buildbot_links[i].GenerateWmatrixRetryLink(),'')
+                    collector.buildbot_links[i].GenerateWmatrixRetryLink(), '')
+            self.assertNotEqual(
+                    collector.buildbot_links[i].GenerateWmatrixHistoryLink(),
+                    '')
 
 
     def _end_to_end_test_helper(
             self, include_bad_test=False, include_warn_test=False,
-            include_experimental_bad_test=False, include_timeout_test=False,
+            include_timeout_test=False,
             include_self_aborted_test=False,
             include_aborted_by_suite_test=False,
             include_good_retry=False, include_bad_retry=False,
+            include_good_test=True,
             suite_job_timed_out=False, suite_job_status='GOOD'):
         """A helper method for testing ResultCollector end-to-end.
 
@@ -272,9 +343,6 @@ class ResultCollectorUnittest(unittest.TestCase):
                 If True, include a view of a test which has status 'FAIL'.
         @param include_warn_test:
                 If True, include a view of a test which has status 'WARN'
-        @param include_experimental_bad_test:
-                If True, include a view of an experimental test
-                which has status 'FAIL'.
         @param include_timeout_test:
                 If True, include a view of a test which was aborted before
                 started.
@@ -288,6 +356,10 @@ class ResultCollectorUnittest(unittest.TestCase):
                 If True, include a test that passed after retry.
         @param include_bad_retry:
                 If True, include a test that failed after retry.
+        @param include_good_test:
+                If True, include a test that passed. If False, pretend no tests
+                (including the parent suite job) came back with any test
+                results.
         @param suite_job_status: One of 'GOOD' 'FAIL' 'ABORT' 'RUNNING'
 
         @returns: A ResultCollector instance.
@@ -296,7 +368,6 @@ class ResultCollectorUnittest(unittest.TestCase):
         good_job_id = 101
         bad_job_id = 102
         warn_job_id = 102
-        experimental_bad_job_id = 102
         timeout_job_id = 100
         self_aborted_job_id = 104
         aborted_by_suite_job_id = 105
@@ -339,13 +410,6 @@ class ResultCollectorUnittest(unittest.TestCase):
                 warn_job_id, 'lumpy-release/R27-3888.0.0/dummy/dummy_Fail.Warn',
                 'always warn', {}, '2014-04-29 13:16:00',
                 '2014-04-29 13:16:02')
-        experimental_bad_test = self._build_view(
-                14, 'experimental_dummy_Fail.Fail',
-                '102-user/host/dummy_Fail.Fail', 'FAIL',
-                experimental_bad_job_id,
-                'lumpy-release/R27-3888.0.0/dummy/experimental_dummy_Fail.Fail',
-                'always fail', {'experimental': 'True'}, '2014-04-29 13:16:06',
-                '2014-04-29 13:16:07')
         timeout_test = self._build_view(
                 15, 'dummy_Timeout', '', 'ABORT',
                 timeout_job_id,
@@ -395,17 +459,22 @@ class ResultCollectorUnittest(unittest.TestCase):
                 'original test failed', {},
                 '2014-04-29 13:10:03', '2014-04-29 13:10:04')
 
-        test_views = [server_job_view, good_test]
-        child_jobs = set([good_job_id])
+        test_views = []
+        child_jobs = set()
+        missing_results = []
+        if include_good_test:
+            test_views.append(server_job_view)
+            test_views.append(good_test)
+            child_jobs.add(good_job_id)
+        # Emulate missing even the parent/suite job.
+        else:
+            missing_results.append(suite_job_id)
         if include_bad_test:
             test_views.append(bad_test)
             child_jobs.add(bad_job_id)
         if include_warn_test:
             test_views.append(warn_test)
             child_jobs.add(warn_job_id)
-        if include_experimental_bad_test:
-            test_views.append(experimental_bad_test)
-            child_jobs.add(experimental_bad_job_id)
         if include_timeout_test:
             test_views.append(timeout_test)
         if include_self_aborted_test:
@@ -420,81 +489,82 @@ class ResultCollectorUnittest(unittest.TestCase):
         if include_aborted_by_suite_test:
             test_views.append(aborted_by_suite)
             child_jobs.add(aborted_by_suite_job_id)
-        self._mock_tko_get_detailed_test_views(test_views)
+        self._mock_tko_get_detailed_test_views(test_views,
+               missing_results=missing_results)
         self._mock_afe_get_jobs(suite_job_id, child_jobs)
         collector = run_suite.ResultCollector(
                'fake_server', self.afe, self.tko,
-               'lumpy-release/R36-5788.0.0', 'lumpy', 'dummy', suite_job_id)
+               'lumpy-release/R36-5788.0.0', 'lumpy', 'dummy', suite_job_id,
+               return_code_function=run_suite._ReturnCodeComputer())
         collector.run()
+        collector.output_results()
         return collector
+
+
+    def testEndToEndSuiteEmpty(self):
+        """Test it returns code INFRA_FAILURE when no tests report back."""
+        collector = self._end_to_end_test_helper(include_good_test=False)
+        self.assertEqual(collector.return_result.return_code,
+                         run_suite.RETURN_CODES.INFRA_FAILURE)
 
 
     def testEndToEndSuitePass(self):
         """Test it returns code OK when all test pass."""
         collector = self._end_to_end_test_helper()
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.OK)
-
-
-    def testEndToEndExperimentalTestFails(self):
-        """Test that it returns code OK when only experimental test fails."""
-        collector = self._end_to_end_test_helper(
-                include_experimental_bad_test=True)
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.OK)
+        self.assertEqual(collector.return_result.return_code,
+                         run_suite.RETURN_CODES.OK)
 
 
     def testEndToEndSuiteWarn(self):
         """Test it returns code WARNING when there is a test that warns."""
         collector = self._end_to_end_test_helper(include_warn_test=True)
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.WARNING)
+        self.assertEqual(collector.return_result.return_code,
+                         run_suite.RETURN_CODES.WARNING)
 
 
     def testEndToEndSuiteFail(self):
         """Test it returns code ERROR when there is a test that fails."""
-        # Test that it returns ERROR when there is test that fails.
         collector = self._end_to_end_test_helper(include_bad_test=True)
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.ERROR)
-
-        # Test that it returns ERROR when both experimental and non-experimental
-        # test fail.
-        collector = self._end_to_end_test_helper(
-                include_bad_test=True, include_warn_test=True,
-                include_experimental_bad_test=True)
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.ERROR)
-
-        collector = self._end_to_end_test_helper(include_self_aborted_test=True)
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.ERROR)
+        self.assertEqual(collector.return_result.return_code,
+                         run_suite.RETURN_CODES.ERROR)
 
 
     def testEndToEndSuiteJobFail(self):
         """Test it returns code SUITE_FAILURE when only the suite job failed."""
         collector = self._end_to_end_test_helper(suite_job_status='ABORT')
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.INFRA_FAILURE)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.INFRA_FAILURE)
 
         collector = self._end_to_end_test_helper(suite_job_status='ERROR')
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.INFRA_FAILURE)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.INFRA_FAILURE)
 
 
     def testEndToEndRetry(self):
         """Test it returns correct code when a test was retried."""
         collector = self._end_to_end_test_helper(include_good_retry=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.WARNING)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.WARNING)
 
         collector = self._end_to_end_test_helper(include_good_retry=True,
                 include_self_aborted_test=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.ERROR)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.ERROR)
 
         collector = self._end_to_end_test_helper(include_good_retry=True,
                 include_bad_test=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.ERROR)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.ERROR)
 
         collector = self._end_to_end_test_helper(include_bad_retry=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.ERROR)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.ERROR)
 
 
     def testEndToEndSuiteTimeout(self):
@@ -502,35 +572,39 @@ class ResultCollectorUnittest(unittest.TestCase):
         # a child job timed out before started, none failed.
         collector = self._end_to_end_test_helper(include_timeout_test=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.SUITE_TIMEOUT)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.SUITE_TIMEOUT)
 
         # a child job timed out before started, and one test failed.
         collector = self._end_to_end_test_helper(
                 include_bad_test=True, include_timeout_test=True)
-        self.assertEqual(collector.return_code, run_suite.RETURN_CODES.ERROR)
+        self.assertEqual(collector.return_result.return_code,
+                         run_suite.RETURN_CODES.ERROR)
 
         # a child job timed out before started, and one test warned.
         collector = self._end_to_end_test_helper(
                 include_warn_test=True, include_timeout_test=True)
-        self.assertEqual(collector.return_code,
+        self.assertEqual(collector.return_result.return_code,
                          run_suite.RETURN_CODES.SUITE_TIMEOUT)
 
         # a child job timed out before started, and one test was retried.
         collector = self._end_to_end_test_helper(include_good_retry=True,
                 include_timeout_test=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.SUITE_TIMEOUT)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.SUITE_TIMEOUT)
 
         # a child jot was aborted because suite timed out.
         collector = self._end_to_end_test_helper(
                 include_aborted_by_suite_test=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.OK)
+                collector.return_result.return_code, run_suite.RETURN_CODES.OK)
 
         # suite job timed out.
         collector = self._end_to_end_test_helper(suite_job_timed_out=True)
         self.assertEqual(
-                collector.return_code, run_suite.RETURN_CODES.SUITE_TIMEOUT)
+                collector.return_result.return_code,
+                run_suite.RETURN_CODES.SUITE_TIMEOUT)
 
 
 class LogLinkUnittests(unittest.TestCase):
@@ -579,67 +653,6 @@ class SimpleTimerUnittests(unittest.TestCase):
         self.assertTrue(t.deadline is None and t.poll() == False)
         t._reset()
         self.assertTrue(t.deadline is None and t.poll() == False)
-
-
-class ArgumentParserUnittests(unittest.TestCase):
-    """Tests for argument parser."""
-
-    @unittest.expectedFailure
-    def test_crbug_658013(self):
-        """crbug.com/658013
-
-        Expected failure due to http://bugs.python.org/issue9334
-        """
-        parser = run_suite.make_parser()
-        args = [
-            '--board', 'heli',
-            '--build', 'trybot-heli-paladin/R56-8918.0.0-b1601',
-            '--suite_name', 'test_that_wrapper',
-            '--pool', 'suites',
-            '--max_runtime_mins', '20',
-            '--suite_args', '-b heli -i trybot-heli-paladin/R56-8918.0.0-b1601 :lab: suite:bvt-inline',
-        ]
-
-        def error_handler(msg):  # pylint: disable=missing-docstring
-            self.fail('Argument parsing failed: ' + msg)
-
-        parser.error = error_handler
-        got = parser.parse_args(args)
-        self.assertEqual(
-            got.board, 'heli')
-        self.assertEqual(
-            got.build, 'trybot-heli-paladin/R56-8918.0.0-b1601')
-        self.assertEqual(
-            got.suite_args,
-            '-b heli -i trybot-heli-paladin/R56-8918.0.0-b1601 :lab: suite:bvt-inline')
-
-    def test_crbug_658013b(self):
-        """crbug.com/658013
-
-        Unambiguous behavior.
-        """
-        parser = run_suite.make_parser()
-        args = [
-            '--board=heli',
-            '--build=trybot-heli-paladin/R56-8918.0.0-b1601',
-            '--suite_name=test_that_wrapper',
-            '--pool=suites',
-            '--max_runtime_mins=20',
-            '--suite_args=-b heli -i trybot-heli-paladin/R56-8918.0.0-b1601 :lab: suite:bvt-inline',
-        ]
-
-        def error_handler(msg):  # pylint: disable=missing-docstring
-            self.fail('Argument parsing failed: ' + msg)
-
-        parser.error = error_handler
-        got = parser.parse_args(args)
-        self.assertEqual(
-            got.board, 'heli')
-        self.assertEqual(
-            got.build, 'trybot-heli-paladin/R56-8918.0.0-b1601')
-        self.assertEqual(
-            got.suite_args,
-            '-b heli -i trybot-heli-paladin/R56-8918.0.0-b1601 :lab: suite:bvt-inline')
 
 
 if __name__ == '__main__':

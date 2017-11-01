@@ -28,22 +28,18 @@ TESTS = [
   'power_StatsCPUFreq',
   'power_StatsCPUIdle',
   'power_StatsUSB',
-  'power_x86Settings'
 ]
 
 
 def run_client_test(machine):
   client = hosts.create_host(machine)
-  client_attributes = site_host_attributes.HostAttributes(machine)
+  client_attributes = site_host_attributes.HostAttributes(client.hostname)
   client_at = autotest.Autotest(client)
 
   if client.has_power():
     client.power_on()
   else:
     raise error.TestNAError("No power switch configured")
-
-  # Run power_x86Settings test with AC power connected
-  client_at.run_test('power_x86Settings', tag='AC_ONLINE')
 
   # Charge battery to at least 50% first
   client_at.run_test('power_BatteryCharge', percent_target_charge=50,
@@ -56,6 +52,7 @@ def run_client_test(machine):
 
     if not client_attributes.has_resume_bug:
         client_at.run_test('power_Resume')
+        client_at.run_test('power_UiResume')
 
   finally:
     client.power_on()

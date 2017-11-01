@@ -7,6 +7,8 @@ import collections, logging, os, re, shutil, time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cros_logging, sys_power
+from autotest_lib.client.cros import power_utils
+from autotest_lib.client.cros import power_status
 #pylint: disable=W0611
 from autotest_lib.client.cros import flimflam_test_path
 import flimflam
@@ -37,7 +39,7 @@ class Suspender(object):
         __del__: Restore tlsdated (must run eventually, but GC delay no problem)
         _set_pm_print_times: Enable/disable kernel device suspend timing output.
         _check_failure_log: Check /sys/.../suspend_stats for new failures.
-        _ts: Returns a timestamp from /var/run/power_manager/last_resume_timings
+        _ts: Returns a timestamp from /run/power_manager/last_resume_timings
         _hwclock_ts: Read RTC timestamp left on resume in hwclock-on-resume
         _device_resume_time: Read seconds overall device resume took from logs.
         _individual_device_times: Reads individual device suspend/resume times.
@@ -75,7 +77,7 @@ class Suspender(object):
 
     # File written by send_metrics_on_resume containing timing information about
     # the last resume.
-    _TIMINGS_FILE = '/var/run/power_manager/root/last_resume_timings'
+    _TIMINGS_FILE = '/run/power_manager/root/last_resume_timings'
 
     # Amount of lines to dump from the eventlog on a SpuriousWakeup. Should be
     # enough to include ACPI Wake Reason... 10 should be far on the safe side.
@@ -85,11 +87,20 @@ class Suspender(object):
     _MAX_RESUME_TIME = 10
 
     # File written by powerd_suspend containing the hwclock time at resume.
-    HWCLOCK_FILE = '/var/run/power_manager/root/hwclock-on-resume'
+    HWCLOCK_FILE = '/run/power_manager/root/hwclock-on-resume'
+
+    # File read by powerd to decide on the state to suspend (mem or freeze).
+    _SUSPEND_STATE_PREF_FILE = 'suspend_to_idle'
 
     def __init__(self, logdir, method=sys_power.do_suspend,
-                 throw=False, device_times=False):
-        """Prepare environment for suspending."""
+                 throw=False, device_times=False, suspend_state=''):
+        """
+        Prepare environment for suspending.
+        @param suspend_state: Suspend state to enter into. It can be
+                              'mem' or 'freeze' or an empty string. If
+                              the suspend state is an empty string,
+                              system suspends to the default pref.
+        """
         self.disconnect_3G_time = 0
         self.successes = []
         self.failures = []
@@ -99,6 +110,7 @@ class Suspender(object):
         self._reset_pm_print_times = False
         self._restart_tlsdated = False
         self._log_file = None
+        self._suspend_state = suspend_state
         if device_times:
             self.device_times = []
 
@@ -136,6 +148,24 @@ class Suspender(object):
             else:
                 logging.error('Could not disconnect: %s.', status)
                 self.disconnect_3G_time = -1
+
+        self._configure_suspend_state()
+
+
+    def _configure_suspend_state(self):
+        """Configure the suspend state as requested."""
+        if self._suspend_state:
+            available_suspend_states = utils.read_one_line('/sys/power/state')
+            if self._suspend_state not in available_suspend_states:
+                raise error.TestNAError('Invalid suspend state: ' +
+                                        self._suspend_state)
+            # Check the current state. If it is same as the one requested,
+            # we don't want to call PowerPrefChanger(restarts powerd).
+            if self._suspend_state == power_utils.get_sleep_state():
+                return
+            should_freeze = '1' if self._suspend_state == 'freeze' else '0'
+            new_prefs = {self._SUSPEND_STATE_PREF_FILE: should_freeze}
+            self._power_pref_changer = power_utils.PowerPrefChanger(new_prefs)
 
 
     def _set_pm_print_times(self, on):
@@ -211,11 +241,12 @@ class Suspender(object):
         for retry in xrange(retries + 1):
             early_wakeup = False
             if os.path.exists(self.HWCLOCK_FILE):
-                match = re.search(r'(.+) (-?[0-9.]+) seconds',
+                # TODO(crbug.com/733773): Still fragile see bug.
+                match = re.search(r'(.+)(\.\d+)[+-]\d+:?\d+$',
                                   utils.read_file(self.HWCLOCK_FILE), re.DOTALL)
                 if match:
                     timeval = time.strptime(match.group(1),
-                            "%a %b %d %H:%M:%S %Y")
+                                            "%Y-%m-%d %H:%M:%S")
                     seconds = time.mktime(timeval)
                     seconds += float(match.group(2))
                     logging.debug('RTC resume timestamp read: %f', seconds)
@@ -282,6 +313,7 @@ class Suspender(object):
 
         raise error.TestError('Failed to find device resume time in syslog.')
 
+
     def _get_phase_times(self):
         phase_times = []
         regex = re.compile(r'PM: (\w+ )?(resume|suspend) of devices complete')
@@ -295,6 +327,7 @@ class Suspender(object):
             phase_times.append((phase.upper(), ts))
         return sorted(phase_times, key = lambda entry: entry[1])
 
+
     def _get_phase(self, ts, phase_table, dev):
       for entry in phase_table:
         #checking if timestamp was before that phase's cutoff
@@ -302,6 +335,7 @@ class Suspender(object):
           return entry[0]
       raise error.TestError('Device %s has a timestamp after all devices %s',
                             dev, 'had already resumed')
+
 
     def _individual_device_times(self, start_resume):
         """Return dict of individual device suspend and resume times."""
@@ -340,6 +374,7 @@ class Suspender(object):
             report += ', %f %s' % (dev[phase], phase)
           logging.debug(report)
 
+
     def _identify_driver(self, device):
         """Return the driver name of a device (or "unknown")."""
         for path, subdirs, _ in os.walk('/sys/devices'):
@@ -374,14 +409,19 @@ class Suspender(object):
         failed = False
 
         # TODO(scottz): warning_monitor crosbug.com/38092
-        for i in xrange(len(self._logs)):
+        log_len = len(self._logs)
+        for i in xrange(log_len):
             line = self._logs[i]
             if warning_regex.search(line):
                 # match the source file from the WARNING line, and the
                 # actual error text by peeking one or two lines below that
                 src = cros_logging.strip_timestamp(line)
-                text = cros_logging.strip_timestamp(self._logs[i + 1]) + '\n' \
-                     + cros_logging.strip_timestamp(self._logs[i + 2])
+                text = ''
+                if i+1 < log_len:
+                    text = cros_logging.strip_timestamp(self._logs[i + 1])
+                if i+2 < log_len:
+                    text += '\n' + cros_logging.strip_timestamp(
+                        self._logs[i + 2])
                 for p1, p2 in sys_power.KernelError.WHITELIST:
                     if re.search(p1, src) and re.search(p2, text):
                         logging.info('Whitelisted KernelError: %s', src)
@@ -417,7 +457,38 @@ class Suspender(object):
         return False
 
 
-    def suspend(self, duration=10, ignore_kernel_warns=False):
+    def _arc_resume_ts(self, retries=3):
+        """Parse arc logcat for arc resume timestamp.
+
+        @param retries: retry if the expected log cannot be found in logcat.
+
+        @returns: a float representing arc resume timestamp in  CPU seconds
+                  starting from the last boot if arc logcat resume log is parsed
+                  correctly; otherwise 'unknown'.
+
+        """
+        command = 'android-sh -c "logcat -v monotonic -t 300 *:silent' \
+                  ' ArcPowerManagerService:D"'
+        regex_resume = re.compile(r'^\s*(\d+\.\d+).*ArcPowerManagerService: '
+                                  'Suspend is over; resuming all apps$')
+        for retry in xrange(retries + 1):
+            arc_logcat = utils.system_output(command, ignore_status=False)
+            arc_logcat = arc_logcat.splitlines()
+            resume_ts = 0
+            for line in arc_logcat:
+                match_resume = regex_resume.search(line)
+                # ARC logcat is cleared before suspend so the first ARC resume
+                # timestamp is the one we are looking for.
+                if match_resume:
+                    return float(match_resume.group(1))
+            time.sleep(0.005 * 2**retry)
+        else:
+            logging.error('ARC did not resume correctly.')
+            return 'unknown'
+
+
+    def suspend(self, duration=10, ignore_kernel_warns=False,
+                measure_arc=False):
         """
         Do a single suspend for 'duration' seconds. Estimates the amount of time
         it takes to suspend for a board (see _SUSPEND_DELAY), so the actual RTC
@@ -429,15 +500,22 @@ class Suspender(object):
         @param duration: time in seconds to do a suspend prior to waking.
         @param ignore_kernel_warns: Ignore kernel errors.  Defaults to false.
         """
+
+        if power_utils.get_sleep_state() == 'freeze':
+            self._s0ix_residency_stats = power_status.S0ixResidencyStats()
+
         try:
             iteration = len(self.failures) + len(self.successes) + 1
-
             # Retry suspend in case we hit a known (whitelisted) bug
             for _ in xrange(10):
                 self._reset_logs()
                 utils.system('sync')
                 board_delay = self._SUSPEND_DELAY.get(self._get_board(),
                         self._DEFAULT_SUSPEND_DELAY)
+                # Clear the ARC logcat to make parsing easier.
+                if measure_arc:
+                    command = 'android-sh -c "logcat -c"'
+                    utils.system(command, ignore_status=False)
                 try:
                     alarm = self._suspend(duration + board_delay)
                 except sys_power.SpuriousWakeupError:
@@ -489,7 +567,17 @@ class Suspender(object):
                          '%g kernel, %g cpu, %g devices',
                          iteration, kernel_down, total_up, board_up,
                          firmware_up, kernel_up, cpu_up, devices_up)
-            self.successes.append({
+
+            if hasattr(self, '_s0ix_residency_stats'):
+                s0ix_residency_secs = \
+                        self._s0ix_residency_stats.\
+                                get_accumulated_residency_secs()
+                if not s0ix_residency_secs:
+                    raise sys_power.S0ixResidencyNotChanged(
+                        'S0ix residency did not change.')
+                logging.info('S0ix residency : %d secs.', s0ix_residency_secs)
+
+            successful_suspend = {
                 'seconds_system_suspend': kernel_down,
                 'seconds_system_resume': total_up,
                 'seconds_system_resume_firmware': firmware_up + board_up,
@@ -498,7 +586,13 @@ class Suspender(object):
                 'seconds_system_resume_kernel': kernel_up,
                 'seconds_system_resume_kernel_cpu': cpu_up,
                 'seconds_system_resume_kernel_dev': devices_up,
-                })
+                }
+
+            if measure_arc:
+                successful_suspend['seconds_system_resume_arc'] = \
+                        self._arc_resume_ts() - start_resume
+
+            self.successes.append(successful_suspend)
 
             if hasattr(self, 'device_times'):
                 self._individual_device_times(start_resume)
@@ -526,6 +620,8 @@ class Suspender(object):
                 utils.system('initctl start tlsdated')
             if self._reset_pm_print_times:
                 self._set_pm_print_times(False)
+        if hasattr(self, '_power_pref_changer'):
+            self._power_pref_changer.finalize()
 
 
     def __del__(self):

@@ -12,7 +12,6 @@
 import httplib
 import logging
 import socket
-import traceback
 import xmlrpclib
 
 from autotest_lib.client.bin import utils
@@ -25,7 +24,6 @@ from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import autoupdater
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
-from autotest_lib.client.common_lib.cros.graphite import autotest_es
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.server import afe_utils
@@ -38,7 +36,11 @@ from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import ssh_host
 from autotest_lib.site_utils.rpm_control_system import rpm_client
 
-from chromite.lib import metrics
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
+
 
 # Names of the host attributes in the database that represent the values for
 # the servo_host and servo_port for a servo connected to the DUT.
@@ -64,7 +66,7 @@ class ServoHost(ssh_host.SSHHost):
     DEFAULT_PORT = 9999
 
     # Timeout for initializing servo signals.
-    INITIALIZE_SERVO_TIMEOUT_SECS = 30
+    INITIALIZE_SERVO_TIMEOUT_SECS = 60
 
     # Ready test function
     SERVO_READY_METHOD = 'get_version'
@@ -424,16 +426,7 @@ class ServoHost(ssh_host.SSHHost):
         except Exception as e:
             # Sometimes creating the job will raise an exception. We'll log it
             # but we don't want to fail because of it.
-            logging.exception('Scheduling reboot job failed: %s', e)
-            metadata = {'dut': dut,
-                        'servo_host': self.hostname,
-                        'error': str(e),
-                        'details': traceback.format_exc()}
-            # We want to track how often we fail here so we can justify
-            # investing some effort into hardening up afe.create_job().
-            autotest_es.post(use_http=True,
-                             type_str='servohost_Reboot_schedule_fail',
-                             metadata=metadata)
+            logging.exception('Scheduling reboot job failed due to Exception.')
 
 
     def reboot(self, *args, **dargs):
@@ -559,6 +552,8 @@ class ServoHost(ssh_host.SSHHost):
         if status in autoupdater.UPDATER_PROCESSING_UPDATE:
             logging.info('servo host %s already processing an update, update '
                          'engine client status=%s', self.hostname, status)
+        elif status == autoupdater.UPDATER_NEED_REBOOT:
+            return
         elif current_build_number != target_build_number:
             logging.info('Using devserver url: %s to trigger update on '
                          'servo host %s, from %s to %s', url, self.hostname,
@@ -773,10 +768,10 @@ def _get_standard_servo_args(dut_host):
         if is_in_lab:
             servo_args = {SERVO_HOST_ATTR: servo_host}
     if servo_args is not None:
-        servo_board = afe_utils.get_board(dut_host)
-        if servo_board is not None:
-            servo_board = _map_afe_board_to_servo_board(servo_board)
-            servo_args[SERVO_BOARD_ATTR] = servo_board
+        info = dut_host.host_info_store.get()
+        if info.board:
+            servo_args[SERVO_BOARD_ATTR] = _map_afe_board_to_servo_board(
+                    info.board)
     return servo_args, is_in_lab
 
 

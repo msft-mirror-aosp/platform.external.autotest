@@ -9,7 +9,6 @@ These can be exposed via a xmlrpci server running on the DUT.
 
 import functools, os, tempfile
 
-import common
 from autotest_lib.client.cros.faft.utils import (cgpt_handler,
                                                  os_interface,
                                                  firmware_check_keys,
@@ -41,19 +40,19 @@ def allow_multiple_section_input(image_operator):
     return wrapper
 
 
-class LazyFlashromHandlerProxy:
-    """Proxy of FlashromHandler for lazy initialization."""
+class LazyInitHandlerProxy:
+    """Proxy of a given handler_class for lazy initialization."""
     _loaded = False
     _obj = None
 
-    def __init__(self, *args, **kargs):
+    def __init__(self, handler_class, *args, **kargs):
+        self._handler_class = handler_class
         self._args = args
         self._kargs = kargs
 
     def _load(self):
-        self._obj = flashrom_handler.FlashromHandler()
+        self._obj = self._handler_class()
         self._obj.init(*self._args, **self._kargs)
-        self._obj.new_image()
         self._loaded = True
 
     def __getattr__(self, name):
@@ -88,6 +87,7 @@ class RPCFunctions(object):
         _keys_path: Path of a directory, keys/, in temp directory.
         _work_path: Path of a directory, work/, in temp directory.
     """
+
     def __init__(self):
         """Initialize the data attributes of this class."""
         # TODO(waihong): Move the explicit object.init() methods to the
@@ -100,21 +100,23 @@ class RPCFunctions(object):
         self._os_if.init(state_dir, log_file=self._log_file)
         os.chdir(state_dir)
 
-        self._bios_handler = LazyFlashromHandlerProxy(
-                                saft_flashrom_util,
-                                self._os_if,
-                                None,
-                                '/usr/share/vboot/devkeys',
-                                'bios')
+        self._bios_handler = LazyInitHandlerProxy(
+                flashrom_handler.FlashromHandler,
+                saft_flashrom_util,
+                self._os_if,
+                None,
+                '/usr/share/vboot/devkeys',
+                'bios')
 
         self._ec_handler = None
         if self._os_if.run_shell_command_get_status('mosys ec info') == 0:
-            self._ec_handler = LazyFlashromHandlerProxy(
-                                  saft_flashrom_util,
-                                  self._os_if,
-                                  'ec_root_key.vpubk',
-                                  '/usr/share/vboot/devkeys',
-                                  'ec')
+            self._ec_handler = LazyInitHandlerProxy(
+                    flashrom_handler.FlashromHandler,
+                    saft_flashrom_util,
+                    self._os_if,
+                    'ec_root_key.vpubk',
+                    '/usr/share/vboot/devkeys',
+                    'ec')
         else:
             self._os_if.log('No EC is reported by mosys.')
 
@@ -123,12 +125,9 @@ class RPCFunctions(object):
                                   dev_key_path='/usr/share/vboot/devkeys',
                                   internal_disk=True)
 
-        # FIXME(waihong): Add back the TPM support.
-        if not self._os_if.is_android:
-            self._tpm_handler = tpm_handler.TpmHandler()
-            self._tpm_handler.init(self._os_if)
-        else:
-            self._tpm_handler = None
+        self._tpm_handler = LazyInitHandlerProxy(
+                tpm_handler.TpmHandler,
+                self._os_if)
 
         self._cgpt_handler = cgpt_handler.CgptHandler(self._os_if)
 
@@ -242,7 +241,7 @@ class RPCFunctions(object):
         return self._os_if.run_host_shell_command_get_output(command)
 
     def _host_run_nonblock_shell_command(self, command):
-        """Run non-blocking shell command
+        """Run non-blocking shell command.
 
         @param command: A shell command to be run.
         @return: none
@@ -296,7 +295,7 @@ class RPCFunctions(object):
         self._os_if.cs.fwb_tries = count
 
     def _system_set_fw_try_next(self, next, count=0):
-        """Set fw_try_next to A or B
+        """Set fw_try_next to A or B.
 
         @param next: Next FW to reboot to (A or B)
         @param count: # of times to try booting into FW <next>
@@ -306,7 +305,7 @@ class RPCFunctions(object):
             self._os_if.cs.fw_try_count = count
 
     def _system_get_fw_vboot2(self):
-        """Get fw_vboot2"""
+        """Get fw_vboot2."""
         try:
             return self._os_if.cs.fw_vboot2 == '1'
         except os_interface.OSInterfaceError:
@@ -339,9 +338,22 @@ class RPCFunctions(object):
         root_part = self._os_if.get_root_part()
         return self._os_if.is_removable_device(root_part)
 
+    def _system_get_internal_device(self):
+        """Get the internal disk by given the current disk."""
+        root_part = self._os_if.get_root_part()
+        return self._os_if.get_internal_disk(root_part)
+
     def _system_create_temp_dir(self, prefix='backup_'):
         """Create a temporary directory and return the path."""
         return tempfile.mkdtemp(prefix=prefix)
+
+    def _system_remove_file(self, file_path):
+        """Remove the file."""
+        return self._os_if.remove_file(file_path)
+
+    def _system_remove_dir(self, dir_path):
+        """Remove the directory."""
+        return self._os_if.remove_dir(dir_path)
 
     def _bios_reload(self):
         """Reload the firmware image that may be changed."""
@@ -487,6 +499,21 @@ class RPCFunctions(object):
         """Get SHA1 hash of EC RW firmware section."""
         return self._ec_handler.get_section_sha('rw')
 
+    def _ec_dump_whole(self, ec_path):
+        """Dump the current EC firmware to a file, specified by ec_path.
+
+        @param ec_path: The path of the EC image to be written.
+        """
+        self._ec_handler.dump_whole(ec_path)
+
+    def _ec_write_whole(self, ec_path):
+        """Write the firmware from ec_path to the current system.
+
+        @param ec_path: The path of the source EC image.
+        """
+        self._ec_handler.new_image(ec_path)
+        self._ec_handler.write_whole()
+
     @allow_multiple_section_input
     def _ec_corrupt_sig(self, section):
         """Corrupt the requested EC section signature.
@@ -631,7 +658,23 @@ class RPCFunctions(object):
 
     def _tpm_get_firmware_datakey_version(self):
         """Retrieve tpm firmware data key version."""
-        return self._tpm_handler.get_fw_body_version()
+        return self._tpm_handler.get_fw_key_version()
+
+    def _tpm_get_kernel_version(self):
+        """Retrieve tpm kernel body version."""
+        return self._tpm_handler.get_kernel_version()
+
+    def _tpm_get_kernel_datakey_version(self):
+        """Retrieve tpm kernel data key version."""
+        return self._tpm_handler.get_kernel_key_version()
+
+    def _tpm_stop_daemon(self):
+        """Stop tpm related daemon."""
+        return self._tpm_handler.stop_daemon()
+
+    def _tpm_restart_daemon(self):
+        """Restart tpm related daemon which was stopped by stop_daemon()."""
+        return self._tpm_handler.restart_daemon()
 
     def _cgpt_get_attributes(self):
         """Get kernel attributes."""
@@ -705,13 +748,55 @@ class RPCFunctions(object):
 
     def _updater_run_recovery(self):
         """Run chromeos-firmwareupdate with recovery mode."""
-        options = ['--noupdate_ec', '--nocheck_rw_compatible']
+        options = ['--noupdate_ec',
+                   '--nocheck_rw_compatible',
+                   '--nocheck_keys']
         self._updater.run_firmwareupdate(mode='recovery',
                                          options=options)
+
+    def _updater_cbfs_setup_work_dir(self):
+        """Sets up cbfstool work directory."""
+        return self._updater.cbfs_setup_work_dir()
+
+    def _updater_cbfs_extract_chip(self, fw_name):
+        """Runs cbfstool to extract chip firmware.
+
+        @param fw_name: Name of chip firmware to extract.
+        @return: Boolean success status.
+        """
+        return self._updater.cbfs_extract_chip(fw_name)
+
+    def _updater_cbfs_get_chip_hash(self, fw_name):
+        """Gets the chip firmware hash blob.
+
+        @param fw_name: Name of chip firmware whose hash blob to return.
+        @return: Hex string of hash blob.
+        """
+        return self._updater.cbfs_get_chip_hash(fw_name)
+
+    def _updater_cbfs_replace_chip(self, fw_name):
+        """Runs cbfstool to replace chip firmware.
+
+        @param fw_name: Name of chip firmware to extract.
+        @return: Boolean success status.
+        """
+        return self._updater.cbfs_replace_chip(fw_name)
+
+    def _updater_cbfs_sign_and_flash(self):
+        """Runs cbfs signer and flash it.
+
+        @param fw_name: Name of chip firmware to extract.
+        @return: Boolean success status.
+        """
+        return self._updater.cbfs_sign_and_flash()
 
     def _updater_get_temp_path(self):
         """Get updater's temp directory path."""
         return self._updater.get_temp_path()
+
+    def _updater_get_cbfs_work_path(self):
+        """Get updater's cbfs work directory path."""
+        return self._updater.get_cbfs_work_path()
 
     def _updater_get_keys_path(self):
         """Get updater's keys directory path."""
@@ -720,6 +805,14 @@ class RPCFunctions(object):
     def _updater_get_work_path(self):
         """Get updater's work directory path."""
         return self._updater.get_work_path()
+
+    def _updater_get_bios_relative_path(self):
+        """Gets the relative path of the bios image in the shellball."""
+        return self._updater.get_bios_relative_path()
+
+    def _updater_get_ec_relative_path(self):
+        """Gets the relative path of the ec image in the shellball."""
+        return self._updater.get_ec_relative_path()
 
     def _rootfs_verify_rootfs(self, section):
         """Verifies the integrity of the root FS.

@@ -4,6 +4,7 @@
 
 import collections, ctypes, fcntl, glob, logging, math, numpy, os, re, struct
 import threading, time
+import contextlib
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, enum
@@ -261,6 +262,8 @@ class BatteryStat(DevStat):
                 return
             except error.TestError as e:
                 logging.warn(e)
+                for field, prop in self.battery_fields.iteritems():
+                    logging.warn(field + ': ' + repr(getattr(self, field)))
                 continue
         raise error.TestError('Failed to read battery state')
 
@@ -405,6 +408,10 @@ class SysStat(object):
                 continue
             power_type = utils.read_one_line(type_path)
             if power_type == 'Battery':
+                scope_path = os.path.join(path,'scope')
+                if (os.path.exists(scope_path) and
+                        utils.read_one_line(scope_path) == 'Device'):
+                    continue
                 self.battery_path = path
             elif power_type in self.psu_types:
                 self.linepower_path.append(path)
@@ -766,7 +773,9 @@ class CPUPackageStats(AbstractStats):
     ATOM         =              {'C2': 0x3F8, 'C4': 0x3F9, 'C6': 0x3FA}
     NEHALEM      =              {'C3': 0x3F8, 'C6': 0x3F9, 'C7': 0x3FA}
     SANDY_BRIDGE = {'C2': 0x60D, 'C3': 0x3F8, 'C6': 0x3F9, 'C7': 0x3FA}
-    HASWELL      = {'C2': 0x60D, 'C3': 0x3F8, 'C6': 0x3F9, 'C7': 0x3FA,
+    SILVERMONT   = {'C6': 0x3FA}
+    GOLDMONT     = {'C2': 0x60D, 'C3': 0x3F8, 'C6': 0x3F9,'C10': 0x632}
+    BROADWELL    = {'C2': 0x60D, 'C3': 0x3F8, 'C6': 0x3F9, 'C7': 0x3FA,
                                  'C8': 0x630, 'C9': 0x631,'C10': 0x632}
 
     def __init__(self):
@@ -776,35 +785,29 @@ class CPUPackageStats(AbstractStats):
 
             Returns: dict that maps C-state name to MSR address, or None.
             """
-            modalias = '/sys/devices/system/cpu/modalias'
-            if not os.path.exists(modalias):
-                return None
-
-            values = utils.read_one_line(modalias).split(':')
-            # values[2]: vendor, values[4]: family, values[6]: model (CPUID)
-            if values[2] != '0000' or values[4] != '0006':
-                return None
+            cpu_uarch = utils.get_intel_cpu_uarch()
 
             return {
-                # model groups pulled from Intel manual, volume 3 chapter 35
-                '0027': self.ATOM,         # unreleased? (Next Generation Atom)
-                '001A': self.NEHALEM,      # Bloomfield, Nehalem-EP (i7/Xeon)
-                '001E': self.NEHALEM,      # Clarks-/Lynnfield, Jasper (i5/i7/X)
-                '001F': self.NEHALEM,      # unreleased? (abandoned?)
-                '0025': self.NEHALEM,      # Arran-/Clarksdale (i3/i5/i7/C/X)
-                '002C': self.NEHALEM,      # Gulftown, Westmere-EP (i7/Xeon)
-                '002E': self.NEHALEM,      # Nehalem-EX (Xeon)
-                '002F': self.NEHALEM,      # Westmere-EX (Xeon)
-                '002A': self.SANDY_BRIDGE, # SandyBridge (i3/i5/i7/C/X)
-                '002D': self.SANDY_BRIDGE, # SandyBridge-E (i7)
-                '003A': self.SANDY_BRIDGE, # IvyBridge (i3/i5/i7/X)
-                '003C': self.HASWELL,      # Haswell (Core/Xeon)
-                '003D': self.HASWELL,      # Broadwell (Core)
-                '003E': self.SANDY_BRIDGE, # IvyBridge (Xeon)
-                '003F': self.HASWELL,      # Haswell-E (Core/Xeon)
-                '004F': self.HASWELL,      # Broadwell (Xeon)
-                '0056': self.HASWELL,      # Broadwell (Xeon D)
-                }.get(values[6], None)
+                # model groups pulled from Intel SDM, volume 4
+                # Group same package cstate using the older uarch name
+                #
+                # TODO(harry.pan): As the keys represent microarchitecture
+                # names, we could consider to rename the PC state groups
+                # to avoid ambiguity.
+                'Airmont':      self.SILVERMONT,
+                'Atom':         self.ATOM,
+                'Broadwell':    self.BROADWELL,
+                'Goldmont':     self.GOLDMONT,
+                'Haswell':      self.SANDY_BRIDGE,
+                'Ivy Bridge':   self.SANDY_BRIDGE,
+                'Ivy Bridge-E': self.SANDY_BRIDGE,
+                'Kaby Lake':    self.BROADWELL,
+                'Nehalem':      self.NEHALEM,
+                'Sandy Bridge': self.SANDY_BRIDGE,
+                'Silvermont':   self.SILVERMONT,
+                'Skylake':      self.BROADWELL,
+                'Westmere':     self.NEHALEM,
+                }.get(cpu_uarch, None)
 
         self._platform_states = _get_platform_states()
         super(CPUPackageStats, self).__init__(name='cpupkg')
@@ -1330,6 +1333,14 @@ class MeasurementLogger(threading.Thread):
          mylogger = MeasurementLogger([Measurent1, Measurent2])
          mylogger.run()
          for testname in tests:
+             with my_logger.checkblock(testname):
+                #run the test method for testname
+         keyvals = mylogger.calc()
+
+    or
+         mylogger = MeasurementLogger([Measurent1, Measurent2])
+         mylogger.run()
+         for testname in tests:
              start_time = time.time()
              #run the test method for testname
              mlogger.checkpoint(testname, start_time)
@@ -1397,6 +1408,16 @@ class MeasurementLogger(threading.Thread):
             self.times.append(time.time())
             time.sleep(self.seconds_period)
 
+    @contextlib.contextmanager
+    def checkblock(self, tname=''):
+        """Check point for the following block with test tname.
+
+        Args:
+            tname: String of testname associated with this time interval
+        """
+        start_time = time.time()
+        yield
+        self.checkpoint(tname, start_time)
 
     def checkpoint(self, tname='', tstart=None, tend=None):
         """Check point the times in seconds associated with test tname.
@@ -1431,7 +1452,8 @@ class MeasurementLogger(threading.Thread):
             mtype: string of measurement type.  For example:
                    pwr == power
                    temp == temperature
-
+            statistics: boolean for returning the statistics or not. If false,
+                        return the readings instead.
         Returns:
             dict of keyvals suitable for autotest results.
         """
@@ -1482,13 +1504,12 @@ class MeasurementLogger(threading.Thread):
                 # Results list can be used for pretty printing and saving as csv
                 results.append((prefix, meas_mean, meas_std,
                                 tend - tstart, tstart, tend))
-
-                keyvals[prefix + '_' + mtype] = meas_mean
+                keyvals[prefix + '_' + mtype] = list(meas_array)
+                keyvals[prefix + '_' + mtype + '_avg'] = meas_mean
                 keyvals[prefix + '_' + mtype + '_cnt'] = meas_array.size
                 keyvals[prefix + '_' + mtype + '_max'] = meas_array.max()
                 keyvals[prefix + '_' + mtype + '_min'] = meas_array.min()
                 keyvals[prefix + '_' + mtype + '_std'] = meas_std
-
         self._results = results
         return keyvals
 
@@ -1575,8 +1596,8 @@ class TempLogger(MeasurementLogger):
         super(TempLogger, self).save_results(resultsdir, fname)
 
 
-    def calc(self, mtype='temp'):
-        return super(TempLogger, self).calc(mtype)
+    def calc(self, mtype='temp', statistics=True):
+        return super(TempLogger, self).calc(mtype, statistics)
 
 
 class DiskStateLogger(threading.Thread):
@@ -1740,3 +1761,37 @@ class DiskStateLogger(threading.Thread):
     def get_error(self):
         """Returns the _error exception... please only call after result()."""
         return self._error
+
+def parse_pmc_s0ix_residency_info():
+    """
+    Parses S0ix residency for PMC based Intel systems
+    (skylake/kabylake/apollolake), the debugfs paths might be
+    different from platform to platform, yet the format is
+    unified in microseconds.
+
+    @returns residency in seconds.
+    @raises error.TestNAError if the debugfs file not found.
+    """
+    info_path = None
+    for node in ['/sys/kernel/debug/pmc_core/slp_s0_residency_usec',
+                 '/sys/kernel/debug/telemetry/s0ix_residency_usec']:
+        if os.path.exists(node):
+            info_path = node
+            break
+    if not info_path:
+        raise error.TestNAError('S0ix residency file not found')
+    return float(utils.read_one_line(info_path)) * 1e-6
+
+
+class S0ixResidencyStats(object):
+    """
+    Measures the S0ix residency of a given board over time.
+    """
+    def __init__(self):
+        self._initial_residency = parse_pmc_s0ix_residency_info()
+
+    def get_accumulated_residency_secs(self):
+        """
+        @returns S0ix Residency since the class has been initialized.
+        """
+        return parse_pmc_s0ix_residency_info() - self._initial_residency

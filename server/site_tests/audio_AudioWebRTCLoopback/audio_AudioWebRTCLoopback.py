@@ -97,9 +97,17 @@ class audio_AudioWebRTCLoopback(audio_test.AudioTest):
                 audio_test_utils.dump_cros_audio_logs(
                         host, audio_facade, self.resultsdir, 'after_binding')
 
-                # Checks the nodes selected by Chrome are correct.
+                # Checks whether line-out or headphone is detected.
+                hp_jack_node_type = audio_test_utils.check_hp_or_lineout_plugged(
+                        audio_facade)
+
+                # Checks headphone and USB nodes are plugged.
+                # Let Chrome select the proper I/O nodes.
                 # Input is USB, output is headphone.
-                audio_facade.set_chrome_active_node_type('HEADPHONE', 'USB')
+                audio_test_utils.check_and_set_chrome_active_node_types(
+                        audio_facade=audio_facade,
+                        output_type=hp_jack_node_type,
+                        input_type='USB')
 
                 logging.info('Setting playback data on Chameleon')
                 usb_out.set_playback_data(golden_file)
@@ -135,11 +143,15 @@ class audio_AudioWebRTCLoopback(audio_test.AudioTest):
         logging.info('Saving recorded data to %s', recorded_file)
         linein.save_file(recorded_file)
 
-        audio_test_utils.check_recorded_frequency(
-                golden_file, linein, check_artifacts=check_quality)
-
         diagnostic_path = os.path.join(
                 self.resultsdir,
                 'audio_diagnostics.txt.after_recording')
         logging.info('Examine diagnostic file at %s', diagnostic_path)
-        audio_test_utils.examine_audio_diagnostics(diagnostic_path)
+        diag_warning_msg = audio_test_utils.examine_audio_diagnostics(
+                diagnostic_path)
+        if diag_warning_msg:
+            logging.warning(diag_warning_msg)
+
+        # Raise error.TestFail if there is issue.
+        audio_test_utils.check_recorded_frequency(
+                golden_file, linein, check_artifacts=check_quality)

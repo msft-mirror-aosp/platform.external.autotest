@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
 import logging
 import time
 
@@ -28,8 +27,7 @@ class accessibility_Sanity(a11y_test_base.a11y_test_base):
     def _check_chromevox(self):
         """Run ChromeVox specific checks.
 
-        Check the reported state of ChromeVox before/after enable and
-        for the presence of the indicator before/after disable.
+        Check the reported state of ChromeVox before/after enable and disable.
 
         """
         # ChromeVox is initially off.
@@ -38,13 +36,10 @@ class accessibility_Sanity(a11y_test_base.a11y_test_base):
         # Turn ChromeVox on and check that all the pieces work.
         self._toggle_chromevox()
         self._confirm_chromevox_state(True)
-        self._tab_move('forwards') # Ensure that indicator is shown.
-        self._confirm_chromevox_indicator(True)
 
         # Turn ChromeVox off.
         self._toggle_chromevox()
-        self._tab.Navigate(self._url) # reload page to remove old indicators
-        self._confirm_chromevox_indicator(False)
+        self._confirm_chromevox_state(False)
 
 
     def run_once(self):
@@ -53,14 +48,6 @@ class accessibility_Sanity(a11y_test_base.a11y_test_base):
 
         with chrome.Chrome(extension_paths=[extension_path]) as cr:
             self._extension = cr.get_extension(extension_path)
-
-            # Open test page.
-            self._tab = cr.browser.tabs[0]
-            cr.browser.platform.SetHTTPServerDirectories(
-                    os.path.join(os.path.dirname(__file__)))
-            page_path = os.path.join(self.bindir, 'page.html')
-            self._url = cr.browser.platform.http_server.UrlOf(page_path)
-            self._tab.Navigate(self._url)
 
             # Check specific features.
             self._check_chromevox()

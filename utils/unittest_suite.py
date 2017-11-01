@@ -71,6 +71,7 @@ REQUIRES_HTTPLIB2 = set((
         ))
 
 REQUIRES_PROTOBUFS = set((
+        'cloud_console_client_unittest.py',
         'job_serializer_unittest.py',
         ))
 
@@ -80,7 +81,7 @@ REQUIRES_SELENIUM = set((
     ))
 
 LONG_RUNTIME = set((
-    'base_barrier_unittest.py',
+    'barrier_unittest.py',
     'logging_manager_test.py',
     'task_loop_unittest.py'  # crbug.com/254030
     ))
@@ -97,7 +98,7 @@ SKIP = set((
     'ap_configurator_test.py',
     'chaos_base_test.py',
     'chaos_interop_test.py',
-    'atomic_group_unittests.py',
+    'only_if_needed_unittests.py',
     # crbug.com/251395
     'dev_server_test.py',
     'full_release_test.py',
@@ -106,8 +107,13 @@ SKIP = set((
     # crbug.com/432621 These files are not tests, and will disappear soon.
     'des_01_test.py',
     'des_02_test.py',
-    # Rquire lxc to be installed
+    # Require lxc to be installed
+    'base_image_unittest.py',
+    'container_bucket_unittest.py',
+    'container_factory_unittest.py',
+    'container_unittest.py',
     'lxc_functional_test.py',
+    'zygote_unittest.py',
     # Require sponge utils installed in site-packages
     'sponge_utils_functional_test.py',
     ))

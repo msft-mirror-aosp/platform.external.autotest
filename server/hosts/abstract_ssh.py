@@ -1,13 +1,16 @@
-import os, time, socket, shutil, glob, logging, traceback, tempfile, re
+import os, time, socket, shutil, glob, logging, tempfile, re
 import shlex
 import subprocess
 
-from multiprocessing import Lock
-from autotest_lib.client.common_lib import autotemp, error
+from autotest_lib.client.bin.result_tools import runner as result_tools_runner
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros.network import ping_runner
+from autotest_lib.client.common_lib.global_config import global_config
 from autotest_lib.server import utils, autotest
+from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 from autotest_lib.server.hosts import rpc_server_tracker
-from autotest_lib.client.common_lib.global_config import global_config
+from autotest_lib.server.hosts import ssh_multiplex
 
 # pylint: disable=C0111
 
@@ -15,6 +18,8 @@ get_value = global_config.get_config_value
 enable_master_ssh = get_value('AUTOSERV', 'enable_master_ssh', type=bool,
                               default=False)
 
+# Number of seconds to use the cached up status.
+_DEFAULT_UP_STATUS_EXPIRATION_SECONDS = 300
 
 class AbstractSSHHost(remote.RemoteHost):
     """
@@ -27,6 +32,7 @@ class AbstractSSHHost(remote.RemoteHost):
 
     def _initialize(self, hostname, user="root", port=22, password="",
                     is_client_install_supported=True, afe_host=None,
+                    host_info_store=None, connection_pool=None,
                     *args, **dargs):
         super(AbstractSSHHost, self)._initialize(hostname=hostname,
                                                  *args, **dargs)
@@ -38,6 +44,10 @@ class AbstractSSHHost(remote.RemoteHost):
         @param is_client_install_supported: Boolean to indicate if we can
                 install autotest on the host.
         @param afe_host: The host object attained from the AFE (get_hosts).
+        @param host_info_store: Optional host_info.CachingHostInfoStore object
+                to obtain / update host information.
+        @param connection_pool: ssh_multiplex.ConnectionPool instance to share
+                the master ssh connection across control scripts.
         """
         # IP address is retrieved only on demand. Otherwise the host
         # initialization will fail for host is not online.
@@ -55,14 +65,21 @@ class AbstractSSHHost(remote.RemoteHost):
         control path option. If master-SSH is enabled, these fields will be
         initialized by start_master_ssh when a new SSH connection is initiated.
         """
-        self.master_ssh_job = None
-        self.master_ssh_tempdir = None
-        self.master_ssh_option = ''
-
-        # Create a Lock to protect against race conditions.
-        self._lock = Lock()
+        self._connection_pool = connection_pool
+        if connection_pool:
+            self._master_ssh = connection_pool.get(hostname, user, port)
+        else:
+            self._master_ssh = ssh_multiplex.MasterSsh(hostname, user, port)
 
         self._afe_host = afe_host or utils.EmptyAFEHost()
+        self.host_info_store = (host_info_store or
+                                host_info.InMemoryHostInfoStore())
+
+        # The cached status of whether the DUT responded to ping.
+        self._cached_up_status = None
+        # The timestamp when the value of _cached_up_status is set.
+        self._cached_up_status_updated = None
+
 
     @property
     def ip(self):
@@ -109,14 +126,14 @@ class AbstractSSHHost(remote.RemoteHost):
 
         # Check if rsync is available on the remote host. If it's not,
         # don't try to use it for any future file transfers.
-        self._use_rsync = self._check_rsync()
+        self._use_rsync = self.check_rsync()
         if not self._use_rsync:
             logging.warning("rsync not available on remote host %s -- disabled",
                          self.hostname)
         return self._use_rsync
 
 
-    def _check_rsync(self):
+    def check_rsync(self):
         """
         Check if rsync is available on the remote host.
         """
@@ -163,14 +180,14 @@ class AbstractSSHHost(remote.RemoteHost):
         return " ".join('"%s"' % p for p in paths)
 
     def _make_rsync_cmd(self, sources, dest, delete_dest,
-                        preserve_symlinks, safe_symlinks):
+                        preserve_symlinks, safe_symlinks, excludes=None):
         """
         Given a string of source paths and a destination path, produces the
         appropriate rsync command for copying them. Remote paths must be
         pre-encoded.
         """
         ssh_cmd = self.make_ssh_command(user=self.user, port=self.port,
-                                        opts=self.master_ssh_option,
+                                        opts=self._master_ssh.ssh_option,
                                         hosts_file=self.known_hosts_file)
         if delete_dest:
             delete_flag = "--delete"
@@ -182,9 +199,14 @@ class AbstractSSHHost(remote.RemoteHost):
             symlink_flag = "-l"
         else:
             symlink_flag = "-L"
+        exclude_args = ''
+        if excludes:
+            exclude_args = ' '.join(
+                    ["--exclude '%s'" % exclude for exclude in excludes])
         command = ("rsync %s %s --timeout=1800 --rsh='%s' -az --no-o --no-g "
-                   "%s \"%s\"")
-        return command % (symlink_flag, delete_flag, ssh_cmd, sources, dest)
+                   "%s %s \"%s\"")
+        return command % (symlink_flag, delete_flag, ssh_cmd, exclude_args,
+                          sources, dest)
 
 
     def _make_ssh_cmd(self, cmd):
@@ -193,7 +215,7 @@ class AbstractSSHHost(remote.RemoteHost):
         to run commands directly on the machine
         """
         base_cmd = self.make_ssh_command(user=self.user, port=self.port,
-                                         opts=self.master_ssh_option,
+                                         opts=self._master_ssh.ssh_option,
                                          hosts_file=self.known_hosts_file)
 
         return '%s %s "%s"' % (base_cmd, self.hostname, utils.sh_escape(cmd))
@@ -206,7 +228,7 @@ class AbstractSSHHost(remote.RemoteHost):
         """
         command = ("scp -rq %s -o StrictHostKeyChecking=no "
                    "-o UserKnownHostsFile=%s -P %d %s '%s'")
-        return command % (self.master_ssh_option, self.known_hosts_file,
+        return command % (self._master_ssh.ssh_option, self.known_hosts_file,
                           self.port, sources, dest)
 
 
@@ -339,6 +361,7 @@ class AbstractSSHHost(remote.RemoteHost):
         logging.debug('get_file. source: %s, dest: %s, delete_dest: %s,'
                       'preserve_perm: %s, preserve_symlinks:%s', source, dest,
                       delete_dest, preserve_perm, preserve_symlinks)
+
         # Start a master SSH connection if necessary.
         self.start_master_ssh()
 
@@ -410,7 +433,7 @@ class AbstractSSHHost(remote.RemoteHost):
 
 
     def send_file(self, source, dest, delete_dest=False,
-                  preserve_symlinks=False):
+                  preserve_symlinks=False, excludes=None):
         """
         Copy files from a local path to the remote host.
 
@@ -434,6 +457,10 @@ class AbstractSSHHost(remote.RemoteHost):
                 preserve_symlinks: controls if symlinks on the source will be
                     copied as such on the destination or transformed into the
                     referenced file/directory
+                excludes: A list of file pattern that matches files not to be
+                          sent. `send_file` will fail if exclude is set, since
+                          local copy does not support --exclude, e.g., when
+                          using scp to copy file.
 
         Raises:
                 AutoservRunError: the scp command failed
@@ -462,7 +489,7 @@ class AbstractSSHHost(remote.RemoteHost):
             try:
                 rsync = self._make_rsync_cmd(local_sources, remote_dest,
                                              delete_dest, preserve_symlinks,
-                                             False)
+                                             False, excludes=excludes)
                 utils.run(rsync)
                 try_scp = False
             except error.CmdError, e:
@@ -470,6 +497,10 @@ class AbstractSSHHost(remote.RemoteHost):
 
         if try_scp:
             logging.debug('Trying scp.')
+            if excludes:
+                raise error.AutotestHostRunError(
+                        '--exclude is not supported in scp, try to use rsync. '
+                        'excludes: %s' % ','.join(excludes))
             # scp has no equivalent to --delete, just drop the entire dest dir
             if delete_dest:
                 is_dir = self.run("ls -d %s/" % dest,
@@ -554,6 +585,13 @@ class AbstractSSHHost(remote.RemoteHost):
             return False
         else:
             return True
+
+
+    def is_up_fast(self):
+        """Return True if the host can be pinged."""
+        ping_config = ping_runner.PingConfig(
+                self.hostname, count=3, ignore_result=True, ignore_status=True)
+        return ping_runner.PingRunner().ping(ping_config).received > 0
 
 
     def wait_up(self, timeout=None):
@@ -715,19 +753,21 @@ class AbstractSSHHost(remote.RemoteHost):
         try:
             self.check_diskspace(autotest.Autotest.get_install_dir(self),
                                  self.AUTOTEST_GB_DISKSPACE_REQUIRED)
-        except error.AutoservHostError:
-            raise           # only want to raise if it's a space issue
-        except autotest.AutodirNotFoundError:
-            # autotest dir may not exist, etc. ignore
-            logging.debug('autodir space check exception, this is probably '
-                          'safe to ignore\n' + traceback.format_exc())
+        except error.AutoservDiskFullHostError:
+            # only want to raise if it's a space issue
+            raise
+        except (error.AutoservHostError, autotest.AutodirNotFoundError):
+            logging.excption('autodir space check exception, this is probably '
+                             'safe to ignore\n')
 
 
     def close(self):
         super(AbstractSSHHost, self).close()
         self.rpc_server_tracker.disconnect_all()
-        self._cleanup_master_ssh()
-        os.remove(self.known_hosts_file)
+        if not self._connection_pool:
+            self._master_ssh.close()
+        if os.path.exists(self.known_hosts_file):
+            os.remove(self.known_hosts_file)
 
 
     def restart_master_ssh(self):
@@ -736,27 +776,9 @@ class AbstractSSHHost(remote.RemoteHost):
         resort when ssh commands fail and we don't understand why.
         """
         logging.debug('Restarting master ssh connection')
-        self._cleanup_master_ssh()
-        self.start_master_ssh(timeout=30)
+        self._master_ssh.close()
+        self._master_ssh.maybe_start(timeout=30)
 
-
-    def _cleanup_master_ssh(self):
-        """
-        Release all resources (process, temporary directory) used by an active
-        master SSH connection.
-        """
-        # If a master SSH connection is running, kill it.
-        if self.master_ssh_job is not None:
-            logging.debug('Nuking master_ssh_job.')
-            utils.nuke_subprocess(self.master_ssh_job.sp)
-            self.master_ssh_job = None
-
-        # Remove the temporary directory for the master SSH socket.
-        if self.master_ssh_tempdir is not None:
-            logging.debug('Cleaning master_ssh_tempdir.')
-            self.master_ssh_tempdir.clean()
-            self.master_ssh_tempdir = None
-            self.master_ssh_option = ''
 
 
     def start_master_ssh(self, timeout=5):
@@ -773,50 +795,7 @@ class AbstractSSHHost(remote.RemoteHost):
         """
         if not enable_master_ssh:
             return
-
-        # Multiple processes might try in parallel to clean up the old master
-        # ssh connection and create a new one, therefore use a lock to protect
-        # against race conditions.
-        with self._lock:
-            # If a previously started master SSH connection is not running
-            # anymore, it needs to be cleaned up and then restarted.
-            if self.master_ssh_job is not None:
-                socket_path = os.path.join(self.master_ssh_tempdir.name,
-                                           'socket')
-                if (not os.path.exists(socket_path) or
-                        self.master_ssh_job.sp.poll() is not None):
-                    logging.info("Master ssh connection to %s is down.",
-                                 self.hostname)
-                    self._cleanup_master_ssh()
-
-            # Start a new master SSH connection.
-            if self.master_ssh_job is None:
-                # Create a shared socket in a temp location.
-                self.master_ssh_tempdir = autotemp.tempdir(
-                        unique_id='ssh-master')
-                self.master_ssh_option = ("-o ControlPath=%s/socket" %
-                                          self.master_ssh_tempdir.name)
-
-                # Start the master SSH connection in the background.
-                master_cmd = self.ssh_command(
-                        options="-N -o ControlMaster=yes")
-                logging.info("Starting master ssh connection '%s'", master_cmd)
-                self.master_ssh_job = utils.BgJob(master_cmd,
-                                                  nickname='master-ssh',
-                                                  no_pipes=True)
-                # To prevent a race between the the master ssh connection
-                # startup and its first attempted use, wait for socket file to
-                # exist before returning.
-                end_time = time.time() + timeout
-                socket_file_path = os.path.join(self.master_ssh_tempdir.name,
-                                                'socket')
-                while time.time() < end_time:
-                    if os.path.exists(socket_file_path):
-                        break
-                    time.sleep(.2)
-                else:
-                    logging.info('Timed out waiting for master-ssh connection '
-                                 'to be established.')
+        self._master_ssh.maybe_start(timeout=timeout)
 
 
     def clear_known_hosts(self):
@@ -846,6 +825,11 @@ class AbstractSSHHost(remote.RemoteHost):
         @raises AutoservRunError, AutotestRunError: If something goes wrong
             while copying the directories and ignore_errors is False.
         """
+        if not self.check_cached_up_status():
+            logging.warning('Host %s did not answer to ping, skip collecting '
+                            'logs.', self.hostname)
+            return
+
         locally_created_dest = False
         if (not os.path.exists(local_dest_dir)
                 or not os.path.isdir(local_dest_dir)):
@@ -858,6 +842,16 @@ class AbstractSSHHost(remote.RemoteHost):
                 if not ignore_errors:
                     raise
                 return
+
+        # Build test result directory summary
+        try:
+            result_tools_runner.run_on_client(self, remote_src_dir)
+        except (error.AutotestRunError, error.AutoservRunError,
+                error.AutoservSSHTimeout) as e:
+            logging.exception(
+                    'Non-critical failure: Failed to collect and throttle '
+                    'results at %s from host %s', remote_src_dir, self.hostname)
+
         try:
             self.get_file(remote_src_dir, local_dest_dir, safe_symlinks=True)
         except (error.AutotestRunError, error.AutoservRunError,
@@ -869,6 +863,16 @@ class AbstractSSHHost(remote.RemoteHost):
                 shutil.rmtree(local_dest_dir, ignore_errors=ignore_errors)
             if not ignore_errors:
                 raise
+
+        # Clean up directory summary file on the client side.
+        try:
+            result_tools_runner.run_on_client(self, remote_src_dir,
+                                              cleanup_only=True)
+        except (error.AutotestRunError, error.AutoservRunError,
+                error.AutoservSSHTimeout) as e:
+            logging.exception(
+                    'Non-critical failure: Failed to cleanup result summary '
+                    'files at %s in host %s: %s', remote_src_dir, self.hostname)
 
 
     def create_ssh_tunnel(self, port, local_port):
@@ -883,7 +887,7 @@ class AbstractSSHHost(remote.RemoteHost):
         @return: the tunnel process.
         """
         tunnel_options = '-n -N -q -L %d:localhost:%d' % (local_port, port)
-        ssh_cmd = self.make_ssh_command(opts=tunnel_options)
+        ssh_cmd = self.make_ssh_command(opts=tunnel_options, port=self.port)
         tunnel_cmd = '%s %s' % (ssh_cmd, self.hostname)
         logging.debug('Full tunnel command: %s', tunnel_cmd)
         # Exec the ssh process directly here rather than using a shell.
@@ -920,3 +924,26 @@ class AbstractSSHHost(remote.RemoteHost):
         @return A string describing the OS type.
         """
         raise NotImplementedError
+
+
+    def check_cached_up_status(
+            self, expiration_seconds=_DEFAULT_UP_STATUS_EXPIRATION_SECONDS):
+        """Check if the DUT responded to ping in the past `expiration_seconds`.
+
+        @param expiration_seconds: The number of seconds to keep the cached
+                status of whether the DUT responded to ping.
+        @return: True if the DUT has responded to ping during the past
+                 `expiration_seconds`.
+        """
+        # Refresh the up status if any of following conditions is true:
+        # * cached status is never set
+        # * cached status is False, so the method can check if the host is up
+        #   again.
+        # * If the cached status is older than `expiration_seconds`
+        expire_time = time.time() - expiration_seconds
+        if (self._cached_up_status_updated is None or
+                not self._cached_up_status or
+                self._cached_up_status_updated < expire_time):
+            self._cached_up_status = self.is_up_fast()
+            self._cached_up_status_updated = time.time()
+        return self._cached_up_status

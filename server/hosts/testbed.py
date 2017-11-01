@@ -6,7 +6,9 @@
 
 import logging
 import re
+import sys
 import threading
+import traceback
 from multiprocessing import pool
 
 import common
@@ -19,6 +21,7 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.hosts import adb_host
 from autotest_lib.server.hosts import base_label
+from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import testbed_label
 from autotest_lib.server.hosts import teststation_host
 
@@ -41,7 +44,7 @@ class TestBed(object):
     support_devserver_provision = False
 
     def __init__(self, hostname='localhost', afe_host=None, adb_serials=None,
-                 **dargs):
+                 host_info_store=None, **dargs):
         """Initialize a TestBed.
 
         This will create the Test Station Host and connected hosts (ADBHost for
@@ -49,11 +52,14 @@ class TestBed(object):
 
         @param hostname: Hostname of the test station connected to the duts.
         @param adb_serials: List of adb device serials.
+        @param host_info_store: A CachingHostInfoStore object.
         @param afe_host: The host object attained from the AFE (get_hosts).
         """
         logging.info('Initializing TestBed centered on host: %s', hostname)
         self.hostname = hostname
         self._afe_host = afe_host or utils.EmptyAFEHost()
+        self.host_info_store = (host_info_store or
+                                host_info.InMemoryHostInfoStore())
         self.labels = base_label.LabelRetriever(testbed_label.TESTBED_LABELS)
         self.teststation = teststation_host.create_teststationhost(
                 hostname=hostname, afe_host=self._afe_host, **dargs)
@@ -69,7 +75,8 @@ class TestBed(object):
         for adb_serial in self.adb_device_serials:
             self.adb_devices[adb_serial] = adb_host.ADBHost(
                 hostname=hostname, teststation=self.teststation,
-                adb_serial=adb_serial, afe_host=self._afe_host, **dargs)
+                adb_serial=adb_serial, afe_host=self._afe_host,
+                host_info_store=self.host_info_store, **dargs)
 
 
     def query_adb_device_serials(self):
@@ -132,8 +139,35 @@ class TestBed(object):
 
     def repair(self):
         """Run through repair on all the devices."""
+        # board name is needed for adb_host to repair as the adb_host objects
+        # created for testbed doesn't have host label and attributes retrieved
+        # from AFE.
+        info = self.host_info_store.get()
+        board = info.board
+        # Remove the tailing -# in board name as it can be passed in from
+        # testbed board labels
+        match = re.match(r'^(.*)-\d+$', board)
+        if match:
+            board = match.group(1)
+        failures = []
         for adb_device in self.get_adb_devices().values():
-            adb_device.repair()
+            try:
+                adb_device.repair(board=board, os=info.os)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                failures.append((adb_device.adb_serial, exc_type, exc_value,
+                                 exc_traceback))
+        if failures:
+            serials = []
+            for serial, exc_type, exc_value, exc_traceback in failures:
+                serials.append(serial)
+                details = ''.join(traceback.format_exception(
+                        exc_type, exc_value, exc_traceback))
+                logging.error('Failed to repair device with serial %s, '
+                              'error:\n%s', serial, details)
+            raise error.AutoservRepairTotalFailure(
+                    'Fail to repair %d devices: %s' %
+                    (len(serials), ','.join(serials)))
 
 
     def verify(self):
@@ -210,6 +244,23 @@ class TestBed(object):
     def locate_devices(self, images):
         """Locate device for each image in the given images list.
 
+        If the given images all have no serial associated and have the same
+        image for the same board, testbed will assign all devices with the
+        desired board to the image. This allows tests to randomly pick devices
+        to run.
+        As an example, a testbed with 4 devices, 2 for board_1 and 2 for
+        board_2. If the given images value is:
+        [('board_1_build', None), ('board_2_build', None)]
+        The testbed will return following device allocation:
+        {'serial_1_board_1': 'board_1_build',
+         'serial_2_board_1': 'board_1_build',
+         'serial_1_board_2': 'board_2_build',
+         'serial_2_board_2': 'board_2_build',
+        }
+        That way, all board_1 duts will be installed with board_1_build, and
+        all board_2 duts will be installed with board_2_build. Test can pick
+        any dut from board_1 duts and same applies to board_2 duts.
+
         @param images: A list of tuples of (build, serial). serial could be None
                 if it's not specified. Following are some examples:
                 [('branch1/shamu-userdebug/100', None),
@@ -237,33 +288,56 @@ class TestBed(object):
             return serial_build_pairs
 
         # serials grouped by the board of duts.
-        duts_by_board = {}
+        duts_by_name = {}
         for serial, host in self.get_adb_devices().iteritems():
             # Excluding duts already assigned to a build.
             if serial in serial_build_pairs:
                 continue
-            board = host.get_board_name()
-            duts_by_board.setdefault(board, []).append(serial)
+            aliases = host.get_device_aliases()
+            for alias in aliases:
+                duts_by_name.setdefault(alias, []).append(serial)
 
         # Builds grouped by the board name.
-        builds_by_board = {}
+        builds_by_name = {}
         for build in builds_without_serial:
             match = re.match(adb_host.BUILD_REGEX, build)
             if not match:
                 raise error.InstallError('Build %s is invalid. Failed to parse '
                                          'the board name.' % build)
-            board = match.group('BUILD_TARGET')
-            builds_by_board.setdefault(board, []).append(build)
+            name = match.group('BUILD_TARGET')
+            builds_by_name.setdefault(name, []).append(build)
 
         # Pair build with dut with matching board.
-        for board, builds in builds_by_board.iteritems():
-            duts = duts_by_board.get(board, None)
-            if not duts or len(duts) != len(builds):
+        for name, builds in builds_by_name.iteritems():
+            duts = duts_by_name.get(name, [])
+            if len(duts) < len(builds):
                 raise error.InstallError(
-                        'Expected number of DUTs for board %s is %d, got %d' %
-                        (board, len(builds), len(duts) if duts else 0))
-            serial_build_pairs.update(dict(zip(duts, builds)))
+                        'Expected number of DUTs for name %s is %d, got %d' %
+                        (name, len(builds), len(duts) if duts else 0))
+            elif len(duts) == len(builds):
+                serial_build_pairs.update(dict(zip(duts, builds)))
+            else:
+                # In this cases, available dut number is greater than the number
+                # of builds.
+                if len(set(builds)) > 1:
+                    raise error.InstallError(
+                            'Number of available DUTs are greater than builds '
+                            'needed, testbed cannot allocate DUTs for testing '
+                            'deterministically.')
+                # Set all DUTs to the same build.
+                for serial in duts:
+                    serial_build_pairs[serial] = builds[0]
+
         return serial_build_pairs
+
+
+    def save_info(self, results_dir):
+        """Saves info about the testbed to a directory.
+
+        @param results_dir: The directory to save to.
+        """
+        for device in self.get_adb_devices().values():
+            device.save_info(results_dir, include_build_info=True)
 
 
     def _stage_shared_build(self, serial_build_map):
@@ -351,6 +425,7 @@ class TestBed(object):
         build_url, build_local_path, teststation = self._stage_shared_build(
                 serial_build_map)
 
+        thread_pool = None
         try:
             arguments = []
             for serial, build in serial_build_map.iteritems():
@@ -371,7 +446,12 @@ class TestBed(object):
             thread_pool = pool.ThreadPool(_POOL_SIZE)
             thread_pool.map(self._install_device, arguments)
             thread_pool.close()
+        except Exception as err:
+            logging.error(err.message)
         finally:
+            if thread_pool:
+                thread_pool.join()
+
             if build_local_path:
                 logging.debug('Clean up build artifacts %s:%s',
                               teststation.hostname, build_local_path)

@@ -6,8 +6,9 @@ AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_RateControl'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_matfunc, suite:wifi_matfunc_bcm4371'
-DEPENDENCIES = 'wificell'
+ATTRIBUTES = ('suite:wifi_matfunc, suite:wifi_matfunc_noservo,'
+              'suite:wifi_matfunc_bcm4371')
+DEPENDENCIES = 'wificell, conductive:True'
 
 DOC = """
 This test associates a DUT with several APs serving an open HT40 network.  The

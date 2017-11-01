@@ -14,7 +14,12 @@ Decoding class can be invoked independently.
 
 """
 
-import json, logging, re, utils
+import json
+import logging
+import re
+
+import common
+from autotest_lib.client.bin import utils
 
 class fio_graph_generator():
     """
@@ -297,6 +302,10 @@ def fio_parser(lines, prefix=None):
 
 
         for k, v in job.iteritems():
+            # Igonre "job options", its alphanumerc keys confuses tko.
+            # Besides, these keys are redundant.
+            if k == 'job options':
+                continue
             results.update(fio_parse_dict({k:v}, job_prefix))
 
     return results

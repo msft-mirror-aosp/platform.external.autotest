@@ -10,9 +10,7 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "moblab"
 TEST_TYPE = "server"
-# moblab_RunSuite requires .boto file from drone. Disable SSP for this test as
-# it has dependency on lab infrastructure.
-REQUIRE_SSP = False
+MAX_RESULT_SIZE_KB = 5000 * 1024
 
 DOC = """
 Kicks off the smoke suite on a Moblab host against the DUTs on its subnet
@@ -33,11 +31,24 @@ Values pertaining to the test case include:
                                        specified, the value will be fetched
                                        from global_config.
 """
+from autotest_lib.client.bin import sysinfo
 from autotest_lib.client.common_lib import utils
+
+MOBLAB_AUTOTEST_FOLDERS = ['/usr/local/autotest/results',
+                           '/usr/local/autotest/logs']
+
 
 def run(machine):
     host = hosts.create_host(machine)
     args_dict = utils.args_to_dict(args)
-    job.run_test('moblab_RunSuite', host=host, suite_name='smoke', **args_dict)
+
+    logging.info('Logs from moblab\'s instance of autotest will be collected '
+                 'under the sysinfo/ folder in results.')
+    for folder in MOBLAB_AUTOTEST_FOLDERS:
+        logging.info('  Will collect %s', folder)
+        job.sysinfo.add_logdir(sysinfo.logdir(folder, excludes=()))
+
+    job.run_test('moblab_RunSuite', host=host, suite_name='smoke',
+                 moblab_suite_max_retries=1, **args_dict)
 
 parallel_simple(run, machines)

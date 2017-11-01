@@ -2,8 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import abc
+import logging
+import os
+import re
+
 import common
-import logging, os, re
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import dev_server
 
@@ -16,10 +20,10 @@ class ControlFileGetter(object):
     Interface for classes that can list and fetch known control files.
     """
 
-    def __init__(self):
-        pass
+    __metaclass__ = abc.ABCMeta
 
 
+    @abc.abstractmethod
     def get_control_file_list(self, suite_name=''):
         """
         Gather a list of paths to control files.
@@ -31,6 +35,7 @@ class ControlFileGetter(object):
         pass
 
 
+    @abc.abstractmethod
     def get_control_file_contents(self, test_path):
         """
         Given a path to a control file, return its contents.
@@ -42,6 +47,7 @@ class ControlFileGetter(object):
         pass
 
 
+    @abc.abstractmethod
     def get_control_file_contents_by_name(self, test_name):
         """
         Given the name of a control file, return its contents.
@@ -53,6 +59,11 @@ class ControlFileGetter(object):
         pass
 
 
+class SuiteControlFileGetter(ControlFileGetter):
+    """Interface that additionally supports getting by suite."""
+
+
+    @abc.abstractmethod
     def get_suite_info(self, suite_name=''):
         """
         Gather the control paths and contents of all the control files.
@@ -94,16 +105,21 @@ class CacheingAndFilteringControlFileGetter(ControlFileGetter):
         return self._files
 
 
-    def get_control_file_contents_by_name(self, test_name):
+    @abc.abstractmethod
+    def _get_control_file_list(self, suite_name=''):
+        pass
+
+
+    def get_control_file_path(self, test_name):
         """
-        Given the name of a control file, return its contents.
+        Given the name of a control file, return its path.
 
         Searches through previously-compiled list in |self._files| for a
         test named |test_name| and returns the contents of the control file
         for that test if it is found.
 
         @param test_name: the name of the test whose control file is desired.
-        @return the contents of the control file specified by the name.
+        @return control file path
         @throws ControlFileNotFound if the file cannot be retrieved.
         """
         if not self._files and not self.get_control_file_list():
@@ -118,7 +134,23 @@ class CacheingAndFilteringControlFileGetter(ControlFileGetter):
             raise error.ControlFileNotFound('No control file for ' + test_name)
         if len(candidates) > 1:
             raise error.ControlFileNotFound(test_name + ' is not unique.')
-        return self.get_control_file_contents(candidates[0])
+        return candidates[0]
+
+
+    def get_control_file_contents_by_name(self, test_name):
+        """
+        Given the name of a control file, return its contents.
+
+        Searches through previously-compiled list in |self._files| for a
+        test named |test_name| and returns the contents of the control file
+        for that test if it is found.
+
+        @param test_name: the name of the test whose control file is desired.
+        @return the contents of the control file specified by the name.
+        @throws ControlFileNotFound if the file cannot be retrieved.
+        """
+        path = self.get_control_file_path(test_name)
+        return self.get_control_file_contents(path)
 
 
 class FileSystemGetter(CacheingAndFilteringControlFileGetter):
@@ -162,12 +194,20 @@ class FileSystemGetter(CacheingAndFilteringControlFileGetter):
 
         regexp = re.compile(self._CONTROL_PATTERN)
         directories = self._paths
+        # Do not explore site-packages. (crbug.com/771823)
+        # Do not explore venv. (b/67416549)
+        # (Do not pass Go. Do not collect $200.)
+        blacklist = {'site-packages', 'venv'}
         while len(directories) > 0:
             directory = directories.pop()
             if not os.path.exists(directory):
                 continue
+            # TODO(crbug.com/771827): This traverses everything,
+            # including results and containers.  Make it stop doing that.
             try:
                 for name in os.listdir(directory):
+                    if name in blacklist:
+                        continue
                     fullpath = os.path.join(directory, name)
                     if os.path.isfile(fullpath):
                         if regexp.search(name):
@@ -203,7 +243,8 @@ class FileSystemGetter(CacheingAndFilteringControlFileGetter):
             raise error.ControlFileNotFound(msg)
 
 
-class DevServerGetter(CacheingAndFilteringControlFileGetter):
+class DevServerGetter(CacheingAndFilteringControlFileGetter,
+                      SuiteControlFileGetter):
     """Class that can list and fetch known control files from DevServer.
 
     @var _CONTROL_PATTERN: control file name format to match.

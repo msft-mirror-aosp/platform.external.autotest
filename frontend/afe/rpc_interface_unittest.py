@@ -1,21 +1,28 @@
-#!/usr/bin/python
-#pylint: disable-msg=C0111
+#!/usr/bin/env python2
+# pylint: disable=missing-docstring
 
 import datetime
+import mox
 import unittest
 
 import common
-from autotest_lib.frontend import setup_django_environment
-from autotest_lib.frontend.afe import frontend_test_utils
-from autotest_lib.frontend.afe import models, rpc_interface, frontend_test_utils
-from autotest_lib.frontend.afe import model_logic, model_attributes
-from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import control_data
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import priorities
+from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.test_utils import mock
+from autotest_lib.frontend import setup_django_environment
+from autotest_lib.frontend.afe import frontend_test_utils
+from autotest_lib.frontend.afe import model_logic
+from autotest_lib.frontend.afe import models
+from autotest_lib.frontend.afe import rpc_interface
+from autotest_lib.frontend.afe import rpc_utils
 from autotest_lib.server import frontend
 from autotest_lib.server import utils as server_utils
+from autotest_lib.server.cros import provision
+from autotest_lib.server.cros.dynamic_suite import constants
+from autotest_lib.server.cros.dynamic_suite import control_file_getter
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 
 CLIENT = control_data.CONTROL_TYPE_NAMES.CLIENT
@@ -38,10 +45,6 @@ class RpcInterfaceTest(unittest.TestCase,
 
 
     def test_validation(self):
-        # non-number for a numeric field
-        self.assertRaises(model_logic.ValidationError,
-                          rpc_interface.add_atomic_group, name='foo',
-                          max_number_of_machines='bar')
         # omit a required field
         self.assertRaises(model_logic.ValidationError, rpc_interface.add_label,
                           name=None)
@@ -70,6 +73,10 @@ class RpcInterfaceTest(unittest.TestCase,
                           set(expected_hostnames))
 
 
+    def test_ping_db(self):
+        self.assertEquals(rpc_interface.ping_db(), [True])
+
+
     def test_get_hosts(self):
         hosts = rpc_interface.get_hosts()
         self._check_hostnames(hosts, [host.hostname for host in self.hosts])
@@ -79,7 +86,6 @@ class RpcInterfaceTest(unittest.TestCase,
         host = hosts[0]
         self.assertEquals(sorted(host['labels']), ['label1', 'myplatform'])
         self.assertEquals(host['platform'], 'myplatform')
-        self.assertEquals(host['atomic_group'], None)
         self.assertEquals(host['acls'], ['my_acl'])
         self.assertEquals(host['attributes'], {})
 
@@ -98,26 +104,10 @@ class RpcInterfaceTest(unittest.TestCase,
         self._check_hostnames(hosts, ['host2'])
 
 
-    def test_get_hosts_exclude_atomic_group_hosts(self):
-        hosts = rpc_interface.get_hosts(
-                exclude_atomic_group_hosts=True,
-                hostname__in=['host4', 'host5', 'host6'])
-        self._check_hostnames(hosts, ['host4'])
-
-
-    def test_get_hosts_exclude_both(self):
-        self.hosts[0].labels.add(self.label3)
-
-        hosts = rpc_interface.get_hosts(
-                hostname__in=['host1', 'host2', 'host5'],
-                exclude_only_if_needed_labels=True,
-                exclude_atomic_group_hosts=True)
-        self._check_hostnames(hosts, ['host2'])
-
-
     def test_job_keyvals(self):
         keyval_dict = {'mykey': 'myvalue'}
-        job_id = rpc_interface.create_job(name='test', priority='Medium',
+        job_id = rpc_interface.create_job(name='test',
+                                          priority=priorities.Priority.DEFAULT,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           hosts=['host1'],
@@ -128,7 +118,8 @@ class RpcInterfaceTest(unittest.TestCase,
 
 
     def test_test_retry(self):
-        job_id = rpc_interface.create_job(name='flake', priority='Medium',
+        job_id = rpc_interface.create_job(name='flake',
+                                          priority=priorities.Priority.DEFAULT,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           hosts=['host1'],
@@ -221,7 +212,8 @@ class RpcInterfaceTest(unittest.TestCase,
 
 
     def _create_job_helper(self, **kwargs):
-        return rpc_interface.create_job(name='test', priority='Medium',
+        return rpc_interface.create_job(name='test',
+                                        priority=priorities.Priority.DEFAULT,
                                         control_file='control file',
                                         control_type=SERVER, **kwargs)
 
@@ -251,7 +243,6 @@ class RpcInterfaceTest(unittest.TestCase,
         self.assertEquals(len(queue_entries), 1)
         self.assertEquals(queue_entries[0].host, None)
         self.assertEquals(queue_entries[0].meta_host, None)
-        self.assertEquals(queue_entries[0].atomic_group, None)
 
 
     def _setup_special_tasks(self):
@@ -336,6 +327,73 @@ class RpcInterfaceTest(unittest.TestCase,
         self.assertEquals(entry2['started_on'], '2009-01-03 00:00:00')
 
 
+    def _create_hqes_and_start_time_index_entries(self):
+        shard = models.Shard.objects.create(hostname='shard')
+        job = self._create_job(shard=shard, control_file='foo')
+        HqeStatus = models.HostQueueEntry.Status
+
+        for i, day in enumerate(['2017-01-01', '2017-01-02', '2017-01-03']):
+            models.HostQueueEntryStartTimes(
+                insert_time=day, highest_hqe_id=i*2).save()
+            models.HostQueueEntry(
+                id=i*2, job=job, started_on=day,
+                status=HqeStatus.QUEUED).save()
+            models.HostQueueEntry(
+                id=i*2 + 1, job=job, started_on=day + ' 12:00:00',
+                status=HqeStatus.QUEUED).save()
+
+    def test_get_hqe_by_insert_time_lower_bounds(self):
+        """Check the started_on__gte constraints."""
+        self._create_hqes_and_start_time_index_entries()
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__gte='2017-01-01')
+        self.assertEquals(len(hqes), 6)
+
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__gte='2017-01-02')
+        self.assertEquals(len(hqes), 4)
+
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__gte='2017-01-03')
+        self.assertEquals(len(hqes), 2)
+
+    def test_get_hqe_by_insert_time_upper_bounds(self):
+        """Check the started_on__lte constraints."""
+        self._create_hqes_and_start_time_index_entries()
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__lte='2017-01-01')
+        self.assertEquals(len(hqes), 1)
+
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__lte='2017-01-02')
+        self.assertEquals(len(hqes), 3)
+
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__lte='2017-01-03')
+        self.assertEquals(len(hqes), 5)
+
+    def test_get_hqe_by_insert_time_with_before_and_after(self):
+        self._create_hqes_and_start_time_index_entries()
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__lte='2017-01-02 13:00:00',
+            started_on__gte='2017-01-02')
+        self.assertEquals(len(hqes), 2)
+
+    def test_get_hqe_by_insert_time_and_id_constraint(self):
+        self._create_hqes_and_start_time_index_entries()
+        # The time constraint is looser than the id constraint, so the id
+        # constraint should take precedence.
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__lte='2017-01-02',
+            id__lte=1)
+        self.assertEquals(len(hqes), 2)
+
+        # Now make the time constraint tighter than the id constraint.
+        hqes = rpc_interface.get_host_queue_entries_by_insert_time(
+            started_on__lte='2017-01-02',
+            id__lte=42)
+        self.assertEquals(len(hqes), 3)
+
     def test_view_invalid_host(self):
         # RPCs used by View Host page should work for invalid hosts
         self._create_job_helper(hosts=[1])
@@ -384,56 +442,6 @@ class RpcInterfaceTest(unittest.TestCase,
         task = tasks[0]
         self.assertEquals(task['task'], models.SpecialTask.Task.REPAIR)
         self.assertEquals(task['requested_by'], 'autotest_system')
-
-
-    def test_parameterized_job(self):
-        global_config.global_config.override_config_value(
-                'AUTOTEST_WEB', 'parameterized_jobs', 'True')
-
-        string_type = model_attributes.ParameterTypes.STRING
-
-        test = models.Test.objects.create(
-                name='test', test_type=control_data.CONTROL_TYPE.SERVER)
-        test_parameter = test.testparameter_set.create(name='key')
-        profiler = models.Profiler.objects.create(name='profiler')
-
-        kernels = ({'version': 'version', 'cmdline': 'cmdline'},)
-        profilers = ('profiler',)
-        profiler_parameters = {'profiler': {'key': ('value', string_type)}}
-        job_parameters = {'key': ('value', string_type)}
-
-        job_id = rpc_interface.create_parameterized_job(
-                name='job', priority=priorities.Priority.DEFAULT, test='test',
-                parameters=job_parameters, kernel=kernels, label='label1',
-                profilers=profilers, profiler_parameters=profiler_parameters,
-                profile_only=False, hosts=('host1',))
-        parameterized_job = models.Job.smart_get(job_id).parameterized_job
-
-        self.assertEqual(parameterized_job.test, test)
-        self.assertEqual(parameterized_job.label, self.labels[0])
-        self.assertEqual(parameterized_job.kernels.count(), 1)
-        self.assertEqual(parameterized_job.profilers.count(), 1)
-
-        kernel = models.Kernel.objects.get(**kernels[0])
-        self.assertEqual(parameterized_job.kernels.all()[0], kernel)
-        self.assertEqual(parameterized_job.profilers.all()[0], profiler)
-
-        parameterized_profiler = models.ParameterizedJobProfiler.objects.get(
-                parameterized_job=parameterized_job, profiler=profiler)
-        profiler_parameters_obj = (
-                models.ParameterizedJobProfilerParameter.objects.get(
-                parameterized_job_profiler=parameterized_profiler))
-        self.assertEqual(profiler_parameters_obj.parameter_name, 'key')
-        self.assertEqual(profiler_parameters_obj.parameter_value, 'value')
-        self.assertEqual(profiler_parameters_obj.parameter_type, string_type)
-
-        self.assertEqual(
-                parameterized_job.parameterizedjobparameter_set.count(), 1)
-        parameters_obj = (
-                parameterized_job.parameterizedjobparameter_set.all()[0])
-        self.assertEqual(parameters_obj.test_parameter, test_parameter)
-        self.assertEqual(parameters_obj.parameter_value, 'value')
-        self.assertEqual(parameters_obj.parameter_type, string_type)
 
 
     def _modify_host_helper(self, on_shard=False, host_on_shard=False):
@@ -629,24 +637,10 @@ class RpcInterfaceTest(unittest.TestCase,
         self.god.check_playback()
 
 
-    def test_get_image_for_job_parameterized(self):
-        test = models.Test.objects.create(
-            name='name', author='author', test_class='class',
-            test_category='category',
-            test_type=control_data.CONTROL_TYPE.SERVER, path='path')
-        parameterized_job = models.ParameterizedJob.objects.create(test=test)
-        job = self._create_job(hosts=[1])
-        job.parameterized_job = parameterized_job
-        self.god.stub_function_to_return(rpc_interface,
-                'get_parameterized_autoupdate_image_url', 'cool-image')
-        image = rpc_interface._get_image_for_job(job, True)
-        self.assertEquals('cool-image', image)
-        self.god.check_playback()
-
-
     def test_get_image_for_job_with_keyval_build(self):
         keyval_dict = {'build': 'cool-image'}
-        job_id = rpc_interface.create_job(name='test', priority='Medium',
+        job_id = rpc_interface.create_job(name='test',
+                                          priority=priorities.Priority.DEFAULT,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           hosts=['host1'],
@@ -659,7 +653,8 @@ class RpcInterfaceTest(unittest.TestCase,
 
     def test_get_image_for_job_with_keyval_builds(self):
         keyval_dict = {'builds': {'cros-version': 'cool-image'}}
-        job_id = rpc_interface.create_job(name='test', priority='Medium',
+        job_id = rpc_interface.create_job(name='test',
+                                          priority=priorities.Priority.DEFAULT,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           hosts=['host1'],
@@ -673,7 +668,8 @@ class RpcInterfaceTest(unittest.TestCase,
     def test_get_image_for_job_with_control_build(self):
         CONTROL_FILE = """build='cool-image'
         """
-        job_id = rpc_interface.create_job(name='test', priority='Medium',
+        job_id = rpc_interface.create_job(name='test',
+                                          priority=priorities.Priority.DEFAULT,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           hosts=['host1'])
@@ -687,7 +683,8 @@ class RpcInterfaceTest(unittest.TestCase,
     def test_get_image_for_job_with_control_builds(self):
         CONTROL_FILE = """builds={'cros-version': 'cool-image'}
         """
-        job_id = rpc_interface.create_job(name='test', priority='Medium',
+        job_id = rpc_interface.create_job(name='test',
+                                          priority=priorities.Priority.DEFAULT,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           hosts=['host1'])
@@ -696,6 +693,741 @@ class RpcInterfaceTest(unittest.TestCase,
         job.control_file = CONTROL_FILE
         image = rpc_interface._get_image_for_job(job, True)
         self.assertEquals('cool-image', image)
+
+
+class ExtraRpcInterfaceTest(mox.MoxTestBase,
+                           frontend_test_utils.FrontendTestMixin):
+    """Unit tests for functions originally in site_rpc_interface.py.
+
+    @var _NAME: fake suite name.
+    @var _BOARD: fake board to reimage.
+    @var _BUILD: fake build with which to reimage.
+    @var _PRIORITY: fake priority with which to reimage.
+    """
+    _NAME = 'name'
+    _BOARD = 'link'
+    _BUILD = 'link-release/R36-5812.0.0'
+    _BUILDS = {provision.CROS_VERSION_PREFIX: _BUILD}
+    _PRIORITY = priorities.Priority.DEFAULT
+    _TIMEOUT = 24
+
+
+    def setUp(self):
+        super(ExtraRpcInterfaceTest, self).setUp()
+        self._SUITE_NAME = rpc_interface.canonicalize_suite_name(
+            self._NAME)
+        self.dev_server = self.mox.CreateMock(dev_server.ImageServer)
+        self._frontend_common_setup(fill_data=False)
+
+
+    def tearDown(self):
+        self._frontend_common_teardown()
+
+
+    def _setupDevserver(self):
+        self.mox.StubOutClassWithMocks(dev_server, 'ImageServer')
+        dev_server.resolve(self._BUILD).AndReturn(self.dev_server)
+
+
+    def _mockDevServerGetter(self, get_control_file=True):
+        self._setupDevserver()
+        if get_control_file:
+          self.getter = self.mox.CreateMock(
+              control_file_getter.DevServerGetter)
+          self.mox.StubOutWithMock(control_file_getter.DevServerGetter,
+                                   'create')
+          control_file_getter.DevServerGetter.create(
+              mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(self.getter)
+
+
+    def _mockRpcUtils(self, to_return, control_file_substring=''):
+        """Fake out the autotest rpc_utils module with a mockable class.
+
+        @param to_return: the value that rpc_utils.create_job_common() should
+                          be mocked out to return.
+        @param control_file_substring: A substring that is expected to appear
+                                       in the control file output string that
+                                       is passed to create_job_common.
+                                       Default: ''
+        """
+        download_started_time = constants.DOWNLOAD_STARTED_TIME
+        payload_finished_time = constants.PAYLOAD_FINISHED_TIME
+        self.mox.StubOutWithMock(rpc_utils, 'create_job_common')
+        rpc_utils.create_job_common(mox.And(mox.StrContains(self._NAME),
+                                    mox.StrContains(self._BUILD)),
+                            priority=self._PRIORITY,
+                            timeout_mins=self._TIMEOUT*60,
+                            max_runtime_mins=self._TIMEOUT*60,
+                            control_type='Server',
+                            control_file=mox.And(mox.StrContains(self._BOARD),
+                                                 mox.StrContains(self._BUILD),
+                                                 mox.StrContains(
+                                                     control_file_substring)),
+                            hostless=True,
+                            keyvals=mox.And(mox.In(download_started_time),
+                                            mox.In(payload_finished_time))
+                            ).AndReturn(to_return)
+
+
+    def testStageBuildFail(self):
+        """Ensure that a failure to stage the desired build fails the RPC."""
+        self._setupDevserver()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndRaise(
+                dev_server.DevServerException())
+        self.mox.ReplayAll()
+        self.assertRaises(error.StageControlFileFailure,
+                          rpc_interface.create_suite_job,
+                          name=self._NAME,
+                          board=self._BOARD,
+                          builds=self._BUILDS,
+                          pool=None)
+
+
+    def testGetControlFileFail(self):
+        """Ensure that a failure to get needed control file fails the RPC."""
+        self._mockDevServerGetter()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+
+        self.getter.get_control_file_contents_by_name(
+            self._SUITE_NAME).AndReturn(None)
+        self.mox.ReplayAll()
+        self.assertRaises(error.ControlFileEmpty,
+                          rpc_interface.create_suite_job,
+                          name=self._NAME,
+                          board=self._BOARD,
+                          builds=self._BUILDS,
+                          pool=None)
+
+
+    def testGetControlFileListFail(self):
+        """Ensure that a failure to get needed control file fails the RPC."""
+        self._mockDevServerGetter()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+
+        self.getter.get_control_file_contents_by_name(
+            self._SUITE_NAME).AndRaise(error.NoControlFileList())
+        self.mox.ReplayAll()
+        self.assertRaises(error.NoControlFileList,
+                          rpc_interface.create_suite_job,
+                          name=self._NAME,
+                          board=self._BOARD,
+                          builds=self._BUILDS,
+                          pool=None)
+
+
+    def testBadNumArgument(self):
+        """Ensure we handle bad values for the |num| argument."""
+        self.assertRaises(error.SuiteArgumentException,
+                          rpc_interface.create_suite_job,
+                          name=self._NAME,
+                          board=self._BOARD,
+                          builds=self._BUILDS,
+                          pool=None,
+                          num='goo')
+        self.assertRaises(error.SuiteArgumentException,
+                          rpc_interface.create_suite_job,
+                          name=self._NAME,
+                          board=self._BOARD,
+                          builds=self._BUILDS,
+                          pool=None,
+                          num=[])
+        self.assertRaises(error.SuiteArgumentException,
+                          rpc_interface.create_suite_job,
+                          name=self._NAME,
+                          board=self._BOARD,
+                          builds=self._BUILDS,
+                          pool=None,
+                          num='5')
+
+
+
+    def testCreateSuiteJobFail(self):
+        """Ensure that failure to schedule the suite job fails the RPC."""
+        self._mockDevServerGetter()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+
+        self.getter.get_control_file_contents_by_name(
+            self._SUITE_NAME).AndReturn('f')
+
+        self.dev_server.url().AndReturn('mox_url')
+        self._mockRpcUtils(-1)
+        self.mox.ReplayAll()
+        self.assertEquals(
+            rpc_interface.create_suite_job(name=self._NAME,
+                                           board=self._BOARD,
+                                           builds=self._BUILDS, pool=None),
+            -1)
+
+
+    def testCreateSuiteJobSuccess(self):
+        """Ensures that success results in a successful RPC."""
+        self._mockDevServerGetter()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+
+        self.getter.get_control_file_contents_by_name(
+            self._SUITE_NAME).AndReturn('f')
+
+        self.dev_server.url().AndReturn('mox_url')
+        job_id = 5
+        self._mockRpcUtils(job_id)
+        self.mox.ReplayAll()
+        self.assertEquals(
+            rpc_interface.create_suite_job(name=self._NAME,
+                                           board=self._BOARD,
+                                           builds=self._BUILDS,
+                                           pool=None),
+            job_id)
+
+
+    def testCreateSuiteJobNoHostCheckSuccess(self):
+        """Ensures that success results in a successful RPC."""
+        self._mockDevServerGetter()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+
+        self.getter.get_control_file_contents_by_name(
+            self._SUITE_NAME).AndReturn('f')
+
+        self.dev_server.url().AndReturn('mox_url')
+        job_id = 5
+        self._mockRpcUtils(job_id)
+        self.mox.ReplayAll()
+        self.assertEquals(
+          rpc_interface.create_suite_job(name=self._NAME,
+                                         board=self._BOARD,
+                                         builds=self._BUILDS,
+                                         pool=None, check_hosts=False),
+          job_id)
+
+    def testCreateSuiteIntegerNum(self):
+        """Ensures that success results in a successful RPC."""
+        self._mockDevServerGetter()
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+
+        self.getter.get_control_file_contents_by_name(
+            self._SUITE_NAME).AndReturn('f')
+
+        self.dev_server.url().AndReturn('mox_url')
+        job_id = 5
+        self._mockRpcUtils(job_id, control_file_substring='num=17')
+        self.mox.ReplayAll()
+        self.assertEquals(
+            rpc_interface.create_suite_job(name=self._NAME,
+                                           board=self._BOARD,
+                                           builds=self._BUILDS,
+                                           pool=None,
+                                           check_hosts=False,
+                                           num=17),
+            job_id)
+
+
+    def testCreateSuiteJobControlFileSupplied(self):
+        """Ensure we can supply the control file to create_suite_job."""
+        self._mockDevServerGetter(get_control_file=False)
+
+        self.dev_server.hostname = 'mox_url'
+        self.dev_server.stage_artifacts(
+                image=self._BUILD, artifacts=['test_suites']).AndReturn(True)
+        self.dev_server.url().AndReturn('mox_url')
+        job_id = 5
+        self._mockRpcUtils(job_id)
+        self.mox.ReplayAll()
+        self.assertEquals(
+            rpc_interface.create_suite_job(name='%s/%s' % (self._NAME,
+                                                           self._BUILD),
+                                           board=None,
+                                           builds=self._BUILDS,
+                                           pool=None,
+                                           control_file='CONTROL FILE'),
+            job_id)
+
+
+    def _get_records_for_sending_to_master(self):
+        return [{'control_file': 'foo',
+                 'control_type': 1,
+                 'created_on': datetime.datetime(2014, 8, 21),
+                 'drone_set': None,
+                 'email_list': '',
+                 'max_runtime_hrs': 72,
+                 'max_runtime_mins': 1440,
+                 'name': 'dummy',
+                 'owner': 'autotest_system',
+                 'parse_failed_repair': True,
+                 'priority': 40,
+                 'reboot_after': 0,
+                 'reboot_before': 1,
+                 'run_reset': True,
+                 'run_verify': False,
+                 'synch_count': 0,
+                 'test_retry': 10,
+                 'timeout': 24,
+                 'timeout_mins': 1440,
+                 'id': 1
+                 }], [{
+                    'aborted': False,
+                    'active': False,
+                    'complete': False,
+                    'deleted': False,
+                    'execution_subdir': '',
+                    'finished_on': None,
+                    'started_on': None,
+                    'status': 'Queued',
+                    'id': 1
+                }]
+
+
+    def _do_heartbeat_and_assert_response(self, shard_hostname='shard1',
+                                          upload_jobs=(), upload_hqes=(),
+                                          known_jobs=(), known_hosts=(),
+                                          **kwargs):
+        known_job_ids = [job.id for job in known_jobs]
+        known_host_ids = [host.id for host in known_hosts]
+        known_host_statuses = [host.status for host in known_hosts]
+
+        retval = rpc_interface.shard_heartbeat(
+            shard_hostname=shard_hostname,
+            jobs=upload_jobs, hqes=upload_hqes,
+            known_job_ids=known_job_ids, known_host_ids=known_host_ids,
+            known_host_statuses=known_host_statuses)
+
+        self._assert_shard_heartbeat_response(shard_hostname, retval,
+                                              **kwargs)
+
+        return shard_hostname
+
+
+    def _assert_shard_heartbeat_response(self, shard_hostname, retval, jobs=[],
+                                         hosts=[], hqes=[],
+                                         incorrect_host_ids=[]):
+
+        retval_hosts, retval_jobs = retval['hosts'], retval['jobs']
+        retval_incorrect_hosts = retval['incorrect_host_ids']
+
+        expected_jobs = [
+            (job.id, job.name, shard_hostname) for job in jobs]
+        returned_jobs = [(job['id'], job['name'], job['shard']['hostname'])
+                         for job in retval_jobs]
+        self.assertEqual(returned_jobs, expected_jobs)
+
+        expected_hosts = [(host.id, host.hostname) for host in hosts]
+        returned_hosts = [(host['id'], host['hostname'])
+                          for host in retval_hosts]
+        self.assertEqual(returned_hosts, expected_hosts)
+
+        retval_hqes = []
+        for job in retval_jobs:
+            retval_hqes += job['hostqueueentry_set']
+
+        expected_hqes = [(hqe.id) for hqe in hqes]
+        returned_hqes = [(hqe['id']) for hqe in retval_hqes]
+        self.assertEqual(returned_hqes, expected_hqes)
+
+        self.assertEqual(retval_incorrect_hosts, incorrect_host_ids)
+
+
+    def _send_records_to_master_helper(
+        self, jobs, hqes, shard_hostname='host1',
+        exception_to_throw=error.UnallowedRecordsSentToMaster, aborted=False):
+        job_id = rpc_interface.create_job(
+                name='dummy',
+                priority=self._PRIORITY,
+                control_file='foo',
+                control_type=SERVER,
+                test_retry=10, hostless=True)
+        job = models.Job.objects.get(pk=job_id)
+        shard = models.Shard.objects.create(hostname='host1')
+        job.shard = shard
+        job.save()
+
+        if aborted:
+            job.hostqueueentry_set.update(aborted=True)
+            job.shard = None
+            job.save()
+
+        hqe = job.hostqueueentry_set.all()[0]
+        if not exception_to_throw:
+            self._do_heartbeat_and_assert_response(
+                shard_hostname=shard_hostname,
+                upload_jobs=jobs, upload_hqes=hqes)
+        else:
+            self.assertRaises(
+                exception_to_throw,
+                self._do_heartbeat_and_assert_response,
+                shard_hostname=shard_hostname,
+                upload_jobs=jobs, upload_hqes=hqes)
+
+
+    def testSendingRecordsToMaster(self):
+        """Send records to the master and ensure they are persisted."""
+        jobs, hqes = self._get_records_for_sending_to_master()
+        hqes[0]['status'] = 'Completed'
+        self._send_records_to_master_helper(
+            jobs=jobs, hqes=hqes, exception_to_throw=None)
+
+        # Check the entry was actually written to db
+        self.assertEqual(models.HostQueueEntry.objects.all()[0].status,
+                         'Completed')
+
+
+    def testSendingRecordsToMasterAbortedOnMaster(self):
+        """Send records to the master and ensure they are persisted."""
+        jobs, hqes = self._get_records_for_sending_to_master()
+        hqes[0]['status'] = 'Completed'
+        self._send_records_to_master_helper(
+            jobs=jobs, hqes=hqes, exception_to_throw=None, aborted=True)
+
+        # Check the entry was actually written to db
+        self.assertEqual(models.HostQueueEntry.objects.all()[0].status,
+                         'Completed')
+
+
+    def testSendingRecordsToMasterJobAssignedToDifferentShard(self):
+        """Ensure records belonging to different shard are silently rejected."""
+        shard1 = models.Shard.objects.create(hostname='shard1')
+        shard2 = models.Shard.objects.create(hostname='shard2')
+        job1 = self._create_job(shard=shard1, control_file='foo1')
+        job2 = self._create_job(shard=shard2, control_file='foo2')
+        job1_id = job1.id
+        job2_id = job2.id
+        hqe1 = models.HostQueueEntry.objects.create(job=job1)
+        hqe2 = models.HostQueueEntry.objects.create(job=job2)
+        hqe1_id = hqe1.id
+        hqe2_id = hqe2.id
+        job1_record = job1.serialize(include_dependencies=False)
+        job2_record = job2.serialize(include_dependencies=False)
+        hqe1_record = hqe1.serialize(include_dependencies=False)
+        hqe2_record = hqe2.serialize(include_dependencies=False)
+
+        # Prepare a bogus job record update from the wrong shard. The update
+        # should not throw an exception. Non-bogus jobs in the same update
+        # should happily update.
+        job1_record.update({'control_file': 'bar1'})
+        job2_record.update({'control_file': 'bar2'})
+        hqe1_record.update({'status': 'Aborted'})
+        hqe2_record.update({'status': 'Aborted'})
+        self._do_heartbeat_and_assert_response(
+            shard_hostname='shard2', upload_jobs=[job1_record, job2_record],
+            upload_hqes=[hqe1_record, hqe2_record])
+
+        # Job and HQE record for wrong job should not be modified, because the
+        # rpc came from the wrong shard. Job and HQE record for valid job are
+        # modified.
+        self.assertEqual(models.Job.objects.get(id=job1_id).control_file,
+                         'foo1')
+        self.assertEqual(models.Job.objects.get(id=job2_id).control_file,
+                         'bar2')
+        self.assertEqual(models.HostQueueEntry.objects.get(id=hqe1_id).status,
+                         '')
+        self.assertEqual(models.HostQueueEntry.objects.get(id=hqe2_id).status,
+                         'Aborted')
+
+
+    def testSendingRecordsToMasterNotExistingJob(self):
+        """Ensure update for non existing job gets rejected."""
+        jobs, hqes = self._get_records_for_sending_to_master()
+        jobs[0]['id'] = 3
+
+        self._send_records_to_master_helper(
+            jobs=jobs, hqes=hqes)
+
+
+    def _createShardAndHostWithLabel(self, shard_hostname='shard1',
+                                     host_hostname='host1',
+                                     label_name='board:lumpy'):
+        """Create a label, host, shard, and assign host to shard."""
+        label = models.Label.objects.create(name=label_name)
+
+        shard = models.Shard.objects.create(hostname=shard_hostname)
+        shard.labels.add(label)
+
+        host = models.Host.objects.create(hostname=host_hostname, leased=False,
+                                          shard=shard)
+        host.labels.add(label)
+
+        return shard, host, label
+
+
+    def _createJobForLabel(self, label):
+        job_id = rpc_interface.create_job(name='dummy', priority=self._PRIORITY,
+                                          control_file='foo',
+                                          control_type=CLIENT,
+                                          meta_hosts=[label.name],
+                                          dependencies=(label.name,))
+        return models.Job.objects.get(id=job_id)
+
+
+    def testShardHeartbeatFetchHostlessJob(self):
+        """Create a hostless job and ensure it's not assigned to a shard."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel(
+            'shard1', 'host1', 'board:lumpy')
+
+        label2 = models.Label.objects.create(name='bluetooth', platform=False)
+
+        job1 = self._create_job(hostless=True)
+
+        # Hostless jobs should be executed by the global scheduler.
+        self._do_heartbeat_and_assert_response(hosts=[host1])
+
+
+    def testShardHeartbeatIncorrectHosts(self):
+        """Ensure that hosts that don't belong to shard are determined."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+
+        host2 = models.Host.objects.create(hostname='host2', leased=False)
+
+        # host2 should not belong to shard1. Ensure that if shard1 thinks host2
+        # is a known host, then it is returned as invalid.
+        self._do_heartbeat_and_assert_response(known_hosts=[host1, host2],
+                                               incorrect_host_ids=[host2.id])
+
+
+    def testShardHeartbeatLabelRemovalRace(self):
+        """Ensure correctness if label removed during heartbeat."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+
+        host2 = models.Host.objects.create(hostname='host2', leased=False)
+        host2.labels.add(lumpy_label)
+        self.assertEqual(host2.shard, None)
+
+        # In the middle of the assign_to_shard call, remove lumpy_label from
+        # shard1.
+        self.mox.StubOutWithMock(models.Host, '_assign_to_shard_nothing_helper')
+        def remove_label():
+            rpc_interface.remove_board_from_shard(
+                    shard1.hostname, lumpy_label.name)
+        models.Host._assign_to_shard_nothing_helper().WithSideEffects(
+            remove_label)
+        self.mox.ReplayAll()
+
+        self._do_heartbeat_and_assert_response(
+            known_hosts=[host1], hosts=[], incorrect_host_ids=[host1.id])
+        host2 = models.Host.smart_get(host2.id)
+        self.assertEqual(host2.shard, None)
+
+
+    def testShardLabelRemovalInvalid(self):
+        """Ensure you cannot remove the wrong label from shard."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+        stumpy_label = models.Label.objects.create(
+                name='board:stumpy', platform=True)
+        with self.assertRaises(error.RPCException):
+            rpc_interface.remove_board_from_shard(
+                    shard1.hostname, stumpy_label.name)
+
+
+    def testShardHeartbeatLabelRemoval(self):
+        """Ensure label removal from shard works."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+
+        self.assertEqual(host1.shard, shard1)
+        self.assertItemsEqual(shard1.labels.all(), [lumpy_label])
+        rpc_interface.remove_board_from_shard(
+                shard1.hostname, lumpy_label.name)
+        host1 = models.Host.smart_get(host1.id)
+        shard1 = models.Shard.smart_get(shard1.id)
+        self.assertEqual(host1.shard, None)
+        self.assertItemsEqual(shard1.labels.all(), [])
+
+
+    def testShardRetrieveJobs(self):
+        """Create jobs and retrieve them."""
+        # should never be returned by heartbeat
+        leased_host = models.Host.objects.create(hostname='leased_host',
+                                                 leased=True)
+
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+        shard2, host2, grumpy_label = self._createShardAndHostWithLabel(
+            'shard2', 'host2', 'board:grumpy')
+
+        leased_host.labels.add(lumpy_label)
+
+        job1 = self._createJobForLabel(lumpy_label)
+
+        job2 = self._createJobForLabel(grumpy_label)
+
+        job_completed = self._createJobForLabel(lumpy_label)
+        # Job is already being run, so don't sync it
+        job_completed.hostqueueentry_set.update(complete=True)
+        job_completed.hostqueueentry_set.create(complete=False)
+
+        job_active = self._createJobForLabel(lumpy_label)
+        # Job is already started, so don't sync it
+        job_active.hostqueueentry_set.update(active=True)
+        job_active.hostqueueentry_set.create(complete=False, active=False)
+
+        self._do_heartbeat_and_assert_response(
+            jobs=[job1], hosts=[host1], hqes=job1.hostqueueentry_set.all())
+
+        self._do_heartbeat_and_assert_response(
+            shard_hostname=shard2.hostname,
+            jobs=[job2], hosts=[host2], hqes=job2.hostqueueentry_set.all())
+
+        host3 = models.Host.objects.create(hostname='host3', leased=False)
+        host3.labels.add(lumpy_label)
+
+        self._do_heartbeat_and_assert_response(
+            known_jobs=[job1], known_hosts=[host1], hosts=[host3])
+
+
+    def testResendJobsAfterFailedHeartbeat(self):
+        """Create jobs, retrieve them, fail on client, fetch them again."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+
+        job1 = self._createJobForLabel(lumpy_label)
+
+        self._do_heartbeat_and_assert_response(
+            jobs=[job1],
+            hqes=job1.hostqueueentry_set.all(), hosts=[host1])
+
+        # Make sure it's resubmitted by sending last_job=None again
+        self._do_heartbeat_and_assert_response(
+            known_hosts=[host1],
+            jobs=[job1], hqes=job1.hostqueueentry_set.all(), hosts=[])
+
+        # Now it worked, make sure it's not sent again
+        self._do_heartbeat_and_assert_response(
+            known_jobs=[job1], known_hosts=[host1])
+
+        job1 = models.Job.objects.get(pk=job1.id)
+        job1.hostqueueentry_set.all().update(complete=True)
+
+        # Job is completed, make sure it's not sent again
+        self._do_heartbeat_and_assert_response(
+            known_hosts=[host1])
+
+        job2 = self._createJobForLabel(lumpy_label)
+
+        # job2's creation was later, it should be returned now.
+        self._do_heartbeat_and_assert_response(
+            known_hosts=[host1],
+            jobs=[job2], hqes=job2.hostqueueentry_set.all())
+
+        self._do_heartbeat_and_assert_response(
+            known_jobs=[job2], known_hosts=[host1])
+
+        job2 = models.Job.objects.get(pk=job2.pk)
+        job2.hostqueueentry_set.update(aborted=True)
+        # Setting a job to a complete status will set the shard_id to None in
+        # scheduler_models. We have to emulate that here, because we use Django
+        # models in tests.
+        job2.shard = None
+        job2.save()
+
+        self._do_heartbeat_and_assert_response(
+            known_jobs=[job2], known_hosts=[host1],
+            jobs=[job2],
+            hqes=job2.hostqueueentry_set.all())
+
+        models.Test.objects.create(name='platform_BootPerfServer:shard',
+                                   test_type=1)
+        self.mox.StubOutWithMock(server_utils, 'read_file')
+        server_utils.read_file(mox.IgnoreArg()).AndReturn('')
+        self.mox.ReplayAll()
+        rpc_interface.delete_shard(hostname=shard1.hostname)
+
+        self.assertRaises(
+            models.Shard.DoesNotExist, models.Shard.objects.get, pk=shard1.id)
+
+        job1 = models.Job.objects.get(pk=job1.id)
+        lumpy_label = models.Label.objects.get(pk=lumpy_label.id)
+        host1 = models.Host.objects.get(pk=host1.id)
+        super_job = models.Job.objects.get(priority=priorities.Priority.SUPER)
+        super_job_host = models.HostQueueEntry.objects.get(
+                job_id=super_job.id)
+
+        self.assertIsNone(job1.shard)
+        self.assertEqual(len(lumpy_label.shard_set.all()), 0)
+        self.assertIsNone(host1.shard)
+        self.assertIsNotNone(super_job)
+        self.assertEqual(super_job_host.host_id, host1.id)
+
+
+    def testCreateListShard(self):
+        """Retrieve a list of all shards."""
+        lumpy_label = models.Label.objects.create(name='board:lumpy',
+                                                  platform=True)
+        stumpy_label = models.Label.objects.create(name='board:stumpy',
+                                                  platform=True)
+        peppy_label = models.Label.objects.create(name='board:peppy',
+                                                  platform=True)
+
+        shard_id = rpc_interface.add_shard(
+            hostname='host1', labels='board:lumpy,board:stumpy')
+        self.assertRaises(error.RPCException,
+                          rpc_interface.add_shard,
+                          hostname='host1', labels='board:lumpy,board:stumpy')
+        self.assertRaises(model_logic.ValidationError,
+                          rpc_interface.add_shard,
+                          hostname='host1', labels='board:peppy')
+        shard = models.Shard.objects.get(pk=shard_id)
+        self.assertEqual(shard.hostname, 'host1')
+        self.assertEqual(shard.labels.values_list('pk')[0], (lumpy_label.id,))
+        self.assertEqual(shard.labels.values_list('pk')[1], (stumpy_label.id,))
+
+        self.assertEqual(rpc_interface.get_shards(),
+                         [{'labels': ['board:lumpy','board:stumpy'],
+                           'hostname': 'host1',
+                           'id': 1}])
+
+
+    def testAddBoardsToShard(self):
+        """Add boards to a given shard."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+        stumpy_label = models.Label.objects.create(name='board:stumpy',
+                                                   platform=True)
+        shard_id = rpc_interface.add_board_to_shard(
+            hostname='shard1', labels='board:stumpy')
+        # Test whether raise exception when board label does not exist.
+        self.assertRaises(models.Label.DoesNotExist,
+                          rpc_interface.add_board_to_shard,
+                          hostname='shard1', labels='board:test')
+        # Test whether raise exception when board already sharded.
+        self.assertRaises(error.RPCException,
+                          rpc_interface.add_board_to_shard,
+                          hostname='shard1', labels='board:lumpy')
+        shard = models.Shard.objects.get(pk=shard_id)
+        self.assertEqual(shard.hostname, 'shard1')
+        self.assertEqual(shard.labels.values_list('pk')[0], (lumpy_label.id,))
+        self.assertEqual(shard.labels.values_list('pk')[1], (stumpy_label.id,))
+
+        self.assertEqual(rpc_interface.get_shards(),
+                         [{'labels': ['board:lumpy','board:stumpy'],
+                           'hostname': 'shard1',
+                           'id': 1}])
+
+
+    def testResendHostsAfterFailedHeartbeat(self):
+        """Check that master accepts resending updated records after failure."""
+        shard1, host1, lumpy_label = self._createShardAndHostWithLabel()
+
+        # Send the host
+        self._do_heartbeat_and_assert_response(hosts=[host1])
+
+        # Send it again because previous one didn't persist correctly
+        self._do_heartbeat_and_assert_response(hosts=[host1])
+
+        # Now it worked, make sure it isn't sent again
+        self._do_heartbeat_and_assert_response(known_hosts=[host1])
 
 
 if __name__ == '__main__':

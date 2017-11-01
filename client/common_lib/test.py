@@ -27,7 +27,6 @@ from autotest_lib.client.common_lib import error
 
 class base_test(object):
     preserve_srcdir = False
-    network_destabilizing = False
 
     def __init__(self, job, bindir, outputdir):
         self.job = job
@@ -77,8 +76,7 @@ class base_test(object):
 
 
     def write_test_keyval(self, attr_dict):
-        utils.write_keyval(self.outputdir, attr_dict,
-                           tap_report=self.job._tap)
+        utils.write_keyval(self.outputdir, attr_dict)
 
 
     @staticmethod
@@ -91,7 +89,8 @@ class base_test(object):
 
 
     def output_perf_value(self, description, value, units=None,
-                          higher_is_better=None, graph=None, replacement='_'):
+                          higher_is_better=None, graph=None,
+                          replacement='_', replace_existing_values=False):
         """
         Records a measured performance value in an output file.
 
@@ -125,6 +124,8 @@ class base_test(object):
                 value should be displayed individually on a separate graph.
         @param replacement: string to replace illegal characters in
                 |description| and |units| with.
+        @param replace_existing_values: A boolean indicating whether or not a
+                new added perf value should replace existing perf.
         """
         if len(description) > 256:
             raise ValueError('The description must be at most 256 characters.')
@@ -184,13 +185,16 @@ class base_test(object):
             if first_level in charts and second_level in charts[first_level]:
                 if 'values' in charts[first_level][second_level]:
                     result_value = charts[first_level][second_level]['values']
-                    result_value.extend(value)
                 elif 'value' in charts[first_level][second_level]:
                     result_value = [charts[first_level][second_level]['value']]
+                if replace_existing_values:
+                    result_value = value
+                else:
                     result_value.extend(value)
             else:
                 result_value = value
-        elif first_level in charts and second_level in charts[first_level]:
+        elif (first_level in charts and second_level in charts[first_level] and
+              not replace_existing_values):
             result_type = 'list_of_scalar_values'
             value_key = 'values'
             if 'values' in charts[first_level][second_level]:
@@ -218,29 +222,25 @@ class base_test(object):
 
 
     def write_perf_keyval(self, perf_dict):
-        self.write_iteration_keyval({}, perf_dict,
-                                    tap_report=self.job._tap)
+        self.write_iteration_keyval({}, perf_dict)
 
 
     def write_attr_keyval(self, attr_dict):
-        self.write_iteration_keyval(attr_dict, {},
-                                    tap_report=self.job._tap)
+        self.write_iteration_keyval(attr_dict, {})
 
 
-    def write_iteration_keyval(self, attr_dict, perf_dict, tap_report=None):
+    def write_iteration_keyval(self, attr_dict, perf_dict):
         # append the dictionaries before they have the {perf} and {attr} added
         self._keyvals.append({'attr':attr_dict, 'perf':perf_dict})
         self._new_keyval = True
 
         if attr_dict:
             attr_dict = self._append_type_to_keys(attr_dict, "attr")
-            utils.write_keyval(self.resultsdir, attr_dict, type_tag="attr",
-                               tap_report=tap_report)
+            utils.write_keyval(self.resultsdir, attr_dict, type_tag="attr")
 
         if perf_dict:
             perf_dict = self._append_type_to_keys(perf_dict, "perf")
-            utils.write_keyval(self.resultsdir, perf_dict, type_tag="perf",
-                               tap_report=tap_report)
+            utils.write_keyval(self.resultsdir, perf_dict, type_tag="perf")
 
         keyval_path = os.path.join(self.resultsdir, "keyval")
         print >> open(keyval_path, "a"), ""
@@ -359,8 +359,10 @@ class base_test(object):
                        postprocess_profiled_run, args, dargs):
         self.drop_caches_between_iterations()
         # execute iteration hooks
+        logging.debug('starting before_iteration_hooks')
         for hook in self.before_iteration_hooks:
             hook(self)
+        logging.debug('before_iteration_hooks completed')
 
         try:
             if profile_only:
@@ -373,17 +375,24 @@ class base_test(object):
                                         *args, **dargs)
             else:
                 self.before_run_once()
+                logging.debug('starting test(run_once()), test details follow'
+                              '\n%r', args)
                 self.run_once(*args, **dargs)
+                logging.debug('The test has completed successfully')
                 self.after_run_once()
 
             self.postprocess_iteration()
             self.analyze_perf_constraints(constraints)
         # Catch and re-raise to let after_iteration_hooks see the exception.
-        except:
+        except Exception as e:
+            logging.debug('Test failed due to %s. Exception log follows the '
+                          'after_iteration_hooks.', str(e))
             raise
         finally:
+            logging.debug('starting after_iteration_hooks')
             for hook in reversed(self.after_iteration_hooks):
                 hook(self)
+            logging.debug('after_iteration_hooks completed')
 
 
     def execute(self, iterations=None, test_length=None, profile_only=None,
@@ -540,9 +549,6 @@ class base_test(object):
         self.job.logging.tee_redirect_debug_dir(self.debugdir,
                                                 log_name=self.tagged_testname)
         try:
-            if self.network_destabilizing:
-                self.job.disable_warnings("NETWORK")
-
             # write out the test attributes into a keyval
             dargs   = dargs.copy()
             run_cleanup = dargs.pop('run_cleanup', self.job.run_test_cleanup)
@@ -602,12 +608,13 @@ class base_test(object):
                 # Save the exception while we run our cleanup() before
                 # reraising it, but log it to so actual time of error is known.
                 exc_info = sys.exc_info()
-                logging.warning('Autotest caught exception when running test:',
+                logging.warning('The test failed with the following exception',
                                 exc_info=True)
 
                 try:
                     try:
                         if run_cleanup:
+                            logging.debug('Running cleanup for test.')
                             _cherry_pick_call(self.cleanup, *args, **dargs)
                     except Exception:
                         logging.error('Ignoring exception during cleanup() '
@@ -617,6 +624,9 @@ class base_test(object):
                                       exc_info[0])
                     self.crash_handler_report()
                 finally:
+                    # Raise exception after running cleanup, reporting crash,
+                    # and restoring job's logging, even if the first two
+                    # actions fail.
                     self.job.logging.restore()
                     try:
                         raise exc_info[0], exc_info[1], exc_info[2]
@@ -632,19 +642,11 @@ class base_test(object):
                 finally:
                     self.job.logging.restore()
         except error.AutotestError:
-            if self.network_destabilizing:
-                self.job.enable_warnings("NETWORK")
             # Pass already-categorized errors on up.
             raise
         except Exception, e:
-            if self.network_destabilizing:
-                self.job.enable_warnings("NETWORK")
             # Anything else is an ERROR in our own code, not execute().
             raise error.UnhandledTestError(e)
-        else:
-            if self.network_destabilizing:
-                self.job.enable_warnings("NETWORK")
-
 
     def runsubtest(self, url, *args, **dargs):
         """

@@ -4,7 +4,7 @@
 
 AUTHOR = 'chromeos-gfx'
 NAME = "graphics_Idle.arc"
-ATTRIBUTES = "suite:arc-bvt-cq, suite:bvt-cq"
+ATTRIBUTES = "suite:bvt-arc"
 PURPOSE = "Verify that graphics behaves as expected on idle."
 CRITERIA = """
 This test will fail if we don't see the appropriate GPU idle states.
@@ -26,4 +26,4 @@ This test checks that the GPU is in the proper state when idle (RC6, panel,
 clocks...)
 """
 
-job.run_test('graphics_Idle', arc_mode=ARC_MODE)
+job.run_test('graphics_Idle', arc_mode=ARC_MODE, tag='arc')

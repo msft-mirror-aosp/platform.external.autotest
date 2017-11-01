@@ -17,7 +17,6 @@ from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import autoupdater
 from autotest_lib.client.common_lib.cros import dev_server
-from autotest_lib.client.common_lib.cros.graphite import autotest_es
 from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.client.cros import cros_ui
 from autotest_lib.client.cros.audio import cras_utils
@@ -46,15 +45,14 @@ from autotest_lib.site_utils.rpm_control_system import rpm_client
 # older chromite version.
 try:
     from chromite.lib import metrics
-except:
-    metrics = None
+except ImportError:
+    metrics =  utils.metrics_mock
+
 
 CONFIG = global_config.global_config
 ENABLE_DEVSERVER_TRIGGER_AUTO_UPDATE = CONFIG.get_config_value(
         'CROS', 'enable_devserver_trigger_auto_update', type=bool,
         default=False)
-
-LUCID_SLEEP_BOARDS = ['samus', 'lulu']
 
 
 class FactoryImageCheckerException(error.AutoservError):
@@ -120,9 +118,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     # _POWER_CYCLE_TIMEOUT: Time to allow for manual power cycle.
     _USB_POWER_TIMEOUT = 5
     _POWER_CYCLE_TIMEOUT = 10
-
-    _RPM_RECOVERY_BOARDS = CONFIG.get_config_value('CROS',
-            'rpm_recovery_boards', type=str).split(',')
 
     _LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
     _RPM_HOSTNAME_REGEX = ('chromeos(\d+)(-row(\d+))?-rack(\d+[a-z]*)'
@@ -191,9 +186,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     '! test -f /mnt/stateful_partition/.android_tester && '
                     '! grep -q moblab /etc/lsb-release',
                     ignore_status=True, timeout=timeout)
+            if result.exit_status == 0:
+                lsb_release_content = host.run(
+                    'grep CHROMEOS_RELEASE_BOARD /etc/lsb-release',
+                    timeout=timeout).stdout
+                return not lsbrelease_utils.is_jetstream(
+                    lsb_release_content=lsb_release_content)
         except (error.AutoservRunError, error.AutoservSSHTimeout):
             return False
-        return result.exit_status == 0
+
+        return False
 
 
     @staticmethod
@@ -251,9 +253,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         servo_attrs = (servo_host.SERVO_HOST_ATTR,
                        servo_host.SERVO_PORT_ATTR,
                        servo_host.SERVO_BOARD_ATTR)
-        return {key: args_dict[key]
-                for key in servo_attrs
-                if key in args_dict}
+        servo_args = {key: args_dict[key]
+                      for key in servo_attrs
+                      if key in args_dict}
+        return (
+            None
+            if servo_host.SERVO_HOST_ATTR in servo_args
+                and not servo_args[servo_host.SERVO_HOST_ATTR]
+            else servo_args)
 
 
     def _initialize(self, hostname, chameleon_args=None, servo_args=None,
@@ -299,7 +306,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # TODO(fdeng): We need to simplify the
         # process of servo and servo_host initialization.
         # crbug.com/298432
-        self._servo_host =  servo_host.create_servo_host(
+        self._servo_host = servo_host.create_servo_host(
                 dut=self, servo_args=servo_args,
                 try_lab_servo=try_lab_servo,
                 try_servo_repair=try_servo_repair)
@@ -330,25 +337,25 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def _get_cros_repair_image_name(self):
-        return afe_utils.get_stable_cros_image_name(
-                self._get_board_from_afe())
+        info = self.host_info_store.get()
+        if info.board is None:
+            raise error.AutoservError('Cannot obtain repair image name. '
+                                      'No board label value found')
+
+        return afe_utils.get_stable_cros_image_name(info.board)
 
 
-    def lookup_job_repo_url(self):
-        """Looks up the job_repo_url for the host.
+    def host_version_prefix(self, image):
+        """Return version label prefix.
 
-        This is kept for backwards compatibility as AU test code in older
-        branch does not use server-side packaging and calls this method through
-        the host object.
+        In case the CrOS provisioning version is something other than the
+        standard CrOS version e.g. CrOS TH version, this function will
+        find the prefix from provision.py.
 
-        TODO(dshi): Once R50 falls off the stable branch, we should remove this
-        method.
-
-        @returns job_repo_url from AFE or None if not found.
-
-        @raises KeyError if the host does not have a job_repo_url
+        @param image: The image name to find its version prefix.
+        @returns: A prefix string for the image type.
         """
-        return afe_utils.get_host_attribute(self, ds_constants.JOB_REPO_URL)
+        return provision.get_version_label_prefix(image)
 
 
     def verify_job_repo_url(self, tag=''):
@@ -374,8 +381,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @raises urllib2.URLError: If the devserver embedded in job_repo_url
                                   doesn't respond within the timeout.
         """
-        job_repo_url = afe_utils.get_host_attribute(self,
-                                                    ds_constants.JOB_REPO_URL)
+        info = self.host_info_store.get()
+        job_repo_url = info.attributes.get(ds_constants.JOB_REPO_URL, '')
         if not job_repo_url:
             logging.warning('No job repo url set on host %s', self.hostname)
             return
@@ -410,22 +417,24 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 'branch': branch,
                 'devserver': devserver.replace('.', '_'),
             }
-            if metrics:
-                monarch_fields = {
-                    'board': board,
-                    'build_type': build_type,
-                    # TODO(akeshet): To be consistent with most other metrics,
-                    # consider changing the following field to be named
-                    # 'milestone'.
-                    'branch': branch,
-                    'dev_server': devserver,
-                }
-                metrics.Counter(
-                        'chromeos/autotest/provision/verify_url'
-                        ).increment(fields=monarch_fields)
-                metrics.SecondsDistribution(
-                        'chromeos/autotest/provision/verify_url_duration'
-                        ).add(stage_time, fields=monarch_fields)
+
+            monarch_fields = {
+                'board': board,
+                'build_type': build_type,
+                # TODO(akeshet): To be consistent with most other metrics,
+                # consider changing the following field to be named
+                # 'milestone'.
+                'branch': branch,
+                'dev_server': devserver,
+            }
+            metrics.Counter(
+                    'chromeos/autotest/provision/verify_url'
+                    ).increment(fields=monarch_fields)
+            metrics.SecondsDistribution(
+                    'chromeos/autotest/provision/verify_url_duration'
+                    ).add(stage_time, fields=monarch_fields)
+
+
     def stage_server_side_package(self, image=None):
         """Stage autotest server-side package on devserver.
 
@@ -449,8 +458,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         'Failed to parse build name from %s' % image)
             ds = dev_server.ImageServer.resolve(image_name, hostname)
         else:
-            job_repo_url = afe_utils.get_host_attribute(
-                    self, ds_constants.JOB_REPO_URL)
+            info = self.host_info_store.get()
+            job_repo_url = info.attributes.get(ds_constants.JOB_REPO_URL, '')
             if job_repo_url:
                 devserver_url, image_name = (
                     tools.get_devserver_build_from_package_url(job_repo_url))
@@ -461,14 +470,13 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     ds = dev_server.ImageServer(devserver_url)
                 else:
                     ds = dev_server.ImageServer.resolve(image_name)
+            elif info.build is not None:
+                ds = dev_server.ImageServer.resolve(info.build, hostname)
+                image_name = info.build
             else:
-                labels = afe_utils.get_labels(self, self.VERSION_PREFIX)
-                if not labels:
-                    raise error.AutoservError(
-                            'Failed to stage server-side package. The host has '
-                            'no job_report_url attribute or version label.')
-                image_name = labels[0][len(self.VERSION_PREFIX + ':'):]
-                ds = dev_server.ImageServer.resolve(image_name, hostname)
+                raise error.AutoservError(
+                        'Failed to stage server-side package. The host has '
+                        'no job_report_url attribute or version label.')
 
         # Get the OS version of the build, for any build older than
         # MIN_VERSION_SUPPORT_SSP, server side packaging is not supported.
@@ -499,9 +507,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @returns: True if the DUT was updated with stateful update.
 
         """
-        # Stop service ap-update-manager to prevent rebooting during autoupdate.
-        # The service is used in jetstream boards, but not other CrOS devices.
-        self.run('sudo stop ap-update-manager', ignore_status=True)
+        self.prepare_for_update()
 
         # TODO(jrbarnette):  Yes, I hate this re.match() test case.
         # It's better than the alternative:  see crbug.com/360944.
@@ -520,22 +526,19 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # the stateful update.
         folders_to_check = ['/var', '/home', '/mnt/stateful_partition']
         test_file = '.test_file_to_be_deleted'
-        for folder in folders_to_check:
-            touch_path = os.path.join(folder, test_file)
-            self.run('touch %s' % touch_path)
+        paths = [os.path.join(folder, test_file) for folder in folders_to_check]
+        self.run('touch %s' % ' '.join(paths))
 
         updater.run_update(update_root=False)
 
         # Reboot to complete stateful update.
         self.reboot(timeout=self.REBOOT_TIMEOUT, wait=True)
-        check_file_cmd = 'test -f %s; echo $?'
-        for folder in folders_to_check:
-            test_file_path = os.path.join(folder, test_file)
-            result = self.run(check_file_cmd % test_file_path,
-                              ignore_status=True)
-            if result.exit_status == 1:
-                return False
-        return True
+
+        # After stateful update and a reboot, all of the test_files shouldn't
+        # exist any more. Otherwise the stateful update is failed.
+        return not any(
+            self.path_exists(os.path.join(folder, test_file))
+            for folder in folders_to_check)
 
 
     def _post_update_processing(self, updater, expected_kernel=None):
@@ -639,6 +642,78 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return tools.factory_image_url_pattern() % (devserver.url(), image_name)
 
 
+    def _get_au_monarch_fields(self, devserver, build):
+        """Form monarch fields by given devserve & build for auto-update.
+
+        @param devserver: the devserver (ImageServer instance) for auto-update.
+        @param build: the build to be updated.
+
+        @return A dictionary of monach fields.
+        """
+        try:
+            board, build_type, milestone, _ = server_utils.ParseBuildName(build)
+        except server_utils.ParseBuildNameException:
+            logging.warning('Unable to parse build name %s. Something is '
+                            'likely broken, but will continue anyway.',
+                            build)
+            board, build_type, milestone = ('', '', '')
+
+        monarch_fields = {
+                'dev_server': devserver.hostname,
+                'board': board,
+                'build_type': build_type,
+                'milestone': milestone
+        }
+        return monarch_fields
+
+
+    def _retry_auto_update_with_new_devserver(self, build, last_devserver,
+                                              force_update, force_full_update,
+                                              force_original):
+        """Kick off auto-update by devserver and send metrics.
+
+        @param build: the build to update.
+        @param last_devserver: the last devserver that failed to provision.
+        @param force_update: see |machine_install_by_devserver|'s force_udpate
+                             for details.
+        @param force_full_update: see |machine_install_by_devserver|'s
+                                  force_full_update for details.
+        @param force_original: Whether to force stateful update with the
+                               original payload.
+
+        @return the result of |auto_update| in dev_server.
+        """
+        devserver = dev_server.resolve(
+                build, self.hostname, ban_list=[last_devserver.url()])
+        devserver.trigger_download(build, synchronous=False)
+        monarch_fields = self._get_au_monarch_fields(devserver, build)
+        logging.debug('Retry auto_update: resolved devserver for '
+                      'auto-update: %s', devserver.url())
+
+        # Add metrics
+        install_with_dev_counter = metrics.Counter(
+                'chromeos/autotest/provision/install_with_devserver')
+        install_with_dev_counter.increment(fields=monarch_fields)
+        c = metrics.Counter(
+                'chromeos/autotest/provision/retry_by_devserver')
+        monarch_fields['last_devserver'] = last_devserver.hostname
+        monarch_fields['host'] = self.hostname
+        c.increment(fields=monarch_fields)
+
+        # Won't retry auto_update in a retry of auto-update.
+        # In other words, we only retry auto-update once with a different
+        # devservers.
+        devserver.auto_update(
+                self.hostname, build,
+                original_board=self.get_board().replace(
+                        ds_constants.BOARD_PREFIX, ''),
+                original_release_version=self.get_release_version(),
+                log_dir=self.job.resultdir,
+                force_update=force_update,
+                full_update=force_full_update,
+                force_original=force_original)
+
+
     def machine_install_by_devserver(self, update_url=None, force_update=False,
                     local_devserver=False, repair=False,
                     force_full_update=False):
@@ -693,22 +768,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         else:
             build = update_url
         devserver = dev_server.resolve(build, self.hostname)
-        server_name = dev_server.ImageServer.get_server_name(devserver.url())
+        server_name = devserver.hostname
 
-        try:
-            board, build_type, milestone, _ = server_utils.ParseBuildName(build)
-        except server_utils.ParseBuildNameException:
-            logging.warning('Unable to parse build name %s. Something is '
-                            'likely broken, but will continue anyway.',
-                            build)
-            board, build_type, milestone = ('', '', '')
-
-        monarch_fields = {
-                'dev_server': server_name,
-                'board': board,
-                'build_type': build_type,
-                'milestone': milestone
-        }
+        monarch_fields = self._get_au_monarch_fields(devserver, build)
 
         if previously_resolved:
             # Make sure devserver for Auto-Update has staged the build.
@@ -720,32 +782,54 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                             server_name)
               logging.info('Staging build for AU: %s', update_url)
               devserver.trigger_download(build, synchronous=False)
-              if metrics:
-                  c = metrics.Counter(
-                      'chromeos/autotest/provision/failover_download')
-                  c.increment(fields=monarch_fields)
+              c = metrics.Counter(
+                  'chromeos/autotest/provision/failover_download')
+              c.increment(fields=monarch_fields)
         else:
             logging.info('Staging build for AU: %s', update_url)
             devserver.trigger_download(build, synchronous=False)
-            if metrics:
-                c = metrics.Counter(
-                        'chromeos/autotest/provision/trigger_download')
-                c.increment(fields=monarch_fields)
+            c = metrics.Counter('chromeos/autotest/provision/trigger_download')
+            c.increment(fields=monarch_fields)
 
         # Report provision stats.
-        (metrics.Counter('chromeos/autotest/provision/install_with_devserver')
-         .increment(fields=monarch_fields))
+        install_with_dev_counter = metrics.Counter(
+                'chromeos/autotest/provision/install_with_devserver')
+        install_with_dev_counter.increment(fields=monarch_fields)
         logging.debug('Resolved devserver for auto-update: %s', devserver.url())
 
         # and other metrics from this function.
-        if metrics:
-            metrics.Counter('chromeos/autotest/provision/resolve',
-                            ).increment(fields=monarch_fields)
+        metrics.Counter('chromeos/autotest/provision/resolve'
+                        ).increment(fields=monarch_fields)
 
-        devserver.auto_update(self.hostname, build,
-                              log_dir=self.job.resultdir,
-                              force_update=force_update,
-                              full_update=force_full_update)
+        force_original = self.get_chromeos_release_milestone() is None
+
+        try:
+            devserver.auto_update(
+                    self.hostname, build,
+                    original_board=self.get_board().replace(
+                            ds_constants.BOARD_PREFIX, ''),
+                    original_release_version=self.get_release_version(),
+                    log_dir=self.job.resultdir,
+                    force_update=force_update,
+                    full_update=force_full_update,
+                    force_original=force_original)
+        except dev_server.RetryableProvisionException:
+            # It indicates that last provision failed due to devserver load
+            # issue, so another devserver is resolved to kick off provision
+            # job once again and only once.
+            logging.debug('Provision failed due to devserver issue,'
+                          'retry it with another devserver.')
+
+            # Check first whether this DUT is completely offline. If so, skip
+            # the following provision tries.
+            logging.debug('Checking whether host %s is online.', self.hostname)
+            if utils.ping(self.hostname, tries=1, deadline=1) == 0:
+                self._retry_auto_update_with_new_devserver(
+                        build, devserver, force_update, force_full_update,
+                        force_original)
+            else:
+                raise error.AutoservError(
+                        'No answer to ping from %s' % self.hostname)
 
         # The reason to resolve a new devserver in function machine_install
         # is mostly because that the update_url there may has a strange format,
@@ -754,6 +838,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # devserver is used to form JOB_REPO_URL here. Verified in local test.
         repo_url = tools.get_package_url(devserver.url(), build)
         return build, {ds_constants.JOB_REPO_URL: repo_url}
+
+
+    def prepare_for_update(self):
+        """Prepares the DUT for an update.
+
+        Subclasses may override this to perform any special actions
+        required before updating.
+        """
+        pass
 
 
     def machine_install(self, update_url=None, force_update=False,
@@ -819,7 +912,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         logging.debug('Update URL is %s', update_url)
 
         # Report provision stats.
-        server_name = dev_server.ImageServer.get_server_name(update_url)
+        server_name = dev_server.get_hostname(update_url)
         (metrics.Counter('chromeos/autotest/provision/install')
          .increment(fields={'devserver': server_name}))
 
@@ -845,10 +938,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         else:
             logging.info('DUT requires full update.')
             self.reboot(timeout=self.REBOOT_TIMEOUT, wait=True)
-            # Stop service ap-update-manager to prevent rebooting during
-            # autoupdate. The service is used in jetstream boards, but not other
-            # CrOS devices.
-            self.run('sudo stop ap-update-manager', ignore_status=True)
+            self.prepare_for_update()
 
             num_of_attempts = provision.FLAKY_DEVSERVER_ATTEMPTS
 
@@ -976,7 +1066,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise error.TestError('Host %s does not have servo.' %
                                   self.hostname)
 
-        board = self.get_board().replace(ds_constants.BOARD_PREFIX, '')
+        # Get the DUT board name from servod.
+        board = self.servo.get_board()
 
         # If build is not set, try to install firmware from stable CrOS.
         if not build:
@@ -1028,39 +1119,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Output update engine log."""
         logging.debug('Dumping %s', client_constants.UPDATE_ENGINE_LOG)
         self.run('cat %s' % client_constants.UPDATE_ENGINE_LOG)
-
-
-    def _get_board_from_afe(self):
-        """Retrieve this host's board from its labels stored locally.
-
-        Looks for a host label of the form "board:<board>", and
-        returns the "<board>" part of the label.  `None` is returned
-        if there is not a single, unique label matching the pattern.
-
-        @returns board from label, or `None`.
-        """
-        board = afe_utils.get_board(self)
-        if board is None:
-            raise error.AutoservError('DUT cannot be repaired, '
-                                      'there is no board attribute.')
-        return board
-
-
-    def get_build(self):
-        """Retrieve the current build for this Host from the AFE.
-
-        Looks through this host's labels in the AFE to determine its build.
-        This method is replaced by afe_utils.get_build. It's kept here to
-        maintain backwards compatibility for test control files in older CrOS
-        builds (R48, R49 etc.) still call host.get_build, e.g.,
-        `provision_AutoUpdate.double`.
-        TODO(sbasi): Once R50 falls into release branch, this method can be
-        removed.
-
-        @returns The current build or None if it could not find it or if there
-                 were multiple build labels assigned to this host.
-        """
-        return afe_utils.get_build(self)
 
 
     def servo_install(self, image_url=None, usb_boot_timeout=USB_BOOT_TIMEOUT,
@@ -1156,10 +1214,26 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         repair steps needed to get the DUT working.
         """
         self._repair_strategy.repair(self)
+        # Sometimes, hosts with certain ethernet dongles get stuck in a
+        # bad network state where they're reachable from this code, but
+        # not from the devservers during provisioning.  Rebooting the
+        # DUT fixes it.
+        #
+        # TODO(jrbarnette):  Ideally, we'd get rid of the problem
+        # dongles, and drop this code.  Failing that, we could be smart
+        # enough not to reboot if repair rebooted the DUT (e.g. by
+        # looking at DUT uptime after repair completes).
+
+        self.reboot()
 
 
     def close(self):
         super(CrosHost, self).close()
+        if self._chameleon_host:
+            self._chameleon_host.close()
+
+        if self._servo_host:
+            self._servo_host.close()
 
 
     def get_power_supply_info(self):
@@ -1250,9 +1324,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         except rpm_client.RemotePowerException:
             logging.error('Failed to turn Power On for this host after '
                           'cleanup through the RPM Infrastructure.')
-            autotest_es.post(
-                    type_str='RPM_poweron_failure',
-                    metadata={'hostname': self.hostname})
 
             battery_percentage = self.get_battery_percentage()
             if battery_percentage and battery_percentage < 50:
@@ -1299,16 +1370,31 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         cros_ui.wait_for_chrome_ready(prompt, self)
 
 
+    def _get_lsb_release_content(self):
+        """Return the content of lsb-release file of host."""
+        return self.run(
+                'cat "%s"' % client_constants.LSB_RELEASE).stdout.strip()
+
+
     def get_release_version(self):
         """Get the value of attribute CHROMEOS_RELEASE_VERSION from lsb-release.
 
         @returns The version string in lsb-release, under attribute
                  CHROMEOS_RELEASE_VERSION.
         """
-        lsb_release_content = self.run(
-                    'cat "%s"' % client_constants.LSB_RELEASE).stdout.strip()
         return lsbrelease_utils.get_chromeos_release_version(
-                    lsb_release_content=lsb_release_content)
+                lsb_release_content=self._get_lsb_release_content())
+
+
+    def get_chromeos_release_milestone(self):
+        """Get the value of attribute CHROMEOS_RELEASE_BUILD_TYPE
+        from lsb-release.
+
+        @returns The version string in lsb-release, under attribute
+                 CHROMEOS_RELEASE_BUILD_TYPE.
+        """
+        return lsbrelease_utils.get_chromeos_release_milestone(
+                lsb_release_content=self._get_lsb_release_content())
 
 
     def verify_cros_version_label(self):
@@ -1344,16 +1430,31 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     label.remove_hosts(hosts=host_list)
                     mismatch_found = True
         if mismatch_found:
-            autotest_es.post(use_http=True,
-                             type_str='cros_version_label_mismatch',
-                             metadata={'hostname': self.hostname})
             raise error.AutoservError('The host has wrong cros-version label.')
+
+
+    def cleanup_services(self):
+        """Reinitializes the device for cleanup.
+
+        Subclasses may override this to customize the cleanup method.
+
+        To indicate failure of the reset, the implementation may raise
+        any of:
+            error.AutoservRunError
+            error.AutotestRunError
+            FactoryImageCheckerException
+
+        @raises error.AutoservRunError
+        @raises error.AutotestRunError
+        @raises error.FactoryImageCheckerException
+        """
+        self._restart_ui()
 
 
     def cleanup(self):
         self.run('rm -f %s' % client_constants.CLEANUP_LOGS_PAUSED_FILE)
         try:
-            self._restart_ui()
+            self.cleanup_services()
         except (error.AutotestRunError, error.AutoservRunError,
                 FactoryImageCheckerException):
             logging.warning('Unable to restart ui, rebooting device.')
@@ -1409,16 +1510,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise
         finally:
             duration = int(time.time() - t0)
-            if metrics:
-                metrics.Counter(
-                        'chromeos/autotest/autoserv/reboot_count').increment(
-                        fields=metric_fields)
-                metrics.Counter(
-                        'chromeos/autotest/autoserv/reboot_debug').increment(
-                        fields=metric_debug_fields)
-                metrics.SecondsDistribution(
-                        'chromeos/autotest/autoserv/reboot_duration').add(
-                        duration, fields=metric_fields)
+            metrics.Counter(
+                    'chromeos/autotest/autoserv/reboot_count').increment(
+                    fields=metric_fields)
+            metrics.Counter(
+                    'chromeos/autotest/autoserv/reboot_debug').increment(
+                    fields=metric_debug_fields)
+            metrics.SecondsDistribution(
+                    'chromeos/autotest/autoserv/reboot_duration').add(
+                    duration, fields=metric_fields)
 
 
     def suspend(self, **dargs):
@@ -1442,8 +1542,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns True if the service is running, False otherwise.
         """
-        return self.run('status %s | grep start/running' %
-                        service_name).stdout.strip() != ''
+        return 'start/running' in self.run('status %s' % service_name,
+                                           ignore_status=True).stdout
 
 
     def verify_software(self):
@@ -1854,14 +1954,22 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns a string representing this host's platform.
         """
-        crossystem = utils.Crossystem(self)
-        crossystem.init()
-        # Extract fwid value and use the leading part as the platform id.
-        # fwid generally follow the format of {platform}.{firmware version}
-        # Example: Alex.X.YYY.Z or Google_Alex.X.YYY.Z
-        platform = crossystem.fwid().split('.')[0].lower()
-        # Newer platforms start with 'Google_' while the older ones do not.
-        return platform.replace('google_', '')
+        cmd = 'mosys platform model'
+        result = self.run(command=cmd, ignore_status=True)
+        if result.exit_status == 0:
+            return result.stdout.strip()
+        else:
+            # $(mosys platform model) should support all platforms, but it
+            # currently doesn't, so this reverts to parsing the fw
+            # for any unsupported mosys platforms.
+            crossystem = utils.Crossystem(self)
+            crossystem.init()
+            # Extract fwid value and use the leading part as the platform id.
+            # fwid generally follow the format of {platform}.{firmware version}
+            # Example: Alex.X.YYY.Z or Google_Alex.X.YYY.Z
+            platform = crossystem.fwid().split('.')[0].lower()
+            # Newer platforms start with 'Google_' while the older ones do not.
+            return platform.replace('google_', '')
 
 
     def get_architecture(self):
@@ -1891,6 +1999,29 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return utils.parse_chrome_version(version_string)
 
 
+    def is_chrome_switch_present(self, switch):
+        """Returns True if the specified switch was provided to Chrome.
+
+        @param switch The chrome switch to search for.
+        """
+
+        command = 'pgrep -x -f -c "/opt/google/chrome/chrome.*%s.*"' % switch
+        return self.run(command, ignore_status=True).exit_status == 0
+
+
+    def oobe_triggers_update(self):
+        """Returns True if this host has an OOBE flow during which
+        it will perform an update check and perhaps an update.
+        One example of such a flow is Hands-Off Zero-Touch Enrollment.
+        As more such flows are developed, code handling them needs
+        to be added here.
+
+        @return Boolean indicating whether this host's OOBE triggers an update.
+        """
+        return self.is_chrome_switch_present(
+            '--enterprise-enable-zero-touch-enrollment=hands-off')
+
+
     # TODO(kevcheng): change this to just return the board without the
     # 'board:' prefix and fix up all the callers.  Also look into removing the
     # need for this method.
@@ -1904,7 +2035,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return (ds_constants.BOARD_PREFIX +
                 release_info['CHROMEOS_RELEASE_BOARD'])
 
+    def get_channel(self):
+        """Determine the correct channel label for this host.
 
+        @returns: a string represeting this host's build channel.
+                  (stable, dev, beta). None on fail.
+        """
+        return lsbrelease_utils.get_chromeos_channel(
+                lsb_release_content=self._get_lsb_release_content())
 
     def has_lightsensor(self):
         """Determine the correct board label for this host.
@@ -2201,15 +2339,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             common_utils.read_file = original_read_file
 
 
-    def has_lucid_sleep_support(self):
-        """Determine if the device under test has support for lucid sleep.
-
-        @return 'lucidsleep' if this board supports lucid sleep; None otherwise
-        """
-        board = self.get_board().replace(ds_constants.BOARD_PREFIX, '')
-        return 'lucidsleep' if board in LUCID_SLEEP_BOARDS else None
-
-
     def is_boot_from_usb(self):
         """Check if DUT is boot from USB.
 
@@ -2239,7 +2368,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @return CPU architecture of the DUT.
         """
-        # Add CPUs by following logic in client/bin/base_utils.py.
+        # Add CPUs by following logic in client/bin/utils.py.
         if self.run("grep '^flags.*:.* lm .*' /proc/cpuinfo",
                 ignore_status=True).stdout:
             return 'x86_64'
@@ -2261,6 +2390,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if device_type:
             return device_type.split('=')[-1].strip()
         return ''
+
+
+    def get_arc_version(self):
+        """Return ARC version installed on the DUT.
+
+        @returns ARC version as string if the CrOS build has ARC, else None.
+        """
+        arc_version = self.run('grep CHROMEOS_ARC_VERSION /etc/lsb-release',
+                               ignore_status=True).stdout
+        if arc_version:
+            return arc_version.split('=')[-1].strip()
+        return None
 
 
     def get_os_type(self):

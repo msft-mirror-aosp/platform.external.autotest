@@ -32,7 +32,7 @@ major, minor, release = pylint_version.split('.')
 pylint_version = float("%s.%s" % (major, minor))
 
 # some files make pylint blow up, so make sure we ignore them
-BLACKLIST = ['/contrib/*', '/frontend/afe/management.py']
+BLACKLIST = ['/site-packages/*', '/contrib/*', '/frontend/afe/management.py']
 
 # patch up the logilab module lookup tools to understand autotest_lib.* trash
 import logilab.common.modutils
@@ -122,6 +122,7 @@ def patch_consumed_list(to_consume=None, consumed=None):
 class CustomImportsChecker(imports.ImportsChecker):
     """Modifies stock imports checker to suit autotest."""
     def visit_from(self, node):
+        """Patches modnames so pylints understands autotest_lib."""
         node.modname = patch_modname(node.modname)
         return super(CustomImportsChecker, self).visit_from(node)
 
@@ -180,6 +181,9 @@ class CustomDocStringChecker(base.DocStringChecker):
                 node.parent.frame().ancestors())):
             return
 
+        if _is_test_case_method(node):
+            return
+
         super(CustomDocStringChecker, self).visit_function(node)
 
 
@@ -190,36 +194,6 @@ class CustomDocStringChecker(base.DocStringChecker):
                  not require a "@param" docstring.
         """
         return arg in ('self', 'cls', 'args', 'kwargs', 'dargs')
-
-
-    def _check_docstring(self, node_type, node):
-        """
-        Teaches pylint to look for @param with each argument in the
-        function/method signature.
-
-        @param node_type: type of the node we're currently checking.
-        @param node: node of the ast we're currently checking.
-        """
-        super(CustomDocStringChecker, self)._check_docstring(node_type, node)
-        docstring = node.doc
-        if pylint_version >= 1.1:
-            key = 'missing-docstring'
-        else:
-            key = 'C0111'
-
-        if (docstring is not None and
-               (node_type is 'method' or
-                node_type is 'function')):
-            args = node.argnames()
-            old_msg = self.linter._messages[key].msg
-            for arg in args:
-                arg_docstring_rgx = '.*@param '+arg+'.*'
-                line = re.search(arg_docstring_rgx, node.doc)
-                if not line and not self._should_skip_arg(arg):
-                    self.linter._messages[key].msg = ('Docstring needs '
-                                                      '"@param '+arg+':"')
-                    self.add_message(key, node=node)
-            self.linter._messages[key].msg = old_msg
 
 base.DocStringChecker = CustomDocStringChecker
 imports.ImportsChecker = CustomImportsChecker
@@ -397,6 +371,21 @@ def check_committed_files(work_tree_files, commit, pylint_base_opts):
             tempdir.clean()
 
 
+def _is_test_case_method(node):
+    """Determine if the given function node is a method of a TestCase.
+
+    We simply check for 'TestCase' being one of the parent classes in the mro of
+    the containing class.
+
+    @params node: A function node.
+    """
+    if not hasattr(node.parent.frame(), 'ancestors'):
+        return False
+
+    parent_class_names = {x.name for x in node.parent.frame().ancestors()}
+    return 'TestCase' in parent_class_names
+
+
 def main():
     """Main function checks each file in a commit for pylint violations."""
 
@@ -459,6 +448,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except Exception as e:
+    except pylint_error as e:
         logging.error(e)
         sys.exit(1)

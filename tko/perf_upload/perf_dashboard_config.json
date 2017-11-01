@@ -4,8 +4,44 @@
     "master_name": "ChromeOS_Audio"
   },
   {
+    "autotest_name": "audio_WebRtcAudioLoopback",
+    "master_name": "ChromeOSWebRtcAudio"
+  },
+  {
     "autotest_name": "audiovideo_AVSync",
     "master_name": "ChromeOS_Audio"
+  },
+  {
+    "autotest_name": "autoupdate_EndToEndTest.paygen_au_beta_delta",
+    "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_beta_full",
+     "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_canary_delta",
+     "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_canary_full",
+     "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_dev_delta",
+     "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_dev_full",
+     "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_stable_delta",
+     "master_name": "ChromeOSPerf"
+  },
+  {
+     "autotest_name": "autoupdate_EndToEndTest.paygen_au_stable_full",
+     "master_name": "ChromeOSPerf"
   },
   {
     "autotest_name": "bluetooth_Sanity_Discoverable",
@@ -20,7 +56,28 @@
     "master_name": "ChromeOSPerf"
   },
   {
+    "autotest_name": "camera_HAL3Perf",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "cheets_StartAndroid.stress",
+    "master_name": "ChromeOSPerf",
+    "dashboard_test_name": "cheets_StartAndroid"
+  },
+  {
     "autotest_name": "enterprise_CFM_Perf",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_CFM_Perf.meet_app",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_CFM_USBPeripheralHotplugDetect.c920",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_CFM_USBPeripheralHotplugDetect.c930",
     "master_name": "ChromeOS_Enterprise"
   },
   {
@@ -32,15 +89,47 @@
     "master_name": "ChromeOSPower"
   },
   {
+    "autotest_name": "graphics_dEQP.bvt",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_dEQP.gles2-master",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_dEQP.gles3-master",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_dEQP.vk-master",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "graphics_dEQP"
+  },
+  {
+    "autotest_name": "graphics_Drm",
+    "master_name": "ChromeOS_Graphics"
+  },
+  {
+    "autotest_name": "graphics_Gbm",
+    "master_name": "ChromeOS_Graphics"
+  },
+  {
+    "autotest_name": "graphics_GLAPICheck",
+    "master_name": "ChromeOS_Graphics"
+  },
+  {
     "autotest_name": "graphics_GLBench",
     "master_name": "ChromeOS_Graphics"
   },
   {
-    "autotest_name": "graphics_GLES2ConformChrome",
+    "autotest_name": "graphics_GLMark2",
     "master_name": "ChromeOS_Graphics"
   },
   {
-    "autotest_name": "graphics_GLMark2",
+    "autotest_name": "graphics_Gralloc",
     "master_name": "ChromeOS_Graphics"
   },
   {
@@ -52,11 +141,11 @@
     "master_name": "ChromeOS_Graphics"
   },
   {
-    "autotest_name": "graphics_Piglit",
+    "autotest_name": "graphics_Idle",
     "master_name": "ChromeOS_Graphics"
   },
   {
-    "autotest_name": "graphics_PiglitBVT",
+    "autotest_name": "graphics_LibDRM",
     "master_name": "ChromeOS_Graphics"
   },
   {
@@ -64,7 +153,15 @@
     "master_name": "ChromeOS_Graphics"
   },
   {
+    "autotest_name": "graphics_Sanity",
+    "master_name": "ChromeOS_Graphics"
+  },
+  {
     "autotest_name": "graphics_Stress",
+    "master_name": "ChromeOS_Graphics"
+  },
+  {
+    "autotest_name": "graphics_PerfControl",
     "master_name": "ChromeOS_Graphics"
   },
   {
@@ -84,6 +181,10 @@
     "master_name": "ChromeOS_Graphics"
   },
   {
+    "autotest_name": "graphics_VTSwitch",
+    "master_name": "ChromeOS_Graphics"
+  },
+  {
     "autotest_name": "hardware_RamFio",
     "master_name": "ChromeOSPerf"
   },
@@ -96,7 +197,15 @@
     "master_name": "ChromeOSPerf"
   },
   {
-    "autotest_name": "longevity_Tracker",
+    "autotest_name": "enterprise_LongevityTrackerServer.chromesign_20min",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_LongevityTrackerServer.chromesign_3hr",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_LongevityTrackerServer.riseplayer",
     "master_name": "ChromeOS_Enterprise"
   },
   {
@@ -203,6 +312,10 @@
     "autotest_name": "network_WiFi_Perf.ht40_aes",
     "master_name": "ChromeOSWiFi",
     "dashboard_test_name": "network_WiFi_Perf"
+  },
+  {
+    "autotest_name": "network_WiFi_PTK",
+    "master_name": "ChromeOSWiFi"
   },
   {
     "autotest_name": "network_WiFi_SimpleConnect.wifi_check1x_PEAP",
@@ -365,6 +478,10 @@
     "dashboard_test_name": "network_WiFi_SuspendStress"
   },
   {
+    "autotest_name": "performance_InboxInputLatency",
+    "master_name": "ChromeOSPerf"
+  },
+  {
     "autotest_name": "platform_BootPerfServer",
     "master_name": "ChromeOSPerf"
   },
@@ -382,6 +499,10 @@
   },
   {
     "autotest_name": "platform_CryptohomeFio.surfing",
+    "master_name": "ChromeOSPerf"
+  },
+  {
+    "autotest_name": "platform_LogoutPerf",
     "master_name": "ChromeOSPerf"
   },
   {
@@ -406,6 +527,10 @@
   },
   {
     "autotest_name": "power_Resume",
+    "master_name": "ChromeOSPower"
+  },
+  {
+    "autotest_name": "power_UiResume",
     "master_name": "ChromeOSPower"
   },
   {
@@ -442,6 +567,11 @@
     "autotest_name": "telemetry_Benchmarks.kraken",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "kraken"
+  },
+  {
+    "autotest_name": "telemetry_Benchmarks.memory.desktop",
+    "master_name": "ChromeOSPerf",
+    "dashboard_test_name": "memory.desktop"
   },
   {
     "autotest_name": "telemetry_Benchmarks.memory.top_7_stress",
@@ -514,11 +644,6 @@
     "dashboard_test_name": "speedometer"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.startup.cold.blank_page",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "startup.cold.blank_page"
-  },
-  {
     "autotest_name": "telemetry_Benchmarks.sunspider",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "sunspider"
@@ -529,14 +654,14 @@
     "dashboard_test_name": "tab_switching.top_10"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.webrtc.peerconnection",
+    "autotest_name": "telemetry_Benchmarks.tab_switching.typical_25",
     "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "webrtc.peerconnection"
+    "dashboard_test_name": "tab_switching.typical_25"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.webrtc.stress",
+    "autotest_name": "telemetry_Benchmarks.webrtc",
     "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "webrtc.stress"
+    "dashboard_test_name": "webrtc"
   },
   {
     "autotest_name": "video_HangoutHardwarePerf",
@@ -547,16 +672,40 @@
     "master_name": "ChromeOSVideo"
   },
   {
-    "autotest_name": "video_VDAPerf",
+    "autotest_name": "video_VDAPerf.h264",
     "master_name": "ChromeOSVideo"
   },
   {
-    "autotest_name": "video_VEAPerf",
+    "autotest_name": "video_VDAPerf.vp8",
     "master_name": "ChromeOSVideo"
   },
   {
-    "autotest_name": "video_VideoDecodeMemoryUsage",
+    "autotest_name": "video_VDAPerf.vp9",
     "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VEAPerf.h264",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VEAPerf.vp8",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VideoDecodeMemoryUsage.h264",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VideoDecodeMemoryUsage.vp8",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_VideoDecodeMemoryUsage.vp9",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_WebRtcMainFeedSwitching.perf",
+    "master_name": "ChromeOSWebRtcVideo"
   },
   {
     "autotest_name": "video_WebRtcPeerConnectionWithCamera.h264",
@@ -571,7 +720,19 @@
     "master_name": "ChromeOSWebRtcVideo"
   },
   {
+    "autotest_name": "video_WebRtcResolutionSwitching.perf",
+    "master_name": "ChromeOSWebRtcVideo"
+  },
+  {
     "autotest_name": "video_WebRtcCamera",
+    "master_name": "ChromeOSWebRtcVideo"
+  },
+  {
+    "autotest_name": "webrtc_PausePlayPeerConnections.audio_perf",
+    "master_name": "ChromeOSWebRtcVideo"
+  },
+  {
+    "autotest_name": "webrtc_PausePlayPeerConnections.video_perf",
     "master_name": "ChromeOSWebRtcVideo"
   }
 ]

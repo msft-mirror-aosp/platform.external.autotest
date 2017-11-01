@@ -52,6 +52,11 @@ class InputPlayback(object):
                                'keyboard': 'keyboard.prop'}
     _PLAYBACK_COMMAND = 'evemu-play --insert-slot0 %s < %s'
 
+    # Define the overhead (500 ms) elapsed for launching evemu-play and the
+    # latency from event injection to the first event read by Chrome Input
+    # thread.
+    _PLAYBACK_OVERHEAD_LATENCY = 0.5
+
     # Define a keyboard as anything with any keys #2 to #248 inclusive,
     # as defined in the linux input header.  This definition includes things
     # like the power button, so reserve the "keyboard" label for things with
@@ -148,19 +153,28 @@ class InputPlayback(object):
         if not os.path.isfile(property_file):
             raise error.TestError('Property file %s not found!' % property_file)
 
-        logging.info('Emulating %s %s', input_type, property_file)
-        num_events_before = len(self._get_input_events())
-        new_device.emulation_process = subprocess.Popen(
-                ['evemu-device', property_file], stdout=subprocess.PIPE)
-        utils.poll_for_condition(
-                lambda: len(self._get_input_events()) > num_events_before,
-                exception=error.TestError('Error emulating %s!' % input_type))
-
         with open(property_file) as fh:
             name_line = fh.readline()  # Format "N: NAMEOFDEVICE"
             new_device.name = name_line[3:-1]
 
+        logging.info('Emulating %s %s (%s).', input_type, new_device.name,
+                     property_file)
+        num_events_before = len(self._get_input_events())
+        new_device.emulation_process = subprocess.Popen(
+                ['evemu-device', property_file], stdout=subprocess.PIPE)
+
         self._emulated_device = new_device
+
+        # Ensure there are more input events than there were before.
+        try:
+            expected = num_events_before + 1
+            exception = error.TestError('Error emulating %s!' % input_type)
+            utils.poll_for_condition(
+                    lambda: len(self._get_input_events()) == expected,
+                    exception=exception)
+        except error.TestError as e:
+            self.close()
+            raise e
 
 
     def _find_device_properties(self, device):
@@ -236,27 +250,35 @@ class InputPlayback(object):
         return utils.run('cat %s' % filepath).stdout.strip()
 
 
-    def _find_input_name(self, device_dir):
+    def _find_input_name(self, device_dir, name=None):
         """Find the associated input* name for the given device directory.
 
         E.g. given '/dev/input/event4', return 'input3'.
 
         @param device_dir: the device directory.
+        @param name: the device name.
+
 
         @returns: string of the associated input name.
 
         """
         input_names = glob.glob(os.path.join(device_dir, 'input', 'input*'))
-        if len(input_names) != 1:
-            logging.error('Input names found: %s', input_names)
-            raise error.TestError('Could not match input* to this device!')
-        return os.path.basename(input_names[0])
+        for input_name in input_names:
+          name_path = os.path.join(input_name, 'name')
+          if not os.path.exists(name_path):
+            continue
+          if name == self._get_contents_of_file(name_path):
+            return os.path.basename(input_name)
+        # Raise if name could not be matched.
+        logging.error('Input names found(%s): %s', device_dir, input_names)
+        raise error.TestError('Could not match input* to this device!')
 
 
-    def _find_device_ids_for_styluses(self, device_dir):
+    def _find_device_ids_for_styluses(self, device_dir, name=None):
         """Find the fw_id and hw_id for the stylus in the given directory.
 
         @param device_dir: the device directory.
+        @param name: the device name.
 
         @returns: firmware id, hardware id for this device.
 
@@ -267,7 +289,7 @@ class InputPlayback(object):
         # Find fw_id for wacom styluses via wacom_flash command.  Arguments
         # to this command are wacom_flash (dummy placeholder arg) -a (i2c name)
         # Find i2c name if any /dev/i2c-* link to this device's input event.
-        input_name = self._find_input_name(device_dir)
+        input_name = self._find_input_name(device_dir, name)
         i2c_paths = glob.glob('/dev/i2c-*')
         for i2c_path in i2c_paths:
             class_folder = i2c_path.replace('dev', 'sys/class/i2c-adapter')
@@ -277,7 +299,10 @@ class InputPlayback(object):
             if len(contents_of_input_folder) != 0:
                 i2c_name = i2c_path[len('/dev/'):]
                 cmd = 'wacom_flash dummy -a %s' % i2c_name
-                fw_id = utils.run(cmd).stdout.split()[-1]
+                # Do not throw an exception if wacom_flash does not exist.
+                result = utils.run(cmd, ignore_status=True)
+                if result.exit_status == 0:
+                    fw_id = result.stdout.split()[-1]
                 break
 
         if fw_id == '':
@@ -285,7 +310,7 @@ class InputPlayback(object):
         return fw_id, hw_id
 
 
-    def _find_device_ids(self, device_dir, input_type):
+    def _find_device_ids(self, device_dir, input_type, name):
         """Find the fw_id and hw_id for the given device directory.
 
         Finding fw_id and hw_id applicable only for touchpads, touchscreens,
@@ -293,6 +318,7 @@ class InputPlayback(object):
 
         @param device_dir: the device directory.
         @param input_type: string of input type.
+        @param name: string of input name.
 
         @returns: firmware id, hardware id
 
@@ -303,22 +329,26 @@ class InputPlayback(object):
                                                 'stylus']:
             return fw_id, hw_id
         if input_type == 'stylus':
-            return self._find_device_ids_for_styluses(device_dir)
+            return self._find_device_ids_for_styluses(device_dir, name)
 
         # Touch devices with custom drivers usually save this info as a file.
         fw_filenames = ['fw_version', 'firmware_version', 'firmware_id']
         for fw_filename in fw_filenames:
             fw_path = os.path.join(device_dir, fw_filename)
             if os.path.exists(fw_path):
+                if fw_id:
+                    logging.warning('Found new potential fw_id when previous '
+                                    'value was %s!', fw_id)
                 fw_id = self._get_contents_of_file(fw_path)
-                break
 
         hw_filenames = ['hw_version', 'product_id', 'board_id']
         for hw_filename in hw_filenames:
             hw_path = os.path.join(device_dir, hw_filename)
             if os.path.exists(hw_path):
+                if hw_id:
+                    logging.warning('Found new potential hw_id when previous '
+                                    'value was %s!', hw_id)
                 hw_id = self._get_contents_of_file(hw_path)
-                break
 
         # Hw_ids for Weida and 2nd gen Synaptics are different.
         if not hw_id:
@@ -328,17 +358,17 @@ class InputPlayback(object):
 
             if os.path.isfile(product_path):
                 product = self._get_contents_of_file(product_path)
-                if input_type == 'touchscreen': # Weida ts, e.g. sumo.
+                if name.startswith('WD'): # Weida ts, e.g. sumo
                     if os.path.isfile(vendor_path):
                         vendor = self._get_contents_of_file(vendor_path)
                         hw_id = vendor + product
-                else: # Synaptics tp: e.g. heli, lulu.
+                else: # Synaptics tp or ts, e.g. heli, lulu, setzer
                     hw_id = product
 
         if not fw_id:
             # Fw_ids for 2nd gen Synaptics can only be found via rmi4update.
             # See if any /dev/hidraw* link to this device's input event.
-            input_name = self._find_input_name(device_dir)
+            input_name = self._find_input_name(device_dir, name)
             hidraws = glob.glob('/dev/hidraw*')
             for hidraw in hidraws:
                 class_folder = hidraw.replace('dev', 'sys/class/hidraw')
@@ -398,8 +428,8 @@ class InputPlayback(object):
                 device_dir = os.path.join(class_folder, 'device', 'device')
                 if os.path.exists(device_dir):
                     new_device.device_dir = device_dir
-                    fw_id, hw_id = self._find_device_ids(device_dir, input_type)
-                    new_device.fw_id, new_device.hw_id = fw_id, hw_id
+                    new_device.fw_id, new_device.hw_id = self._find_device_ids(
+                            device_dir, input_type, new_device.name)
 
                 if new_device.emulated:
                     self._emulated_device = new_device
@@ -445,10 +475,15 @@ class InputPlayback(object):
             lines = fh.readlines()
             start = float(lines[0].split(' ')[1])
             end = float(lines[-1].split(' ')[1])
-            sleep_time = end - start
+            sleep_time = end - start + self._PLAYBACK_OVERHEAD_LATENCY
+        start_time = time.time()
         self.playback(filepath, input_type)
-        logging.info('Sleeping for %s seconds during playback.', sleep_time)
-        time.sleep(sleep_time)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        if elapsed_time < sleep_time:
+            sleep_time -= elapsed_time
+            logging.info('Blocking for %s seconds after playback.', sleep_time)
+            time.sleep(sleep_time)
 
 
     def blocking_playback_of_default_file(self, filename, input_type='mouse'):
@@ -473,7 +508,21 @@ class InputPlayback(object):
     def close(self):
         """Kill emulation if necessary."""
         if self._emulated_device:
+            num_events_before = len(self._get_input_events())
+            device_name = self._emulated_device.name
+
             self._emulated_device.emulation_process.kill()
+
+            # Ensure there is one fewer input event before returning.
+            try:
+                expected = num_events_before - 1
+                utils.poll_for_condition(
+                        lambda: len(self._get_input_events()) == expected,
+                        exception=error.TestError())
+            except error.TestError as e:
+                logging.warning('Could not kill emulated %s!', device_name)
+
+            self._emulated_device = None
 
 
     def __exit__(self):

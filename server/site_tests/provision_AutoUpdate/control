@@ -14,9 +14,29 @@ TEST_TYPE = "Server"
 DOC = """
 This is a test used by the provision control segment in autoserv to set the
 cros-version label of a host to the desired setting.
+
+To run locally:
+
+1. Start a devserver outside of a chroot like this:
+src/platform/dev/devserver.py --port=8082
+
+2. You will need to add a few lines to
+src/third_party/autotest/files/shadow_config.ini
+
+[CROS]
+dev_server: http://127.0.0.1:8082
+enable_devserver_trigger_auto_update: True
+
+3. Use a command like this replacing the |value| arg with the device and build
+version you want to run the test against:
+
+test_that --args="value='samus-release/R60-9495.0.0'" <DUT-IPADDR>
+provision_AutoUpdate
+
 """
 
 
+from autotest_lib.client.bin import sysinfo
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.cros import constants
 
@@ -35,7 +55,8 @@ if not locals().get('value'):
 
 def run(machine):
     # Save preserved log after autoupdate is completed.
-    job.sysinfo.add_logdir(constants.AUTOUPDATE_PRESERVE_LOG)
+    job.sysinfo.add_logdir(
+            sysinfo.logdir(constants.AUTOUPDATE_PRESERVE_LOG))
 
     host = hosts.create_host(machine)
     # Only collect pre-test sysinfo to save time.

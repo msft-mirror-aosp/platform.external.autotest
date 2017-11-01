@@ -8,6 +8,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error, file_utils, utils
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.video import histogram_verifier
+from autotest_lib.client.cros.video import helper_logger
 
 
 # Chrome flags to use fake camera and skip camera permission.
@@ -30,7 +31,10 @@ class video_ChromeRTCHWDecodeUsed(test.test):
                 # (board, milestone); None if don't care.
 
                 # kevin did support hw decode, but not ready in M54 and M55.
-                ('kevin', 54),('kevin', 55)
+                ('kevin', 54), ('kevin', 55),
+
+                # elm and hana support hw decode since M57.
+                ('elm', 56), ('hana', 56),
         ]
 
         entry = (utils.get_current_board(), utils.get_chrome_milestone())
@@ -54,9 +58,8 @@ class video_ChromeRTCHWDecodeUsed(test.test):
             os.path.join(self.bindir, 'loopback.html')))
         tab.WaitForDocumentReadyStateToBeComplete()
 
-
-    def run_once(self, video_name, histogram_name, histogram_bucket_val,
-                 arc_mode=None):
+    @helper_logger.video_log_wrapper
+    def run_once(self, video_name, histogram_name, histogram_bucket_val):
         if self.is_skipping_test():
             raise error.TestNAError('Skipping test run on this board.')
 
@@ -67,8 +70,9 @@ class video_ChromeRTCHWDecodeUsed(test.test):
 
         # Start chrome with test flags.
         EXTRA_BROWSER_ARGS.append(FAKE_FILE_ARG % local_path)
+        EXTRA_BROWSER_ARGS.append(helper_logger.chrome_vmodule_flag())
         with chrome.Chrome(extra_browser_args=EXTRA_BROWSER_ARGS,
-                           arc_mode=arc_mode) as cr:
+                           init_network_controller=True) as cr:
             # Open WebRTC loopback page.
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)
             self.start_loopback(cr)

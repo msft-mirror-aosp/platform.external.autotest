@@ -11,16 +11,52 @@ import common
 
 _WHITELISTED_SUITES = (
     'arc-cts',
+    'arc-cts-perbuild',
     'arc-cts-dev',
     'arc-cts-beta',
     'arc-cts-stable',
+    'arc-cts-beta-fri',
+    'arc-cts-beta-mon',
+    'arc-cts-beta-sat',
+    'arc-cts-beta-sun',
+    'arc-cts-beta-thu',
+    'arc-cts-beta-tue',
+    'arc-cts-beta-wed',
+    'arc-cts-dev-fri',
+    'arc-cts-dev-mon',
+    'arc-cts-dev-sat',
+    'arc-cts-dev-sun',
+    'arc-cts-dev-thu',
+    'arc-cts-dev-tue',
+    'arc-cts-dev-wed',
+    'arc-cts-qual',
     'arc-gts',
+    'arc-gts-perbuild',
+    'arc-gts-qual',
     'arc-gts-tot',
     'arc-nightly',
     'arc-weekly',
     'crosbolt_arc_perf',
     'crosbolt_arc_perf_nightly',
+    'crosbolt_arc_perf_perbuild',
 )
+
+
+def checkSectionNameCollision(config):
+    """
+    Make sure that section name of the ini file is case-insensitive unique.
+    This prevents key collision in database for test monitoring services such as
+    wmatrix.
+    """
+    has_collision = False
+    sections = sorted([(key.lower(), key) for key in config.sections()])
+    for index in range(len(sections) - 1):
+        if sections[index][0] == sections[index + 1][0]:
+            logging.warning("Section name [%s] is not case-insensitive unique",
+                            sections[index][1])
+            has_collision = True
+    return 1 if has_collision else 0
+
 
 def CheckControlFileExistence(tasks):
     """

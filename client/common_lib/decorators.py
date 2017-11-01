@@ -59,16 +59,17 @@ def in_context(context_name):
     return wrap
 
 
-class _Property(object):
-    def __init__(self, func):
-        self._func = func
+class _CachedProperty(object):
 
-    def __get__(self, obj, type=None):
-        if not hasattr(obj, '_property_cache'):
-            obj._property_cache = {}
-        if self._func not in obj._property_cache:
-            obj._property_cache[self._func] = self._func(obj)
-        return obj._property_cache[self._func]
+
+    def __init__(self, func, name=None):
+        self._func = func
+        self._name = name if name is not None else func.__name__
+
+    def __get__(self, instance, owner):
+        value = self._func(instance)
+        setattr(instance, self._name, value)
+        return value
 
 
 def cached_property(func):
@@ -80,15 +81,17 @@ def cached_property(func):
     @param func: The function to calculate the property value.
     @returns: An object that abides by the descriptor protocol.
     """
-    return _Property(func)
+    return _CachedProperty(func)
 
 
-def test_module_available(module):
+def test_module_available(module, raise_error=False):
     """A decorator to test if the given module is available first before
     calling a function.
 
     @param module: Module object. The value should be None if the module is
                    failed to be imported.
+    @param raise_error: If true an import error will be raised on call if module
+                        is not imported.
     """
 
     def decorator(f):
@@ -103,6 +106,8 @@ def test_module_available(module):
             """A dummy function silently pass."""
             logging.debug('Module %s is not found. Call %s is skipped.', module,
                           f)
+            if raise_error:
+                raise ImportError('Module %s is not found.' % module)
 
         return f if module else dummy_func
 

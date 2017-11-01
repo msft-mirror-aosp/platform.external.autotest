@@ -2,6 +2,7 @@ package autotest.afe;
 
 import autotest.common.SimpleCallback;
 import autotest.common.CustomHistory.HistoryToken;
+import autotest.common.table.DatetimeSegmentFilter;
 import autotest.common.table.Filter;
 import autotest.common.table.RadioButtonSetFilter;
 import autotest.common.table.SearchFilter;
@@ -17,6 +18,7 @@ import autotest.common.ui.ToolTip;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONBoolean;
 import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONString;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
@@ -32,8 +34,8 @@ public class JobListView extends TabView implements TableActionsListener {
                                STATUS_FINISHED = 2, STATUS_ALL = 3,
                                STATUS_RADIO_BUTTON_COUNT = 4;
     protected static final int STATUS_DEFAULT_BUTTON = STATUS_ALL;
-    protected static final int TYPE_SUITE = 0, TYPE_SUB = 1, TYPE_STANDALONE = 2,
-                               TYPE_ALL = 3, TYPE_RADIO_BUTTON_COUNT = 4;
+    protected static final int TYPE_SUITE = 0, TYPE_SUB = 1, TYPE_ALL = 2,
+                               TYPE_RADIO_BUTTON_COUNT = 3;
     protected static final int TYPE_DEFAULT_BUTTON = TYPE_ALL;
     private static final String[] statusHistoryTokens = {"queued", "running",
                                                          "finished", "all"};
@@ -41,12 +43,10 @@ public class JobListView extends TabView implements TableActionsListener {
                                                              "Finished Jobs", "All Jobs"};
     private static final String[] statusFilterStrings = {"not_yet_run", "running",
                                                          "finished"};
-    private static final String[] typeHistoryTokens = {"suite", "sub", "standalone",
-                                                       "all"};
+    private static final String[] typeHistoryTokens = {"suite", "sub", "all"};
     private static final String[] typeRadioButtonLabels = {"Parent Jobs", "Child Jobs",
-                                                            "Standalone Jobs",
                                                             "All Jobs"};
-    private static final String[] typeFilterStrings = {"suite", "sub", "standalone"};
+    private static final String[] typeFilterStrings = {"suite", "sub"};
 
     private JobSelectListener selectListener;
 
@@ -56,6 +56,7 @@ public class JobListView extends TabView implements TableActionsListener {
     private JobTypeFilter jobTypeFilter;
     private Filter ownerFilter;
     private SearchFilter nameFilter;
+    private JobStartingDatetimeFilter startingDatetimeFilter;
     private SelectionManager selectionManager;
 
     interface JobSelectListener {
@@ -96,6 +97,26 @@ public class JobListView extends TabView implements TableActionsListener {
         }
     }
 
+    static class JobStartingDatetimeFilter extends DatetimeSegmentFilter {
+        @Override
+        public void addParams(JSONObject params) {
+            String start_time = startDatetimeBox.getText();
+            if (start_time == "") {
+                setStartTimeToPlaceHolderValue();
+                start_time = startDatetimeBox.getText();
+            }
+            params.put("created_on__gt", new JSONString(start_time));
+
+            String end_time = endDatetimeBox.getText();
+            if (start_time == "") {
+                setEndTimeToPlaceHolderValue();
+                end_time = endDatetimeBox.getText();
+            }
+            params.put("created_on__lt", new JSONString(end_time));
+        }
+
+    }
+
     public void abortSelectedJobs() {
         Set<JSONObject> selectedSet = selectionManager.getSelectedObjects();
         if (selectedSet.isEmpty()) {
@@ -116,7 +137,7 @@ public class JobListView extends TabView implements TableActionsListener {
             }
         });
     }
-    
+
     @Override
     public String getElementId() {
         return "job_list";
@@ -131,7 +152,7 @@ public class JobListView extends TabView implements TableActionsListener {
     public JobListView(JobSelectListener listener) {
         selectListener = listener;
     }
-    
+
     @Override
     public void initialize() {
         super.initialize();
@@ -146,22 +167,22 @@ public class JobListView extends TabView implements TableActionsListener {
 
             public void onTableRefreshed() {}
         });
-        
+
         tableDecorator = new TableDecorator(jobTable);
         tableDecorator.addPaginators();
         selectionManager = tableDecorator.addSelectionManager(false);
         jobTable.setWidgetFactory(selectionManager);
         tableDecorator.addTableActionsPanel(this, true);
         addWidget(tableDecorator, "job_table");
-        
+
         ownerFilter = new JobOwnerFilter("owner");
         jobTable.addFilter(ownerFilter);
         addWidget(ownerFilter.getWidget(), "user_list");
-        
+
         nameFilter = new SearchFilter("name", "Filter", false);
         jobTable.addFilter(nameFilter);
         addWidget(nameFilter.getWidget(), "jl_name_search");
-        
+
         jobStateFilter = new JobStateFilter();
         for (int i = 0; i < STATUS_RADIO_BUTTON_COUNT; i++)
             jobStateFilter.addRadioButon(statusRadioButtonLabels[i]);
@@ -187,10 +208,13 @@ public class JobListView extends TabView implements TableActionsListener {
         });
         jobTable.addFilter(jobTypeFilter);
         addWidget(new ToolTip("?", "Suite jobs: jobs with child jobs. " +
-                                   "Sub jobs: jobs with a parent jobs. " +
-                                   "Standalone jobs: jobs without a parent or child job."),
+                                   "Sub jobs: jobs with a parent jobs. "),
                   "job_type_tooltip");
         addWidget(jobTypeFilter.getWidget(), "job_type_controls");
+
+        startingDatetimeFilter = new JobStartingDatetimeFilter();
+        jobTable.addFilter(startingDatetimeFilter);
+        addWidget(startingDatetimeFilter.getWidget(), "job_starting_datetime_controls");
     }
 
     @Override
@@ -202,7 +226,7 @@ public class JobListView extends TabView implements TableActionsListener {
                       typeHistoryTokens[jobTypeFilter.getSelectedButtonIndex()]);
         return arguments;
     }
-    
+
     @Override
     public void handleHistoryArguments(Map<String, String> arguments) {
         String stateFilter = arguments.get("state_filter");

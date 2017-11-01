@@ -30,18 +30,17 @@ description_table = string.maketrans(':,=;', '.-__')
 description_delete = '<>'
 
 
-class graphics_GLMark2(test.test):
+class graphics_GLMark2(graphics_utils.GraphicsTest):
     """Runs glmark2, which benchmarks only calls compatible with OpenGL ES 2.0"""
     version = 1
     preserve_srcdir = True
     _services = None
-    GSC = None
 
     def setup(self):
         self.job.setup_dep(['glmark2'])
 
     def initialize(self):
-        self.GSC = graphics_utils.GraphicsStateChecker()
+        super(graphics_GLMark2, self).initialize()
         # If UI is running, we must stop it and restore later.
         self._services = service_stopper.ServiceStopper(['ui'])
         self._services.stop_services()
@@ -49,17 +48,9 @@ class graphics_GLMark2(test.test):
     def cleanup(self):
         if self._services:
             self._services.restore_services()
-        if self.GSC:
-            keyvals = self.GSC.get_memory_keyvals()
-            for key, val in keyvals.iteritems():
-                self.output_perf_value(
-                    description=key,
-                    value=val,
-                    units='bytes',
-                    higher_is_better=False)
-            self.GSC.finalize()
-            self.write_perf_keyval(keyvals)
+        super(graphics_GLMark2, self).cleanup()
 
+    @graphics_utils.GraphicsTest.failure_report_decorator('graphics_GLMark2')
     def run_once(self, size='800x600', hasty=False, min_score=None):
         dep = 'glmark2'
         dep_dir = os.path.join(self.autodir, 'deps', dep)
@@ -80,8 +71,6 @@ class graphics_GLMark2(test.test):
         else:
             options.append('-b :duration=2')
         cmd = glmark2 + ' ' + ' '.join(options)
-        if not utils.is_freon():
-            cmd = 'X :1 vt1 & sleep 1; chvt 1 && DISPLAY=:1 ' + cmd
 
         if os.environ.get('CROS_FACTORY'):
             from autotest_lib.client.cros import factory_setup_modules
@@ -108,11 +97,6 @@ class graphics_GLMark2(test.test):
             raise error.TestFail('Failed: CmdError running %s' % cmd)
         except error.CmdTimeoutError:
             raise error.TestFail('Failed: CmdTimeout running %s' % cmd)
-        finally:
-            # Just sending SIGTERM to X is not enough; we must wait for it to
-            # really die before we start a new X server (ie start ui).
-            if not utils.is_freon():
-                utils.ensure_processes_are_dead_by_name('^X$')
 
         logging.info(result)
         for line in result.stderr.splitlines():

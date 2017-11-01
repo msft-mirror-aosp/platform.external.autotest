@@ -13,39 +13,31 @@ to catch performance regressions in a given browser and system.
 
 import logging
 import os
+import math
 
-from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.graphics import graphics_utils
 
 
-class graphics_WebGLPerformance(test.test):
+class graphics_WebGLPerformance(graphics_utils.GraphicsTest):
     """WebGL performance graphics test."""
     version = 1
-    GSC = None
     _test_duration_secs = 0
     perf_keyval = {}
+    _waived_tests = ['convert-Canvas-to-rgb-float.html',
+                     'convert-Canvas-to-rgb-float-premultiplied.html']
 
     def setup(self):
         self.job.setup_dep(['webgl_perf'])
         self.job.setup_dep(['graphics'])
 
     def initialize(self):
-        self.GSC = graphics_utils.GraphicsStateChecker()
+        super(graphics_WebGLPerformance, self).initialize()
 
     def cleanup(self):
-        if self.GSC:
-            keyvals = self.GSC.get_memory_keyvals()
-            for key, val in keyvals.iteritems():
-                self.output_perf_value(
-                    description=key,
-                    value=val,
-                    units='bytes',
-                    higher_is_better=False)
-            self.GSC.finalize()
-            self.write_perf_keyval(keyvals)
+        super(graphics_WebGLPerformance, self).cleanup()
 
     def run_performance_test(self, browser, test_url):
         """Runs the performance test from the given url.
@@ -64,11 +56,28 @@ class graphics_WebGLPerformance(test.test):
         tab.WaitForDocumentReadyStateToBeComplete()
 
         # Wait for test completion.
-        tab.WaitForJavaScriptExpression('time_ms_geom_mean > 0.0',
-                                        self._test_duration_secs)
+        tab.WaitForJavaScriptCondition('test_completed == true',
+                                       timeout=self._test_duration_secs)
 
+        # Get all the result data
+        results = tab.EvaluateJavaScript('testsRun')
+        logging.info('results: %s', results)
         # Get the geometric mean of individual runtimes.
-        time_ms_geom_mean = tab.EvaluateJavaScript('time_ms_geom_mean')
+        sumOfLogResults = 0
+        sumOfPassed = 0
+        sumOfFailed = 0
+        sumOfWaived = 0
+        for result in results:
+            if result.get('url') in self._waived_tests or result.get('skip'):
+                sumOfWaived += 1
+            elif 'error' in result:
+                sumOfFailed += 1
+            else:
+                sumOfLogResults += math.log(result['testResult'])
+                sumOfPassed += 1
+        time_ms_geom_mean = round(100 * math.exp(
+            sumOfLogResults / len(results))) / 100
+
         logging.info('WebGLPerformance: time_ms_geom_mean = %f',
                      time_ms_geom_mean)
 
@@ -102,7 +111,9 @@ class graphics_WebGLPerformance(test.test):
         f.close()
 
         tab.Close()
+        return sumOfPassed, sumOfWaived, sumOfFailed
 
+    @graphics_utils.GraphicsTest.failure_report_decorator('graphics_WebGLPerformance')
     def run_once(self, test_duration_secs=2700, fullscreen=True):
         """Finds a brower with telemetry, and run the test.
 
@@ -124,10 +135,19 @@ class graphics_WebGLPerformance(test.test):
                 os.path.join(self.autodir, 'deps', 'graphics',
                              'graphics_test_extension'))
 
-        with chrome.Chrome(logged_in=False, extension_paths=ext_paths) as cr:
+        with chrome.Chrome(logged_in=False,
+                           extension_paths=ext_paths,
+                           init_network_controller=True) as cr:
             websrc_dir = os.path.join(self.autodir, 'deps', 'webgl_perf', 'src')
             if not cr.browser.platform.SetHTTPServerDirectories(websrc_dir):
                 raise error.TestFail('Failed: Unable to start HTTP server')
             test_url = cr.browser.platform.http_server.UrlOf(
                 os.path.join(websrc_dir, 'index.html'))
-            self.run_performance_test(cr.browser, test_url)
+
+            passed, waived, failed = self.run_performance_test(cr.browser,
+                                                               test_url)
+            logging.debug('Number of tests: %d, passed: %d, '
+                          'waived: %d, failed: %d',
+                          passed + waived + failed, passed, waived, failed)
+            if failed > 0:
+                raise error.TestFail('Failed: %d tests failed.' % failed)

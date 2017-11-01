@@ -11,32 +11,11 @@ from telemetry.core import cros_interface, exceptions, util
 from telemetry.internal.browser import browser_finder, browser_options
 from telemetry.internal.browser import extension_to_load
 
+CAP_USERNAME = 'crosautotest@gmail.com'
+CAP_URL = ('https://sites.google.com/a/chromium.org/dev/chromium-os'
+           '/testing/cros-autotest/cap')
+
 Error = exceptions.Error
-
-
-# Cached result of whether ARC is available on current device.
-_arc_available = None
-
-
-def is_arc_available():
-    """Returns true if ARC is available on current device."""
-    global _arc_available
-    if _arc_available is not None:
-        return _arc_available
-
-    def _check_lsb_release():
-        lsb_release = '/etc/lsb-release'
-        if not os.path.exists(lsb_release):
-            return False
-        with open(lsb_release) as f:
-            for line in f:
-                if line.startswith('CHROMEOS_ARC_VERSION='):
-                    return True
-        return False
-
-    _arc_available = _check_lsb_release()
-    return _arc_available
-
 
 def NormalizeEmail(username):
     """Remove dots from username. Add @gmail.com if necessary.
@@ -79,7 +58,8 @@ class Chrome(object):
                  disable_gaia_services=True, disable_default_apps = True,
                  auto_login=True, gaia_login=False,
                  username=None, password=None, gaia_id=None,
-                 arc_mode=None, disable_arc_opt_in=True):
+                 arc_mode=None, disable_arc_opt_in=True,
+                 init_network_controller=False, login_delay=0):
         """
         Constructor of telemetry wrapper.
 
@@ -108,15 +88,23 @@ class Chrome(object):
                          start.
         @param disable_arc_opt_in: For opt in flow autotest. This option is used
                                    to disable the arc opt in flow.
+        @param login_delay: Time for idle in login screen to simulate the time
+                            required for password typing.
         """
         self._autotest_ext_path = None
+
+        # Force autotest extension if we need enable Play Store.
+        if (utils.is_arc_available() and (arc_util.should_start_arc(arc_mode)
+            or not disable_arc_opt_in)):
+            autotest_ext = True
+
         if autotest_ext:
             self._autotest_ext_path = os.path.join(os.path.dirname(__file__),
                                                    'autotest_private_ext')
             extension_paths.append(self._autotest_ext_path)
 
         finder_options = browser_options.BrowserFinderOptions()
-        if is_arc_available() and arc_util.should_start_arc(arc_mode):
+        if utils.is_arc_available() and arc_util.should_start_arc(arc_mode):
             if disable_arc_opt_in:
                 finder_options.browser_options.AppendExtraBrowserArgs(
                         arc_util.get_extra_chrome_flags())
@@ -143,11 +131,13 @@ class Chrome(object):
         b_options.disable_gaia_services = disable_gaia_services
         b_options.disable_default_apps = disable_default_apps
         b_options.disable_component_extensions_with_background_pages = disable_default_apps
+        b_options.disable_background_networking = False
 
         b_options.auto_login = auto_login
         b_options.gaia_login = gaia_login
+        b_options.login_delay = login_delay
 
-        if is_arc_available() and not disable_arc_opt_in:
+        if utils.is_arc_available() and not disable_arc_opt_in:
             arc_util.set_browser_options_for_opt_in(b_options)
 
         self.username = b_options.username if username is None else username
@@ -176,12 +166,12 @@ class Chrome(object):
             try:
                 browser_to_create = browser_finder.FindBrowser(finder_options)
                 self._browser = browser_to_create.Create(finder_options)
-                if is_arc_available():
+                if utils.is_arc_available():
                     if disable_arc_opt_in:
                         if arc_util.should_start_arc(arc_mode):
-                            arc_util.enable_arc_setting(self.browser)
+                            arc_util.enable_play_store(self.autotest_ext, True)
                     else:
-                        arc_util.opt_in(self.browser)
+                        arc_util.opt_in(self.browser, self.autotest_ext)
                     arc_util.post_processing_after_browser(self)
                 break
             except exceptions.LoginException as e:
@@ -189,7 +179,8 @@ class Chrome(object):
                               i, repr(e))
                 if i == num_tries-1:
                     raise
-        self._browser.platform.network_controller.InitializeIfNeeded()
+        if init_network_controller:
+          self._browser.platform.network_controller.InitializeIfNeeded()
 
     def __enter__(self):
         return self
@@ -277,7 +268,7 @@ class Chrome(object):
 
 
     @staticmethod
-    def wait_for_browser_restart(func):
+    def wait_for_browser_restart(func, browser):
         """Runs func, and waits for a browser restart.
 
         @param func: function to run.
@@ -287,6 +278,7 @@ class Chrome(object):
         pid = _cri.GetChromePid()
         Chrome.did_browser_crash(func)
         utils.poll_for_condition(lambda: pid != _cri.GetChromePid(), timeout=60)
+        browser.WaitForBrowserToComeUp()
 
 
     def wait_for_browser_to_come_up(self):
@@ -311,7 +303,7 @@ class Chrome(object):
         """Closes the browser.
         """
         try:
-            if is_arc_available():
+            if utils.is_arc_available():
                 arc_util.pre_processing_before_close(self)
         finally:
             # Calling platform.StopAllLocalServers() to tear down the telemetry

@@ -1,9 +1,11 @@
-import re, os
+import os
+import re
 
-from autotest_lib.client.common_lib import utils as common_utils
-from autotest_lib.tko import utils as tko_utils, models, status_lib
+import common
+from autotest_lib.tko import models
+from autotest_lib.tko import status_lib
+from autotest_lib.tko import utils as tko_utils
 from autotest_lib.tko.parsers import base
-
 
 class NoHostnameError(Exception):
     pass

@@ -12,12 +12,12 @@ import multiprocessing
 import os
 import pprint
 import re
-import time
 from contextlib import contextmanager
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.audio import audio_analysis
+from autotest_lib.client.cros.audio import audio_spec
 from autotest_lib.client.cros.audio import audio_data
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import audio_quality_measurement
@@ -83,12 +83,19 @@ def check_audio_nodes(audio_facade, audio_nodes):
     out_audio_nodes, in_audio_nodes = audio_nodes
     if (in_audio_nodes != None and
         sorted(curr_in_nodes) != sorted(in_audio_nodes)):
-        raise error.TestFail('Wrong input node(s) selected %s '
-                'instead %s!' % (str(curr_in_nodes), str(in_audio_nodes)))
+        raise error.TestFail('Wrong input node(s) selected: %s '
+                'expected: %s' % (str(curr_in_nodes), str(in_audio_nodes)))
+
+    # Treat line-out node as headphone node in Chameleon test since some
+    # Cros devices detect audio board as lineout. This actually makes sense
+    # because 3.5mm audio jack is connected to LineIn port on Chameleon.
+    if (out_audio_nodes == ['HEADPHONE'] and curr_out_nodes == ['LINEOUT']):
+        return
+
     if (out_audio_nodes != None and
         sorted(curr_out_nodes) != sorted(out_audio_nodes)):
         raise error.TestFail('Wrong output node(s) selected %s '
-                'instead %s!' % (str(curr_out_nodes), str(out_audio_nodes)))
+                'expected: %s' % (str(curr_out_nodes), str(out_audio_nodes)))
 
 
 def check_plugged_nodes(audio_facade, audio_nodes):
@@ -107,12 +114,12 @@ def check_plugged_nodes(audio_facade, audio_nodes):
     out_audio_nodes, in_audio_nodes = audio_nodes
     if (in_audio_nodes != None and
         sorted(curr_in_nodes) != sorted(in_audio_nodes)):
-        raise error.TestFail('Wrong input node(s) plugged %s '
-                'instead %s!' % (str(curr_in_nodes), str(in_audio_nodes)))
+        raise error.TestFail('Wrong input node(s) plugged: %s '
+                'expected: %s!' % (str(curr_in_nodes), str(in_audio_nodes)))
     if (out_audio_nodes != None and
         sorted(curr_out_nodes) != sorted(out_audio_nodes)):
-        raise error.TestFail('Wrong output node(s) plugged %s '
-                'instead %s!' % (str(curr_out_nodes), str(out_audio_nodes)))
+        raise error.TestFail('Wrong output node(s) plugged: %s '
+                'expected: %s!' % (str(curr_out_nodes), str(out_audio_nodes)))
 
 
 def bluetooth_nodes_plugged(audio_facade):
@@ -149,7 +156,7 @@ def has_internal_speaker(host):
 
     """
     board_name = _get_board_name(host)
-    if host.get_board_type() == 'CHROMEBOX' and board_name != 'stumpy':
+    if not audio_spec.has_internal_speaker(host.get_board_type(), board_name):
         logging.info('Board %s does not have speaker.', board_name)
         return False
     return True
@@ -164,7 +171,7 @@ def has_internal_microphone(host):
 
     """
     board_name = _get_board_name(host)
-    if host.get_board_type() == 'CHROMEBOX':
+    if not audio_spec.has_internal_microphone(host.get_board_type()):
         logging.info('Board %s does not have internal microphone.', board_name)
         return False
     return True
@@ -179,7 +186,7 @@ def has_headphone(host):
 
     """
     board_name = _get_board_name(host)
-    if host.get_board_type() == 'CHROMEBIT':
+    if not audio_spec.has_headphone(host.get_board_type()):
         logging.info('Board %s does not have headphone.', board_name)
         return False
     return True
@@ -242,10 +249,10 @@ def examine_audio_diagnostics(path):
 
     @param path: Path to audio diagnostic file.
 
-    @raise: error.TestFail if there is unexpected result.
+    @returns: Warning messages or ''.
 
     """
-    error_msgs = []
+    warning_msgs = []
     line_number = 1
 
     underrun_pattern = re.compile('num_underruns: (\d*)')
@@ -258,18 +265,19 @@ def examine_audio_diagnostics(path):
             if search_result:
                 num_underruns = int(search_result.group(1))
                 if num_underruns != 0:
-                    error_msgs.append(
-                            'Found nonzero underrun at line %d: %s' % (
-                                    line_number, line))
+                    warning_msgs.append(
+                            'Found %d underrun at line %d: %s' % (
+                                    num_underruns, line_number, line))
 
             # TODO(cychiang) add other check like maximum client reply delay.
             line_number = line_number + 1
 
-    if error_msgs:
-        raise error.TestFail('Found issue in audio diganostics result : %s',
-                             '\n'.join(error_msgs))
+    if warning_msgs:
+        return ('Found issue in audio diganostics result : %s' %
+                '\n'.join(warning_msgs))
 
     logging.info('audio_diagnostic result looks fine')
+    return ''
 
 
 @contextmanager
@@ -574,17 +582,26 @@ def check_recorded_frequency(
                         '(%f Hz, %f)' % (test_channel, freq, coeff))
 
         # Filter out the frequencies to be ignored.
-        spectral = [x for x in spectral if not should_be_ignored(x[0])]
+        spectral_post_ignore = [
+                x for x in spectral if not should_be_ignored(x[0])]
 
-        if len(spectral) > 1:
-            first_coeff = spectral[0][1]
-            second_coeff = spectral[1][1]
+        if len(spectral_post_ignore) > 1:
+            first_coeff = spectral_post_ignore[0][1]
+            second_coeff = spectral_post_ignore[1][1]
             if second_coeff > first_coeff * second_peak_ratio:
                 errors.append(
                         'Channel %d: Found large second dominant frequencies: '
-                        '%s' % (test_channel, spectral))
+                        '%s' % (test_channel, spectral_post_ignore))
 
-        dominant_spectrals.append(spectral[0])
+        if not spectral_post_ignore:
+            errors.append(
+                    'Channel %d: No frequency left after removing unwanted '
+                    'frequencies. Spectral: %s; After removing unwanted '
+                    'frequencies: %s' %
+                    (test_channel, spectral, spectral_post_ignore))
+
+        else:
+            dominant_spectrals.append(spectral_post_ignore[0])
 
     if errors:
         raise error.TestFail(', '.join(errors))
@@ -678,3 +695,52 @@ def compare_recorded_correlation(golden_file, recorder, parameters=None):
             golden_file.get_binary(), golden_file.data_format,
             recorder.get_binary(), recorder.data_format, recorder.channel_map,
             parameters)
+
+
+def check_and_set_chrome_active_node_types(audio_facade, output_type=None,
+                                           input_type=None):
+   """Check the target types are available, and set them to be active nodes.
+
+   @param audio_facade: An AudioFacadeNative or AudioFacadeAdapter object.
+   @output_type: An output node type defined in cras_utils.CRAS_NODE_TYPES.
+                 None to skip.
+   @input_type: An input node type defined in cras_utils.CRAS_NODE_TYPES.
+                 None to skip.
+
+   @raises: error.TestError if the expected node type is missing. We use
+            error.TestError here because usually this step is not the main
+            purpose of the test, but a setup step.
+
+   """
+   output_types, input_types = audio_facade.get_plugged_node_types()
+   logging.debug('Plugged types: output: %r, input: %r',
+                 output_types, input_types)
+   if output_type and output_type not in output_types:
+       raise error.TestError(
+               'Target output type %s not present' % output_type)
+   if input_type and input_type not in input_types:
+       raise error.TestError(
+               'Target input type %s not present' % input_type)
+   audio_facade.set_chrome_active_node_type(output_type, input_type)
+
+
+def check_hp_or_lineout_plugged(audio_facade):
+    """Checks whether line-out or headphone is plugged.
+
+    @param audio_facade: A RemoteAudioFacade to access audio functions on
+                         Cros device.
+
+    @returns: 'LINEOUT' if line-out node is plugged.
+              'HEADPHONE' if headphone node is plugged.
+
+    @raises: error.TestFail if the plugged nodes does not contain one of
+             'LINEOUT' and 'HEADPHONE'.
+
+    """
+    # Checks whether line-out or headphone is detected.
+    output_nodes, _ = audio_facade.get_plugged_node_types()
+    if 'LINEOUT' in output_nodes:
+        return 'LINEOUT'
+    if 'HEADPHONE' in output_nodes:
+        return 'HEADPHONE'
+    raise error.TestFail('Can not detect line-out or headphone')

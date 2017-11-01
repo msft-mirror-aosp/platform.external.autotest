@@ -8,6 +8,8 @@ from autotest_lib.client.common_lib import autotemp, revision_control, utils
 
 _READ_SIZE = 64*1024
 _MAX_PACKAGE_SIZE = 100*1024*1024
+_CHROMEOS_MIRROR = ('http://commondatastorage.googleapis.com/'
+                    'chromeos-mirror/gentoo/distfiles/')
 
 
 class Error(Exception):
@@ -591,8 +593,7 @@ class SetuptoolsPackage(ExternalPackage):
     # try to install the latest found on the upstream.
     minimum_version = '18.0.1'
     version = '18.0.1'
-    urls = ('http://pypi.python.org/packages/source/s/setuptools/'
-            'setuptools-%s.tar.gz' % (version,),)
+    urls = (_CHROMEOS_MIRROR + 'setuptools-%s.tar.gz' % (version,),)
     local_filename = 'setuptools-%s.tar.gz' % version
     hex_sum = 'ebc4fe81b7f6d61d923d9519f589903824044f52'
 
@@ -645,10 +646,9 @@ class MySQLdbPackage(ExternalPackage):
     """mysql package, used in scheduler."""
     module_name = 'MySQLdb'
     version = '1.2.3'
-    urls = ('http://downloads.sourceforge.net/project/mysql-python/'
-            'mysql-python/%(version)s/MySQL-python-%(version)s.tar.gz'
-            % dict(version=version),)
     local_filename = 'MySQL-python-%s.tar.gz' % version
+    urls = ('http://commondatastorage.googleapis.com/chromeos-mirror/gentoo/'
+            'distfiles/%s' % local_filename,)
     hex_sum = '3511bb8c57c6016eeafa531d5c3ea4b548915e3c'
 
     _build_and_install_current_dir = (
@@ -669,7 +669,7 @@ class DjangoPackage(ExternalPackage):
     """django package."""
     version = '1.5.1'
     local_filename = 'Django-%s.tar.gz' % version
-    urls = ('http://www.djangoproject.com/download/%s/tarball/' % version,)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = '0ab97b90c4c79636e56337f426f1e875faccbba1'
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -689,8 +689,7 @@ class NumpyPackage(ExternalPackage):
     """numpy package, required by matploglib."""
     version = '1.7.0'
     local_filename = 'numpy-%s.tar.gz' % version
-    urls = ('http://downloads.sourceforge.net/project/numpy/NumPy/%(version)s/'
-            'numpy-%(version)s.tar.gz' % dict(version=version),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = 'ba328985f20390b0f969a5be2a6e1141d5752cf9'
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -708,8 +707,7 @@ class MatplotlibPackage(ExternalPackage):
     version = '0.98.5.3'
     short_version = '0.98.5'
     local_filename = 'matplotlib-%s.tar.gz' % version
-    urls = ('http://downloads.sourceforge.net/project/matplotlib/matplotlib/'
-            'matplotlib-%s/matplotlib-%s.tar.gz' % (short_version, version),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = '2f6c894cf407192b3b60351bcc6468c0385d47b6'
     os_requirements = {('/usr/include/freetype2/ft2build.h',
                         '/usr/include/ft2build.h'): 'libfreetype6-dev',
@@ -720,92 +718,16 @@ class MatplotlibPackage(ExternalPackage):
             ExternalPackage._build_and_install_current_dir_setupegg_py)
 
 
-class AtForkPackage(ExternalPackage):
-    """atfork package"""
-    version = '0.1.2'
-    local_filename = 'atfork-%s.zip' % version
-    # Since the url doesn't include version anymore, there exists a small
-    # chance that the url and hex_sum remain the same but a package with new
-    # version is linked by this url.
-    urls = ('https://github.com/google/python-atfork/archive/master.zip',)
-    hex_sum = '868dace98201cf8a920287c6186f135c1ec70cb0'
-    extracted_package_path = 'python-atfork-master'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-            ExternalPackage._build_and_install_current_dir_noegg)
-
-
-class ParamikoPackage(ExternalPackage):
-    """paramiko package"""
-    version = '1.7.5'
-    local_filename = 'paramiko-%s.zip' % version
-    urls = ('https://pypi.python.org/packages/source/p/paramiko/' + local_filename,)
-    hex_sum = 'd23e437c0d8bd6aeb181d9990a9d670fb30d0c72'
-
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-
-
-    def _check_for_pycrypto(self):
-        # NOTE(gps): Linux distros have better python-crypto packages than we
-        # can easily get today via a wget due to the library's age and staleness
-        # yet many security and behavior bugs are fixed by patches that distros
-        # already apply.  PyCrypto has a new active maintainer in 2009.  Once a
-        # new release is made (http://pycrypto.org/) we should add an installer.
-        try:
-            import Crypto
-        except ImportError:
-            logging.error('Please run "sudo apt-get install python-crypto" '
-                          'or your Linux distro\'s equivalent.')
-            return False
-        return True
-
-
-    def _build_and_install_current_dir(self, install_dir):
-        if not self._check_for_pycrypto():
-            return False
-        # paramiko 1.7.4 doesn't require building, it is just a module directory
-        # that we can rsync into place directly.
-        if not os.path.isdir('paramiko'):
-            raise Error('no paramiko directory in %s.' % os.getcwd())
-        status = system("rsync -r 'paramiko' '%s/'" % install_dir)
-        if status:
-            logging.error('%s rsync to install_dir failed.', self.name)
-            return False
-        return True
-
-
 class JsonRPCLib(ExternalPackage):
     """jsonrpclib package"""
     version = '0.1.3'
     module_name = 'jsonrpclib'
     local_filename = '%s-%s.tar.gz' % (module_name, version)
-    urls = ('http://pypi.python.org/packages/source/j/%s/%s' %
-            (module_name, local_filename), )
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = '431714ed19ab677f641ce5d678a6a95016f5c452'
 
     def _get_installed_version_from_module(self, module):
         # jsonrpclib doesn't contain a proper version
-        return self.version
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-
-class Httplib2Package(ExternalPackage):
-    """httplib2 package"""
-    version = '0.6.0'
-    local_filename = 'httplib2-%s.tar.gz' % version
-    # Cannot use the newest httplib2 package 0.9.2 since it cannot be installed
-    # directly in a temp folder. So keep it as 0.6.0.
-    urls = ('https://launchpad.net/ubuntu/+archive/primary/+files/'
-            'python-httplib2_' + version + '.orig.tar.gz',)
-    hex_sum = '995344b2704826cc0d61a266e995b328d92445a5'
-
-    def _get_installed_version_from_module(self, module):
-        # httplib2 doesn't contain a proper version
         return self.version
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -858,88 +780,6 @@ class GwtPackage(ExternalPackage):
         return True
 
 
-class GVizAPIPackage(ExternalPackage):
-    """gviz package"""
-    module_name = 'gviz_api'
-    version = '1.8.2'
-    local_filename = 'google-visualization-python.zip'
-    urls = ('https://github.com/google/google-visualization-python/'
-            'archive/master.zip',)
-    hex_sum = 'ec70fb8b874eae21e331332065415318f6fe4882'
-    extracted_package_path = 'google-visualization-python-master'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-    def _get_installed_version_from_module(self, module):
-        # gviz doesn't contain a proper version
-        return self.version
-
-
-class StatsdPackage(ExternalPackage):
-    """python-statsd package"""
-    version = '1.7.2'
-    url_filename = 'python-statsd-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/p/python-statsd/%s' % (
-        url_filename),)
-    hex_sum = '2cc186ebdb723e2420b432ab71639786d877694b'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_setup_py)
-
-
-class GdataPackage(ExternalPackage):
-    """
-    Pulls the GData library, giving us an API to query tracker.
-    """
-    version = '2.0.18'
-    local_filename = 'gdata-%s.zip' % version
-    urls = ('https://github.com/google/gdata-python-client/' +
-            'archive/master.zip',)
-    hex_sum = '893f9c9f627ef92afe8f3f066311d9b3748f1732'
-    extracted_package_path = 'gdata-python-client-master'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-    def _get_installed_version_from_module(self, module):
-        # gdata doesn't contain a proper version
-        return self.version
-
-
-class DnsPythonPackage(ExternalPackage):
-    """
-    dns module
-
-    Used in unittests.
-    """
-    module_name = 'dns'
-    version = '1.3.5'
-    url_filename = 'dnspython-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://www.dnspython.org/kits/%s/%s' % (
-        version, url_filename),)
-
-    hex_sum = '06314dad339549613435470c6add992910e26e5d'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-    def _get_installed_version_from_module(self, module):
-        """Ask our module its version string and return it or '' if unknown."""
-        try:
-            __import__(self.module_name + '.version')
-            return module.version.version
-        except AttributeError:
-            logging.error('could not get version from %s', module)
-            return ''
-
-
 class PyudevPackage(ExternalPackage):
     """
     pyudev module
@@ -949,8 +789,7 @@ class PyudevPackage(ExternalPackage):
     version = '0.16.1'
     url_filename = 'pyudev-%s.tar.gz' % version
     local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/p/pyudev/%s' % (
-        url_filename),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = 'b36bc5c553ce9b56d32a5e45063a2c88156771c0'
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -981,25 +820,6 @@ class PyMoxPackage(ExternalPackage):
         return self.version
 
 
-class MockPackage(ExternalPackage):
-    """
-    mock module
-
-    Used in unittests.
-    """
-    module_name = 'mock'
-    version = '2.0.0'
-    url_filename = 'mock-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/m/mock/%s' % (
-        url_filename),)
-    hex_sum = '397ed52eb2d8d4b326bc3fa6b38adda5f0b090d3'
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-
 class PySeleniumPackage(ExternalPackage):
     """
     selenium module
@@ -1010,8 +830,7 @@ class PySeleniumPackage(ExternalPackage):
     version = '2.37.2'
     url_filename = 'selenium-%s.tar.gz' % version
     local_filename = url_filename
-    urls = ('https://pypi.python.org/packages/source/s/selenium/%s' % (
-        url_filename),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = '66946d5349e36d946daaad625c83c30c11609e36'
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -1027,8 +846,7 @@ class FaultHandlerPackage(ExternalPackage):
     version = '2.3'
     url_filename = '%s-%s.tar.gz' % (module_name, version)
     local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/f/faulthandler/%s' %
-            (url_filename),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = 'efb30c068414fba9df892e48fcf86170cbf53589'
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -1044,8 +862,7 @@ class PsutilPackage(ExternalPackage):
     version = '2.1.1'
     url_filename = '%s-%s.tar.gz' % (module_name, version)
     local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/p/psutil/%s' %
-            (url_filename),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = '0c20a20ed316e69f2b0881530439213988229916'
 
     _build_and_install = ExternalPackage._build_and_install_from_package
@@ -1079,48 +896,119 @@ class Urllib3Package(ExternalPackage):
     version = '1.9'
     url_filename = 'urllib3-%s.tar.gz' % version
     local_filename = url_filename
-    urls = ('https://pypi.python.org/packages/source/u/urllib3/%s' %
-            (url_filename),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = '9522197efb2a2b49ce804de3a515f06d97b6602f'
     _build_and_install = ExternalPackage._build_and_install_from_package
     _build_and_install_current_dir = (
             ExternalPackage._build_and_install_current_dir_setup_py)
 
-
 class ImagingLibraryPackage(ExternalPackage):
-    """Python Imaging Library (PIL)."""
-    version = '1.1.7'
-    url_filename = 'Imaging-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://effbot.org/downloads/%s' % url_filename,)
-    hex_sum = '76c37504251171fda8da8e63ecb8bc42a69a5c81'
+     """Python Imaging Library (PIL)."""
+     version = '1.1.7'
+     url_filename = 'Imaging-%s.tar.gz' % version
+     local_filename = url_filename
+     urls = ('http://commondatastorage.googleapis.com/chromeos-mirror/gentoo/'
+             'distfiles/%s' % url_filename,)
+     hex_sum = '76c37504251171fda8da8e63ecb8bc42a69a5c81'
 
-    def _build_and_install(self, install_dir):
-        # The path of zlib library might be different from what PIL setup.py is
-        # expected. Following change does the best attempt to link the library
-        # to a path PIL setup.py will try.
-        libz_possible_path = '/usr/lib/x86_64-linux-gnu/libz.so'
-        libz_expected_path = '/usr/lib/libz.so'
-        if (os.path.exists(libz_possible_path) and
-            not os.path.exists(libz_expected_path)):
-            utils.run('sudo ln -s %s %s' %
-                      (libz_possible_path, libz_expected_path))
-        return self._build_and_install_from_package(install_dir)
+     def _build_and_install(self, install_dir):
+         #The path of zlib library might be different from what PIL setup.py is
+         #expected. Following change does the best attempt to link the library
+         #to a path PIL setup.py will try.
+         libz_possible_path = '/usr/lib/x86_64-linux-gnu/libz.so'
+         libz_expected_path = '/usr/lib/libz.so'
+         if (os.path.exists(libz_possible_path) and
+             not os.path.exists(libz_expected_path)):
+             utils.run('sudo ln -s %s %s' %
+                       (libz_possible_path, libz_expected_path))
+         return self._build_and_install_from_package(install_dir)
 
-    _build_and_install_current_dir = (
-            ExternalPackage._build_and_install_current_dir_noegg)
+     _build_and_install_current_dir = (
+             ExternalPackage._build_and_install_current_dir_noegg)
 
 
 class AstroidPackage(ExternalPackage):
     """astroid package."""
-    version = '1.0.0'
+    version = '1.5.3'
     url_filename = 'astroid-%s.tar.gz' % version
     local_filename = url_filename
-    #md5=e74430dfbbe09cd18ef75bd76f95425a
-    urls = ('https://pypi.python.org/packages/15/ef/'
-            '1c01161c40ce08451254125935c5bca85b08913e610a4708760ee1432fa8/%s' %
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = 'e654225ab5bd2788e5e246b156910990bf33cde6'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class LazyObjectProxyPackage(ExternalPackage):
+    """lazy-object-proxy package (dependency for astroid)."""
+    version = '1.3.1'
+    url_filename = 'lazy-object-proxy-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '984828d8f672986ca926373986214d7057b772fb'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class SingleDispatchPackage(ExternalPackage):
+    """singledispatch package (dependency for astroid)."""
+    version = '3.4.0.3'
+    url_filename = 'singledispatch-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = 'f93241b06754a612af8bb7aa208c4d1805637022'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class Enum34Package(ExternalPackage):
+    """enum34 package (dependency for astroid)."""
+    version = '1.1.6'
+    url_filename = 'enum34-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '014ef5878333ff91099893d615192c8cd0b1525a'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class WraptPackage(ExternalPackage):
+    """wrapt package (dependency for astroid)."""
+    version = '1.10.10'
+    url_filename = 'wrapt-%s.tar.gz' % version
+    local_filename = url_filename
+    #md5=97365e906afa8b431f266866ec4e2e18
+    urls = ('https://pypi.python.org/packages/a3/bb/'
+            '525e9de0a220060394f4aa34fdf6200853581803d92714ae41fc3556e7d7/%s' %
             (url_filename),)
-    hex_sum = '2ebba76d115cb8a2d84d8777d8535ddac86daaa6'
+    hex_sum = '6be4f1bb50db879863f4247692360eb830a3eb33'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_noegg)
+
+
+class SixPackage(ExternalPackage):
+    """six package (dependency for astroid)."""
+    version = '1.10.0'
+    url_filename = 'six-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '30d480d2e352e8e4c2aae042cf1bf33368ff0920'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class LruCachePackage(ExternalPackage):
+    """backports.functools_lru_cache package (dependency for astroid)."""
+    version = '1.4'
+    url_filename = 'backports.functools_lru_cache-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '8a546e7887e961c2873c9b053f4e2cd2a96bd71d'
     _build_and_install = ExternalPackage._build_and_install_from_package
     _build_and_install_current_dir = (
             ExternalPackage._build_and_install_current_dir_setup_py)
@@ -1132,10 +1020,7 @@ class LogilabCommonPackage(ExternalPackage):
     module_name = 'logilab'
     url_filename = 'logilab-common-%s.tar.gz' % version
     local_filename = url_filename
-    #md5=daa7b20c8374ff5f525882cf67e258c0
-    urls = ('https://pypi.python.org/packages/63/5b/'
-            'd4d93ad9e683a06354bc5893194514fbf5d05ef86b06b0285762c3724509/%s' %
-            (url_filename),)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = 'ecad2d10c31dcf183c8bed87b6ec35e7ed397d27'
     _build_and_install = ExternalPackage._build_and_install_from_package
     _build_and_install_current_dir = (
@@ -1144,14 +1029,62 @@ class LogilabCommonPackage(ExternalPackage):
 
 class PyLintPackage(ExternalPackage):
     """pylint package."""
-    version = '1.1.0'
+    version = '1.7.2'
     url_filename = 'pylint-%s.tar.gz' % version
     local_filename = url_filename
-    #md5=017299b5911838a9347a71de5f946afc
-    urls = ('https://pypi.python.org/packages/09/69/'
-            'cf252f211dbbf58bbbe01a3931092d8a8df8d55f5fe23ac5cef145aa6468/%s' %
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '42d8b9394e5a485377ae128b01350f25d8b131e0'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class ConfigParserPackage(ExternalPackage):
+    """configparser package (dependency for pylint)."""
+    version = '3.5.0'
+    url_filename = 'configparser-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '8ee6b29c6a11977c0e094da1d4f5f71e7e7ac78b'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class IsortPackage(ExternalPackage):
+    """isort package (dependency for pylint)."""
+    version = '4.2.15'
+    url_filename = 'isort-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = 'acacc36e476b70e13e6fda812c193f4c3c187781'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class Pytz(ExternalPackage):
+    """Pytz package."""
+    version = '2016.10'
+    url_filename = 'pytz-%s.tar.gz' % version
+    local_filename = url_filename
+    #md5=cc9f16ba436efabdcef3c4d32ae4919c
+    urls = ('https://pypi.python.org/packages/42/00/'
+            '5c89fc6c9b305df84def61863528e899e9dccb196f8438f6cbe960758fc5/%s' %
             (url_filename),)
-    hex_sum = 'b33594a2c627d72007bfa8c6d7619af699e26085'
+    hex_sum = '8d63f1e9b1ee862841b990a7d8ad1d4508d9f0be'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+class Tzlocal(ExternalPackage):
+    """Tzlocal package."""
+    version = '1.3'
+    url_filename = 'tzlocal-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '730e9d7112335865a1dcfabec69c8c3086be424f'
     _build_and_install = ExternalPackage._build_and_install_from_package
     _build_and_install_current_dir = (
             ExternalPackage._build_and_install_current_dir_setup_py)
@@ -1268,32 +1201,6 @@ class ChromiteRepo(_ExternalGitRepo):
                 abs_work_tree=local_chromite_dir)
         git_repo.reinit_repo_at(init_branch)
 
-
-        if git_repo.get_latest_commit_hash():
-            return True
-        return False
-
-
-class DevServerRepo(_ExternalGitRepo):
-    """Clones or updates the chromite repo."""
-
-    _GIT_URL = ('https://chromium.googlesource.com/'
-                'chromiumos/platform/dev-util')
-
-    def build_and_install(self, install_dir):
-        """
-        Clone if the repo isn't initialized, pull clean bits if it is.
-
-        Unlike it's hdctools counterpart the dev-util repo clones master
-        directly into site-packages. It doesn't use an intermediate temp
-        directory because it doesn't need installation.
-
-        @param install_dir: destination directory for chromite installation.
-        """
-        local_devserver_dir = os.path.join(install_dir, 'devserver')
-        git_repo = revision_control.GitRepo(local_devserver_dir, self._GIT_URL,
-                                            abs_work_tree=local_devserver_dir)
-        git_repo.reinit_repo_at(self.PROD_BRANCH)
 
         if git_repo.get_latest_commit_hash():
             return True

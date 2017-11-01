@@ -10,10 +10,8 @@ NOTE: This module should only be used in the context of a running test. Any
 """
 
 import common
-from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros import provision
-from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 
 
@@ -44,99 +42,6 @@ def _host_in_lab(host):
     if not host.job or not host.job.in_lab:
         return False
     return host._afe_host
-
-
-def get_labels(host, prefix=None):
-    """Get labels of a host with name started with given prefix.
-
-    @param prefix: Prefix of label names, if None, return all labels.
-
-    @returns List of labels that match the prefix or if prefix is None, all
-             labels.
-    """
-    if not prefix:
-        return host._afe_host.labels
-
-    return [label for label in host._afe_host.labels
-            if label.startswith(prefix)]
-
-
-def get_build(host):
-    """Retrieve the current build for a given host stored inside host._afe_host.
-
-    Looks through a host's labels in host._afe_host.labels to determine
-    its build.
-
-    @param host: Host object to get build.
-
-    @returns The current build or None if it could not find it or if there
-             were multiple build labels assigned to the host.
-    """
-    for label_prefix in [provision.CROS_VERSION_PREFIX,
-                         provision.ANDROID_BUILD_VERSION_PREFIX,
-                         provision.TESTBED_BUILD_VERSION_PREFIX]:
-        full_label_prefix = label_prefix + ':'
-        build_labels = get_labels(host, full_label_prefix)
-        if build_labels:
-            return build_labels[0][len(full_label_prefix):]
-    return None
-
-
-def get_boards(host):
-    """Retrieve all boards for a given host stored inside host._afe_host.
-
-    @param host: Host object to get board.
-
-    @returns List of all boards.
-    """
-    return [board[len(constants.BOARD_PREFIX):]
-            for board in get_labels(host, constants.BOARD_PREFIX)]
-
-
-def get_board(host):
-    """Retrieve the board for a given host stored inside host._afe_host.
-
-    @param host: Host object to get board.
-
-    @returns The current board or None if it could not find it.
-    """
-    boards = get_boards(host)
-    if not boards:
-        return None
-    return boards[0]
-
-
-
-def clear_version_labels(host):
-    """Clear version labels for a given host.
-
-    @param host: Host whose version labels to clear.
-    """
-    host._afe_host.labels = [label for label in host._afe_host.labels
-                             if not label.startswith(host.VERSION_PREFIX)]
-    if not _host_in_lab(host):
-        return
-
-    host_list = [host.hostname]
-    labels = AFE.get_labels(
-            name__startswith=host.VERSION_PREFIX,
-            host__hostname=host.hostname)
-
-    for label in labels:
-        label.remove_hosts(hosts=host_list)
-
-
-def add_version_label(host, image_name):
-    """Add version labels to a host.
-
-    @param host: Host to add the version label for.
-    @param image_name: Name of the build version to add to the host.
-    """
-    label = '%s:%s' % (host.VERSION_PREFIX, image_name)
-    host._afe_host.labels.append(label)
-    if not _host_in_lab(host):
-        return
-    AFE.run('label_add_hosts', id=label, hosts=[host.hostname])
 
 
 def get_stable_cros_image_name(board):
@@ -182,76 +87,18 @@ def get_stable_android_version(board):
     return _ANDROID_VERSION_MAP.get_version(board)
 
 
-def lookup_job_repo_url(host):
-    """Looks up the job_repo_url for the host.
-
-    The method is kept for backwards compatibility with test
-    autoupdate_EndToEndTest in existing builds. It should not be used for new
-    code.
-    TODO(dshi): Update autoupdate_EndToEndTest to use get_host_attribute after
-    lab is updated. After R50 is in stable channel, this method can be removed.
-
-    @param host: A Host object to lookup for job_repo_url.
-
-    @returns Host attribute `job_repo_url` of the given host.
-    """
-    return get_host_attribute(host, host.job_repo_url_attribute)
-
-
-def get_host_attribute(host, attribute, use_local_value=True):
-    """Looks up the value of host attribute for the host.
-
-    @param host: A Host object to lookup for attribute value.
-    @param attribute: Name of the host attribute.
-    @param use_local_value: Boolean to indicate if the local value or AFE value
-            should be retrieved.
-
-    @returns value for the given attribute or None if not found.
-    """
-    local_value = host._afe_host.attributes.get(attribute)
-    if not _host_in_lab(host) or use_local_value:
-        return local_value
-
-    hosts = AFE.get_hosts(hostname=host.hostname)
-    if hosts and attribute in hosts[0].attributes:
-        return hosts[0].attributes[attribute]
-    else:
-        return local_value
-
-
-def clear_host_attributes_before_provision(host):
+def _clear_host_attributes_before_provision(host, info):
     """Clear host attributes before provision, e.g., job_repo_url.
 
     @param host: A Host object to clear attributes before provision.
+    @param info: A HostInfo to update the attributes in.
     """
     attributes = host.get_attributes_to_clear_before_provision()
-    for attribute in attributes:
-        host._afe_host.attributes.pop(attribute, None)
-    if not _host_in_lab(host):
+    if not attributes:
         return
 
-    for attribute in attributes:
-        update_host_attribute(host, attribute, None)
-
-
-def update_host_attribute(host, attribute, value):
-    """Updates the host attribute with given value.
-
-    @param host: A Host object to update attribute value.
-    @param attribute: Name of the host attribute.
-    @param value: Value for the host attribute.
-
-    @raises AutoservError: If we failed to update the attribute.
-    """
-    host._afe_host.attributes[attribute] = value
-    if not _host_in_lab(host):
-        return
-
-    AFE.set_host_attribute(attribute, value, hostname=host.hostname)
-    if get_host_attribute(host, attribute, use_local_value=False) != value:
-        raise error.AutoservError(
-                'Failed to update host attribute `%s` with %s, host %s' %
-                (attribute, value, host.hostname))
+    for key in attributes:
+        info.attributes.pop(key, None)
 
 
 def machine_install_and_update_labels(host, *args, **dargs):
@@ -260,9 +107,16 @@ def machine_install_and_update_labels(host, *args, **dargs):
     @param host: Host object to run machine_install on.
     @param *args: Args list to pass to machine_install.
     @param **dargs: dargs dict to pass to machine_install.
+
     """
-    clear_version_labels(host)
-    clear_host_attributes_before_provision(host)
+    # **dargs also carries an additional bool arg to determine whether
+    # the provisioning is w/ or w/o cheets. with_cheets arg will be popped in
+    # beginning so machine_install isn't affected by with_cheets presence.
+    with_cheets = dargs.pop('with_cheets', False)
+    info = host.host_info_store.get()
+    info.clear_version_labels()
+    _clear_host_attributes_before_provision(host, info)
+    host.host_info_store.commit(info)
     # If ENABLE_DEVSERVER_TRIGGER_AUTO_UPDATE is enabled and the host is a
     # CrosHost, devserver will be used to trigger auto-update.
     if host.support_devserver_provision:
@@ -270,20 +124,10 @@ def machine_install_and_update_labels(host, *args, **dargs):
             *args, **dargs)
     else:
         image_name, host_attributes = host.machine_install(*args, **dargs)
-    for attribute, value in host_attributes.items():
-        update_host_attribute(host, attribute, value)
-    add_version_label(host, image_name)
 
-
-def get_os(host):
-    """Retrieve the os for a given host stored inside host._afe_host.
-
-    @param host: Host object to get board.
-
-    @returns The os or None if it could not find it.
-    """
-    full_os_prefix = constants.OS_PREFIX + ':'
-    os_labels = get_labels(host, full_os_prefix)
-    if not os_labels:
-        return None
-    return os_labels[0][len(full_os_prefix):]
+    info = host.host_info_store.get()
+    info.attributes.update(host_attributes)
+    if with_cheets == True:
+        image_name += provision.CHEETS_SUFFIX
+    info.set_version_label(host.VERSION_PREFIX, image_name)
+    host.host_info_store.commit(info)

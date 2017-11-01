@@ -12,6 +12,8 @@ from math import sqrt
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.cros.graphics import graphics_utils
+from autotest_lib.client.cros.video import helper_logger
 
 TEST_PAGE = 'content.html'
 
@@ -68,26 +70,9 @@ KERNEL_MEMORY_ENTRIES = ['Slab', 'Shmem', 'KernelStack', 'PageTables']
 
 MEM_TOTAL_ENTRY = 'MemTotal'
 
-# Paths of files to read graphics memory usage from
-AMDGPU_GEM_OBJECTS_PATH = '/sys/kernel/debug/dri/0/amdgpu_gem_info'
-ARM_GEM_OBJECTS_PATH = '/sys/kernel/debug/dri/0/exynos_gem_objects'
-X86_GEM_OBJECTS_PATH = '/sys/kernel/debug/dri/0/i915_gem_objects'
-
-GEM_OBJECTS_PATH = {'amdgpu'    : AMDGPU_GEM_OBJECTS_PATH,
-                    'exynos5'   : ARM_GEM_OBJECTS_PATH,
-                    'x86_64'    : X86_GEM_OBJECTS_PATH}
-
-
-# To parse the content of the files abvoe. The first line looks like:
-# "432 objects, 272699392 bytes"
-GEM_OBJECTS_RE = re.compile('(\d+)\s+objects,\s+(\d+)\s+bytes')
-
 # The default sleep time, in seconds.
 SLEEP_TIME = 1.5
 
-
-_AMD_PCI_IDS_FILE_PATH = '/usr/local/autotest/bin/amd_pci_ids.json'
-_INTEL_PCI_IDS_FILE_PATH = '/usr/local/autotest/bin/intel_pci_ids.json'
 
 def _get_kernel_memory_usage():
     with file(MEMINFO_PATH) as f:
@@ -96,38 +81,17 @@ def _get_kernel_memory_usage():
     # Sum up the kernel memory usage (in KB) in mem_info
     return sum(map(mem_info.get, KERNEL_MEMORY_ENTRIES))
 
-def get_gem_path_from_gpu(gpu):
-    if 'mali' in gpu:
-        if utils.get_cpu_soc_family() == 'exynos5':
-            return 'exynos5'
-    if gpu in open(_AMD_PCI_IDS_FILE_PATH).read():
-        return 'amdgpu'
-    if gpu in open(_INTEL_PCI_IDS_FILE_PATH).read():
-        return 'x86_64'
-    return None
-
 def _get_graphics_memory_usage():
     """Get the memory usage (in KB) of the graphics module."""
-    gpu = utils.get_gpu_family()
-    gem_path = get_gem_path_from_gpu(gpu)
-    if gem_path in GEM_OBJECTS_PATH:
-        path = GEM_OBJECTS_PATH[gem_path]
-    else:
-        raise error.TestFail('Error: gem_path for gpu "%s" not specified.' % gpu)
-    try:
-        with open(path, 'r') as input:
-            for line in input:
-                result = GEM_OBJECTS_RE.match(line)
-                if result:
-                    return int(result.group(2)) / 1024 # in KB
-    except IOError as e:
-        if e.errno == os.errno.ENOENT: # no such file
-            logging.warning('graphics memory info is not available.')
-            return 0
-        raise
+    key = 'gem_objects_bytes'
+    graphics_kernel_memory = graphics_utils.GraphicsKernelMemory()
+    usage = graphics_kernel_memory.get_memory_keyvals().get(key, 0)
 
-    raise error.TestError('Cannot parse the content')
+    if graphics_kernel_memory.num_errors:
+        logging.warning('graphics memory info is not available')
+        return 0
 
+    return usage
 
 def _get_linear_regression_slope(x, y):
     """
@@ -385,6 +349,7 @@ def _get_testcase_name(class_name, videos):
 # Deprecate the logging messages at DEBUG level (and lower) in telemetry.
 # http://crbug.com/331992
 class TelemetryFilter(logging.Filter):
+    """Filter for telemetry logging."""
 
     def filter(self, record):
         return (record.levelno > logging.DEBUG or
@@ -395,11 +360,14 @@ class video_VideoDecodeMemoryUsage(test.test):
     """This is a memory usage test for video playback."""
     version = 1
 
+    @helper_logger.video_log_wrapper
     def run_once(self, testcases):
         last_error = None
         logging.getLogger().addFilter(TelemetryFilter())
 
-        with chrome.Chrome() as cr:
+        with chrome.Chrome(
+                extra_browser_args=helper_logger.chrome_vmodule_flag(),
+                init_network_controller=True) as cr:
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)
             for class_name, videos in testcases:
                 name = _get_testcase_name(class_name, videos)

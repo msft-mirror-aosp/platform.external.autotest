@@ -8,13 +8,13 @@ from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import power_suspend, sys_power
 
-
 class power_SuspendStress(test.test):
     """Class for test."""
     version = 1
 
     def initialize(self, duration, idle=False, init_delay=0, min_suspend=0,
-                   min_resume=0, check_connection=False, iterations=None):
+                   min_resume=0, max_resume_window=3, check_connection=False,
+                   iterations=None, suspend_state=''):
         """
         Entry point.
 
@@ -26,10 +26,16 @@ class power_SuspendStress(test.test):
         @param min_suspend: suspend durations will be chosen randomly out of
                 the interval between min_suspend and min_suspend + 3 seconds.
         @param min_resume: minimal time in seconds between suspends.
+        @param max_resume_window: maximum range to use between suspends. i.e.,
+                we will stay awake between min_resume and min_resume +
+                max_resume_window seconds.
         @param check_connection: If true, we check that the network interface
                 used for testing is up after resume. Otherwsie we reboot.
         @param iterations: number of times to attempt suspend.  If !=None has
                 precedence over duration.
+        @param suspend_state: Force to suspend to a specific
+                state ("mem" or "freeze"). If the string is empty, suspend
+                state is left to the default pref on the system.
         """
         self._endtime = time.time()
         if duration:
@@ -37,8 +43,10 @@ class power_SuspendStress(test.test):
         self._init_delay = init_delay
         self._min_suspend = min_suspend
         self._min_resume = min_resume
+        self._max_resume_window = max_resume_window
         self._check_connection = check_connection
         self._iterations = iterations
+        self._suspend_state = suspend_state
         self._method = sys_power.idle_suspend if idle else sys_power.do_suspend
 
     def _done(self):
@@ -50,18 +58,24 @@ class power_SuspendStress(test.test):
     def run_once(self):
         time.sleep(self._init_delay)
         self._suspender = power_suspend.Suspender(
-                self.resultsdir, method=self._method)
+                self.resultsdir, method=self._method,
+                suspend_state=self._suspend_state)
         # Find the interface which is used for most communication.
+        # We assume the interface connects to the gateway and has the lowest
+        # metric.
         if self._check_connection:
+            interface_choices={}
             with open('/proc/net/route') as fh:
                 for line in fh:
                     fields = line.strip().split()
                     if fields[1] != '00000000' or not int(fields[3], 16) & 2:
                         continue
-                    interface = fields[0]
+                    interface_choices[fields[0]] = fields[6]
+            interface = min(interface_choices)
 
         while not self._done():
-            time.sleep(self._min_resume + random.randint(0, 3))
+            time.sleep(self._min_resume +
+                       random.randint(0, self._max_resume_window))
             # Check the network interface to the caller is still available
             if self._check_connection:
                 link_status = None

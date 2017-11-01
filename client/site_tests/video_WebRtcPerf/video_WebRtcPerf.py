@@ -6,7 +6,7 @@ import logging
 import os
 import time
 
-from autotest_lib.client.bin import site_utils, test, utils
+from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.common_lib.cros import chrome
@@ -14,6 +14,7 @@ from autotest_lib.client.cros import power_status, power_utils
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.video import histogram_verifier
 from autotest_lib.client.cros.video import constants
+from autotest_lib.client.cros.video import helper_logger
 
 
 EXTRA_BROWSER_ARGS = ['--use-fake-device-for-media-stream',
@@ -80,10 +81,10 @@ ADD_STATS_JAVASCRIPT = (
         '  }'
         '}')
 
-# Measure the stats until getting 10 samples or exceeding 15 seconds. addStats
+# Measure the stats until getting 10 samples or exceeding 30 seconds. addStats
 # is called once per second for now.
 NUM_DECODE_TIME_SAMPLES = 10
-TIMEOUT = 15
+TIMEOUT = 60
 
 
 class video_WebRtcPerf(test.test):
@@ -93,6 +94,23 @@ class video_WebRtcPerf(test.test):
     """
     version = 1
     arc_mode = None
+
+
+    def initialize(self):
+        self._service_stopper = None
+        self._original_governors = None
+        self._backlight = None
+
+
+    def cleanup(self):
+        if self._backlight:
+            self._backlight.restore()
+        if self._service_stopper:
+            self._service_stopper.restore_services()
+        if self._original_governors:
+            utils.restore_scaling_governor_states(self._original_governors)
+
+        super(video_WebRtcPerf, self).cleanup()
 
 
     def start_loopback(self, cr):
@@ -125,6 +143,7 @@ class video_WebRtcPerf(test.test):
         return tab
 
 
+    @helper_logger.video_log_wrapper
     def run_once(self, decode_time_test=False, cpu_test=False,
                  power_test=False, arc_mode=None):
         """
@@ -178,8 +197,10 @@ class video_WebRtcPerf(test.test):
         keyvals = {}
         EXTRA_BROWSER_ARGS.append(FAKE_FILE_ARG % local_path)
 
-        with chrome.Chrome(extra_browser_args=EXTRA_BROWSER_ARGS,
-                           arc_mode=self.arc_mode) as cr:
+        with chrome.Chrome(extra_browser_args=EXTRA_BROWSER_ARGS +\
+                           [helper_logger.chrome_vmodule_flag()],
+                           arc_mode=self.arc_mode,
+                           init_network_controller=True) as cr:
             # On daisy, Chrome freezes about 30 seconds after login because of
             # TPM error. See http://crbug.com/588579.
             if utils.get_board() == 'daisy':
@@ -203,7 +224,16 @@ class video_WebRtcPerf(test.test):
         # Start chrome with disabled video hardware decode flag.
         with chrome.Chrome(extra_browser_args=
                 DISABLE_ACCELERATED_VIDEO_DECODE_BROWSER_ARGS +
-                EXTRA_BROWSER_ARGS, arc_mode=self.arc_mode) as cr:
+                EXTRA_BROWSER_ARGS, arc_mode=self.arc_mode,
+                init_network_controller=True) as cr:
+
+            # crbug/753292 - enforce the idle checks after login
+            if not utils.wait_for_idle_cpu(WAIT_FOR_IDLE_CPU_TIMEOUT,
+                                           CPU_IDLE_USAGE):
+                logging.warning('Could not get idle CPU post login.')
+            if not utils.wait_for_cool_machine():
+                logging.warning('Could not get cold machine post login.')
+
             if utils.get_board() == 'daisy':
               logging.warning('Delay 30s for issue 588579 on daisy')
               time.sleep(30)
@@ -232,27 +262,29 @@ class video_WebRtcPerf(test.test):
         """
         def get_cpu_usage(cr):
             time.sleep(STABILIZATION_DURATION)
-            cpu_usage_start = site_utils.get_cpu_usage()
+            cpu_usage_start = utils.get_cpu_usage()
             time.sleep(MEASUREMENT_DURATION)
-            cpu_usage_end = site_utils.get_cpu_usage()
-            return site_utils.compute_active_cpu_time(cpu_usage_start,
+            cpu_usage_end = utils.get_cpu_usage()
+            return utils.compute_active_cpu_time(cpu_usage_start,
                                                       cpu_usage_end) * 100
+
+        # crbug/753292 - APNG login pictures increase CPU usage. Move the more
+        # strict idle checks after the login phase.
+        utils.wait_for_idle_cpu(WAIT_FOR_IDLE_CPU_TIMEOUT, CPU_IDLE_USAGE)
+        utils.wait_for_cool_machine()
         if not utils.wait_for_idle_cpu(WAIT_FOR_IDLE_CPU_TIMEOUT,
                                        CPU_IDLE_USAGE):
-            raise error.TestError('Could not get idle CPU.')
+            logging.warning('Could not get idle CPU pre login.')
         if not utils.wait_for_cool_machine():
-            raise error.TestError('Could not get cool machine.')
+            logging.warning('Could not get cold machine pre login.')
+
         # Stop the thermal service that may change the cpu frequency.
-        services = service_stopper.ServiceStopper(THERMAL_SERVICES)
-        services.stop_services()
+        self._service_stopper = service_stopper.ServiceStopper(THERMAL_SERVICES)
+        self._service_stopper.stop_services()
         # Set the scaling governor to performance mode to set the cpu to the
         # highest frequency available.
-        original_governors = utils.set_high_performance_mode()
-        try:
-            return self.test_webrtc(local_path, get_cpu_usage)
-        finally:
-            services.restore_services()
-            utils.restore_scaling_governor_states(original_governors)
+        self._original_governors = utils.set_high_performance_mode()
+        return self.test_webrtc(local_path, get_cpu_usage)
 
 
     def test_power(self, local_path):
@@ -263,9 +295,21 @@ class video_WebRtcPerf(test.test):
 
         @return a dictionary that contains the test result.
         """
-        # Verify that we are running on battery and the battery is sufficiently
-        # charged.
+        self._backlight = power_utils.Backlight()
+        self._backlight.set_default()
+        self._service_stopper = service_stopper.ServiceStopper(
+                service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
+        self._service_stopper.stop_services()
+
         current_power_status = power_status.get_status()
+        # We expect the DUT is powered by battery now. But this is not always
+        # true due to other bugs. Disable this test temporarily as workaround.
+        # TODO(kcwu): remove this workaround after AC control is stable
+        #             crbug.com/723968
+        if current_power_status.on_ac():
+            logging.warning('Still powered by AC. Skip this test')
+            return {}
+        # Verify that the battery is sufficiently charged.
         current_power_status.assert_battery_state(BATTERY_INITIAL_CHARGED_MIN)
 
         measurements = [power_status.SystemPower(
@@ -281,16 +325,7 @@ class video_WebRtcPerf(test.test):
             keyval = power_logger.calc()
             return keyval['result_' + measurements[0].domain + '_pwr']
 
-        backlight = power_utils.Backlight()
-        backlight.set_default()
-        services = service_stopper.ServiceStopper(
-                service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
-        services.stop_services()
-        try:
-            return self.test_webrtc(local_path, get_power)
-        finally:
-            backlight.restore()
-            services.restore_services()
+        return self.test_webrtc(local_path, get_power)
 
 
     def test_decode_time(self, local_path):

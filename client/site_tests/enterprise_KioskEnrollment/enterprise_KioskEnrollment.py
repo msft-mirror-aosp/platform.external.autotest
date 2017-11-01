@@ -4,15 +4,12 @@
 
 import logging
 import os
-import time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import enrollment
-from autotest_lib.client.common_lib.cros import cfm_util
-
-TIMEOUT = 20
+from autotest_lib.client.common_lib.cros import kiosk_utils
 
 
 class enterprise_KioskEnrollment(test.test):
@@ -24,7 +21,7 @@ class enterprise_KioskEnrollment(test.test):
     EXT_PAGE = 'viewer.html'
 
     def _CheckKioskExtensionContexts(self, browser):
-        ext_contexts = cfm_util.wait_for_kiosk_ext(
+        ext_contexts = kiosk_utils.wait_for_kiosk_ext(
                 browser, self.EXT_ID)
         ext_urls = set([context.EvaluateJavaScript('location.href;')
                        for context in ext_contexts])
@@ -49,15 +46,7 @@ class enterprise_KioskEnrollment(test.test):
             logging.warn('No credentials found - exiting test.')
             return
 
-        with chrome.Chrome(auto_login=False) as cr:
+        with chrome.Chrome(auto_login=False,
+                           disable_gaia_services=False) as cr:
             enrollment.EnterpriseEnrollment(cr.browser, user_id, password)
-            time.sleep(TIMEOUT)
-
-        # This is a workaround fix for crbug.com/495847. A more permanent fix
-        # should be to get the kiosk app to auto launch after enrollment.
-        cr = chrome.Chrome(clear_enterprise_policy=False,
-                           dont_override_profile=True,
-                           disable_gaia_services=False,
-                           disable_default_apps=False,
-                           auto_login=False)
-        self._CheckKioskExtensionContexts(cr.browser)
+            self._CheckKioskExtensionContexts(cr.browser)

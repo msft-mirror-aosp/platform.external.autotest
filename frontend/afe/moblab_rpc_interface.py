@@ -7,34 +7,29 @@ This module includes all moblab-related RPCs. These RPCs can only be run
 on moblab.
 """
 
-# The boto module is only available/used in Moblab for validation of cloud
-# storage access. The module is not available in the test lab environment,
-# and the import error is handled.
-try:
-    import boto
-except ImportError:
-    boto = None
-
 import ConfigParser
 import common
 import logging
 import os
 import re
+import sys
 import shutil
 import socket
 import StringIO
 import subprocess
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import global_config, utils
+from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import utils
 from autotest_lib.frontend.afe import models
 from autotest_lib.frontend.afe import rpc_utils
 from autotest_lib.server import frontend
 from autotest_lib.server.hosts import moblab_host
-
+from chromite.lib import gs
 
 _CONFIG = global_config.global_config
 MOBLAB_BOTO_LOCATION = '/home/moblab/.boto'
+CROS_CACHEDIR = '/mnt/moblab/cros_cache_apache'
 
 # Google Cloud Storage bucket url regex pattern. The pattern is used to extract
 # the bucket name from the bucket URL. For example, "gs://image_bucket/google"
@@ -45,15 +40,36 @@ GOOGLE_STORAGE_BUCKET_URL_PATTERN = re.compile(
 # Contants used in Json RPC field names.
 _IMAGE_STORAGE_SERVER = 'image_storage_server'
 _GS_ACCESS_KEY_ID = 'gs_access_key_id'
-_GS_SECRETE_ACCESS_KEY = 'gs_secret_access_key'
+_GS_SECRET_ACCESS_KEY = 'gs_secret_access_key'
 _RESULT_STORAGE_SERVER = 'results_storage_server'
 _USE_EXISTING_BOTO_FILE = 'use_existing_boto_file'
+_CLOUD_NOTIFICATION_ENABLED = 'cloud_notification_enabled'
+_WIFI_AP_NAME = 'wifi_dut_ap_name'
+_WIFI_AP_PASS = 'wifi_dut_ap_pass'
 
 # Location where dhcp leases are stored.
 _DHCPD_LEASES = '/var/lib/dhcp/dhcpd.leases'
 
 # File where information about the current device is stored.
 _ETC_LSB_RELEASE = '/etc/lsb-release'
+
+# Full path to the correct gsutil command to run.
+class GsUtil:
+    """Helper class to find correct gsutil command."""
+    _GSUTIL_CMD = None
+
+    @classmethod
+    def get_gsutil_cmd(cls):
+      if not cls._GSUTIL_CMD:
+         cls._GSUTIL_CMD = gs.GSContext.GetDefaultGSUtilBin(
+           cache_dir=CROS_CACHEDIR)
+
+      return cls._GSUTIL_CMD
+
+
+class BucketPerformanceTestException(Exception):
+  """Exception thrown when the command to test the bucket performance fails."""
+  pass
 
 @rpc_utils.moblab_only
 def get_config_values():
@@ -254,8 +270,8 @@ def _get_public_ip_address(socket_handle):
 def _get_network_info():
     """Gets the network information.
 
-    TCP socket is used to test the connectivity. If there is no connectivity, try to
-    get the public IP with UDP socket.
+    TCP socket is used to test the connectivity. If there is no connectivity,
+    try to get the public IP with UDP socket.
 
     @return: a tuple as (public_ip_address, connected_to_internet).
     """
@@ -320,9 +336,9 @@ def get_cloud_storage_info():
         if _GS_ACCESS_KEY_ID in options:
             value = boto_config.get('Credentials', _GS_ACCESS_KEY_ID)
             cloud_storage_info[_GS_ACCESS_KEY_ID] = value
-        if _GS_SECRETE_ACCESS_KEY in options:
-            value = boto_config.get('Credentials', _GS_SECRETE_ACCESS_KEY)
-            cloud_storage_info[_GS_SECRETE_ACCESS_KEY] = value
+        if _GS_SECRET_ACCESS_KEY in options:
+            value = boto_config.get('Credentials', _GS_SECRET_ACCESS_KEY)
+            cloud_storage_info[_GS_SECRET_ACCESS_KEY] = value
 
     return rpc_utils.prepare_for_serialization(cloud_storage_info)
 
@@ -339,59 +355,12 @@ def _get_bucket_name_from_url(bucket_url):
     return None
 
 
-def _is_valid_boto_key(key_id, key_secret):
-    """Checks if the boto key is valid.
-
-    @param: key_id: The boto key id string.
-    @param: key_secret: The boto key string.
-
-    @return: A tuple as (valid_boolean, details_string).
-    """
-    if not key_id or not key_secret:
-        return (False, "Empty key id or secret.")
-    conn = boto.connect_gs(key_id, key_secret)
-    try:
-        buckets = conn.get_all_buckets()
-        return (True, None)
-    except boto.exception.GSResponseError:
-        details = "The boto access key is not valid"
-        return (False, details)
-    finally:
-        conn.close()
-
-
-def _is_valid_bucket(key_id, key_secret, bucket_name):
-    """Checks if a bucket is valid and accessible.
-
-    @param: key_id: The boto key id string.
-    @param: key_secret: The boto key string.
-    @param: bucket name string.
-
-    @return: A tuple as (valid_boolean, details_string).
-    """
-    if not key_id or not key_secret or not bucket_name:
-        return (False, "Server error: invalid argument")
-    conn = boto.connect_gs(key_id, key_secret)
-    bucket = conn.lookup(bucket_name)
-    conn.close()
-    if bucket:
-        return (True, None)
-    return (False, "Bucket %s does not exist." % bucket_name)
-
-
-def _is_valid_bucket_url(key_id, key_secret, bucket_url):
-    """Validates the bucket url is accessible.
-
-    @param: key_id: The boto key id string.
-    @param: key_secret: The boto key string.
-    @param: bucket url string.
-
-    @return: A tuple as (valid_boolean, details_string).
-    """
-    bucket_name = _get_bucket_name_from_url(bucket_url)
-    if bucket_name:
-        return _is_valid_bucket(key_id, key_secret, bucket_name)
-    return (False, "Bucket url %s is not valid" % bucket_url)
+def _is_valid_boto_key(key_id, key_secret, directory):
+  try:
+      _run_bucket_performance_test(key_id, key_secret, directory)
+  except BucketPerformanceTestException as e:
+       return(False, str(e))
+  return(True, None)
 
 
 def _validate_cloud_storage_info(cloud_storage_info):
@@ -405,17 +374,9 @@ def _validate_cloud_storage_info(cloud_storage_info):
     details = None
     if not cloud_storage_info[_USE_EXISTING_BOTO_FILE]:
         key_id = cloud_storage_info[_GS_ACCESS_KEY_ID]
-        key_secret = cloud_storage_info[_GS_SECRETE_ACCESS_KEY]
-        valid, details = _is_valid_boto_key(key_id, key_secret)
-
-        if valid:
-            valid, details = _is_valid_bucket_url(
-                key_id, key_secret, cloud_storage_info[_IMAGE_STORAGE_SERVER])
-
-        # allows result bucket to be empty.
-        if valid and cloud_storage_info[_RESULT_STORAGE_SERVER]:
-            valid, details = _is_valid_bucket_url(
-                key_id, key_secret, cloud_storage_info[_RESULT_STORAGE_SERVER])
+        key_secret = cloud_storage_info[_GS_SECRET_ACCESS_KEY]
+        valid, details = _is_valid_boto_key(
+            key_id, key_secret, cloud_storage_info[_IMAGE_STORAGE_SERVER])
     return (valid, details)
 
 
@@ -444,18 +405,20 @@ def validate_cloud_storage_info(cloud_storage_info):
 
 
 @rpc_utils.moblab_only
-def submit_wizard_config_info(cloud_storage_info):
+def submit_wizard_config_info(cloud_storage_info, wifi_info):
     """RPC handler to submit the cloud storage info.
 
     @param cloud_storage_info: The JSON RPC object for cloud storage info.
+    @param wifi_info: The JSON RPC object for DUT wifi info.
     """
-    valid, details = _validate_cloud_storage_info(cloud_storage_info)
-    if not valid:
-        return _create_operation_status_response(valid, details)
     config_update = {}
     config_update['CROS'] = [
         (_IMAGE_STORAGE_SERVER, cloud_storage_info[_IMAGE_STORAGE_SERVER]),
         (_RESULT_STORAGE_SERVER, cloud_storage_info[_RESULT_STORAGE_SERVER])
+    ]
+    config_update['MOBLAB'] = [
+        (_WIFI_AP_NAME, wifi_info.get(_WIFI_AP_NAME)),
+        (_WIFI_AP_PASS, wifi_info.get(_WIFI_AP_PASS)),
     ]
     _update_partial_config(config_update)
 
@@ -464,16 +427,26 @@ def submit_wizard_config_info(cloud_storage_info):
         boto_config.add_section('Credentials')
         boto_config.set('Credentials', _GS_ACCESS_KEY_ID,
                         cloud_storage_info[_GS_ACCESS_KEY_ID])
-        boto_config.set('Credentials', _GS_SECRETE_ACCESS_KEY,
-                        cloud_storage_info[_GS_SECRETE_ACCESS_KEY])
+        boto_config.set('Credentials', _GS_SECRET_ACCESS_KEY,
+                        cloud_storage_info[_GS_SECRET_ACCESS_KEY])
         _write_config_file(MOBLAB_BOTO_LOCATION, boto_config, True)
 
     _CONFIG.parse_config_file()
-    services = ['moblab-devserver-init', 'moblab-apache-init',
-    'moblab-devserver-cleanup-init', ' moblab-gsoffloader_s-init',
-    'moblab-base-container-init', 'moblab-scheduler-init', 'moblab-gsoffloader-init']
-    cmd = ';/sbin/restart '.join(services)
-    os.system(cmd)
+    _enable_notification_using_credentials_in_bucket()
+    services = ['moblab-devserver-init',
+    'moblab-devserver-cleanup-init', 'moblab-gsoffloader_s-init',
+    'moblab-scheduler-init', 'moblab-gsoffloader-init']
+    cmd = 'export ATEST_RESULTS_DIR=/usr/local/autotest/results;'
+    cmd += 'sudo stop ' + ';sudo stop '.join(services)
+    cmd += ';sudo start ' + ';sudo start '.join(services)
+    cmd += ';sudo apache2 -k graceful'
+    logging.info(cmd)
+    try:
+        utils.run(cmd)
+    except error.CmdError as e:
+        logging.error(e)
+        # if all else fails reboot the device.
+        utils.run('sudo reboot')
 
     return _create_operation_status_response(True, None)
 
@@ -487,6 +460,9 @@ def get_version_info():
     lines = open(_ETC_LSB_RELEASE).readlines()
     version_response = {
         x.split('=')[0]: x.split('=')[1] for x in lines if '=' in x}
+    version_response['MOBLAB_ID'] = utils.get_moblab_id();
+    version_response['MOBLAB_MAC_ADDRESS'] = (
+        utils.get_default_interface_mac_address())
     return rpc_utils.prepare_for_serialization(version_response)
 
 
@@ -500,13 +476,16 @@ def get_connected_dut_info():
     leases = _get_dhcp_dut_leases()
 
     # Get a list of the AFE configured DUT's
-    hosts = list(rpc_utils.get_host_query((), False, False, True, {}))
+    hosts = list(rpc_utils.get_host_query((), False, True, {}))
     models.Host.objects.populate_relationships(hosts, models.Label,
                                                'label_list')
     configured_duts = {}
     for host in hosts:
         labels = [label.name for label in host.label_list]
         labels.sort()
+        for host_attribute in host.hostattribute_set.all():
+              labels.append("ATTR:(%s=%s)" % (host_attribute.attribute,
+                                              host_attribute.value))
         configured_duts[host.hostname] = ', '.join(labels)
 
     return rpc_utils.prepare_for_serialization(
@@ -578,7 +557,8 @@ def add_moblab_label(ipaddress, label_name):
     if label:
         label.host_set.add(host_obj)
         return (True, 'Added label %s to DUT %s' % (label_name, ipaddress))
-    return (False, 'Failed to add label %s to DUT %s' % (label_name, ipaddress))
+    return (False,
+            'Failed to add label %s to DUT %s' % (label_name, ipaddress))
 
 
 @rpc_utils.moblab_only
@@ -595,16 +575,49 @@ def remove_moblab_label(ipaddress, label_name):
     return (True, 'Removed label %s from DUT %s' % (label_name, ipaddress))
 
 
+@rpc_utils.moblab_only
+def set_host_attrib(ipaddress, attribute, value):
+    """ RPC handler to set an attribute of a host.
+
+    @param ipaddress: IP address of the DUT.
+    @param attribute: string name of attribute
+    @param value: string, or None to delete an attribute
+
+    @return: True if the command succeeds without an exception
+    """
+    host_obj = models.Host.smart_get(ipaddress)
+    host_obj.set_or_delete_attribute(attribute, value)
+    return (True, 'Updated attribute %s to %s on DUT %s' % (
+        attribute, value, ipaddress))
+
+
+@rpc_utils.moblab_only
+def delete_host_attrib(ipaddress, attribute):
+    """ RPC handler to delete an attribute of a host.
+
+    @param ipaddress: IP address of the DUT.
+    @param attribute: string name of attribute
+
+    @return: True if the command succeeds without an exception
+    """
+    host_obj = models.Host.smart_get(ipaddress)
+    host_obj.set_or_delete_attribute(attribute, None)
+    return (True, 'Deleted attribute %s from DUT %s' % (
+        attribute, ipaddress))
+
+
 def _get_connected_dut_labels(requested_label, only_first_label=True):
-    """ Query the DUT's attached to the moblab and return a filtered list of labels.
-    
+    """ Query the DUT's attached to the moblab and return a filtered list
+        of labels.
+
     @param requested_label:  the label name you are requesting.
-    @param only_first_label:  if the device has the same label name multiple times only
-                              return the first label value in the list.
+    @param only_first_label:  if the device has the same label name multiple
+                              times only return the first label value in the
+                              list.
 
     @return: A de-duped list of requested dut labels attached to the moblab.
     """
-    hosts = list(rpc_utils.get_host_query((), False, False, True, {}))
+    hosts = list(rpc_utils.get_host_query((), False, True, {}))
     if not hosts:
         return []
     models.Host.objects.populate_relationships(hosts, models.Label,
@@ -650,7 +663,8 @@ def get_builds_for_board(board_name):
     @return: A list of string with the most recent builds for the latest
              three milestones.
     """
-    return _get_builds_for_in_directory(board_name + '-release')
+    return _get_builds_for_in_directory(board_name + '-release',
+                                        milestone_limit=4)
 
 
 @rpc_utils.moblab_only
@@ -665,7 +679,32 @@ def get_firmware_for_board(board_name):
     return _get_builds_for_in_directory(board_name + '-firmware')
 
 
-def _get_builds_for_in_directory(directory_name, milestone_limit=3, build_limit=20):
+def _get_sortable_build_number(sort_key):
+    """ Converts a build number line cyan-release/R59-9460.27.0 into an integer.
+
+        To be able to sort a list of builds you need to convert the build number
+        into an integer so it can be compared correctly to other build.
+
+        cyan-release/R59-9460.27.0 =>  5909460027000
+
+        If the sort key is not recognised as a build number 1 will be returned.
+
+    @param sort_key: A string that represents a build number like
+                     cyan-release/R59-9460.27.0
+    @return: An integer that represents that build number or 1 if not recognised
+             as a build.
+    """
+    build_number = re.search('.*/R([0-9]*)-([0-9]*)\.([0-9]*)\.([0-9]*)',
+                             sort_key)
+    if not build_number or not len(build_number.groups()) == 4:
+      return 1
+    return int("%d%05d%03d%03d" % (int(build_number.group(1)),
+                                   int(build_number.group(2)),
+                                   int(build_number.group(3)),
+                                   int(build_number.group(4))))
+
+def _get_builds_for_in_directory(directory_name, milestone_limit=3,
+                                 build_limit=20):
     """ Fetch the most recent builds for the last three milestones from gcs.
 
 
@@ -673,16 +712,19 @@ def _get_builds_for_in_directory(directory_name, milestone_limit=3, build_limit=
                            storage bucket to search.
 
 
-    @return: A string list no longer than <milestone_limit> x <build_limit> items,
-             containing the most recent <build_limit> builds from the last
-             milestone_limit milestones.
+    @return: A string list no longer than <milestone_limit> x <build_limit>
+             items, containing the most recent <build_limit> builds from the
+             last milestone_limit milestones.
     """
     output = StringIO.StringIO()
     gs_image_location =_CONFIG.get_config_value('CROS', _IMAGE_STORAGE_SERVER)
-    utils.run('gsutil', args=('ls', gs_image_location + directory_name), stdout_tee=output)
+    utils.run(GsUtil.get_gsutil_cmd(),
+              args=('ls', gs_image_location + directory_name),
+              stdout_tee=output)
     lines = output.getvalue().split('\n')
     output.close()
-    builds = [line.replace(gs_image_location,'').strip('/ ') for line in lines if line != '']
+    builds = [line.replace(gs_image_location,'').strip('/ ')
+              for line in lines if line != '']
     build_matcher = re.compile(r'^.*\/R([0-9]*)-.*')
     build_map = {}
     for build in builds:
@@ -698,13 +740,52 @@ def _get_builds_for_in_directory(directory_name, milestone_limit=3, build_limit=
     build_list = []
     for milestone in milestones[:milestone_limit]:
          builds = build_map[milestone]
+         builds.sort(key=_get_sortable_build_number)
          builds.reverse()
          build_list.extend(builds[:build_limit])
     return build_list
 
 
+def _run_bucket_performance_test(key_id, key_secret, bucket_name,
+                                 test_size='1M', iterations='1',
+                                 result_file='/tmp/gsutil_perf.json'):
+    """Run a gsutil perfdiag on a supplied bucket and output the results"
+
+       @param key_id: boto key of the bucket to be accessed
+       @param key_secret: boto secret of the bucket to be accessed
+       @param bucket_name: bucket to be tested.
+       @param test_size: size of file to use in test, see gsutil perfdiag help.
+       @param iterations: number of times each test is run.
+       @param result_file: name of file to write results out to.
+
+       @return None
+       @raises BucketPerformanceTestException if the command fails.
+    """
+    try:
+      utils.run(GsUtil.get_gsutil_cmd(), args=(
+          '-o', 'Credentials:gs_access_key_id=%s' % key_id,
+          '-o', 'Credentials:gs_secret_access_key=%s' % key_secret,
+          'perfdiag', '-s', test_size, '-o', result_file,
+          '-n', iterations,
+          bucket_name))
+    except error.CmdError as e:
+       logging.error(e)
+       # Extract useful error from the stacktrace
+       errormsg = str(e)
+       start_error_pos = errormsg.find("<Error>")
+       end_error_pos = errormsg.find("</Error>", start_error_pos)
+       extracted_error_msg = errormsg[start_error_pos:end_error_pos]
+       raise BucketPerformanceTestException(
+           extracted_error_msg if extracted_error_msg else errormsg)
+    # TODO(haddowk) send the results to the cloud console when that feature is
+    # enabled.
+
+
+# TODO(haddowk) Change suite_args name to "test_filter_list" or similar. May
+# also need to make changes at MoblabRpcHelper.java
 @rpc_utils.moblab_only
-def run_suite(board, build, suite, ro_firmware=None, rw_firmware=None, pool=None):
+def run_suite(board, build, suite, ro_firmware=None, rw_firmware=None,
+              pool=None, suite_args=None, bug_id=None, part_id=None):
     """ RPC handler to run a test suite.
 
     @param board: a board name connected to the moblab.
@@ -713,15 +794,78 @@ def run_suite(board, build, suite, ro_firmware=None, rw_firmware=None, pool=None
     @param ro_firmware: Optional ro firmware build number to use.
     @param rw_firmware: Optional rw firmware build number to use.
     @param pool: Optional pool name to run the suite in.
+    @param suite_args: Arguments to be used in the suite control file.
+    @param bug_id: Optilnal bug ID used for AVL qualification process.
+    @param part_id: Optilnal part ID used for AVL qualification
+    process.
 
     @return: None
     """
     builds = {'cros-version': build}
+    processed_suite_args = dict()
     if rw_firmware:
         builds['fwrw-version'] = rw_firmware
     if ro_firmware:
         builds['fwro-version'] = ro_firmware
+    if suite_args:
+        processed_suite_args['tests'] = \
+            [s.strip() for s in suite_args.split(',')]
+    if bug_id:
+        processed_suite_args['bug_id'] = bug_id
+    if part_id:
+        processed_suite_args['part_id'] = part_id
+
+    # set processed_suite_args to None instead of empty dict when there is no
+    # argument in processed_suite_args
+    if len(processed_suite_args) == 0:
+        processed_suite_args = None
+
+    test_args = {}
+
+    ap_name =_CONFIG.get_config_value('MOBLAB', _WIFI_AP_NAME, default=None)
+    test_args['ssid'] = ap_name
+    ap_pass =_CONFIG.get_config_value('MOBLAB', _WIFI_AP_PASS, default=None)
+    test_args['wifipass'] = ap_pass
+
     afe = frontend.AFE(user='moblab')
     afe.run('create_suite_job', board=board, builds=builds, name=suite,
-    pool=pool, run_prod_code=False, test_source_build=build,
-    wait_for_results=False)
+            pool=pool, run_prod_code=False, test_source_build=build,
+            wait_for_results=True, suite_args=processed_suite_args,
+            test_args=test_args, job_retry=True, max_retries=sys.maxint)
+
+
+def _enable_notification_using_credentials_in_bucket():
+    """ Check and enable cloud notification if a credentials file exits.
+    @return: None
+    """
+    gs_image_location =_CONFIG.get_config_value('CROS', _IMAGE_STORAGE_SERVER)
+    try:
+        utils.run(GsUtil.get_gsutil_cmd(), args=(
+            'cp', gs_image_location + 'pubsub-key-do-not-delete.json', '/tmp'))
+        # This runs the copy as moblab user
+        shutil.copyfile('/tmp/pubsub-key-do-not-delete.json',
+                        moblab_host.MOBLAB_SERVICE_ACCOUNT_LOCATION)
+
+    except error.CmdError as e:
+        logging.error(e)
+    else:
+        logging.info('Enabling cloud notifications')
+        config_update = {}
+        config_update['CROS'] = [(_CLOUD_NOTIFICATION_ENABLED, True)]
+        _update_partial_config(config_update)
+
+
+@rpc_utils.moblab_only
+def get_dut_wifi_info():
+    """RPC handler to get the dut wifi AP information.
+    """
+    dut_wifi_info = {}
+    value =_CONFIG.get_config_value('MOBLAB', _WIFI_AP_NAME,
+        default=None)
+    if value is not None:
+        dut_wifi_info[_WIFI_AP_NAME] = value
+    value = _CONFIG.get_config_value('MOBLAB', _WIFI_AP_PASS,
+        default=None)
+    if value is not None:
+        dut_wifi_info[_WIFI_AP_PASS] = value
+    return rpc_utils.prepare_for_serialization(dut_wifi_info)

@@ -7,7 +7,7 @@ from autotest_lib.database import database_connection
 from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.afe import frontend_test_utils, models
 from autotest_lib.frontend.afe import model_attributes
-from autotest_lib.scheduler import drone_manager, email_manager, host_scheduler
+from autotest_lib.scheduler import drone_manager, email_manager
 from autotest_lib.scheduler import monitor_db, scheduler_models
 from autotest_lib.scheduler import scheduler_config
 from autotest_lib.scheduler import scheduler_lib
@@ -24,27 +24,6 @@ class NullMethodObject(object):
 
         for method_name in self._NULL_METHODS:
             setattr(self, method_name, null_method)
-
-class MockGlobalConfig(object):
-    def __init__(self):
-        self._config_info = {}
-
-
-    def set_config_value(self, section, key, value):
-        self._config_info[(section, key)] = value
-
-
-    def get_config_value(self, section, key, type=str,
-                         default=None, allow_blank=False):
-        identifier = (section, key)
-        if identifier not in self._config_info:
-            return default
-        return self._config_info[identifier]
-
-
-    def parse_config_file(self):
-        pass
-
 
 # the SpecialTask names here must match the suffixes used on the SpecialTask
 # results directories
@@ -351,7 +330,7 @@ class SchedulerFunctionalTest(unittest.TestCase,
 
 
     def _set_stubs(self):
-        self.mock_config = MockGlobalConfig()
+        self.mock_config = global_config.FakeGlobalConfig()
         self.god.stub_with(global_config, 'global_config', self.mock_config)
 
         self.mock_drone_manager = MockDroneManager()
@@ -542,8 +521,6 @@ class SchedulerFunctionalTest(unittest.TestCase,
         self.mock_drone_manager.finish_process(_PidfileType.CLEANUP,
                                                exit_status=256)
         self._run_dispatcher() # repair, HQE unaffected
-        self.mock_drone_manager.finish_process(_PidfileType.ARCHIVE)
-        self._run_dispatcher()
         return queue_entry
 
 
@@ -581,15 +558,11 @@ class SchedulerFunctionalTest(unittest.TestCase,
         self._run_dispatcher() # launches parsing
         self._check_statuses(queue_entry, HqeStatus.PARSING)
         self._ensure_post_job_process_is_paired(queue_entry, _PidfileType.PARSE)
-        self._finish_parsing(queue_entry)
+        self._finish_parsing()
 
 
-    def _finish_parsing(self, queue_entry):
+    def _finish_parsing(self):
         self.mock_drone_manager.finish_process(_PidfileType.PARSE)
-        self._run_dispatcher()
-
-        self._check_entry_status(queue_entry, HqeStatus.ARCHIVING)
-        self.mock_drone_manager.finish_process(_PidfileType.ARCHIVE)
         self._run_dispatcher()
 
 
@@ -717,7 +690,7 @@ class SchedulerFunctionalTest(unittest.TestCase,
         self.mock_drone_manager.finish_process(_PidfileType.GATHER)
         self._run_dispatcher() # launches parsing + cleanup
         queue_entry = job.hostqueueentry_set.all()[0]
-        self._finish_parsing(queue_entry)
+        self._finish_parsing()
         # The abort will cause gathering to launch a cleanup.
         self.mock_drone_manager.finish_process(_PidfileType.CLEANUP)
         self._run_dispatcher()
@@ -823,19 +796,6 @@ class SchedulerFunctionalTest(unittest.TestCase,
                                                 _PidfileType.VERIFY)
 
 
-    def test_recover_pending_hqes_with_group(self):
-        # recover a group of HQEs that are in Pending, in the same group (e.g.,
-        # in a job with atomic hosts)
-        job = self._create_job(hosts=[1,2], atomic_group=1)
-        job.save()
-
-        job.hostqueueentry_set.all().update(status=HqeStatus.PENDING)
-
-        self._initialize_test()
-        for queue_entry in job.hostqueueentry_set.all():
-            self.assertEquals(queue_entry.status, HqeStatus.STARTING)
-
-
     def test_recover_parsing(self):
         self._initialize_test()
         job, queue_entry = self._make_job_and_queue_entry()
@@ -928,7 +888,7 @@ class SchedulerFunctionalTest(unittest.TestCase,
         self._run_dispatcher() # gathering must start
         self.mock_drone_manager.finish_process(_PidfileType.GATHER)
         self._run_dispatcher() # parsing and cleanup
-        self._finish_parsing(queue_entry)
+        self._finish_parsing()
         self._run_dispatcher() # now reverify runs
         self._check_statuses(queue_entry, HqeStatus.FAILED,
                              HostStatus.VERIFYING)
@@ -1091,9 +1051,6 @@ class SchedulerFunctionalTest(unittest.TestCase,
         self._check_entry_status(entry, HqeStatus.PARSING)
         self.mock_drone_manager.finish_process(_PidfileType.PARSE)
         self._run_dispatcher()
-        self._check_entry_status(entry, HqeStatus.ARCHIVING)
-        self.mock_drone_manager.finish_process(_PidfileType.ARCHIVE)
-        self._run_dispatcher()
         self._check_entry_status(entry, HqeStatus.COMPLETED)
 
 
@@ -1128,7 +1085,7 @@ class SchedulerFunctionalTestNoArchiving(SchedulerFunctionalTest):
                                           False)
 
 
-    def _finish_parsing(self, queue_entry):
+    def _finish_parsing(self):
         self.mock_drone_manager.finish_process(_PidfileType.PARSE)
         self._run_dispatcher()
 

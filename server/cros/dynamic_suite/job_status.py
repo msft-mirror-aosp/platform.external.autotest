@@ -2,15 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import datetime, logging, os, time
+import datetime
+import logging
+import os
+import random
+import time
 
 
 from autotest_lib.client.common_lib import base_job, global_config, log
 from autotest_lib.client.common_lib import time_utils
-from autotest_lib.client.common_lib.host_queue_entry_states \
-    import IntStatus as HqeIntStatus
 
-DEFAULT_POLL_INTERVAL_SECONDS = 10
+_DEFAULT_POLL_INTERVAL_SECONDS = 30.0
 
 HQE_MAXIMUM_ABORT_RATE_FLOAT = global_config.global_config.get_config_value(
             'SCHEDULER', 'hqe_maximum_abort_rate_float', type=float,
@@ -113,6 +115,59 @@ def _status_for_test(status):
                 status.test_name.startswith('CLIENT_JOB'))
 
 
+class JobResultWaiter(object):
+    """Class for waiting on job results."""
+
+    def __init__(self, afe, tko):
+        """Instantiate class
+
+        @param afe: an instance of AFE as defined in server/frontend.py.
+        @param tko: an instance of TKO as defined in server/frontend.py.
+        """
+        self._afe = afe
+        self._tko = tko
+        self._job_ids = set()
+
+    def add_job(self, job):
+        """Add job to wait on.
+
+        @param job: Job object to get results from, as defined in
+                    server/frontend.py
+        """
+        self.add_jobs((job,))
+
+    def add_jobs(self, jobs):
+        """Add job to wait on.
+
+        @param jobs: Iterable of Job object to get results from, as defined in
+                     server/frontend.py
+        """
+        self._job_ids.update(job.id for job in jobs)
+
+    def wait_for_results(self):
+        """Wait for jobs to finish and return their results.
+
+        The returned generator blocks until all jobs have finished,
+        naturally.
+
+        @yields an iterator of Statuses, one per test.
+        """
+        while self._job_ids:
+            for job in self._get_finished_jobs():
+                for result in _yield_job_results(self._afe, self._tko, job):
+                    yield result
+                self._job_ids.remove(job.id)
+            self._sleep()
+
+    def _get_finished_jobs(self):
+        # This is an RPC call which serializes to JSON, so we can't pass
+        # in sets.
+        return self._afe.get_jobs(id__in=list(self._job_ids), finished=True)
+
+    def _sleep(self):
+        time.sleep(_DEFAULT_POLL_INTERVAL_SECONDS * (random.random() + 0.5))
+
+
 def _yield_job_results(afe, tko, job):
     """
     Yields the results of an individual job.
@@ -168,78 +223,6 @@ def _yield_job_results(afe, tko, job):
                              s.test_finished_time, job.id,
                              job.owner, s.hostname, job.name,
                              subdir=s.job_tag)
-
-
-def wait_for_child_results(afe, tko, parent_job_id):
-    """
-    Wait for results of all tests in jobs with given parent id.
-
-    New jobs could be added by calling send(new_jobs) on the generator.
-    Currently polls for results every 5s.  Yields one Status object per test
-    as results become available.
-
-    @param afe: an instance of AFE as defined in server/frontend.py.
-    @param tko: an instance of TKO as defined in server/frontend.py.
-    @param parent_job_id: Parent job id for the jobs to wait on.
-    @yields an iterator of Statuses, one per test.
-    """
-    remaining_child_jobs = set(job.id for job in
-                               afe.get_jobs(parent_job_id=parent_job_id))
-    while remaining_child_jobs:
-        new_finished_jobs = afe.get_jobs(id__in=list(remaining_child_jobs),
-                                         finished=True)
-
-        for job in new_finished_jobs:
-
-            remaining_child_jobs.remove(job.id)
-            for result in _yield_job_results(afe, tko, job):
-                # To figure out what new jobs (like retry jobs) have been
-                # created since last iteration, we could re-poll for
-                # the set of child jobs in each iteration and
-                # calculate the set difference against the set we got in
-                # last iteration. As an alternative, we could just make
-                # the caller 'send' new jobs to this generator. We go
-                # with the latter to avoid unnecessary overhead.
-                new_child_jobs = (yield result)
-                if new_child_jobs:
-                    remaining_child_jobs.update([new_job.id for new_job in
-                                                 new_child_jobs])
-                    # Return nothing if 'send' is called
-                    yield None
-
-        time.sleep(5)
-
-
-def wait_for_results(afe, tko, jobs):
-    """
-    Wait for results of all tests in all jobs in |jobs|.
-
-    New jobs could be added by calling send(new_jobs) on the generator.
-    Currently polls for results every 5s.  Yields one Status object per test
-    as results become available.
-
-    @param afe: an instance of AFE as defined in server/frontend.py.
-    @param tko: an instance of TKO as defined in server/frontend.py.
-    @param jobs: a list of Job objects, as defined in server/frontend.py.
-    @yields an iterator of Statuses, one per test.
-    """
-    local_jobs = list(jobs)
-    while local_jobs:
-        for job in list(local_jobs):
-            if not afe.get_jobs(id=job.id, finished=True):
-                continue
-
-            local_jobs.remove(job)
-            for result in _yield_job_results(afe, tko, job):
-                # The caller can 'send' new jobs (i.e. retry jobs)
-                # to this generator at any time.
-                new_jobs = (yield result)
-                if new_jobs:
-                    local_jobs.extend(new_jobs)
-                    # Return nothing if 'send' is called
-                    yield None
-
-        time.sleep(5)
 
 
 class Status(object):

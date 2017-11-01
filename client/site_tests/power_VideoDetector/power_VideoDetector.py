@@ -6,7 +6,7 @@ import os
 import time
 
 from autotest_lib.client.bin import test, utils
-from autotest_lib.client.common_lib import base_utils, error
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros import power_utils, upstart
 
@@ -24,7 +24,7 @@ class power_VideoDetector(test.test):
         if run_time_sec < 30:
             raise error.TestError('Must run for at least 30 seconds')
 
-        with chrome.Chrome() as cr:
+        with chrome.Chrome(init_network_controller=True) as cr:
             # Start powerd if not started.  Set timeouts for quick idle events.
             run_time_ms = run_time_sec * 1000
             # At the time of writing this test, the video detector gets a status
@@ -45,7 +45,7 @@ class power_VideoDetector(test.test):
             power_utils.BacklightController().set_brightness_to_max()
             backlight = power_utils.Backlight()
             initial_brightness = \
-                base_utils.wait_for_value(backlight.get_max_level)
+                utils.wait_for_value(backlight.get_max_level)
 
             # Open a tab to play video.
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)

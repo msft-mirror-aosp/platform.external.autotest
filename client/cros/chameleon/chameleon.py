@@ -11,7 +11,10 @@ import time
 import xmlrpclib
 from contextlib import contextmanager
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -326,12 +329,22 @@ class ChameleonBoard(object):
         return self._usb_ctrl
 
 
-    def get_bluetooh_hid_mouse(self):
-        """Gets the emulated bluetooth hid mouse on Chameleon.
+    def get_bluetooth_hid_mouse(self):
+        """Gets the emulated Bluetooth (BR/EDR) HID mouse on Chameleon.
 
         @return: A BluetoothHIDMouseFlow object.
         """
         return self._chameleond_proxy.bluetooth_mouse
+
+
+    def get_bluetooth_hog_mouse(self):
+        """Gets the emulated Bluetooth Low Energy HID mouse on Chameleon.
+
+        Note that this uses HID over GATT, or HOG.
+
+        @return: A BluetoothHOGMouseFlow object.
+        """
+        return self._chameleond_proxy.bluetooth_hog_mouse
 
 
     def get_avsync_probe(self):
@@ -340,6 +353,14 @@ class ChameleonBoard(object):
         @return: An AVSyncProbeFlow object.
         """
         return self._chameleond_proxy.avsync_probe
+
+
+    def get_motor_board(self):
+        """Gets the motor_board device on Chameleon.
+
+        @return: An MotorBoard object.
+        """
+        return self._chameleond_proxy.motor_board
 
 
     def get_mac_address(self):

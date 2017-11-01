@@ -11,7 +11,7 @@ pushed. Link to design document:
 https://docs.google.com/a/google.com/document/d/1JMz0xS3fZRSHMpFkkKAL_rxsdbNZomhHbC3B8L71uuI/edit
 
 To verify if prod branch can be pushed to lab, run following command in
-chromeos-autotest.cbf server:
+chromeos-staging-master2.hot server:
 /usr/local/autotest/site_utils/test_push.py -e someone@company.com
 
 The script uses latest gandof stable build as test build by default.
@@ -49,6 +49,13 @@ from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.site_utils import gmail_lib
 from autotest_lib.site_utils.suite_scheduler import constants
 
+try:
+    from chromite.lib import metrics
+    from chromite.lib import ts_mon_config
+except ImportError:
+    metrics = site_utils.metrics_mock
+    ts_mon_config = site_utils.metrics_mock
+
 AUTOTEST_DIR=common.autotest_dir
 CONFIG = global_config.global_config
 
@@ -60,14 +67,15 @@ BUILD_REGEX = 'R[\d]+-[\d]+\.[\d]+\.[\d]+'
 RUN_SUITE_COMMAND = 'run_suite.py'
 PUSH_TO_PROD_SUITE = 'push_to_prod'
 DUMMY_SUITE = 'dummy'
-AU_SUITE = 'paygen_au_beta'
 TESTBED_SUITE = 'testbed_push'
 # TODO(shuqianz): Dynamically get android build after crbug.com/646068 fixed
 DEFAULT_TIMEOUT_MIN_FOR_SUITE_JOB = 30
 IMAGE_BUCKET = CONFIG.get_config_value('CROS', 'image_storage_server')
 DEFAULT_EMAIL = CONFIG.get_config_value(
-        'SCHEDULER', 'notify_email', type=str, default='')
-DEFAULT_NUM_DUTS = "{'gandof': 4, 'quawks': 2, 'testbed': 1}"
+        'SCHEDULER', 'notify_email', type=list, default=[])
+# TODO(crbug.com/767302): Bump up tesbed requirement back to 1 when we
+# re-enable testbed tests.
+DEFAULT_NUM_DUTS = "{'gandof': 4, 'quawks': 2, 'testbed': 0}"
 
 SUITE_JOB_START_INFO_REGEX = ('^.*Created suite job:.*'
                               'tab_id=view_job&object_id=(\d+)$')
@@ -86,6 +94,7 @@ EXPECTED_TEST_RESULTS = {'^SERVER_JOB$':                 'GOOD',
                          'dummy_Fail.Warn$':             'WARN',
                          'dummy_Fail.NAError$':          'TEST_NA',
                          'dummy_Fail.Crash$':            'GOOD',
+                         'autotest_SyncCount$':          'GOOD',
                          }
 
 EXPECTED_TEST_RESULTS_DUMMY = {'^SERVER_JOB$':       'GOOD',
@@ -95,11 +104,6 @@ EXPECTED_TEST_RESULTS_DUMMY = {'^SERVER_JOB$':       'GOOD',
                                'dummy_Fail.Crash':   'GOOD',
                                'dummy_Fail.Error':   'ERROR',
                                'dummy_Fail.NAError': 'TEST_NA',}
-
-EXPECTED_TEST_RESULTS_AU = {'SERVER_JOB$':                        'GOOD',
-         'autoupdate_EndToEndTest.paygen_au_beta_delta.*': 'GOOD',
-         'autoupdate_EndToEndTest.paygen_au_beta_full.*':  'GOOD',
-         }
 
 EXPECTED_TEST_RESULTS_TESTBED = {'^SERVER_JOB$':      'GOOD',
                                  'testbed_DummyTest': 'GOOD',}
@@ -136,23 +140,26 @@ class TestPushException(Exception):
 
 
 @retry.retry(TestPushException, timeout_min=5, delay_sec=30)
-def check_dut_inventory(required_num_duts):
-    """Check DUT inventory for each board.
+def check_dut_inventory(required_num_duts, pool):
+    """Check DUT inventory for each board in the pool specified..
 
     @param required_num_duts: a dict specifying the number of DUT each platform
                               requires in order to finish push tests.
+    @param pool: the pool used by test_push.
     @raise TestPushException: if number of DUTs are less than the requirement.
     """
     print 'Checking DUT inventory...'
+    pool_label = constants.Labels.POOL_PREFIX + pool
     hosts = AFE.run('get_hosts', status='Ready', locked=False)
+    hosts = [h for h in hosts if pool_label in h.get('labels', [])]
     platforms = [host['platform'] for host in hosts]
     current_inventory = {p : platforms.count(p) for p in platforms}
     error_msg = ''
     for platform, req_num in required_num_duts.items():
         curr_num = current_inventory.get(platform, 0)
         if curr_num < req_num:
-            error_msg += ('\nRequire %d %s DUTs, only %d are Ready now' %
-                          (req_num, platform, curr_num))
+            error_msg += ('\nRequire %d %s DUTs in pool: %s, only %d are Ready'
+                          ' now' % (req_num, platform, pool, curr_num))
     if error_msg:
         raise TestPushException('Not enough DUTs to run push tests. %s' %
                                 error_msg)
@@ -184,18 +191,14 @@ def powerwash_dut_to_test_repair(hostname, timeout):
     AFE.reverify_hosts(hostnames=[hostname])
 
 
-def reverify_all_push_duts(pool):
-    """Reverify all the push DUTs.
-
-    @param pool: Name of the pool used by test_push.
-    """
-    print 'Reverifying DUTs in pool %s' % pool
-    pool_label = constants.Labels.POOL_PREFIX + pool
-    hosts = [h.hostname for h in AFE.get_hosts(label=pool_label)]
+def reverify_all_push_duts():
+    """Reverify all the push DUTs."""
+    print 'Reverifying all DUTs.'
+    hosts = [h.hostname for h in AFE.get_hosts()]
     AFE.reverify_hosts(hostnames=hosts)
 
 
-def get_default_build(board='gandof', server='chromeos-autotest.hot'):
+def get_default_build(board='gandof', server='chromeos-staging-master2.hot'):
     """Get the default build to be used for test.
 
     @param board: Name of board to be tested, default is gandof.
@@ -233,7 +236,7 @@ def parse_arguments():
                         help='Default is the latest stable build of given '
                              'board. Must be a stable build, otherwise AU test '
                              'will fail.')
-    parser.add_argument('-w', '--web', default='chromeos-autotest.hot',
+    parser.add_argument('-w', '--web', default='chromeos-staging-master2.hot',
                         help='Specify web server to grab stable version from.')
     parser.add_argument('-ab', '--android_board', dest='android_board',
                         default='shamu-2', help='Android board to test.')
@@ -242,7 +245,8 @@ def parse_arguments():
     parser.add_argument('-p', '--pool', dest='pool', default='bvt')
     parser.add_argument('-u', '--num', dest='num', type=int, default=3,
                         help='Run on at most NUM machines.')
-    parser.add_argument('-e', '--email', dest='email', default=DEFAULT_EMAIL,
+    parser.add_argument('-e', '--email', nargs='+', dest='email',
+                        default=DEFAULT_EMAIL,
                         help='Email address for the notification to be sent to '
                              'after the script finished running.')
     parser.add_argument('-t', '--timeout_min', dest='timeout_min', type=int,
@@ -407,7 +411,7 @@ def test_suite(suite_name, expected_results, arguments, use_shard=False,
     # therefore, skip verifying dut build for jobs running in shard.
     build_expected = (arguments.android_build if testbed_test
                       else arguments.build)
-    if suite_name != AU_SUITE and not use_shard and not testbed_test:
+    if not use_shard and not testbed_test:
         check_dut_image(build_expected, suite_job_id)
 
     # Verify test results are the expected results.
@@ -570,20 +574,37 @@ def push_prod_next_branch(updated_repo_heads):
                                        shell=True)
 
 
-def main():
-    """Entry point for test_push script."""
-    arguments = parse_arguments()
+def send_notification_email(email_list, title, msg):
+    """Send notification to all email addresses in email list.
+
+    @param email_list: a email address list which receives notification email,
+        whose format is like:
+            [xxx@google.com, xxx@google.com, xxx@google.com,...]
+        so that users could also specify multiple email addresses by using
+        config '--email' or '-e'.
+    @param title: the title of the email to be sent.
+    @param msg: the content of the email to be sent.
+    """
+    gmail_lib.send_email(','.join(email_list), title, msg)
+
+
+def _main(arguments):
+    """Running tests.
+
+    @param arguments: command line arguments.
+    """
     updated_repo_heads = get_head_of_repos(UPDATED_REPOS)
     updated_repo_msg = '\n'.join(
         ['%s: %s' % (k, v) for k, v in updated_repo_heads.iteritems()])
+    test_push_success = False
 
     try:
         # Use daemon flag will kill child processes when parent process fails.
         use_daemon = not arguments.continue_on_failure
         # Verify all the DUTs at the beginning of testing push.
-        reverify_all_push_duts(arguments.pool)
+        reverify_all_push_duts()
         time.sleep(15) # Wait 15 secs for the verify test to start.
-        check_dut_inventory(arguments.num_duts)
+        check_dut_inventory(arguments.num_duts, arguments.pool)
         queue = multiprocessing.Queue()
 
         push_to_prod_suite = multiprocessing.Process(
@@ -593,46 +614,27 @@ def main():
         push_to_prod_suite.daemon = use_daemon
         push_to_prod_suite.start()
 
-        # TODO(dshi): Remove following line after crbug.com/267644 is fixed.
-        # Also, merge EXPECTED_TEST_RESULTS_AU to EXPECTED_TEST_RESULTS
-        # AU suite will be on shard until crbug.com/634049 is fixed.
-        au_suite = multiprocessing.Process(
-                target=test_suite_wrapper,
-                args=(queue, AU_SUITE, EXPECTED_TEST_RESULTS_AU,
-                      arguments, True))
-        au_suite.daemon = use_daemon
-        au_suite.start()
-
         # suite test with --create_and_return flag
         asynchronous_suite = multiprocessing.Process(
                 target=test_suite_wrapper,
                 args=(queue, DUMMY_SUITE, EXPECTED_TEST_RESULTS_DUMMY,
-                      arguments, False, True))
+                      arguments, True, True))
         asynchronous_suite.daemon = True
         asynchronous_suite.start()
 
-        # Test suite for testbed
-        testbed_suite = multiprocessing.Process(
-                target=test_suite_wrapper,
-                args=(queue, TESTBED_SUITE, EXPECTED_TEST_RESULTS_TESTBED,
-                      arguments, False, False, True))
-        testbed_suite.daemon = use_daemon
-        testbed_suite.start()
-
-        while (push_to_prod_suite.is_alive() or au_suite.is_alive() or
-               asynchronous_suite.is_alive() or testbed_suite.is_alive()):
+        while (push_to_prod_suite.is_alive()
+               or asynchronous_suite.is_alive()):
             check_queue(queue)
             time.sleep(5)
 
         check_queue(queue)
 
         push_to_prod_suite.join()
-        au_suite.join()
         asynchronous_suite.join()
-        testbed_suite.join()
 
         # All tests pass, push prod-next branch for UPDATED_REPOS.
         push_prod_next_branch(updated_repo_heads)
+        test_push_success = True
     except Exception as e:
         print 'Test for pushing to prod failed:\n'
         print str(e)
@@ -643,29 +645,44 @@ def main():
                     AFE.run('abort_host_queue_entries', job=suite_id)
         # Send out email about the test failure.
         if arguments.email:
-            gmail_lib.send_email(
+            send_notification_email(
                     arguments.email,
                     'Test for pushing to prod failed. Do NOT push!',
                     ('Test CLs of the following repos failed. Below are the '
                      'repos and the corresponding test HEAD.\n\n%s\n\n.'
-                     'Error occurred during test:\n\n%s\n\n' %
+                     'Error occurred during test:\n\n%s\n\n'
+                     'All logs have been saved to '
+                     '/var/log/test_push/test_push.log on push master. '
+                     'Stats on recent success rate can be found at '
+                     'go/test-push-stats . Detailed '
+                     'debugging info can be found at go/push-to-prod' %
                      (updated_repo_msg, str(e)) + '\n'.join(run_suite_output)))
         raise
     finally:
+        metrics.Counter('chromeos/autotest/test_push/completed').increment(
+            fields={'success': test_push_success})
         # Reverify all the hosts
-        reverify_all_push_duts(arguments.pool)
+        reverify_all_push_duts()
 
-    message = ('\nAll tests are completed successfully, the prod branch of the '
-               'following repos ready to be pushed to the hash list below.\n'
-               '%s' % updated_repo_msg)
+    message = ('\nAll tests completed successfully, the prod branch of the '
+               'following repos is ready to be pushed to the hash list below.\n'
+               '%s\n\n\nInstructions for pushing to prod are available at '
+               'https://goto.google.com/autotest-to-prod ' % updated_repo_msg)
     print message
     # Send out email about test completed successfully.
     if arguments.email:
-        gmail_lib.send_email(
+        send_notification_email(
                 arguments.email,
                 'Test for pushing to prod completed successfully',
                 message)
 
+
+def main():
+    """Entry point."""
+    arguments = parse_arguments()
+    with ts_mon_config.SetupTsMonGlobalState(service_name='test_push',
+                                             indirect=True):
+        return _main(arguments)
 
 if __name__ == '__main__':
     sys.exit(main())

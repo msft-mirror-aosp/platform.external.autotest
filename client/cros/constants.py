@@ -31,7 +31,7 @@ CRASH_DIR = '/var/spool/crash'
 CRASH_REPORTER_RESIDUE_DIR = '/tmp/crash_reporter'
 
 # LOGS to collect from DUTs
-LOG_CONSOLE_RAMOOPS = '/dev/pstore/console-ramoops'
+LOG_PSTORE_DIRS = ('/dev/pstore', '/sys/fs/pstore')
 LOG_I915_ERROR_STATE = '/sys/kernel/debug/dri/0/i915_error_state'
 
 CREDENTIALS = {
@@ -45,14 +45,22 @@ SHADOW_ROOT = '/home/.shadow'
 
 CRYPTOHOME_DEV_REGEX_ANY = r'.*'
 CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW = r'^/home/\.shadow/.*/vault$'
+CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE = r'^/dev/[^/]*$'
 CRYPTOHOME_DEV_REGEX_REGULAR_USER_EPHEMERAL = r'^ephemeralfs/.*$'
-CRYPTOHOME_DEV_REGEX_REGULAR_USER = r'(%s|%s)' % (
-    CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW,
-    CRYPTOHOME_DEV_REGEX_REGULAR_USER_EPHEMERAL)
+# Ecryptfs-based user home directory mounts the SHADOW encrypted directory,
+# while ext4-crypto based user home is a bind-mount to an encrypted directory
+# part of a ext4 filesystem that mounts the main disk device. Both can be
+# a home directory of a regular user.
+CRYPTOHOME_DEV_REGEX_REGULAR_USER = r'(%s|%s|%s)' % (
+   CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW,
+   CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE,
+   CRYPTOHOME_DEV_REGEX_REGULAR_USER_EPHEMERAL)
 CRYPTOHOME_DEV_REGEX_GUEST = r'^guestfs$'
 
 CRYPTOHOME_FS_REGEX_ANY = r'.*'
 CRYPTOHOME_FS_REGEX_TMPFS = r'^tmpfs$'
+CRYPTOHOME_FS_REGEX_EXT4 = r'^ext4$'
+CRYPTOHOME_FS_REGEX_ECRYPTFS = r'^ecryptfs$'
 
 CRYPTOHOME_MOUNT_PT = USER_DATA_DIR + '/user'
 
@@ -61,11 +69,11 @@ CRYPTOHOMED_LOG = '/var/log/cryptohomed.log'
 # Directories to copy out of cryptohome, relative to CRYPTOHOME_MOUNT_PT.
 CRYPTOHOME_DIRS_TO_RECOVER = ['crash', 'log']
 
-DISABLE_BROWSER_RESTART_MAGIC_FILE = '/var/run/disable_chrome_restart'
+DISABLE_BROWSER_RESTART_MAGIC_FILE = '/run/disable_chrome_restart'
 DEFAULT_OWNERSHIP_TIMEOUT = 300  # Ownership is an inherently random process.
 
 ENABLE_BROWSER_HANG_DETECTION_FILE = \
-    '/var/run/session_manager/enable_hang_detection'
+    '/run/session_manager/enable_hang_detection'
 
 FLIMFLAM_TEST_PATH = '/usr/lib/flimflam/test/'
 
@@ -113,7 +121,7 @@ SERVICE_LOGIN_AUTH_ERROR = 'The username or password you entered is incorrect.'
 SESSION_MANAGER = 'session_manager'
 SIGNED_POLICY_FILE = WHITELIST_DIR + '/policy'
 SPECIAL_CASE_DOMAIN = 'gmail.com'
-USER_POLICY_DIR = '/var/run/user_policy'
+USER_POLICY_DIR = '/run/user_policy'
 USER_POLICY_KEY_FILENAME = 'policy.pub'
 
 TOKEN_AUTH_URL = '/accounts/TokenAuth'
@@ -127,7 +135,7 @@ UPDATE_ENGINE_LOG = '/var/log/update_engine.log'
 RESOLV_CONF_FILE = '/etc/resolv.conf'
 
 PENDING_SHUTDOWN_PATH = '/var/lib/crash_reporter/pending_clean_shutdown'
-UNCLEAN_SHUTDOWN_DETECTED_PATH = '/var/run/unclean-shutdown-detected'
+UNCLEAN_SHUTDOWN_DETECTED_PATH = '/run/unclean-shutdown-detected'
 
 INTERACTIVE_XMLRPC_SERVER_PORT = 9980
 INTERACTIVE_XMLRPC_SERVER_COMMAND = (

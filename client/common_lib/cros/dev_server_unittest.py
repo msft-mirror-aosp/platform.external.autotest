@@ -17,7 +17,10 @@ import time
 import unittest
 import urllib2
 
-from autotest_lib.client.bin import utils as site_utils
+import mock
+
+import common
+from autotest_lib.client.bin import utils as bin_utils
 from autotest_lib.client.common_lib import android_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
@@ -82,6 +85,7 @@ class RunCallTest(mox.MoxTestBase):
     def setUp(self):
         """Set up the test"""
         self.test_call = 'http://nothing/test'
+        self.hostname = 'nothing'
         self.contents = 'true'
         self.contents_readline = ['file/one', 'file/two']
         self.save_ssh_config = dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER
@@ -89,11 +93,53 @@ class RunCallTest(mox.MoxTestBase):
         self.mox.StubOutWithMock(urllib2, 'urlopen')
         self.mox.StubOutWithMock(utils, 'run')
 
+        sleep = mock.patch('time.sleep', autospec=True)
+        sleep.start()
+        self.addCleanup(sleep.stop)
+
 
     def tearDown(self):
         """Tear down the test"""
         dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = self.save_ssh_config
         super(RunCallTest, self).tearDown()
+
+
+    def testRunCallHTTPWithDownDevserver(self):
+        """Test dev_server.ImageServerBase.run_call using http with arg:
+        (call)."""
+        dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = False
+
+        urllib2.urlopen(mox.StrContains(self.test_call)).AndReturn(
+                StringIO.StringIO(dev_server.ERR_MSG_FOR_DOWN_DEVSERVER))
+        time.sleep(mox.IgnoreArg())
+        urllib2.urlopen(mox.StrContains(self.test_call)).AndReturn(
+                StringIO.StringIO(self.contents))
+        self.mox.ReplayAll()
+        response = dev_server.ImageServerBase.run_call(self.test_call)
+        self.assertEquals(self.contents, response)
+
+
+    def testRunCallSSHWithDownDevserver(self):
+        """Test dev_server.ImageServerBase.run_call using http with arg:
+        (call)."""
+        dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = True
+        self.mox.StubOutWithMock(utils, 'get_restricted_subnet')
+        utils.get_restricted_subnet(
+                self.hostname, utils.RESTRICTED_SUBNETS).AndReturn(
+                self.hostname)
+
+        to_return1 = MockSshResponse(dev_server.ERR_MSG_FOR_DOWN_DEVSERVER)
+        to_return2 = MockSshResponse(self.contents)
+        utils.run(mox.StrContains(self.test_call),
+                  timeout=mox.IgnoreArg()).AndReturn(to_return1)
+        time.sleep(mox.IgnoreArg())
+        utils.run(mox.StrContains(self.test_call),
+                  timeout=mox.IgnoreArg()).AndReturn(to_return2)
+
+        self.mox.ReplayAll()
+        response = dev_server.ImageServerBase.run_call(self.test_call)
+        self.assertEquals(self.contents, response)
+        dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = False
 
 
     def testRunCallWithSingleCallHTTP(self):
@@ -138,6 +184,10 @@ class RunCallTest(mox.MoxTestBase):
         """Test dev_server.ImageServerBase.run_call using ssh with arg:
         (call)."""
         dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = True
+        self.mox.StubOutWithMock(utils, 'get_restricted_subnet')
+        utils.get_restricted_subnet(
+                self.hostname, utils.RESTRICTED_SUBNETS).AndReturn(
+                self.hostname)
 
         to_return = MockSshResponse(self.contents)
         utils.run(mox.StrContains(self.test_call),
@@ -151,6 +201,10 @@ class RunCallTest(mox.MoxTestBase):
         """Test dev_server.ImageServerBase.run_call using ssh with args:
         (call, readline=True)."""
         dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = True
+        self.mox.StubOutWithMock(utils, 'get_restricted_subnet')
+        utils.get_restricted_subnet(
+                self.hostname, utils.RESTRICTED_SUBNETS).AndReturn(
+                self.hostname)
 
         to_return = MockSshResponse('\n'.join(self.contents_readline))
         utils.run(mox.StrContains(self.test_call),
@@ -165,6 +219,10 @@ class RunCallTest(mox.MoxTestBase):
         """Test dev_server.ImageServerBase.run_call using ssh with args:
         (call, timeout=xxx)."""
         dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = True
+        self.mox.StubOutWithMock(utils, 'get_restricted_subnet')
+        utils.get_restricted_subnet(
+                self.hostname, utils.RESTRICTED_SUBNETS).AndReturn(
+                self.hostname)
 
         to_return = MockSshResponse(self.contents)
         utils.run(mox.StrContains(self.test_call),
@@ -190,6 +248,11 @@ class RunCallTest(mox.MoxTestBase):
         """Test dev_server.ImageServerBase.run_call using ssh with raising
         exception."""
         dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = True
+        self.mox.StubOutWithMock(utils, 'get_restricted_subnet')
+        utils.get_restricted_subnet(
+                self.hostname, utils.RESTRICTED_SUBNETS).AndReturn(
+                self.hostname)
+
         utils.run(mox.StrContains(self.test_call),
                   timeout=mox.IgnoreArg()).AndRaise(MockSshError())
         self.mox.ReplayAll()
@@ -234,6 +297,12 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.StubOutWithMock(os.path, 'exists')
         # Hide local restricted_subnets setting.
         dev_server.RESTRICTED_SUBNETS = []
+        self.mox.StubOutWithMock(dev_server.ImageServer,
+                                 '_read_json_response_from_devserver')
+
+        sleep = mock.patch('time.sleep', autospec=True)
+        sleep.start()
+        self.addCleanup(sleep.stop)
 
 
     def testSimpleResolve(self):
@@ -276,8 +345,13 @@ class DevServerTest(mox.MoxTestBase):
     def testResolveWithFailureURLError(self):
         """Ensure we rehash on a failed ping using http on a bad_host after
         urlerror."""
-        # Retry mock just return the original method.
+        # Set retry.retry to retry_mock for just returning the original
+        # method for this test. This is to save waiting time for real retry,
+        # which is defined by dev_server.DEVSERVER_SSH_TIMEOUT_MINS.
+        # Will reset retry.retry to real retry at the end of this test.
+        real_retry = retry.retry
         retry.retry = retry_mock
+
         self.mox.StubOutWithMock(dev_server, '_get_dev_server_list')
         bad_host, good_host = 'http://bad_host:99', 'http://good_host:8080'
         dev_server._get_dev_server_list().MultipleTimes().AndReturn(
@@ -299,6 +373,8 @@ class DevServerTest(mox.MoxTestBase):
         host = dev_server.ImageServer.resolve(0) # Using 0 as it'll hash to 0.
         self.assertEquals(host.url(), good_host)
         self.mox.VerifyAll()
+
+        retry.retry = real_retry
 
 
     def testResolveWithManyDevservers(self):
@@ -359,7 +435,7 @@ class DevServerTest(mox.MoxTestBase):
                 mox.IgnoreArg()).AndRaise(E500)
         self.mox.ReplayAll()
         self.assertFalse(self.dev_server.kill_au_process_for_host(
-                '100.0.0.0'))
+                '100.0.0.0', 100))
 
 
     def testURLErrorRetryKillAUProcess(self):
@@ -373,7 +449,8 @@ class DevServerTest(mox.MoxTestBase):
         time.sleep(mox.IgnoreArg())
         dev_server.ImageServerBase.run_call(mox.IgnoreArg()).AndRaise(E403)
         self.mox.ReplayAll()
-        self.assertFalse(self.dev_server.kill_au_process_for_host('100.0.0.0'))
+        self.assertFalse(self.dev_server.kill_au_process_for_host(
+                '100.0.0.0', 100))
 
 
     def testCmdErrorRetryCleanTrackLog(self):
@@ -415,14 +492,16 @@ class DevServerTest(mox.MoxTestBase):
         devserver."""
         response1 = (True, 100)
         response2 = (True, 'Completed')
+        response3 = {'host_logs': {'a': 'log'}, 'cros_au_log': 'logs'}
+
         argument1 = mox.And(mox.StrContains(self._HOST),
                             mox.StrContains('cros_au'))
         argument2 = mox.And(mox.StrContains(self._HOST),
                             mox.StrContains('get_au_status'))
         argument3 = mox.And(mox.StrContains(self._HOST),
-                            mox.StrContains('handler_cleanup'))
-        argument4 = mox.And(mox.StrContains(self._HOST),
                             mox.StrContains('collect_cros_au_log'))
+        argument4 = mox.And(mox.StrContains(self._HOST),
+                            mox.StrContains('handler_cleanup'))
         argument5 = mox.And(mox.StrContains(self._HOST),
                             mox.StrContains('kill_au_proc'))
 
@@ -460,21 +539,26 @@ class DevServerTest(mox.MoxTestBase):
                 dev_server.ImageServerBase.run_call(argument2).AndReturn(
                         json.dumps(response2))
 
-        if 'handler_cleanup_error' in kwargs:
-            if kwargs['handler_cleanup_error']:
+        if 'collect_au_log_error' in kwargs:
+            if kwargs['collect_au_log_error']:
                 dev_server.ImageServerBase.run_call(argument3).AndRaise(
                         raised_error)
             else:
-                dev_server.ImageServerBase.run_call(argument3).AndReturn('True')
+                dev_server.ImageServer._read_json_response_from_devserver(
+                        mox.IgnoreArg()).AndReturn(response3)
+                dev_server.ImageServerBase.run_call(argument3).AndReturn('log')
+                os.path.exists(mox.IgnoreArg()).AndReturn(True)
 
-        if 'collect_au_log_error' in kwargs:
-            if kwargs['collect_au_log_error']:
+                # We write two log files: host_log and cros_au_log
+                self._mockWriteFile()
+                self._mockWriteFile()
+
+        if 'handler_cleanup_error' in kwargs:
+            if kwargs['handler_cleanup_error']:
                 dev_server.ImageServerBase.run_call(argument4).AndRaise(
                         raised_error)
             else:
-                dev_server.ImageServerBase.run_call(argument4).AndReturn('log')
-                os.path.exists(mox.IgnoreArg()).AndReturn(True)
-                self._mockWriteFile()
+                dev_server.ImageServerBase.run_call(argument4).AndReturn('True')
 
         if 'kill_au_proc_error' in kwargs:
             if kwargs['kill_au_proc_error']:
@@ -578,7 +662,7 @@ class DevServerTest(mox.MoxTestBase):
         errors.
 
         Func auto_update() should call 'handler_cleanup' and 'collect_au_log'
-        even if '_start_auto_update()' failed.
+        even if '_trigger_auto_update()' failed.
         """
         self.mox.StubOutWithMock(time, 'sleep')
         self.mox.StubOutWithMock(__builtin__, 'open')
@@ -594,7 +678,7 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.ReplayAll()
         self.assertRaises(dev_server.DevServerException,
                           self.dev_server.auto_update,
-                          '100.0.0.0', 'build', 'path/')
+                          '100.0.0.0', 'build', log_dir='path/')
 
 
     def testCleanUpErrorInAutoUpdate(self):
@@ -602,7 +686,7 @@ class DevServerTest(mox.MoxTestBase):
         errors.
 
         Func auto_update() should call 'handler_cleanup' and 'collect_au_log'
-        no matter '_start_auto_update()' succeeds or fails.
+        no matter '_trigger_auto_update()' succeeds or fails.
         """
         self.mox.StubOutWithMock(time, 'sleep')
         self.mox.StubOutWithMock(__builtin__, 'open')
@@ -619,7 +703,7 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.ReplayAll()
         self.assertRaises(dev_server.DevServerException,
                           self.dev_server.auto_update,
-                          '100.0.0.0', 'build', 'path/')
+                          '100.0.0.0', 'build', log_dir='path/')
 
 
     def testCollectLogErrorInAutoUpdate(self):
@@ -639,7 +723,7 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.ReplayAll()
         self.assertRaises(dev_server.DevServerException,
                           self.dev_server.auto_update,
-                          '100.0.0.0', 'build', 'path/')
+                          '100.0.0.0', 'build', log_dir='path/')
 
 
     def testGetAUStatusErrorAndCleanUpErrorInAutoUpdate(self):
@@ -647,7 +731,7 @@ class DevServerTest(mox.MoxTestBase):
         and handler_cleanup errors.
 
         Func auto_update() should call 'handler_cleanup' and 'collect_au_log'
-        even if '_start_auto_update()' fails.
+        even if '_trigger_auto_update()' fails.
         """
         self.mox.StubOutWithMock(time, 'sleep')
         self.mox.StubOutWithMock(__builtin__, 'open')
@@ -664,7 +748,7 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.ReplayAll()
         self.assertRaises(dev_server.DevServerException,
                           self.dev_server.auto_update,
-                          '100.0.0.0', 'build', 'path/')
+                          '100.0.0.0', 'build', log_dir='path/')
 
 
     def testGetAUStatusErrorAndCleanUpErrorAndCollectLogErrorInAutoUpdate(self):
@@ -672,7 +756,7 @@ class DevServerTest(mox.MoxTestBase):
         handler_cleanup, and collect_au_log errors.
 
         Func auto_update() should call 'handler_cleanup' and 'collect_au_log'
-        even if '_start_auto_update()' fails.
+        even if '_trigger_auto_update()' fails.
         """
         self.mox.StubOutWithMock(time, 'sleep')
         kwargs={'cros_au_error': False, 'get_au_status_error': True,
@@ -687,7 +771,7 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.ReplayAll()
         self.assertRaises(dev_server.DevServerException,
                           self.dev_server.auto_update,
-                          '100.0.0.0', 'build', 'path/')
+                          '100.0.0.0', 'build', log_dir='path/')
 
 
     def testGetAUStatusErrorAndCleanUpErrorAndCollectLogErrorAndKillErrorInAutoUpdate(self):
@@ -695,7 +779,7 @@ class DevServerTest(mox.MoxTestBase):
         handler_cleanup, collect_au_log, and kill_au_proc errors.
 
         Func auto_update() should call 'handler_cleanup' and 'collect_au_log'
-        even if '_start_auto_update()' fails.
+        even if '_trigger_auto_update()' fails.
         """
         self.mox.StubOutWithMock(time, 'sleep')
 
@@ -711,7 +795,7 @@ class DevServerTest(mox.MoxTestBase):
         self.mox.ReplayAll()
         self.assertRaises(dev_server.DevServerException,
                           self.dev_server.auto_update,
-                          '100.0.0.0', 'build', 'path/')
+                          '100.0.0.0', 'build', log_dir='path/')
 
 
     def testSuccessfulTriggerDownloadSync(self):
@@ -1129,7 +1213,7 @@ class DevServerTest(mox.MoxTestBase):
                 artifacts=mox.IgnoreArg(),
                 files=mox.IgnoreArg(),
                 archive_url=mox.IgnoreArg(),
-                error_message=mox.IgnoreArg()).AndRaise(site_utils.TimeoutError())
+                error_message=mox.IgnoreArg()).AndRaise(bin_utils.TimeoutError())
 
 
     def test_StageArtifactsTimeout(self):

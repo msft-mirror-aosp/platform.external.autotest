@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import time
-import urllib2
 
 import common
 from autotest_lib.client.common_lib import error, global_config
@@ -45,6 +44,18 @@ DUT_VERIFY_SLEEP_SECS = 5
 DUT_VERIFY_TIMEOUT = 15 * 60
 MOBLAB_TMP_DIR = '/mnt/moblab/tmp'
 MOBLAB_PORT = 80
+
+
+class UpstartServiceNotRunning(error.AutoservError):
+    """An expected upstart service was not in the expected state."""
+
+    def __init__(self, service_name):
+        """Create us.
+        @param service_name: Name of the service_name that was in the worng
+                state.
+        """
+        super(UpstartServiceNotRunning, self).__init__(
+                'Upstart service %s not in running state.' % service_name)
 
 
 class MoblabHost(cros_host.CrosHost):
@@ -153,9 +164,10 @@ class MoblabHost(cros_host.CrosHost):
         # to continue and reimage the device.
         try:
             self.wait_afe_up()
-        except (urllib2.HTTPError, urllib2.URLError) as e:
-            logging.error('DUT has rebooted but AFE has failed to load.: %s',
-                          e)
+        except Exception as e:
+            logging.error(
+                    'DUT has rebooted but AFE has failed to load: %s', e)
+            logging.error('Ignoring this error condition')
 
 
     def wait_afe_up(self, timeout_min=5):
@@ -187,7 +199,8 @@ class MoblabHost(cros_host.CrosHost):
         Either uses fping or directly pings devices listed in the dhcpd lease
         file.
         """
-        fping_result = self.run('fping -g 192.168.231.100 192.168.231.120',
+        fping_result = self.run(('fping -g 192.168.231.100 192.168.231.110 '
+                                 '-a -c 10 -p 30 -q'),
                                 ignore_status=True)
         # If fping is not on the system, ping entries in the dhcpd lease file.
         if fping_result.exit_status == 127:
@@ -224,51 +237,73 @@ class MoblabHost(cros_host.CrosHost):
                 dut_hostname = match.group('ip')
                 if dut_hostname in existing_hosts:
                     break
+                # SSP package ip's start at 150 for the moblab, so it is not
+                # a DUT
+                if int(dut_hostname.split('.')[-1]) > 150:
+                    break
                 self.add_dut(dut_hostname)
 
 
     def verify_software(self):
-        """Verify working software on a Chrome OS system.
-
-        Tests for the following conditions:
-         1. All conditions tested by the parent version of this
-            function.
-         2. Ensures that Moblab services are running.
-         3. Ensures that both DUTs successfully run Verify.
-
-        """
+        """Create the autodir then do standard verify."""
         # In case cleanup or powerwash wiped the autodir, create an empty
         # directory.
+        # Removing this mkdir command will result in the disk size check
+        # not being performed.
         self.run('mkdir -p %s' % MOBLAB_AUTODIR)
         super(MoblabHost, self).verify_software()
-        self._verify_moblab_services()
-        self._verify_duts()
 
 
-    @retry.retry(error.AutoservError, timeout_min=2, delay_sec=10)
+    @retry.retry(error.AutoservError, timeout_min=0.5, delay_sec=10)
     def _verify_upstart_service(self, service):
-        """Retry to verify the required moblab services are up and running.
+        """Verify the required moblab service is up and running.
 
-        Regarding crbug.com/649811, moblab services takes longer to restart
-        under the new provision framework. This is a fix to retry the service
-        check until all services are successfully restarted.
+        upstart services depend on one another, so a small amount of delay is to
+        be expected between various services starting.
 
         @param service: the moblab upstart service.
 
         @return True if this service is started and running, otherwise False.
         """
-        return self.upstart_status(service)
+        if not self.upstart_status(service):
+            raise UpstartServiceNotRunning(service)
 
 
-    def _verify_moblab_services(self):
+    @retry.retry(error.AutoservError, timeout_min=5, delay_sec=10)
+    def _verify_upstart_service_long_wait(self, service):
+        """Verify that required moblab service is up, with a long retry.
+
+        The first moblab service can take a long time to start up. Especially on
+        first, boot lxc container setup can delay the services for ~5 minutes.
+
+        @param service: the moblab upstart service.
+
+        @return True if this service is started and running, otherwise False.
+        """
+        if not self.upstart_status(service):
+            raise UpstartServiceNotRunning(service)
+
+
+    def verify_moblab_services(self):
         """Verify the required Moblab services are up and running.
 
         @raises AutoservError if any moblab service is not running.
         """
-        for service in MOBLAB_SERVICES:
-            if not self._verify_upstart_service(service):
-                raise error.AutoservError('Moblab service: %s is not running.'
-                                          % service)
+        if not MOBLAB_SERVICES:
+            return
+
+        service = MOBLAB_SERVICES[0]
+        try:
+            self._verify_upstart_service_long_wait(service)
+        except error.TimeoutException:
+            raise error.UpstartServiceNotRunning(service)
+
+        for service in MOBLAB_SERVICES[1:]:
+            try:
+                self._verify_upstart_service(service)
+            except error.TimeoutException:
+                raise error.UpstartServiceNotRunning(service)
+
         for process in MOBLAB_PROCESSES:
             try:
                 self.run('pgrep %s' % process)
@@ -288,32 +323,26 @@ class MoblabHost(cros_host.CrosHost):
         """
         try:
             self.afe.get_hosts()
-        except:
-            logging.debug('AFE is not responding')
+        except error.TimeoutException:
+            raise error.AutoservError('Moblab AFE is not responding')
+        except Exception as e:
+            logging.error('Unknown exception when checking moblab AFE: %s', e)
             raise
 
         return True
 
 
-    def _verify_duts(self):
+    def verify_duts(self):
         """Verify the Moblab DUTs are up and running.
 
         @raises AutoservError if no DUTs are in the Ready State.
         """
-        # Check whether afe is well connected, if not, restart it.
-        try:
-            self._check_afe()
-        except:
-            self.wait_afe_up()
-
-        # Add the DUTs if they have not yet been added.
-        self.find_and_add_duts()
-        # Ensure a boto file is installed in case this Moblab was wiped in
-        # repair.
-        self.install_boto_file()
         hosts = self.afe.reverify_hosts()
         logging.debug('DUTs scheduled for reverification: %s', hosts)
-        # Wait till all pending special tasks are completed.
+
+
+    def verify_special_tasks_complete(self):
+        """Wait till the special tasks on the moblab host are complete."""
         total_time = 0
         while (self.afe.get_special_tasks(is_complete=False) and
                total_time < DUT_VERIFY_TIMEOUT):

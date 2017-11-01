@@ -5,10 +5,11 @@
 import logging
 import os
 
-from autotest_lib.client.bin import site_utils, test, utils
+from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 
-ROOTFS_SIZE = 2 * 1024 * 1024 * 1024
+ROOTFS_SIZE_2G = 2 * 1024 * 1024 * 1024
+ROOTFS_SIZE_4G = 4 * 1024 * 1024 * 1024
 
 class platform_PartitionCheck(test.test):
     """
@@ -51,22 +52,16 @@ class platform_PartitionCheck(test.test):
 
     def run_once(self):
         errors = []
-        device = os.path.basename(site_utils.get_fixed_dst_drive())
-        mmcpath = os.path.join('/sys', 'block', device)
-
-        if os.path.exists(mmcpath) and device.startswith('mmc'):
-            partitions = [device + 'p3', device + 'p5']
-        else:
-            partitions = [device + '3', device + '5']
-
+        device = os.path.basename(utils.get_fixed_dst_drive())
+        partitions = [utils.concat_partition(device, i) for i in (3, 5)]
         block_size = self.get_block_size(device)
 
         for p in partitions:
             pblocks = self.get_partition_size(device, p)
             psize = pblocks * block_size
-            if psize != ROOTFS_SIZE:
-                errmsg = ('%s is %d bytes, expected %d' %
-                          (p, psize, ROOTFS_SIZE))
+            if psize != ROOTFS_SIZE_2G and psize != ROOTFS_SIZE_4G:
+                errmsg = ('%s is %d bytes, expected %d or %d' %
+                          (p, psize, ROOTFS_SIZE_2G, ROOTFS_SIZE_4G))
                 logging.warning(errmsg)
                 errors.append(errmsg)
 

@@ -98,25 +98,38 @@ def update_prod_branch(repo, repo_dir, hash_to_rebase):
     @param hash_to_rebase: Hash to rebase the prod branch to. If it is None,
                            prod branch will rebase to prod-next branch.
 
-    @returns the range of the pushed commits as a string. E.g 123...345
+    @returns the range of the pushed commits as a string. E.g 123...345. If the
+        prod branch is already up-to-date, return None.
     @raises subprocess.CalledProcessError on a command failure.
     """
     with infra.chdir(repo_dir):
         print 'Updating %s prod branch.' % repo
         rebase_to = hash_to_rebase if hash_to_rebase else 'origin/prod-next'
-        infra.local_runner('git rebase %s prod' % rebase_to, stream_output=True)
-        result = infra.local_runner('git push origin prod', stream_output=True)
-        print 'Successfully pushed %s prod branch!\n' % repo
+        # Check whether prod branch is already up-to-date, which means there is
+        # no changes since last push.
+        print 'Detecting new changes since last push...'
+        diff = infra.local_runner('git log prod..%s --oneline' % rebase_to,
+                                  stream_output=True)
+        if diff:
+            print 'Find new changes, will update prod branch...'
+            infra.local_runner('git rebase %s prod' % rebase_to,
+                               stream_output=True)
+            result = infra.local_runner('git push origin prod',
+                                        stream_output=True)
+            print 'Successfully pushed %s prod branch!\n' % repo
 
-        # Get the pushed commit range, which is used to get the pushed commits
-        # using git log E.g. 123..456, then run git log --oneline 123..456.
-        grep = re.search('(\w)*\.\.(\w)*', result)
+            # Get the pushed commit range, which is used to get pushed commits
+            # using git log E.g. 123..456, then run git log --oneline 123..456.
+            grep = re.search('(\w)*\.\.(\w)*', result)
 
-    if not grep:
-        raise AutoDeployException(
-            'Fail to get pushed commits for repo %s from git push log: %s' %
-            (repo, result))
-    return grep.group(0)
+            if not grep:
+                raise AutoDeployException(
+                    'Fail to get pushed commits for repo %s from git log: %s' %
+                    (repo, result))
+            return grep.group(0)
+        else:
+            print 'No new %s changes found since last push.' % repo
+            return None
 
 
 def get_pushed_commits(repo, repo_dir, pushed_commits_range):
@@ -132,13 +145,27 @@ def get_pushed_commits(repo, repo_dir, pushed_commits_range):
     @raises subprocess.CalledProcessError on a command failure.
     """
     print 'Getting pushed CLs for %s repo.' % repo
+    if not pushed_commits_range:
+        return '\n%s:\nNo new changes since last push.' % repo
+
     with infra.chdir(repo_dir):
         get_commits_cmd = 'git log --oneline %s' % pushed_commits_range
+
+        pushed_commits = infra.local_runner(
+                get_commits_cmd, stream_output=True)
         if repo == 'autotest':
-            get_commits_cmd += '|grep autotest'
-        pushed_commits = infra.local_runner(get_commits_cmd, stream_output=True)
+            autotest_commits = ''
+            for cl in pushed_commits.splitlines():
+                if 'autotest' in cl:
+                    autotest_commits += '%s\n' % cl
+
+            pushed_commits = autotest_commits
+
         print 'Successfully got pushed CLs for %s repo!\n' % repo
-        return '\n%s:\n%s\n%s\n' % (repo, get_commits_cmd, pushed_commits)
+        displayed_cmd = get_commits_cmd
+        if repo == 'autotest':
+          displayed_cmd += ' | grep autotest'
+        return '\n%s:\n%s\n%s\n' % (repo, displayed_cmd, pushed_commits)
 
 
 def kick_off_deploy():
@@ -149,10 +176,10 @@ def kick_off_deploy():
     print 'Start deploying changes to all lab servers...'
     with infra.chdir(AUTOTEST_DIR):
         # Then kick off the deploy script.
-        deploy_cmd = ('runlocalssh ./site_utils/deploy_server.py --afe=%s' %
+        deploy_cmd = ('runlocalssh ./site_utils/deploy_server.py -x --afe=%s' %
                       MASTER_AFE)
         infra.local_runner(deploy_cmd, stream_output=True)
-        print 'Successfully deploy changes to all lab servers.!'
+        print 'Successfully deployed changes to all lab servers.'
 
 
 def main(args):
@@ -178,10 +205,11 @@ def main(args):
         print 'Fail to clone prod branch. Error:\n%s\n' % e
         raise
     except subprocess.CalledProcessError as e:
-        print 'Deploy fails when running a subprocess cmd :\n%s\n' % e.output
+        print ('Deploy fails when running a subprocess cmd :\n%s\n'
+               'Below is the push log:\n%s\n' % (e.output, update_log))
         raise
     except Exception as e:
-        print 'Deploy fails with error:\n%s\n' % e
+        print 'Deploy fails with error:\n%s\nPush log:\n%s\n' % (e, update_log)
         raise
 
     # When deploy succeeds, print the update_log.

@@ -1,4 +1,5 @@
 # pylint: disable=missing-docstring
+
 """\
 Functions to expose over the RPC interface.
 
@@ -31,40 +32,59 @@ See doctests/001_rpc_test.txt for (lots) more examples.
 __author__ = 'showard@google.com (Steve Howard)'
 
 import ast
+import collections
 import datetime
 import logging
+import os
 import sys
 
+from django.db import connection as db_connection
+from django.db import transaction
 from django.db.models import Count
+from django.db.utils import DatabaseError
+
 import common
 from autotest_lib.client.common_lib import control_data
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import priorities
-# TODO(akeshet): Replace with monarch stats once we know how to instrument rpc
-# server with ts_mon.
-from autotest_lib.client.common_lib.cros.graphite import autotest_stats
-from autotest_lib.frontend.afe import control_file, rpc_utils
-from autotest_lib.frontend.afe import models, model_logic, model_attributes
-from autotest_lib.frontend.afe import site_rpc_interface
+from autotest_lib.client.common_lib import time_utils
+from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.frontend.afe import control_file as control_file_lib
+from autotest_lib.frontend.afe import model_attributes
+from autotest_lib.frontend.afe import model_logic
+from autotest_lib.frontend.afe import models
+from autotest_lib.frontend.afe import rpc_utils
 from autotest_lib.frontend.tko import models as tko_models
 from autotest_lib.frontend.tko import rpc_interface as tko_rpc_interface
 from autotest_lib.server import frontend
 from autotest_lib.server import utils
 from autotest_lib.server.cros import provision
+from autotest_lib.server.cros.dynamic_suite import constants
+from autotest_lib.server.cros.dynamic_suite import control_file_getter
+from autotest_lib.server.cros.dynamic_suite import suite as SuiteBase
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.cros.dynamic_suite.suite import Suite
 from autotest_lib.server.lib import status_history
+from autotest_lib.site_utils import job_history
+from autotest_lib.site_utils import server_manager_utils
+from autotest_lib.site_utils import stable_version_utils
 
 
-_timer = autotest_stats.Timer('rpc_interface')
+_CONFIG = global_config.global_config
 
-def get_parameterized_autoupdate_image_url(job):
-    """Get the parameterized autoupdate image url from a parameterized job."""
-    known_test_obj = models.Test.smart_get('autoupdate_ParameterizedJob')
-    image_parameter = known_test_obj.testparameter_set.get(test=known_test_obj,
-                                                           name='image')
-    para_set = job.parameterized_job.parameterizedjobparameter_set
-    job_test_para = para_set.get(test_parameter=image_parameter)
-    return job_test_para.parameter_value
+# Definition of LabHealthIndicator
+LabHealthIndicator = collections.namedtuple(
+        'LabHealthIndicator',
+        [
+                'if_lab_close',
+                'available_duts',
+                'devserver_health',
+                'upcoming_builds',
+        ]
+)
 
+# Relevant CrosDynamicSuiteExceptions are defined in client/common_lib/error.py.
 
 # labels
 
@@ -255,38 +275,7 @@ def get_labels(exclude_filters=(), **filter_data):
     labels = models.Label.query_objects(filter_data)
     for exclude_filter in exclude_filters:
         labels = labels.exclude(**exclude_filter)
-    return rpc_utils.prepare_rows_as_nested_dicts(labels, ('atomic_group',))
-
-
-# atomic groups
-
-def add_atomic_group(name, max_number_of_machines=None, description=None):
-    return models.AtomicGroup.add_object(
-            name=name, max_number_of_machines=max_number_of_machines,
-            description=description).id
-
-
-def modify_atomic_group(id, **data):
-    models.AtomicGroup.smart_get(id).update_object(data)
-
-
-def delete_atomic_group(id):
-    models.AtomicGroup.smart_get(id).delete()
-
-
-def atomic_group_add_labels(id, labels):
-    label_objs = models.Label.smart_get_bulk(labels)
-    models.AtomicGroup.smart_get(id).label_set.add(*label_objs)
-
-
-def atomic_group_remove_labels(id, labels):
-    label_objs = models.Label.smart_get_bulk(labels)
-    models.AtomicGroup.smart_get(id).label_set.remove(*label_objs)
-
-
-def get_atomic_groups(**filter_data):
-    return rpc_utils.prepare_for_serialization(
-            models.AtomicGroup.list_objects(filter_data))
+    return rpc_utils.prepare_rows_as_nested_dicts(labels, ())
 
 
 # hosts
@@ -329,12 +318,20 @@ def modify_host(id, **kwargs):
     # between the master and a shard.
     if kwargs.get('locked', None) and 'lock_time' not in kwargs:
         kwargs['lock_time'] = datetime.datetime.now()
-    host.update_object(kwargs)
 
     # force_modifying_locking is not an internal field in database, remove.
-    kwargs.pop('force_modify_locking', None)
+    shard_kwargs = dict(kwargs)
+    shard_kwargs.pop('force_modify_locking', None)
     rpc_utils.fanout_rpc([host], 'modify_host_local',
-                         include_hostnames=False, id=id, **kwargs)
+                         include_hostnames=False, id=id, **shard_kwargs)
+
+    # Update the local DB **after** RPC fanout is complete.
+    # This guarantees that the master state is only updated if the shards were
+    # correctly updated.
+    # In case the shard update fails mid-flight and the master-shard desync, we
+    # always consider the master state to be the source-of-truth, and any
+    # (automated) corrective actions will revert the (partial) shard updates.
+    host.update_object(kwargs)
 
 
 def modify_host_local(id, **kwargs):
@@ -388,7 +385,7 @@ def modify_hosts(host_filter_data, update_data):
                               'lock modification will be enforced. %s', e)
 
         if host.shard:
-            affected_shard_hostnames.add(host.shard.rpc_hostname())
+            affected_shard_hostnames.add(host.shard.hostname)
             affected_host_ids.append(host.id)
 
     # This is required to make `lock_time` for a host be exactly same
@@ -490,7 +487,7 @@ def get_host_attribute(attribute, **host_filter_data):
     @param host_filter_data: filter data to apply to Hosts to choose hosts to
                              act upon
     """
-    hosts = rpc_utils.get_host_query((), False, False, True, host_filter_data)
+    hosts = rpc_utils.get_host_query((), False, True, host_filter_data)
     hosts = list(hosts)
     models.Host.objects.populate_relationships(hosts, models.HostAttribute,
                                                'attribute_list')
@@ -502,8 +499,28 @@ def get_host_attribute(attribute, **host_filter_data):
     return rpc_utils.prepare_for_serialization(host_attr_dicts)
 
 
+@rpc_utils.route_rpc_to_master
 def set_host_attribute(attribute, value, **host_filter_data):
+    """Set an attribute on hosts.
+
+    This RPC is a shim that forwards calls to master to be handled there.
+
+    @param attribute: string name of attribute
+    @param value: string, or None to delete an attribute
+    @param host_filter_data: filter data to apply to Hosts to choose hosts to
+                             act upon
     """
+    assert not utils.is_shard()
+    set_host_attribute_impl(attribute, value, **host_filter_data)
+
+
+def set_host_attribute_impl(attribute, value, **host_filter_data):
+    """Set an attribute on hosts.
+
+    *** DO NOT CALL THIS RPC from client code ***
+    This RPC exists for master-shard communication only.
+    Call set_host_attribute instead.
+
     @param attribute: string name of attribute
     @param value: string, or None to delete an attribute
     @param host_filter_data: filter data to apply to Hosts to choose hosts to
@@ -517,7 +534,7 @@ def set_host_attribute(attribute, value, **host_filter_data):
 
     # Master forwards this RPC to shards.
     if not utils.is_shard():
-        rpc_utils.fanout_rpc(hosts, 'set_host_attribute', False,
+        rpc_utils.fanout_rpc(hosts, 'set_host_attribute_impl', False,
                 attribute=attribute, value=value, **host_filter_data)
 
 
@@ -527,22 +544,18 @@ def delete_host(id):
 
 
 def get_hosts(multiple_labels=(), exclude_only_if_needed_labels=False,
-              exclude_atomic_group_hosts=False, valid_only=True,
-              include_current_job=False, **filter_data):
+              valid_only=True, include_current_job=False, **filter_data):
     """Get a list of dictionaries which contains the information of hosts.
 
     @param multiple_labels: match hosts in all of the labels given.  Should
             be a list of label names.
     @param exclude_only_if_needed_labels: Exclude hosts with at least one
             "only_if_needed" label applied.
-    @param exclude_atomic_group_hosts: Exclude hosts that have one or more
-            atomic group labels associated with them.
     @param include_current_job: Set to True to include ids of currently running
             job and special task.
     """
     hosts = rpc_utils.get_host_query(multiple_labels,
                                      exclude_only_if_needed_labels,
-                                     exclude_atomic_group_hosts,
                                      valid_only, filter_data)
     hosts = list(hosts)
     models.Host.objects.populate_relationships(hosts, models.Label,
@@ -555,8 +568,7 @@ def get_hosts(multiple_labels=(), exclude_only_if_needed_labels=False,
     for host_obj in hosts:
         host_dict = host_obj.get_object_dict()
         host_dict['labels'] = [label.name for label in host_obj.label_list]
-        host_dict['platform'], host_dict['atomic_group'] = (rpc_utils.
-                find_platform_and_atomic_group(host_obj))
+        host_dict['platform'] = rpc_utils.find_platform(host_obj)
         host_dict['acls'] = [acl.name for acl in host_obj.acl_list]
         host_dict['attributes'] = dict((attribute.attribute, attribute.value)
                                        for attribute in host_obj.attribute_list)
@@ -579,8 +591,7 @@ def get_hosts(multiple_labels=(), exclude_only_if_needed_labels=False,
 
 
 def get_num_hosts(multiple_labels=(), exclude_only_if_needed_labels=False,
-                  exclude_atomic_group_hosts=False, valid_only=True,
-                  **filter_data):
+                  valid_only=True, **filter_data):
     """
     Same parameters as get_hosts().
 
@@ -588,53 +599,30 @@ def get_num_hosts(multiple_labels=(), exclude_only_if_needed_labels=False,
     """
     hosts = rpc_utils.get_host_query(multiple_labels,
                                      exclude_only_if_needed_labels,
-                                     exclude_atomic_group_hosts,
                                      valid_only, filter_data)
     return hosts.count()
 
 
 # tests
 
-def add_test(name, test_type, path, author=None, dependencies=None,
-             experimental=True, run_verify=None, test_class=None,
-             test_time=None, test_category=None, description=None,
-             sync_count=1):
-    return models.Test.add_object(name=name, test_type=test_type, path=path,
-                                  author=author, dependencies=dependencies,
-                                  experimental=experimental,
-                                  run_verify=run_verify, test_time=test_time,
-                                  test_category=test_category,
-                                  sync_count=sync_count,
-                                  test_class=test_class,
-                                  description=description).id
-
-
-def modify_test(id, **data):
-    models.Test.smart_get(id).update_object(data)
-
-
-def delete_test(id):
-    models.Test.smart_get(id).delete()
-
-
 def get_tests(**filter_data):
     return rpc_utils.prepare_for_serialization(
         models.Test.list_objects(filter_data))
 
 
-@_timer.decorate
 def get_tests_status_counts_by_job_name_label(job_name_prefix, label_name):
     """Gets the counts of all passed and failed tests from the matching jobs.
 
-    @param job_name_prefix: Name prefix of the jobs to get the summary from, e.g.,
-            'butterfly-release/R40-6457.21.0/bvt-cq/'.
+    @param job_name_prefix: Name prefix of the jobs to get the summary
+           from, e.g., 'butterfly-release/r40-6457.21.0/bvt-cq/'. Prefix
+           matching is case insensitive.
     @param label_name: Label that must be set in the jobs, e.g.,
             'cros-version:butterfly-release/R40-6457.21.0'.
 
     @returns A summary of the counts of all the passed and failed tests.
     """
     job_ids = list(models.Job.objects.filter(
-            name__startswith=job_name_prefix,
+            name__istartswith=job_name_prefix,
             dependency_labels__name=label_name).values_list(
                 'pk', flat=True))
     summary = {'passed': 0, 'failed': 0}
@@ -675,18 +663,6 @@ def get_profilers(**filter_data):
 
 
 # users
-
-def add_user(login, access_level=None):
-    return models.User.add_object(login=login, access_level=access_level).id
-
-
-def modify_user(id, **data):
-    models.User.smart_get(id).update_object(data)
-
-
-def delete_user(id):
-    models.User.smart_get(id).delete()
-
 
 def get_users(**filter_data):
     return rpc_utils.prepare_for_serialization(
@@ -799,7 +775,7 @@ def generate_control_file(tests=(), profilers=(),
     cf_info, test_objects, profiler_objects = (
         rpc_utils.prepare_generate_control_file(tests, profilers,
                                                 db_tests))
-    cf_info['control_file'] = control_file.generate_control(
+    cf_info['control_file'] = control_file_lib.generate_control(
         tests=test_objects, profilers=profiler_objects,
         is_server=cf_info['is_server'],
         client_control_file=client_control_file, profile_only=profile_only,
@@ -807,95 +783,10 @@ def generate_control_file(tests=(), profilers=(),
     return cf_info
 
 
-def create_parameterized_job(name, priority, test, parameters, kernel=None,
-                             label=None, profilers=(), profiler_parameters=None,
-                             use_container=False, profile_only=None,
-                             upload_kernel_config=False, hosts=(),
-                             meta_hosts=(), one_time_hosts=(),
-                             atomic_group_name=None, synch_count=None,
-                             is_template=False, timeout=None,
-                             timeout_mins=None, max_runtime_mins=None,
-                             run_verify=False, email_list='', dependencies=(),
-                             reboot_before=None, reboot_after=None,
-                             parse_failed_repair=None, hostless=False,
-                             keyvals=None, drone_set=None, run_reset=True,
-                             require_ssp=None):
-    """
-    Creates and enqueues a parameterized job.
-
-    Most parameters a combination of the parameters for generate_control_file()
-    and create_job(), with the exception of:
-
-    @param test name or ID of the test to run
-    @param parameters a map of parameter name ->
-                          tuple of (param value, param type)
-    @param profiler_parameters a dictionary of parameters for the profilers:
-                                   key: profiler name
-                                   value: dict of param name -> tuple of
-                                                                (param value,
-                                                                 param type)
-    """
-    # Save the values of the passed arguments here. What we're going to do with
-    # them is pass them all to rpc_utils.get_create_job_common_args(), which
-    # will extract the subset of these arguments that apply for
-    # rpc_utils.create_job_common(), which we then pass in to that function.
-    args = locals()
-
-    # Set up the parameterized job configs
-    test_obj = models.Test.smart_get(test)
-    control_type = test_obj.test_type
-
-    try:
-        label = models.Label.smart_get(label)
-    except models.Label.DoesNotExist:
-        label = None
-
-    kernel_objs = models.Kernel.create_kernels(kernel)
-    profiler_objs = [models.Profiler.smart_get(profiler)
-                     for profiler in profilers]
-
-    parameterized_job = models.ParameterizedJob.objects.create(
-            test=test_obj, label=label, use_container=use_container,
-            profile_only=profile_only,
-            upload_kernel_config=upload_kernel_config)
-    parameterized_job.kernels.add(*kernel_objs)
-
-    for profiler in profiler_objs:
-        parameterized_profiler = models.ParameterizedJobProfiler.objects.create(
-                parameterized_job=parameterized_job,
-                profiler=profiler)
-        profiler_params = profiler_parameters.get(profiler.name, {})
-        for name, (value, param_type) in profiler_params.iteritems():
-            models.ParameterizedJobProfilerParameter.objects.create(
-                    parameterized_job_profiler=parameterized_profiler,
-                    parameter_name=name,
-                    parameter_value=value,
-                    parameter_type=param_type)
-
-    try:
-        for parameter in test_obj.testparameter_set.all():
-            if parameter.name in parameters:
-                param_value, param_type = parameters.pop(parameter.name)
-                parameterized_job.parameterizedjobparameter_set.create(
-                        test_parameter=parameter, parameter_value=param_value,
-                        parameter_type=param_type)
-
-        if parameters:
-            raise Exception('Extra parameters remain: %r' % parameters)
-
-        return rpc_utils.create_job_common(
-                parameterized_job=parameterized_job.id,
-                control_type=control_type,
-                **rpc_utils.get_create_job_common_args(args))
-    except:
-        parameterized_job.delete()
-        raise
-
-
 def create_job_page_handler(name, priority, control_file, control_type,
                             image=None, hostless=False, firmware_rw_build=None,
                             firmware_ro_build=None, test_source_build=None,
-                            is_cloning=False, **kwargs):
+                            is_cloning=False, cheets_build=None, **kwargs):
     """\
     Create and enqueue a job.
 
@@ -911,6 +802,8 @@ def create_job_page_handler(name, priority, control_file, control_type,
     @param test_source_build: Build to be used to retrieve test code. Default
                               to None.
     @param is_cloning: True if creating a cloning job.
+    @param cheets_build: ChromeOS Android build  to be installed in the dut.
+                         Default to None. Cheets build will not be updated.
     @param kwargs extra args that will be required by create_suite_job or
                   create_job.
 
@@ -933,16 +826,18 @@ def create_job_page_handler(name, priority, control_file, control_type,
     if image and hostless:
         builds = {}
         builds[provision.CROS_VERSION_PREFIX] = image
+        if cheets_build:
+            builds[provision.CROS_ANDROID_VERSION_PREFIX] = cheets_build
         if firmware_rw_build:
             builds[provision.FW_RW_VERSION_PREFIX] = firmware_rw_build
         if firmware_ro_build:
             builds[provision.FW_RO_VERSION_PREFIX] = firmware_ro_build
-        return site_rpc_interface.create_suite_job(
+        return create_suite_job(
                 name=name, control_file=control_file, priority=priority,
                 builds=builds, test_source_build=test_source_build,
                 is_cloning=is_cloning, **kwargs)
     return create_job(name, priority, control_file, control_type, image=image,
-                      hostless=hostless, is_cloning=is_cloning, **kwargs)
+                      hostless=hostless, **kwargs)
 
 
 @rpc_utils.route_rpc_to_master
@@ -954,7 +849,6 @@ def create_job(
         hosts=(),
         meta_hosts=(),
         one_time_hosts=(),
-        atomic_group_name=None,
         synch_count=None,
         is_template=False,
         timeout=None,
@@ -975,7 +869,6 @@ def create_job(
         run_reset=True,
         require_ssp=None,
         args=(),
-        is_cloning=False,
         **kwargs):
     """\
     Create and enqueue a job.
@@ -1005,7 +898,6 @@ def create_job(
     @param meta_hosts List where each entry is a label name, and for each entry
         one host will be chosen from that label to run the job on.
     @param one_time_hosts List of hosts not in the database to run the job on.
-    @param atomic_group_name The name of an atomic group to schedule the job on.
     @param drone_set The name of the drone set to run this test on.
     @param image OS image to install before running job.
     @param parent_job_id id of a job considered to be parent of created job.
@@ -1019,19 +911,40 @@ def create_job(
                        image is not set, drone will run the test without server-
                        side packaging. Default is None.
     @param args A list of args to be injected into control file.
-    @param is_cloning: True if creating a cloning job.
     @param kwargs extra keyword args. NOT USED.
 
     @returns The created Job id number.
     """
     if args:
         control_file = tools.inject_vars({'args': args}, control_file)
-
     if image:
-        version_label = provision.cros_version_to_label(image)
-        dependencies += (version_label,)
+        dependencies += (provision.image_version_to_label(image),)
     return rpc_utils.create_job_common(
-            **rpc_utils.get_create_job_common_args(locals()))
+            name=name,
+            priority=priority,
+            control_type=control_type,
+            control_file=control_file,
+            hosts=hosts,
+            meta_hosts=meta_hosts,
+            one_time_hosts=one_time_hosts,
+            synch_count=synch_count,
+            is_template=is_template,
+            timeout=timeout,
+            timeout_mins=timeout_mins,
+            max_runtime_mins=max_runtime_mins,
+            run_verify=run_verify,
+            email_list=email_list,
+            dependencies=dependencies,
+            reboot_before=reboot_before,
+            reboot_after=reboot_after,
+            parse_failed_repair=parse_failed_repair,
+            hostless=hostless,
+            keyvals=keyvals,
+            drone_set=drone_set,
+            parent_job_id=parent_job_id,
+            test_retry=test_retry,
+            run_reset=run_reset,
+            require_ssp=require_ssp)
 
 
 def abort_host_queue_entries(**filter_data):
@@ -1099,7 +1012,7 @@ def _forward_special_tasks_on_hosts(task, rpc, **filter_data):
     @return: A list of hostnames that a special task was created for.
     """
     hosts = models.Host.query_objects(filter_data)
-    shard_host_map = rpc_utils.bucket_hosts_by_shard(hosts, rpc_hostnames=True)
+    shard_host_map = rpc_utils.bucket_hosts_by_shard(hosts)
 
     # Filter out hosts on a shard from those on the master, forward
     # rpcs to the shard with an additional hostname__in filter, and
@@ -1189,8 +1102,6 @@ def get_jobs(not_yet_run=False, running=False, finished=False,
                                             for label in job.dependencies)
         job_dict['keyvals'] = dict((keyval.key, keyval.value)
                                    for keyval in job.keyvals)
-        if job.parameterized_job:
-            job_dict['image'] = get_parameterized_autoupdate_image_url(job)
         job_dicts.append(job_dict)
     return rpc_utils.prepare_for_serialization(job_dicts)
 
@@ -1266,10 +1177,6 @@ def get_info_for_clone(id, preserve_metahosts, queue_entry_filter_data=None):
                 meta_host_counts=meta_host_counts,
                 hosts=host_dicts)
     info['job']['dependencies'] = job_info['dependencies']
-    if job_info['atomic_group']:
-        info['atomic_group_name'] = (job_info['atomic_group']).name
-    else:
-        info['atomic_group_name'] = None
     info['hostless'] = job_info['hostless']
     info['drone_set'] = job.drone_set and job.drone_set.name
 
@@ -1281,49 +1188,99 @@ def get_info_for_clone(id, preserve_metahosts, queue_entry_filter_data=None):
 
 
 def _get_image_for_job(job, hostless):
-    """ Gets the image used for a job.
+    """Gets the image used for a job.
 
-    Gets the image used for an AFE job. If the job is a parameterized job, get
-    the image from the job parameter; otherwise, tries to get the image from
-    the job's keyvals 'build' or 'builds'. As a last resort, if the job is a
-    hostless job, tries to get the image from its control file attributes
-    'build' or 'builds'.
+    Gets the image used for an AFE job from the job's keyvals 'build' or
+    'builds'. If that fails, and the job is a hostless job, tries to
+    get the image from its control file attributes 'build' or 'builds'.
 
     TODO(ntang): Needs to handle FAFT with two builds for ro/rw.
 
     @param job      An AFE job object.
-    @param hostless Boolean on of the job is hostless.
+    @param hostless Boolean indicating whether the job is hostless.
 
     @returns The image build used for the job.
     """
-    image = None
-    if job.parameterized_job:
-        image = get_parameterized_autoupdate_image_url(job)
-    else:
-        keyvals = job.keyval_dict()
-        image = keyvals.get('build')
-        if not image:
-            value = keyvals.get('builds')
-            builds = None
-            if isinstance(value, dict):
-                builds = value
-            elif isinstance(value, basestring):
-                builds = ast.literal_eval(value)
-            if builds:
+    keyvals = job.keyval_dict()
+    image = keyvals.get('build')
+    if not image:
+        value = keyvals.get('builds')
+        builds = None
+        if isinstance(value, dict):
+            builds = value
+        elif isinstance(value, basestring):
+            builds = ast.literal_eval(value)
+        if builds:
+            image = builds.get('cros-version')
+    if not image and hostless and job.control_file:
+        try:
+            control_obj = control_data.parse_control_string(
+                    job.control_file)
+            if hasattr(control_obj, 'build'):
+                image = getattr(control_obj, 'build')
+            if not image and hasattr(control_obj, 'builds'):
+                builds = getattr(control_obj, 'builds')
                 image = builds.get('cros-version')
-        if not image and hostless and job.control_file:
-            try:
-                control_obj = control_data.parse_control_string(
-                        job.control_file)
-                if hasattr(control_obj, 'build'):
-                    image = getattr(control_obj, 'build')
-                if not image and hasattr(control_obj, 'builds'):
-                    builds = getattr(control_obj, 'builds')
-                    image = builds.get('cros-version')
-            except:
-                logging.warning('Failed to parse control file for job: %s',
-                                job.name)
+        except:
+            logging.warning('Failed to parse control file for job: %s',
+                            job.name)
     return image
+
+
+
+def get_host_queue_entries_by_start_time(
+        insert_time_after=None, insert_time_before=None,
+        started_on__gte=None, started_on__lte=None, **filter_data):
+    """Like get_host_queue_entries, but using the insert index table.
+
+    TODO(phobbs) remove these dead arguments after the API change has finished
+    rolling out:
+
+    @param insert_time_after: (ignored)
+    @param insert_time_before: (ignored)
+    @param started_on__gte: (optional) A datetime string lower bound for the
+        hqe's started_on column.
+    @param started_on__lte: (optional) A datetime string upper bound for the
+        hqe's started_on column.
+    @returns A sequence of nested dictionaries of host and job information.
+    """
+    assert started_on__gte is not None or started_on__lte is not None, \
+      ('Caller to get_host_queue_entries_by_start_time must provide '
+       ' either started_on__gte or started_on__lte.')
+
+    # We know a upper bound on when the job was started, started_on__lte.
+    # We know insert_time < started_on.
+    # If the started_on < t, then insert_time < t by transitivity.
+    if started_on__lte:
+        # The HQE start times table is inserted periodically, so to be safe
+        # we need to get the next HQE-start-time row after our constraint.
+        query = models.HostQueueEntryStartTimes.objects.filter(
+            insert_time__gte=started_on__lte).order_by('-insert_time')
+        try:
+            constraint = query[0].highest_hqe_id
+            if 'id__lte' in filter_data:
+                constraint = min(constraint, filter_data['id__lte'])
+            filter_data['id__lte'] = constraint
+        except IndexError:
+            pass
+
+    # We can't provide a lower bound on the when the job was inserted because
+    # there may be an arbitrarily large gap between insert and start time (even
+    # days long).
+
+    # We still need to provide the started_on constraints - the id constraint
+    # from insert time isn't sufficient because the index table is approximate.
+    if started_on__gte:
+        filter_data['started_on__gte'] = started_on__gte
+    if started_on__lte:
+        filter_data['started_on__lte'] = started_on__lte
+    return rpc_utils.prepare_rows_as_nested_dicts(
+            models.HostQueueEntry.query_objects(filter_data),
+            ('host', 'job'))
+
+
+# TODO(phobbs) remove the below once this has finished rolling out.
+get_host_queue_entries_by_insert_time = get_host_queue_entries_by_start_time
 
 
 def get_host_queue_entries(start_time=None, end_time=None, **filter_data):
@@ -1337,7 +1294,7 @@ def get_host_queue_entries(start_time=None, end_time=None, **filter_data):
                                                    **filter_data)
     return rpc_utils.prepare_rows_as_nested_dicts(
             models.HostQueueEntry.query_objects(filter_data),
-            ('host', 'atomic_group', 'job'))
+            ('host', 'job'))
 
 
 def get_num_host_queue_entries(start_time=None, end_time=None, **filter_data):
@@ -1411,7 +1368,7 @@ def get_host_special_tasks(host_id, **filter_data):
         # objects that aren't JSON-serializable.  So, we have to
         # call AFE.run() to get the raw, serializable output from
         # the shard.
-        shard_afe = frontend.AFE(server=host.shard.rpc_hostname())
+        shard_afe = frontend.AFE(server=host.shard.hostname)
         return shard_afe.run('get_special_tasks',
                              host_id=host_id, **filter_data)
 
@@ -1446,7 +1403,7 @@ def get_host_num_special_tasks(host, **kwargs):
     if not host_model.shard:
         return get_num_special_tasks(host=host, **kwargs)
     else:
-        shard_afe = frontend.AFE(server=host_model.shard.rpc_hostname())
+        shard_afe = frontend.AFE(server=host_model.shard.hostname)
         return shard_afe.run('get_num_special_tasks', host=host, **kwargs)
 
 
@@ -1500,7 +1457,7 @@ def get_host_status_task(host_id, end_time):
         # objects that aren't JSON-serializable.  So, we have to
         # call AFE.run() to get the raw, serializable output from
         # the shard.
-        shard_afe = frontend.AFE(server=host.shard.rpc_hostname())
+        shard_afe = frontend.AFE(server=host.shard.hostname)
         return shard_afe.run('get_status_task',
                              host_id=host_id, end_time=end_time)
 
@@ -1536,7 +1493,7 @@ def get_host_diagnosis_interval(host_id, end_time, success):
         return status_history.get_diagnosis_interval(
                 host_id, end_time, success)
     else:
-        shard_afe = frontend.AFE(server=host.shard.rpc_hostname())
+        shard_afe = frontend.AFE(server=host.shard.hostname)
         return shard_afe.get_host_diagnosis_interval(
                 host_id, end_time, success)
 
@@ -1588,32 +1545,6 @@ def get_num_host_queue_entries_and_special_tasks(host, start_time=None,
             + get_host_num_special_tasks(**filter_data_special_tasks))
 
 
-# recurring run
-
-def get_recurring(**filter_data):
-    return rpc_utils.prepare_rows_as_nested_dicts(
-            models.RecurringRun.query_objects(filter_data),
-            ('job', 'owner'))
-
-
-def get_num_recurring(**filter_data):
-    return models.RecurringRun.query_count(filter_data)
-
-
-def delete_recurring_runs(**filter_data):
-    to_delete = models.RecurringRun.query_objects(filter_data)
-    to_delete.delete()
-
-
-def create_recurring_run(job_id, start_date, loop_period, loop_count):
-    owner = models.User.current_user().login
-    job = models.Job.objects.get(id=job_id)
-    return job.create_recurring_job(start_date=start_date,
-                                    loop_period=loop_period,
-                                    loop_count=loop_count,
-                                    owner=owner)
-
-
 # other
 
 def echo(data=""):
@@ -1641,7 +1572,6 @@ def get_static_data():
     users: Sorted list of all users.
     labels: Sorted list of labels not start with 'cros-version' and
             'fw-version'.
-    atomic_groups: Sorted list of all atomic groups.
     tests: Sorted list of all tests.
     profilers: Sorted list of all profilers.
     current_user: Logged-in username.
@@ -1657,7 +1587,6 @@ def get_static_data():
             informative description.
     """
 
-    job_fields = models.Job.get_field_dict()
     default_drone_set_name = models.DroneSet.default_drone_set_name()
     drone_sets = ([default_drone_set_name] +
                   sorted(drone_set.name for drone_set in
@@ -1666,7 +1595,6 @@ def get_static_data():
 
     result = {}
     result['priorities'] = priorities.Priority.choices()
-    default_priority = priorities.Priority.DEFAULT
     result['default_priority'] = 'Default'
     result['max_schedulable_priority'] = priorities.Priority.DEFAULT
     result['users'] = get_users(sort_by=['login'])
@@ -1681,7 +1609,6 @@ def get_static_data():
         label_exclude_filters,
         sort_by=['-platform', 'name'])
 
-    result['atomic_groups'] = get_atomic_groups(sort_by=['name'])
     result['tests'] = get_tests(sort_by=['name'])
     result['profilers'] = get_profilers(sort_by=['name'])
     result['current_user'] = rpc_utils.prepare_for_serialization(
@@ -1698,7 +1625,6 @@ def get_static_data():
     result['motd'] = rpc_utils.get_motd()
     result['drone_sets_enabled'] = models.DroneSet.drone_sets_enabled()
     result['drone_sets'] = drone_sets
-    result['parameterized_jobs'] = models.Job.parameterized_jobs_enabled()
 
     result['status_dictionary'] = {"Aborted": "Aborted",
                                    "Verifying": "Verifying Host",
@@ -1712,7 +1638,6 @@ def get_static_data():
                                    "Stopped": "Other host(s) failed verify",
                                    "Parsing": "Awaiting parse of final results",
                                    "Gathering": "Gathering log files",
-                                   "Template": "Template job for recurring run",
                                    "Waiting": "Waiting for scheduler action",
                                    "Archiving": "Archiving results",
                                    "Resetting": "Resetting hosts"}
@@ -1725,6 +1650,15 @@ def get_static_data():
 
 def get_server_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
+
+def ping_db():
+    """Simple connection test to db"""
+    try:
+        db_connection.cursor()
+    except DatabaseError:
+        return [False]
+    return [True]
 
 
 def get_hosts_by_attribute(attribute, value):
@@ -1740,3 +1674,730 @@ def get_hosts_by_attribute(attribute, value):
     hosts = models.HostAttribute.query_objects({'attribute': attribute,
                                                 'value': value})
     return [row.host.hostname for row in hosts if row.host.invalid == 0]
+
+
+def canonicalize_suite_name(suite_name):
+    """Canonicalize the suite's name.
+
+    @param suite_name: the name of the suite.
+    """
+    # Do not change this naming convention without updating
+    # site_utils.parse_job_name.
+    return 'test_suites/control.%s' % suite_name
+
+
+def formatted_now():
+    """Format the current datetime."""
+    return datetime.datetime.now().strftime(time_utils.TIME_FMT)
+
+
+def _get_control_file_by_build(build, ds, suite_name):
+    """Return control file contents for |suite_name|.
+
+    Query the dev server at |ds| for the control file |suite_name|, included
+    in |build| for |board|.
+
+    @param build: unique name by which to refer to the image from now on.
+    @param ds: a dev_server.DevServer instance to fetch control file with.
+    @param suite_name: canonicalized suite name, e.g. test_suites/control.bvt.
+    @raises ControlFileNotFound if a unique suite control file doesn't exist.
+    @raises NoControlFileList if we can't list the control files at all.
+    @raises ControlFileEmpty if the control file exists on the server, but
+                             can't be read.
+
+    @return the contents of the desired control file.
+    """
+    getter = control_file_getter.DevServerGetter.create(build, ds)
+    devserver_name = ds.hostname
+    # Get the control file for the suite.
+    try:
+        control_file_in = getter.get_control_file_contents_by_name(suite_name)
+    except error.CrosDynamicSuiteException as e:
+        raise type(e)('Failed to get control file for %s '
+                      '(devserver: %s) (error: %s)' %
+                      (build, devserver_name, e))
+    if not control_file_in:
+        raise error.ControlFileEmpty(
+            "Fetching %s returned no data. (devserver: %s)" %
+            (suite_name, devserver_name))
+    # Force control files to only contain ascii characters.
+    try:
+        control_file_in.encode('ascii')
+    except UnicodeDecodeError as e:
+        raise error.ControlFileMalformed(str(e))
+
+    return control_file_in
+
+
+def _get_control_file_by_suite(suite_name):
+    """Get control file contents by suite name.
+
+    @param suite_name: Suite name as string.
+    @returns: Control file contents as string.
+    """
+    getter = control_file_getter.FileSystemGetter(
+            [_CONFIG.get_config_value('SCHEDULER',
+                                      'drone_installation_directory')])
+    return getter.get_control_file_contents_by_name(suite_name)
+
+
+def _stage_build_artifacts(build, hostname=None):
+    """
+    Ensure components of |build| necessary for installing images are staged.
+
+    @param build image we want to stage.
+    @param hostname hostname of a dut may run test on. This is to help to locate
+        a devserver closer to duts if needed. Default is None.
+
+    @raises StageControlFileFailure: if the dev server throws 500 while staging
+        suite control files.
+
+    @return: dev_server.ImageServer instance to use with this build.
+    @return: timings dictionary containing staging start/end times.
+    """
+    timings = {}
+    # Ensure components of |build| necessary for installing images are staged
+    # on the dev server. However set synchronous to False to allow other
+    # components to be downloaded in the background.
+    ds = dev_server.resolve(build, hostname=hostname)
+    ds_name = ds.hostname
+    timings[constants.DOWNLOAD_STARTED_TIME] = formatted_now()
+    try:
+        ds.stage_artifacts(image=build, artifacts=['test_suites'])
+    except dev_server.DevServerException as e:
+        raise error.StageControlFileFailure(
+                "Failed to stage %s on %s: %s" % (build, ds_name, e))
+    timings[constants.PAYLOAD_FINISHED_TIME] = formatted_now()
+    return (ds, timings)
+
+
+@rpc_utils.route_rpc_to_master
+def create_suite_job(
+        name='',
+        board='',
+        pool='',
+        child_dependencies=(),
+        control_file='',
+        check_hosts=True,
+        num=None,
+        file_bugs=False,
+        timeout=24,
+        timeout_mins=None,
+        priority=priorities.Priority.DEFAULT,
+        suite_args=None,
+        wait_for_results=True,
+        job_retry=False,
+        max_retries=None,
+        max_runtime_mins=None,
+        suite_min_duts=0,
+        offload_failures_only=False,
+        builds=None,
+        test_source_build=None,
+        run_prod_code=False,
+        delay_minutes=0,
+        is_cloning=False,
+        job_keyvals=None,
+        test_args=None,
+        **kwargs):
+    """
+    Create a job to run a test suite on the given device with the given image.
+
+    When the timeout specified in the control file is reached, the
+    job is guaranteed to have completed and results will be available.
+
+    @param name: The test name if control_file is supplied, otherwise the name
+                 of the test suite to run, e.g. 'bvt'.
+    @param board: the kind of device to run the tests on.
+    @param builds: the builds to install e.g.
+                   {'cros-version:': 'x86-alex-release/R18-1655.0.0',
+                    'fwrw-version:':  'x86-alex-firmware/R36-5771.50.0',
+                    'fwro-version:':  'x86-alex-firmware/R36-5771.49.0'}
+                   If builds is given a value, it overrides argument build.
+    @param test_source_build: Build that contains the server-side test code.
+    @param pool: Specify the pool of machines to use for scheduling
+            purposes.
+    @param child_dependencies: (optional) list of additional dependency labels
+            (strings) that will be added as dependency labels to child jobs.
+    @param control_file: the control file of the job.
+    @param check_hosts: require appropriate live hosts to exist in the lab.
+    @param num: Specify the number of machines to schedule across (integer).
+                Leave unspecified or use None to use default sharding factor.
+    @param file_bugs: File a bug on each test failure in this suite.
+    @param timeout: The max lifetime of this suite, in hours.
+    @param timeout_mins: The max lifetime of this suite, in minutes. Takes
+                         priority over timeout.
+    @param priority: Integer denoting priority. Higher is more important.
+    @param suite_args: Optional arguments which will be parsed by the suite
+                       control file. Used by control.test_that_wrapper to
+                       determine which tests to run.
+    @param wait_for_results: Set to False to run the suite job without waiting
+                             for test jobs to finish. Default is True.
+    @param job_retry: Set to True to enable job-level retry. Default is False.
+    @param max_retries: Integer, maximum job retries allowed at suite level.
+                        None for no max.
+    @param max_runtime_mins: Maximum amount of time a job can be running in
+                             minutes.
+    @param suite_min_duts: Integer. Scheduler will prioritize getting the
+                           minimum number of machines for the suite when it is
+                           competing with another suite that has a higher
+                           priority but already got minimum machines it needs.
+    @param offload_failures_only: Only enable gs_offloading for failed jobs.
+    @param run_prod_code: If True, the suite will run the test code that
+                          lives in prod aka the test code currently on the
+                          lab servers. If False, the control files and test
+                          code for this suite run will be retrieved from the
+                          build artifacts.
+    @param delay_minutes: Delay the creation of test jobs for a given number of
+                          minutes.
+    @param is_cloning: True if creating a cloning job.
+    @param job_keyvals: A dict of job keyvals to be inject to control file.
+    @param test_args: A dict of args passed all the way to each individual test
+                      that will be actually run.
+    @param kwargs: extra keyword args. NOT USED.
+
+    @raises ControlFileNotFound: if a unique suite control file doesn't exist.
+    @raises NoControlFileList: if we can't list the control files at all.
+    @raises StageControlFileFailure: If the dev server throws 500 while
+                                     staging test_suites.
+    @raises ControlFileEmpty: if the control file exists on the server, but
+                              can't be read.
+
+    @return: the job ID of the suite; -1 on error.
+    """
+    if type(num) is not int and num is not None:
+        raise error.SuiteArgumentException('Ill specified num argument %r. '
+                                           'Must be an integer or None.' % num)
+    if num == 0:
+        logging.warning("Can't run on 0 hosts; using default.")
+        num = None
+
+    if builds is None:
+        builds = {}
+
+    # Default test source build to CrOS build if it's not specified and
+    # run_prod_code is set to False.
+    if not run_prod_code:
+        test_source_build = Suite.get_test_source_build(
+                builds, test_source_build=test_source_build)
+
+    sample_dut = rpc_utils.get_sample_dut(board, pool)
+
+    suite_name = canonicalize_suite_name(name)
+    if run_prod_code:
+        ds = dev_server.resolve(test_source_build, hostname=sample_dut)
+        keyvals = {}
+    else:
+        (ds, keyvals) = _stage_build_artifacts(
+                test_source_build, hostname=sample_dut)
+    keyvals[constants.SUITE_MIN_DUTS_KEY] = suite_min_duts
+
+    # Do not change this naming convention without updating
+    # site_utils.parse_job_name.
+    if run_prod_code:
+        # If run_prod_code is True, test_source_build is not set, use the
+        # first build in the builds list for the sutie job name.
+        name = '%s-%s' % (builds.values()[0], suite_name)
+    else:
+        name = '%s-%s' % (test_source_build, suite_name)
+
+    timeout_mins = timeout_mins or timeout * 60
+    max_runtime_mins = max_runtime_mins or timeout * 60
+
+    if not board:
+        board = utils.ParseBuildName(builds[provision.CROS_VERSION_PREFIX])[0]
+
+    if run_prod_code:
+        control_file = _get_control_file_by_suite(suite_name)
+
+    if not control_file:
+        # No control file was supplied so look it up from the build artifacts.
+        control_file = _get_control_file_by_build(
+                test_source_build, ds, suite_name)
+
+    # Prepend builds and board to the control file.
+    if is_cloning:
+        control_file = tools.remove_injection(control_file)
+
+    if suite_args is None:
+        suite_args = dict()
+
+    # TODO(crbug.com/758427): suite_args_raw is needed to run old tests.
+    # Can be removed after R64.
+    if 'tests' in suite_args:
+        # TODO(crbug.com/758427): test_that used to have its own
+        # snowflake implementation of parsing command line arguments in
+        # the test
+        suite_args_raw = ' '.join([':lab:'] + suite_args['tests'])
+    # TODO(crbug.com/760675): Needed for CTS/GTS as above, but when
+    # 'tests' is not passed.  Can be removed after R64.
+    elif name.rpartition('/')[-1] in {'control.cts_N',
+                                      'control.cts_N_preconditions',
+                                      'control.gts'}:
+        suite_args_raw = ''
+    else:
+        # TODO(crbug.com/758427): This is for suite_attr_wrapper.  Can
+        # be removed after R64.
+        suite_args_raw = repr(suite_args)
+
+    inject_dict = {
+        'board': board,
+        # `build` is needed for suites like AU to stage image inside suite
+        # control file.
+        'build': test_source_build,
+        'builds': builds,
+        'check_hosts': check_hosts,
+        'pool': pool,
+        'child_dependencies': child_dependencies,
+        'num': num,
+        'file_bugs': file_bugs,
+        'timeout': timeout,
+        'timeout_mins': timeout_mins,
+        'devserver_url': ds.url(),
+        'priority': priority,
+        # TODO(crbug.com/758427): injecting suite_args is needed to run
+        # old tests
+        'suite_args' : suite_args_raw,
+        'wait_for_results': wait_for_results,
+        'job_retry': job_retry,
+        'max_retries': max_retries,
+        'max_runtime_mins': max_runtime_mins,
+        'offload_failures_only': offload_failures_only,
+        'test_source_build': test_source_build,
+        'run_prod_code': run_prod_code,
+        'delay_minutes': delay_minutes,
+        'job_keyvals': job_keyvals,
+        'test_args': test_args,
+    }
+    inject_dict.update(suite_args)
+    control_file = tools.inject_vars(inject_dict, control_file)
+
+    return rpc_utils.create_job_common(name,
+                                       priority=priority,
+                                       timeout_mins=timeout_mins,
+                                       max_runtime_mins=max_runtime_mins,
+                                       control_type='Server',
+                                       control_file=control_file,
+                                       hostless=True,
+                                       keyvals=keyvals)
+
+
+def get_job_history(**filter_data):
+    """Get history of the job, including the special tasks executed for the job
+
+    @param filter_data: filter for the call, should at least include
+                        {'job_id': [job id]}
+    @returns: JSON string of the job's history, including the information such
+              as the hosts run the job and the special tasks executed before
+              and after the job.
+    """
+    job_id = filter_data['job_id']
+    job_info = job_history.get_job_info(job_id)
+    return rpc_utils.prepare_for_serialization(job_info.get_history())
+
+
+def get_host_history(start_time, end_time, hosts=None, board=None, pool=None):
+    """Deprecated."""
+    raise ValueError('get_host_history rpc is deprecated '
+                     'and no longer implemented.')
+
+
+def shard_heartbeat(shard_hostname, jobs=(), hqes=(), known_job_ids=(),
+                    known_host_ids=(), known_host_statuses=()):
+    """Receive updates for job statuses from shards and assign hosts and jobs.
+
+    @param shard_hostname: Hostname of the calling shard
+    @param jobs: Jobs in serialized form that should be updated with newer
+                 status from a shard.
+    @param hqes: Hostqueueentries in serialized form that should be updated with
+                 newer status from a shard. Note that for every hostqueueentry
+                 the corresponding job must be in jobs.
+    @param known_job_ids: List of ids of jobs the shard already has.
+    @param known_host_ids: List of ids of hosts the shard already has.
+    @param known_host_statuses: List of statuses of hosts the shard already has.
+
+    @returns: Serialized representations of hosts, jobs, suite job keyvals
+              and their dependencies to be inserted into a shard's database.
+    """
+    # The following alternatives to sending host and job ids in every heartbeat
+    # have been considered:
+    # 1. Sending the highest known job and host ids. This would work for jobs:
+    #    Newer jobs always have larger ids. Also, if a job is not assigned to a
+    #    particular shard during a heartbeat, it never will be assigned to this
+    #    shard later.
+    #    This is not true for hosts though: A host that is leased won't be sent
+    #    to the shard now, but might be sent in a future heartbeat. This means
+    #    sometimes hosts should be transfered that have a lower id than the
+    #    maximum host id the shard knows.
+    # 2. Send the number of jobs/hosts the shard knows to the master in each
+    #    heartbeat. Compare these to the number of records that already have
+    #    the shard_id set to this shard. In the normal case, they should match.
+    #    In case they don't, resend all entities of that type.
+    #    This would work well for hosts, because there aren't that many.
+    #    Resending all jobs is quite a big overhead though.
+    #    Also, this approach might run into edge cases when entities are
+    #    ever deleted.
+    # 3. Mixtures of the above: Use 1 for jobs and 2 for hosts.
+    #    Using two different approaches isn't consistent and might cause
+    #    confusion. Also the issues with the case of deletions might still
+    #    occur.
+    #
+    # The overhead of sending all job and host ids in every heartbeat is low:
+    # At peaks one board has about 1200 created but unfinished jobs.
+    # See the numbers here: http://goo.gl/gQCGWH
+    # Assuming that job id's have 6 digits and that json serialization takes a
+    # comma and a space as overhead, the traffic per id sent is about 8 bytes.
+    # If 5000 ids need to be sent, this means 40 kilobytes of traffic.
+    # A NOT IN query with 5000 ids took about 30ms in tests made.
+    # These numbers seem low enough to outweigh the disadvantages of the
+    # solutions described above.
+    shard_obj = rpc_utils.retrieve_shard(shard_hostname=shard_hostname)
+    rpc_utils.persist_records_sent_from_shard(shard_obj, jobs, hqes)
+    assert len(known_host_ids) == len(known_host_statuses)
+    for i in range(len(known_host_ids)):
+        host_model = models.Host.objects.get(pk=known_host_ids[i])
+        if host_model.status != known_host_statuses[i]:
+            host_model.status = known_host_statuses[i]
+            host_model.save()
+
+    hosts, jobs, suite_keyvals, inc_ids = rpc_utils.find_records_for_shard(
+            shard_obj, known_job_ids=known_job_ids,
+            known_host_ids=known_host_ids)
+    return {
+        'hosts': [host.serialize() for host in hosts],
+        'jobs': [job.serialize() for job in jobs],
+        'suite_keyvals': [kv.serialize() for kv in suite_keyvals],
+        'incorrect_host_ids': [int(i) for i in inc_ids],
+    }
+
+
+def get_shards(**filter_data):
+    """Return a list of all shards.
+
+    @returns A sequence of nested dictionaries of shard information.
+    """
+    shards = models.Shard.query_objects(filter_data)
+    serialized_shards = rpc_utils.prepare_rows_as_nested_dicts(shards, ())
+    for serialized, shard in zip(serialized_shards, shards):
+        serialized['labels'] = [label.name for label in shard.labels.all()]
+
+    return serialized_shards
+
+
+def _assign_board_to_shard_precheck(labels):
+    """Verify whether board labels are valid to be added to a given shard.
+
+    First check whether board label is in correct format. Second, check whether
+    the board label exist. Third, check whether the board has already been
+    assigned to shard.
+
+    @param labels: Board labels separated by comma.
+
+    @raises error.RPCException: If label provided doesn't start with `board:`
+            or board has been added to shard already.
+    @raises models.Label.DoesNotExist: If the label specified doesn't exist.
+
+    @returns: A list of label models that ready to be added to shard.
+    """
+    if not labels:
+      # allow creation of label-less shards (labels='' would otherwise fail the
+      # checks below)
+      return []
+    labels = labels.split(',')
+    label_models = []
+    for label in labels:
+        # Check whether the board label is in correct format.
+        if not label.startswith('board:'):
+            raise error.RPCException('Sharding only supports `board:.*` label.')
+        # Check whether the board label exist. If not, exception will be thrown
+        # by smart_get function.
+        label = models.Label.smart_get(label)
+        # Check whether the board has been sharded already
+        try:
+            shard = models.Shard.objects.get(labels=label)
+            raise error.RPCException(
+                    '%s is already on shard %s' % (label, shard.hostname))
+        except models.Shard.DoesNotExist:
+            # board is not on any shard, so it's valid.
+            label_models.append(label)
+    return label_models
+
+
+def add_shard(hostname, labels):
+    """Add a shard and start running jobs on it.
+
+    @param hostname: The hostname of the shard to be added; needs to be unique.
+    @param labels: Board labels separated by comma. Jobs of one of the labels
+                   will be assigned to the shard.
+
+    @raises error.RPCException: If label provided doesn't start with `board:` or
+            board has been added to shard already.
+    @raises model_logic.ValidationError: If a shard with the given hostname
+            already exist.
+    @raises models.Label.DoesNotExist: If the label specified doesn't exist.
+
+    @returns: The id of the added shard.
+    """
+    labels = _assign_board_to_shard_precheck(labels)
+    shard = models.Shard.add_object(hostname=hostname)
+    for label in labels:
+        shard.labels.add(label)
+    return shard.id
+
+
+def add_board_to_shard(hostname, labels):
+    """Add boards to a given shard
+
+    @param hostname: The hostname of the shard to be changed.
+    @param labels: Board labels separated by comma.
+
+    @raises error.RPCException: If label provided doesn't start with `board:` or
+            board has been added to shard already.
+    @raises models.Label.DoesNotExist: If the label specified doesn't exist.
+
+    @returns: The id of the changed shard.
+    """
+    labels = _assign_board_to_shard_precheck(labels)
+    shard = models.Shard.objects.get(hostname=hostname)
+    for label in labels:
+        shard.labels.add(label)
+    return shard.id
+
+
+# Remove board RPCs are rare, so we can afford to make them a bit more
+# expensive (by performing in a transaction) in order to guarantee
+# atomicity.
+# TODO(akeshet): If we ever update to newer version of django, we need to
+# migrate to transaction.atomic instead of commit_on_success
+@transaction.commit_on_success
+def remove_board_from_shard(hostname, label):
+    """Remove board from the given shard.
+    @param hostname: The hostname of the shard to be changed.
+    @param labels: Board label.
+
+    @raises models.Label.DoesNotExist: If the label specified doesn't exist.
+
+    @returns: The id of the changed shard.
+    """
+    shard = models.Shard.objects.get(hostname=hostname)
+    label = models.Label.smart_get(label)
+    if label not in shard.labels.all():
+        raise error.RPCException(
+          'Cannot remove label from shard that does not belong to it.')
+    shard.labels.remove(label)
+    models.Host.objects.filter(labels__in=[label]).update(shard=None)
+
+
+def delete_shard(hostname):
+    """Delete a shard and reclaim all resources from it.
+
+    This claims back all assigned hosts from the shard. To ensure all DUTs are
+    in a sane state, a Reboot task with highest priority is scheduled for them.
+    This reboots the DUTs and then all left tasks continue to run in drone of
+    the master.
+
+    The procedure for deleting a shard:
+        * Lock all unlocked hosts on that shard.
+        * Remove shard information .
+        * Assign a reboot task with highest priority to these hosts.
+        * Unlock these hosts, then, the reboot tasks run in front of all other
+        tasks.
+
+    The status of jobs that haven't been reported to be finished yet, will be
+    lost. The master scheduler will pick up the jobs and execute them.
+
+    @param hostname: Hostname of the shard to delete.
+    """
+    shard = rpc_utils.retrieve_shard(shard_hostname=hostname)
+    hostnames_to_lock = [h.hostname for h in
+                         models.Host.objects.filter(shard=shard, locked=False)]
+
+    # TODO(beeps): Power off shard
+    # For ChromeOS hosts, a reboot test with the highest priority is added to
+    # the DUT. After a reboot it should be ganranteed that no processes from
+    # prior tests that were run by a shard are still running on.
+
+    # Lock all unlocked hosts.
+    dicts = {'locked': True, 'lock_time': datetime.datetime.now()}
+    models.Host.objects.filter(hostname__in=hostnames_to_lock).update(**dicts)
+
+    # Remove shard information.
+    models.Host.objects.filter(shard=shard).update(shard=None)
+    models.Job.objects.filter(shard=shard).update(shard=None)
+    shard.labels.clear()
+    shard.delete()
+
+    # Assign a reboot task with highest priority: Super.
+    t = models.Test.objects.get(name='platform_BootPerfServer:shard')
+    c = utils.read_file(os.path.join(common.autotest_dir, t.path))
+    if hostnames_to_lock:
+        rpc_utils.create_job_common(
+                'reboot_dut_for_shard_deletion',
+                priority=priorities.Priority.SUPER,
+                control_type='Server',
+                control_file=c, hosts=hostnames_to_lock,
+                timeout_mins=10,
+                max_runtime_mins=10)
+
+    # Unlock these shard-related hosts.
+    dicts = {'locked': False, 'lock_time': None}
+    models.Host.objects.filter(hostname__in=hostnames_to_lock).update(**dicts)
+
+
+def get_servers(hostname=None, role=None, status=None):
+    """Get a list of servers with matching role and status.
+
+    @param hostname: FQDN of the server.
+    @param role: Name of the server role, e.g., drone, scheduler. Default to
+                 None to match any role.
+    @param status: Status of the server, e.g., primary, backup, repair_required.
+                   Default to None to match any server status.
+
+    @raises error.RPCException: If server database is not used.
+    @return: A list of server names for servers with matching role and status.
+    """
+    if not server_manager_utils.use_server_db():
+        raise error.RPCException('Server database is not enabled. Please try '
+                                 'retrieve servers from global config.')
+    servers = server_manager_utils.get_servers(hostname=hostname, role=role,
+                                               status=status)
+    return [s.get_details() for s in servers]
+
+
+@rpc_utils.route_rpc_to_master
+def get_stable_version(board=stable_version_utils.DEFAULT, android=False):
+    """Get stable version for the given board.
+
+    @param board: Name of the board.
+    @param android: If True, the given board is an Android-based device. If
+                    False, assume its a Chrome OS-based device.
+
+    @return: Stable version of the given board. Return global configure value
+             of CROS.stable_cros_version if stable_versinos table does not have
+             entry of board DEFAULT.
+    """
+    return stable_version_utils.get(board=board, android=android)
+
+
+@rpc_utils.route_rpc_to_master
+def get_all_stable_versions():
+    """Get stable versions for all boards.
+
+    @return: A dictionary of board:version.
+    """
+    return stable_version_utils.get_all()
+
+
+@rpc_utils.route_rpc_to_master
+def set_stable_version(version, board=stable_version_utils.DEFAULT):
+    """Modify stable version for the given board.
+
+    @param version: The new value of stable version for given board.
+    @param board: Name of the board, default to value `DEFAULT`.
+    """
+    stable_version_utils.set(version=version, board=board)
+
+
+@rpc_utils.route_rpc_to_master
+def delete_stable_version(board):
+    """Modify stable version for the given board.
+
+    Delete a stable version entry in afe_stable_versions table for a given
+    board, so default stable version will be used.
+
+    @param board: Name of the board.
+    """
+    stable_version_utils.delete(board=board)
+
+
+def get_tests_by_build(build, ignore_invalid_tests=True):
+    """Get the tests that are available for the specified build.
+
+    @param build: unique name by which to refer to the image.
+    @param ignore_invalid_tests: flag on if unparsable tests are ignored.
+
+    @return: A sorted list of all tests that are in the build specified.
+    """
+    # Collect the control files specified in this build
+    cfile_getter = control_file_lib._initialize_control_file_getter(build)
+    if SuiteBase.ENABLE_CONTROLS_IN_BATCH:
+        control_file_info_list = cfile_getter.get_suite_info()
+        control_file_list = control_file_info_list.keys()
+    else:
+        control_file_list = cfile_getter.get_control_file_list()
+
+    test_objects = []
+    _id = 0
+    for control_file_path in control_file_list:
+        # Read and parse the control file
+        if SuiteBase.ENABLE_CONTROLS_IN_BATCH:
+            control_file = control_file_info_list[control_file_path]
+        else:
+            control_file = cfile_getter.get_control_file_contents(
+                    control_file_path)
+        try:
+            control_obj = control_data.parse_control_string(control_file)
+        except:
+            logging.info('Failed to parse control file: %s', control_file_path)
+            if not ignore_invalid_tests:
+                raise
+
+        # Extract the values needed for the AFE from the control_obj.
+        # The keys list represents attributes in the control_obj that
+        # are required by the AFE
+        keys = ['author', 'doc', 'name', 'time', 'test_type', 'experimental',
+                'test_category', 'test_class', 'dependencies', 'run_verify',
+                'sync_count', 'job_retries', 'retries', 'path']
+
+        test_object = {}
+        for key in keys:
+            test_object[key] = getattr(control_obj, key) if hasattr(
+                    control_obj, key) else ''
+
+        # Unfortunately, the AFE expects different key-names for certain
+        # values, these must be corrected to avoid the risk of tests
+        # being omitted by the AFE.
+        # The 'id' is an additional value used in the AFE.
+        # The control_data parsing does not reference 'run_reset', but it
+        # is also used in the AFE and defaults to True.
+        test_object['id'] = _id
+        test_object['run_reset'] = True
+        test_object['description'] = test_object.get('doc', '')
+        test_object['test_time'] = test_object.get('time', 0)
+        test_object['test_retry'] = test_object.get('retries', 0)
+
+        # Fix the test name to be consistent with the current presentation
+        # of test names in the AFE.
+        testpath, subname = os.path.split(control_file_path)
+        testname = os.path.basename(testpath)
+        subname = subname.split('.')[1:]
+        if subname:
+            testname = '%s:%s' % (testname, ':'.join(subname))
+
+        test_object['name'] = testname
+
+        # Correct the test path as parse_control_string sets an empty string.
+        test_object['path'] = control_file_path
+
+        _id += 1
+        test_objects.append(test_object)
+
+    test_objects = sorted(test_objects, key=lambda x: x.get('name'))
+    return rpc_utils.prepare_for_serialization(test_objects)
+
+
+@rpc_utils.route_rpc_to_master
+def get_lab_health_indicators(board=None):
+    """Get the healthy indicators for whole lab.
+
+    The indicators now includes:
+    1. lab is closed or not.
+    2. Available DUTs list for a given board.
+    3. Devserver capacity.
+    4. When is the next major DUT utilization (e.g. CQ is coming in 3 minutes).
+
+    @param board: if board is specified, a list of available DUTs will be
+        returned for it. Otherwise, skip this indicator.
+
+    @returns: A healthy indicator object including health info.
+    """
+    return LabHealthIndicator(None, None, None, None)

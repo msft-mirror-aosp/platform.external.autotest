@@ -14,7 +14,12 @@ import common
 from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.afe import models
 from autotest_lib.server import site_utils
-from chromite.lib import metrics
+
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = site_utils.metrics_mock
+
 
 def number_of_jobs_since(delta):
     """Returns the number of jobs kicked off in the last |duration| minutes.
@@ -26,7 +31,7 @@ def number_of_jobs_since(delta):
 
 
 def main():
-    """Counts the number of AFE jobs in the last day, then pushes the count to statsd"""
+    """Counts the number of AFE jobs in the last day and report to monarch."""
     parser = argparse.ArgumentParser(
         description=('A script which records the number of afe jobs run in a time interval.'))
     parser.parse_args(sys.argv[1:])

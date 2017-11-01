@@ -28,7 +28,7 @@ import logging
 import os
 import time
 
-from autotest_lib.client.common_lib import error, utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.server import autotest
 from autotest_lib.server import profilers
 from autotest_lib.server import test
@@ -68,10 +68,10 @@ TELEMETRY_AFDO_BENCHMARKS = (
 # List of boards where this test can be run.  Currently, it needs a
 # machines with at least 4GB of memory or 2GB of /tmp.
 # This must be consistent with chromite.
-GCC_BOARDS = ['samus', 'link', 'lumpy']
+GCC_BOARDS = ['lumpy']
 
 # Should be disjoint with GCC_BOARDS
-LLVM_BOARDS = ['chell']
+LLVM_BOARDS = ['chell', 'samus']
 
 class telemetry_AFDOGenerate(test.test):
     """
@@ -137,6 +137,10 @@ class telemetry_AFDOGenerate(test.test):
         latest_data =  COMP_PERF_FILE % (self._arch, 'LATEST')
         latest_compressed = self._get_compressed_name(latest_data)
         self._gs_upload(compressed, latest_compressed)
+
+        # So that they are not uploaded along with the logs.
+        os.remove(compressed)
+        os.remove(perf_data)
 
 
     def _parse_args(self, args):

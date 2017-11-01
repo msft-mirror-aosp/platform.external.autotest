@@ -31,6 +31,7 @@ class security_StatefulPermissions(test.test):
                      "chaps": ["/encrypted/var/lib/chaps"],
                      "chronos": ["/encrypted/chronos",
                                  "/encrypted/var/cache/app_pack",
+                                 "/encrypted/var/cache/camera",
                                  "/encrypted/var/cache/device_local_account_component_policy",
                                  "/encrypted/var/cache/device_local_account_extensions",
                                  "/encrypted/var/cache/device_local_account_external_policy_data",
@@ -59,6 +60,7 @@ class security_StatefulPermissions(test.test):
                      "debugd": [],
                      "dhcp": ["/encrypted/var/lib/dhcpcd"],
                      "dlm": ["/encrypted/var/log/displaylink"],
+                     "imageloaderd": ["/encrypted/var/lib/imageloader"],
                      "input": [],
                      "ipsec": [],
                      "lp": [],
@@ -121,8 +123,12 @@ class security_StatefulPermissions(test.test):
             # android-root not found, so don't prune anything
             return ""
 
+        # On ecryptfs backend, the Android data path is
+        # /home/.shadow/hash/vault/root/ENCRYPTED<android-data>/...
+        # while on ext4crypto backend, it is:
+        # /home/.shadow/hash/mount/ENCRYPTED<root>/ENCRYPTED<android-data>/...
         cmd = "-regextype posix-extended -regex STATEFUL_ROOT/home/.shadow/"
-        cmd += "[[:alnum:]]{40}/vault/root/[^/]*/[^/]* "
+        cmd += "[[:alnum:]]{40}/(vault/root|mount/[^/]*)/[^/]*/[^/]* "
         cmd += "-uid {0} \\( -gid {1} -o -gid {2} \\) -prune -o ".format(
                 aroot_uid + self._AID_SYSTEM,
                 aroot_uid + self._AID_SYSTEM, aroot_uid + self._AID_CACHE)

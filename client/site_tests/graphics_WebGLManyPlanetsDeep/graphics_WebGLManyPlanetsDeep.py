@@ -11,13 +11,13 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.cros import power_rapl
 from autotest_lib.client.cros.graphics import graphics_utils
 
 
-class graphics_WebGLManyPlanetsDeep(test.test):
+class graphics_WebGLManyPlanetsDeep(graphics_utils.GraphicsTest):
     """WebGL many planets deep graphics test."""
     version = 1
-    GSC = None
     frame_data = {}
     perf_keyval = {}
     test_duration_secs = 30
@@ -27,19 +27,10 @@ class graphics_WebGLManyPlanetsDeep(test.test):
         self.job.setup_dep(['graphics'])
 
     def initialize(self):
-        self.GSC = graphics_utils.GraphicsStateChecker()
+        super(graphics_WebGLManyPlanetsDeep, self).initialize()
 
     def cleanup(self):
-        if self.GSC:
-            keyvals = self.GSC.get_memory_keyvals()
-            for key, val in keyvals.iteritems():
-                self.output_perf_value(
-                    description=key,
-                    value=val,
-                    units='bytes',
-                    higher_is_better=False)
-            self.GSC.finalize()
-            self.write_perf_keyval(keyvals)
+        super(graphics_WebGLManyPlanetsDeep, self).cleanup()
 
     def run_many_planets_deep_test(self, browser, test_url):
         """Runs the many planets deep test from the given url.
@@ -74,6 +65,10 @@ class graphics_WebGLManyPlanetsDeep(test.test):
                     'js_elapsed_time': datum['jsElapsedTime']
                 }
             time.sleep(1)
+
+        # Intel only: Record the power consumption for the next few seconds.
+        self.rapl_rate = power_rapl.get_rapl_measurement(
+            'rapl_many_planets_deep')
         tab.Close()
 
     def calculate_perf_values(self):
@@ -90,6 +85,19 @@ class graphics_WebGLManyPlanetsDeep(test.test):
             'js_render_time_ms_std': std[1],
             'js_render_time_ms_mean': mean[1]
         })
+
+        # Remove entries that we don't care about.
+        rapl_rate = {key: self.rapl_rate[key]
+                     for key in self.rapl_rate.keys() if key.endswith('pwr')}
+        # Report to chromeperf/ dashboard.
+        for key, values in rapl_rate.iteritems():
+            self.output_perf_value(
+                description=key,
+                value=values,
+                units='W',
+                higher_is_better=False,
+                graph='rapl_power_consumption'
+            )
         self.output_perf_value(
             description='average_fps',
             value=avg_fps,
@@ -106,6 +114,7 @@ class graphics_WebGLManyPlanetsDeep(test.test):
                                        d['frame_elapsed_time'],
                                        d['js_elapsed_time']))
 
+    @graphics_utils.GraphicsTest.failure_report_decorator('graphics_WebGLManyPlanetsDeep')
     def run_once(self, test_duration_secs=30, fullscreen=True):
         """Finds a brower with telemetry, and run the test.
 
@@ -121,7 +130,9 @@ class graphics_WebGLManyPlanetsDeep(test.test):
                 os.path.join(self.autodir, 'deps', 'graphics',
                              'graphics_test_extension'))
 
-        with chrome.Chrome(logged_in=False, extension_paths=ext_paths) as cr:
+        with chrome.Chrome(logged_in=False,
+                           extension_paths=ext_paths,
+                           init_network_controller=True) as cr:
             websrc_dir = os.path.join(self.autodir, 'deps', 'webgl_mpd', 'src')
             if not cr.browser.platform.SetHTTPServerDirectories(websrc_dir):
                 raise error.TestFail('Failed: Unable to start HTTP server')

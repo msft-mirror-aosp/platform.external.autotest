@@ -4,8 +4,6 @@ import autotest.afe.HostDetailView.HostDetailListener;
 import autotest.afe.HostListView.HostListListener;
 import autotest.afe.JobDetailView.JobDetailListener;
 import autotest.afe.JobListView.JobSelectListener;
-import autotest.afe.RecurringView.RecurringSelectListener;
-import autotest.afe.UserPreferencesView.UserPreferencesListener;
 import autotest.afe.create.CreateJobViewPresenter.JobCreateListener;
 import autotest.afe.create.CreateJobViewTab;
 import autotest.common.CustomHistory;
@@ -26,13 +24,11 @@ import com.google.gwt.user.client.Window.Location;
 public class AfeClient implements EntryPoint {
     private JobListView jobList;
     private JobDetailView jobDetail;
-    private RecurringView recurringView;
     private CreateJobViewTab createJob;
     private HostListView hostListView;
     private HostDetailView hostDetailView;
-    private UserPreferencesView userPreferencesView;
 
-    public CustomTabPanel mainTabPanel = new CustomTabPanel();
+    public CustomTabPanel mainTabPanel;
 
     /**
      * Application entry point.
@@ -68,6 +64,7 @@ public class AfeClient implements EntryPoint {
         }
         boolean is_moblab = StaticDataRepository.getRepository().getData(
             "is_moblab").isBoolean().booleanValue();
+        mainTabPanel = new CustomTabPanel(is_moblab);
         if (is_moblab) {
             Document.get().getElementById("moblab_setup").removeClassName("hidden");
             Document.get().getElementById("mobmonitor_link").setAttribute("href",
@@ -91,18 +88,6 @@ public class AfeClient implements EntryPoint {
                 // the mode will be reset.
                 createJob.cloneJob(cloneInfo);
             }
-
-            public void onCreateRecurringJob(int jobId) {
-                recurringView.ensureInitialized();
-                recurringView.createRecurringJob(jobId);
-                mainTabPanel.selectTabView(recurringView);
-            }
-        });
-
-        recurringView = new RecurringView(new RecurringSelectListener() {
-            public void onRecurringSelected(int jobId) {
-                showJob(jobId);
-            }
         });
 
         createJob = AfeUtils.factory.getCreateJobView(jobCreateListener);
@@ -119,14 +104,8 @@ public class AfeClient implements EntryPoint {
             }
         }, jobCreateListener);
 
-        userPreferencesView = new UserPreferencesView(new UserPreferencesListener() {
-            public void onPreferencesChanged() {
-                createJob.onPreferencesChanged();
-            }
-        });
-
-        TabView[] tabViews = new TabView[] {jobList, jobDetail, recurringView, createJob,
-                                            hostListView, hostDetailView, userPreferencesView};
+        TabView[] tabViews = new TabView[] {jobList, jobDetail, createJob,
+                                            hostListView, hostDetailView};
         for (TabView tabView : tabViews) {
             mainTabPanel.addTabView(tabView);
         }

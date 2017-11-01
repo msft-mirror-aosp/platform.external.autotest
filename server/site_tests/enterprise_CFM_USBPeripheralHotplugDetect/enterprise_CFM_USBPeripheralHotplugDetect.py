@@ -5,7 +5,7 @@
 import logging, os, time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import tpm_utils
+from autotest_lib.client.common_lib.cros import tpm_utils, crash_detector
 from autotest_lib.server import test
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 
@@ -130,21 +130,15 @@ class enterprise_CFM_USBPeripheralHotplugDetect(test.test):
     def _enroll_device_and_skip_oobe(self):
         """Enroll device into CFM and skip CFM oobe."""
         self.cfm_facade.enroll_device()
-        self.cfm_facade.restart_chrome_for_cfm()
-        self.cfm_facade.wait_for_telemetry_commands()
-        self.cfm_facade.wait_for_oobe_start_page()
-
-        if not self.cfm_facade.is_oobe_start_page():
-            raise error.TestFail('CFM did not reach oobe screen.')
-
-        self.cfm_facade.skip_oobe_screen()
-        time.sleep(_SHORT_TIMEOUT)
+        self.cfm_facade.skip_oobe_after_enrollment()
+        self.cfm_facade.wait_for_hangouts_telemetry_commands()
 
 
     def _set_preferred_peripherals(self, cros_peripherals):
         """Set perferred peripherals.
 
         @param cros_peripherals: Dictionary of peripherals
+
         """
         avail_mics = self.cfm_facade.get_mic_devices()
         avail_speakers = self.cfm_facade.get_speaker_devices()
@@ -177,6 +171,13 @@ class enterprise_CFM_USBPeripheralHotplugDetect(test.test):
         return cfm_peripheral_dict
 
 
+    def _upload_crash_count(self, count):
+        """Uploads crash count based on length of crash_files list."""
+        self.output_perf_value(description='number_of_crashes',
+                               value=int(count),
+                               units='count', higher_is_better=False)
+
+
     def run_once(self, host, peripheral_whitelist_dict):
         """Main function to run autotest.
 
@@ -184,18 +185,33 @@ class enterprise_CFM_USBPeripheralHotplugDetect(test.test):
 
         """
         self.client = host
+        self.crash_list =[]
 
         factory = remote_facade_factory.RemoteFacadeFactory(
                 host, no_chrome=True)
         self.cfm_facade = factory.create_cfm_facade()
 
+        detect_crash = crash_detector.CrashDetector(self.client)
+
         tpm_utils.ClearTPMOwnerRequest(self.client)
+
+        factory = remote_facade_factory.RemoteFacadeFactory(
+                host, no_chrome=True)
+        self.cfm_facade = factory.create_cfm_facade()
+
+        if detect_crash.is_new_crash_present():
+            self.crash_list.append('New Warning or Crash Detected before ' +
+                                   'plugging in usb peripherals.')
 
         if self.client.servo:
             self.client.servo.switch_usbkey('dut')
             self.client.servo.set('usb_mux_sel3', 'dut_sees_usbkey')
             time.sleep(_WAIT_DELAY)
             self._set_hub_power(True)
+
+        if detect_crash.is_new_crash_present():
+            self.crash_list.append('New Warning or Crash Detected after ' +
+                                   'plugging in usb peripherals.')
 
         usb_list_dir_on = self._get_usb_device_dirs()
 
@@ -210,7 +226,16 @@ class enterprise_CFM_USBPeripheralHotplugDetect(test.test):
             logging.debug('Peripherals detected by hotrod: %s',
                           cfm_peripheral_dict)
         except Exception as e:
-            raise error.TestFail(str(e))
+            exception_msg = str(e)
+            if self.crash_list:
+                crash_identified_at = (' ').join(self.crash_list)
+                exception_msg += '. ' + crash_identified_at
+                self._upload_crash_count(len(detect_crash.get_crash_files()))
+            raise error.TestFail(str(exception_msg))
+
+        if detect_crash.is_new_crash_present():
+            self.crash_list.append('New Warning or Crash detected after ' +
+                                     'device enrolled into CFM.')
 
         tpm_utils.ClearTPMOwnerRequest(self.client)
 
@@ -219,9 +244,20 @@ class enterprise_CFM_USBPeripheralHotplugDetect(test.test):
 
         peripheral_diff = cros_peripherals.difference(cfm_peripherals)
 
+        if self.crash_list:
+            crash_identified_at = (', ').join(self.crash_list)
+        else:
+            crash_identified_at = 'No Crash or Warning detected.'
+
+        self._upload_crash_count(len(detect_crash.get_crash_files()))
+
         if peripheral_diff:
             no_match_list = list()
             for item in peripheral_diff:
                 no_match_list.append(item[0])
-            raise error.TestFail('Following peripherals do not match: %s' %
-                                 ', '.join(no_match_list))
+            peripherals_diff = ', '.join(no_match_list)
+            raise error.TestFail("Following peripherals do not match: {0}. "
+                                 "No of Crashes: {1}. Crashes: {2}".format
+                                 (peripherals_diff,
+                                 int(len(detect_crash.get_crash_files())),
+                                 crash_identified_at))

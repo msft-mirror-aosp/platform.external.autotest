@@ -20,14 +20,18 @@ import os
 import re
 
 import common
-from chromite.lib import metrics
 
 from autotest_lib.frontend.afe import rpc_client_lib
 from autotest_lib.client.common_lib import control_data
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import priorities
 from autotest_lib.client.common_lib import utils
 from autotest_lib.tko import db
 
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
 
 try:
     from autotest_lib.server.site_common import site_utils as server_utils
@@ -113,17 +117,6 @@ class RpcClient(object):
             print message
 
 
-class Planner(RpcClient):
-    def __init__(self, user=None, server=None, print_log=True, debug=False,
-                 reply_debug=False):
-        super(Planner, self).__init__(path='/planner/server/rpc/',
-                                      user=user,
-                                      server=server,
-                                      print_log=print_log,
-                                      debug=debug,
-                                      reply_debug=reply_debug)
-
-
 class TKO(RpcClient):
     def __init__(self, user=None, server=None, print_log=True, debug=False,
                  reply_debug=False):
@@ -137,7 +130,7 @@ class TKO(RpcClient):
 
 
     @metrics.SecondsTimerDecorator(
-        '/chrome/infra/chromeos/autotest/tko/get_job_status_duration')
+            'chromeos/autotest/tko/get_job_status_duration')
     def get_job_test_statuses_from_db(self, job_id):
         """Get job test statuses from the database.
 
@@ -462,16 +455,6 @@ class _FirmwareVersionMap(_SuffixHackVersionMap):
 
 
 class AFE(RpcClient):
-    def __init__(self, user=None, server=None, print_log=True, debug=False,
-                 reply_debug=False, job=None):
-        self.job = job
-        super(AFE, self).__init__(path='/afe/server/noauth/rpc/',
-                                  user=user,
-                                  server=server,
-                                  print_log=print_log,
-                                  debug=debug,
-                                  reply_debug=reply_debug)
-
 
     # Known image types for stable version mapping objects.
     # CROS_IMAGE_TYPE - Mappings for Chrome OS images.
@@ -490,6 +473,17 @@ class AFE(RpcClient):
         FIRMWARE_IMAGE_TYPE: _FirmwareVersionMap,
         ANDROID_IMAGE_TYPE: _AndroidVersionMap
     }
+
+
+    def __init__(self, user=None, server=None, print_log=True, debug=False,
+                 reply_debug=False, job=None):
+        self.job = job
+        super(AFE, self).__init__(path='/afe/server/noauth/rpc/',
+                                  user=user,
+                                  server=server,
+                                  print_log=print_log,
+                                  debug=debug,
+                                  reply_debug=reply_debug)
 
 
     def get_stable_version_map(self, image_type):
@@ -549,6 +543,15 @@ class AFE(RpcClient):
                                                     status=status,
                                                     label=label))
         return self.run('reverify_hosts', **query_args)
+
+
+    def repair_hosts(self, hostnames=(), status=None, label=None):
+        query_args = dict(locked=False,
+                          aclgroup__users__login=self.user)
+        query_args.update(self._dict_for_host_query(hostnames=hostnames,
+                                                    status=status,
+                                                    label=label))
+        return self.run('repair_hosts', **query_args)
 
 
     def create_host(self, hostname, **dargs):
@@ -611,20 +614,42 @@ class AFE(RpcClient):
         return jobs
 
 
-    def get_host_queue_entries(self, **data):
-        entries = self.run('get_host_queue_entries', **data)
-        job_statuses = [JobStatus(self, e) for e in entries]
+    def get_host_queue_entries(self, **kwargs):
+        """Find JobStatus objects matching some constraints.
 
-        # Sadly, get_host_queue_entries doesn't return platforms, we have
-        # to get those back from an explicit get_hosts queury, then patch
-        # the new host objects back into the host list.
+        @param **kwargs: Arguments to pass to the RPC
+        """
+        entries = self.run('get_host_queue_entries', **kwargs)
+        return self._entries_to_statuses(entries)
+
+
+    def get_host_queue_entries_by_insert_time(self, **kwargs):
+        """Like get_host_queue_entries, but using the insert index table.
+
+        @param **kwargs: Arguments to pass to the RPC
+        """
+        entries = self.run('get_host_queue_entries_by_insert_time', **kwargs)
+        return self._entries_to_statuses(entries)
+
+
+    def _entries_to_statuses(self, entries):
+        """Converts HQEs to JobStatuses
+
+        Sadly, get_host_queue_entries doesn't return platforms, we have
+        to get those back from an explicit get_hosts queury, then patch
+        the new host objects back into the host list.
+
+        :param entries: A list of HQEs from get_host_queue_entries or
+          get_host_queue_entries_by_insert_time.
+        """
+        job_statuses = [JobStatus(self, e) for e in entries]
         hostnames = [s.host.hostname for s in job_statuses if s.host]
-        host_hash = {}
+        hosts = {}
         for host in self.get_hosts(hostname__in=hostnames):
-            host_hash[host.hostname] = host
+            hosts[host.hostname] = host
         for status in job_statuses:
             if status.host:
-                status.host = host_hash.get(status.host.hostname)
+                status.host = hosts.get(status.host.hostname)
         # filter job statuses that have either host or meta_host
         return [status for status in job_statuses if (status.host or
                                                       status.meta_host)]
@@ -653,8 +678,10 @@ class AFE(RpcClient):
                         success=success)
 
 
-    def create_job(self, control_file, name=' ', priority='Medium',
-                control_type=control_data.CONTROL_TYPE_NAMES.CLIENT, **dargs):
+    def create_job(self, control_file, name=' ',
+                   priority=priorities.Priority.DEFAULT,
+                   control_type=control_data.CONTROL_TYPE_NAMES.CLIENT,
+                   **dargs):
         id = self.run('create_job', name=name, priority=priority,
                  control_file=control_file, control_type=control_type, **dargs)
         return self.get_jobs(id=id)[0]
@@ -867,7 +894,7 @@ class Host(RpcObject):
 
     Fields:
         status, lock_time, locked_by, locked, hostname, invalid,
-        synch_id, labels, platform, protection, dirty, id
+        labels, platform, protection, dirty, id
     """
     def __repr__(self):
         return 'HOST OBJECT: %s' % self.hostname

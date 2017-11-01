@@ -16,7 +16,7 @@ import sys
 import common
 
 import django.core.exceptions
-from autotest_lib.client.common_lib import base_utils as utils
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.global_config import global_config
 from autotest_lib.frontend.server import models as server_models
 from autotest_lib.site_utils.lib import infra
@@ -96,16 +96,6 @@ def format_servers(servers):
 def format_servers_json(servers):
     """Format servers for printing as JSON.
 
-    Example output:
-
-        Hostname     : server2
-        Status       : primary
-        Roles        : drone
-        Attributes   : {'max_processes':300}
-        Date Created : 2014-11-25 12:00:00
-        Date Modified: None
-        Note         : Drone in lab1
-
     @param servers: Sequence of Server instances.
     @returns: String.
     """
@@ -115,12 +105,15 @@ def format_servers_json(servers):
             date_modified = None
         else:
             date_modified = str(server.date_modified)
+        attributes = {k: v for k, v in server.attributes.values_list(
+                'attribute', 'value')}
         server_dicts.append({'hostname': server.hostname,
                              'status': server.status,
                              'roles': server.get_role_names(),
                              'date_created': str(server.date_created),
                              'date_modified': date_modified,
-                             'note': server.note})
+                             'note': server.note,
+                             'attributes': attributes})
     return json.dumps(server_dicts)
 
 
@@ -189,6 +182,15 @@ def format_servers_summary(servers):
         result_lines.append(
                 _format_role_servers_summary('No Role', servers_without_roles))
     return '\n'.join(result_lines)
+
+
+def format_servers_nameonly(servers):
+    """format servers for printing names only
+
+    @param servers: Sequence of Server instances.
+    @returns: Formatted output as string.
+    """
+    return '\n'.join(s.hostname for s in servers)
 
 
 def _get_servers_by_role(servers):

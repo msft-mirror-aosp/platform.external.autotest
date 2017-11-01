@@ -2,7 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Server side bluetooth tests on adapter pairing and connecting to a bluetooth
+"""
+Server side bluetooth tests on adapter pairing and connecting to a bluetooth
 HID device.
 """
 
@@ -10,12 +11,12 @@ import logging
 import time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros.bluetooth.bluetooth_adpater_tests import (
-        BluetoothAdapterTests)
+from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 
-class bluetooth_AdapterPairing(BluetoothAdapterTests):
+class bluetooth_AdapterPairing(
+        bluetooth_adapter_tests.BluetoothAdapterTests):
     """Server side bluetooth adapter pairing and connecting to bluetooth device
 
     This test tries to verify that the adapter of the DUT could
@@ -32,8 +33,9 @@ class bluetooth_AdapterPairing(BluetoothAdapterTests):
     # TODO(josephsih): Reduce the sleep intervals to speed up the tests.
     TEST_SLEEP_SECS = 5
 
+
     def run_once(self, host, device_type, num_iterations=1, min_pass_count=1,
-                 pairing_twice=False):
+                 pairing_twice=False, suspend_resume=False, reboot=False):
         """Running Bluetooth adapter tests about pairing to a device.
 
         @param host: the DUT, usually a chromebook
@@ -42,11 +44,15 @@ class bluetooth_AdapterPairing(BluetoothAdapterTests):
         @param min_pass_count: the minimal pass count to pass this test
         @param pairing_twice: True if the host tries to pair the device
                 again after the paired device is removed.
+        @param suspend_resume: True if the host suspends/resumes after
+                pairing.
+        @param reboot: True if the host reboots after pairing.
 
         """
         self.host = host
         factory = remote_facade_factory.RemoteFacadeFactory(host)
-        self.bluetooth_hid_facade = factory.create_bluetooth_hid_facade()
+        self.bluetooth_facade = factory.create_bluetooth_hid_facade()
+        self.input_facade = factory.create_input_facade()
 
         pass_count = 0
         self.total_fails = {}
@@ -54,7 +60,7 @@ class bluetooth_AdapterPairing(BluetoothAdapterTests):
             self.fails = []
 
             # Get the device object and query some important properties.
-            device = self.get_device(host, device_type)
+            device = self.get_device(device_type)
 
             # Reset the adapter to forget previously paired devices if any.
             self.test_reset_on_adapter()
@@ -95,15 +101,57 @@ class bluetooth_AdapterPairing(BluetoothAdapterTests):
             time.sleep(self.TEST_SLEEP_SECS)
             self.test_device_name(device.address, device.name)
 
+            # Test if the device is still connected after suspend/resume.
+            if suspend_resume:
+                self.suspend_resume()
+
+                time.sleep(self.TEST_SLEEP_SECS)
+                self.test_device_is_paired(device.address)
+
+                # After a suspend/resume, we need to wake the peripheral
+                # as it is not connected.
+                time.sleep(self.TEST_SLEEP_SECS)
+                self.test_connection_by_device(device)
+
+                time.sleep(self.TEST_SLEEP_SECS)
+                self.test_device_name(device.address, device.name)
+
+            # Test if the device is still connected after reboot.
+            # if reboot:
+            #     self.host.reboot()
+
+            #     time.sleep(self.TEST_SLEEP_SECS)
+            #     self.test_device_is_paired(device.address)
+
+            #     # After a reboot, we need to wake the peripheral
+            #     # as it is not connected.
+            #     time.sleep(self.TEST_SLEEP_SECS)
+            #     self.test_connection_by_adapter(device.address)
+
+            #     time.sleep(self.TEST_SLEEP_SECS)
+            #     self.test_device_is_connected(device.address)
+
+            #     time.sleep(self.TEST_SLEEP_SECS)
+            #     self.test_device_name(device.address, device.name)
+
             # Verify that the adapter could disconnect the device.
             self.test_disconnection_by_adapter(device.address)
 
-            # Verify that the device could initiate the connection.
             time.sleep(self.TEST_SLEEP_SECS)
-            self.test_connection_by_device(device)
+            if device.can_init_connection:
+                # Verify that the device could initiate the connection.
+                self.test_connection_by_device(device)
+            else:
+                # Reconnect so that we can test disconnection from the kit
+                self.test_connection_by_adapter(device.address)
 
-            # Verify that the device could initiate the disconnection.
-            self.test_disconnection_by_device(device)
+            # TODO(alent): Needs a new capability, but this is a good proxy
+            if device.can_init_connection:
+                # Verify that the device could initiate the disconnection.
+                self.test_disconnection_by_device(device)
+            else:
+                # Reconnect so that we can test disconnection from the kit
+                self.test_disconnection_by_adapter(device.address)
 
             # Verify that the adapter could remove the paired device.
             self.test_remove_pairing(device.address)

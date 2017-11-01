@@ -4,6 +4,7 @@
 
 """This class defines the CrosHost Label class."""
 
+import collections
 import logging
 import os
 import re
@@ -21,6 +22,20 @@ from autotest_lib.server.hosts import servo_host
 from autotest_lib.site_utils import hwid_lib
 
 # pylint: disable=missing-docstring
+LsbOutput = collections.namedtuple('LsbOutput', ['unibuild', 'board'])
+
+def _parse_lsb_output(host):
+  """Parses the LSB output and returns key data points for labeling.
+
+  @param host: Host that the command will be executed against
+  @returns: LsbOutput with the result of parsing the /etc/lsb-release output
+  """
+  release_info = utils.parse_cmd_output('cat /etc/lsb-release',
+                                        run_method=host.run)
+
+  unibuild = release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1'
+  return LsbOutput(unibuild, release_info['CHROMEOS_RELEASE_BOARD'])
+
 
 class BoardLabel(base_label.StringPrefixLabel):
     """Determine the correct board label for the device."""
@@ -37,14 +52,32 @@ class BoardLabel(base_label.StringPrefixLabel):
             if label.startswith(self._NAME + ':'):
                 return [label.split(':')[-1]]
 
-        # TODO(kevcheng): for now this will dup the code in CrosHost and a
-        # separate cl will refactor the get_board in CrosHost to just return the
-        # board without the BOARD_PREFIX and all the other callers will be
-        # updated to not need to clear it out and this code will be replaced to
-        # just call the host's get_board() method.
-        release_info = utils.parse_cmd_output('cat /etc/lsb-release',
-                                              run_method=host.run)
-        return [release_info['CHROMEOS_RELEASE_BOARD']]
+        return [_parse_lsb_output(host).board]
+
+
+class ModelLabel(base_label.StringPrefixLabel):
+    """Determine the correct model label for the device."""
+
+    _NAME = ds_constants.MODEL_LABEL
+
+    def generate_labels(self, host):
+        # Return the existing label if set to defend against any bad image
+        # pushes to the host.  See comment in BoardLabel for more details.
+        for label in host._afe_host.labels:
+            if label.startswith(self._NAME + ':'):
+                return [label.split(':')[-1]]
+
+        cmd = 'mosys platform model'
+        result = host.run(command=cmd, ignore_status=True)
+        if result.exit_status == 0:
+            return [result.stdout.strip()]
+        else:
+            # We need some sort of backwards compatibility for boards that
+            # are not yet supported with mosys and unified builds.
+            # This is necessary so that we can begin changing cbuildbot to take
+            # advantage of the model/board label differentiations for
+            # scheduling, while still retaining backwards compatibility.
+            return [_parse_lsb_output(host).board]
 
 
 class LightSensorLabel(base_label.BaseLabel):
@@ -247,6 +280,7 @@ class StorageLabel(base_label.StringPrefixLabel):
              * `storage:ssd` when internal device is solid state drive
              * `storage:hdd` when internal device is hard disk drive
              * `storage:mmc` when internal device is mmc drive
+             * `storage:nvme` when internal device is NVMe drive
              * None          When internal device is something else or
                              when we are unable to determine the type
     """
@@ -315,6 +349,11 @@ class StorageLabel(base_label.StringPrefixLabel):
             self.type_str = rotate_dict.get(rotate_str)
             return True
 
+        nvme_pattern = '/dev/nvme[0-9]+n[0-9]+'
+        if re.match(nvme_pattern, rootdev_str):
+            self.type_str = 'nmve'
+            return True
+
         # All other internal device / error case will always fall here
         return False
 
@@ -334,8 +373,10 @@ class ServoLabel(base_label.BaseLabel):
 
         @returns True if a servo host is detected, False otherwise.
         """
+        servo_host_hostname = None
         servo_args, _ = servo_host._get_standard_servo_args(host)
-        servo_host_hostname = servo_args.get(servo_host.SERVO_HOST_ATTR)
+        if servo_args:
+            servo_host_hostname = servo_args.get(servo_host.SERVO_HOST_ATTR)
         return (servo_host_hostname is not None
                 and servo_host.servo_host_is_up(servo_host_hostname))
 
@@ -346,6 +387,7 @@ class VideoLabel(base_label.StringLabel):
     # List gathered from
     # https://chromium.googlesource.com/chromiumos/
     # platform2/+/master/avtest_label_detect/main.c#19
+    # TODO(hiroh): '4k_video' won't be used. It will be removed in the future.
     _NAME = [
         'hw_jpeg_acc_dec',
         'hw_video_acc_h264',
@@ -354,6 +396,10 @@ class VideoLabel(base_label.StringLabel):
         'hw_video_acc_enc_h264',
         'hw_video_acc_enc_vp8',
         'webcam',
+        '4k_video',
+        '4k_video_h264',
+        '4k_video_vp8',
+        '4k_video_vp9',
     ]
 
     def generate_labels(self, host):
@@ -500,6 +546,7 @@ CROS_LABELS = [
     AudioLoopbackDongleLabel(),
     BluetoothLabel(),
     BoardLabel(),
+    ModelLabel(),
     ChameleonConnectionLabel(),
     ChameleonLabel(),
     ChameleonPeripheralsLabel(),

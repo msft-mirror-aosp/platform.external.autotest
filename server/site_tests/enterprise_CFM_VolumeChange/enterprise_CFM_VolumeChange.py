@@ -24,14 +24,8 @@ class enterprise_CFM_VolumeChange(test.test):
     def _enroll_device(self):
         """Enroll device into CFM."""
         self.cfm_facade.enroll_device()
-        self.cfm_facade.restart_chrome_for_cfm()
-        self.cfm_facade.wait_for_telemetry_commands()
-        self.cfm_facade.wait_for_oobe_start_page()
-
-        if not self.cfm_facade.is_oobe_start_page():
-            raise error.TestFail('CFM did not reach oobe screen.')
-
-        self.cfm_facade.skip_oobe_screen()
+        self.cfm_facade.skip_oobe_after_enrollment()
+        self.cfm_facade.wait_for_hangouts_telemetry_commands()
 
 
     def _start_hangout_session(self):
@@ -85,11 +79,13 @@ class enterprise_CFM_VolumeChange(test.test):
             self.cfm_facade.set_speaker_volume(cfm_volume)
             time.sleep(_SHORT_TIMEOUT)
 
-            cras_volume = self.client.run_output(cmd)
-            if cras_volume != cfm_volume:
-                raise error.TestFail('Cras volume (%s) does not match volume '
-                                     'set by CFM (%s).' %
-                                     (cras_volume, cfm_volume))
+            cras_volume = [s.strip() for s in
+                           self.client.run_output(cmd).splitlines()]
+            for volume in cras_volume:
+                if volume != cfm_volume:
+                    raise error.TestFail('Cras volume (%s) does not match '
+                                         'volume set by CFM (%s).' %
+                                         (volume, cfm_volume))
             logging.info('Cras volume (%s) matches volume set by CFM (%s)',
                          cras_volume, cfm_volume)
 

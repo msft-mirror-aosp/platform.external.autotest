@@ -14,7 +14,6 @@ class CrosDisksAPITester(CrosDisksTester):
 
     def get_tests(self):
         return [
-            self.test_is_alive,
             self.test_enumerate_devices,
             self.test_enumerate_auto_mountable_devices,
             self.test_get_device_properties,
@@ -43,6 +42,7 @@ class CrosDisksAPITester(CrosDisksTester):
             ('DriveModel', dbus.String),
             ('IdLabel', dbus.String),
             ('NativePath', dbus.String),
+            ('FileSystemType', dbus.String),
         )
 
         for (prop_name, prop_value_type) in disk_properties:
@@ -85,12 +85,6 @@ class CrosDisksAPITester(CrosDisksTester):
                 raise error.TestFail(
                         "disk.DeviceMountPaths should not contain any "
                         "empty string")
-
-    def test_is_alive(self):
-        # Check if CrosDisks server is alive.
-        is_alive = self.cros_disks.is_alive()
-        if not is_alive:
-            raise error.TestFail("Unable to talk to the disk daemon")
 
     def test_enumerate_devices(self):
         # Check if EnumerateDevices method returns a list of devices.

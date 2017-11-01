@@ -10,6 +10,7 @@ import time
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.cros.video import helper_logger
 
 
 class video_VimeoVideo(test.test):
@@ -34,8 +35,9 @@ class video_VimeoVideo(test.test):
 
     def _wait_for_player(self):
         """Wait for the player to load."""
-        self._tab.WaitForJavaScriptExpression(
-                'typeof vimeo_player !== \'undefined\'', self._WAIT_TIMEOUT_S)
+        self._tab.WaitForJavaScriptCondition(
+                'typeof vimeo_player !== \'undefined\'',
+                timeout=self._WAIT_TIMEOUT_S)
 
     def _wait_for_player_status(self, expected_status):
         """"Wait for expected player status.
@@ -54,9 +56,9 @@ class video_VimeoVideo(test.test):
 
     def _video_current_time(self):
         "Returns current video time."""
-        self._tab.WaitForJavaScriptExpression(
+        self._tab.WaitForJavaScriptCondition(
                 'typeof vimeo_player.duration == \'number\'',
-                self._WAIT_TIMEOUT_S)
+                timeout=self._WAIT_TIMEOUT_S)
         return float(self._tab.EvaluateJavaScript('vimeo_player.duration'))
 
 
@@ -106,7 +108,10 @@ class video_VimeoVideo(test.test):
             playback = playback + 1
 
 
+    @helper_logger.video_log_wrapper
     def run_once(self):
-        with chrome.Chrome() as cr:
+        with chrome.Chrome(
+                extra_browser_args=helper_logger.chrome_vmodule_flag(),
+                init_network_controller=True) as cr:
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)
             self.run_vimeo_tests(cr.browser)

@@ -11,8 +11,12 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros import provision
-from autotest_lib.server.cros.dynamic_suite import frontend_wrappers, reporting
-from chromite.lib import metrics
+from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
+
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = site_utils.metrics_mock
 
 
 CONFIG = global_config.global_config
@@ -125,7 +129,7 @@ class DedupingScheduler(object):
 
 
     def _Schedule(self, suite, board, build, pool, num, priority, timeout,
-                  file_bugs=False, firmware_rw_build=None,
+                  file_bugs=False, cheets_build=None, firmware_rw_build=None,
                   firmware_ro_build=None, test_source_build=None,
                   job_retry=False, launch_control_build=None,
                   run_prod_code=False, testbed_dut_count=None, no_delay=False):
@@ -144,6 +148,8 @@ class DedupingScheduler(object):
                          client.common_lib.priorities.Priority.
         @param timeout: The max lifetime of the suite in hours.
         @param file_bugs: True if bug filing is desired for this suite.
+        @param cheets_build: CrOS Android build to be used for testing.
+                             Default to None.
         @param firmware_rw_build: Firmware build to update RW firmware. Default
                                   to None.
         @param firmware_ro_build: Firmware build to update RO firmware. Default
@@ -171,6 +177,8 @@ class DedupingScheduler(object):
         try:
             if build:
                 builds = {provision.CROS_VERSION_PREFIX: build}
+            if cheets_build:
+                builds[provision.CROS_ANDROID_VERSION_PREFIX] = cheets_build
             if firmware_rw_build:
                 builds[provision.FW_RW_VERSION_PREFIX] = firmware_rw_build
             if firmware_ro_build:
@@ -223,20 +231,23 @@ class DedupingScheduler(object):
             max_runtime_mins = JOB_MAX_RUNTIME_MINS_DEFAULT + delay_minutes
             timeout_mins = JOB_MAX_RUNTIME_MINS_DEFAULT + delay_minutes
 
-            logging.info('Scheduling %s on %s against %s (pool: %s)',
+            logging.info('Scheduling %s on %s against %s (pool: %s)...',
                          suite, builds, board, pool)
-            if self._afe.run('create_suite_job', name=suite, board=board,
-                             builds=builds, check_hosts=False, num=num,
-                             pool=pool, priority=priority, timeout=timeout,
-                             max_runtime_mins=max_runtime_mins,
-                             timeout_mins=timeout_mins,
-                             file_bugs=file_bugs,
-                             wait_for_results=file_bugs,
-                             test_source_build=test_source_build,
-                             job_retry=job_retry,
-                             delay_minutes=delay_minutes,
-                             run_prod_code=run_prod_code,
-                             min_rpc_timeout=_MIN_RPC_TIMEOUT) is not None:
+            job_id = self._afe.run('create_suite_job', name=suite, board=board,
+                                   builds=builds, check_hosts=False, num=num,
+                                   pool=pool, priority=priority,
+                                   timeout=timeout,
+                                   max_runtime_mins=max_runtime_mins,
+                                   timeout_mins=timeout_mins,
+                                   file_bugs=file_bugs,
+                                   wait_for_results=file_bugs,
+                                   test_source_build=test_source_build,
+                                   job_retry=job_retry,
+                                   delay_minutes=delay_minutes,
+                                   run_prod_code=run_prod_code,
+                                   min_rpc_timeout=_MIN_RPC_TIMEOUT)
+            if job_id is not None:
+                logging.info('... created as suite job id %s', job_id)
                 # Report data to metrics.
                 fields = {'suite': suite,
                           'board': board,
@@ -247,30 +258,16 @@ class DedupingScheduler(object):
             else:
                 raise ScheduleException(
                         "Can't schedule %s for %s." % (suite, builds))
-        except (error.ControlFileNotFound, error.ControlFileEmpty,
-                error.ControlFileMalformed, error.NoControlFileList) as e:
-            if self._file_bug:
-                # File bug on test_source_build if it's specified.
-                b = reporting.SuiteSchedulerBug(
-                        suite, test_source_build or build, board, e)
-                # If a bug has filed with the same <suite, build, error type>
-                # will not file again, but simply gets the existing bug id.
-                bid, _ = reporting.Reporter().report(
-                        b, ignore_duplicate=True)
-                if bid is not None:
-                    return False
-            # Raise the exception if not filing a bug or failed to file bug.
-            raise ScheduleException(e)
         except Exception as e:
             raise ScheduleException(e)
 
 
     def ScheduleSuite(self, suite, board, build, pool, num, priority, timeout,
-                      force=False, file_bugs=False, firmware_rw_build=None,
-                      firmware_ro_build=None, test_source_build=None,
-                      job_retry=False, launch_control_build=None,
-                      run_prod_code=False, testbed_dut_count=None,
-                      no_delay=False):
+                      force=False, file_bugs=False, cheets_build=None,
+                      firmware_rw_build=None, firmware_ro_build=None,
+                      test_source_build=None, job_retry=False,
+                      launch_control_build=None, run_prod_code=False,
+                      testbed_dut_count=None, no_delay=False):
         """Schedule |suite|, if it hasn't already been run.
 
         If |suite| has not already been run against |build| on |board|,
@@ -288,6 +285,8 @@ class DedupingScheduler(object):
         @param timeout: The max lifetime of the suite in hours.
         @param force: Always schedule the suite.
         @param file_bugs: True if bug filing is desired for this suite.
+        @param cheets_build: CrOS Android build to be used for testing.
+                             Default to None.
         @param firmware_rw_build: Firmware build to update RW firmware. Default
                                   to None.
         @param firmware_ro_build: Firmware build to update RO firmware. Default
@@ -317,6 +316,7 @@ class DedupingScheduler(object):
                 test_source_build or build or launch_control_build)):
             return self._Schedule(suite, board, build, pool, num, priority,
                                   timeout, file_bugs=file_bugs,
+                                  cheets_build=cheets_build,
                                   firmware_rw_build=firmware_rw_build,
                                   firmware_ro_build=firmware_ro_build,
                                   test_source_build=test_source_build,

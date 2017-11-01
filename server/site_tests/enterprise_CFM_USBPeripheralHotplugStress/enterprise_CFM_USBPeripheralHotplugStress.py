@@ -37,15 +37,8 @@ class enterprise_CFM_USBPeripheralHotplugStress(test.test):
     def _enroll_device_and_skip_oobe(self):
         """Enroll device into CFM and skip CFM oobe."""
         self.cfm_facade.enroll_device()
-        self.cfm_facade.restart_chrome_for_cfm()
-        self.cfm_facade.wait_for_telemetry_commands()
-        self.cfm_facade.wait_for_oobe_start_page()
-
-        if not self.cfm_facade.is_oobe_start_page():
-            raise error.TestFail('CFM did not reach oobe screen.')
-
-        self.cfm_facade.skip_oobe_screen()
-        time.sleep(_SHORT_TIMEOUT)
+        self.cfm_facade.skip_oobe_after_enrollment()
+        self.cfm_facade.wait_for_hangouts_telemetry_commands()
 
 
     def _set_peripheral(self, peripheral_dict):
@@ -53,17 +46,17 @@ class enterprise_CFM_USBPeripheralHotplugStress(test.test):
 
         @param peripheral_dict: Dictionary of peripherals
         """
-        avail_mics = self.cfm_facade.get_mic_devices()
-        avail_speakers = self.cfm_facade.get_speaker_devices()
-        avail_cameras = self.cfm_facade.get_camera_devices()
+        self.avail_mics = self.cfm_facade.get_mic_devices()
+        self.avail_speakers = self.cfm_facade.get_speaker_devices()
+        self.avail_cameras = self.cfm_facade.get_camera_devices()
 
-        if peripheral_dict.get('Microphone') in avail_mics:
+        if peripheral_dict.get('Microphone') in self.avail_mics:
             self.cfm_facade.set_preferred_mic(
                     peripheral_dict.get('Microphone'))
-        if peripheral_dict.get('Speaker') in avail_speakers:
+        if peripheral_dict.get('Speaker') in self.avail_speakers:
             self.cfm_facade.set_preferred_speaker(
                     peripheral_dict.get('Speaker'))
-        if peripheral_dict.get('Camera') in avail_cameras:
+        if peripheral_dict.get('Camera') in self.avail_cameras:
             self.cfm_facade.set_preferred_camera(
                     peripheral_dict.get('Camera'))
 
@@ -78,16 +71,35 @@ class enterprise_CFM_USBPeripheralHotplugStress(test.test):
             if (on_off and peripheral_dict.get('Microphone') not in
                     self.cfm_facade.get_preferred_mic()):
                 raise error.TestFail('Microphone not detected.')
-            if (not on_off and peripheral_dict.get('Microphone') in
+            if (not on_off and peripheral_dict.get('Microphone') is
                     self.cfm_facade.get_preferred_mic()):
                 raise error.TestFail('Microphone should not be detected.')
+            if len(self.avail_mics) > 1:
+                if self.cfm_facade.get_preferred_mic() is None:
+                    raise error.TestFail('Available Microphone not selected.')
+                if ((not on_off and peripheral_dict.get('Microphone') not in
+                        self.cfm_facade.get_preferred_mic()) and
+                        (self.cfm_facade.get_preferred_mic() not in
+                        self.avail_mics)):
+                    raise error.TestFail('Available Microphone not selected.')
+
 
         if 'Speaker' in peripheral_dict.keys():
             if (on_off and peripheral_dict.get('Speaker') not in
                     self.cfm_facade.get_preferred_speaker()):
                 raise error.TestFail('Speaker not detected.')
-            if not on_off and self.cfm_facade.get_preferred_speaker():
+            if (not on_off and peripheral_dict.get('Speaker') is
+                    self.cfm_facade.get_preferred_speaker()):
                 raise error.TestFail('Speaker should not be detected.')
+            if len(self.avail_speakers) > 1:
+                if self.cfm_facade.get_preferred_speaker() is None:
+                    raise error.TestFail('Available Speaker not selected.')
+                if ((not on_off and peripheral_dict.get('Speaker') not in
+                        self.cfm_facade.get_preferred_speaker()) and
+                        (self.cfm_facade.get_preferred_speaker() not in
+                        self.avail_speakers)):
+                    raise error.TestFail('Available Speaker not selected.')
+
 
         if 'Camera' in peripheral_dict.keys():
             if (on_off and peripheral_dict.get('Camera') not in

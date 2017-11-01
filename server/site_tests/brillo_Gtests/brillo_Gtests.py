@@ -8,10 +8,9 @@ import logging
 import os
 
 import common
-from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import error, gtest_parser
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server import afe_utils
-from autotest_lib.server import site_gtest_runner
 from autotest_lib.server import test
 
 
@@ -59,10 +58,10 @@ class brillo_Gtests(test.test):
         @param test_file_format: Format of the zip file containing the tests.
         @param artifact: Devserver artifact to stage.
         """
-        build = afe_utils.get_build(host)
-        ds = dev_server.AndroidBuildServer.resolve(build, host.hostname)
-        ds.stage_artifacts(image=build, artifacts=[artifact])
-        build_url = os.path.join(ds.url(), 'static', build)
+        info = host.host_info_store.get()
+        ds = dev_server.AndroidBuildServer.resolve(info.build, host.hostname)
+        ds.stage_artifacts(image=info.build, artifacts=[artifact])
+        build_url = os.path.join(ds.url(), 'static', info.build)
         nativetests_file = (test_file_format %
                             host.get_build_info_from_build_url(build_url))
         tmp_dir = host.teststation.get_tmp_dir()
@@ -190,7 +189,7 @@ class brillo_Gtests(test.test):
         # properly interleaved.
         result = self.host.run(command, ignore_status=True)
 
-        parser = site_gtest_runner.gtest_parser()
+        parser = gtest_parser.gtest_parser()
         for line in result.stdout.splitlines():
             parser.ProcessLogLine(line)
         passed_tests = parser.PassedTests()

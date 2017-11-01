@@ -9,23 +9,46 @@ RAPL ( Running Average Power Limit ) registers can be queried and written to
 change and evaluate power consumption on the CPU.
 
 See 'Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3'
-(Section 14.7) for complete details.
+(Section 14.9) for complete details.
 
 TODO(tbroch)
 1. Investigate exposing access to control Power policy.  Current implementation
 just surveys consumption via energy status registers.
 """
 import logging
+import os
 import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import power_status
+from autotest_lib.client.cros import power_utils
 from numpy import uint32
 
 
-# TODO(tbroch): dram domain only for server class CPU's
-VALID_DOMAINS = ['pkg', 'pp0', 'pp1']
+VALID_DOMAINS = ['pkg', 'pp0', 'gfx', 'dram']
+
+
+def get_rapl_measurement(tname, exe_function=time.sleep, exe_args=(10,),
+                         exe_kwargs={}):
+    """Get rapl measurement.
+
+    @param name: String of test name.
+    @param exe_function: function that should be executed during measuring
+                         rapl readings.
+    @param exe_args: tuple of args to be passed into exe_function.
+    @param exe_kwargs: dict of args to be passed into exe_function.
+    """
+    logging.info('Now measuring rapl power consumption.')
+    measurement = []
+    if power_utils.has_rapl_support():
+        measurement += create_rapl()
+    power_logger = power_status.PowerLogger(measurement)
+    power_logger.start()
+    with power_logger.checkblock(tname):
+        exe_function(*exe_args, **exe_kwargs)
+    keyval = power_logger.calc()
+    return keyval
 
 
 def create_rapl(domains=None):
@@ -72,7 +95,7 @@ class Rapl(power_status.PowerMeasurement):
                             'energy_status':  0x639,
                             'policy':         0x63a,
                             'perf_status':    0x63b},
-                    'pp1': {'power_limit':    0x640,
+                    'gfx': {'power_limit':    0x640,
                             'energy_status':  0x641,
                             'policy':         0x642},
                     'dram': {'power_limit':   0x618,
@@ -201,5 +224,81 @@ class Rapl(power_status.PowerMeasurement):
                                       (self.domain, self._MAX_MEAS_SECS))
         average_power = energy_used / time_used
         self._joules_start = joules_now
+        self._time_start = time_now
+        return average_power
+
+
+def create_powercap():
+    """Create a list of Powercap instances of PowerMeasurement
+
+    Args:
+        (none)
+
+    Returns:
+        A list of Powercap objects.
+    """
+    powercap = '/sys/devices/virtual/powercap/intel-rapl/'
+    # Failsafe check
+    if not os.path.isdir(powercap):
+        logging.debug("RAPL: no powercap driver found")
+        return []
+    rapl_map = {}
+    for root, dir, file in os.walk(powercap):
+        if os.path.isfile(root + '/energy_uj'):
+            with open(root + '/name', 'r') as fn:
+                name = fn.read().rstrip()
+                rapl_map[name] = root + '/energy_uj'
+    return [Powercap(name, path) for name, path in rapl_map.iteritems()]
+
+
+class Powercap(power_status.PowerMeasurement):
+    """Classes to support RAPL power measurement via powercap sysfs
+
+    This class utilizes the subset of Linux powercap driver to report
+    energy consumption, in this manner, we do not need microarchitecture
+    knowledge in userspace program.
+
+    For more detail of powercap framework, readers could refer to:
+    https://www.kernel.org/doc/Documentation/power/powercap/powercap.txt
+    https://youtu.be/1Rl8PyuK6yA
+
+    Private attributes:
+        _file: sysfs reporting energy of the particular RAPL domain.
+        _energy_start: float, micro-joule measured at the beginning.
+        _time_start: float, time in seconds since Epoch.
+    """
+    def __init__(self, name, path):
+        """Constructor for Powercap class.
+        """
+        super(Powercap, self).__init__(name)
+
+        self._file = open(path, 'r')
+        self._energy_start = self._get_energy()
+        self._time_start = time.time()
+        logging.debug("RAPL: monitor domain %s", name)
+
+
+    def __del__(self):
+        """Deconstructor for Powercap class.
+        """
+        self._file.close()
+
+
+    def _get_energy(self):
+        """Get energy reading in micro-joule unit.
+        """
+        self._file.seek(0)
+        return int(self._file.read().rstrip())
+
+
+    def refresh(self):
+        """Calculate the average power used per RAPL domain.
+        """
+        energy_now = self._get_energy()
+        time_now = time.time()
+        energy_used = (energy_now - self._energy_start) / 1000000.0
+        time_used = time_now - self._time_start
+        average_power = energy_used / time_used
+        self._energy_start = energy_now
         self._time_start = time_now
         return average_power

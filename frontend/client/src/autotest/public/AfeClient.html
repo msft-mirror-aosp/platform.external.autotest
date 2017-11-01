@@ -15,7 +15,6 @@
     <div class="nav-header">
       <span class="links-box">
         Frontend |
-        <a href="server/admin">Admin interface</a> |
         <a href="/new_tko">Results database</a> |
         <a href="http://www.chromium.org/chromium-os/testing">Chromium OS Testing</a> |
         <a href="/results/dashboard">Dashboard</a>
@@ -52,14 +51,11 @@
           <tr>
             <td>Name:</td><td id="jl_name_search"></td>
           </tr>
+          <tr>
+            <td>Job starting time:</td><td id="job_starting_datetime_controls"></td>
+          </tr>
         </table>
         <div id="job_table"></div>
-      </div>
-
-      <div id="recurring_list" title="Recurring Job">
-        <div id="recurring_user_list"></div>
-        <div id="recurring_table"></div>
-        <div id="recurring_create_panel" class="box" width="0"></div>
       </div>
 
       <div id="view_job"  title="View Job">
@@ -69,7 +65,7 @@
         <div id="view_title" class="title"></div><br>
         <div id="view_data">
           <span id="view_abort"></span><span id="view_clone"></span>
-          <span id="view_recurring"></span><br>
+          <br>
           <table class="data-table data-table-outlined">
             <tr class="data-row">
               <td><span class="field-name">Label:</span></td>
@@ -248,7 +244,6 @@
         <div id="view_host_title" class="title"></div>
         <div>
           <span id="view_host_reverify_button"></span>
-          <span id="view_host_reinstall_button"></span>
           <span id="view_host_repair_button"></span>
         </div>
         <div id="view_host_data">
@@ -305,9 +300,6 @@
         </div>
       </div>
 
-      <div id="user_preferences" title="User Preferences">
-        <div id="user_preferences_table"></div>
-      </div>
     </div>
     <br>
     <div id="error_log"></div>

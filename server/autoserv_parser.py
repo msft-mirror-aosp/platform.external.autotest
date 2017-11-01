@@ -212,6 +212,15 @@ class autoserv_parser(object):
         self.parser.add_argument('--lab', action='store', type=str,
                                  dest='lab', default='',
                                  help=argparse.SUPPRESS)
+        self.parser.add_argument('--cloud_trace_context', type=str, default='',
+                                 action='store', dest='cloud_trace_context',
+                                 help=('Global trace context to configure '
+                                       'emission of data to Cloud Trace.'))
+        self.parser.add_argument('--cloud_trace_context_enabled', type=str,
+                                 default='False', action='store',
+                                 dest='cloud_trace_context_enabled',
+                                 help=('Global trace context to configure '
+                                       'emission of data to Cloud Trace.'))
         #
         # Warning! Please read before adding any new arguments!
         #
@@ -250,8 +259,15 @@ class autoserv_parser(object):
         if self.options.image:
             self.options.install_before = True
             self.options.image =  self.options.image.strip()
+
         self.options.host_attributes = ast.literal_eval(
                 self.options.host_attributes)
+        if self.options.lab and self.options.host_attributes:
+            logging.warn(
+                    '--lab and --host-attributes are mutually exclusive. '
+                    'Ignoring custom host attributes: %s',
+                    str(self.options.host_attributes))
+            self.options.host_attributes = []
 
 
 # create the one and only one instance of autoserv_parser

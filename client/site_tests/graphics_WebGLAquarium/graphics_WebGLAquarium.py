@@ -19,11 +19,11 @@ import sampler
 import threading
 import time
 
-from autotest_lib.client.bin import test, utils
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.graphics import graphics_utils
-from autotest_lib.client.cros import power_status, power_utils
+from autotest_lib.client.cros import power_rapl, power_status, power_utils
 from autotest_lib.client.cros import service_stopper
 
 # Minimum battery charge percentage to run the test
@@ -38,7 +38,7 @@ POWER_DESCRIPTION = 'avg_energy_rate_1000_fishes'
 STABILIZATION_DURATION = 10
 
 
-class graphics_WebGLAquarium(test.test):
+class graphics_WebGLAquarium(graphics_utils.GraphicsTest):
     """WebGL aquarium graphics test."""
     version = 1
 
@@ -48,7 +48,6 @@ class graphics_WebGLAquarium(test.test):
     _test_power = False
     active_tab = None
     flip_stats = {}
-    GSC = None
     kernel_sampler = None
     perf_keyval = {}
     sampler_lock = None
@@ -65,7 +64,7 @@ class graphics_WebGLAquarium(test.test):
         utils.extract_tarball_to_dir(tarball_path, self.srcdir)
 
     def initialize(self):
-        self.GSC = graphics_utils.GraphicsStateChecker()
+        super(graphics_WebGLAquarium, self).initialize()
         self.sampler_lock = threading.Lock()
         # TODO: Create samplers for other platforms (e.g. x86).
         if utils.get_board().lower() in ['daisy', 'daisy_spring']:
@@ -84,17 +83,7 @@ class graphics_WebGLAquarium(test.test):
             self._backlight.restore()
         if self._service_stopper:
             self._service_stopper.restore_services()
-        if self.GSC:
-            keyvals = self.GSC.get_memory_keyvals()
-            if not self._test_power:
-                for key, val in keyvals.iteritems():
-                    self.output_perf_value(
-                        description=key,
-                        value=val,
-                        units='bytes',
-                        higher_is_better=False)
-            self.GSC.finalize()
-            self.write_perf_keyval(keyvals)
+        super(graphics_WebGLAquarium, self).cleanup()
 
     def run_fish_test(self, browser, test_url, num_fishes, perf_log=True):
         """Run the test with the given number of fishes.
@@ -115,13 +104,15 @@ class graphics_WebGLAquarium(test.test):
         # Set the number of fishes when document finishes loading.  Also reset
         # our own FPS counter and start recording FPS and rendering time.
         utils.wait_for_value(
-            lambda: tab.EvaluateJavaScript('if (document.readyState === "complete") {'
-                                           '  setSetting(document.getElementById("%s"), %d);'
-                                           '  g_crosFpsCounter.reset();'
-                                           '  true;'
-                                           '} else {'
-                                           '  false;'
-                                           '}' % self.test_settings[num_fishes]),
+            lambda: tab.EvaluateJavaScript(
+                'if (document.readyState === "complete") {'
+                '  setSetting(document.getElementById("%s"), %d);'
+                '  g_crosFpsCounter.reset();'
+                '  true;'
+                '} else {'
+                '  false;'
+                '}' % self.test_settings[num_fishes]
+            ),
             expected_value=True,
             timeout_sec=30)
 
@@ -158,12 +149,30 @@ class graphics_WebGLAquarium(test.test):
         logging.info('%d fish(es): Average FPS = %f, '
                      'average render time = %f', num_fishes, avg_fps,
                      avg_render_time)
+
         if perf_log:
+            # Report frames per second to chromeperf/ dashboard.
             self.output_perf_value(
                 description='avg_fps_%04d_fishes' % num_fishes,
                 value=avg_fps,
                 units='fps',
                 higher_is_better=True)
+
+            # Intel only: Record the power consumption for the next few seconds.
+            rapl_rate = power_rapl.get_rapl_measurement(
+                'rapl_%04d_fishes' % num_fishes)
+            # Remove entries that we don't care about.
+            rapl_rate = {key: rapl_rate[key]
+                         for key in rapl_rate.keys() if key.endswith('pwr')}
+            # Report to chromeperf/ dashboard.
+            for key, values in rapl_rate.iteritems():
+                self.output_perf_value(
+                    description=key,
+                    value=values,
+                    units='W',
+                    higher_is_better=False,
+                    graph='rapl_power_consumption'
+                )
 
     def run_power_test(self, browser, test_url, ac_ok):
         """Runs the webgl power consumption test and reports the perf results.
@@ -271,12 +280,13 @@ class graphics_WebGLAquarium(test.test):
                                                stats['wait_kds'][1],
                                                stats['flipped'][1]))
 
+    @graphics_utils.GraphicsTest.failure_report_decorator('graphics_WebGLAquarium')
     def run_once(self,
                  test_duration_secs=30,
                  test_setting_num_fishes=(50, 1000),
                  power_test=False,
                  ac_ok=False):
-        """Find a brower with telemetry, and run the test.
+        """Find a browser with telemetry, and run the test.
 
         @param test_duration_secs: The duration in seconds to run each scenario
                 for.
@@ -288,7 +298,7 @@ class graphics_WebGLAquarium(test.test):
         self.test_duration_secs = test_duration_secs
         self.test_setting_num_fishes = test_setting_num_fishes
 
-        with chrome.Chrome(logged_in=False) as cr:
+        with chrome.Chrome(logged_in=False, init_network_controller=True) as cr:
             cr.browser.platform.SetHTTPServerDirectories(self.srcdir)
             test_url = cr.browser.platform.http_server.UrlOf(
                 os.path.join(self.srcdir, 'aquarium.html'))

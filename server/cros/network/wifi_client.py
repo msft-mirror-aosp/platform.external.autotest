@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import logging
 import math
 import os
@@ -12,7 +13,6 @@ from contextlib import contextmanager
 from collections import namedtuple
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import base_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import iw_runner
@@ -21,11 +21,10 @@ from autotest_lib.client.cros import constants
 from autotest_lib.server import adb_utils
 from autotest_lib.server import autotest
 from autotest_lib.server import constants as server_constants
-from autotest_lib.server import frontend
 from autotest_lib.server import site_linux_system
-from autotest_lib.server import site_utils
 from autotest_lib.server.cros.network import wpa_cli_proxy
 from autotest_lib.server.hosts import adb_host
+from autotest_lib.server.hosts import cast_os_host
 
 # Wake-on-WiFi feature strings
 WAKE_ON_WIFI_NONE = 'none'
@@ -56,6 +55,18 @@ ANDROID_XMLRPC_DEBUG_DIR_FMT = '/var/log/acts-%s'
 ANDROID_XMLRPC_LOG_FILE_FMT = '/var/log/android_xmlrpc_server-%s.log'
 # Local debug dir name is suffixed by the test name
 ANDROID_LOCAL_DEBUG_DIR_FMT = 'android_debug_%s'
+
+
+def _is_android_host(host):
+    return host.get_os_type() == adb_host.OS_TYPE_ANDROID
+
+
+def _is_brillo_host(host):
+    return host.get_os_type() == adb_host.OS_TYPE_BRILLO
+
+
+def _is_eureka_host(host):
+    return host.get_os_type() == cast_os_host.OS_TYPE_CAST_OS
 
 
 def install_android_xmlrpc_server(host, server_port):
@@ -94,12 +105,12 @@ def get_xmlrpc_proxy(host):
     # This is the default port for shill xmlrpc server.
     server_port = constants.SHILL_XMLRPC_SERVER_PORT
 
-    if host.get_os_type() == adb_host.OS_TYPE_BRILLO:
+    if _is_brillo_host(host):
         xmlrpc_server_command = constants.SHILL_BRILLO_XMLRPC_SERVER_COMMAND
         log_path = SHILL_BRILLO_XMLRPC_LOG_PATH
         command_name = constants.SHILL_BRILLO_XMLRPC_SERVER_CLEANUP_PATTERN
         rpc_server_host = host
-    elif host.get_os_type() == adb_host.OS_TYPE_ANDROID:
+    elif _is_android_host(host):
         if not host.adb_serial:
             raise error.TestFail('No serial number detected')
         debug_dir = ANDROID_XMLRPC_DEBUG_DIR_FMT % host.adb_serial
@@ -138,13 +149,15 @@ def get_xmlrpc_proxy(host):
     return proxy
 
 
-def _is_conductive(hostname):
-    if utils.host_could_be_in_afe(hostname):
-        conductive = site_utils.get_label_from_afe(hostname.split('.')[0],
-                                                  'conductive:',
-                                                   frontend.AFE())
-        if conductive and conductive.lower() == 'true':
-            return True
+def _is_conductive(host):
+    """Determine if the host is conductive based on AFE labels.
+
+    @param host: A Host object.
+    """
+    if utils.host_could_be_in_afe(host.hostname):
+        info = host.host_info_store.get()
+        conductive = info.get_label_value('conductive')
+        return conductive.lower() == 'true'
     return False
 
 
@@ -157,8 +170,8 @@ class WiFiClient(site_linux_system.LinuxSystem):
     MAX_SERVICE_GONE_TIMEOUT_SECONDS = 60
 
     # List of interface names we won't consider for use as "the" WiFi interface
-    # on Android hosts.
-    WIFI_IF_BLACKLIST = ['p2p0']
+    # on Android or CastOS hosts.
+    WIFI_IF_BLACKLIST = ['p2p0', 'wfd0']
 
     UNKNOWN_BOARD_TYPE = 'unknown'
 
@@ -168,6 +181,8 @@ class WiFiClient(site_linux_system.LinuxSystem):
     NET_DETECT_SCAN_PERIOD = 'NetDetectScanPeriodSeconds'
     WAKE_TO_SCAN_PERIOD = 'WakeToScanPeriodSeconds'
     FORCE_WAKE_TO_SCAN_TIMER = 'ForceWakeToScanTimer'
+    MAC_ADDRESS_RANDOMIZATION_SUPPORTED = 'MACAddressRandomizationSupported'
+    MAC_ADDRESS_RANDOMIZATION_ENABLED = 'MACAddressRandomizationEnabled'
 
     CONNECTED_STATES = ['ready', 'portal', 'online']
 
@@ -261,7 +276,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
     def conductive(self):
         """@return True if the rig is conductive; False otherwise."""
         if self._conductive is None:
-            self._conductive = _is_conductive(self._client_hostname)
+            self._conductive = _is_conductive(self.host)
         return self._conductive
 
 
@@ -360,9 +375,9 @@ class WiFiClient(site_linux_system.LinuxSystem):
         self._machine_id = None
         self._result_dir = result_dir
         self._conductive = None
-        self._client_hostname = client_host.hostname
 
-        if self.host.get_os_type() == adb_host.OS_TYPE_ANDROID and use_wpa_cli:
+        if ((_is_android_host(self.host) or _is_eureka_host(self.host)) and
+            use_wpa_cli):
             # Look up the WiFi device (and its MAC) on the client.
             devs = self.iw_runner.list_interfaces(desired_if_type='managed')
             devs = [dev for dev in devs
@@ -379,11 +394,11 @@ class WiFiClient(site_linux_system.LinuxSystem):
                     self.host, self._wifi_if)
             self._wpa_cli_proxy = self._shill_proxy
         else:
-            if self.host.get_os_type() == adb_host.OS_TYPE_ANDROID:
+            if _is_android_host(self.host):
                 adb_utils.install_apk_from_build(
                         self.host,
                         server_constants.SL4A_APK,
-                        server_constants.SL4A_PACKAGE,
+                        server_constants.SL4A_ARTIFACT,
                         package_name=server_constants.SL4A_PACKAGE)
 
             self._shill_proxy = get_xmlrpc_proxy(self.host)
@@ -471,8 +486,8 @@ class WiFiClient(site_linux_system.LinuxSystem):
         """
         # Make no assertions about ADBHost support.  We don't use an XMLRPC
         # proxy with those hosts anyway.
-        supported = (isinstance(self.host, adb_host.ADBHost) or
-                     method_name in self._shill_proxy.system.listMethods())
+        supported = (_is_android_host(self.host) or _is_eureka_host(self.host)
+                     or method_name in self._shill_proxy.system.listMethods())
         if not supported:
             logging.warning('%s() is not supported on older images',
                             method_name)
@@ -529,7 +544,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
         @param local_save_dir_prefix Used as a prefix for local save directory.
         """
-        if self.host.get_os_type() == adb_host.OS_TYPE_ANDROID:
+        if _is_android_host(self.host):
             # First capture the bugreport to the test station
             self.shill.collect_debug_info(local_save_dir_prefix)
             # Now copy the file over from test station to the server.
@@ -811,6 +826,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         @return bool True if operation initiated successfully, False otherwise.
 
         """
+        logging.info('TDLS discovery with peer %s', mac_address)
         return self._shill_proxy.discover_tdls_link(self.wifi_if, mac_address)
 
 
@@ -822,6 +838,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         @return bool True if operation initiated successfully, False otherwise.
 
         """
+        logging.info('Establishing TDLS link with peer %s', mac_address)
         return self._shill_proxy.establish_tdls_link(self.wifi_if, mac_address)
 
 
@@ -833,6 +850,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         @return string indicating current TDLS connectivity.
 
         """
+        logging.info('Querying TDLS link with peer %s', mac_address)
         return self._shill_proxy.query_tdls_link(self.wifi_if, mac_address)
 
 
@@ -944,6 +962,37 @@ class WiFiClient(site_linux_system.LinuxSystem):
                                            self.wifi_if,
                                            self.FORCE_WAKE_TO_SCAN_TIMER,
                                            is_forced)
+
+
+    def mac_address_randomization(self, enabled):
+        """Sets the boolean value determining whether or not to enable MAC
+        address randomization. This instructs the NIC to randomize the last
+        three octets of the MAC address used in probe requests while
+        disconnected to make the DUT harder to track.
+
+        If MAC address randomization is not supported on this DUT and the
+        caller tries to turn it on, this raises a TestNAError.
+
+        @param enabled: boolean whether or not to enable MAC address
+                randomization
+
+        @return a context manager for the MAC address randomization property
+
+        """
+        if not self._shill_proxy.get_dbus_property_on_device(
+                self.wifi_if, self.MAC_ADDRESS_RANDOMIZATION_SUPPORTED):
+            if enabled:
+                raise error.TestNAError(
+                    'MAC address randomization not supported')
+            else:
+                # Return a no-op context manager.
+                return contextlib.nested()
+
+        return TemporaryDeviceDBusProperty(
+                self._shill_proxy,
+                self.wifi_if,
+                self.MAC_ADDRESS_RANDOMIZATION_ENABLED,
+                enabled)
 
 
     def request_roam(self, bssid):
@@ -1325,7 +1374,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
             logger_command = ('/usr/bin/logger'
                               ' --tag shill'
                               ' --priority daemon.debug'
-                              ' "%s"' % base_utils.sh_escape(message))
+                              ' "%s"' % utils.sh_escape(message))
             self.host.run(logger_command)
 
 

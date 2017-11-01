@@ -120,7 +120,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
 
     def test_execute_list_all_no_labels(self):
-        self.run_cmd(argv=['atest', 'host', 'list', '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'list'],
                      rpcs=[('get_hosts', {},
                             True,
                             [{u'status': u'Ready',
@@ -131,7 +131,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': None,
                               u'shard': None,
                               u'id': 1},
@@ -143,7 +142,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2}])],
@@ -152,7 +150,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
 
     def test_execute_list_all_with_labels(self):
-        self.run_cmd(argv=['atest', 'host', 'list', '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'list'],
                      rpcs=[('get_hosts', {},
                             True,
                             [{u'status': u'Ready',
@@ -163,7 +161,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label0', u'label1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': None,
                               u'shard': None,
                               u'id': 1},
@@ -175,7 +172,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 2}])],
@@ -185,8 +181,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
 
     def test_execute_list_filter_one_host(self):
-        self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'list', 'host1'],
                      rpcs=[('get_hosts', {'hostname__in': ['host1']},
                             True,
                             [{u'status': u'Ready',
@@ -197,20 +192,19 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True', 'None'],
                      out_words_no=['host0', 'host2',
-                                   'label1', 'label4', 'False'])
+                                   'label1', 'False'])
 
 
     def test_execute_list_filter_two_hosts(self):
         mfile = cli_mock.create_file('host2')
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '--mlist', mfile.name, '--ignore_site_file'],
+                           '--mlist', mfile.name],
                      # This is a bit fragile as the list order may change...
                      rpcs=[('get_hosts', {'hostname__in': ['host2', 'host1']},
                             True,
@@ -222,7 +216,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2},
@@ -232,15 +225,14 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'False'])
         mfile.clean()
 
@@ -248,7 +240,7 @@ class host_list_unittest(cli_mock.cli_unittest):
     def test_execute_list_filter_two_hosts_one_not_found(self):
         mfile = cli_mock.create_file('host2')
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '--mlist', mfile.name, '--ignore_site_file'],
+                           '--mlist', mfile.name],
                      # This is a bit fragile as the list order may change...
                      rpcs=[('get_hosts', {'hostname__in': ['host2', 'host1']},
                             True,
@@ -258,14 +250,13 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['Ready', 'plat1',
-                                   'label3', 'label4', 'True', 'None'],
+                                   'label3', 'True', 'None'],
                      out_words_no=['host1', 'False'],
                      err_words_ok=['host1'])
         mfile.clean()
@@ -273,7 +264,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
     def test_execute_list_filter_two_hosts_none_found(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           'host1', 'host2', '--ignore_site_file'],
+                           'host1', 'host2'],
                      # This is a bit fragile as the list order may change...
                      rpcs=[('get_hosts', {'hostname__in': ['host2', 'host1']},
                             True,
@@ -285,7 +276,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
     def test_execute_list_filter_label(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '-b', 'label3', '--ignore_site_file'],
+                           '-b', 'label3'],
                      rpcs=[('get_hosts', {'labels__name__in': ['label3']},
                             True,
                             [{u'status': u'Ready',
@@ -296,7 +287,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2},
@@ -306,21 +296,20 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
                               u'shard': None,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'False'])
 
 
     def test_execute_list_filter_multi_labels(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '-b', 'label3,label2', '--ignore_site_file'],
+                           '-b', 'label3,label2'],
                      rpcs=[('get_hosts', {'multiple_labels': ['label2',
                                                               'label3']},
                             True,
@@ -332,7 +321,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat0',
                               u'id': 2},
@@ -344,22 +332,19 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label3', u'label2', u'plat2'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat2',
                               u'id': 4}])],
                      out_words_ok=['host1', 'host3', 'Ready', 'plat0',
                                    'label2', 'label3', 'plat2', 'None'],
-                     out_words_no=['host2', 'label4', 'False', 'plat1'])
+                     out_words_no=['host2', 'False', 'plat1'])
 
 
     def test_execute_list_filter_three_labels(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '-b', 'label3,label2, label4',
-                           '--ignore_site_file'],
+                           '-b', 'label3,label2'],
                      rpcs=[('get_hosts', {'multiple_labels': ['label2',
-                                                              'label3',
-                                                              'label4']},
+                                                              'label3']},
                             True,
                             [{u'status': u'Ready',
                               u'hostname': u'host2',
@@ -367,22 +352,19 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label2', u'label4',
-                                          u'plat1'],
+                              u'labels': [u'label3', u'label2', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 3}])],
                      out_words_ok=['host2', 'plat1',
-                                   'label2', 'label3', 'label4', 'None'],
+                                   'label2', 'label3', 'None'],
                      out_words_no=['host1', 'host3'])
 
 
     def test_execute_list_filter_wild_labels(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '-b', 'label*',
-                           '--ignore_site_file'],
+                           '-b', 'label*'],
                      rpcs=[('get_hosts',
                             {'labels__name__startswith': 'label'},
                             True,
@@ -393,32 +375,30 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label2', u'label4',
-                                          u'plat1'],
+                              u'labels': [u'label3', u'label2', u'plat1'],
                               u'invalid': 0,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host2', 'plat1',
-                                   'label2', 'label3', 'label4', 'None'],
+                                   'label2', 'label3', 'None'],
                      out_words_no=['host1', 'host3'])
 
 
     def test_execute_list_filter_multi_labels_no_results(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '-b', 'label3,label2, ', '--ignore_site_file'],
+                           '-b', 'label3,label2, '],
                      rpcs=[('get_hosts', {'multiple_labels': ['label2',
                                                               'label3']},
                             True,
                             [])],
                      out_words_ok=[],
                      out_words_no=['host1', 'host2', 'host3',
-                                   'label2', 'label3', 'label4'])
+                                   'label2', 'label3'])
 
 
     def test_execute_list_filter_label_and_hosts(self):
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '-b', 'label3', 'host2', '--ignore_site_file'],
+                           '-b', 'label3', 'host2'],
                      rpcs=[('get_hosts', {'labels__name__in': ['label3'],
                                           'hostname__in': ['host2', 'host1']},
                             True,
@@ -430,7 +410,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'lock_reason': u'',
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2},
@@ -440,21 +419,20 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'False'])
 
 
     def test_execute_list_filter_label_and_hosts_none(self):
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '-b', 'label3', 'host2', '--ignore_site_file'],
+                           '-b', 'label3', 'host2'],
                      rpcs=[('get_hosts', {'labels__name__in': ['label3'],
                                           'hostname__in': ['host2', 'host1']},
                             True,
@@ -466,7 +444,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
     def test_execute_list_filter_status(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '-s', 'Ready', '--ignore_site_file'],
+                           '-s', 'Ready'],
                      rpcs=[('get_hosts', {'status__in': ['Ready']},
                             True,
                             [{u'status': u'Ready',
@@ -477,7 +455,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2},
@@ -487,22 +464,21 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'False'])
 
 
 
     def test_execute_list_filter_status_and_hosts(self):
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '-s', 'Ready', 'host2', '--ignore_site_file'],
+                           '-s', 'Ready', 'host2'],
                      rpcs=[('get_hosts', {'status__in': ['Ready'],
                                           'hostname__in': ['host2', 'host1']},
                             True,
@@ -514,7 +490,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2},
@@ -524,22 +499,21 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'False'])
 
 
     def test_execute_list_filter_status_and_hosts_none(self):
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
                            '--status', 'Repair',
-                           'host2', '--ignore_site_file'],
+                           'host2'],
                      rpcs=[('get_hosts', {'status__in': ['Repair'],
                                           'hostname__in': ['host2', 'host1']},
                             True,
@@ -552,7 +526,7 @@ class host_list_unittest(cli_mock.cli_unittest):
     def test_execute_list_filter_statuses_and_hosts_none(self):
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
                            '--status', 'Repair',
-                           'host2', '--ignore_site_file'],
+                           'host2'],
                      rpcs=[('get_hosts', {'status__in': ['Repair'],
                                           'hostname__in': ['host2', 'host1']},
                             True,
@@ -564,7 +538,7 @@ class host_list_unittest(cli_mock.cli_unittest):
 
     def test_execute_list_filter_locked(self):
         self.run_cmd(argv=['atest', 'host', 'list', 'host1',
-                           '--locked', 'host2', '--ignore_site_file'],
+                           '--locked', 'host2'],
                      rpcs=[('get_hosts', {'locked': True,
                                           'hostname__in': ['host2', 'host1']},
                             True,
@@ -576,7 +550,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'shard': None,
                               u'id': 2},
@@ -586,21 +559,20 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_reason': u'',
                               u'lock_time': u'2008-07-23 12:54:15',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'True',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'False'])
 
 
     def test_execute_list_filter_unlocked(self):
         self.run_cmd(argv=['atest', 'host', 'list',
-                           '--unlocked', '--ignore_site_file'],
+                           '--unlocked'],
                      rpcs=[('get_hosts', {'locked': False},
                             True,
                             [{u'status': u'Ready',
@@ -611,7 +583,6 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'lock_reason': u'',
                               u'labels': [u'label2', u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 2},
@@ -621,23 +592,21 @@ class host_list_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'lock_reason': u'',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
                               u'shard': None,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'id': 3}])],
                      out_words_ok=['host1', 'Ready', 'plat1',
                                    'label2', 'label3', 'False',
-                                   'host2', 'label4', 'None'],
+                                   'host2', 'None'],
                      out_words_no=['host0', 'label1', 'True'])
 
 
 class host_stat_unittest(cli_mock.cli_unittest):
     def test_execute_stat_two_hosts(self):
         # The order of RPCs between host1 and host0 could change...
-        self.run_cmd(argv=['atest', 'host', 'stat', 'host0', 'host1',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'stat', 'host0', 'host1'],
                      rpcs=[('get_hosts', {'hostname': 'host1'},
                             True,
                             [{u'status': u'Ready',
@@ -647,9 +616,8 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_reason': u'',
                               u'protection': 'No protection',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'shard': None,
                               u'platform': u'plat1',
                               u'id': 3,
@@ -666,7 +634,6 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
                               u'shard': None,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 2,
                               u'attributes': {}}]),
@@ -714,7 +681,7 @@ class host_stat_unittest(cli_mock.cli_unittest):
 
     def test_execute_stat_one_bad_host_verbose(self):
         self.run_cmd(argv=['atest', 'host', 'stat', 'host0',
-                           'host1', '-v', '--ignore_site_file'],
+                           'host1', '-v'],
                      rpcs=[('get_hosts', {'hostname': 'host1'},
                             True,
                             []),
@@ -729,7 +696,6 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'protection': u'No protection',
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 2,
                               u'attributes': {}}]),
@@ -765,8 +731,7 @@ class host_stat_unittest(cli_mock.cli_unittest):
 
 
     def test_execute_stat_one_bad_host(self):
-        self.run_cmd(argv=['atest', 'host', 'stat', 'host0', 'host1',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'stat', 'host0', 'host1'],
                      rpcs=[('get_hosts', {'hostname': 'host1'},
                             True,
                             []),
@@ -781,7 +746,6 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'protection': u'No protection',
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 2,
                               u'attributes': {}}]),
@@ -818,8 +782,7 @@ class host_stat_unittest(cli_mock.cli_unittest):
 
     def test_execute_stat_wildcard(self):
         # The order of RPCs between host1 and host0 could change...
-        self.run_cmd(argv=['atest', 'host', 'stat', 'ho*',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'stat', 'ho*'],
                      rpcs=[('get_hosts', {'hostname__startswith': 'ho'},
                             True,
                             [{u'status': u'Ready',
@@ -829,9 +792,8 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_reason': u'',
                               u'protection': 'No protection',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'id': 3,
                               u'attributes': {}},
@@ -844,7 +806,6 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'protection': u'No protection',
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 2,
                               u'attributes': {}}]),
@@ -892,8 +853,7 @@ class host_stat_unittest(cli_mock.cli_unittest):
 
     def test_execute_stat_wildcard_and_host(self):
         # The order of RPCs between host1 and host0 could change...
-        self.run_cmd(argv=['atest', 'host', 'stat', 'ho*', 'newhost0',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'stat', 'ho*', 'newhost0'],
                      rpcs=[('get_hosts', {'hostname': 'newhost0'},
                             True,
                             [{u'status': u'Ready',
@@ -905,7 +865,6 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'protection': u'No protection',
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 5,
                               u'attributes': {}}]),
@@ -918,9 +877,8 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'locked_by': 'user0',
                               u'lock_reason': u'',
                               u'protection': 'No protection',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'id': 3,
                               u'attributes': {}},
@@ -933,7 +891,6 @@ class host_stat_unittest(cli_mock.cli_unittest):
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 2,
                               u'attributes': {}}]),
@@ -1006,8 +963,7 @@ class host_stat_unittest(cli_mock.cli_unittest):
 
 class host_jobs_unittest(cli_mock.cli_unittest):
     def test_execute_jobs_one_host(self):
-        self.run_cmd(argv=['atest', 'host', 'jobs', 'host0',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'jobs', 'host0'],
                      rpcs=[('get_host_queue_entries',
                             {'host__hostname': 'host0', 'query_limit': 20,
                              'sort_by': ['-job__id']},
@@ -1019,8 +975,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'locked_by': 'user0',
                                         u'hostname': u'host0',
                                         u'invalid': False,
-                                        u'id': 3232,
-                                        u'synch_id': None},
+                                        u'id': 3232},
                               u'priority': 0,
                               u'meta_host': u'meta0',
                               u'job': {u'control_file':
@@ -1035,7 +990,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                        u'owner': u'user0',
                                        u'created_on': u'2008-01-09 10:45:12',
                                        u'synch_count': None,
-                                       u'synch_type': u'Asynchronous',
                                        u'id': 216},
                                        u'active': 0,
                                        u'id': 2981},
@@ -1046,8 +1000,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                          u'locked_by': 'user0',
                                          u'hostname': u'host0',
                                          u'invalid': False,
-                                         u'id': 3232,
-                                         u'synch_id': None},
+                                         u'id': 3232},
                                u'priority': 0,
                                u'meta_host': None,
                                u'job': {u'control_file':
@@ -1059,7 +1012,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'owner': u'user1',
                                         u'created_on': u'2008-01-17 15:04:53',
                                         u'synch_count': None,
-                                        u'synch_type': u'Asynchronous',
                                         u'id': 289},
                                u'active': 0,
                                u'id': 3167}])],
@@ -1070,8 +1022,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
 
 
     def test_execute_jobs_wildcard(self):
-        self.run_cmd(argv=['atest', 'host', 'jobs', 'ho*',
-                           '--ignore_site_file'],
+        self.run_cmd(argv=['atest', 'host', 'jobs', 'ho*'],
                      rpcs=[('get_hosts', {'hostname__startswith': 'ho'},
                             True,
                             [{u'status': u'Ready',
@@ -1079,9 +1030,8 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                               u'locked': True,
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'locked_by': 'user0',
-                              u'labels': [u'label3', u'label4', u'plat1'],
+                              u'labels': [u'label3', u'plat1'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat1',
                               u'id': 3},
                             {u'status': u'Ready',
@@ -1091,7 +1041,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                               u'lock_time': u'2008-07-23 12:54:15',
                               u'labels': [u'label0', u'plat0'],
                               u'invalid': False,
-                              u'synch_id': None,
                               u'platform': u'plat0',
                               u'id': 2}]),
                            ('get_host_queue_entries',
@@ -1105,8 +1054,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'locked_by': 'user0',
                                         u'hostname': u'host1',
                                         u'invalid': False,
-                                        u'id': 3232,
-                                        u'synch_id': None},
+                                        u'id': 3232},
                               u'priority': 0,
                               u'meta_host': u'meta0',
                               u'job': {u'control_file':
@@ -1121,7 +1069,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                        u'owner': u'user0',
                                        u'created_on': u'2008-01-09 10:45:12',
                                        u'synch_count': None,
-                                       u'synch_type': u'Asynchronous',
                                        u'id': 216},
                                        u'active': 0,
                                        u'id': 2981},
@@ -1132,8 +1079,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                          u'locked_by': 'user0',
                                          u'hostname': u'host1',
                                          u'invalid': False,
-                                         u'id': 3232,
-                                         u'synch_id': None},
+                                         u'id': 3232},
                                u'priority': 0,
                                u'meta_host': None,
                                u'job': {u'control_file':
@@ -1145,7 +1091,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'owner': u'user1',
                                         u'created_on': u'2008-01-17 15:04:53',
                                         u'synch_count': None,
-                                        u'synch_type': u'Asynchronous',
                                         u'id': 289},
                                u'active': 0,
                                u'id': 3167}]),
@@ -1160,8 +1105,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'locked_by': 'user0',
                                         u'hostname': u'host0',
                                         u'invalid': False,
-                                        u'id': 3232,
-                                        u'synch_id': None},
+                                        u'id': 3232},
                               u'priority': 0,
                               u'meta_host': u'meta0',
                               u'job': {u'control_file':
@@ -1176,7 +1120,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                        u'owner': u'user0',
                                        u'created_on': u'2008-01-09 10:45:12',
                                        u'synch_count': None,
-                                       u'synch_type': u'Asynchronous',
                                        u'id': 216},
                                        u'active': 0,
                                        u'id': 2981},
@@ -1187,8 +1130,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                          u'locked_by': 'user0',
                                          u'hostname': u'host0',
                                          u'invalid': False,
-                                         u'id': 3232,
-                                         u'synch_id': None},
+                                         u'id': 3232},
                                u'priority': 0,
                                u'meta_host': None,
                                u'job': {u'control_file':
@@ -1200,7 +1142,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'owner': u'user1',
                                         u'created_on': u'2008-01-17 15:04:53',
                                         u'synch_count': None,
-                                        u'synch_type': u'Asynchronous',
                                         u'id': 289},
                                u'active': 0,
                                u'id': 3167}])],
@@ -1211,8 +1152,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
 
 
     def test_execute_jobs_one_host_limit(self):
-        self.run_cmd(argv=['atest', 'host', 'jobs', 'host0',
-                           '--ignore_site_file', '-q', '10'],
+        self.run_cmd(argv=['atest', 'host', 'jobs', 'host0', '-q', '10'],
                      rpcs=[('get_host_queue_entries',
                             {'host__hostname': 'host0', 'query_limit': 10,
                              'sort_by': ['-job__id']},
@@ -1224,8 +1164,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'locked_by': 'user0',
                                         u'hostname': u'host0',
                                         u'invalid': False,
-                                        u'id': 3232,
-                                        u'synch_id': None},
+                                        u'id': 3232},
                               u'priority': 0,
                               u'meta_host': u'meta0',
                               u'job': {u'control_file':
@@ -1240,7 +1179,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                        u'owner': u'user0',
                                        u'created_on': u'2008-01-09 10:45:12',
                                        u'synch_count': None,
-                                       u'synch_type': u'Asynchronous',
                                        u'id': 216},
                                        u'active': 0,
                                        u'id': 2981},
@@ -1251,8 +1189,7 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                          u'locked_by': 'user0',
                                          u'hostname': u'host0',
                                          u'invalid': False,
-                                         u'id': 3232,
-                                         u'synch_id': None},
+                                         u'id': 3232},
                                u'priority': 0,
                                u'meta_host': None,
                                u'job': {u'control_file':
@@ -1264,7 +1201,6 @@ class host_jobs_unittest(cli_mock.cli_unittest):
                                         u'owner': u'user1',
                                         u'created_on': u'2008-01-17 15:04:53',
                                         u'synch_count': None,
-                                        u'synch_type': u'Asynchronous',
                                         u'id': 289},
                                u'active': 0,
                                u'id': 3167}])],

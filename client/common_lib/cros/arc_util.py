@@ -11,21 +11,20 @@ import select
 import tempfile
 import time
 
-from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.common_lib.cros import arc_common
+from telemetry.core import exceptions
 from telemetry.internal.browser import extension_page
 
 _ARC_SUPPORT_HOST_URL = 'chrome-extension://cnbgggchhmkkdmeppjobngjoejnihlei/'
 _ARC_SUPPORT_HOST_PAGENAME = '_generated_background_page.html'
 _DUMPSTATE_DEFAULT_TIMEOUT = 20
 _DUMPSTATE_PATH = '/var/log/arc-dumpstate.log'
-_DUMPSTATE_PIPE_PATH = '/var/run/arc/bugreport/pipe'
-_USERNAME = 'powerloadtest@gmail.com'
-_USERNAME_DISPLAY = 'power.loadtest@gmail.com'
-_PLTP_URL = 'https://sites.google.com/a/chromium.org/dev/chromium-os' \
-                '/testing/power-testing/pltp/pltp'
+_DUMPSTATE_PIPE_PATH = '/run/arc/bugreport/pipe'
+_USERNAME = 'crosarcplusplustest@gmail.com'
+_ARCP_URL = 'https://sites.google.com/a/chromium.org/dev/chromium-os' \
+                '/testing/arcplusplus-testing/arcp'
 _OPT_IN_BEGIN = 'Initializing ARC opt-in flow.'
 _OPT_IN_FINISH = 'ARC opt-in flow complete.'
 
@@ -58,12 +57,19 @@ def post_processing_after_browser(chrome):
     @param chrome: Chrome object.
 
     """
-    # Wait for Android container ready if ARC is enabled.
-    if chrome.arc_mode == arc_common.ARC_MODE_ENABLED:
-        arc_common.wait_for_android_boot()
     # Remove any stale dumpstate files.
     if os.path.isfile(_DUMPSTATE_PATH):
         os.unlink(_DUMPSTATE_PATH)
+
+    # Wait for Android container ready if ARC is enabled.
+    if chrome.arc_mode == arc_common.ARC_MODE_ENABLED:
+        try:
+            arc_common.wait_for_android_boot()
+        except Exception:
+            # Save dumpstate so that we can figure out why boot does not
+            # complete.
+            _save_android_dumpstate()
+            raise
 
 
 def pre_processing_before_close(chrome):
@@ -81,41 +87,52 @@ def pre_processing_before_close(chrome):
     # logcat for all tests
 
     # Save dumpstate just before logout.
+    _save_android_dumpstate()
+
+
+def _save_android_dumpstate(timeout=_DUMPSTATE_DEFAULT_TIMEOUT):
+    """
+    Triggers a dumpstate and saves its contents to to /var/log/arc-dumpstate.log
+    with logging.
+
+    Exception thrown while doing dumpstate will be ignored.
+
+    @param timeout: The timeout in seconds.
+    """
+
     try:
         logging.info('Saving Android dumpstate.')
-        _save_android_dumpstate()
+        with open(_DUMPSTATE_PATH, 'w') as out:
+            # _DUMPSTATE_PIPE_PATH is a named pipe, so it permanently blocks if
+            # opened normally if the other end has not been opened. In order to
+            # avoid that, open the file with O_NONBLOCK and use a select loop to
+            # read from the file with a timeout.
+            fd = os.open(_DUMPSTATE_PIPE_PATH, os.O_RDONLY | os.O_NONBLOCK)
+            with os.fdopen(fd, 'r') as pipe:
+                end_time = time.time() + timeout
+                while True:
+                    remaining_time = end_time - time.time()
+                    if remaining_time <= 0:
+                        break
+                    rlist, _, _ = select.select([pipe], [], [], remaining_time)
+                    if pipe not in rlist:
+                        break
+                    buf = os.read(pipe.fileno(), 1024)
+                    if len(buf) == 0:
+                        break
+                    out.write(buf)
         logging.info('Android dumpstate successfully saved.')
     except Exception:
         # Dumpstate is nice-to-have stuff. Do not make it as a fatal error.
         logging.exception('Failed to save Android dumpstate.')
 
 
-def _save_android_dumpstate(timeout=_DUMPSTATE_DEFAULT_TIMEOUT):
-    """
-    Triggers a dumpstate and saves its contents to to /var/log/arc-dumpstate.log
-
-    @param timeout: The timeout in seconds.
-    """
-
-    with open(_DUMPSTATE_PATH, 'w') as out:
-        # _DUMPSTATE_PIPE_PATH is a named pipe, so it permanently blocks if
-        # opened normally if the other end has not been opened. In order to
-        # avoid that, open the file with O_NONBLOCK and use a select loop to
-        # read from the file with a timeout.
-        fd = os.open(_DUMPSTATE_PIPE_PATH, os.O_RDONLY | os.O_NONBLOCK)
-        with os.fdopen(fd, 'r') as pipe:
-            end_time = time.time() + timeout
-            while True:
-                remaining_time = end_time - time.time()
-                if remaining_time <= 0:
-                    break
-                rlist, _, _ = select.select([pipe], [], [], remaining_time)
-                if pipe not in rlist:
-                    break
-                buf = os.read(pipe.fileno(), 1024)
-                if len(buf) == 0:
-                    break
-                out.write(buf)
+def get_test_account_info():
+    """Retrieve test account information."""
+    with tempfile.NamedTemporaryFile() as pltp:
+        file_utils.download_file(_ARCP_URL, pltp.name)
+        password = pltp.read().rstrip()
+    return (_USERNAME, password)
 
 
 def set_browser_options_for_opt_in(b_options):
@@ -125,56 +142,58 @@ def set_browser_options_for_opt_in(b_options):
     @param b_options: browser options object used by chrome.Chrome.
 
     """
-    b_options.username = _USERNAME
-    with tempfile.NamedTemporaryFile() as pltp:
-        file_utils.download_file(_PLTP_URL, pltp.name)
-        b_options.password = pltp.read().rstrip()
+    b_options.username, b_options.password = get_test_account_info()
     b_options.disable_default_apps = False
     b_options.disable_component_extensions_with_background_pages = False
     b_options.gaia_login = True
 
 
-def enable_arc_setting(browser):
+def enable_play_store(autotest_ext, enabled):
     """
-    Enable ARC++ via the settings page checkbox.
+    Enable ARC++ Play Store
 
     Do nothing if the account is managed.
 
-    @param browser: chrome.Chrome broswer object.
+    @param autotest_ext: autotest extension object.
+
+    @param enabled: if True then perform opt-in, otherwise opt-out.
 
     @returns: True if the opt-in should continue; else False.
 
     """
-    settings_tab = browser.tabs.New()
 
+    if autotest_ext is None:
+         raise error.TestFail(
+                 'Could not change the Play Store enabled state because '
+                 'autotest API does not exist')
+
+    # Skip enabling for managed users, since value is policy enforced.
+    # Return early if a managed user has ArcEnabled set to false.
     try:
-        settings_tab.Navigate('chrome://settings')
-        settings_tab.WaitForDocumentReadyStateToBeComplete()
-
-        try:
-            settings_tab.ExecuteJavaScript(
-                    'assert(document.getElementById("android-apps-enabled"))')
-        except Exception, e:
-            raise error.TestFail('Could not locate section in chrome://settings'
-                                 ' to enable arc. Make sure ARC is available.')
-
-        # Skip enabling for managed users, since value is policy enforced.
-        # Return early if a managed user has ArcEnabled set to false.
-        is_managed = settings_tab.EvaluateJavaScript(
-                'document.getElementById("android-apps-enabled").disabled')
+        autotest_ext.ExecuteJavaScript('''
+            chrome.autotestPrivate.getPlayStoreState(function(state) {
+              window.__play_store_state = state;
+            });
+        ''')
+        # Results must be available by the next invocation.
+        is_managed = autotest_ext.EvaluateJavaScript(
+            'window.__play_store_state.managed')
         if is_managed:
             logging.info('Determined that ARC is managed by user policy.')
-            policy_value = settings_tab.EvaluateJavaScript(
-                    'document.getElementById("android-apps-enabled").checked')
-            if not policy_value:
+            policy_enabled = autotest_ext.EvaluateJavaScript(
+                'window.__play_store_state.enabled')
+            if enabled != policy_enabled:
                 logging.info(
-                        'Returning early since ARC is policy-enforced off.')
+                    'Returning early since ARC is policy-enforced.')
                 return False
         else:
-            settings_tab.ExecuteJavaScript(
-                    'Preferences.setBooleanPref("arc.enabled", true, true)')
-    finally:
-        settings_tab.Close()
+            autotest_ext.ExecuteJavaScript('''
+                    chrome.autotestPrivate.setPlayStoreEnabled(
+                        %s, function(enabled) {});
+                ''' % ('true' if enabled else 'false'))
+    except exceptions.EvaluateException as e:
+        raise error.TestFail('Could not change the Play Store enabled state '
+                             ' via autotest API. "%s".' % e)
 
     return True
 
@@ -213,70 +232,29 @@ def find_opt_in_extension_page(browser):
             '(termsPage.isManaged_ || termsPage.state_ == LoadState.LOADED)']
     try:
         for condition in js_code_did_start_conditions:
-            extension_main_page.WaitForJavaScriptExpression(condition, 60.0)
+            extension_main_page.WaitForJavaScriptCondition(condition,
+                                                           timeout=60)
     except Exception, e:
         raise error.TestError('Error waiting for "%s": "%s".' % (condition, e))
 
     return extension_main_page
 
 
-def navigate_opt_in_extension(extension_main_page):
+def opt_in_and_wait_for_completion(extension_main_page):
     """
-    Step through the user input of the opt-in extension.
-
-    @param extension_main_page: opt-in extension object.
-
-    @raises error.TestFail if problem found.
-
-    """
-    js_code_click_agree = """
-        doc = appWindow.contentWindow.document;
-        agree_button_element = doc.getElementById('button-agree');
-        agree_button_element.click();
-    """
-    extension_main_page.ExecuteJavaScript(js_code_click_agree)
-
-    js_code_is_lso_section_active = """
-        !appWindow.contentWindow.document.getElementById('lso').hidden
-    """
-    try:
-        extension_main_page.WaitForJavaScriptExpression(
-            js_code_is_lso_section_active, 120)
-    except Exception, e:
-        raise error.TestFail('Error occured while waiting for lso session. '
-                             'Make sure gaia login was used.')
-
-    web_views = utils.poll_for_condition(
-            extension_main_page.GetWebviewContexts, timeout=60,
-            exception=error.TestError('WebviewContexts error during opt in!'))
-
-    js_code_is_sign_in_button_enabled = """
-        !document.getElementById('submit_approve_access')
-            .hasAttribute('disabled')
-    """
-    web_views[0].WaitForJavaScriptExpression(
-            js_code_is_sign_in_button_enabled, 60.0)
-
-    js_code_click_sign_in = """
-        sign_in_button_element = document.getElementById('submit_approve_access');
-        sign_in_button_element.click();
-    """
-    web_views[0].ExecuteJavaScript(js_code_click_sign_in)
-
-
-def wait_for_opt_in_to_complete(extension_main_page):
-    """
-    Wait for opt-in app to close (i.e. complete sign in).
+    Step through the user input of the opt-in extension and wait for completion.
 
     @param extension_main_page: opt-in extension object.
 
     @raises error.TestFail if opt-in doesn't complete after timeout.
 
     """
+    extension_main_page.ExecuteJavaScript('termsPage.onAgree()')
+
     SIGN_IN_TIMEOUT = 120
     try:
-        extension_main_page.WaitForJavaScriptExpression('!appWindow',
-                                                        SIGN_IN_TIMEOUT)
+        extension_main_page.WaitForJavaScriptCondition('!appWindow',
+                                                       timeout=SIGN_IN_TIMEOUT)
     except Exception, e:
         js_read_error_message = """
             err = appWindow.contentWindow.document.getElementById(
@@ -293,23 +271,28 @@ def wait_for_opt_in_to_complete(extension_main_page):
         else:
             raise error.TestFail('Opt-in app did not finish running after %s '
                                  'seconds!' % SIGN_IN_TIMEOUT)
+    # Reset termsPage to be able to reuse OptIn page and wait condition for ToS
+    # are loaded.
+    extension_main_page.ExecuteJavaScript('termsPage = null')
 
 
-def opt_in(browser):
+def opt_in(browser, autotest_ext):
     """
     Step through opt in and wait for it to complete.
 
     Return early if the arc_setting cannot be set True.
 
-    @param browser: chrome.Chrome broswer object.
+    @param browser: chrome.Chrome browser object.
+    @param autotest_ext: autotest extension object.
 
     @raises: error.TestFail if opt in fails.
 
     """
+
     logging.info(_OPT_IN_BEGIN)
-    if not enable_arc_setting(browser):
+    if not enable_play_store(autotest_ext, True):
         return
+
     extension_main_page = find_opt_in_extension_page(browser)
-    navigate_opt_in_extension(extension_main_page)
-    wait_for_opt_in_to_complete(extension_main_page)
+    opt_in_and_wait_for_completion(extension_main_page)
     logging.info(_OPT_IN_FINISH)

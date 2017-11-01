@@ -4,7 +4,6 @@
 
 import collections, logging, numpy, os, tempfile, time
 from autotest_lib.client.bin import utils, test
-from autotest_lib.client.common_lib import base_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.common_lib.cros import chrome
@@ -237,7 +236,9 @@ class power_LoadTest(test.test):
 
         measurements = \
             [power_status.SystemPower(self._power_status.battery_path)]
-        if power_utils.has_rapl_support():
+        if power_utils.has_powercap_support():
+            measurements += power_rapl.create_powercap()
+        elif power_utils.has_rapl_support():
             measurements += power_rapl.create_rapl()
         self._plog = power_status.PowerLogger(measurements, seconds_period=20)
         self._tlog = power_status.TempLogger([], seconds_period=20)
@@ -428,7 +429,8 @@ class power_LoadTest(test.test):
             if self._gaia_login:
                 self.output_perf_value(description='minutes_battery_life',
                                        value=keyvals['minutes_battery_life'],
-                                       units='minutes')
+                                       units='minutes',
+                                       higher_is_better=True)
 
         if not self._gaia_login:
             keyvals = dict(map(lambda (key, value):
@@ -438,8 +440,9 @@ class power_LoadTest(test.test):
                 if key.startswith('percent_cpuidle') and \
                    key.endswith('C0_time'):
                     self.output_perf_value(description=key,
-                                       value=value,
-                                        units='percent')
+                                           value=value,
+                                           units='percent',
+                                           higher_is_better=False)
 
         self.write_perf_keyval(keyvals)
         self._plog.save_results(self.resultsdir)
@@ -576,7 +579,7 @@ class power_LoadTest(test.test):
         # If the command exits with a failure status,
         # we do not have a light sensor
         cmd = 'check_powerd_config --ambient_light_sensor'
-        result = base_utils.run(cmd, ignore_status=True)
+        result = utils.run(cmd, ignore_status=True)
         if result.exit_status:
             logging.debug('Ambient light sensor not present')
             return False
@@ -639,7 +642,7 @@ class power_LoadTest(test.test):
         """
 
         cmd = 'check_powerd_config --hover_detection'
-        result = base_utils.run(cmd, ignore_status=True)
+        result = utils.run(cmd, ignore_status=True)
         if result.exit_status:
             logging.debug('Hover not present')
             return False

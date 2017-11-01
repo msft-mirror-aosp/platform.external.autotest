@@ -8,12 +8,12 @@ import StringIO
 
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import dev_server
-from autotest_lib.server import afe_utils
 
 
 TELEMETRY_RUN_BENCHMARKS_SCRIPT = 'tools/perf/run_benchmark'
 TELEMETRY_RUN_TESTS_SCRIPT = 'tools/telemetry/run_tests'
-TELEMETRY_TIMEOUT_MINS = 120
+TELEMETRY_RUN_GPU_TESTS_SCRIPT = 'content/test/gpu/run_gpu_integration_test.py'
+TELEMETRY_TIMEOUT_MINS = 150
 
 DUT_CHROME_ROOT = '/usr/local/telemetry/src'
 DUT_COMMON_SSH_OPTIONS = ['-o StrictHostKeyChecking=no',
@@ -48,6 +48,7 @@ ON_DUT_WHITE_LIST = ['dromaeo.domcoreattr',
                      'memory.top_7_stress',
                      'octane',
                      'page_cycler.typical_25',
+                     'page_cycler_v2.typical_25',
                      'robohornet_pro',
                      'smoothness.top_25_smooth',
                      'smoothness.tough_animation_cases',
@@ -57,9 +58,9 @@ ON_DUT_WHITE_LIST = ['dromaeo.domcoreattr',
                      'smoothness.tough_scrolling_cases',
                      'smoothness.tough_webgl_cases',
                      'speedometer',
-                     'startup.cold.blank_page',
                      'sunspider',
                      'tab_switching.top_10',
+                     'tab_switching.typical_25',
                      'webrtc.peerconnection',
                      'webrtc.stress']
 
@@ -148,20 +149,19 @@ class TelemetryRunner(object):
         """Setup Telemetry to use the devserver."""
         logging.debug('Setting up telemetry for devserver testing')
         logging.debug('Grabbing build from AFE.')
-
-        build = afe_utils.get_build(self._host)
-        if not build:
+        info = self._host.host_info_store.get()
+        if not info.build:
             logging.error('Unable to locate build label for host: %s.',
                           self._host.hostname)
             raise error.AutotestError('Failed to grab build for host %s.' %
                                       self._host.hostname)
 
-        logging.debug('Setting up telemetry for build: %s', build)
+        logging.debug('Setting up telemetry for build: %s', info.build)
 
-        self._devserver = dev_server.ImageServer.resolve(build,
-                hostname=self._host.hostname)
-        self._devserver.stage_artifacts(build, ['autotest_packages'])
-        self._telemetry_path = self._devserver.setup_telemetry(build=build)
+        self._devserver = dev_server.ImageServer.resolve(
+                info.build, hostname=self._host.hostname)
+        self._devserver.stage_artifacts(info.build, ['autotest_packages'])
+        self._telemetry_path = self._devserver.setup_telemetry(build=info.build)
 
 
     def _setup_local_telemetry(self):
@@ -209,8 +209,7 @@ class TelemetryRunner(object):
         """
         telemetry_cmd = []
         if self._devserver:
-            devserver_hostname = dev_server.DevServer.get_server_name(
-                    self._devserver.url())
+            devserver_hostname = self._devserver.hostname
             telemetry_cmd.extend(['ssh', devserver_hostname])
 
         if self._telemetry_on_dut:
@@ -250,8 +249,7 @@ class TelemetryRunner(object):
         devserver_hostname = ''
         if perf_results_dir:
             if self._devserver:
-                devserver_hostname = dev_server.DevServer.get_server_name(
-                        self._devserver.url()) + ':'
+                devserver_hostname = self._devserver.hostname + ':'
             if self._telemetry_on_dut:
                 src = ('root@%s:%s/results-chart.json' %
                        (self._host.hostname, DUT_CHROME_ROOT))
@@ -403,6 +401,40 @@ class TelemetryRunner(object):
         if perf_value_writer:
             self._run_scp(perf_value_writer.resultsdir)
         return result
+
+
+    def run_gpu_integration_test(self, test, *args):
+        """Runs a gpu test on a dut.
+
+        @param test: Gpu test we want to run.
+        @param args: additional list of arguments to pass to the telemetry
+                     execution script.
+
+         @returns A TelemetryResult instance with the results of this telemetry
+                  execution.
+        """
+        script = os.path.join(DUT_CHROME_ROOT,
+                              TELEMETRY_RUN_GPU_TESTS_SCRIPT)
+        cmd = []
+        if self._devserver:
+            devserver_hostname = self._devserver.hostname
+            cmd.extend(['ssh', devserver_hostname])
+
+        cmd.extend(
+                ['ssh',
+                 DUT_SSH_OPTIONS,
+                 self._host.hostname,
+                 'python',
+                 script])
+
+        cmd.extend(args)
+        cmd.append(test)
+        cmd = ' '.join(cmd)
+        stdout, stderr, exit_code = self._run_cmd(cmd)
+
+        return TelemetryResult(exit_code=exit_code, stdout=stdout,
+                               stderr=stderr)
+
 
     def _ensure_deps(self, dut, test_name):
         """

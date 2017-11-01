@@ -29,7 +29,6 @@ class platform_BootPerf(test.test):
       * seconds_kernel_to_signin_start
       * seconds_kernel_to_signin_wait
       * seconds_kernel_to_signin_users
-      * seconds_kernel_to_signin_seen
       * seconds_kernel_to_login
       * seconds_kernel_to_network
       * rdbytes_kernel_to_startup
@@ -43,6 +42,7 @@ class platform_BootPerf(test.test):
       * seconds_power_on_to_lk_start
       * seconds_power_on_to_lk_end
       * seconds_power_on_to_kernel
+      * seconds_power_on_to_login
       * seconds_shutdown_time
       * seconds_reboot_time
       * seconds_reboot_error
@@ -52,9 +52,7 @@ class platform_BootPerf(test.test):
 
     version = 2
 
-    # Names of keyvals, their associated bootstat events, 'needs_x' flag and
-    # 'Required' flag.
-    # Events that needs X are not checked in the freon world.
+    # Names of keyvals, their associated bootstat events, and 'Required' flag.
     # Test fails if a required event is not found.
     # Each event samples statistics measured since kernel startup
     # at a specific moment on the boot critical path:
@@ -73,9 +71,7 @@ class platform_BootPerf(test.test):
     #     screen initialization and now waits until JS sends "ready" event.
     #   kernel_to_signin_users - The moment when UI thread receives "ready" from
     #     JS code. So V8 is initialized and running, etc...
-    #   kernel_to_signin_seen - The moment when user can actually see signin UI.
-    #   boot-complete - Completion of boot after Chrome presents the
-    #     login screen.
+    #   kernel_to_login - The moment when user can actually see signin UI.
     #   kernel_to_android_start - The moment when Android is started.
     _EVENT_KEYVALS = [
         # N.B.  Keyval attribute names go into a database that
@@ -84,20 +80,19 @@ class platform_BootPerf(test.test):
         # 'rdbytes_', so we have 22 characters wiggle room.
         #
         # ----+----1----+----2--
-        ('kernel_to_startup',       'pre-startup',               False, True),
-        ('kernel_to_startup_done',  'post-startup',              False, True),
-        ('kernel_to_x_started',     'x-started',                 True,  True),
-        ('kernel_to_chrome_exec',   'chrome-exec',               False, True),
-        ('kernel_to_chrome_main',   'chrome-main',               False, True),
+        ('kernel_to_startup',       'pre-startup',                     True),
+        ('kernel_to_startup_done',  'post-startup',                    True),
+        ('kernel_to_chrome_exec',   'chrome-exec',                     True),
+        ('kernel_to_chrome_main',   'chrome-main',                     True),
         # These two events do not happen if device is in OOBE.
-        ('kernel_to_signin_start',  'login-start-signin-screen', False, False),
+        ('kernel_to_signin_start',  'login-start-signin-screen',       False),
         ('kernel_to_signin_wait',
-            'login-wait-for-signin-state-initialize',            False, False),
+            'login-wait-for-signin-state-initialize',                  False),
         # This event doesn't happen if device has no users.
-        ('kernel_to_signin_users',  'login-send-user-list',      False, False),
-        ('kernel_to_signin_seen',   'login-prompt-visible',      False, True),
-        ('kernel_to_login',         'boot-complete',             False, True),
-        ('kernel_to_android_start', 'android-start',             False, False)
+        ('kernel_to_signin_users',  'login-send-user-list',            False),
+        ('kernel_to_login',         'login-prompt-visible',            True),
+        # Not all boards support ARC.
+        ('kernel_to_android_start', 'android-start',                   False)
     ]
 
     _CPU_FREQ_FILE = ('/sys/devices/system/cpu/cpu0'
@@ -112,7 +107,9 @@ class platform_BootPerf(test.test):
     _UPTIME_FILE_GLOB = os.path.join('/tmp', _UPTIME_PREFIX + '*')
     _DISK_FILE_GLOB = os.path.join('/tmp', _DISK_PREFIX + '*')
 
-    _RAMOOPS_FILE = "/dev/pstore/console-ramoops"
+    # The name of this file has changed starting with linux-3.19.
+    # Use a glob to snarf up all existing records.
+    _RAMOOPS_FILE_GLOB = "/dev/pstore/console-ramoops*"
 
 
     def _copy_timestamp_files(self):
@@ -129,10 +126,12 @@ class platform_BootPerf(test.test):
     def _copy_console_ramoops(self):
         """Copy console_ramoops from previous reboot."""
         # If reboot was misbehaving, looking at ramoops may provide clues.
-        try:
-            shutil.copy(self._RAMOOPS_FILE, self.resultsdir)
-        except Exception:
-            pass
+        for path in glob.glob(self._RAMOOPS_FILE_GLOB):
+            try:
+                shutil.copy(path, self.resultsdir)
+                break
+            except Exception:
+                pass
 
     def _parse_bootstat(self, filename, fieldnum):
         """Read values from a bootstat event file.
@@ -293,9 +292,7 @@ class platform_BootPerf(test.test):
                                 be determined.
 
         """
-        for keyval_name, event_name, needs_x, required in self._EVENT_KEYVALS:
-            if needs_x and utils.is_freon():
-                continue
+        for keyval_name, event_name, required in self._EVENT_KEYVALS:
             key = 'seconds_' + keyval_name
             try:
                 results[key] = self._parse_uptime(event_name)
@@ -347,9 +344,7 @@ class platform_BootPerf(test.test):
         # "chrome-main" event because Chrome (not bootstat) generates
         # that event, and it doesn't include the disk statistics.
         # We get around that by ignoring all errors.
-        for keyval_name, event_name, needs_x, required in self._EVENT_KEYVALS:
-            if needs_x and utils.is_freon():
-                continue
+        for keyval_name, event_name, required in self._EVENT_KEYVALS:
             try:
                 key = 'rdbytes_' + keyval_name
                 results[key] = 512 * self._parse_diskstat(event_name)

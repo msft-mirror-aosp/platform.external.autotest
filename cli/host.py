@@ -24,9 +24,10 @@ import re
 import socket
 
 from autotest_lib.cli import action_common, rpc, topic_common
-from autotest_lib.client.bin import utils
+from autotest_lib.client.bin import utils as bin_utils
 from autotest_lib.client.common_lib import error, host_protections
 from autotest_lib.server import frontend, hosts
+from autotest_lib.server.hosts import host_info
 
 
 class host(topic_common.atest):
@@ -154,6 +155,7 @@ class host_list(action_common.atest_list, host):
 
 
     def execute(self):
+        """Execute 'atest host list'."""
         filters = {}
         check_results = {}
         if self.hosts:
@@ -194,6 +196,10 @@ class host_list(action_common.atest_list, host):
 
 
     def output(self, results):
+        """Print output of 'atest host list'.
+
+        @param results: the results to be printed.
+        """
         if results:
             # Remove the platform from the labels.
             for result in results:
@@ -213,6 +219,7 @@ class host_stat(host):
     usage_action = 'stat'
 
     def execute(self):
+        """Execute 'atest host stat'."""
         results = []
         # Convert wildcards into real host stats.
         existing_hosts = []
@@ -243,6 +250,10 @@ class host_stat(host):
 
 
     def output(self, results):
+        """Print output of 'atest host stat'.
+
+        @param results: the results to be printed.
+        """
         for stats, acls, labels, attributes in results:
             print '-'*5
             self.print_fields(stats,
@@ -275,6 +286,7 @@ class host_jobs(host):
 
 
     def execute(self):
+        """Execute 'atest host jobs'."""
         results = []
         real_hosts = []
         for host in self.hosts:
@@ -305,6 +317,10 @@ class host_jobs(host):
 
 
     def output(self, results):
+        """Print output of 'atest host jobs'.
+
+        @param results: the results to be printed.
+        """
         for host, jobs in results:
             print '-'*5
             print 'Hostname: %s' % host
@@ -314,6 +330,7 @@ class host_jobs(host):
                                                 'status'])
 
 class BaseHostModCreate(host):
+    """The base class for host_mod and host_create"""
     # Matches one attribute=value pair
     attribute_regex = r'(?P<attribute>\w+)=(?P<value>.+)?'
 
@@ -389,8 +406,9 @@ class BaseHostModCreate(host):
                     raise topic_common.CliError('Attribute must be in key=value '
                                                 'syntax.')
                 elif m.group('attribute') in self.attributes:
-                    raise topic_common.CliError('Multiple values provided for '
-                                                'attribute %s.' % attribute)
+                    raise topic_common.CliError(
+                            'Multiple values provided for attribute '
+                            '%s.' % m.group('attribute'))
                 self.attributes[m.group('attribute')] = m.group('value')
 
         self.platform = options.platform
@@ -511,6 +529,7 @@ class host_mod(BaseHostModCreate):
 
 
     def execute(self):
+        """Execute 'atest host mod'."""
         successes = []
         for host in self.execute_rpc('get_hosts', hostname__in=self.hosts):
             self.host_ids[host['hostname']] = host['id']
@@ -548,6 +567,10 @@ class host_mod(BaseHostModCreate):
 
 
     def output(self, hosts):
+        """Print output of 'atest host mod'.
+
+        @param hosts: the host list to be printed.
+        """
         for msg in self.messages:
             self.print_wrapped(msg, hosts)
 
@@ -632,9 +655,16 @@ class host_create(BaseHostModCreate):
         # data was already in afe
         data = {'attributes': self.attributes, 'labels': self.labels}
         afe_host = frontend.Host(None, data)
-        machine = {'hostname': host, 'afe_host': afe_host}
+        store = host_info.InMemoryHostInfoStore(
+                host_info.HostInfo(labels=self.labels,
+                                   attributes=self.attributes))
+        machine = {
+                'hostname': host,
+                'afe_host': afe_host,
+                'host_info_store': store
+        }
         try:
-            if utils.ping(host, tries=1, deadline=1) == 0:
+            if bin_utils.ping(host, tries=1, deadline=1) == 0:
                 serials = self.attributes.get('serials', '').split(',')
                 if serials and len(serials) > 1:
                     host_dut = hosts.create_testbed(machine,
@@ -643,17 +673,22 @@ class host_create(BaseHostModCreate):
                     adb_serial = self.attributes.get('serials')
                     host_dut = hosts.create_host(machine,
                                                  adb_serial=adb_serial)
-                host_info = HostInfo(host, host_dut.get_platform(),
-                                     host_dut.get_labels())
+
+                info = HostInfo(host, host_dut.get_platform(),
+                                host_dut.get_labels())
+                # Clean host to make sure nothing left after calling it,
+                # e.g. tunnels.
+                if hasattr(host_dut, 'close'):
+                    host_dut.close()
             else:
                 # Can't ping the host, use default information.
-                host_info = HostInfo(host, None, [])
+                info = HostInfo(host, None, [])
         except (socket.gaierror, error.AutoservRunError,
                 error.AutoservSSHTimeout):
             # We may be adding a host that does not exist yet or we can't
             # reach due to hostname/address issues or if the host is down.
-            host_info = HostInfo(host, None, [])
-        return host_info
+            info = HostInfo(host, None, [])
+        return info
 
 
     def _execute_add_one_host(self, host):
@@ -665,10 +700,10 @@ class host_create(BaseHostModCreate):
         self.execute_rpc('add_host', hostname=host, status="Ready", **self.data)
 
         # If there are labels avaliable for host, use them.
-        host_info = self._detect_host_info(host)
+        info = self._detect_host_info(host)
         labels = set(self.labels)
-        if host_info.labels:
-            labels.update(host_info.labels)
+        if info.labels:
+            labels.update(info.labels)
 
         if labels:
             self._set_labels(host, list(labels))
@@ -676,7 +711,7 @@ class host_create(BaseHostModCreate):
         # Now add the platform label.
         # If a platform was not provided and we were able to retrieve it
         # from the host, use the retrieved platform.
-        platform = self.platform if self.platform else host_info.platform
+        platform = self.platform if self.platform else info.platform
         if platform:
             self._set_platform_label(host, platform)
 
@@ -685,6 +720,7 @@ class host_create(BaseHostModCreate):
 
 
     def execute(self):
+        """Execute 'atest host create'."""
         successful_hosts = []
         for host in self.hosts:
             try:
@@ -704,6 +740,10 @@ class host_create(BaseHostModCreate):
 
 
     def output(self, hosts):
+        """Print output of 'atest host create'.
+
+        @param hosts: the added host list to be printed.
+        """
         self.print_wrapped('Added host', hosts)
 
 

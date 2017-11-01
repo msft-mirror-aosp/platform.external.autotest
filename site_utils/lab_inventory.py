@@ -69,11 +69,12 @@ SPARE_POOL = constants.Pools.SPARE_POOL
 MANAGED_POOLS = constants.Pools.MANAGED_POOLS
 
 # _EXCLUDED_LABELS - A set of labels that disqualify a DUT from
-#     monitoring by this script.  Currently, we're excluding any
-#     'adb' host, because we're not ready to monitor Android or
-#     Brillo hosts.
+#     monitoring by this script.  Currently, we're excluding these:
+#   + 'adb' - We're not ready to monitor Android or Brillo hosts.
+#   + 'board:guado_moblab' - These are maintained by a separate
+#     process that doesn't use this script.
 
-_EXCLUDED_LABELS = set(['adb'])
+_EXCLUDED_LABELS = {'adb', 'board:guado_moblab'}
 
 # _DEFAULT_DURATION:
 #     Default value used for the --duration command line option.
@@ -417,12 +418,15 @@ class _LabInventory(dict):
     def _eligible_host(afehost):
         """Return whether this host is eligible for monitoring.
 
-        Hosts with any label that's in `_EXCLUDED_LABELS` aren't
-        eligible.
+        A host is eligible if it's in exactly one pool and it has no
+        labels from the `_EXCLUDED_LABELS` set.
 
         @param afehost  The host to be tested for eligibility.
         """
-        return not len(_EXCLUDED_LABELS.intersection(afehost.labels))
+        pools = [l for l in afehost.labels
+                     if l.startswith(constants.Labels.POOL_PREFIX)]
+        excluded = _EXCLUDED_LABELS.intersection(afehost.labels)
+        return len(pools) == 1 and not excluded
 
 
     @classmethod

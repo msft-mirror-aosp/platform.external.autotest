@@ -14,7 +14,10 @@ from autotest_lib.server.cros.dynamic_suite.constants import JOB_BUILD_KEY
 from autotest_lib.server.crashcollect import collect_log_file
 from autotest_lib.server import utils
 
-from chromite.lib import metrics
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = client_utils.metrics_mock
 
 
 def generate_minidump_stacktrace(minidump_path):
@@ -49,8 +52,8 @@ def _resolve_crashserver():
         raise dev_server.DevServerException(
                 'No crash server has the capacity to symbolicate the dump.')
     else:
-        metrics.Counter('chromeos/autotest/crashcollect/resolved',
-                        fields={'crash_server': crashserver_name})
+        metrics.Counter('chromeos/autotest/crashcollect/resolved'
+                        ).increment(fields={'crash_server': crashserver_name})
     return crashserver_name
 
 
@@ -199,6 +202,12 @@ def fetch_orphaned_crashdumps(host, infodir):
     if not os.path.exists(infodir):
         os.mkdir(infodir)
     orphans = []
+
+    if not host.check_cached_up_status():
+        logging.warning('Host %s did not answer to ping, skip fetching '
+                        'orphaned crashdumps.', host.hostname)
+        return orphans
+
     try:
         for file in _find_orphaned_crashdumps(host):
             logging.info('Collecting %s...', file)

@@ -8,19 +8,22 @@ import time
 import common
 from autotest_lib.scheduler import drone_utility, email_manager
 from autotest_lib.client.bin import local_host
-from autotest_lib.client.common_lib import error, global_config, utils
+from autotest_lib.client.common_lib import error, global_config
 
 CONFIG = global_config.global_config
 AUTOTEST_INSTALL_DIR = CONFIG.get_config_value('SCHEDULER',
                                                'drone_installation_directory')
 DEFAULT_CONTAINER_PATH = CONFIG.get_config_value('AUTOSERV', 'container_path')
 
+SSP_REQUIRED = CONFIG.get_config_value('SCHEDULER', 'exit_on_failed_ssp_setup',
+                                       default=False)
+
 class DroneUnreachable(Exception):
     """The drone is non-sshable."""
     pass
 
 
-class _BaseAbstractDrone(object):
+class SiteDrone(object):
     """
     Attributes:
     * allowed_users: set of usernames allowed to use this drone.  if None,
@@ -45,6 +48,7 @@ class _BaseAbstractDrone(object):
         # If drone supports server-side packaging. The property support_ssp will
         # init self._support_ssp later.
         self._support_ssp = None
+        self._processes_to_kill = []
 
 
     def shutdown(self):
@@ -129,6 +133,15 @@ class _BaseAbstractDrone(object):
 
 
     def execute_queued_calls(self):
+        """Execute queued calls.
+
+        If there are any processes queued to kill, kill them then process the
+        remaining queued up calls.
+        """
+        if self._processes_to_kill:
+            self.queue_call('kill_processes', self._processes_to_kill)
+        self.clear_processes_to_kill()
+
         if not self._calls:
             return
         results = self._execute_calls(self._calls)
@@ -171,13 +184,25 @@ class _BaseAbstractDrone(object):
             except (error.AutoservRunError, error.AutotestHostRunError):
                 # Local drone raises AutotestHostRunError, while remote drone
                 # raises AutoservRunError.
+                logging.exception('Drone %s does not support server-side '
+                                  'packaging.', self.hostname)
                 self._support_ssp = False
+                if SSP_REQUIRED:
+                  raise
         return self._support_ssp
 
 
-SiteDrone = utils.import_site_class(
-   __file__, 'autotest_lib.scheduler.site_drones',
-   '_SiteAbstractDrone', _BaseAbstractDrone)
+    def queue_kill_process(self, process):
+        """Queue a process to kill/abort.
+
+        @param process: Process to kill/abort.
+        """
+        self._processes_to_kill.append(process)
+
+
+    def clear_processes_to_kill(self):
+        """Reset the list of processes to kill for this tick."""
+        self._processes_to_kill = []
 
 
 class _AbstractDrone(SiteDrone):
@@ -190,7 +215,6 @@ class _LocalDrone(_AbstractDrone):
                 timestamp_remote_calls=timestamp_remote_calls)
         self.hostname = 'localhost'
         self._host = local_host.LocalHost()
-        self._drone_utility = drone_utility.DroneUtility()
 
 
     def send_file_to(self, drone, source_path, destination_path,

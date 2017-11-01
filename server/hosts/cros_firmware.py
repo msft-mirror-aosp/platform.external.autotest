@@ -58,21 +58,6 @@ _FIRMWARE_REPAIR_POOLS = set(
 _FIRMWARE_UPDATE_POOLS = set(constants.Pools.MANAGED_POOLS)
 
 
-def _get_host_pools(host):
-    """
-    Return the set of pools to which the host is assigned.
-
-    Returns all of a host's assigned pools as a set of pool names,
-    with the 'pool:' prefix stripped off.
-
-    @param host  The host for which to find the pools.
-    @return A set object containing all the pools.
-    """
-    pool_prefix = constants.Labels.POOL_PREFIX
-    pool_labels = afe_utils.get_labels(host, pool_prefix)
-    return set([l[len(pool_prefix) : ] for l in pool_labels])
-
-
 def _is_firmware_repair_supported(host):
     """
     Check if a host supports firmware repair.
@@ -85,7 +70,8 @@ def _is_firmware_repair_supported(host):
     @return A true value if the host should use `FirmwareStatusVerifier`
             and `FirmwareRepair`; a false value otherwise.
     """
-    return bool(_get_host_pools(host) & _FIRMWARE_REPAIR_POOLS)
+    info = host.host_info_store.get()
+    return bool(info.pools & _FIRMWARE_REPAIR_POOLS)
 
 
 def _is_firmware_update_supported(host):
@@ -103,7 +89,8 @@ def _is_firmware_update_supported(host):
     @return A true value if the host should use
             `FirmwareVersionVerifier`; a false value otherwise.
     """
-    return bool(_get_host_pools(host) & _FIRMWARE_UPDATE_POOLS)
+    info = host.host_info_store.get()
+    return bool(info.pools & _FIRMWARE_UPDATE_POOLS)
 
 
 class FirmwareStatusVerifier(hosts.Verifier):
@@ -221,8 +208,17 @@ class FirmwareVersionVerifier(hosts.Verifier):
         result = host.run('chromeos-firmwareupdate -V',
                           ignore_status=True)
         if result.exit_status == 0:
-            version = re.search(r'BIOS version:\s*(?P<version>.*)',
+            # At one point, the chromeos-firmwareupdate script was updated to
+            # add "RW" version fields.  The old string, "BIOS version:" still
+            # appears in the new output, however it now refers to the RO
+            # firmware version.  Therefore, we try searching for the new string
+            # first, "BIOS (RW) version".  If that string isn't found, we then
+            # fallback to searching for old string.
+            version = re.search(r'BIOS \(RW\) version:\s*(?P<version>.*)',
                                 result.stdout)
+            if not version:
+                version = re.search(r'BIOS version:\s*(?P<version>.*)',
+                                    result.stdout)
             if version is not None:
                 return version.group('version')
         return None
@@ -256,8 +252,13 @@ class FirmwareVersionVerifier(hosts.Verifier):
         if not _is_firmware_update_supported(host):
             return
         # Test 2 - The DUT has an assigned stable firmware version.
-        stable_firmware = afe_utils.get_stable_firmware_version(
-                host._get_board_from_afe())
+        info = host.host_info_store.get()
+        if info.board is None:
+            raise hosts.AutoservVerifyError(
+                    'Can not verify firmware version. '
+                    'No board label value found')
+
+        stable_firmware = afe_utils.get_stable_firmware_version(info.board)
         if stable_firmware is None:
             # This DUT doesn't have a firmware update target
             return
@@ -299,6 +300,12 @@ class FirmwareVersionVerifier(hosts.Verifier):
             logging.exception(message, current_firmware, stable_firmware)
             raise hosts.AutoservVerifyError(
                     message % (current_firmware, stable_firmware))
+        final_firmware = self._get_rw_firmware(host)
+        if final_firmware != stable_firmware:
+            message = ('chromeos-firmwareupdate failed: tried upgrade '
+                       'to %s, now running %s instead')
+            raise hosts.AutoservVerifyError(
+                    message % (stable_firmware, final_firmware))
 
     @property
     def description(self):

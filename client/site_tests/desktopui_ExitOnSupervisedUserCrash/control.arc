@@ -4,7 +4,7 @@
 
 AUTHOR = "cmasone, antrim"
 NAME = "desktopui_ExitOnSupervisedUserCrash.arc"
-ATTRIBUTES = "suite:arc-bvt-cq, suite:bvt-cq"
+ATTRIBUTES = "suite:bvt-arc"
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "desktopui"
@@ -19,4 +19,4 @@ account is being created and verifies that a crash during that operation
 triggers session termination.
 """
 
-job.run_test('desktopui_ExitOnSupervisedUserCrash', arc_mode=ARC_MODE)
+job.run_test('desktopui_ExitOnSupervisedUserCrash', arc_mode=ARC_MODE, tag='arc')

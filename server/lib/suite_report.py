@@ -14,6 +14,7 @@ from autotest_lib.server import frontend
 from autotest_lib.server.lib import status_history
 from chromite.lib import cros_logging as logging
 
+
 HostJobHistory = status_history.HostJobHistory
 
 # TODO: Handle other statuses like infra failures.
@@ -22,8 +23,12 @@ TKO_STATUS_MAP = {
     'FAIL': 'fail',
     'GOOD': 'pass',
     'PASS': 'pass',
+    'ABORT': 'aborted',
+    'Failed': 'fail',
     'Completed': 'pass',
+    'Aborted': 'aborted',
 }
+
 
 def parse_tko_status_string(status_string):
     """Parse a status string from TKO or the HQE databases.
@@ -33,6 +38,7 @@ def parse_tko_status_string(status_string):
     @return A status string suitable for inclusion within Cloud Datastore.
     """
     return TKO_STATUS_MAP.get(status_string, 'unknown:' + status_string)
+
 
 def make_entry(entry_id, name, status, start_time,
                finish_time=None, parent=None):
@@ -59,6 +65,24 @@ def make_entry(entry_id, name, status, start_time,
         entry['parent'] = parent
     return entry
 
+
+def find_start_finish_times(statuses):
+    """Determines the start and finish times for a list of statuses.
+
+    @param statuses: A list of job test statuses.
+
+    @return (start_tme, finish_time) tuple of seconds past epoch.  If either
+            cannot be determined, None for that time.
+    """
+    starts = {int(time_utils.to_epoch_time(s.test_started_time))
+              for s in statuses if s.test_started_time != 'None'}
+    finishes = {int(time_utils.to_epoch_time(s.test_finished_time))
+                for s in statuses if s.test_finished_time != 'None'}
+    start_time = min(starts) if starts else None
+    finish_time = max(finishes) if finishes else None
+    return start_time, finish_time
+
+
 def make_job_entry(tko, job, parent=None, suite_job=False, job_entries=None):
     """Generate a Suite or HWTest event log entry.
 
@@ -80,19 +104,14 @@ def make_job_entry(tko, job, parent=None, suite_job=False, job_entries=None):
             status = parsed_status
         if s.hostname:
             dut = s.hostname
-    if len(statuses):
-        start_time = min(int(time_utils.to_epoch_time(s.test_started_time))
-                         for s in statuses)
-        finish_time = max(int(time_utils.to_epoch_time(s.test_finished_time))
-                          for s in statuses)
-    else:
-        start_time = None
-        finish_time = None
-
+        if s.test_started_time == 'None' or s.test_finished_time == 'None':
+            logging.warn('TKO entry for %d missing time: %s' % (job.id, str(s)))
+    start_time, finish_time = find_start_finish_times(statuses)
     entry = make_entry(('Suite' if suite_job else 'HWTest', int(job.id)),
                        job.name.split('/')[-1], status, start_time,
                        finish_time=finish_time, parent=parent)
 
+    entry['job_id'] = int(job.id)
     if dut:
         entry['dut'] = dut
     if job.shard:
@@ -108,7 +127,9 @@ def make_job_entry(tko, job, parent=None, suite_job=False, job_entries=None):
             entry['try'] = 0
     else:
         entry['try'] = 1
+    entry['gs_url'] = status_history.get_job_gs_url(job)
     return entry
+
 
 def make_hqe_entry(hostname, hqe, hqe_statuses, parent=None):
     """Generate a HQE event log entry.
@@ -128,20 +149,30 @@ def make_hqe_entry(hostname, hqe, hqe_statuses, parent=None):
     entry['task_name'] = hqe.name.split('/')[-1]
     entry['in_suite'] = hqe.id in hqe_statuses
     entry['job_url'] = hqe.job_url
+    entry['gs_url'] = hqe.gs_url
+    if hqe.job_id is not None:
+        entry['job_id'] = hqe.job_id
+    entry['is_special'] = hqe.is_special
     return entry
 
-def generate_suite_report(suite_job_id):
+
+def generate_suite_report(suite_job_id, afe=None, tko=None):
     """Generate a list of events corresonding to a single suite job.
 
     @param suite_job_id: The AFE id of the suite job.
+    @param afe: AFE database handle.
+    @param tko: TKO database handle.
 
     @return A list of entries suitable for dumping via JSON.
     """
-    afe = frontend.AFE()
-    tko = frontend.TKO()
+    if afe is None:
+        afe = frontend.AFE()
+    if tko is None:
+        tko = frontend.TKO()
 
     # Retrieve the main suite job.
     suite_job = afe.get_jobs(id=suite_job_id)[0]
+
     suite_entry = make_job_entry(tko, suite_job, suite_job=True)
     entries = [suite_entry]
 
@@ -173,13 +204,15 @@ def generate_suite_report(suite_job_id):
 
     # Retrieve histories for the time of the suite for all associated hosts.
     # TODO: Include all hosts in the pool.
-    histories = [HostJobHistory.get_host_history(afe, hostname,
-                                                 suite_entry['start_time'],
-                                                 suite_entry['finish_time'])
-                 for hostname in sorted(hostnames)]
-    for history in histories:
-        entries.extend(make_hqe_entry(history.hostname, h, hqe_statuses,
-                                      suite_entry['id']) for h in history)
+    if suite_entry['start_time'] and suite_entry['finish_time']:
+        histories = [HostJobHistory.get_host_history(afe, hostname,
+                                                     suite_entry['start_time'],
+                                                     suite_entry['finish_time'])
+                     for hostname in sorted(hostnames)]
+
+        for history in histories:
+            entries.extend(make_hqe_entry(history.hostname, h, hqe_statuses,
+                                          suite_entry['id']) for h in history)
 
     return entries
 

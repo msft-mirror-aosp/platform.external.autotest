@@ -45,6 +45,7 @@ tko/parsers/test/site_scenarios
 ExternalSource
 /frontend/client/www/
 /shadow_config.ini
+/shadow_config.param.ini
 /site-packages/
 monitor_db.pid
 server/cros/chaos_shadow_ap_list.conf
@@ -58,11 +59,6 @@ site_utils/autotest_private/
 site_utils/autotest_tools/
 site_utils/devserver/
 site_utils/buildbot_src/
-
-# Pupplylab files
-puppylab/Vagrantfile
-puppylab/chromeos_lab_core_cluster.box
-puppylab/.vagrant
 
 # Container directory
 containers/

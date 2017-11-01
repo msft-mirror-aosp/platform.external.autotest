@@ -1,4 +1,4 @@
-# Copyright (c) 2016 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -10,6 +10,7 @@ import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.server.cros import stress
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 class firmware_EmmcWriteLoad(FirmwareTest):
@@ -33,18 +34,18 @@ class firmware_EmmcWriteLoad(FirmwareTest):
             r'mmc[0-9]+: Timeout waiting for hardware interrupt', re.MULTILINE)
 
     def initialize(self, host, cmdline_args, ec_wp=None):
-      dict_args = utils.args_to_dict(cmdline_args)
-      self.minutes_to_run = int(dict_args.get('minutes_to_run', 5))
-      super(firmware_EmmcWriteLoad, self).initialize(
-              host, cmdline_args, ec_wp=ec_wp)
+        dict_args = utils.args_to_dict(cmdline_args)
+        self.minutes_to_run = int(dict_args.get('minutes_to_run', 5))
+        super(firmware_EmmcWriteLoad, self).initialize(
+            host, cmdline_args, ec_wp=ec_wp)
 
-      self.assert_test_image_in_usb_disk()
-      self.switcher.setup_mode('dev')
-      self.setup_usbkey(usbkey=True, host=False)
+        self.assert_test_image_in_usb_disk()
+        self.switcher.setup_mode('dev')
+        self.setup_usbkey(usbkey=True, host=False)
 
-      self.original_dev_boot_usb = self.faft_client.system.get_dev_boot_usb()
-      logging.info(
-              'Original dev_boot_usb value: %s', str(self.original_dev_boot_usb))
+        self.original_dev_boot_usb = self.faft_client.system.get_dev_boot_usb()
+        logging.info('Original dev_boot_usb value: %s',
+                     str(self.original_dev_boot_usb))
 
 
     def read_dmesg(self, filename):
@@ -57,36 +58,42 @@ class firmware_EmmcWriteLoad(FirmwareTest):
 
         return utils.read_file(filename)
 
-    def check_for_emmc_error(self, dmesg, error_regex):
-      """Check the current dmesg output for the specified error message regex.
+    def check_for_emmc_error(self, dmesg):
+        """Check the current dmesg output for the specified error message regex.
 
-      @param dmesg: Contents of the dmesg buffer.
-      @param error_regex: The regex to check for the error.
+        @param dmesg: Contents of the dmesg buffer.
 
-      @return True if error found.
-      """
-      for line in dmesg.splitlines():
-        if error_regex.search(dmesg):
-          return True
+        @return True if error found.
+        """
+        for line in dmesg.splitlines():
+            if self.ERROR_MESSAGE_REGEX.search(line):
+                return True
 
-      return False
+        return False
 
     def install_chrome_os(self):
-      """Runs the install command in a continuous loop. """
-      install = 'while true; do %s; done' % self.INSTALL_COMMAND
-      self.install_process = self._client.run_background(install)
+        """Runs the install command. """
+        self.faft_client.system.run_shell_command(self.INSTALL_COMMAND)
 
     def poll_for_emmc_error(self, dmesg_file, poll_seconds=20):
-        end_time = datetime.datetime.now() +
-                datetime.timedelta(minutes=self.minutes_to_run)
+        """Continuously polls the contents of dmesg for the emmc failure message
+
+        @param dmesg_file: Contents of the dmesg buffer.
+        @param poll_seconds: Time to wait before checking dmesg again.
+
+        @return True if error found.
+        """
+        end_time = datetime.datetime.now() + \
+                   datetime.timedelta(minutes=self.minutes_to_run)
 
         while datetime.datetime.now() <= end_time:
-          dmesg = self.read_dmesg(dmesg_file)
-          contains_error = self.check_for_emmc_error(
-              dmesg, self.ERROR_MESSAGE_REGEX)
-          if contains_error:
-            raise error.TestFail('eMMC error found. Dmesg output: %s' % dmesg)
-          time.sleep(poll_seconds)
+            dmesg = self.read_dmesg(dmesg_file)
+            contains_error = self.check_for_emmc_error(dmesg)
+
+            if contains_error:
+                raise error.TestFail('eMMC error found. Dmesg output: %s' %
+                                     dmesg)
+            time.sleep(poll_seconds)
 
     def cleanup(self):
         self.ensure_internal_device_boot()
@@ -113,18 +120,22 @@ class firmware_EmmcWriteLoad(FirmwareTest):
         self.check_state((self.checkers.dev_boot_usb_checker,
                           True,
                           'Not USB boot, Ctrl-U not work'))
+        stressor = stress.ControlledStressor(self.install_chrome_os)
 
         dmesg_filename = os.path.join(self.resultsdir, 'dmesg')
 
         logging.info('===== Starting OS install loop. =====')
-        logging.info(
-            '===== Running install for %s minutes. =====' % self.minutes_to_run)
-        self.install_chrome_os()
+        logging.info('===== Running install for %s minutes. =====',
+                     self.minutes_to_run)
+        stressor.start()
 
         self.poll_for_emmc_error(dmesg_file=dmesg_filename)
 
-        logging.info('Killing ChromeOS install loop.')
-        self._client.run('kill -9 %s' % self.install_process)
+        logging.info('Stopping install loop.')
+        # Usually takes a little over 3 minutes to install so make sure we
+        # wait long enough for a install iteration to complete.
+        stressor.stop(timeout=300)
 
-        logging.info('Run one last install.')
-        self._client.run(self.INSTALL_COMMAND)
+        logging.info("Installing OS one more time.")
+        # Installing OS one more time to ensure DUT is left in a good state
+        self.install_chrome_os()

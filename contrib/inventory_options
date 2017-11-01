@@ -20,11 +20,11 @@ if [ $# -eq 0 ]; then
 
   POOL_INTEREST=(
     chromeos-infra-eng@grotations.appspotmail.com
-    chromeos-lab-alerts@google.com
+    chromeos-build-alerts+dut-pool@google.com
   )
   BOARD_INTEREST=(
     englab-sys-cros@google.com
-    chromeos-lab-alerts@google.com
+    chromeos-build-alerts+dut-pool@google.com
   )
 else
   BOARD_INTEREST=( "$@" )
@@ -37,7 +37,7 @@ BOARD_NOTIFY=(
   $(echo "${BOARD_INTEREST[@]}" | sed 's/ /,/g')
 )
 POOL_NOTIFY=(
-  --recommend=20
+  --recommend=40
   --pool-notify
   $(echo "${POOL_INTEREST[@]}" | sed 's/ /,/g')
 )

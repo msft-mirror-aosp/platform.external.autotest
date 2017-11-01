@@ -5,7 +5,6 @@ import json
 import os
 import re
 import shutil
-import time
 
 import common
 from autotest_lib.client.common_lib import time_utils
@@ -105,20 +104,12 @@ class _JobDirectory(object):
       call to `offload()` makes the first attempt to offload the
       directory to GS.  Offload is attempted, but fails to complete
       (e.g. because of a GS problem).
-   4. After the first failed offload `is_offloaded()` is false,
-      but `is_reportable()` is also false, so the failure is not
-      reported.
-   5. Another call to `offload()` again tries to offload the
-      directory, and again fails.
-   6. After a second failure, `is_offloaded()` is false and
-      `is_reportable()` is true, so the failure generates an e-mail
-      notification.
-   7. Finally, a call to `offload()` succeeds, and the directory no
+   4. Finally, a call to `offload()` succeeds, and the directory no
       longer exists.  Now `is_offloaded()` is true, so the job
       instance is deleted, and future failures will not mention this
       directory any more.
 
-  Only steps 1. and 7. are guaranteed to occur.  The others depend
+  Only steps 1. and 4. are guaranteed to occur.  The others depend
   on the timing of calls to `offload()`, and on the reliability of
   the actual offload process.
 
@@ -129,10 +120,10 @@ class _JobDirectory(object):
   GLOB_PATTERN = None   # must be redefined in subclass
 
   def __init__(self, resultsdir):
-    self._dirname = resultsdir
+    self.dirname = resultsdir
     self._id = get_job_id_or_task_id(resultsdir)
-    self._offload_count = 0
-    self._first_offload_start = 0
+    self.offload_count = 0
+    self.first_offload_start = 0
 
   @classmethod
   def get_job_directories(cls):
@@ -154,55 +145,6 @@ class _JobDirectory(object):
     """
     raise NotImplementedError("_JobDirectory.get_timestamp_if_finished")
 
-  def enqueue_offload(self, queue, age_limit):
-    """Enqueue the job for offload, if it's eligible.
-
-    The job is eligible for offloading if the database has marked
-    it finished, and the job is older than the `age_limit`
-    parameter.
-
-    If the job is eligible, offload processing is requested by
-    passing the `queue` parameter's `put()` method a sequence with
-    the job's `_dirname` attribute and its directory name.
-
-    @param queue     If the job should be offloaded, put the offload
-                     parameters into this queue for processing.
-    @param age_limit Minimum age for a job to be offloaded.  A value
-                     of 0 means that the job will be offloaded as
-                     soon as it is finished.
-
-    """
-    timestamp = self.get_timestamp_if_finished()
-    if not self._offload_count:
-      if not timestamp:
-        return
-      if not is_job_expired(age_limit, timestamp):
-        return
-      self._first_offload_start = time.time()
-    self._offload_count += 1
-    if self.process_gs_instructions():
-      queue.put([self._dirname, os.path.dirname(self._dirname), timestamp])
-
-  def is_offloaded(self):
-    """Return whether this job has been successfully offloaded."""
-    return not os.path.exists(self._dirname)
-
-  def is_reportable(self):
-    """Return whether this job has a reportable failure."""
-    return self._offload_count > 1
-
-  def get_failure_time(self):
-    """Return the time of the first offload failure."""
-    return self._first_offload_start
-
-  def get_failure_count(self):
-    """Return the number of times this job has failed to offload."""
-    return self._offload_count
-
-  def get_job_directory(self):
-    """Return the name of this job's results directory."""
-    return self._dirname
-
   def process_gs_instructions(self):
     """Process any gs_offloader instructions for this special task.
 
@@ -210,6 +152,10 @@ class _JobDirectory(object):
     """
     # Default support is to still offload the directory.
     return True
+
+
+NO_OFFLOAD_README = """These results have been deleted rather than offloaded.
+This is the expected behavior for passing jobs from the Commit Queue."""
 
 
 class RegularJobDirectory(_JobDirectory):
@@ -223,16 +169,17 @@ class RegularJobDirectory(_JobDirectory):
     @returns True/False if there is anything left to offload.
     """
     # Go through the gs_offloader instructions file for each test in this job.
-    for path in glob.glob(os.path.join(self._dirname, '*',
+    for path in glob.glob(os.path.join(self.dirname, '*',
                                        constants.GS_OFFLOADER_INSTRUCTIONS)):
       with open(path, 'r') as f:
         gs_off_instructions = json.load(f)
       if gs_off_instructions.get(constants.GS_OFFLOADER_NO_OFFLOAD):
-        shutil.rmtree(os.path.dirname(path))
+        dirname = os.path.dirname(path)
+        _remove_log_directory_contents(dirname)
 
     # Finally check if there's anything left to offload.
-    if not os.listdir(self._dirname):
-      shutil.rmtree(self._dirname)
+    if not os.listdir(self.dirname):
+      shutil.rmtree(self.dirname)
       return False
     return True
 
@@ -252,6 +199,20 @@ class RegularJobDirectory(_JobDirectory):
       return entry[0].created_on
     # While most Jobs have 1 HQE, some can have multiple, so check them all.
     return max([hqe.finished_on for hqe in hqes])
+
+
+def _remove_log_directory_contents(dirpath):
+    """Remove log directory contents.
+
+    Leave a note explaining what has happened to the logs.
+
+    @param dirpath: Path to log directory.
+    """
+    shutil.rmtree(dirpath)
+    os.mkdir(dirpath)
+    breadcrumb_name = os.path.join(dirpath, 'logs-removed-readme.txt')
+    with open(breadcrumb_name, 'w') as f:
+      f.write(NO_OFFLOAD_README)
 
 
 class SpecialJobDirectory(_JobDirectory):

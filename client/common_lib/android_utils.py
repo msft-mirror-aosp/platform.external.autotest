@@ -35,6 +35,81 @@ def get_config_value_regex(section, regex):
     return result
 
 
+class AndroidAliases(object):
+    """Wrapper class for getting alias names for an android device.
+
+    On android it is only possible to get a devices product name
+    (eg. marlin, sailfish). However a product may have several aliases
+    that it is called by such as the name of its board, or a public name,
+    etc. This wrapper allows for mapping the product name to different
+    aliases.
+
+    Terms:
+        product: The name a device reports itself as.
+        board: The name of the hardware board in a device.
+        alias: Some name a device is called, this includes both product and
+               board.
+    """
+
+    # regex pattern for CLIENT/android_aliases_[product]. For example,
+    # global config can have following config in CLIENT section to indicate that
+    # android product name `zzz` has following aliases.
+    # ['my_board', 'xyz'].
+    # android_board_aliases_zzz: my_board,xyz
+    ALIASES_PATTERN = 'android_aliases_(.*)'
+
+    # A dict of product:aliases for product aliases, can be defined in global
+    # config CLIENT/android_aliases_[product]
+    aliases_map = get_config_value_regex('CLIENT',
+                                         ALIASES_PATTERN)
+
+    # regex pattern for CLIENT/android_board_name[product]. For example,
+    # global config can have following config in CLIENT section to indicate that
+    # android product `zzz` has following board name.
+    # xyz.
+    # android_board_name_zzz: xyz
+    BOARD_NAME_PATTERN = 'android_board_name_(.*)'
+
+
+    # A dict of product:board for product board names, can be defined in global
+    # config CLIENT/android_board_name_[product]
+    board_name_map = get_config_value_regex('CLIENT', BOARD_NAME_PATTERN)
+
+    @classmethod
+    def get_product_aliases(cls, product):
+        """Get all aliases for a android product name.
+
+        Androids can have multiple aliases for a single product. These aliases
+        may be what the device is called in different configs. For example
+        bat has a board name of bat_land. Therefore the product name bat
+        can be referenced as either bat or batland.
+
+        @param product: The name of the product that is reported for a device.
+        @returns: All aliases for that product (including the product name).
+        """
+        aliases = set(cls.aliases_map.get(product, []))
+        aliases.add(cls.get_board_name(product))
+        aliases.add(product)
+
+        return aliases
+
+    @classmethod
+    def get_board_name(cls, product):
+        """Get the board name of a product.
+
+        The board name of an android device is what the hardware is named.
+        In many cases this is the same name as the reported product name,
+        however some devices have boards that differ from the product name.
+
+        @param product: The name of the product.
+        @returns: The board name of the given product.
+        """
+        boards = cls.board_name_map.get(product, None)
+        if boards:
+            return boards[0]
+        return product
+
+
 class AndroidImageFiles(object):
     """A wrapper class for constants and methods related to image files.
     """
@@ -44,6 +119,8 @@ class AndroidImageFiles(object):
     BOOT = 'boot.img'
     SYSTEM = 'system.img'
     VENDOR = 'vendor.img'
+    VBMETA = 'vbmeta.img'
+    DTBO = 'dtbo.img'
 
     # Image files not inside the image zip file. These files should be
     # downloaded directly from devserver.
@@ -51,7 +128,7 @@ class AndroidImageFiles(object):
 
     # Default image files that are packaged in a zip file, e.g.,
     # shamu-img-123456.zip
-    DEFAULT_ZIPPED_IMAGES = [BOOT, SYSTEM, VENDOR]
+    DEFAULT_ZIPPED_IMAGES = [BOOT, SYSTEM, VENDOR, VBMETA, DTBO]
 
     # Default image files to be flashed to an Android device.
     DEFAULT_IMAGES = DEFAULT_STANDALONE_IMAGES + DEFAULT_ZIPPED_IMAGES
@@ -125,7 +202,6 @@ class AndroidArtifacts(object):
     # (os, board) = 'artifacts'
     DEFAULT_ARTIFACTS_MAP = {
         ('android', 'default'): [BOOTLOADER_IMAGE, RADIO_IMAGE, ZIP_IMAGE],
-        ('android', 'bat_land'): [ZIP_IMAGE],
         ('brillo', 'default'):  [ZIP_IMAGE, VENDOR_PARTITIONS],
         ('emulated_brillo', 'default'): [TARGET_FILES, DTB],
     }

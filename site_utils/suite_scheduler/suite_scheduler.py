@@ -40,6 +40,7 @@ import common
 import board_enumerator, deduping_scheduler, driver, forgiving_config_parser
 import manifest_versions, sanity, task
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib import logging_config, logging_manager
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 try:
@@ -51,7 +52,11 @@ except ImportError:
     server_manager_utils = None
     logging.debug('Could not load server_manager_utils module, expected '
                   'if you are running sanity check or pre-submit hook')
-from chromite.lib import ts_mon_config
+
+try:
+    from chromite.lib import ts_mon_config
+except ImportError:
+    ts_mon_config = utils.metrics_mock
 
 
 CONFIG_SECTION = 'SCHEDULER'
@@ -88,8 +93,7 @@ class SchedulerLoggingConfig(logging_config.LoggingConfig):
                 CONFIG_SECTION, "notify_email_from", default=getpass.getuser())
 
         self._notify_address = global_config.global_config.get_config_value(
-                CONFIG_SECTION, "notify_email",
-                default='chromeos-lab-admins@google.com')
+                CONFIG_SECTION, "notify_email")
 
         self._smtp_server = global_config.global_config.get_config_value(
                 CONFIG_SECTION_SERVER, "smtp_server", default='localhost')
@@ -228,6 +232,10 @@ def main():
     if options.sanity:
         # config_file_getter generates a high amount of noise at DEBUG level
         logging.getLogger().setLevel(logging.WARNING)
+        section_name_collision = sanity.checkSectionNameCollision(config)
+        if section_name_collision:
+            return 1
+
         d = driver.Driver(None, None, True)
         d.SetUpEventsAndTasks(config, None)
         tasks_per_event = d.TasksFromConfig(config)

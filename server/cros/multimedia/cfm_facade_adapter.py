@@ -1,8 +1,12 @@
-# Copyright 2016 The Chromium OS Authors. All rights reserved.
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """An adapter to remotely access the CFM facade on DUT."""
+
+import os
+import tempfile
+import time
 
 
 class CFMFacadeRemoteAdapter(object):
@@ -11,6 +15,7 @@ class CFMFacadeRemoteAdapter(object):
     The Autotest host object representing the remote DUT, passed to this
     class on initialization, can be accessed from its _client property.
     """
+    _RESTART_UI_DELAY = 10
 
     def __init__(self, host, remote_facade_proxy):
         """Construct a CFMFacadeRemoteAdapter.
@@ -24,7 +29,19 @@ class CFMFacadeRemoteAdapter(object):
 
     @property
     def _cfm_proxy(self):
-        return self._proxy.cfm
+        return self._proxy.cfm_main_screen
+
+
+    @property
+    def main_screen(self):
+        """CFM main screen API."""
+        return self._proxy.cfm_main_screen
+
+
+    @property
+    def mimo_screen(self):
+        """CFM mimo screen API."""
+        return self._proxy.cfm_mimo_screen
 
 
     def enroll_device(self):
@@ -36,10 +53,40 @@ class CFMFacadeRemoteAdapter(object):
         """Restart chrome for CFM."""
         self._cfm_proxy.restart_chrome_for_cfm()
 
+    def reboot_device_with_chrome_api(self):
+        """Reboot device using Chrome runtime API."""
+        self._cfm_proxy.reboot_device_with_chrome_api()
+
+    def skip_oobe_after_enrollment(self):
+        """Skips oobe and goes to the app landing page after enrollment."""
+        self._client.run('restart ui', ignore_status=True)
+        time.sleep(self._RESTART_UI_DELAY)
+        self._cfm_proxy.skip_oobe_after_enrollment()
+
 
     def wait_for_telemetry_commands(self):
         """Wait for telemetry commands."""
         self._cfm_proxy.wait_for_telemetry_commands()
+
+
+    def wait_for_hangouts_telemetry_commands(self):
+        """Wait for Hangouts App telemetry commands."""
+        self._cfm_proxy.wait_for_hangouts_telemetry_commands()
+
+
+    def wait_for_meetings_telemetry_commands(self):
+        """Waits for Meet App telemetry commands."""
+        self._cfm_proxy.wait_for_meetings_telemetry_commands()
+
+
+    def wait_for_meetings_in_call_page(self):
+        """Waits for the in-call page to launch."""
+        self._cfm_proxy.wait_for_meetings_in_call_page()
+
+
+    def wait_for_meetings_landing_page(self):
+        """Waits for the landing page screen."""
+        self._cfm_proxy.wait_for_meetings_landing_page()
 
 
     # UI commands/functions
@@ -75,6 +122,31 @@ class CFMFacadeRemoteAdapter(object):
         self._cfm_proxy.end_hangout_session()
 
 
+    def take_screenshot(self):
+        """
+        Takes a screenshot on the DUT.
+
+        @return The file path to the screenshot on the DUT or None.
+        """
+        # No suffix since cfm_proxy.take_screenshot() automactially appends one.
+        with tempfile.NamedTemporaryFile() as f:
+            basename = os.path.basename(f.name)
+            return self._cfm_proxy.take_screenshot(basename)
+
+    def get_latest_callgrok_file_path(self):
+        """
+        @return The path to the lastest callgrok log file, if any.
+        """
+        return self._cfm_proxy.get_latest_callgrok_file_path()
+
+
+    def get_latest_pa_logs_file_path(self):
+        """
+        @return The path to the lastest packaged app log file, if any.
+        """
+        return self._cfm_proxy.get_latest_pa_logs_file_path()
+
+
     def is_in_hangout_session(self):
         """Check if device is in hangout session.
 
@@ -89,6 +161,29 @@ class CFMFacadeRemoteAdapter(object):
         @return a boolean for hangout session ready state.
         """
         return self._cfm_proxy.is_ready_to_start_hangout_session()
+
+
+    def join_meeting_session(self, session_name):
+        """Join a meeting.
+
+        @param session_name: Name of the meeting session.
+        """
+        self._cfm_proxy.join_meeting_session(session_name)
+
+
+    def start_meeting_session(self):
+        """Start a meeting."""
+        self._cfm_proxy.start_meeting_session()
+
+
+    def end_meeting_session(self):
+        """End current meeting session."""
+        self._cfm_proxy.end_meeting_session()
+
+
+    def get_participant_count(self):
+        """Gets the total participant count in a call."""
+        return self._cfm_proxy.get_participant_count()
 
 
     # Diagnostics commands/functions

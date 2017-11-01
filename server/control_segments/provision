@@ -5,11 +5,16 @@
 import datetime
 import re
 
-from chromite.lib import metrics
-
+from autotest_lib.client.bin import sysinfo
 from autotest_lib.client.cros import constants
 from autotest_lib.server import utils
 from autotest_lib.server.cros import provision
+
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
+
 
 LABEL_REGEX = r',.*:'
 _LABEL_UPDATE_DURATION_METRIC = metrics.SecondsDistribution(
@@ -42,7 +47,8 @@ def provision_machine(machine):
     job.record('START', None, 'provision')
     host = hosts.create_target_machine(machine, try_lab_servo=True)
     try:
-        job.sysinfo.add_logdir(constants.AUTOUPDATE_PRESERVE_LOG)
+        job.sysinfo.add_logdir(
+                sysinfo.logdir(constants.AUTOUPDATE_PRESERVE_LOG))
         provision.run_special_task_actions(job, host, labels_list,
                                            provision.Provision)
         host.verify()
@@ -54,8 +60,8 @@ def provision_machine(machine):
         start_time = datetime.datetime.now()
         try:
             host.update_labels()
-        except Exception as e:
-            logging.exception('Exception while updating labels: %s', e)
+        except Exception:
+            logging.exception('Exception while updating labels.')
             label_update_success = False
 
         end_time = datetime.datetime.now()
@@ -67,8 +73,8 @@ def provision_machine(machine):
                             if not utils.machine_is_testbed(machine)
                             else host.get_platform())}
         _LABEL_UPDATE_DURATION_METRIC.add(duration, fields=fields)
-    except Exception as e:
-        logging.exception(e)
+    except Exception:
+        logging.exception('Provision failed due to Exception.')
         job.record('END FAIL', None, 'provision')
         # Raising a blank exception is done here because any message we can
         # give here would be less useful than whatever the failing test left as

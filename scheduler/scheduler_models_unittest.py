@@ -56,50 +56,6 @@ class BaseSchedulerModelsTest(unittest.TestCase,
         self._do_query(query)
 
 
-class DelayedCallTaskTest(unittest.TestCase):
-    def setUp(self):
-        self.god = mock.mock_god()
-
-
-    def tearDown(self):
-        self.god.unstub_all()
-
-
-    def test_delayed_call(self):
-        test_time = self.god.create_mock_function('time')
-        test_time.expect_call().and_return(33)
-        test_time.expect_call().and_return(34.01)
-        test_time.expect_call().and_return(34.99)
-        test_time.expect_call().and_return(35.01)
-        def test_callback():
-            test_callback.calls += 1
-        test_callback.calls = 0
-        delay_task = scheduler_models.DelayedCallTask(
-                delay_seconds=2, callback=test_callback,
-                now_func=test_time)  # time 33
-        self.assertEqual(35, delay_task.end_time)
-        delay_task.poll()  # activates the task and polls it once, time 34.01
-        self.assertEqual(0, test_callback.calls, "callback called early")
-        delay_task.poll()  # time 34.99
-        self.assertEqual(0, test_callback.calls, "callback called early")
-        delay_task.poll()  # time 35.01
-        self.assertEqual(1, test_callback.calls)
-        self.assert_(delay_task.is_done())
-        self.assert_(delay_task.success)
-        self.assert_(not delay_task.aborted)
-        self.god.check_playback()
-
-
-    def test_delayed_call_abort(self):
-        delay_task = scheduler_models.DelayedCallTask(
-                delay_seconds=987654, callback=lambda : None)
-        delay_task.abort()
-        self.assert_(delay_task.aborted)
-        self.assert_(delay_task.is_done())
-        self.assert_(not delay_task.success)
-        self.god.check_playback()
-
-
 class DBObjectTest(BaseSchedulerModelsTest):
     def test_compare_fields_in_row(self):
         host = scheduler_models.Host(id=1)
@@ -152,7 +108,7 @@ class DBObjectTest(BaseSchedulerModelsTest):
     def test_save(self):
         # Dummy Job to avoid creating a one in the HostQueueEntry __init__.
         class MockJob(object):
-            def __init__(self, id):
+            def __init__(self, id, row):
                 pass
             def tag(self):
                 return 'MockJob'
@@ -175,7 +131,6 @@ class DBObjectTest(BaseSchedulerModelsTest):
         self.assertEqual(hqe.complete, False)
         self.assertEqual(hqe.deleted, False)
         self.assertEqual(hqe.execution_subdir, '.')
-        self.assertEqual(hqe.atomic_group_id, None)
         self.assertEqual(hqe.started_on, None)
         self.assertEqual(hqe.finished_on, None)
 
@@ -245,10 +200,10 @@ class HostQueueEntryTest(BaseSchedulerModelsTest):
         self._check_hqe_labels(hqe, ['label2'])
 
 
-    def test_get_labels_dependancies(self):
-        hqe = self._create_hqe(dependency_labels=(self.label3, self.label4),
+    def test_get_labels_dependencies(self):
+        hqe = self._create_hqe(dependency_labels=(self.label3,),
                                metahosts=[1])
-        self._check_hqe_labels(hqe, ['label1', 'label3', 'label4'])
+        self._check_hqe_labels(hqe, ['label1', 'label3'])
 
 
     def setup_abort_test(self, agent_finished=True):
@@ -265,8 +220,8 @@ class HostQueueEntryTest(BaseSchedulerModelsTest):
         hqe.status = models.HostQueueEntry.Status.STARTING
         hqe.started_on = datetime.datetime.now()
 
-        dispatcher = self.god.create_mock_class(monitor_db.BaseDispatcher,
-                                                'BaseDispatcher')
+        dispatcher = self.god.create_mock_class(monitor_db.Dispatcher,
+                                                'Dispatcher')
         agent = self.god.create_mock_class(monitor_db.Agent, 'Agent')
         dispatcher.get_agents_for_entry.expect_call(hqe).and_return([agent])
         agent.is_done.expect_call().and_return(agent_finished)
@@ -336,42 +291,12 @@ class JobTest(BaseSchedulerModelsTest):
 
 
     def test_job_request_abort(self):
-        django_job = self._create_job(hosts=[5, 6], atomic_group=1)
+        django_job = self._create_job(hosts=[5, 6])
         job = scheduler_models.Job(django_job.id)
         job.request_abort()
         django_hqes = list(models.HostQueueEntry.objects.filter(job=job.id))
         for hqe in django_hqes:
             self.assertTrue(hqe.aborted)
-
-
-    def test__atomic_and_has_started__on_atomic(self):
-        self._create_job(hosts=[5, 6], atomic_group=1)
-        job = scheduler_models.Job.fetch('id = 1')[0]
-        self.assertFalse(job._atomic_and_has_started())
-
-        self._update_hqe("status='Pending'")
-        self.assertFalse(job._atomic_and_has_started())
-        self._update_hqe("status='Verifying'")
-        self.assertFalse(job._atomic_and_has_started())
-        self.assertFalse(job._atomic_and_has_started())
-        self._update_hqe("status='Failed'")
-        self.assertFalse(job._atomic_and_has_started())
-        self._update_hqe("status='Stopped'")
-        self.assertFalse(job._atomic_and_has_started())
-
-        self._update_hqe("status='Starting'")
-        self.assertTrue(job._atomic_and_has_started())
-        self._update_hqe("status='Completed'")
-        self.assertTrue(job._atomic_and_has_started())
-        self._update_hqe("status='Aborted'")
-
-
-    def test__atomic_and_has_started__not_atomic(self):
-        self._create_job(hosts=[1, 2])
-        job = scheduler_models.Job.fetch('id = 1')[0]
-        self.assertFalse(job._atomic_and_has_started())
-        self._update_hqe("status='Starting'")
-        self.assertFalse(job._atomic_and_has_started())
 
 
     def _check_special_tasks(self, tasks, task_types):
@@ -452,18 +377,6 @@ class JobTest(BaseSchedulerModelsTest):
         self._check_special_tasks(tasks, [(models.SpecialTask.Task.VERIFY, 1)])
 
 
-    def test_run_atomic_group_already_started(self):
-        self._create_job(hosts=[5, 6], atomic_group=1, synchronous=True)
-        self._update_hqe("status='Starting', execution_subdir=''")
-
-        job = scheduler_models.Job.fetch('id = 1')[0]
-        queue_entry = scheduler_models.HostQueueEntry.fetch('id = 1')[0]
-        assert queue_entry.job is job
-        self.assertEqual(None, job.run(queue_entry))
-
-        self.god.check_playback()
-
-
     def test_reboot_before_always(self):
         job = self._create_job(hosts=[1])
         job.reboot_before = model_attributes.RebootBefore.ALWAYS
@@ -495,17 +408,6 @@ class JobTest(BaseSchedulerModelsTest):
     def test_reboot_before_not_dirty(self):
         models.Host.smart_get(1).update_object(dirty=False)
         self._test_reboot_before_if_dirty_helper()
-
-
-    def test_next_group_name(self):
-        django_job = self._create_job(metahosts=[1])
-        job = scheduler_models.Job(id=django_job.id)
-        self.assertEqual('group0', job._next_group_name())
-
-        for hqe in django_job.hostqueueentry_set.filter():
-            hqe.execution_subdir = 'my_rack.group0'
-            hqe.save()
-        self.assertEqual('my_rack.group1', job._next_group_name('my/rack'))
 
 
 if __name__ == '__main__':

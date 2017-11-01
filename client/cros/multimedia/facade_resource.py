@@ -13,6 +13,8 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants
 
+import py_utils
+
 _FLAKY_CALL_RETRY_TIMEOUT_SEC = 60
 _FLAKY_CHROME_CALL_RETRY_DELAY_SEC = 1
 
@@ -179,7 +181,11 @@ class FacadeResource(object):
 
         for tab in browser_tabs:
             if self._generate_tab_descriptor(tab) not in self._tabs:
-                tab.Close()
+                # TODO(mojahsu): Reevaluate this code. crbug.com/719592
+                try:
+                    tab.Close()
+                except py_utils.TimeoutException:
+                    logging.warn('close tab timeout %r, %s', tab, tab.url)
 
 
     @retry_chrome_call
@@ -275,8 +281,8 @@ class FacadeResource(object):
         """
         if tab_descriptor not in self._tabs:
             raise RuntimeError('There is no tab for %s' % tab_descriptor)
-        self._tabs[tab_descriptor].WaitForJavaScriptExpression(
-                expression, timeout)
+        self._tabs[tab_descriptor].WaitForJavaScriptCondition(
+                expression, timeout=timeout)
 
 
     def execute_javascript(self, tab_descriptor, statement, timeout):
@@ -289,7 +295,7 @@ class FacadeResource(object):
         if tab_descriptor not in self._tabs:
             raise RuntimeError('There is no tab for %s' % tab_descriptor)
         self._tabs[tab_descriptor].ExecuteJavaScript(
-                statement, timeout)
+                statement, timeout=timeout)
 
 
     def evaluate_javascript(self, tab_descriptor, expression, timeout):
@@ -303,4 +309,4 @@ class FacadeResource(object):
         if tab_descriptor not in self._tabs:
             raise RuntimeError('There is no tab for %s' % tab_descriptor)
         return self._tabs[tab_descriptor].EvaluateJavaScript(
-                expression, timeout)
+                expression, timeout=timeout)

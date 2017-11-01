@@ -10,13 +10,18 @@ if necessary.
 
 import os
 
+from autotest_lib.client.common_lib import utils
 from autotest_lib.frontend.afe import models, model_attributes
 from autotest_lib.scheduler import agent_task, drones, drone_manager
 from autotest_lib.scheduler import email_manager, pidfile_monitor
 from autotest_lib.scheduler import scheduler_config
 from autotest_lib.server import autoserv_utils
 
-from chromite.lib import metrics
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
+
 
 _parser_path = os.path.join(drones.AUTOTEST_INSTALL_DIR, 'tko', 'parse')
 
@@ -312,8 +317,9 @@ class FinalReparseTask(SelfThrottledPostJobTask):
 
 
     def _generate_command(self, results_dir):
-        return [_parser_path, '--write-pidfile', '--record-duration',
-                '--suite-report', '-l', '2', '-r', '-o', results_dir]
+        return [_parser_path, '--detach', '--write-pidfile',
+                '--record-duration', '--suite-report', '-l', '2', '-r', '-o',
+                results_dir]
 
 
     @property
@@ -340,53 +346,4 @@ class FinalReparseTask(SelfThrottledPostJobTask):
 
     def epilog(self):
         super(FinalReparseTask, self).epilog()
-        self._archive_results(self.queue_entries)
-
-
-class ArchiveResultsTask(SelfThrottledPostJobTask):
-    _ARCHIVING_FAILED_FILE = '.archiver_failed'
-
-    def __init__(self, queue_entries):
-        super(ArchiveResultsTask, self).__init__(queue_entries,
-                                                 log_file_name='.archiving.log')
-        # don't use _set_ids, since we don't want to set the host_ids
-        self.queue_entry_ids = [entry.id for entry in queue_entries]
-
-
-    def _pidfile_name(self):
-        return drone_manager.ARCHIVER_PID_FILE
-
-
-    # TODO: Refactor into autoserv_utils. crbug.com/243090
-    def _generate_command(self, results_dir):
-        return [autoserv_utils.autoserv_path , '-p',
-                '--pidfile-label=%s' % self._pidfile_label(), '-r', results_dir,
-                '--use-existing-results', '--control-filename=control.archive',
-                os.path.join(drones.AUTOTEST_INSTALL_DIR, 'scheduler',
-                             'archive_results.control.srv')]
-
-
-    @classmethod
-    def _max_processes(cls):
-        return scheduler_config.config.max_transfer_processes
-
-
-    def prolog(self):
-        self._check_queue_entry_statuses(
-                self.queue_entries,
-                allowed_hqe_statuses=(models.HostQueueEntry.Status.ARCHIVING,))
-
-        super(ArchiveResultsTask, self).prolog()
-
-
-    def epilog(self):
-        super(ArchiveResultsTask, self).epilog()
-        if not self.success and self._paired_with_monitor().has_process():
-            failed_file = os.path.join(self._working_directory(),
-                                       self._ARCHIVING_FAILED_FILE)
-            paired_process = self._paired_with_monitor().get_process()
-            self._drone_manager.write_lines_to_file(
-                    failed_file, ['Archiving failed with exit code %s'
-                                  % self.monitor.exit_code()],
-                    paired_with_process=paired_process)
         self._set_all_statuses(self._final_status())

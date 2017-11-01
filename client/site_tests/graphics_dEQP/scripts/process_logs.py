@@ -259,7 +259,7 @@ def process_logs(logs):
 JOB_TAGS_ALL = (
 'select distinct job_tag from chromeos_autotest_db.tko_test_view_2 '
 'where not job_tag like "%%hostless" and '
-'test_name="graphics_dEQP" and '
+'test_name LIKE "graphics_dEQP%%" and '
 'build_version>="%s" and '
 'build_version<="%s" and '
 '((status = "FAIL" and not job_name like "%%.NotPass") or '
@@ -269,7 +269,7 @@ JOB_TAGS_ALL = (
 JOB_TAGS_MASTER = (
 'select distinct job_tag from chromeos_autotest_db.tko_test_view_2 '
 'where not job_tag like "%%hostless" and '
-'test_name="graphics_dEQP" and '
+'test_name LIKE "graphics_dEQP%%" and '
 'build_version>="%s" and '
 'build_version<="%s" and '
 'job_name like "%%-master"' )
@@ -302,7 +302,7 @@ argparser = argparse.ArgumentParser(
 argparser.add_argument(
     '--host',
     dest='host',
-    default='chromeos-server38.cbf',
+    default='173.194.81.83',
     help='Host containing autotest result DB.')
 argparser.add_argument('--user', dest='user', help='Database user account.')
 argparser.add_argument(

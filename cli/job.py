@@ -21,6 +21,7 @@ See topic_common.py for a High Level Design and Algorithm.
 import getpass, re
 from autotest_lib.cli import topic_common, action_common
 from autotest_lib.client.common_lib import control_data
+from autotest_lib.client.common_lib import priorities
 
 
 class job(topic_common.atest):
@@ -259,10 +260,9 @@ class job_create_or_clone(action_common.atest_create, job):
         super(job_create_or_clone, self).__init__()
         self.hosts = []
         self.data_item_key = 'name'
-        self.parser.add_option('-p', '--priority', help='Job priority (low, '
-                               'medium, high, urgent), default=medium',
-                               type='choice', choices=('low', 'medium', 'high',
-                               'urgent'), default='medium')
+        self.parser.add_option('-p', '--priority',
+                               help='Job priority (int)', type='int',
+                               default=priorities.Priority.DEFAULT)
         self.parser.add_option('-b', '--labels',
                                help='Comma separated list of labels '
                                'to get machine list from.', default='')
@@ -316,15 +316,14 @@ class job_create_or_clone(action_common.atest_create, job):
         options, leftover = super(job_create_or_clone, self).parse(
                 [host_info, job_info, oth_info, label_info] + parse_info,
                 req_items='jobname')
-        self.data = {}
+        self.data = {
+            'priority': options.priority,
+        }
         jobname = getattr(self, 'jobname')
         if len(jobname) > 1:
             self.invalid_syntax('Too many arguments specified, only expected '
                                 'to receive job name: %s' % jobname)
         self.jobname = jobname[0]
-
-        if options.priority:
-            self.data['priority'] = options.priority.capitalize()
 
         if self.one_time_hosts:
             self.data['one_time_hosts'] = self.one_time_hosts
@@ -356,7 +355,7 @@ class job_create_or_clone(action_common.atest_create, job):
 
 
 class job_create(job_create_or_clone):
-    """atest job create [--priority <Low|Medium|High|Urgent>]
+    """atest job create [--priority <int>]
     [--synch_count] [--control-file </path/to/cfile>]
     [--on-server] [--test <test1,test2>]
     [--mlist </path/to/machinelist>] [--machine <host1 host2 host3>]
@@ -365,7 +364,7 @@ class job_create(job_create_or_clone):
     [--noverify] [--timeout <timeout>] [--max_runtime <max runtime>]
     [--one-time-hosts <hosts>] [--email <email>]
     [--dependencies <labels this job is dependent on>]
-    [--atomic_group <atomic group name>] [--parse-failed-repair <option>]
+    [--parse-failed-repair <option>]
     [--image <http://path/to/image>] [--require-ssp]
     job_name
 
@@ -390,9 +389,6 @@ class job_create(job_create_or_clone):
 
         self.parser.add_option('-d', '--dependencies', help='Comma separated '
                                'list of labels this job is dependent on.',
-                               default='')
-        self.parser.add_option('-G', '--atomic_group', help='Name of an Atomic '
-                               'Group to schedule this job on.',
                                default='')
 
         self.parser.add_option('-B', '--reboot_before',
@@ -437,10 +433,9 @@ class job_create(job_create_or_clone):
                 parse_info=[deps_info])
 
         if (len(self.hosts) == 0 and not self.one_time_hosts
-            and not options.labels and not options.atomic_group):
-            self.invalid_syntax('Must specify at least one machine '
-                                'or an atomic group '
-                                '(-m, -M, -b, -G or --one-time-hosts).')
+            and not options.labels):
+            self.invalid_syntax('Must specify at least one machine.'
+                                '(-m, -M, -b or --one-time-hosts).')
         if not options.control_file and not options.test:
             self.invalid_syntax('Must specify either --test or --control-file'
                                 ' to create a job.')
@@ -483,9 +478,6 @@ class job_create(job_create_or_clone):
         if options.max_runtime:
             self.data['max_runtime_mins'] = options.max_runtime
 
-        if options.atomic_group:
-            self.data['atomic_group_name'] = options.atomic_group
-
         self.data['dependencies'] = self.dependencies
 
         if options.synch_count:
@@ -526,7 +518,7 @@ class job_create(job_create_or_clone):
 
 
 class job_clone(job_create_or_clone):
-    """atest job clone [--priority <Low|Medium|High|Urgent>]
+    """atest job clone [--priority <int>]
     [--mlist </path/to/machinelist>] [--machine <host1 host2 host3>]
     [--labels <list of labels of machines to run on>]
     [--one-time-hosts <hosts>] [--email <email>]

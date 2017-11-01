@@ -16,7 +16,6 @@ import ConfigParser
 import argparse
 import os
 import re
-import socket
 import subprocess
 import sys
 import time
@@ -29,13 +28,8 @@ from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 
 
 # How long after restarting a service do we watch it to see if it's stable.
-SERVICE_STABILITY_TIMER = 120
+SERVICE_STABILITY_TIMER = 60
 
-# A list of commands that only applies to primary server. For example,
-# test_importer should only be run in primary master scheduler. If two servers
-# are both running test_importer, there is a chance to fail as both try to
-# update the same table.
-PRIMARY_ONLY_COMMANDS = ['test_importer']
 # A dict to map update_commands defined in config file to repos or files that
 # decide whether need to update these commands. E.g. if no changes under
 # frontend repo, no need to update afe.
@@ -71,6 +65,25 @@ def strip_terminal_codes(text):
     return re.sub(ESC+r'\[[^m]*m', '', text)
 
 
+def _clean_pyc_files():
+    print('Removing .pyc files')
+    try:
+        subprocess.check_output([
+                'find', '.',
+                '(',
+                # These are ignored to reduce IO load (crbug.com/759780).
+                '-path', './site-packages',
+                '-o', '-path', './containers',
+                '-o', '-path', './logs',
+                '-o', '-path', './results',
+                ')',
+                '-prune',
+                '-o', '-name', '*.pyc',
+                '-exec', 'rm', '-f', '{}', '+'])
+    except Exception as e:
+        print('Warning: fail to remove .pyc! %s' % e)
+
+
 def verify_repo_clean():
     """This function cleans the current repo then verifies that it is valid.
 
@@ -78,11 +91,23 @@ def verify_repo_clean():
     @raises subprocess.CalledProcessError on a repo command failure.
     """
     subprocess.check_output(['git', 'reset', '--hard'])
+    # Forcefully blow away any non-gitignored files in the tree.
+    subprocess.check_output(['git', 'clean', '-fd'])
     out = subprocess.check_output(['repo', 'status'], stderr=subprocess.STDOUT)
     out = strip_terminal_codes(out).strip()
 
     if not 'working directory clean' in out:
         raise DirtyTreeException(out)
+
+
+def _clean_externals():
+    """Clean untracked files within ExternalSource and site-packages/
+
+    @raises subprocess.CalledProcessError on a git command failure.
+    """
+    dirs_to_clean = ['site-packages/', 'ExternalSource/']
+    cmd = ['git', 'clean', '-fxd'] + dirs_to_clean
+    subprocess.check_output(cmd)
 
 
 def repo_versions():
@@ -152,10 +177,13 @@ def repo_sync(update_push_servers=False):
     subprocess.check_output(['repo', 'sync'])
     if update_push_servers:
         print('Updating push servers, checkout cros/master')
-        subprocess.check_output(['git', 'checkout', 'cros/master'])
+        subprocess.check_output(['git', 'checkout', 'cros/master'],
+                                stderr=subprocess.STDOUT)
     else:
         print('Updating server to prod branch')
-        subprocess.check_output(['git', 'checkout', 'cros/prod'])
+        subprocess.check_output(['git', 'checkout', 'cros/prod'],
+                                stderr=subprocess.STDOUT)
+    _clean_pyc_files()
 
 
 def discover_update_commands():
@@ -248,7 +276,7 @@ def restart_service(service_name, dryrun=False):
     if dryrun:
         print('Skip: %s' % ' '.join(cmd))
     else:
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd, stderr=subprocess.STDOUT)
 
 
 def service_status(service_name):
@@ -292,7 +320,6 @@ def restart_services(service_names, dryrun=False, skip_service_status=False):
     # Restart each, and record the status (including pid).
     for name in service_names:
         restart_service(name)
-        service_statuses[name] = service_status(name)
 
     # Skip service status check if --skip-service-status is specified. Used for
     # servers in backup status.
@@ -302,7 +329,8 @@ def restart_services(service_names, dryrun=False, skip_service_status=False):
 
     # Wait for a while to let the services settle.
     time.sleep(SERVICE_STABILITY_TIMER)
-
+    service_statuses = {name: service_status(name) for name in service_names}
+    time.sleep(SERVICE_STABILITY_TIMER)
     # Look for any services that changed status.
     unstable_services = [n for n in service_names
                          if service_status(n) != service_statuses[n]]
@@ -332,11 +360,6 @@ def run_deploy_actions(cmds_skip=set(), dryrun=False,
     if cmds:
         print('Running update commands:', ', '.join(cmds))
         for cmd in cmds:
-            if (cmd in PRIMARY_ONLY_COMMANDS and
-                not AFE.run('get_servers', hostname=socket.getfqdn(),
-                            status='primary')):
-                print('Command %s is only applicable to primary servers.' % cmd)
-                continue
             update_command(cmd, dryrun=dryrun,
                            use_chromite_master=use_chromite_master)
 
@@ -420,6 +443,11 @@ def parse_arguments(args):
     parser.add_argument('--update_push_servers', action='store_true',
                         help='Indicate to update test_push server. If not '
                              'specify, then update server to production.')
+    parser.add_argument('--force-clean-externals', action='store_true',
+                        default=False,
+                        help='Force a cleanup of all untracked files within '
+                             'site-packages/ and ExternalSource/, so that '
+                             'build_externals will build from scratch.')
     parser.add_argument('--force_update', action='store_true',
                         help='Force to run the update commands for afe, tko '
                              'and build_externals')
@@ -435,6 +463,7 @@ def parse_arguments(args):
     if results.dryrun:
         results.verify = False
         results.update = False
+        results.force_clean_externals = False
 
     return results
 
@@ -455,11 +484,12 @@ class ChangeDir(object):
         os.chdir(self.old_dir)
 
 
-def update_chromeos():
-    """Update /usr/local/google/chromeos repo."""
-    print('Updating /usr/local/google/chromeos')
-    with ChangeDir('/usr/local/google/chromeos'):
-        ret = subprocess.call(['repo', 'sync'])
+def _sync_chromiumos_repo():
+    """Update ~chromeos-test/chromiumos repo."""
+    print('Updating ~chromeos-test/chromiumos')
+    with ChangeDir(os.path.expanduser('~chromeos-test/chromiumos')):
+        ret = subprocess.call(['repo', 'sync'], stderr=subprocess.STDOUT)
+        _clean_pyc_files()
     if ret != 0:
         print('Update failed, exited with status: %d' % ret)
 
@@ -472,16 +502,14 @@ def main(args):
     behaviors = parse_arguments(args)
 
     if behaviors.verify:
-        try:
-            print('Checking tree status:')
-            verify_repo_clean()
-            print('Clean.')
-        except DirtyTreeException as e:
-            print('Local tree is dirty, can\'t perform update safely.')
-            print()
-            print('repo status:')
-            print(e.args[0])
-            return 1
+        print('Checking tree status:')
+        verify_repo_clean()
+        print('Tree status: clean')
+
+    if behaviors.force_clean_externals:
+       print('Cleaning all external packages and their cache...')
+       _clean_externals()
+       print('...done.')
 
     versions_before = repo_versions()
     versions_after = set()
@@ -493,22 +521,15 @@ def main(args):
         repo_sync(behaviors.update_push_servers)
         versions_after = repo_versions()
         cmd_versions_after = repo_versions_to_decide_whether_run_cmd_update()
-
-        update_chromeos()
+        _sync_chromiumos_repo()
 
     if behaviors.actions:
         # If the corresponding repo/file not change, no need to run the cmd.
         cmds_skip = (set() if behaviors.force_update else
                      {t[0] for t in cmd_versions_before & cmd_versions_after})
-        try:
-            run_deploy_actions(
-                    cmds_skip, behaviors.dryrun, behaviors.skip_service_status,
-                    use_chromite_master=behaviors.update_push_servers)
-        except UnstableServices as e:
-            print('The following services were not stable after '
-                  'the update:')
-            print(e.args[0])
-            return 1
+        run_deploy_actions(
+                cmds_skip, behaviors.dryrun, behaviors.skip_service_status,
+                use_chromite_master=behaviors.update_push_servers)
 
     if behaviors.report:
         print('Changes:')

@@ -13,12 +13,16 @@ TIME = 'LONG'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'graphics'
 TEST_TYPE = 'client'
+MAX_RESULT_SIZE_KB = 131072
 DOC = """
 This test runs the drawElements Quality Program test suite.
 """
-
-job.run_test('graphics_dEQP', opts = args + ['filter=dEQP-GLES2.stress',
-                                             'subset_to_run=Pass',
-                                             'hasty=False',
-                                             'shard_number=0',
-                                             'shard_count=1'])
+job.run_test('graphics_dEQP',
+             tag = 'stress',
+             opts = args + [
+                 'filter=dEQP-GLES2.stress',
+                 'subset_to_run=Pass',
+                 'hasty=False',
+                 'shard_number=0',
+                 'shard_count=1'
+             ])

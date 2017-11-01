@@ -11,13 +11,14 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.video import histogram_verifier
 from autotest_lib.client.cros.video import constants
 from autotest_lib.client.cros.video import native_html5_player
+from autotest_lib.client.cros.video import helper_logger
 
 
 class video_ChromeVidResChangeHWDecode(test.test):
     """Verify that VDA works in Chrome for video with resolution changes."""
     version = 1
 
-
+    @helper_logger.video_log_wrapper
     def run_once(self, video_file, video_len):
         """Verify VDA and playback for the video_file.
 
@@ -25,7 +26,9 @@ class video_ChromeVidResChangeHWDecode(test.test):
         @param video_len : test video file length.
         """
 
-        with chrome.Chrome() as cr:
+        with chrome.Chrome(
+                extra_browser_args=helper_logger.chrome_vmodule_flag(),
+                init_network_controller=True) as cr:
             shutil.copy2(constants.VIDEO_HTML_FILEPATH, self.bindir)
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)
             tab1 = cr.browser.tabs[0]
@@ -39,11 +42,6 @@ class video_ChromeVidResChangeHWDecode(test.test):
                  event_timeout = 120)
             player.load_video()
             player.play()
-            # Waits for histogram updated for the test video.
-            histogram_verifier.verify(
-                    cr,
-                    constants.MEDIA_GVD_INIT_STATUS,
-                    constants.MEDIA_GVD_BUCKET)
 
             # Verify the video playback.
             for i in range(1, video_len/2):
@@ -57,3 +55,9 @@ class video_ChromeVidResChangeHWDecode(test.test):
                     timeout=video_len,
                     exception=error.TestError('Video did not end successfully'),
                     sleep_interval=1)
+
+            # Make sure decode is hardware accelerated.
+            histogram_verifier.verify(
+                    cr,
+                    constants.MEDIA_GVD_INIT_STATUS,
+                    constants.MEDIA_GVD_BUCKET)

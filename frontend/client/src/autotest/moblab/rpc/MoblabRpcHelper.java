@@ -20,6 +20,7 @@ import java.util.Map;
  */
 public class MoblabRpcHelper {
   public static final String RPC_PARAM_CLOUD_STORAGE_INFO = "cloud_storage_info";
+  public static final String RPC_PARAM_WIFI_INFO = "wifi_info";
 
   private MoblabRpcHelper() {}
 
@@ -130,6 +131,11 @@ public class MoblabRpcHelper {
       params.put(RPC_PARAM_CLOUD_STORAGE_INFO, configDataMap.get(RPC_PARAM_CLOUD_STORAGE_INFO));
     } else {
       params.put(RPC_PARAM_CLOUD_STORAGE_INFO, new JSONObject());
+    }
+    if (configDataMap.containsKey(RPC_PARAM_WIFI_INFO)) {
+      params.put(RPC_PARAM_WIFI_INFO, configDataMap.get(RPC_PARAM_WIFI_INFO));
+    } else {
+      params.put(RPC_PARAM_WIFI_INFO, new JSONObject());
     }
     JsonRpcProxy rpcProxy = JsonRpcProxy.getProxy();
     rpcProxy.rpcCall("submit_wizard_config_info", params, new JsonRpcCallback() {
@@ -258,6 +264,53 @@ public class MoblabRpcHelper {
     });
   }
 
+  /**
+   * add an attribute to a specific dut.
+   * @param dutIpAddress  ipaddress of the device to have the new attribute applied.
+   * @param attributeName the attribute name
+   * @param attributeValue the attribute value to be associated with the name
+   * @param callback callback to execute when the rpc is complete.
+   */
+  public static void setMoblabAttribute(String dutIpAddress, String attributeName,
+      String attributeValue, final MoblabRpcCallbacks.LogActionCompleteCallback callback) {
+    JsonRpcProxy rpcProxy = JsonRpcProxy.getProxy();
+    JSONObject params = new JSONObject();
+    params.put("ipaddress", new JSONString(dutIpAddress));
+    params.put("attribute", new JSONString(attributeName));
+    params.put("value", new JSONString(attributeValue));
+    rpcProxy.rpcCall("set_host_attrib", params, new JsonRpcCallback() {
+      @Override
+      public void onSuccess(JSONValue result) {
+        boolean didSucceed = result.isArray().get(0).isBoolean().booleanValue();
+        String information = result.isArray().get(1).isString().stringValue();
+        callback.onLogActionComplete(didSucceed, information);
+      }
+    });
+  }
+
+  /**
+   * remove an attribute from a specific dut.
+   * @param dutIpAddress  ipaddress of the device to have the new attribute applied.
+   * @param attributeName the attribute name
+   * @param callback callback to execute when the rpc is complete.
+   */
+  public static void removeMoblabAttribute(String dutIpAddress, String attributeName,
+      final  MoblabRpcCallbacks.LogActionCompleteCallback callback) {
+    JsonRpcProxy rpcProxy = JsonRpcProxy.getProxy();
+    JSONObject params = new JSONObject();
+    params.put("ipaddress", new JSONString(dutIpAddress));
+    params.put("attribute", new JSONString(attributeName));
+    rpcProxy.rpcCall("delete_host_attrib", params, new JsonRpcCallback() {
+      @Override
+      public void onSuccess(JSONValue result) {
+        boolean didSucceed = result.isArray().get(0).isBoolean().booleanValue();
+        String information = result.isArray().get(1).isString().stringValue();
+        callback.onLogActionComplete(didSucceed, information);
+      }
+    });
+  }
+
+
   public static void fetchConnectedBoards(
       final MoblabRpcCallbacks.FetchConnectedBoardsCallback callback) {
     JsonRpcProxy rpcProxy = JsonRpcProxy.getProxy();
@@ -324,8 +377,10 @@ public class MoblabRpcHelper {
     });
   }
 
-  public static void runSuite(String board, String build, String suite, String pool, String rwFirmware,
-      String roFirmware, final MoblabRpcCallbacks.RunSuiteCallback callback) {
+  public static void runSuite(String board, String build, String suite,
+      String pool, String rwFirmware, String roFirmware, String suiteArgs,
+      String bugId, String partId,
+      final MoblabRpcCallbacks.RunSuiteCallback callback) {
     JsonRpcProxy rpcProxy = JsonRpcProxy.getProxy();
     JSONObject params = new JSONObject();
     params.put("board", new JSONString(board));
@@ -334,6 +389,9 @@ public class MoblabRpcHelper {
     params.put("pool", new JSONString(pool));
     params.put("rw_firmware", new JSONString(rwFirmware));
     params.put("ro_firmware", new JSONString(roFirmware));
+    params.put("suite_args", new JSONString(suiteArgs));
+    params.put("bug_id", new JSONString(bugId));
+    params.put("part_id", new JSONString(partId));
     rpcProxy.rpcCall("run_suite", params, new JsonRpcCallback() {
       @Override
       public void onSuccess(JSONValue result) {
@@ -341,4 +399,22 @@ public class MoblabRpcHelper {
       }
     });
   }
+
+  /**
+   * Fetches the DUT wifi configuration information to use in tests.
+   */
+  public static void fetchWifiInfo(
+      final MoblabRpcCallbacks.FetchWifiInfoCallback callback) {
+    JsonRpcProxy rpcProxy = JsonRpcProxy.getProxy();
+    rpcProxy.rpcCall("get_dut_wifi_info", null, new JsonRpcCallback() {
+      @Override
+      public void onSuccess(JSONValue result) {
+        WifiInfo info = new WifiInfo();
+        info.fromJson(result.isObject());
+        callback.onWifiInfoFetched(info);
+      }
+    });
+  }
+
+
 }

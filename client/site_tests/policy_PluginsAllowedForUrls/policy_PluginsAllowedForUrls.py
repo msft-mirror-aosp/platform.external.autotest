@@ -36,6 +36,7 @@ class policy_PluginsAllowedForUrls(
     version = 1
 
     def initialize(self, **kwargs):
+        """Initialize this test."""
         self._initialize_test_constants()
         super(policy_PluginsAllowedForUrls, self).initialize(**kwargs)
         self.start_webserver()
@@ -63,7 +64,7 @@ class policy_PluginsAllowedForUrls(
             'AllowOutdatedPlugins': False,
             'AlwaysAuthorizePlugins': False,
             'BookmarkBarEnabled': True,
-            'EditBookmarkEnabled': True,
+            'EditBookmarksEnabled': True,
             'RestoreOnStartupURLs': self.STARTUP_URLS,
             'RestoreOnStartup': 4
         }
@@ -84,7 +85,7 @@ class policy_PluginsAllowedForUrls(
 
         @param timeout_sec: maximum seconds to wait for processes to die.
         @raises: error.AutoservPidAlreadyDeadError if Flash process is dead.
-        @raises: site_utils.TimeoutError if Flash processes are still running
+        @raises: utils.TimeoutError if Flash processes are still running
                  after timeout_sec.
         """
         def kill_flash_process():
@@ -145,11 +146,12 @@ class policy_PluginsAllowedForUrls(
         tab.Close()
 
 
-    def run_test_case(self, case):
+    def run_once(self, case):
         """Setup and run the test configured for the specified test case.
 
         @param case: Name of the test case to run.
         """
         case_value = self.TEST_CASES[case]
-        self.setup_case(self.POLICY_NAME, case_value, self.SUPPORTING_POLICIES)
+        self.SUPPORTING_POLICIES[self.POLICY_NAME] = case_value
+        self.setup_case(user_policies=self.SUPPORTING_POLICIES)
         self._test_plugins_allowed_for_urls(case_value)

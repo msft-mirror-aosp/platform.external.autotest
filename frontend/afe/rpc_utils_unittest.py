@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 #
 # Copyright (c) 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -6,14 +6,25 @@
 
 """Unit tests for frontend/afe/rpc_utils.py."""
 
-
+import mock
 import unittest
 
 import common
 from autotest_lib.client.common_lib import control_data
 from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.afe import frontend_test_utils
+from autotest_lib.frontend.afe import models
 from autotest_lib.frontend.afe import rpc_utils
+
+
+class DjangoModelTest(unittest.TestCase):
+    """Unit tests for verifying Django behavior."""
+
+    def test_model_equal_by_id(self):
+        """Test that model instances compare equal by id."""
+        x = models.Host(id=10, hostname='foo')
+        y = models.Host(id=10, hostname='bar')
+        self.assertEqual(x, y)
 
 
 class RpcUtilsTest(unittest.TestCase,
@@ -85,6 +96,43 @@ class ConvertToKwargsOnlyTest(unittest.TestCase):
             pass
         got = rpc_utils._convert_to_kwargs_only(func, (1, 2, 3), {})
         self.assertEquals(got, {'a': 1, 'b': 2, 'args': (3,)})
+
+
+class AllowedHostsForMasterJobTest(unittest.TestCase):
+    """Unit tests for _allowed_hosts_for_master_job()."""
+
+    # pylint: disable=missing-docstring
+
+    @mock.patch.object(rpc_utils, 'bucket_hosts_by_shard', autospec=True)
+    def test_multiple_shards(self, bucket_mock):
+        bucket_mock.return_value = {
+            'shard1': [],
+            'shard2': [],
+        }
+        got = rpc_utils._allowed_hosts_for_master_job([])
+        self.assertFalse(got)
+
+    @mock.patch.object(rpc_utils, 'bucket_hosts_by_shard', autospec=True)
+    def test_one_shard_with_less_hosts(self, bucket_mock):
+        bucket_mock.return_value = {
+            'shard1': [1],
+        }
+        got = rpc_utils._allowed_hosts_for_master_job([1, 2])
+        self.assertFalse(got)
+
+    @mock.patch.object(rpc_utils, 'bucket_hosts_by_shard', autospec=True)
+    def test_one_shard_with_equal_hosts(self, bucket_mock):
+        bucket_mock.return_value = {
+            'shard1': [1, 2],
+        }
+        got = rpc_utils._allowed_hosts_for_master_job([1, 2])
+        self.assertTrue(got)
+
+    @mock.patch.object(rpc_utils, 'bucket_hosts_by_shard', autospec=True)
+    def test_no_shards(self, bucket_mock):
+        bucket_mock.return_value = {}
+        got = rpc_utils._allowed_hosts_for_master_job([1, 2])
+        self.assertTrue(got)
 
 
 if __name__ == '__main__':

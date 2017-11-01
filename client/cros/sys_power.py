@@ -8,9 +8,11 @@ import errno
 import logging
 import multiprocessing
 import os
-import rtc
 import time
-import upstart
+
+import common
+from autotest_lib.client.cros import rtc
+from autotest_lib.client.cros import upstart
 
 SYSFS_POWER_STATE = '/sys/power/state'
 SYSFS_WAKEUP_COUNT = '/sys/power/wakeup_count'
@@ -59,6 +61,8 @@ class FirmwareError(SuspendFailure):
             ('^stumpy', r'PNP: 002e\.4 70 irq size: 0x0000000001 not assigned'),
             # crbug.com/221538: no one knows what ME errors mean anyway
             ('^parrot', r'ME failed to respond'),
+            # b/64684441: eve SKU without eMMC
+            ('^eve', r'Card did not respond to voltage select!'),
         ]
 
 
@@ -88,6 +92,11 @@ class SuspendNotAllowed(SuspendFailure):
     """Suspend was not allowed to be performed."""
     pass
 
+
+class S0ixResidencyNotChanged(SuspendFailure):
+    """power_SuspendStress test found CPU/SoC is unable to idle properly
+    when suspended to S0ix. """
+    pass
 
 def prepare_wakeup(seconds):
     """Prepare the device to wake up from an upcoming suspend.

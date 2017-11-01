@@ -1,4 +1,4 @@
-#pylint: disable-msg=C0111
+# pylint: disable=missing-docstring
 """
 Utility functions for rpc_interface.py.  We keep them in a separate file so that
 only RPC interface functions go into that file.
@@ -6,6 +6,7 @@ only RPC interface functions go into that file.
 
 __author__ = 'showard@google.com (Steve Howard)'
 
+import collections
 import datetime
 from functools import wraps
 import inspect
@@ -17,12 +18,9 @@ import django.http
 from autotest_lib.frontend import thread_local
 from autotest_lib.frontend.afe import models, model_logic
 from autotest_lib.client.common_lib import control_data, error
-from autotest_lib.client.common_lib import global_config, priorities
+from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import time_utils
 from autotest_lib.client.common_lib.cros import dev_server
-# TODO(akeshet): Replace with monarch once we know how to instrument rpc server
-# with ts_mon.
-from autotest_lib.client.common_lib.cros.graphite import autotest_stats
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
@@ -38,7 +36,7 @@ def prepare_for_serialization(objects):
     """
     if (isinstance(objects, list) and len(objects) and
         isinstance(objects[0], dict) and 'id' in objects[0]):
-        objects = gather_unique_dicts(objects)
+        objects = _gather_unique_dicts(objects)
     return _prepare_data(objects)
 
 
@@ -105,17 +103,14 @@ def raw_http_response(response_data, content_type=None):
     return response
 
 
-def gather_unique_dicts(dict_iterable):
+def _gather_unique_dicts(dict_iterable):
     """\
     Pick out unique objects (by ID) from an iterable of object dicts.
     """
-    id_set = set()
-    result = []
+    objects = collections.OrderedDict()
     for obj in dict_iterable:
-        if obj['id'] not in id_set:
-            id_set.add(obj['id'])
-            result.append(obj)
-    return result
+        objects.setdefault(obj['id'], obj)
+    return objects.values()
 
 
 def extra_job_status_filters(not_yet_run=False, running=False, finished=False):
@@ -200,7 +195,7 @@ def extra_host_filters(multiple_labels=()):
 
 
 def get_host_query(multiple_labels, exclude_only_if_needed_labels,
-                   exclude_atomic_group_hosts, valid_only, filter_data):
+                   valid_only, filter_data):
     if valid_only:
         query = models.Host.valid_objects.all()
     else:
@@ -218,25 +213,11 @@ def get_host_query(multiple_labels, exclude_only_if_needed_labels,
                 join_condition=('afe_hosts_labels_exclude_OIN.label_id IN (%s)'
                                 % only_if_needed_ids),
                 suffix='_exclude_OIN', exclude=True)
-
-    if exclude_atomic_group_hosts:
-        atomic_group_labels = models.Label.valid_objects.filter(
-                atomic_group__isnull=False)
-        if atomic_group_labels.count() > 0:
-            atomic_group_label_ids = ','.join(
-                    str(atomic_group['id'])
-                    for atomic_group in atomic_group_labels.values('id'))
-            query = models.Host.objects.add_join(
-                    query, 'afe_hosts_labels', join_key='host_id',
-                    join_condition=(
-                            'afe_hosts_labels_exclude_AG.label_id IN (%s)'
-                            % atomic_group_label_ids),
-                    suffix='_exclude_AG', exclude=True)
     try:
         assert 'extra_args' not in filter_data
         filter_data['extra_args'] = extra_host_filters(multiple_labels)
         return models.Host.query_objects(filter_data, initial_query=query)
-    except models.Label.DoesNotExist as e:
+    except models.Label.DoesNotExist:
         return models.Host.objects.none()
 
 
@@ -389,75 +370,6 @@ def check_abort_synchronous_jobs(host_queue_entries):
                          execution_count, queue_entry.job.synch_count)})
 
 
-def check_atomic_group_create_job(synch_count, host_objects, metahost_objects,
-                                  dependencies, atomic_group):
-    """
-    Attempt to reject create_job requests with an atomic group that
-    will be impossible to schedule.  The checks are not perfect but
-    should catch the most obvious issues.
-
-    @param synch_count - The job's minimum synch count.
-    @param host_objects - A list of models.Host instances.
-    @param metahost_objects - A list of models.Label instances.
-    @param dependencies - A list of job dependency label names.
-    @param labels_by_name - A dictionary mapping label names to models.Label
-            instance.  Used to look up instances for dependencies.
-
-    @raises model_logic.ValidationError - When an issue is found.
-    """
-    # If specific host objects were supplied with an atomic group, verify
-    # that there are enough to satisfy the synch_count.
-    minimum_required = synch_count or 1
-    if (host_objects and not metahost_objects and
-        len(host_objects) < minimum_required):
-        raise model_logic.ValidationError(
-                {'hosts':
-                 'only %d hosts provided for job with synch_count = %d' %
-                 (len(host_objects), synch_count)})
-
-    # Check that the atomic group has a hope of running this job
-    # given any supplied metahosts and dependancies that may limit.
-
-    # Get a set of hostnames in the atomic group.
-    possible_hosts = set()
-    for label in atomic_group.label_set.all():
-        possible_hosts.update(h.hostname for h in label.host_set.all())
-
-    # Filter out hosts that don't match all of the job dependency labels.
-    for label in models.Label.objects.filter(name__in=dependencies):
-        hosts_in_label = (h.hostname for h in label.host_set.all())
-        possible_hosts.intersection_update(hosts_in_label)
-
-    if not host_objects and not metahost_objects:
-        # No hosts or metahosts are required to queue an atomic group Job.
-        # However, if they are given, we respect them below.
-        host_set = possible_hosts
-    else:
-        host_set = set(host.hostname for host in host_objects)
-        unusable_host_set = host_set.difference(possible_hosts)
-        if unusable_host_set:
-            raise model_logic.ValidationError(
-                {'hosts': 'Hosts "%s" are not in Atomic Group "%s"' %
-                 (', '.join(sorted(unusable_host_set)), atomic_group.name)})
-
-    # Lookup hosts provided by each meta host and merge them into the
-    # host_set for final counting.
-    for meta_host in metahost_objects:
-        meta_possible = possible_hosts.copy()
-        hosts_in_meta_host = (h.hostname for h in meta_host.host_set.all())
-        meta_possible.intersection_update(hosts_in_meta_host)
-
-        # Count all hosts that this meta_host will provide.
-        host_set.update(meta_possible)
-
-    if len(host_set) < minimum_required:
-        raise model_logic.ValidationError(
-                {'atomic_group_name':
-                 'Insufficient hosts in Atomic Group "%s" with the'
-                 ' supplied dependencies and meta_hosts.' %
-                 (atomic_group.name,)})
-
-
 def check_modify_host(update_data):
     """
     Sanity check modify_host* requests.
@@ -525,7 +437,6 @@ def get_job_info(job, preserve_metahosts=False, queue_entry_filter_data=None):
     hosts = []
     one_time_hosts = []
     meta_hosts = []
-    atomic_group = None
     hostless = False
 
     queue_entries = job.hostqueueentry_set.all()
@@ -547,15 +458,6 @@ def get_job_info(job, preserve_metahosts=False, queue_entry_filter_data=None):
         else:
             hostless = True
 
-        if atomic_group is None:
-            if queue_entry.atomic_group is not None:
-                atomic_group = queue_entry.atomic_group
-        else:
-            assert atomic_group.name == queue_entry.atomic_group.name, (
-                    'DB inconsistency.  HostQueueEntries with multiple atomic'
-                    ' groups on job %s: %s != %s' % (
-                        id, atomic_group.name, queue_entry.atomic_group.name))
-
     meta_host_counts = _get_metahost_counts(meta_hosts)
 
     info = dict(dependencies=[label.name for label
@@ -564,51 +466,31 @@ def get_job_info(job, preserve_metahosts=False, queue_entry_filter_data=None):
                 meta_hosts=meta_hosts,
                 meta_host_counts=meta_host_counts,
                 one_time_hosts=one_time_hosts,
-                atomic_group=atomic_group,
                 hostless=hostless)
     return info
 
 
 def check_for_duplicate_hosts(host_objects):
-    host_ids = set()
-    duplicate_hostnames = set()
-    for host in host_objects:
-        if host.id in host_ids:
-            duplicate_hostnames.add(host.hostname)
-        host_ids.add(host.id)
-
+    host_counts = collections.Counter(host_objects)
+    duplicate_hostnames = {host.hostname
+                           for host, count in host_counts.iteritems()
+                           if count > 1}
     if duplicate_hostnames:
         raise model_logic.ValidationError(
                 {'hosts' : 'Duplicate hosts: %s'
                  % ', '.join(duplicate_hostnames)})
 
 
-def create_new_job(owner, options, host_objects, metahost_objects,
-                   atomic_group=None):
+def create_new_job(owner, options, host_objects, metahost_objects):
     all_host_objects = host_objects + metahost_objects
     dependencies = options.get('dependencies', [])
     synch_count = options.get('synch_count')
 
-    if atomic_group:
-        check_atomic_group_create_job(
-                synch_count, host_objects, metahost_objects,
-                dependencies, atomic_group)
-    else:
-        if synch_count is not None and synch_count > len(all_host_objects):
-            raise model_logic.ValidationError(
-                    {'hosts':
-                     'only %d hosts provided for job with synch_count = %d' %
-                     (len(all_host_objects), synch_count)})
-        atomic_hosts = models.Host.objects.filter(
-                id__in=[host.id for host in host_objects],
-                labels__atomic_group=True)
-        unusable_host_names = [host.hostname for host in atomic_hosts]
-        if unusable_host_names:
-            raise model_logic.ValidationError(
-                    {'hosts':
-                     'Host(s) "%s" are atomic group hosts but no '
-                     'atomic group was specified for this job.' %
-                     (', '.join(unusable_host_names),)})
+    if synch_count is not None and synch_count > len(all_host_objects):
+        raise model_logic.ValidationError(
+                {'hosts':
+                 'only %d hosts provided for job with synch_count = %d' %
+                 (len(all_host_objects), synch_count)})
 
     check_for_duplicate_hosts(host_objects)
 
@@ -626,24 +508,9 @@ def create_new_job(owner, options, host_objects, metahost_objects,
     options['dependencies'] = list(
             models.Label.objects.filter(name__in=dependencies))
 
-    for label in metahost_objects + options['dependencies']:
-        if label.atomic_group and not atomic_group:
-            raise model_logic.ValidationError(
-                    {'atomic_group_name':
-                     'Dependency %r requires an atomic group but no '
-                     'atomic_group_name or meta_host in an atomic group was '
-                     'specified for this job.' % label.name})
-        elif (label.atomic_group and
-              label.atomic_group.name != atomic_group.name):
-            raise model_logic.ValidationError(
-                    {'atomic_group_name':
-                     'meta_hosts or dependency %r requires atomic group '
-                     '%r instead of the supplied atomic_group_name=%r.' %
-                     (label.name, label.atomic_group.name, atomic_group.name)})
-
     job = models.Job.create(owner=owner, options=options,
                             hosts=all_host_objects)
-    job.queue(all_host_objects, atomic_group=atomic_group,
+    job.queue(all_host_objects,
               is_template=options.get('is_template', False))
     return job.id
 
@@ -681,12 +548,12 @@ def _ensure_label_exists(name):
     return False
 
 
-def find_platform_and_atomic_group(host):
+def find_platform(host):
     """
-    Figure out the platform name and atomic group name for the given host
+    Figure out the platform name for the given host
     object.  If none, the return value for either will be None.
 
-    @returns (platform name, atomic group name) for the given host.
+    @returns platform name for the given host.
     """
     platforms = [label.name for label in host.label_list if label.platform]
     if not platforms:
@@ -696,16 +563,7 @@ def find_platform_and_atomic_group(host):
     if len(platforms) > 1:
         raise ValueError('Host %s has more than one platform: %s' %
                          (host.hostname, ', '.join(platforms)))
-    for label in host.label_list:
-        if label.atomic_group:
-            atomic_group_name = label.atomic_group.name
-            break
-    else:
-        atomic_group_name = None
-    # Don't check for multiple atomic groups on a host here.  That is an
-    # error but should not trip up the RPC interface.  monitor_db_cleanup
-    # deals with it.  This just returns the first one found.
-    return platform, atomic_group_name
+    return platform
 
 
 # support for get_host_queue_entries_and_special_tasks()
@@ -854,144 +712,82 @@ def interleave_entries(queue_entries, special_tasks):
     return interleaved_entries
 
 
-def bucket_hosts_by_shard(host_objs, rpc_hostnames=False):
+def bucket_hosts_by_shard(host_objs):
     """Figure out which hosts are on which shards.
 
     @param host_objs: A list of host objects.
-    @param rpc_hostnames: If True, the rpc_hostnames of a shard are returned
-        instead of the 'real' shard hostnames. This only matters for testing
-        environments.
 
     @return: A map of shard hostname: list of hosts on the shard.
     """
-    shard_host_map = {}
+    shard_host_map = collections.defaultdict(list)
     for host in host_objs:
         if host.shard:
-            shard_name = (host.shard.rpc_hostname() if rpc_hostnames
-                          else host.shard.hostname)
-            shard_host_map.setdefault(shard_name, []).append(host.hostname)
+            shard_host_map[host.shard.hostname].append(host.hostname)
     return shard_host_map
 
 
-def get_create_job_common_args(local_args):
-    """
-    Returns a dict containing only the args that apply for create_job_common
-
-    Returns a subset of local_args, which contains only the arguments that can
-    be passed in to create_job_common().
-    """
-    # This code is only here to not kill suites scheduling tests when priority
-    # becomes an int instead of a string.
-    if isinstance(local_args['priority'], str):
-        local_args['priority'] = priorities.Priority.DEFAULT
-    # </migration hack>
-    arg_names, _, _, _ = inspect.getargspec(create_job_common)
-    return dict(item for item in local_args.iteritems() if item[0] in arg_names)
-
-
-def create_job_common(name, priority, control_type, control_file=None,
-                      hosts=(), meta_hosts=(), one_time_hosts=(),
-                      atomic_group_name=None, synch_count=None,
-                      is_template=False, timeout=None, timeout_mins=None,
-                      max_runtime_mins=None, run_verify=True, email_list='',
-                      dependencies=(), reboot_before=None, reboot_after=None,
-                      parse_failed_repair=None, hostless=False, keyvals=None,
-                      drone_set=None, parameterized_job=None,
-                      parent_job_id=None, test_retry=0, run_reset=True,
-                      require_ssp=None):
+def create_job_common(
+        name,
+        priority,
+        control_type,
+        control_file=None,
+        hosts=(),
+        meta_hosts=(),
+        one_time_hosts=(),
+        synch_count=None,
+        is_template=False,
+        timeout=None,
+        timeout_mins=None,
+        max_runtime_mins=None,
+        run_verify=True,
+        email_list='',
+        dependencies=(),
+        reboot_before=None,
+        reboot_after=None,
+        parse_failed_repair=None,
+        hostless=False,
+        keyvals=None,
+        drone_set=None,
+        parent_job_id=None,
+        test_retry=0,
+        run_reset=True,
+        require_ssp=None):
     #pylint: disable-msg=C0111
     """
     Common code between creating "standard" jobs and creating parameterized jobs
     """
-    user = models.User.current_user()
-    owner = user.login
-
     # input validation
-    if not (hosts or meta_hosts or one_time_hosts or atomic_group_name
-            or hostless):
-        raise model_logic.ValidationError({
-            'arguments' : "You must pass at least one of 'hosts', "
-                          "'meta_hosts', 'one_time_hosts', "
-                          "'atomic_group_name', or 'hostless'"
-            })
-
+    host_args_passed = any((hosts, meta_hosts, one_time_hosts))
     if hostless:
-        if hosts or meta_hosts or one_time_hosts or atomic_group_name:
+        if host_args_passed:
             raise model_logic.ValidationError({
                     'hostless': 'Hostless jobs cannot include any hosts!'})
-        server_type = control_data.CONTROL_TYPE_NAMES.SERVER
-        if control_type != server_type:
+        if control_type != control_data.CONTROL_TYPE_NAMES.SERVER:
             raise model_logic.ValidationError({
                     'control_type': 'Hostless jobs cannot use client-side '
                                     'control files'})
-
-    atomic_groups_by_name = dict((ag.name, ag)
-                                 for ag in models.AtomicGroup.objects.all())
+    elif not host_args_passed:
+        raise model_logic.ValidationError({
+            'arguments' : "For host jobs, you must pass at least one of"
+                          " 'hosts', 'meta_hosts', 'one_time_hosts'."
+            })
     label_objects = list(models.Label.objects.filter(name__in=meta_hosts))
 
-    # Schedule on an atomic group automagically if one of the labels given
-    # is an atomic group label and no explicit atomic_group_name was supplied.
-    if not atomic_group_name:
-        for label in label_objects:
-            if label and label.atomic_group:
-                atomic_group_name = label.atomic_group.name
-                break
     # convert hostnames & meta hosts to host/label objects
     host_objects = models.Host.smart_get_bulk(hosts)
-    if not server_utils.is_shard():
-        shard_host_map = bucket_hosts_by_shard(host_objects)
-        num_shards = len(shard_host_map)
-        if (num_shards > 1 or (num_shards == 1 and
-                len(shard_host_map.values()[0]) != len(host_objects))):
-            # We disallow the following jobs on master:
-            #   num_shards > 1: this is a job spanning across multiple shards.
-            #   num_shards == 1 but number of hosts on shard is less
-            #   than total number of hosts: this is a job that spans across
-            #   one shard and the master.
-            raise ValueError(
-                    'The following hosts are on shard(s), please create '
-                    'seperate jobs for hosts on each shard: %s ' %
-                    shard_host_map)
+    _validate_host_job_sharding(host_objects)
+    for host in one_time_hosts:
+        this_host = models.Host.create_one_time_host(host)
+        host_objects.append(this_host)
+
     metahost_objects = []
     meta_host_labels_by_name = {label.name: label for label in label_objects}
-    for label_name in meta_hosts or []:
+    for label_name in meta_hosts:
         if label_name in meta_host_labels_by_name:
             metahost_objects.append(meta_host_labels_by_name[label_name])
-        elif label_name in atomic_groups_by_name:
-            # If given a metahost name that isn't a Label, check to
-            # see if the user was specifying an Atomic Group instead.
-            atomic_group = atomic_groups_by_name[label_name]
-            if atomic_group_name and atomic_group_name != atomic_group.name:
-                raise model_logic.ValidationError({
-                        'meta_hosts': (
-                                'Label "%s" not found.  If assumed to be an '
-                                'atomic group it would conflict with the '
-                                'supplied atomic group "%s".' % (
-                                        label_name, atomic_group_name))})
-            atomic_group_name = atomic_group.name
         else:
             raise model_logic.ValidationError(
                 {'meta_hosts' : 'Label "%s" not found' % label_name})
-
-    # Create and sanity check an AtomicGroup object if requested.
-    if atomic_group_name:
-        if one_time_hosts:
-            raise model_logic.ValidationError(
-                    {'one_time_hosts':
-                     'One time hosts cannot be used with an Atomic Group.'})
-        atomic_group = models.AtomicGroup.smart_get(atomic_group_name)
-        if synch_count and synch_count > atomic_group.max_number_of_machines:
-            raise model_logic.ValidationError(
-                    {'atomic_group_name' :
-                     'You have requested a synch_count (%d) greater than the '
-                     'maximum machines in the requested Atomic Group (%d).' %
-                     (synch_count, atomic_group.max_number_of_machines)})
-    else:
-        atomic_group = None
-
-    for host in one_time_hosts or []:
-        this_host = models.Host.create_one_time_host(host)
-        host_objects.append(this_host)
 
     options = dict(name=name,
                    priority=priority,
@@ -1010,16 +806,45 @@ def create_job_common(name, priority, control_type, control_file=None,
                    parse_failed_repair=parse_failed_repair,
                    keyvals=keyvals,
                    drone_set=drone_set,
-                   parameterized_job=parameterized_job,
                    parent_job_id=parent_job_id,
                    test_retry=test_retry,
                    run_reset=run_reset,
                    require_ssp=require_ssp)
-    return create_new_job(owner=owner,
+
+    return create_new_job(owner=models.User.current_user().login,
                           options=options,
                           host_objects=host_objects,
-                          metahost_objects=metahost_objects,
-                          atomic_group=atomic_group)
+                          metahost_objects=metahost_objects)
+
+
+def _validate_host_job_sharding(host_objects):
+    """Check that the hosts obey job sharding rules."""
+    if not (server_utils.is_shard()
+            or _allowed_hosts_for_master_job(host_objects)):
+        shard_host_map = bucket_hosts_by_shard(host_objects)
+        raise ValueError(
+                'The following hosts are on shard(s), please create '
+                'seperate jobs for hosts on each shard: %s ' %
+                shard_host_map)
+
+
+def _allowed_hosts_for_master_job(host_objects):
+    """Check that the hosts are allowed for a job on master."""
+    # We disallow the following jobs on master:
+    #   num_shards > 1: this is a job spanning across multiple shards.
+    #   num_shards == 1 but number of hosts on shard is less
+    #   than total number of hosts: this is a job that spans across
+    #   one shard and the master.
+    shard_host_map = bucket_hosts_by_shard(host_objects)
+    num_shards = len(shard_host_map)
+    if num_shards > 1:
+        return False
+    if num_shards == 1:
+        hosts_on_shard = shard_host_map.values()[0]
+        assert len(hosts_on_shard) <= len(host_objects)
+        return len(hosts_on_shard) == len(host_objects)
+    else:
+        return True
 
 
 def encode_ascii(control_file):
@@ -1094,9 +919,7 @@ def retrieve_shard(shard_hostname):
 
     @returns: Shard object
     """
-    timer = autotest_stats.Timer('shard_heartbeat.retrieve_shard')
-    with timer:
-        return models.Shard.smart_get(shard_hostname)
+    return models.Shard.smart_get(shard_hostname)
 
 
 def find_records_for_shard(shard, known_job_ids, known_host_ids):
@@ -1106,19 +929,16 @@ def find_records_for_shard(shard, known_job_ids, known_host_ids):
     @param known_job_ids: List of ids of jobs the shard already has.
     @param known_host_ids: List of ids of hosts the shard already has.
 
-    @returns: Tuple of three lists for hosts, jobs, and suite job keyvals:
-              (hosts, jobs, suite_job_keyvals).
+    @returns: Tuple of lists:
+              (hosts, jobs, suite_job_keyvals, invalid_host_ids)
     """
-    timer = autotest_stats.Timer('shard_heartbeat')
-    with timer.get_client('find_hosts'):
-        hosts = models.Host.assign_to_shard(shard, known_host_ids)
-    with timer.get_client('find_jobs'):
-        jobs = models.Job.assign_to_shard(shard, known_job_ids)
-    with timer.get_client('find_suite_job_keyvals'):
-        parent_job_ids = [job.parent_job_id for job in jobs]
-        suite_job_keyvals = models.JobKeyval.objects.filter(
-                job_id__in=parent_job_ids)
-    return hosts, jobs, suite_job_keyvals
+    hosts, invalid_host_ids = models.Host.assign_to_shard(
+            shard, known_host_ids)
+    jobs = models.Job.assign_to_shard(shard, known_job_ids)
+    parent_job_ids = [job.parent_job_id for job in jobs]
+    suite_job_keyvals = models.JobKeyval.objects.filter(
+            job_id__in=parent_job_ids)
+    return hosts, jobs, suite_job_keyvals, invalid_host_ids
 
 
 def _persist_records_with_type_sent_from_shard(
@@ -1148,11 +968,17 @@ def _persist_records_with_type_sent_from_shard(
                 'Object with pk %s of type %s does not exist on master.' % (
                     pk, record_type))
 
-        current_record.sanity_check_update_from_shard(
-            shard, serialized_record, *args, **kwargs)
+        try:
+            current_record.sanity_check_update_from_shard(
+                shard, serialized_record, *args, **kwargs)
+        except error.IgnorableUnallowedRecordsSentToMaster:
+            # An illegal record change was attempted, but it was of a non-fatal
+            # variety. Silently skip this record.
+            pass
+        else:
+            current_record.update_from_serialized(serialized_record)
+            pks.append(pk)
 
-        current_record.update_from_serialized(serialized_record)
-        pks.append(pk)
     return pks
 
 
@@ -1175,14 +1001,11 @@ def persist_records_sent_from_shard(shard, jobs, hqes):
 
     @raises error.UnallowedRecordsSentToMaster if any of the sanity checks fail.
     """
-    timer = autotest_stats.Timer('shard_heartbeat')
-    with timer.get_client('persist_jobs'):
-        job_ids_sent = _persist_records_with_type_sent_from_shard(
-                shard, jobs, models.Job)
-
-    with timer.get_client('persist_hqes'):
-        _persist_records_with_type_sent_from_shard(
-                shard, hqes, models.HostQueueEntry, job_ids_sent=job_ids_sent)
+    job_ids_persisted = _persist_records_with_type_sent_from_shard(
+            shard, jobs, models.Job)
+    _persist_records_with_type_sent_from_shard(
+            shard, hqes, models.HostQueueEntry,
+            job_ids_sent=job_ids_persisted)
 
 
 def forward_single_host_rpc_to_shard(func):
@@ -1208,7 +1031,7 @@ def forward_single_host_rpc_to_shard(func):
         shard_hostname = None
         host = models.Host.smart_get(kwargs['id'])
         if host and host.shard:
-            shard_hostname = host.shard.rpc_hostname()
+            shard_hostname = host.shard.hostname
         ret = func(**kwargs)
         if shard_hostname and not server_utils.is_shard():
             run_rpc_on_multiple_hostnames(func.func_name,
@@ -1231,8 +1054,7 @@ def fanout_rpc(host_objs, rpc_name, include_hostnames=True, **kwargs):
     @param kwargs: The kwargs for the rpc.
     """
     # Figure out which hosts are on which shards.
-    shard_host_map = bucket_hosts_by_shard(
-            host_objs, rpc_hostnames=True)
+    shard_host_map = bucket_hosts_by_shard(host_objs)
 
     # Execute the rpc against the appropriate shards.
     for shard, hostnames in shard_host_map.iteritems():
@@ -1369,10 +1191,13 @@ def get_sample_dut(board, pool):
     """
     if not (dev_server.PREFER_LOCAL_DEVSERVER and pool and board):
         return None
-
-    hosts = get_host_query(
-            ('pool:%s' % pool, 'board:%s' % board), False, False, True, {})
+    hosts = list(get_host_query(
+        multiple_labels=('pool:%s' % pool, 'board:%s' % board),
+        exclude_only_if_needed_labels=False,
+        valid_only=True,
+        filter_data={},
+    ))
     if not hosts:
         return None
-
-    return list(hosts)[0].get_object_dict()['hostname']
+    else:
+        return hosts[0].hostname

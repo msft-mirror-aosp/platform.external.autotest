@@ -283,7 +283,7 @@ def node_type_is_plugged(node_type, nodes_info):
 
 # Cras node types reported from Cras DBus control API.
 CRAS_OUTPUT_NODE_TYPES = ['HEADPHONE', 'INTERNAL_SPEAKER', 'HDMI', 'USB',
-                          'BLUETOOTH', 'UNKNOWN']
+                          'BLUETOOTH', 'LINEOUT', 'UNKNOWN']
 CRAS_INPUT_NODE_TYPES = ['MIC', 'INTERNAL_MIC', 'USB', 'BLUETOOTH',
                          'POST_DSP_LOOPBACK', 'POST_MIX_LOOPBACK', 'UNKNOWN',
                          'KEYBOARD_MIC', 'HOTWORD']
@@ -335,6 +335,18 @@ def get_selected_node_types():
         return node['Active']
 
     return get_filtered_node_types(is_selected)
+
+
+def get_selected_input_device_name():
+    """Returns the device name of the active input node.
+
+    @returns: device name string. E.g. kbl_r5514_5663_max: :0,1
+    """
+    nodes = get_cras_nodes()
+    for node in nodes:
+        if node['Active'] and node['IsInput']:
+            return node['DeviceName']
+    return None
 
 
 def get_plugged_node_types():
@@ -526,3 +538,16 @@ def get_node_id_from_node_type(node_type, is_input):
         raise CrasUtilsError(
                 'Can not find unique node id from node type %s' % node_type)
     return find_ids[0]
+
+def get_active_node_volume():
+    """Returns volume from active node.
+
+    @returns: int for volume
+
+    @raises: CrasUtilsError: if node volume cannot be found.
+    """
+    nodes = get_cras_nodes()
+    for node in nodes:
+        if node['Active'] == 1 and node['IsInput'] == 0:
+            return int(node['NodeVolume'])
+    raise CrasUtilsError('Cannot find active node volume from nodes.')

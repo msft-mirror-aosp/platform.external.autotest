@@ -4,7 +4,7 @@
 
 import logging
 import os
-import tarfile
+import shutil
 import zipfile
 
 from autotest_lib.client.bin import test
@@ -20,6 +20,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
     """
     def __init__(self, test, archive_types):
         super(CrosDisksArchiveTester, self).__init__(test)
+        self._data_dir = os.path.join(test.bindir, 'data')
         self._archive_types = archive_types
 
     def _find_all_files(self, root_dir):
@@ -44,25 +45,6 @@ class CrosDisksArchiveTester(CrosDisksTester):
                 else:
                     yield relative_path
 
-    def _make_tar_archive(self, archive_path, root_dir, compression=None):
-        """Archives a specified directory into a tar file.
-
-           The created tar file contains all files and sub-directories
-           under the specified root directory, but not the root directory
-           itself.
-
-        Args:
-            archive_path: Path of the output archive.
-            root_dir: The root directory to archive.
-            compression: The compression method: None, 'gz', 'bz2'
-        """
-        mode = 'w:' + compression if compression else 'w'
-        # TarFile in Python 2.6 does not work with the 'with' statement.
-        archive = tarfile.open(archive_path, mode)
-        for path in self._find_all_files(root_dir):
-            archive.add(os.path.join(root_dir, path), path)
-        archive.close()
-
     def _make_zip_archive(self, archive_path, root_dir,
                          compression=zipfile.ZIP_DEFLATED):
         """Archives a specified directory into a ZIP file.
@@ -82,6 +64,22 @@ class CrosDisksArchiveTester(CrosDisksTester):
             archive.write(os.path.join(root_dir, path), path)
         archive.close()
 
+    def _make_rar_archive(self, archive_path, root_dir):
+        """Archives a specified directory into a RAR file.
+
+           The created RAR file contains all files and sub-directories
+           under the specified root directory, but not the root directory
+           itself.
+
+        Args:
+            archive_path: Path of the output archive.
+            root_dir: The root directory to archive.
+        """
+        # DESPICABLE HACK: app-arch/rar provides only pre-compiled rar binaries
+        # for x86/amd64. As a workaround, we pretend the RAR creation here
+        # using a precanned RAR file.
+        shutil.copyfile(os.path.join(self._data_dir, 'test.rar'), archive_path)
+
     def _make_archive(self, archive_type, archive_path, root_dir):
         """Archives a specified directory into an archive of specified type.
 
@@ -96,12 +94,8 @@ class CrosDisksArchiveTester(CrosDisksTester):
         """
         if archive_type in ['zip']:
             self._make_zip_archive(archive_path, root_dir)
-        elif archive_type in ['tar']:
-            self._make_tar_archive(archive_path, root_dir)
-        elif archive_type in ['tar.gz', 'tgz']:
-            self._make_tar_archive(archive_path, root_dir, 'gz')
-        elif archive_type in ['tar.bz2', 'tbz', 'tbz2']:
-            self._make_tar_archive(archive_path, root_dir, 'bz2')
+        elif archive_type in ['rar']:
+            self._make_rar_archive(archive_path, root_dir)
         else:
             raise error.TestFail("Unsupported archive type " + archive_type)
 
@@ -151,8 +145,8 @@ class CrosDisksArchiveTester(CrosDisksTester):
             if not test_content.verify(expected_mount_path):
                 raise error.TestFail("Failed to verify filesystem test content")
 
-            self.cros_disks.unmount(expected_mount_path, ['force'])
-            self.cros_disks.unmount(device_file, ['force'])
+            self.cros_disks.unmount(expected_mount_path, ['lazy'])
+            self.cros_disks.unmount(device_file, ['lazy'])
 
     def test_archives(self):
         for archive_type in self._archive_types:

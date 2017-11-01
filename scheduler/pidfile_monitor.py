@@ -10,13 +10,15 @@ import traceback
 
 import common
 
-from chromite.lib import metrics
-
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib import global_config
-from autotest_lib.client.common_lib.cros.graphite import autotest_stats
 from autotest_lib.scheduler import drone_manager
 from autotest_lib.scheduler import scheduler_config
 
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
 
 
 def _get_pidfile_timeout_secs():
@@ -111,12 +113,6 @@ class PidfileRunMonitor(object):
 
 
     def _handle_pidfile_error(self, error, message=''):
-        metadata = {'_type': 'scheduler_error',
-                    'error': 'autoserv died without writing exit code',
-                    'process': str(self._state.process),
-                    'pidfile_id': str(self.pidfile_id)}
-        autotest_stats.Counter('autoserv_died_without_writing_exit_code',
-                               metadata=metadata).increment()
         self.on_lost_process(self._state.process)
 
 

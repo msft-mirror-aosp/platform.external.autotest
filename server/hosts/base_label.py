@@ -9,7 +9,6 @@ import logging
 
 import common
 
-from autotest_lib.server import afe_utils
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 
 
@@ -32,9 +31,8 @@ def forever_exists_decorate(exists):
         @returns True if the label already exists on the host, otherwise run
             the exists method.
         """
-        if self._NAME in afe_utils.get_labels(host):
-            return True
-        return exists(self, host)
+        info = host.host_info_store.get()
+        return (self._NAME in info.labels) or exists(self, host)
     return exists_wrapper
 
 
@@ -222,9 +220,9 @@ class LabelRetriever(object):
             logging.info('checking label %s', label.__class__.__name__)
             try:
                 labels.extend(label.get(host))
-            except Exception as e:
-                logging.exception('error getting label %s: %s',
-                                  label.__class__.__name__, e)
+            except Exception:
+                logging.exception('error getting label %s.',
+                                  label.__class__.__name__)
         return labels
 
 
@@ -264,6 +262,7 @@ class LabelRetriever(object):
                             if self._is_known_label(l)])
         new_labels = set(self.get_labels(host))
 
+        # TODO(pprabhu) Replace this update logic using AfeHostInfoBackend.
         # Remove old labels.
         labels_to_remove = list(old_labels & (known_labels - new_labels))
         if labels_to_remove:

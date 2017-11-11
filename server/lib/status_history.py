@@ -375,6 +375,8 @@ class _TestJobEvent(_JobEvent):
         query_end = time_utils.epoch_time_to_date_string(end_time)
         hqelist = afe.get_host_queue_entries_by_insert_time(
                 host_id=host_id,
+                insert_time_after=query_start,
+                insert_time_before=query_end,
                 started_on__gte=query_start,
                 started_on__lte=query_end,
                 complete=1)
@@ -487,7 +489,7 @@ class HostJobHistory(object):
 
     @classmethod
     def get_multiple_histories(cls, afe, start_time, end_time,
-                               board=None, pool=None):
+                               board=None, pool=None, extra_labels=None):
         """Create `HostJobHistory` instances for a set of hosts.
 
         The set of hosts can be specified as "all hosts of a given
@@ -502,6 +504,8 @@ class HostJobHistory(object):
                            `None`, all boards are allowed.
         @param pool        All hosts must be in this pool; if
                            `None`, all pools are allowed.
+        @param extra_labels Optional list of strings. All hosts must
+                            have these labels.
 
         @return A list of new `HostJobHistory` instances.
 
@@ -516,6 +520,8 @@ class HostJobHistory(object):
             labels.append(constants.Labels.BOARD_PREFIX + board)
         if pool is not None:
             labels.append(constants.Labels.POOL_PREFIX + pool)
+        if extra_labels is not None:
+            labels.extend(extra_labels)
         kwargs = {'multiple_labels': labels}
         hosts = afe.get_hosts(**kwargs)
         return [cls(afe, h, start_time, end_time) for h in hosts]

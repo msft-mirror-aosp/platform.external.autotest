@@ -1,6 +1,6 @@
 TIME="LONG"
 AUTHOR = "Cleber Rosa <cleber@redhat.com>"
-NAME = 'xfsFilesystemTestSuite'
+NAME = 'xfsFilesystemTestSuiteExt4Crypto'
 TEST_CLASS = 'kernel'
 TEST_CATEGORY = 'Functional'
 TEST_TYPE = 'client'
@@ -10,56 +10,16 @@ xfstests in autotest
 
 This is a wrapper for running xfstests inside autotest.
 
-xfttests needs 2 partitions: TEST and SCRATCH.
-- TEST_DEV: "device containing TEST PARTITION"
-- TEST_DIR: "mount point of TEST PARTITION"
-- SCRATCH_DEV "device containing SCRATCH PARTITION"
-- SCRATCH_MNT "mount point for SCRATCH PARTITION"
-
 The control file creates the files (1GB), mount with a loopback device.
 TODO(gwendal): currently the lists of xfstests tests is hardcoded.
 A better solution would be to specify the class of tests to run and
 reimplement the class parsing in python.
 
 """
-from autotest_lib.client.bin import partition
+from autotest_lib.client.bin import xfstest_util
 
-env_names=['TEST', 'SCRATCH']
-env_partition={}
-env_vp={}
-env_device={}
-
-for name in env_names:
-    file_name = 'xfstests_%s' % name
-    file_img = os.path.join(
-            '/mnt/stateful_partition/unencrypted/cache', '%s.img' % file_name)
-    env_vp[name] = partition.virtual_partition(
-            file_img=file_img, file_size=1024)
-    env_device[name] = env_vp[name].device
-
-    # You can use real block devices, such as /dev/sdc1 by populating env_device
-    # directly, bot going through the virtual partition object.
-
-    # By default, we create a directory under autotest
-    mountpoint = os.path.join(job.tmpdir, file_name)
-    if not os.path.isdir(mountpoint):
-        os.makedirs(mountpoint)
-
-    env_partition[name] = job.partition(device=env_device[name],
-                                        mountpoint=mountpoint)
-
-#
-# Job configuration, instead of editing xfstests config files, set them
-# right here as environment variables
-#
-
-for name in env_names:
-    os.environ['%s_DEV' % name] = env_partition[name].device
-
-test_dir = env_partition['TEST'].mountpoint
-
-os.environ['TEST_DIR'] = test_dir
-os.environ['SCRATCH_MNT'] = env_partition['SCRATCH'].mountpoint
+xfs_env = xfstest_util.xfstests_env()
+xfs_env.setup_partitions(job, fs_types=['ext4'], crypto=True)
 
 #
 # Adapt to the list of tests you want to run
@@ -86,23 +46,10 @@ TEST_RANGE['generic'].remove('224')
 TEST_RANGE['generic'].remove('223')
 
 #
-# Choose the filesystem types you want the tests to run on
-#
-FS_TYPES = ['ext4']
-
-# ChromeOS does not need special option when SELinux is enabled.
-os.environ['SELINUX_MOUNT_OPTIONS'] = ' '
-
-#
 # Finally, run the tests
 #
 try:
-    for fs_type in FS_TYPES:
-        for name in env_names:
-            env_partition[name].mkfs(fstype=fs_type, args='-O encrypt')
-
-        os.environ['EXT_MOUNT_OPTIONS'] = '-o test_dummy_encryption'
-
+    for fs_type in xfs_env.fs_types:
         for test_dir in [fs_type, 'generic', 'shared']:
             for test in TEST_RANGE[test_dir]:
                 tag = '%s.%s' % (test_dir, test)
@@ -111,6 +58,4 @@ try:
 
 finally:
     # Unmount the partition created
-    for name in env_names:
-        env_partition[name].unmount(ignore_status=True)
-        env_vp[name].destroy()
+    xfs_env.unmount_partitions()

@@ -90,6 +90,17 @@ class SystemFacadeNative(object):
         """Returns the currently free memory in the system in MBytes."""
         return utils.get_mem_free()
 
+    def get_mem_free_plus_buffers_and_cached(self):
+        """
+        Returns the free memory in MBytes, counting buffers and cached as free.
+
+        This is most often the most interesting number since buffers and cached
+        memory can be reclaimed on demand. Note however, that there are cases
+        where this as misleading as well, for example used tmpfs space
+        count as Cached but can not be reclaimed on demand.
+        See https://www.kernel.org/doc/Documentation/filesystems/tmpfs.txt.
+        """
+        return utils.get_mem_free_plus_buffers_and_cached()
 
     def get_ec_temperatures(self):
         """Uses ectool to return a list of all sensor temperatures in Celsius.
@@ -107,3 +118,10 @@ class SystemFacadeNative(object):
         fail.
         """
         return utils.get_chromeos_release_version()
+
+    def get_num_allocated_file_handles(self):
+        """
+        Returns the number of currently allocated file handles.
+        """
+        return utils.get_num_allocated_file_handles()
+

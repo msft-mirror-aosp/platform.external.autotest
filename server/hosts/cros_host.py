@@ -17,6 +17,7 @@ from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import autoupdater
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.client.cros import cros_ui
 from autotest_lib.client.cros.audio import cras_utils
@@ -1579,9 +1580,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     'SERVER', 'gb_encrypted_diskspace_required', type=float,
                     default=0.1))
 
-        if not self.upstart_status('system-services'):
-            raise error.AutoservError('Chrome failed to reach login. '
-                                      'System services not running.')
+        self.wait_for_system_services()
 
         # Factory images don't run update engine,
         # goofy controls dbus on these DUTs.
@@ -1591,12 +1590,26 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.verify_cros_version_label()
 
 
+    @retry.retry(error.AutoservError, timeout_min=5, delay_sec=10)
+    def wait_for_system_services(self):
+        """Waits for system-services to be running.
+
+        Sometimes, update_engine will take a while to update firmware, so we
+        should give this some time to finish. See crbug.com/765686#c38 for
+        details.
+        """
+        if not self.upstart_status('system-services'):
+            raise error.AutoservError('Chrome failed to reach login. '
+                                      'System services not running.')
+
+
     def verify(self):
         self._repair_strategy.verify(self)
 
 
     def make_ssh_command(self, user='root', port=22, opts='', hosts_file=None,
-                         connect_timeout=None, alive_interval=None):
+                         connect_timeout=None, alive_interval=None,
+                         alive_count_max=None, connection_attempts=None):
         """Override default make_ssh_command to use options tuned for Chrome OS.
 
         Tuning changes:
@@ -1628,15 +1641,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param hosts_file Ignored.
         @param connect_timeout Ignored.
         @param alive_interval Ignored.
+        @param alive_count_max Ignored.
+        @param connection_attempts Ignored.
         """
-        base_command = ('/usr/bin/ssh -a -x %s %s %s'
-                        ' -o StrictHostKeyChecking=no'
-                        ' -o UserKnownHostsFile=/dev/null -o BatchMode=yes'
-                        ' -o ConnectTimeout=30 -o ServerAliveInterval=900'
-                        ' -o ServerAliveCountMax=3 -o ConnectionAttempts=4'
-                        ' -o Protocol=2 -l %s -p %d')
-        return base_command % (self._ssh_verbosity_flag, self._ssh_options,
-                               opts, user, port)
+        options = ' '.join([opts, '-o Protocol=2'])
+        return super(CrosHost, self).make_ssh_command(
+            user=user, port=port, opts=options, hosts_file='/dev/null',
+            connect_timeout=30, alive_interval=900, alive_count_max=3,
+            connection_attempts=4)
+
+
     def syslog(self, message, tag='autotest'):
         """Logs a message to syslog on host.
 

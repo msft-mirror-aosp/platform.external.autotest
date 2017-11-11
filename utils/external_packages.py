@@ -740,8 +740,7 @@ class GwtPackage(ExternalPackage):
 
     version = '2.3.0'
     local_filename = 'gwt-%s.zip' % version
-    urls = ('https://storage.googleapis.com/google-code-archive-downloads/'
-            'v2/code.google.com/google-web-toolkit/' + local_filename,)
+    urls = (_CHROMEOS_MIRROR + local_filename,)
     hex_sum = 'd51fce9166e6b31349659ffca89baf93e39bc84b'
     name = 'gwt'
     about_filename = 'about.txt'
@@ -805,10 +804,11 @@ class PyMoxPackage(ExternalPackage):
     """
     module_name = 'mox'
     version = '0.5.3'
-    url_filename = 'mox-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('http://pypi.python.org/packages/source/m/mox/%s' % (
-        url_filename),)
+    # Note: url_filename does not match local_filename, because of
+    # an uncontrolled fork at some point in time of mox versions.
+    url_filename = 'mox-%s-autotest.tar.gz' % version
+    local_filename = 'mox-%s.tar.gz' % version
+    urls = (_CHROMEOS_MIRROR + url_filename,)
     hex_sum = '1c502d2c0a8aefbba2c7f385a83d33e7d822452a'
 
     _build_and_install = ExternalPackage._build_and_install_from_package

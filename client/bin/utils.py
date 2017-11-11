@@ -582,6 +582,19 @@ def where_art_thy_filehandles():
     os.system("ls -l /proc/%d/fd >> /dev/tty" % os.getpid())
 
 
+def get_num_allocated_file_handles():
+    """
+    Returns the number of currently allocated file handles.
+
+    Gets this information by parsing /proc/sys/fs/file-nr.
+    See https://www.kernel.org/doc/Documentation/sysctl/fs.txt
+    for details on this file.
+    """
+    with _open_file('/proc/sys/fs/file-nr') as f:
+        line = f.readline()
+    allocated_handles = int(line.split()[0])
+    return allocated_handles
+
 def print_to_tty(string):
     """Output string straight to the tty"""
     open('/dev/tty', 'w').write(string + '\n')
@@ -1549,40 +1562,52 @@ def get_cpu_usage():
 
     This function uses /proc/stat to identify CPU usage.
     Returns:
-        A dictionary with 'user', 'nice', 'system' and 'idle' values.
+        A dictionary with values for all columns in /proc/stat
         Sample dictionary:
         {
             'user': 254544,
             'nice': 9,
             'system': 254768,
             'idle': 2859878,
+            'iowait': 1,
+            'irq': 2,
+            'softirq': 3,
+            'steal': 4,
+            'guest': 5,
+            'guest_nice': 6
         }
+        If a column is missing or malformed in /proc/stat (typically on older
+        systems), the value for that column is set to 0.
     """
-    proc_stat = _open_file('/proc/stat')
-    cpu_usage_str = proc_stat.readline().split()
-    proc_stat.close()
-    return {
-        'user': int(cpu_usage_str[1]),
-        'nice': int(cpu_usage_str[2]),
-        'system': int(cpu_usage_str[3]),
-        'idle': int(cpu_usage_str[4])
-    }
-
+    with _open_file('/proc/stat') as proc_stat:
+        cpu_usage_str = proc_stat.readline().split()
+    columns = ('user', 'nice', 'system', 'idle', 'iowait', 'irq', 'softirq',
+               'steal', 'guest', 'guest_nice')
+    d = {}
+    for index, col in enumerate(columns, 1):
+        try:
+            d[col] = int(cpu_usage_str[index])
+        except:
+            d[col] = 0
+    return d
 
 def compute_active_cpu_time(cpu_usage_start, cpu_usage_end):
     """Computes the fraction of CPU time spent non-idling.
 
     This function should be invoked using before/after values from calls to
     get_cpu_usage().
+
+    See https://stackoverflow.com/a/23376195 and
+    https://unix.stackexchange.com/a/303224 for some more context how
+    to calculate usage given two /proc/stat snapshots.
     """
-    time_active_end = (
-        cpu_usage_end['user'] + cpu_usage_end['nice'] + cpu_usage_end['system'])
-    time_active_start = (cpu_usage_start['user'] + cpu_usage_start['nice'] +
-                         cpu_usage_start['system'])
-    total_time_end = (cpu_usage_end['user'] + cpu_usage_end['nice'] +
-                      cpu_usage_end['system'] + cpu_usage_end['idle'])
-    total_time_start = (cpu_usage_start['user'] + cpu_usage_start['nice'] +
-                        cpu_usage_start['system'] + cpu_usage_start['idle'])
+    idle_cols = ('idle', 'iowait')  # All other cols are calculated as active.
+    time_active_start = sum([x[1] for x in cpu_usage_start.iteritems()
+                             if x[0] not in idle_cols])
+    time_active_end = sum([x[1] for x in cpu_usage_end.iteritems()
+                           if x[0] not in idle_cols])
+    total_time_start = sum(cpu_usage_start.values())
+    total_time_end = sum(cpu_usage_end.values())
     return ((float(time_active_end) - time_active_start) /
             (total_time_end - total_time_start))
 
@@ -1974,6 +1999,22 @@ def get_mem_free():
     mem_free = _get_float_from_file(_MEMINFO, 'MemFree:', 'MemFree:', ' kB')
     return mem_free / 1024
 
+def get_mem_free_plus_buffers_and_cached():
+    """
+    Returns the free memory in MBytes, counting buffers and cached as free.
+
+    This is most often the most interesting number since buffers and cached
+    memory can be reclaimed on demand. Note however, that there are cases
+    where this as misleading as well, for example used tmpfs space
+    count as Cached but can not be reclaimed on demand.
+    See https://www.kernel.org/doc/Documentation/filesystems/tmpfs.txt.
+    """
+    free_mb = get_mem_free()
+    cached_mb = (_get_float_from_file(
+        _MEMINFO, 'Cached:', 'Cached:', ' kB') / 1024)
+    buffers_mb = (_get_float_from_file(
+        _MEMINFO, 'Buffers:', 'Buffers:', ' kB') / 1024)
+    return free_mb + buffers_mb + cached_mb
 
 def get_kernel_max():
     """

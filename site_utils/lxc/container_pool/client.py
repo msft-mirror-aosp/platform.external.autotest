@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import os
 import socket
 import sys
 import threading
@@ -10,7 +11,12 @@ from contextlib import contextmanager
 from multiprocessing import connection
 
 import common
+from autotest_lib.site_utils.lxc import constants
 from autotest_lib.site_utils.lxc.container_pool import message
+
+
+# Timeout in seconds for client connections.
+_DEFAULT_TIMEOUT = 1
 
 
 class Client(object):
@@ -34,7 +40,7 @@ class Client(object):
         print(client.get_status())
     """
 
-    def __init__(self, address, timeout):
+    def __init__(self, address=None, timeout=_DEFAULT_TIMEOUT):
         """Initializes a new Client object.
 
         @param address: The address of the pool to connect to.
@@ -45,6 +51,10 @@ class Client(object):
         @raises socket.timeout: If the connection is not established before the
                                 given timeout expires.
         """
+        if address is None:
+            address = os.path.join(
+                constants.DEFAULT_SHARED_HOST_PATH,
+                constants.DEFAULT_CONTAINER_POOL_SOCKET)
         self._connection = _ConnectionHelper(address).connect(timeout)
 
 
@@ -74,6 +84,26 @@ class Client(object):
         """Closes the client connection."""
         self._connection.close()
         self._connection = None
+
+
+    def get_container(self, id, timeout):
+        """Retrieves a container from the pool service.
+
+        @param id: A ContainerId to assign to the container.  Containers require
+                   an ID when they are dissociated from the pool, so that they
+                   can be tracked.
+        @param timeout: A timeout (in seconds) to wait for the operation to
+                        complete.  A timeout of 0 will return immediately if no
+                        containers are available.
+
+        @return: A container from the pool, when one becomes available, or None
+                 if no containers were available within the specified timeout.
+        """
+        self._connection.send(message.get(id, timeout))
+        # Note: this blocks indefinitely.  The reason this works is that the
+        # service-side provides a guarantee that it always returns something
+        # (i.e. a Container, or None) within the specified timeout period.
+        return self._connection.recv()
 
 
     def get_status(self):
@@ -111,7 +141,9 @@ class _ConnectionHelper(threading.Thread):
     def run(self):
         """Instantiates a connection.Client."""
         try:
+            logging.debug('Attempting connection to %s', self._address)
             self._client = connection.Client(self._address)
+            logging.debug('Connection to %s successful', self._address)
         except Exception:
             self._exc_info = sys.exc_info()
 

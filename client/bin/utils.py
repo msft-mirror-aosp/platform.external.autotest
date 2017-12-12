@@ -1832,13 +1832,18 @@ def get_thermal_zone_temperatures():
 def get_ec_temperatures():
     """
     Uses ectool to return a list of all sensor temperatures in Celsius.
+
+    Output from ectool is either '0: 300' or '0: 300 K' (newer ectool
+    includes the unit).
     """
     temperatures = []
     try:
         full_cmd = 'ectool temps all'
         lines = utils.run(full_cmd, verbose=False).stdout.splitlines()
+        pattern = re.compile('.*: (\d+)')
         for line in lines:
-            temperature = int(line.split(': ')[1]) - 273
+            matched = pattern.match(line)
+            temperature = int(matched.group(1)) - 273
             temperatures.append(temperature)
     except Exception:
         logging.warning('Unable to read temperature sensors using ectool.')
@@ -1961,6 +1966,38 @@ def get_board_type():
     @return device type.
     """
     return get_board_property('DEVICETYPE')
+
+
+def get_ec_version():
+    """Get the ec version as strings.
+
+    @returns a string representing this host's ec version.
+    """
+    return utils.run('mosys ec info -s fw_version').stdout.strip()
+
+
+def get_firmware_version():
+    """Get the firmware version as strings.
+
+    @returns a string representing this host's firmware version.
+    """
+    return utils.run('crossystem fwid').stdout.strip()
+
+
+def get_hardware_revision():
+    """Get the hardware revision as strings.
+
+    @returns a string representing this host's hardware revision.
+    """
+    return utils.run('mosys platform version').stdout.strip()
+
+
+def get_kernel_version():
+    """Get the kernel version as strings.
+
+    @returns a string representing this host's kernel version.
+    """
+    return utils.run('uname -r').stdout.strip()
 
 
 def get_board_with_frequency_and_memory():

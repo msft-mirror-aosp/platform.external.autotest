@@ -128,6 +128,7 @@ class Service(object):
             status['pool size'] = self._pool.size
             status['pool worker count'] = self._pool.worker_count
             status['pool errors'] = self._pool.errors.qsize()
+            status['client thread count'] = len(self._client_threads)
         return status
 
 
@@ -136,7 +137,7 @@ class Service(object):
         connection = self._connection_listener.get_connection()
         if connection is not None:
             # Spawn a thread to deal with the new connection.
-            thread = _ClientThread(self, connection)
+            thread = _ClientThread(self, self._pool, connection)
             thread.start()
             self._client_threads.append(thread)
             logging.debug('Client thread count: %d', len(self._client_threads))
@@ -161,8 +162,9 @@ class _ClientThread(threading.Thread):
       communication threads or the main pool service.
     """
 
-    def __init__(self, service, connection):
+    def __init__(self, service, pool, connection):
         self._service = service
+        self._pool = pool
         self._connection = connection
         self._running = False
         super(_ClientThread, self).__init__(name='client_thread')
@@ -184,26 +186,32 @@ class _ClientThread(threading.Thread):
                 # Poll and deal with messages every second.  The timeout enables
                 # the thread to exit cleanly when stop() is called.
                 if self._connection.poll(1):
-                    msg = self._connection.recv()
-                    response = self._handle_message(msg)
-                    if response is not None:
+                    try:
+                        msg = self._connection.recv()
+                    except (AttributeError,
+                            ImportError,
+                            IndexError,
+                            pickle.UnpicklingError) as e:
+                        # All of these can occur while unpickling data.
+                        logging.error('Error while receiving message: %r', e)
+                        # Exit if an error occurs
+                        break
+                    except EOFError:
+                        # EOFError means the client closed the connection.  This
+                        # is not an error - just exit.
+                        break
+
+                    try:
+                        response = self._handle_message(msg)
+                        # Always send the response, even if it's None.  This
+                        # provides more consistent client-side behaviour.
                         self._connection.send(response)
-
-        except EOFError:
-            # The client closed the connection.
-            logging.debug('Connection closed.')
-
-        except (AttributeError,
-                ImportError,
-                IndexError,
-                pickle.UnpicklingError) as e:
-            # Some kind of pickle error occurred.
-            logging.error('Error while unpickling message: %s', e)
-
-        except error.UnknownMessageTypeError as e:
-            # The message received was a valid python object, but not a valid
-            # Message.
-            logging.error('Message error: %s', e)
+                    except error.UnknownMessageTypeError as e:
+                        # The message received was a valid python object, but
+                        # not a valid Message.
+                        logging.error('Message error: %s', e)
+                        # Exit if an error occurs
+                        break
 
         finally:
             # Always close the connection.
@@ -215,21 +223,31 @@ class _ClientThread(threading.Thread):
         """Stops the client thread."""
         self._running = False
 
+
     def _handle_message(self, msg):
-        """Handles incoming messages."""
+        """Handles incoming messages.
+
+        @param msg: The incoming message to be handled.
+
+        @return: A pickleable object (or None) that should be sent back to the
+                 client.
+        """
 
         # Only handle Message objects.
         if not isinstance(msg, message.Message):
             raise error.UnknownMessageTypeError(
                     'Invalid message class %s' % type(msg))
 
-        if msg.type == message.ECHO:
-            return self._echo(msg)
-        elif msg.type == message.SHUTDOWN:
-            return self._shutdown()
-        elif msg.type == message.STATUS:
-            return self._status()
-        else:
+        # Use a dispatch table to simulate switch/case.
+        handlers = {
+            message.ECHO: self._echo,
+            message.GET: self._get,
+            message.SHUTDOWN: self._shutdown,
+            message.STATUS: self._status,
+        }
+        try:
+            return handlers[msg.type](**msg.args)
+        except KeyError:
             raise error.UnknownMessageTypeError(
                     'Invalid message type %s' % msg.type)
 
@@ -238,14 +256,20 @@ class _ClientThread(threading.Thread):
         """Handles ECHO messages.
 
         @param msg: A string that will be echoed back to the client.
+
+        @return: The message, for echoing back to the client.
         """
         # Just echo the message back, for testing aliveness.
-        logging.debug('Echo: %r', msg.args)
+        logging.debug('Echo: %r', msg)
         return msg
 
 
     def _shutdown(self):
-        """Handles SHUTDOWN messages."""
+        """Handles SHUTDOWN messages.
+
+        @return: An ACK message.  This function is synchronous (i.e. it blocks,
+                 and only returns the ACK when shutdown is complete).
+        """
         logging.debug('Received shutdown request.')
         # Request shutdown.  Wait for the service to actually stop before
         # sending the response.
@@ -255,6 +279,33 @@ class _ClientThread(threading.Thread):
 
 
     def _status(self):
-        """Handles STATUS messages."""
+        """Handles STATUS messages.
+
+        @return: The result of the service status call.
+        """
         logging.debug('Received status request.')
         return self._service.get_status()
+
+
+    def _get(self, id, timeout):
+        """Gets a container from the pool.
+
+        @param id: A ContainerId to assign to the new container.
+        @param timeout: A timeout (in seconds) to wait for the pool.  If a
+                        container is not available from the pool within the
+                        given period, None will be returned.
+
+        @return: A container from the pool.
+        """
+        logging.debug('Received get request (id=%s)', id)
+        container = self._pool.get(timeout)
+        # Assign an ID to the container as soon as it is removed from the pool.
+        # This associates the container with the process to which it will be
+        # handed off.
+        if container is not None:
+            logging.debug(
+                'Assigning container (name=%s, id=%s)', container.name, id)
+            container.id = id
+        else:
+            logging.debug('No container (id=%s)', id)
+        return container

@@ -201,7 +201,8 @@ class ServoHost(ssh_host.SSHHost):
 
 
     def make_ssh_command(self, user='root', port=22, opts='', hosts_file=None,
-                         connect_timeout=None, alive_interval=None):
+                         connect_timeout=None, alive_interval=None,
+                         alive_count_max=None, connection_attempts=None):
         """Override default make_ssh_command to use tuned options.
 
         Tuning changes:
@@ -227,6 +228,8 @@ class ServoHost(ssh_host.SSHHost):
         @param hosts_file Ignored.
         @param connect_timeout Ignored.
         @param alive_interval Ignored.
+        @param alive_count_max Ignored.
+        @param connection_attempts Ignored.
 
         @returns: An ssh command with the requested settings.
 

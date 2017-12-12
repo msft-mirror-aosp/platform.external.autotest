@@ -26,9 +26,14 @@ class TestSystemMetricsCollector(unittest.TestCase):
         metric.collect_metric()
         self.assertAlmostEqual(40, metric.values[0])
 
+    def test_tempature_metric(self):
+        metric = system_metrics_collector.TemperatureMetric(FakeSystemFacade())
+        metric.collect_metric()
+        self.assertAlmostEqual(43, metric.values[0])
+
     def test_collector(self):
         collector = system_metrics_collector.SystemMetricsCollector(
-                FakeSystemFacade(), [TestMetric])
+                FakeSystemFacade(), [TestMetric()])
         collector.collect_snapshot()
         d = {}
         def _write_func(**kwargs):
@@ -39,12 +44,45 @@ class TestSystemMetricsCollector(unittest.TestCase):
         self.assertEquals(False, d['higher_is_better'])
         self.assertEquals('test_unit', d['units'])
 
+    def test_collector_default_set_of_metrics_no_error(self):
+        # Only verify no errors are thrown when collecting using
+        # the default metric set.
+        collector = system_metrics_collector.SystemMetricsCollector(
+                FakeSystemFacade())
+        collector.collect_snapshot()
+        collector.collect_snapshot()
+        collector.write_metrics(lambda **kwargs: None)
+
+    def test_peak_metric_description(self):
+        test_metric = TestMetric()
+        peak_metric = system_metrics_collector.PeakMetric(test_metric)
+        self.assertEqual(peak_metric.description, 'peak_test_description')
+
+    def test_peak_metric_one_element(self):
+        test_metric = TestMetric()
+        peak_metric = system_metrics_collector.PeakMetric(test_metric)
+        test_metric.collect_metric()
+        peak_metric.collect_metric()
+        self.assertEqual(peak_metric.values, [1])
+
+    def test_peak_metric_many_elements(self):
+        test_metric = TestMetric()
+        peak_metric = system_metrics_collector.PeakMetric(test_metric)
+        test_metric.collect_metric()
+        test_metric.value = 2
+        test_metric.collect_metric()
+        test_metric.value = 0
+        test_metric.collect_metric()
+        peak_metric.collect_metric()
+        self.assertEqual(peak_metric.values, [2])
+
 class FakeSystemFacade(object):
     def __init__(self):
         self.mem_total_mb = 1000.0
         self.mem_free_mb = 400.0
         self.file_handles = 11
         self.active_cpu_time = 0.4
+        self.current_temperature_max = 43
 
     def get_mem_total(self):
         return self.mem_total_mb
@@ -61,12 +99,16 @@ class FakeSystemFacade(object):
     def compute_active_cpu_time(self, last_usage, current_usage):
         return self.active_cpu_time
 
+    def get_current_temperature_max(self):
+        return self.current_temperature_max
+
 class TestMetric(system_metrics_collector.Metric):
-    def __init__(self, system_facade):
+    def __init__(self):
         super(TestMetric, self).__init__(
-                system_facade, 'test_description', units='test_unit')
+                'test_description', units='test_unit')
+        self.value = 1
 
     def collect_metric(self):
-        self.values.append(1)
+        self.values.append(self.value)
 
 

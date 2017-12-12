@@ -314,8 +314,9 @@ class TelemetryRunner(object):
         """
         scp_cmd = self._scp_telemetry_results_cmd(perf_results_dir)
         logging.debug('Retrieving Results: %s', scp_cmd)
-
-        self._run_cmd(scp_cmd)
+        _, _, exit_code = self._run_cmd(scp_cmd)
+        if exit_code != 0:
+            raise error.TestFail('Unable to retrieve results.')
 
 
     def _run_test(self, script, test, *args):
@@ -458,9 +459,10 @@ class TelemetryRunner(object):
             dst = os.path.join(DUT_CHROME_ROOT, dep)
             if self._devserver:
                 logging.info('Copying: %s -> %s', src, dst)
-                utils.run('ssh %s rsync %s %s %s:%s' %
-                          (devserver_hostname, self._host.rsync_options(), src,
-                           self._host.hostname, dst))
+                rsync_cmd = utils.sh_escape('rsync %s %s %s:%s' %
+                                            (self._host.rsync_options(), src,
+                                            self._host.hostname, dst))
+                utils.run('ssh %s "%s"' % (devserver_hostname, rsync_cmd))
             else:
                 if not os.path.isfile(src):
                     raise error.TestFail('Error occurred while saving DEPs.')

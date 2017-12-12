@@ -590,7 +590,6 @@ class HostQueueEntry(DBObject):
 
         active = (status in models.HostQueueEntry.ACTIVE_STATUSES)
         complete = (status in models.HostQueueEntry.COMPLETE_STATUSES)
-        assert not (active and complete)
 
         self.update_field('active', active)
 
@@ -800,6 +799,11 @@ class HostQueueEntry(DBObject):
         them in PENDING.
         """
         self.set_status(models.HostQueueEntry.Status.PENDING)
+        if not self.host:
+            raise scheduler_lib.NoHostIdError(
+                    'Failed to recover a job whose host_queue_entry_id=%r due'
+                    ' to no host_id.'
+                    % self.id)
         self.host.set_status(models.Host.Status.PENDING)
 
         # Some debug code here: sends an email if an asynchronous job does not
@@ -894,6 +898,7 @@ class HostQueueEntry(DBObject):
         return (self.host_id is None
                 and self.meta_host is None)
 
+
 def hqe_trace_id(hqe_id):
     """Constructs the canonical trace id based on the HQE's id.
 
@@ -906,6 +911,7 @@ def hqe_trace_id(hqe_id):
         A trace id (in hex format)
     """
     return base64.b16encode('HQE') + hex(hqe_id)[2:]
+
 
 class Job(DBObject):
     _table_name = 'afe_jobs'

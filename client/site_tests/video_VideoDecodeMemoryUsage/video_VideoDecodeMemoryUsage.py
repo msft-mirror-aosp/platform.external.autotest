@@ -91,7 +91,8 @@ def _get_graphics_memory_usage():
         logging.warning('graphics memory info is not available')
         return 0
 
-    return usage
+    # The original value is in bytes
+    return usage / 1024
 
 def _get_linear_regression_slope(x, y):
     """
@@ -168,10 +169,8 @@ class MemoryTest(object):
         graphics_usage: the memory usage reported by the graphics driver
         """
         # Force to collect garbage before measuring memory
-        for i in xrange(len(self.browser.tabs)):
-            # TODO(owenlin): Change to "for t in tabs" once
-            #                http://crbug.com/239735 is resolved
-            self.browser.tabs[i].CollectGarbage()
+        for t in self.browser.tabs:
+            t.CollectGarbage()
 
         m = self.browser.memory_stats
 

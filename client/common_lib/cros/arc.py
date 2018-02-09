@@ -20,6 +20,7 @@ _ADB_KEYS_PATH = '/tmp/adb_keys'
 _ADB_VENDOR_KEYS = 'ADB_VENDOR_KEYS'
 _ANDROID_CONTAINER_PID_PATH = '/run/containers/android*/container.pid'
 _ANDROID_DATA_ROOT_PATH = '/opt/google/containers/android/rootfs/android-data'
+_ANDROID_CONTAINER_ROOT_PATH = '/opt/google/containers/android/rootfs'
 _SCREENSHOT_DIR_PATH = '/var/log/arc-screenshots'
 _SCREENSHOT_BASENAME = 'arc-screenshot'
 _MAX_SCREENSHOT_NUM = 10
@@ -70,6 +71,12 @@ def is_adb_connected():
     output = utils.system_output('adb get-state', ignore_status=True)
     logging.debug('adb get-state: %s', output)
     return output.strip() == 'device'
+
+
+def is_run_oci_build():
+    """Return true if the container is managed by run_oci"""
+    # TODO(yusukes): Remove the function once b/69266495 is fixed.
+    return os.path.dirname(get_container_pid_path()).endswith('-run_oci')
 
 
 def is_partial_boot_enabled():
@@ -204,6 +211,8 @@ def adb_root():
 
 def get_container_root():
     """Returns path to Android container root directory."""
+    if is_run_oci_build():
+      return _ANDROID_CONTAINER_ROOT_PATH
     return os.path.dirname(get_container_pid_path())
 
 
@@ -282,8 +291,8 @@ def is_android_process_running(process_name):
 
     @param process_name: Process name.
     """
-    output = adb_shell('ps | grep %s' % pipes.quote(' %s$' % process_name))
-    return bool(output)
+    output = adb_shell('pgrep -c -f %s' % pipes.quote(process_name))
+    return int(output) > 0
 
 
 def check_android_file_exists(filename):

@@ -71,6 +71,20 @@ def is_split_job(hqe_id):
 
 # TODO(crbug.com/748234): This is temporary to enable toggling
 # lucifer rollouts with an option.
+def spawn_starting_job_handler(manager, job):
+    """Spawn job_reporter to handle a job.
+
+    Pass all arguments by keyword.
+
+    @param manager: scheduler.drone_manager.DroneManager instance
+    @param job: Job instance
+    @returns: Drone instance
+    """
+    raise NotImplementedError
+
+
+# TODO(crbug.com/748234): This is temporary to enable toggling
+# lucifer rollouts with an option.
 def spawn_gathering_job_handler(manager, job, autoserv_exit, pidfile_id=None):
     """Spawn job_reporter to handle a job.
 
@@ -104,9 +118,6 @@ def spawn_gathering_job_handler(manager, job, autoserv_exit, pidfile_id=None):
     num_tests_failed = manager.get_num_tests_failed(pidfile_id)
     args.extend([
             '--',
-            '-resultsdir', results_dir,  # TODO(ayatane): Deprecated
-            '-autotestdir', _AUTOTEST_DIR,  # TODO(ayatane): Deprecated
-            '-watcherpath', _get_watcher_path(),  # TODO(ayatane): Deprecated
             '-x-need-gather',
             '-x-num-tests-failed', str(num_tests_failed),
     ])
@@ -146,13 +157,6 @@ def spawn_parsing_job_handler(manager, job, autoserv_exit, pidfile_id=None):
             '--autoserv-exit', str(autoserv_exit),
             '--results-dir', results_dir,
     ]
-    # lucifer_run_job arguments
-    args.extend([
-            '--',
-            '-resultsdir', results_dir,  # TODO(ayatane): Deprecated
-            '-autotestdir', _AUTOTEST_DIR,  # TODO(ayatane): Deprecated
-            '-watcherpath', _get_watcher_path(),  # TODO(ayatane): Deprecated
-    ])
     output_file = os.path.join(results_dir, 'job_reporter_output.log')
     drone.spawn(_JOB_REPORTER_PATH, args, output_file=output_file)
     return drone
@@ -338,7 +342,9 @@ def _spawn(path, argv, output_file):
     """
     logger.info('Spawning %r, %r, %r', path, argv, output_file)
     assert all(isinstance(arg, basestring) for arg in argv)
-    if os.fork():
+    pid = os.fork()
+    if pid:
+        os.waitpid(pid, 0)
         return
     # Double fork to reparent to init since monitor_db does not reap.
     if os.fork():

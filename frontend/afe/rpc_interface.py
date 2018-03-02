@@ -566,10 +566,20 @@ def get_host_attribute(attribute, **host_filter_data):
     models.Host.objects.populate_relationships(hosts, models.HostAttribute,
                                                'attribute_list')
     host_attr_dicts = []
+    host_objs = []
     for host_obj in hosts:
         for attr_obj in host_obj.attribute_list:
             if attr_obj.attribute == attribute:
                 host_attr_dicts.append(attr_obj.get_object_dict())
+                host_objs.append(host_obj)
+
+    if RESPECT_STATIC_ATTRIBUTES:
+        for host_attr, host_obj in zip(host_attr_dicts, host_objs):
+            static_attrs = models.StaticHostAttribute.query_objects(
+                    {'host_id': host_obj.id, 'attribute': attribute})
+            if len(static_attrs) > 0:
+                host_attr['value'] = static_attrs[0].value
+
     return rpc_utils.prepare_for_serialization(host_attr_dicts)
 
 
@@ -1773,9 +1783,43 @@ def get_hosts_by_attribute(attribute, value):
     @returns List of hostnames that all have the same host attribute and
              value.
     """
-    hosts = models.HostAttribute.query_objects({'attribute': attribute,
-                                                'value': value})
-    return [row.host.hostname for row in hosts if row.host.invalid == 0]
+    rows = models.HostAttribute.query_objects({'attribute': attribute,
+                                               'value': value})
+    if RESPECT_STATIC_ATTRIBUTES:
+        returned_hosts = set()
+        # Add hosts:
+        #     * Non-valid
+        #     * Exist in afe_host_attribute with given attribute.
+        #     * Don't exist in afe_static_host_attribute OR exist in
+        #       afe_static_host_attribute with the same given value.
+        for row in rows:
+            if row.host.invalid != 0:
+                continue
+
+            static_hosts = models.StaticHostAttribute.query_objects(
+                {'host_id': row.host.id, 'attribute': attribute})
+            values = [static_host.value for static_host in static_hosts]
+            if len(values) == 0 or values[0] == value:
+                returned_hosts.add(row.host.hostname)
+
+        # Add hosts:
+        #     * Non-valid
+        #     * Exist in afe_static_host_attribute with given attribute
+        #       and value
+        #     * No need to check whether each static attribute has its
+        #       corresponding entry in afe_host_attribute since it is ensured
+        #       in inventory sync.
+        static_rows = models.StaticHostAttribute.query_objects(
+                {'attribute': attribute, 'value': value})
+        for row in static_rows:
+            if row.host.invalid != 0:
+                continue
+
+            returned_hosts.add(row.host.hostname)
+
+        return list(returned_hosts)
+    else:
+        return [row.host.hostname for row in rows if row.host.invalid == 0]
 
 
 def canonicalize_suite_name(suite_name):

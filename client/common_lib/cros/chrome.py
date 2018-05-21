@@ -11,10 +11,6 @@ from telemetry.core import cros_interface, exceptions, util
 from telemetry.internal.browser import browser_finder, browser_options
 from telemetry.internal.browser import extension_to_load
 
-CAP_USERNAME = 'crosautotest@gmail.com'
-CAP_URL = ('https://sites.google.com/a/chromium.org/dev/chromium-os'
-           '/testing/cros-autotest/cap')
-
 Error = exceptions.Error
 
 def NormalizeEmail(username):
@@ -54,9 +50,9 @@ class Chrome(object):
 
     def __init__(self, logged_in=True, extension_paths=None, autotest_ext=False,
                  num_tries=3, extra_browser_args=None,
-                 clear_enterprise_policy=True, dont_override_profile=False,
-                 disable_gaia_services=True, disable_default_apps = True,
-                 auto_login=True, gaia_login=False,
+                 clear_enterprise_policy=True, expect_policy_fetch=False,
+                 dont_override_profile=False, disable_gaia_services=True,
+                 disable_default_apps = True, auto_login=True, gaia_login=False,
                  username=None, password=None, gaia_id=None,
                  arc_mode=None, disable_arc_opt_in=True,
                  init_network_controller=False, login_delay=0):
@@ -72,6 +68,8 @@ class Chrome(object):
                                    browser. It can be a string or a list.
         @param clear_enterprise_policy: Clear enterprise policy before
                                         logging in.
+        @param expect_policy_fetch: Expect that chrome can reach the device
+                                    management server and download policy.
         @param dont_override_profile: Don't delete cryptohome before login.
                                       Telemetry will output a warning with this
                                       option.
@@ -135,6 +133,7 @@ class Chrome(object):
         b_options.disable_default_apps = disable_default_apps
         b_options.disable_component_extensions_with_background_pages = disable_default_apps
         b_options.disable_background_networking = False
+        b_options.expect_policy_fetch = expect_policy_fetch
 
         b_options.auto_login = auto_login
         b_options.gaia_login = gaia_login
@@ -165,10 +164,14 @@ class Chrome(object):
         # (Without this, Chrome coredumps are trashed.)
         open(constants.CHROME_CORE_MAGIC_FILE, 'w').close()
 
+        self._browser_to_create = browser_finder.FindBrowser(
+            finder_options)
+        self._browser_to_create.SetUpEnvironment(b_options)
         for i in range(num_tries):
             try:
-                browser_to_create = browser_finder.FindBrowser(finder_options)
-                self._browser = browser_to_create.Create(finder_options)
+                self._browser = self._browser_to_create.Create()
+                self._browser_pid = \
+                    cros_interface.CrOSInterface().GetChromePid()
                 if utils.is_arc_available():
                     if disable_arc_opt_in:
                         if arc_util.should_start_arc(arc_mode):
@@ -183,7 +186,7 @@ class Chrome(object):
                 if i == num_tries-1:
                     raise
         if init_network_controller:
-          self._browser.platform.network_controller.InitializeIfNeeded()
+          self._browser.platform.network_controller.Open()
 
     def __enter__(self):
         return self
@@ -316,4 +319,5 @@ class Chrome(object):
             # (crbug.com/663387)
             self._browser.platform.StopAllLocalServers()
             self._browser.Close()
+            self._browser_to_create.CleanUpEnvironment()
             self._browser.platform.network_controller.Close()

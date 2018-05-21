@@ -8,6 +8,7 @@ Convenience functions for use by tests or whomever.
 
 # pylint: disable=missing-docstring
 
+import collections
 import commands
 import fnmatch
 import glob
@@ -116,58 +117,6 @@ def extract_tarball(tarball):
         return dir
     else:
         raise NameError('extracting tarball produced no dir')
-
-
-def unmap_url_cache(cachedir, url, expected_hash, method="md5"):
-    """
-    Downloads a file from a URL to a cache directory. If the file is already
-    at the expected position and has the expected hash, let's not download it
-    again.
-
-    @param cachedir: Directory that might hold a copy of the file we want to
-            download.
-    @param url: URL for the file we want to download.
-    @param expected_hash: Hash string that we expect the file downloaded to
-            have.
-    @param method: Method used to calculate the hash string (md5, sha1).
-    """
-    # Let's convert cachedir to a canonical path, if it's not already
-    cachedir = os.path.realpath(cachedir)
-    if not os.path.isdir(cachedir):
-        try:
-            os.makedirs(cachedir)
-        except:
-            raise ValueError('Could not create cache directory %s' % cachedir)
-    file_from_url = os.path.basename(url)
-    file_local_path = os.path.join(cachedir, file_from_url)
-
-    file_hash = None
-    failure_counter = 0
-    while not file_hash == expected_hash:
-        if os.path.isfile(file_local_path):
-            file_hash = hash_file(file_local_path, method)
-            if file_hash == expected_hash:
-                # File is already at the expected position and ready to go
-                src = file_from_url
-            else:
-                # Let's download the package again, it's corrupted...
-                logging.error("Seems that file %s is corrupted, trying to "
-                              "download it again", file_from_url)
-                src = url
-                failure_counter += 1
-        else:
-            # File is not there, let's download it
-            src = url
-        if failure_counter > 1:
-            raise EnvironmentError("Consistently failed to download the "
-                                   "package %s. Aborting further download "
-                                   "attempts. This might mean either the "
-                                   "network connection has problems or the "
-                                   "expected hash string that was determined "
-                                   "for this file is wrong", file_from_url)
-        file_path = utils.unmap_url(cachedir, src, cachedir)
-
-    return file_path
 
 
 def force_copy(src, dest):
@@ -434,6 +383,22 @@ def get_intel_cpu_uarch(numeric=False):
     return INTEL_UARCH_TABLE.get(family_model, family_model)
 
 
+INTEL_SILVERMONT_BCLK_TABLE = [83333, 100000, 133333, 116667, 80000];
+
+
+def get_intel_bclk_khz():
+    """Return Intel CPU base clock.
+
+    This only worked with SandyBridge (released in 2011) or newer. Older CPU has
+    133 MHz bclk. See turbostat code for implementation that also works with
+    older CPU. https://git.io/vpyKT
+    """
+    if get_intel_cpu_uarch() == 'Silvermont':
+        MSR_FSB_FREQ = 0xcd
+        return INTEL_SILVERMONT_BCLK_TABLE[utils.rdmsr(MSR_FSB_FREQ) & 0xf]
+    return 100000
+
+
 def get_current_kernel_arch():
     """Get the machine architecture, now just a wrap of 'uname -m'."""
     return os.popen('uname -m').read().rstrip()
@@ -510,6 +475,8 @@ def usable_memtotal():
     # Reserved 5% for OS use
     return int(read_from_meminfo('MemFree') * 0.95)
 
+def swaptotal():
+    return read_from_meminfo('SwapTotal')
 
 def rounded_memtotal():
     # Get total of all physical mem, in kbytes
@@ -540,6 +507,32 @@ def rounded_memtotal():
     phys_kbytes = min_kbytes + mod2n - 1
     phys_kbytes = phys_kbytes - (phys_kbytes % mod2n)  # clear low bits
     return phys_kbytes
+
+
+_MEMINFO_RE = re.compile('^(\w+)(\(\w+\))?:\s+(\d+)')
+
+
+def get_meminfo():
+    """Returns a namedtuple of pairs from /proc/meminfo.
+
+    Example /proc/meminfo snippets:
+        MemTotal:        2048000 kB
+        Active(anon):     409600 kB
+    Example usage:
+        meminfo = utils.get_meminfo()
+        print meminfo.Active_anon
+    """
+    info = {}
+    with _open_file('/proc/meminfo') as f:
+        for line in f:
+            m = _MEMINFO_RE.match(line)
+            if m:
+                if m.group(2):
+                    name = m.group(1) + '_' + m.group(2)[1:-1]
+                else:
+                    name = m.group(1)
+                info[name] = int(m.group(3))
+    return collections.namedtuple('MemInfo', info.keys())(**info)
 
 
 def sysctl(key, value=None):
@@ -1608,6 +1601,11 @@ def compute_active_cpu_time(cpu_usage_start, cpu_usage_end):
                            if x[0] not in idle_cols])
     total_time_start = sum(cpu_usage_start.values())
     total_time_end = sum(cpu_usage_end.values())
+    # Avoid bogus division which has been observed on Tegra.
+    if total_time_end <= total_time_start:
+        logging.warning('compute_active_cpu_time observed bogus data')
+        # We pretend to be busy, this will force a longer wait for idle CPU.
+        return 1.0
     return ((float(time_active_end) - time_active_start) /
             (total_time_end - total_time_start))
 
@@ -1636,8 +1634,8 @@ def wait_for_idle_cpu(timeout, utilization):
         time_passed += sleep_time
         sleep_time = min(16.0, 2.0 * sleep_time)
         cpu_usage_end = get_cpu_usage()
-        fraction_active_time = \
-                compute_active_cpu_time(cpu_usage_start, cpu_usage_end)
+        fraction_active_time = compute_active_cpu_time(cpu_usage_start,
+                                                       cpu_usage_end)
         logging.info('After waiting %.1fs CPU utilization is %.3f.',
                      time_passed, fraction_active_time)
         if time_passed > timeout:
@@ -1973,7 +1971,11 @@ def get_ec_version():
 
     @returns a string representing this host's ec version.
     """
-    return utils.run('mosys ec info -s fw_version').stdout.strip()
+    command = 'mosys ec info -s fw_version'
+    result = utils.run(command, ignore_status=True)
+    if result.exit_status != 0:
+        return ''
+    return result.stdout.strip()
 
 
 def get_firmware_version():
@@ -1989,7 +1991,11 @@ def get_hardware_revision():
 
     @returns a string representing this host's hardware revision.
     """
-    return utils.run('mosys platform version').stdout.strip()
+    command = 'mosys platform version'
+    result = utils.run(command, ignore_status=True)
+    if result.exit_status != 0:
+        return ''
+    return result.stdout.strip()
 
 
 def get_kernel_version():
@@ -1998,6 +2004,52 @@ def get_kernel_version():
     @returns a string representing this host's kernel version.
     """
     return utils.run('uname -r').stdout.strip()
+
+
+def get_cpu_name():
+    """Get the cpu name as strings.
+
+    @returns a string representing this host's cpu name.
+    """
+
+    # Try get cpu name from device tree first
+    if os.path.exists("/proc/device-tree/compatible"):
+        command = "sed -e 's/\\x0/\\n/g' /proc/device-tree/compatible | tail -1"
+        return utils.run(command).stdout.strip().replace(',', ' ')
+
+
+    # Get cpu name from uname -p
+    command = "uname -p"
+    ret = utils.run(command).stdout.strip()
+
+    # 'uname -p' return variant of unknown or amd64 or x86_64 or i686
+    # Try get cpu name from /proc/cpuinfo instead
+    if re.match("unknown|amd64|[ix][0-9]?86(_64)?", ret, re.IGNORECASE):
+        command = "grep model.name /proc/cpuinfo | cut -f 2 -d: | head -1"
+        ret = utils.run(command).stdout.strip()
+
+    # Remove bloat from CPU name, for example
+    # 'Intel(R) Core(TM) i5-7Y57 CPU @ 1.20GHz'       -> 'Intel Core i5-7Y57'
+    # 'Intel(R) Xeon(R) CPU E5-2690 v4 @ 2.60GHz'     -> 'Intel Xeon E5-2690 v4'
+    # 'AMD A10-7850K APU with Radeon(TM) R7 Graphics' -> 'AMD A10-7850K'
+    # 'AMD GX-212JC SOC with Radeon(TM) R2E Graphics' -> 'AMD GX-212JC'
+    trim_re = " (@|processor|apu|soc|radeon).*|\(.*?\)| cpu"
+    return re.sub(trim_re, '', ret, flags=re.IGNORECASE)
+
+
+def get_screen_resolution():
+    """Get the screen(s) resolution as strings.
+    In case of more than 1 monitor, return resolution for each monitor separate
+    with plus sign.
+
+    @returns a string representing this host's screen(s) resolution.
+    """
+    command = 'for f in /sys/class/drm/*/*/modes; do head -1 $f; done'
+    ret = utils.run(command, ignore_status=True)
+    # We might have Chromebox without a screen
+    if ret.exit_status != 0:
+        return ''
+    return ret.stdout.strip().replace('\n', '+')
 
 
 def get_board_with_frequency_and_memory():
@@ -2010,8 +2062,7 @@ def get_board_with_frequency_and_memory():
     if is_virtual_machine():
         board = '%s_VM' % board_name
     else:
-        # Rounded to nearest GB and GHz.
-        memory = int(round(get_mem_total() / 1024.0))
+        memory = get_mem_total_gb()
         # Convert frequency to GHz with 1 digit accuracy after the
         # decimal point.
         frequency = int(round(get_cpu_max_frequency() * 1e-8)) * 0.1
@@ -2027,6 +2078,13 @@ def get_mem_total():
     # Sanity check, all Chromebooks have at least 1GB of memory.
     assert mem_total > 256 * 1024, 'Unreasonable amount of memory.'
     return mem_total / 1024
+
+
+def get_mem_total_gb():
+    """
+    Returns the total memory available in the system in GBytes.
+    """
+    return int(round(get_mem_total() / 1024.0))
 
 
 def get_mem_free():
@@ -2376,3 +2434,4 @@ def run_sql_cmd(server, user, password, command, database=''):
            (user, password, server, database, command))
     # Set verbose to False so the command line won't be logged, as it includes
     # database credential.
+    return utils.run(cmd, verbose=False).stdout

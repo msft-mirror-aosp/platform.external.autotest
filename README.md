@@ -54,9 +54,17 @@ See the best practices guide, existing tests, and comments in the code.
 
 `git clone https://chromium.googlesource.com/chromiumos/third_party/autotest`
 
-
 ## Hacking and submitting patches
 
 See the coding style guide for guidance on submitting patches.
 
 [Coding Style](docs/coding-style.md)
+
+## Pre-upload hook dependencies
+
+You need to run `utils/build_externals.py` to set up the dependencies
+for pre-upload hook tests.
+
+## Setting up Lucifer
+
+[Setting up Lucifer](docs/lucifer-setup.md)

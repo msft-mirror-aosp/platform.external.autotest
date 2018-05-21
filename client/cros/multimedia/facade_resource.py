@@ -135,7 +135,8 @@ class FacadeResource(object):
         if utils.get_board_property(self.ARC_VERSION):
             arc_mode = self.ARC_ENABLED
         kwargs = {
-            'extension_paths': [constants.MULTIMEDIA_TEST_EXTENSION],
+            'extension_paths': [constants.AUDIO_TEST_EXTENSION,
+                                constants.DISPLAY_TEST_EXTENSION],
             'extra_browser_args': self.EXTRA_BROWSER_ARGS,
             'clear_enterprise_policy': not restart,
             'arc_mode': arc_mode,
@@ -218,6 +219,15 @@ class FacadeResource(object):
                 raise RuntimeError('Extension not found in %r'
                                     % extension_path)
         return extension
+
+
+    def get_visible_notifications(self):
+        """Gets the visible notifications
+
+        @return: Returns all visible notifications in list format. Ex:
+                [{title:'', message:'', prority:'', id:''}]
+        """
+        return self._chrome.get_visible_notifications()
 
 
     @retry_chrome_call

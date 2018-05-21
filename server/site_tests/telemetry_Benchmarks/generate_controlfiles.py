@@ -21,6 +21,7 @@ This file generates all telemetry_Benchmarks control files from a master list.
 # haddowk in the change.
 
 PERF_PER_BUILD_TESTS = (
+    'cros_ui_smoothness',
     'jetstream',
     'kraken',
     'octane',
@@ -61,7 +62,7 @@ ALL_TESTS = (PERF_PER_BUILD_TESTS +
              PERF_NO_SUITE)
 
 CONTROLFILE_TEMPLATE = (
-"""# Copyright 2017 The Chromium OS Authors. All rights reserved.
+"""# Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 

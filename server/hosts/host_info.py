@@ -34,6 +34,7 @@ class HostInfo(object):
 
     # Constants related to exposing labels as more semantic properties.
     _BOARD_PREFIX = 'board'
+    _MODEL_PREFIX = 'model'
     _OS_PREFIX = 'os'
     _POOL_PREFIX = 'pool'
 
@@ -41,7 +42,6 @@ class HostInfo(object):
             provision.CROS_VERSION_PREFIX,
             provision.CROS_ANDROID_VERSION_PREFIX,
             provision.ANDROID_BUILD_VERSION_PREFIX,
-            provision.TESTBED_BUILD_VERSION_PREFIX,
     )
 
     def __init__(self, labels=None, attributes=None):
@@ -77,6 +77,15 @@ class HostInfo(object):
         @returns: The (stripped) board label, or None if no label is found.
         """
         return self.get_label_value(self._BOARD_PREFIX)
+
+
+    @property
+    def model(self):
+        """Retrieve the model label value for the host.
+
+        @returns: The (stripped) model label, or None if no label is found.
+        """
+        return self.get_label_value(self._MODEL_PREFIX)
 
 
     @property

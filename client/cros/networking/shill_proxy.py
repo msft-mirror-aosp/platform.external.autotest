@@ -12,8 +12,15 @@ from autotest_lib.client.cros import dbus_util
 
 
 class ShillProxyError(Exception):
-    """Exceptions raised by ShillProxy and it's children."""
+    """Exceptions raised by ShillProxy and its children."""
     pass
+
+
+class ShillProxyTimeoutError(ShillProxyError):
+    """Timeout exception raised by ShillProxy and its children."""
+    def __init__(self, desc):
+        super(ShillProxyTimeoutError, self).__init__(
+                'Timed out waiting for condition %s.' % desc)
 
 
 class ShillProxy(object):
@@ -45,6 +52,9 @@ class ShillProxy(object):
     MANAGER_PROPERTY_ACTIVE_PROFILE = 'ActiveProfile'
     MANAGER_PROPERTY_DEVICES = 'Devices'
     MANAGER_PROPERTY_NO_AUTOCONNECT_TECHNOLOGIES = 'NoAutoConnectTechnologies'
+    MANAGER_PROPERTY_ENABLED_TECHNOLOGIES = 'EnabledTechnologies'
+    MANAGER_PROPERTY_PROHIBITED_TECHNOLOGIES = 'ProhibitedTechnologies'
+    MANAGER_PROPERTY_UNINITIALIZED_TECHNOLOGIES = 'UninitializedTechnologies'
     MANAGER_PROPERTY_PROFILES = 'Profiles'
     MANAGER_PROPERTY_SERVICES = 'Services'
     MANAGER_PROPERTY_ALL_SERVICES = 'ServiceCompleteList'
@@ -66,6 +76,7 @@ class ShillProxy(object):
         'AnyService': ( DBUS_TYPE_SERVICE, MANAGER_PROPERTY_ALL_SERVICES )
     }
 
+    DEVICE_ENUMERATION_TIMEOUT = 30
     DEVICE_ENABLE_DISABLE_TIMEOUT = 60
     SERVICE_DISCONNECT_TIMEOUT = 5
 
@@ -79,6 +90,7 @@ class ShillProxy(object):
     SERVICE_PROPERTY_PASSPHRASE = 'Passphrase'
     SERVICE_PROPERTY_PROFILE = 'Profile'
     SERVICE_PROPERTY_SAVE_CREDENTIALS = 'SaveCredentials'
+    SERVICE_PROPERTY_FT_ENABLED = 'WiFi.FTEnabled'
     # Unless you really care whether a network is WPA (TSN) vs. WPA-2
     # (RSN), you should use SERVICE_PROPERTY_SECURITY_CLASS.
     SERVICE_PROPERTY_SECURITY_RAW = 'Security'
@@ -94,6 +106,11 @@ class ShillProxy(object):
     SERVICE_PROPERTY_EAP_IDENTITY = 'EAP.Identity'
     SERVICE_PROPERTY_EAP_PASSWORD = 'EAP.Password'
     SERVICE_PROPERTY_EAP_CA_CERT_PEM = 'EAP.CACertPEM'
+    SERVICE_PROPERTY_CLIENT_CERT_ID = 'EAP.CertID'
+    SERVICE_PROPERTY_EAP_KEY_MGMT = 'EAP.KeyMgmt'
+    SERVICE_PROPERTY_EAP_PIN = 'EAP.PIN'
+    SERVICE_PROPERTY_PRIVATE_KEY_ID = 'EAP.KeyID'
+    SERVICE_PROPERTY_USE_SYSTEM_CAS = 'EAP.UseSystemCAs'
 
     # OpenVPN related properties.
     SERVICE_PROPERTY_OPENVPN_CA_CERT_PEM = 'OpenVPN.CACertPEM'
@@ -139,12 +156,18 @@ class ShillProxy(object):
         SERVICE_PROPERTY_STRENGTH: dbus.Byte,
         SERVICE_PROPERTY_STATE: dbus.String,
         SERVICE_PROPERTY_TYPE: dbus.String,
+        SERVICE_PROPERTY_FT_ENABLED: dbus.Boolean,
 
         SERVICE_PROPERTY_EAP_EAP: dbus.String,
         SERVICE_PROPERTY_EAP_INNER_EAP: dbus.String,
         SERVICE_PROPERTY_EAP_IDENTITY: dbus.String,
         SERVICE_PROPERTY_EAP_PASSWORD: dbus.String,
         SERVICE_PROPERTY_EAP_CA_CERT_PEM: dbus.Array,
+        SERVICE_PROPERTY_CLIENT_CERT_ID: dbus.String,
+        SERVICE_PROPERTY_EAP_KEY_MGMT: dbus.String,
+        SERVICE_PROPERTY_EAP_PIN: dbus.String,
+        SERVICE_PROPERTY_PRIVATE_KEY_ID: dbus.String,
+        SERVICE_PROPERTY_USE_SYSTEM_CAS: dbus.Boolean,
 
         SERVICE_PROPERTY_OPENVPN_CA_CERT_PEM: dbus.Array,
         SERVICE_PROPERTY_OPENVPN_PASSWORD: dbus.String,

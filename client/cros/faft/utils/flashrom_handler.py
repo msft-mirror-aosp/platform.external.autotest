@@ -14,6 +14,9 @@ See docstring for FlashromHandler class below.
 import hashlib
 import os
 import struct
+import tempfile
+
+from autotest_lib.client.common_lib.cros import chip_utils
 
 class FvSection(object):
     """An object to hold information about a firmware section.
@@ -95,6 +98,7 @@ class FlashromHandler(object):
     FW_KEYBLOCK_FILE_NAME = 'firmware.keyblock'
     FW_PRIV_DATA_KEY_FILE_NAME = 'firmware_data_key.vbprivk'
     KERNEL_SUBKEY_FILE_NAME = 'kernel_subkey.vbpubk'
+    EC_EFS_KEY_FILE_NAME = 'key_ec_efs.vbprik2'
 
     def __init__(self):
     # make sure it does not accidentally overwrite the image.
@@ -120,6 +124,7 @@ class FlashromHandler(object):
             self.fum = flashrom_util_module.flashrom_util(
                     os_if, target_is_ec=False)
             self.fv_sections = {
+                'ro': FvSection(None, None, 'RO_FRID'),
                 'a': FvSection('VBOOTA', 'FVMAIN', 'RW_FWID_A'),
                 'b': FvSection('VBOOTB', 'FVMAINB', 'RW_FWID_B'),
                 'rec': FvSection(None, 'RECOVERY_MRC_CACHE'),
@@ -371,10 +376,13 @@ class FlashromHandler(object):
             self.image,
             dst_sect.get_body_name(),
             self.fum.get_section(self.image, src_sect.get_body_name()))
-        self.image = self.fum.put_section(
-            self.image,
-            dst_sect.get_sig_name(),
-            self.fum.get_section(self.image, src_sect.get_sig_name()))
+        # If there is no "sig" subsection, skip copying signature.
+        if src_sect.get_sig_name() and dst_sect.get_sig_name():
+            self.image = self.fum.put_section(
+                self.image,
+                dst_sect.get_sig_name(),
+                self.fum.get_section(self.image, src_sect.get_sig_name()))
+        self.write_whole()
 
     def write_whole(self):
         """Write the whole image into the flashrom."""
@@ -419,6 +427,20 @@ class FlashromHandler(object):
                 'Attempt at using an uninitialized object')
         blob = self.fum.get_section(self.image, subsection_name)
         open(filename, 'w').write(blob)
+
+    def dump_section_body(self, section, filename):
+        """Write the body of a firmware section into a file"""
+        subsection_name = self.fv_sections[section].get_body_name()
+        self.dump_partial(subsection_name, filename)
+
+    def get_section_hash(self, section):
+        """Retrieve the hash of the body of a firmware section"""
+        ecrw = chip_utils.ecrw()
+        with tempfile.NamedTemporaryFile(prefix=ecrw.chip_name) as f:
+            self.dump_section_body(section, f.name)
+            ecrw.set_from_file(f.name)
+            result = ecrw.compute_hash_bytes()
+        return result
 
     def get_gbb_flags(self):
         """Retrieve the GBB flags"""
@@ -480,6 +502,10 @@ class FlashromHandler(object):
         blob = self.fum.get_section(self.image, subsection_name)
         return blob
 
+    def has_section_body(self, section):
+        """Return True if the section body is in the image"""
+        return bool(self.get_section_body(section))
+
     def get_section_sig(self, section):
         """Retrieve vblock of a firmware section"""
         subsection_name = self.fv_sections[section].get_sig_name()
@@ -506,6 +532,17 @@ class FlashromHandler(object):
         """Put the supplied blob to the fwid of the firmware section"""
         subsection_name = self.fv_sections[section].get_fwid_name()
         self.write_partial(subsection_name, blob, write_through)
+
+    def resign_ec_rwsig(self):
+        """Resign the EC image using rwsig."""
+        key_ec_efs = os.path.join(self.dev_key_path, self.EC_EFS_KEY_FILE_NAME)
+        # Dump whole EC image to a file and execute the sign command.
+        with tempfile.NamedTemporaryFile() as f:
+            self.dump_whole(f.name)
+            self.os_if.run_shell_command(
+                    'futility sign --type rwsig --prikey %s %s' % (
+                        key_ec_efs, f.name))
+            self.new_image(f.name)
 
     def set_section_version(self, section, version, flags,
                             write_through=False):

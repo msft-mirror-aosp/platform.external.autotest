@@ -1,6 +1,8 @@
 # Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+import datetime
 import logging
 import re
 
@@ -12,7 +14,7 @@ from autotest_lib.server.hosts import moblab_host
 
 DEFAULT_IMAGE_STORAGE_SERVER = global_config.global_config.get_config_value(
         'CROS', 'image_storage_server')
-STORAGE_SERVER_REGEX = 'gs://.*/'
+STORAGE_SERVER_REGEX = '(gs://|/).*/'
 DEFAULT_SERVICES_INIT_TIMEOUT_M = 5
 
 
@@ -40,6 +42,7 @@ class MoblabTest(test.test):
                 upstart service initialzation after boot.
         """
         super(MoblabTest, self).initialize()
+        self._start_time = datetime.datetime.now()
         self._host = host
         # When passed in from test_that or run_suite, all incoming arguments are
         # str.
@@ -51,6 +54,12 @@ class MoblabTest(test.test):
         self._host.find_and_add_duts()
         self._host.verify_duts()
         self._host.verify_special_tasks_complete()
+
+
+    @property
+    def elapsed(self):
+        """A datetime.timedleta for time elapsed since start of test."""
+        return datetime.datetime.now() - self._start_time
 
 
     def _set_image_storage_server(self, image_storage_server):
@@ -65,11 +74,10 @@ class MoblabTest(test.test):
         """
         if not re.match(STORAGE_SERVER_REGEX, image_storage_server):
             raise error.TestError(
-                    'Image Storage Server supplied is not in the correct '
-                    'format. Must start with gs:// and end with a trailing '
-                    'slash: %s' % image_storage_server)
-        logging.debug('Setting image_storage_server to %s',
-                      image_storage_server)
+                    'Image Storage Server supplied (%s) is not in the correct '
+                    'format. Remote paths must be of the form "gs://.*/" and '
+                    'local paths of the form "/.*/"' % image_storage_server)
+        logging.info('Setting image_storage_server to %s', image_storage_server)
         # If the image_storage_server is already set, delete it.
         self._host.run('sed -i /image_storage_server/d %s' %
                        moblab_host.SHADOW_CONFIG_PATH, ignore_status=True)

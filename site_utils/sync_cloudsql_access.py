@@ -30,10 +30,19 @@ import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.server import frontend
 
 
-ROLES_REQUIRE_TKO_ACCESS = {'scheduler', 'drone', 'shard', 'database', 'afe'}
+ROLES_REQUIRE_TKO_ACCESS = {
+        'afe',
+        'database',
+        'drone',
+        'scheduler',
+        'sentinel',
+        'shard',
+}
+
 
 def gcloud_login(project):
     """Login to Google Cloud service for gcloud command to run.
@@ -50,7 +59,13 @@ def gcloud_login(project):
               stderr_tee=sys.stderr, stdin=sys.stdin)
 
 
-def update_allowed_networks(project, instance, afe=None, extra_servers=None):
+@retry.retry(error.CmdError, timeout_min=3)
+def _fetch_external_ip(server_name):
+    return utils.run('ssh %s curl -s ifconfig.me' % server_name).stdout.rstrip()
+
+
+def update_allowed_networks(project, instance, afe=None, extra_servers=None,
+                            dryrun=False):
     """Update the "Allowed Networks" list of the given CloudSQL instance.
 
     @param project: Name of the Google Cloud project.
@@ -59,6 +74,7 @@ def update_allowed_networks(project, instance, afe=None, extra_servers=None):
                 specified in global config.
     @param extra_servers: Extra servers to be included in the "Allowed Networks"
                           list. Default is None.
+    @param dryrun: Boolean indicating whether this is a dryrun.
     """
     # Get the IP address of all servers need access to CloudSQL instance.
     rpc = frontend.AFE(server=afe)
@@ -75,15 +91,34 @@ def update_allowed_networks(project, instance, afe=None, extra_servers=None):
     print 'Adding servers %s to access list for projects %s' % (servers,
                                                                 instance)
     print 'Fetching their IP addresses...'
-    ips = [socket.gethostbyname(name) for name in servers]
+    ips = []
+    for name in servers:
+        try:
+            # collect internal ips
+            ips.append(socket.gethostbyname(name))
+            # collect external ips
+            ips.append(_fetch_external_ip(name))
+        except socket.gaierror:
+            print 'Failed to resolve internal IP address for name %s' % name
+            raise
+        except error.TimeoutException:
+            print 'Failed to resolve external IP address for %s' % name
+            raise
+
     print '...Done: %s' % ips
+
+    cidr_ips = [str(ip) + '/32' for ip in ips]
+
+    if dryrun:
+        print 'This is a dryrun: skip updating glcoud sql whitelists.'
+        return
 
     login = False
     while True:
         try:
             utils.run('gcloud config set project %s -q' % project)
             cmd = ('gcloud sql instances patch %s --authorized-networks %s '
-                   '-q' % (instance, ','.join(ips)))
+                   '-q' % (instance, ','.join(cidr_ips)))
             print 'Running command to update whitelists: "%s"' % cmd
             utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)
             return
@@ -110,10 +145,13 @@ def main():
                         help=('Extra servers to be included in the "Allowed '
                               'Networks" list separated by comma.'),
                         default=None)
+    parser.add_argument('--dryrun', dest='dryrun', action='store_true',
+                        default=False,
+                        help='Fetch IPs without updating whitelists in gcloud.')
     options = parser.parse_args()
 
     update_allowed_networks(options.project, options.instance, options.afe,
-                            options.extra_servers)
+                            options.extra_servers, options.dryrun)
 
 
 if __name__ == '__main__':

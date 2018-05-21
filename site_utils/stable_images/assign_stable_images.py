@@ -26,36 +26,12 @@ database.
 """
 
 import argparse
-import json
-import subprocess
 import sys
 
 import common
-from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.site_utils import lab_inventory
-
-
-# _OMAHA_STATUS - URI of a file in GoogleStorage with a JSON object
-# summarizing all versions currently being served by Omaha.
-#
-# The principle data is in an array named 'omaha_data'.  Each entry
-# in the array contains information relevant to one image being
-# served by Omaha, including the following information:
-#   * The board name of the product, as known to Omaha.
-#   * The channel associated with the image.
-#   * The Chrome and Chrome OS version strings for the image
-#     being served.
-#
-_OMAHA_STATUS = 'gs://chromeos-build-release-console/omaha_status.json'
-
-
-# _BUILD_METADATA_PATTERN - Format string for the URI of a file in
-# GoogleStorage with a JSON object that contains metadata about
-# a given build.  The metadata includes the version of firmware
-# bundled with the build.
-#
-_BUILD_METADATA_PATTERN = 'gs://chromeos-image-archive/%s/metadata.json'
+from autotest_lib.site_utils.stable_images import build_data
 
 
 # _DEFAULT_BOARD - The distinguished board name used to identify a
@@ -68,113 +44,6 @@ _BUILD_METADATA_PATTERN = 'gs://chromeos-image-archive/%s/metadata.json'
 #
 _DEFAULT_BOARD = 'DEFAULT'
 _DEFAULT_VERSION_TAG = '(default)'
-
-
-# _FIRMWARE_UPGRADE_BLACKLIST - a set of boards that are exempt from
-# automatic stable firmware version assignment.  This blacklist is
-# here out of an abundance of caution, on the general principle of "if
-# it ain't broke, don't fix it."  Specifically, these are old, legacy
-# boards and:
-#   * They're working fine with whatever firmware they have in the lab
-#     right now.  Moreover, because of their age, we can expect that
-#     they will never get any new firmware updates in future.
-#   * Servo support is spotty or missing, so there's no certainty
-#     that DUTs bricked by a firmware update can be repaired.
-#   * Because of their age, they are somewhere between hard and
-#     impossible to replace.  In some cases, they are also already
-#     in short supply.
-#
-# N.B.  HARDCODED BOARD NAMES ARE EVIL!!!  This blacklist uses hardcoded
-# names because it's meant to define a list of legacies that will shrivel
-# and die over time.
-#
-# DO NOT ADD TO THIS LIST.  If there's a new use case that requires
-# extending the blacklist concept, you should find a maintainable
-# solution that deletes this code.
-#
-# TODO(jrbarnette):  When any board is past EOL, and removed from the
-# lab, it can be removed from the blacklist.  When all the boards are
-# past EOL, the blacklist should be removed.
-
-_FIRMWARE_UPGRADE_BLACKLIST = set([
-        'butterfly',
-        'daisy',
-        'daisy_skate',
-        'daisy_spring',
-        'lumpy',
-        'parrot',
-        'parrot_ivb',
-        'peach_pi',
-        'peach_pit',
-        'stout',
-        'stumpy',
-        'x86-alex',
-        'x86-mario',
-        'x86-zgb',
-    ])
-
-
-def _get_by_key_path(dictdict, key_path):
-    """
-    Traverse a sequence of keys in a dict of dicts.
-
-    The `dictdict` parameter is a dict of nested dict values, and
-    `key_path` a list of keys.
-
-    A single-element key path returns `dictdict[key_path[0]]`, a
-    two-element path returns `dictdict[key_path[0]][key_path[1]]`, and
-    so forth.  If any key in the path is not found, return `None`.
-
-    @param dictdict   A dictionary of nested dictionaries.
-    @param key_path   The sequence of keys to look up in `dictdict`.
-    @return The value found by successive dictionary lookups, or `None`.
-    """
-    value = dictdict
-    for key in key_path:
-        value = value.get(key)
-        if value is None:
-            break
-    return value
-
-
-def get_firmware_version(version_map, board, cros_version):
-    """
-    Get the firmware version for a given board and CrOS version.
-
-    Typically, CrOS builds bundle firmware that is installed at update
-    time.  This function returns a version string for the firmware
-    installed in a particular build.
-
-    The returned value will be `None` if the build isn't found in
-    storage, if there is no firmware found for the build, or if the
-    board is blacklisted from firmware updates in the test lab.
-
-    @param version_map    An AFE cros version map object; used to
-                          locate the build in storage.
-    @param board          The board for the firmware version to be
-                          determined.
-    @param cros_version   The CrOS version bundling the firmware.
-    @return The version string of the firmware for `board` that's
-            bundled with `cros_version`, or `None`.
-    """
-    if board in _FIRMWARE_UPGRADE_BLACKLIST:
-        return None
-    try:
-        image_path = version_map.format_image_name(board, cros_version)
-        uri = _BUILD_METADATA_PATTERN % image_path
-        key_path = ['board-metadata', board, 'main-firmware-version']
-        return _get_by_key_path(_read_gs_json_data(uri), key_path)
-    except:
-        # TODO(jrbarnette): If we get here, it likely means that
-        # the repair build for our board doesn't exist.  That can
-        # happen if a board doesn't release on the Beta channel for
-        # at least 6 months.
-        #
-        # We can't allow this error to propogate up the call chain
-        # because that will kill assigning versions to all the other
-        # boards that are still OK, so for now we ignore it.  We
-        # really should do better.
-        return None
 
 
 class _VersionUpdater(object):
@@ -215,24 +84,9 @@ class _VersionUpdater(object):
 
         @param image_type   Image type parameter for the version mapper
                             object.
-        @returns The full set of mappings for the image type.
         """
         self._selected_map = self._version_maps[image_type]
         return self._selected_map.get_all_versions()
-
-    def get_firmware_version(self, board, version):
-        """
-        Get the firmware version of a given board and CrOS version.
-
-        Returns the string naming the firmware version for the given
-        `board` and `version`.
-
-        The returned string is generally in a form like
-        "Google_Kip.5216.227.78".
-
-        @returns A firmware version string.
-        """
-        return get_firmware_version(self._cros_map, board, version)
 
     def announce(self):
         """Announce the start of processing to the user."""
@@ -353,58 +207,7 @@ class _NormalModeUpdater(_VersionUpdater):
         self._selected_map.delete_version(board)
 
 
-def _read_gs_json_data(gs_uri):
-    """
-    Read and parse a JSON file from googlestorage.
-
-    This is a wrapper around `gsutil cat` for the specified URI.
-    The standard output of the command is parsed as JSON, and the
-    resulting object returned.
-
-    @return A JSON object parsed from `gs_uri`.
-    """
-    with open('/dev/null', 'w') as ignore_errors:
-        sp = subprocess.Popen(['gsutil', 'cat', gs_uri],
-                              stdout=subprocess.PIPE,
-                              stderr=ignore_errors)
-        try:
-            json_object = json.load(sp.stdout)
-        finally:
-            sp.stdout.close()
-            sp.wait()
-    return json_object
-
-
-def _make_omaha_versions(omaha_status):
-    """
-    Convert parsed omaha versions data to a versions mapping.
-
-    Returns a dictionary mapping board names to the currently preferred
-    version for the Beta channel as served by Omaha.  The mappings are
-    provided by settings in the JSON object `omaha_status`.
-
-    The board names are the names as known to Omaha:  If the board name
-    in the AFE contains '_', the corresponding Omaha name uses '-'
-    instead.  The boards mapped may include boards not in the list of
-    managed boards in the lab.
-
-    @return A dictionary mapping Omaha boards to Beta versions.
-    """
-    def _entry_valid(json_entry):
-        return json_entry['channel'] == 'beta'
-
-    def _get_omaha_data(json_entry):
-        board = json_entry['board']['public_codename']
-        milestone = json_entry['milestone']
-        build = json_entry['chrome_os_version']
-        version = 'R%d-%s' % (milestone, build)
-        return (board, version)
-
-    return dict(_get_omaha_data(e) for e in omaha_status['omaha_data']
-                    if _entry_valid(e))
-
-
-def _get_upgrade_versions(afe_versions, omaha_versions, boards):
+def _get_upgrade_versions(cros_versions, omaha_versions, boards):
     """
     Get the new stable versions to which we should update.
 
@@ -414,11 +217,11 @@ def _get_upgrade_versions(afe_versions, omaha_versions, boards):
     across the given boards.
 
     The new dictionary will have a mapping for every board in `boards`.
-    That mapping will be taken from `afe_versions`, unless the board has
+    That mapping will be taken from `cros_versions`, unless the board has
     a mapping in `omaha_versions` _and_ the omaha version is more recent
     than the AFE version.
 
-    @param afe_versions     The current board->version mappings in the
+    @param cros_versions    The current board->version mappings in the
                             AFE.
     @param omaha_versions   The current board->version mappings from
                             Omaha for the Beta channel.
@@ -428,13 +231,11 @@ def _get_upgrade_versions(afe_versions, omaha_versions, boards):
     """
     upgrade_versions = {}
     version_counts = {}
-    afe_default = afe_versions[_DEFAULT_BOARD]
+    afe_default = cros_versions[_DEFAULT_BOARD]
     for board in boards:
-        version = afe_versions.get(board, afe_default)
-        omaha_version = omaha_versions.get(board.replace('_', '-'))
-        if (omaha_version is not None and
-                utils.compare_versions(version, omaha_version) < 0):
-            version = omaha_version
+        version = build_data.get_omaha_upgrade(
+                omaha_versions, board,
+                cros_versions.get(board, afe_default))
         upgrade_versions[board] = version
         version_counts.setdefault(version, 0)
         version_counts[version] += 1
@@ -442,27 +243,21 @@ def _get_upgrade_versions(afe_versions, omaha_versions, boards):
             max(version_counts.items(), key=lambda x: x[1])[0])
 
 
-def _get_firmware_upgrades(updater, cros_versions):
+def _get_firmware_upgrades(cros_versions):
     """
     Get the new firmware versions to which we should update.
 
-    The new versions are returned in a dictionary mapping board names to
-    firmware versions.  The new dictionary will have a mapping for every
-    board in `cros_versions`, excluding boards named in
-    `_FIRMWARE_UPGRADE_BLACKLIST`.
-
-    The firmware for each board is determined from the JSON metadata for
-    the CrOS build for that board, as specified in `cros_versions`.
-
-    @param updater          An instance of _VersionUpdater.
     @param cros_versions    Current board->cros version mappings in the
                             AFE.
-    @return  A dictionary mapping boards to firmware versions.
+    @return A dictionary mapping boards/models to firmware upgrade versions.
+            If the build is unibuild, the key is a model name; else, the key
+            is a board name.
     """
-    return {
-        board: updater.get_firmware_version(board, version)
-            for board, version in cros_versions.iteritems()
-    }
+    firmware_upgrades = {}
+    for board, version in cros_versions.iteritems():
+        firmware_upgrades.update(
+            build_data.get_firmware_versions(board, version))
+    return firmware_upgrades
 
 
 def _apply_cros_upgrades(updater, old_versions, new_versions,
@@ -588,7 +383,7 @@ def main(argv):
     """
     Standard main routine.
 
-    @param argv  Command line arguments including `sys.argv[0]`.
+    @param argv  Command line arguments, including `sys.argv[0]`.
     """
     arguments = _parse_command_line(argv)
     afe = frontend_wrappers.RetryingAFE(server=None)
@@ -597,18 +392,16 @@ def main(argv):
     boards = (set(arguments.extra_boards) |
               lab_inventory.get_managed_boards(afe))
 
-    afe_versions = updater.select_version_map(afe.CROS_IMAGE_TYPE)
-    omaha_versions = _make_omaha_versions(
-            _read_gs_json_data(_OMAHA_STATUS))
+    cros_versions = updater.select_version_map(afe.CROS_IMAGE_TYPE)
+    omaha_versions = build_data.get_omaha_version_map()
     upgrade_versions, new_default = (
-        _get_upgrade_versions(afe_versions, omaha_versions, boards))
-    _apply_cros_upgrades(updater, afe_versions,
+        _get_upgrade_versions(cros_versions, omaha_versions, boards))
+    _apply_cros_upgrades(updater, cros_versions,
                          upgrade_versions, new_default)
 
     updater.report('\nApplying firmware updates:')
-    fw_versions = updater.select_version_map(
-            afe.FIRMWARE_IMAGE_TYPE)
-    firmware_upgrades = _get_firmware_upgrades(updater, upgrade_versions)
+    fw_versions = updater.select_version_map(afe.FIRMWARE_IMAGE_TYPE)
+    firmware_upgrades = _get_firmware_upgrades(upgrade_versions)
     _apply_firmware_upgrades(updater, fw_versions, firmware_upgrades)
 
 

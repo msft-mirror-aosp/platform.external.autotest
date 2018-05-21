@@ -4,15 +4,25 @@
 
 import json
 import logging
+import os
 import update_engine_event as uee
+import urlparse
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import lsbrelease_utils
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros.update_engine import update_engine_util
+from autotest_lib.server import autotest
 from autotest_lib.server import test
+from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.cros.update_engine import omaha_devserver
+from chromite.lib import retry_util
 from datetime import datetime, timedelta
 from update_engine_event import UpdateEngineEvent
 
-class UpdateEngineTest(test.test):
+
+class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     """Class for comparing expected update_engine events against actual ones.
 
     During a rootfs update, there are several events that are fired (e.g.
@@ -44,13 +54,44 @@ class UpdateEngineTest(test.test):
     _DEVSERVER_HOSTLOG_ROOTFS = 'devserver_hostlog_rootfs'
     _DEVSERVER_HOSTLOG_REBOOT = 'devserver_hostlog_reboot'
 
+    # Version we tell the DUT it is on before update.
+    _CUSTOM_LSB_VERSION = '0.0.0.0'
 
-    def initialize(self):
+    # Expected hostlog events during update: 4 during rootfs
+    _ROOTFS_HOSTLOG_EVENTS = 4
+
+    _CELLULAR_BUCKET = 'gs://chromeos-throw-away-bucket/CrOSPayloads/Cellular/'
+
+
+    def initialize(self, host=None, hosts=None):
+        """
+        Sets default variables for the test.
+
+        @param host: The DUT we will be running on.
+        @param hosts: If we are running a test with multiple DUTs (eg P2P)
+                      we will use hosts instead of host.
+
+        """
         self._hostlog_filename = None
         self._hostlog_events = []
         self._num_consumed_events = 0
         self._current_timestamp = None
         self._expected_events = []
+        self._omaha_devserver = None
+        self._host = host
+        # Some AU tests use multiple DUTs
+        self._hosts = hosts
+
+        # Define functions used in update_engine_util.
+        self._run = self._host.run if self._host else None
+        self._get_file = self._host.get_file if self._host else None
+
+
+    def cleanup(self):
+        if self._omaha_devserver is not None:
+            self._omaha_devserver.stop_devserver()
+        if self._host:
+            self._host.get_file(self._UPDATE_ENGINE_LOG, self.resultsdir)
 
 
     def _get_expected_events_for_rootfs_update(self, source_release):
@@ -274,6 +315,246 @@ class UpdateEngineTest(test.test):
                 'receive %s within %d seconds.' % (desc, timeout))
 
 
+    def _stage_payload_by_uri(self, payload_uri):
+        """Stage a payload based on its GS URI.
+
+        This infers the build's label, filename and GS archive from the
+        provided GS URI.
+
+        @param payload_uri: The full GS URI of the payload.
+
+        @return URL of the staged payload on the server.
+
+        @raise error.TestError if there's a problem with staging.
+
+        """
+        archive_url, _, filename = payload_uri.rpartition('/')
+        build_name = urlparse.urlsplit(archive_url).path.strip('/')
+        return self._stage_payload(build_name, filename,
+                                   archive_url=archive_url)
+
+
+    def _stage_payload(self, build_name, filename, archive_url=None):
+        """Stage the given payload onto the devserver.
+
+        Works for either a stateful or full/delta test payload. Expects the
+        gs_path or a combo of build_name + filename.
+
+        @param build_name: The build name e.g. x86-mario-release/<version>.
+                           If set, assumes default gs archive bucket and
+                           requires filename to be specified.
+        @param filename: In conjunction with build_name, this is the file you
+                         are downloading.
+        @param archive_url: An optional GS archive location, if not using the
+                            devserver's default.
+
+        @return URL of the staged payload on the server.
+
+        @raise error.TestError if there's a problem with staging.
+
+        """
+        try:
+            self._autotest_devserver.stage_artifacts(image=build_name,
+                                                     files=[filename],
+                                                     archive_url=archive_url)
+            return self._autotest_devserver.get_staged_file_url(filename,
+                                                                build_name)
+        except dev_server.DevServerException, e:
+            raise error.TestError('Failed to stage payload: %s' % e)
+
+
+    def _get_payload_url(self, build=None, full_payload=True):
+        """
+        Gets the GStorage URL of the full or delta payload for this build.
+
+        @param build: build string e.g samus-release/R65-10225.0.0.
+        @param full_payload: True for full payload. False for delta.
+
+        @returns the payload URL.
+
+        """
+        if build is None:
+            if self._job_repo_url is None:
+                self._job_repo_url = self._get_job_repo_url()
+            ds_url, build = tools.get_devserver_build_from_package_url(
+                self._job_repo_url)
+            self._autotest_devserver = dev_server.ImageServer(ds_url)
+
+        gs = dev_server._get_image_storage_server()
+        if full_payload:
+            # Example: chromeos_R65-10225.0.0_samus_full_dev.bin
+            regex = 'chromeos_%s*_full_*' % build.rpartition('/')[2]
+        else:
+            # Example: chromeos_R65-10225.0.0_R65-10225.0.0_samus_delta_dev.bin
+            regex = 'chromeos_%s*_delta_*' % build.rpartition('/')[2]
+        payload_url_regex = gs + build + '/' + regex
+        logging.debug('Trying to find payloads at %s', payload_url_regex)
+        payloads = utils.gs_ls(payload_url_regex)
+        if not payloads:
+            raise error.TestFail('Could not find payload for %s', build)
+        logging.debug('Payloads found: %s', payloads)
+        return payloads[0]
+
+
+    def _get_staged_file_info(self, staged_url):
+        """
+        Gets the staged files info that includes SHA256 and size.
+
+        @param staged_url: the staged file url.
+
+        @returns file info (SHA256 and size).
+
+        """
+        split_url = staged_url.rpartition('/static/')
+        file_info_url = os.path.join(split_url[0], 'api/fileinfo', split_url[2])
+        logging.info('file info url: %s', file_info_url)
+        devserver_hostname = urlparse.urlparse(file_info_url).hostname
+        cmd = 'ssh %s \'curl "%s"\'' % (devserver_hostname,
+                                        utils.sh_escape(file_info_url))
+        try:
+            result = utils.run(cmd).stdout
+            return json.loads(result)
+        except error.CmdError as e:
+            logging.error('Failed to read file info: %s', e)
+            raise error.TestFail('Could not reach fileinfo API on devserver.')
+
+
+    def _get_job_repo_url(self):
+        """Gets the job_repo_url argument supplied to the test by the lab."""
+        if self._hosts is not None:
+            self._host = self._hosts[0]
+        if self._host is None:
+            raise error.TestFail('No host specified by AU test.')
+        info = self._host.host_info_store.get()
+        return info.attributes.get(self._host.job_repo_url_attribute, '')
+
+
+    def _copy_payload_to_public_bucket(self, payload_url):
+        """
+        Copy payload and make link public.
+
+        @param payload_url: Payload URL on Google Storage.
+
+        @returns The payload URL that is now publicly accessible.
+
+        """
+        payload_filename = payload_url.rpartition('/')[2]
+        utils.run('gsutil cp %s %s' % (payload_url, self._CELLULAR_BUCKET))
+        new_gs_url = self._CELLULAR_BUCKET + payload_filename
+        utils.run('gsutil acl ch -u AllUsers:R %s' % new_gs_url)
+        return new_gs_url.replace('gs://', 'https://storage.googleapis.com/')
+
+
+    def _get_chromeos_version(self):
+        """Read the ChromeOS version from /etc/lsb-release."""
+        lsb = self._host.run('cat /etc/lsb-release').stdout
+        return lsbrelease_utils.get_chromeos_release_version(lsb)
+
+
+    def _check_for_cellular_entries_in_update_log(self, update_engine_log=None):
+        """
+        Check update_engine.log for log entries about cellular.
+
+        @param update_engine_log: The text of an update_engine.log file.
+
+        """
+        logging.info('Making sure we have cellular entries in update_engine '
+                     'log.')
+        line1 = "Allowing updates over cellular as permission preference is " \
+                "set to true."
+        line2 = "We are connected via cellular, Updates allowed: Yes"
+        for line in [line1, line2]:
+            self._check_update_engine_log_for_entry(line, raise_error=True,
+                                                    update_engine_log=
+                                                    update_engine_log)
+
+
+    def _disconnect_then_reconnect_network(self, update_url):
+        """
+        Disconnects the network for a couple of minutes then reconnects.
+
+        @param update_url: A URL to use to check we are online.
+
+        """
+        self._run_client_test_and_check_result(
+            'autoupdate_DisconnectReconnectNetwork', update_url=update_url)
+
+
+    def _suspend_then_resume(self):
+        """Susepends and resumes the host DUT."""
+        try:
+            self._host.suspend(suspend_time=30)
+        except error.AutoservSuspendError:
+            logging.exception('Suspend did not last the entire time.')
+
+
+    def _run_client_test_and_check_result(self, test_name, **kwargs):
+        """
+        Kicks of a client autotest and checks that it didn't fail.
+
+        @param test_name: client test name
+        @param **kwargs: key-value arguments to pass to the test.
+
+        """
+        client_at = autotest.Autotest(self._host)
+        client_at.run_test(test_name, **kwargs)
+        client_at._check_client_test_result(self._host, test_name)
+
+
+    def _create_hostlog_files(self):
+        """Create the two hostlog files for the update.
+
+        To ensure the update was successful we need to compare the update
+        events against expected update events. There is a hostlog for the
+        rootfs update and for the post reboot update check.
+        """
+        hostlog = self._omaha_devserver.get_hostlog(self._host.ip,
+                                                    wait_for_reboot_events=True)
+        logging.info('Hostlog: %s', hostlog)
+
+        # File names to save the hostlog events to.
+        rootfs_hostlog = os.path.join(self.resultsdir, 'hostlog_rootfs')
+        reboot_hostlog = os.path.join(self.resultsdir, 'hostlog_reboot')
+
+        # Each time we reboot in the middle of an update we ping omaha again
+        # for each update event. So parse the list backwards to get the final
+        # events.
+        with open(reboot_hostlog, 'w') as outfile:
+            json.dump(hostlog[-1:], outfile)
+        with open(rootfs_hostlog, 'w') as outfile:
+            json.dump(
+                hostlog[len(hostlog) - 1 - self._ROOTFS_HOSTLOG_EVENTS:-1],
+                outfile)
+
+        return rootfs_hostlog, reboot_hostlog
+
+
+    def _run_client_test_and_check_result(self, test_name, **kwargs):
+        """
+        Kicks of a client autotest and checks that it didn't fail.
+
+        @param test_name: client test name
+        @param **kwargs: key-value arguments to pass to the test.
+
+        """
+        client_at = autotest.Autotest(self._host)
+        client_at.run_test(test_name, **kwargs)
+        client_at._check_client_test_result(self._host, test_name)
+
+
+    def _change_cellular_setting_in_update_engine(self,
+                                                  update_over_cellular=True):
+        """
+        Toggles the update_over_cellular setting in update_engine.
+
+        @param update_over_cellular: True to enable, False to disable.
+
+        """
+        answer = 'yes' if update_over_cellular else 'no'
+        cmd = 'update_engine_client --update_over_cellular=%s' % answer
+        retry_util.RetryException(error.AutoservRunError, 2, self._run, cmd)
+
+
     def verify_update_events(self, source_release, hostlog_filename,
                              target_release=None):
         """Compares a hostlog file against a set of expected events.
@@ -304,6 +585,83 @@ class UpdateEngineTest(test.test):
             if err_msg is not None:
                 logging.error('Failed expected event: %s', err_msg)
                 raise UpdateEngineEventMissing(err_msg)
+
+
+    def get_update_url_for_test(self, job_repo_url, full_payload=True,
+                                critical_update=False, max_updates=1,
+                                public=False):
+        """
+        Get the correct update URL for autoupdate tests to use.
+
+        There are bunch of different update configurations that are required
+        by AU tests. Some tests need a full payload, some need a delta payload.
+        Some require the omaha response to be critical or be able to handle
+        multiple DUTs etc. This function returns the correct update URL to the
+        test based on the inputs parameters.
+
+        Ideally all updates would use an existing lab devserver to handle the
+        updates. However the lab devservers default setup does not work for
+        all test needs. So we also kick off our own omaha_devserver for the
+        test run some times.
+
+        This tests expects the test to set self._host or self._hosts.
+
+        @param job_repo_url: string url containing the current build.
+        @param full_payload: bool whether we want a full payload.
+        @param critical_update: bool whether we need a critical update.
+        @param max_updates: int number of updates the test will perform. This
+                            is passed to src/platform/dev/devserver.py if we
+                            create our own deverver.
+        @param public: url needs to be publicly accessible.
+
+        @returns an update url string.
+
+        """
+        if job_repo_url is None:
+            self._job_repo_url = self._get_job_repo_url()
+        else:
+            self._job_repo_url = job_repo_url
+        if not self._job_repo_url:
+            raise error.TestFail('There was no job_repo_url so we cannot get '
+                                 'a payload to use.')
+        ds_url, build = tools.get_devserver_build_from_package_url(
+            self._job_repo_url)
+
+        # We always stage the payloads on the existing lab devservers.
+        self._autotest_devserver = dev_server.ImageServer(ds_url)
+
+        if public:
+            # Get the google storage url of the payload. We will be copying
+            # the payload to a public google storage bucket (similar location
+            # to updates via autest command).
+            payload_url = self._get_payload_url(build,
+                                                full_payload=full_payload)
+            url = self._copy_payload_to_public_bucket(payload_url)
+            logging.info('Public update URL: %s', url)
+            return url
+
+        if full_payload:
+            self._autotest_devserver.stage_artifacts(build, ['full_payload'])
+            if not critical_update:
+                # We can use the same lab devserver to handle the update.
+                url = self._autotest_devserver.get_update_url(build)
+                logging.info('Full payload, non-critical update URL: %s', url)
+                return url
+            else:
+                staged_url = self._autotest_devserver._get_image_url(build)
+        else:
+            # We need to stage delta ourselves due to crbug.com/793434.
+            delta_payload = self._get_payload_url(build, full_payload=False)
+            staged_url = self._stage_payload_by_uri(delta_payload)
+
+        # We need to start our own devserver for the rest of the cases.
+        self._omaha_devserver = omaha_devserver.OmahaDevserver(
+            self._autotest_devserver.hostname, staged_url,
+            max_updates=max_updates, critical_update=critical_update)
+        self._omaha_devserver.start_devserver()
+        url = self._omaha_devserver.get_update_url()
+        logging.info('Update URL: %s', url)
+        return url
 
 
 class UpdateEngineEventMissing(error.TestFail):

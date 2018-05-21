@@ -8,10 +8,13 @@ import threading
 import time
 
 import common
+from autotest_lib.client.common_lib import utils
 from autotest_lib.site_utils.lxc import base_image
 from autotest_lib.site_utils.lxc import constants
 from autotest_lib.site_utils.lxc import container_factory
 from autotest_lib.site_utils.lxc import zygote
+from autotest_lib.site_utils.lxc.constants import \
+    CONTAINER_POOL_METRICS_PREFIX as METRICS_PREFIX
 from autotest_lib.site_utils.lxc.container_pool import async_listener
 from autotest_lib.site_utils.lxc.container_pool import error
 from autotest_lib.site_utils.lxc.container_pool import message
@@ -21,6 +24,14 @@ try:
     import cPickle as pickle
 except:
     import pickle
+
+try:
+    from chromite.lib import metrics
+    from infra_libs import ts_mon
+except ImportError:
+    import mock
+    metrics = utils.metrics_mock
+    ts_mon = mock.Mock()
 
 
 # The minimum period between polling for new connections, in seconds.
@@ -84,6 +95,7 @@ class Service(object):
             self._handle_incoming_connections()
             self._cleanup_closed_connections()
             # TODO(kenobi): Poll for and log errors from pool.
+            metrics.Counter(METRICS_PREFIX + '/tick').increment()
             time.sleep(_MIN_POLLING_PERIOD)
 
         logging.debug('Exit event loop.')
@@ -104,6 +116,7 @@ class Service(object):
             self._stop_event.set()
             self._stop_event = None
             self._running = False
+            metrics.Counter(METRICS_PREFIX + '/service_stopped').increment()
             logging.debug('Container pool stopped.')
 
 
@@ -140,7 +153,10 @@ class Service(object):
             thread = _ClientThread(self, self._pool, connection)
             thread.start()
             self._client_threads.append(thread)
-            logging.debug('Client thread count: %d', len(self._client_threads))
+            thread_count = len(self._client_threads)
+            metrics.Counter(METRICS_PREFIX + '/client_threads'
+                          ).increment_by(thread_count)
+            logging.debug('Client thread count: %d', thread_count)
 
 
     def _cleanup_closed_connections(self):
@@ -211,6 +227,11 @@ class _ClientThread(threading.Thread):
                         # not a valid Message.
                         logging.error('Message error: %s', e)
                         # Exit if an error occurs
+                        break
+                    except EOFError:
+                        # EOFError means the client closed the connection early.
+                        # TODO(chromium:794685): Return container to pool.
+                        logging.error('Client closed connection before return.')
                         break
 
         finally:
@@ -308,4 +329,7 @@ class _ClientThread(threading.Thread):
             container.id = id
         else:
             logging.debug('No container (id=%s)', id)
+        metrics.Counter(METRICS_PREFIX + '/container_requests',
+                        field_spec=[ts_mon.BooleanField('success')]
+                        ).increment(fields={'success': (container is not None)})
         return container

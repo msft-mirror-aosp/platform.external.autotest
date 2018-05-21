@@ -37,7 +37,6 @@ from autotest_lib.scheduler import scheduler_config
 from autotest_lib.server import autoserv_utils
 from autotest_lib.server import system_utils
 from autotest_lib.server import utils as server_utils
-from autotest_lib.site_utils import metadata_reporter
 from autotest_lib.site_utils import server_manager_utils
 
 try:
@@ -171,19 +170,21 @@ def main_without_exception_handling():
         global _testing_mode
         _testing_mode = True
 
-    # Start the thread to report metadata.
-    metadata_reporter.start()
-
     with ts_mon_config.SetupTsMonGlobalState('autotest_scheduler',
                                              indirect=True,
                                              debug_file=options.metrics_file):
       try:
+          metrics.Counter('chromeos/autotest/scheduler/start').increment()
           process_start_time = time.time()
           initialize()
           dispatcher = Dispatcher()
           dispatcher.initialize(recover_hosts=options.recover_hosts)
           minimum_tick_sec = global_config.global_config.get_config_value(
                   scheduler_config.CONFIG_SECTION, 'minimum_tick_sec', type=float)
+
+          # TODO(crbug.com/837680): Force creating the current user.
+          # This is a dirty hack to work around a race; see bug.
+          models.User.current_user()
 
           while not _shutdown:
               if _lifetime_expired(options.lifetime_hours, process_start_time):
@@ -205,7 +206,6 @@ def main_without_exception_handling():
           metrics.Counter('chromeos/autotest/scheduler/uncaught_exception'
                           ).increment()
 
-    metadata_reporter.abort()
     email_manager.manager.send_queued_emails()
     _drone_manager.shutdown()
     _db_manager.disconnect()
@@ -488,6 +488,26 @@ class Dispatcher(object):
 
         @param agent_task: A SpecialTask for the agent to manage.
         """
+        if luciferlib.is_enabled_for('STARTING'):
+            # TODO(crbug.com/810141): Transition code.  After running at
+            # STARTING for a while, these tasks should no longer exist.
+            if (isinstance(agent_task, postjob_task.GatherLogsTask)
+                # TODO(crbug.com/811877): Don't skip split HQE parsing.
+                or (isinstance(agent_task, postjob_task.FinalReparseTask)
+                    and not luciferlib.is_split_job(
+                            agent_task.queue_entries[0].id))):
+                return
+            if isinstance(agent_task, AbstractQueueTask):
+                # If Lucifer already owns the job, ignore the agent.
+                if luciferlib.is_lucifer_owned_by_id(agent_task.job.id):
+                    return
+                # If the job isn't started yet, let Lucifer own it.
+                if not agent_task.started:
+                    return
+                # Otherwise, this is a STARTING job that Autotest owned
+                # before Lucifer was enabled for STARTING.  Allow the
+                # scheduler to recover the agent task normally.
+
         agent = Agent(agent_task)
         self._agents.append(agent)
         agent.dispatcher = self
@@ -543,7 +563,7 @@ class Dispatcher(object):
                 + self._get_special_task_agent_tasks(is_active=True))
 
 
-    def _get_queue_entry_agent_tasks(self, to_schedule=False):
+    def _get_queue_entry_agent_tasks(self):
         """
         Get agent tasks for all hqe in the specified states.
 
@@ -553,21 +573,15 @@ class Dispatcher(object):
         one agent task at a time, but there might be multiple queue entries in
         the group.
 
-        @param to_schedule: Whether to get agent tasks for scheduling
         @return: A list of AgentTasks.
         """
-        if luciferlib.is_lucifer_enabled() and to_schedule:
-            statuses = (models.HostQueueEntry.Status.STARTING,
-                        models.HostQueueEntry.Status.RUNNING,
-                        models.HostQueueEntry.Status.GATHERING)
-        else:
-            # host queue entry statuses handled directly by AgentTasks
-            # (Verifying is handled through SpecialTasks, so is not
-            # listed here)
-            statuses = (models.HostQueueEntry.Status.STARTING,
-                        models.HostQueueEntry.Status.RUNNING,
-                        models.HostQueueEntry.Status.GATHERING,
-                        models.HostQueueEntry.Status.PARSING)
+        # host queue entry statuses handled directly by AgentTasks
+        # (Verifying is handled through SpecialTasks, so is not
+        # listed here)
+        statuses = (models.HostQueueEntry.Status.STARTING,
+                    models.HostQueueEntry.Status.RUNNING,
+                    models.HostQueueEntry.Status.GATHERING,
+                    models.HostQueueEntry.Status.PARSING)
         status_list = ','.join("'%s'" % status for status in statuses)
         queue_entries = scheduler_models.HostQueueEntry.fetch(
                 where='status IN (%s)' % status_list)
@@ -585,7 +599,11 @@ class Dispatcher(object):
                 if entry in used_queue_entries:
                     # already picked up by a synchronous job
                     continue
-                agent_task = self._get_agent_task_for_queue_entry(entry)
+                try:
+                    agent_task = self._get_agent_task_for_queue_entry(entry)
+                except scheduler_lib.SchedulerError:
+                    # Probably being handled by lucifer crbug.com/809773
+                    continue
                 agent_tasks.append(agent_task)
                 used_queue_entries.update(agent_task.queue_entries)
             except scheduler_lib.MalformedRecordError as e:
@@ -641,7 +659,7 @@ class Dispatcher(object):
         if queue_entry.status == models.HostQueueEntry.Status.PARSING:
             return postjob_task.FinalReparseTask(queue_entries=task_entries)
 
-        raise scheduler_lib.SchedulerError(
+        raise scheduler_lib.MalformedRecordError(
                 '_get_agent_task_for_queue_entry got entry with '
                 'invalid status %s: %s' % (queue_entry.status, queue_entry))
 
@@ -661,7 +679,7 @@ class Dispatcher(object):
         """
         if self.host_has_agent(entry.host):
             agent = tuple(self._host_agents.get(entry.host.id))[0]
-            raise scheduler_lib.SchedulerError(
+            raise scheduler_lib.MalformedRecordError(
                     'While scheduling %s, host %s already has a host agent %s'
                     % (entry, entry.host, agent.task))
 
@@ -694,7 +712,7 @@ class Dispatcher(object):
             if agent_task_class.TASK_TYPE == special_task.task:
                 return agent_task_class(task=special_task)
 
-        raise scheduler_lib.SchedulerError(
+        raise scheduler_lib.MalformedRecordError(
                 'No AgentTask class for task', str(special_task))
 
 
@@ -819,13 +837,16 @@ class Dispatcher(object):
 
     def _reverify_hosts_where(self, where,
                               print_message='Reverifying host %s'):
-        full_where='locked = 0 AND invalid = 0 AND ' + where
+        full_where = 'locked = 0 AND invalid = 0 AND %s' % where
         for host in scheduler_models.Host.fetch(where=full_where):
             if self.host_has_agent(host):
                 # host has already been recovered in some way
                 continue
             if self._host_has_scheduled_special_task(host):
                 # host will have a special task scheduled on the next cycle
+                continue
+            if host.shard_id is not None and not server_utils.is_shard():
+                # I am master and host is owned by a shard, ignore it.
                 continue
             if print_message:
                 logging.error(print_message, host.hostname)
@@ -866,7 +887,8 @@ class Dispatcher(object):
 
         @param queue_entry: The queue_entry representing the hostless job.
         """
-        self.add_agent_task(HostlessQueueTask(queue_entry))
+        if not luciferlib.is_enabled_for('STARTING'):
+            self.add_agent_task(HostlessQueueTask(queue_entry))
 
         # Need to set execution_subdir before setting the status:
         # After a restart of the scheduler, agents will be restored for HQEs in
@@ -963,6 +985,38 @@ class Dispatcher(object):
         """
         Hand off ownership of a job to lucifer component.
         """
+        self._send_starting_to_lucifer()
+        self._send_parsing_to_lucifer()
+
+
+    # TODO(crbug.com/748234): This is temporary to enable toggling
+    # lucifer rollouts with an option.
+    def _send_starting_to_lucifer(self):
+        Status = models.HostQueueEntry.Status
+        queue_entries_qs = (models.HostQueueEntry.objects
+                            .filter(status=Status.STARTING))
+        for queue_entry in queue_entries_qs:
+            if self.get_agents_for_entry(queue_entry):
+                continue
+            job = queue_entry.job
+            if luciferlib.is_lucifer_owned(job):
+                continue
+            try:
+                drone = luciferlib.spawn_starting_job_handler(
+                        manager=_drone_manager,
+                        job=job)
+            except Exception:
+                logging.exception('Error when sending job to Lucifer')
+                models.HostQueueEntry.abort_host_queue_entries(
+                        job.hostqueueentry_set.all())
+            else:
+                models.JobHandoff.objects.create(
+                        job=job, drone=drone.hostname())
+
+
+    # TODO(crbug.com/748234): This is temporary to enable toggling
+    # lucifer rollouts with an option.
+    def _send_parsing_to_lucifer(self):
         Status = models.HostQueueEntry.Status
         queue_entries_qs = (models.HostQueueEntry.objects
                             .filter(status=Status.PARSING))
@@ -971,20 +1025,29 @@ class Dispatcher(object):
             # owning it.
             if self.get_agents_for_entry(queue_entry):
                 continue
-
             job = queue_entry.job
             if luciferlib.is_lucifer_owned(job):
+                continue
+            # TODO(crbug.com/811877): Ignore split HQEs.
+            if luciferlib.is_split_job(queue_entry.id):
                 continue
             task = postjob_task.PostJobTask(
                     [queue_entry], log_file_name='/dev/null')
             pidfile_id = task._autoserv_monitor.pidfile_id
             autoserv_exit = task._autoserv_monitor.exit_code()
-            luciferlib.spawn_job_handler(
-                    manager=_drone_manager,
-                    job=job,
-                    autoserv_exit=autoserv_exit,
-                    pidfile_id=pidfile_id)
-            models.JobHandoff.objects.create(job=job)
+            try:
+                drone = luciferlib.spawn_parsing_job_handler(
+                        manager=_drone_manager,
+                        job=job,
+                        autoserv_exit=autoserv_exit,
+                        pidfile_id=pidfile_id)
+                models.JobHandoff.objects.create(job=job,
+                                                 drone=drone.hostname())
+            except drone_manager.DroneManagerError as e:
+                logging.warning(
+                    'Fail to get drone for job %s, skipping lucifer. Error: %s',
+                    job.id, e)
+
 
 
     @_calls_log_tick_msg
@@ -1003,7 +1066,7 @@ class Dispatcher(object):
         gathering, parsing) states, and adds it to the dispatcher so
         it is handled by _handle_agents.
         """
-        for agent_task in self._get_queue_entry_agent_tasks(to_schedule=True):
+        for agent_task in self._get_queue_entry_agent_tasks():
             self.add_agent_task(agent_task)
 
 
@@ -1019,6 +1082,9 @@ class Dispatcher(object):
         jobs_to_stop = set()
         for entry in scheduler_models.HostQueueEntry.fetch(
                 where='aborted=1 and complete=0'):
+            if (luciferlib.is_enabled_for('STARTING')
+                and luciferlib.is_lucifer_owned_by_id(entry.job.id)):
+                continue
 
             # If the job is running on a shard, let the shard handle aborting
             # it and sync back the right status.

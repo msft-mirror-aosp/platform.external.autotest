@@ -97,7 +97,7 @@ class Values(object):
     software_sync_update = 2
 
     # Duration of holding power button to power off DUT normally
-    hold_pwr_button_poweroff = 2
+    hold_pwr_button_poweroff = 5
 
     # Duration of holding power button to power on DUT normally
     # (also known as SHORT_DELAY in hdctools)
@@ -114,3 +114,6 @@ class Values(object):
 
     # Time in second to wait after changing servo state for programming
     servo_prog_state_delay = 0
+
+    # Timeout of confirming DUT doesn't boot on USB image in Recovery screen
+    usb_image_boot_timeout = 180

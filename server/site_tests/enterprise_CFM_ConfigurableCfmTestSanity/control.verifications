@@ -8,7 +8,7 @@ AUTHOR = "kerl@google.com, chromeos-meetings@google.com"
 NAME = "enterprise_CFM_ConfigurableCfmTestSanity.verifications"
 PURPOSE = "Verifies the configurable CfM test infra with a simple scenario"
 CRITERIA = "No errors occur"
-ATTRIBUTES = "suite:bluestreak-perbuild, suite:bluestreak-pre-cq"
+ATTRIBUTES = "suite:hotrod, suite:bluestreak-pre-cq"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
@@ -21,7 +21,7 @@ configurable CFM test.
 
 cfm_test = CfmTest(
     scenario=Scenario(
-        AssertUsbDevices(ATRUS, lambda devices: True),
+        AssertUsbDevices([ATRUS], lambda devices: True),
         RetryAssertAction(
             AssertFileDoesNotContain('/var/log/messages', ['FOOERRORBAR']),
             5,
@@ -30,12 +30,14 @@ cfm_test = CfmTest(
         AssertFileDoesNotContain('/var/log/eventlog.txt', ['FOOERRORBAR']),
         # Create some silly scenarios to be selected at random. The purpose
         # of this is only to test the SelectScenarioAtRandom action.
+        # Since the predicate always return true for the assert actions
+        # we do not actually verify the devices exist.
         SelectScenarioAtRandom(scenarios=[
-                Scenario(AssertUsbDevices(ATRUS, lambda devices: True),
+                Scenario(AssertUsbDevices([ATRUS], lambda devices: True),
                     AssertFileDoesNotContain('/var/log/messages',
                                              ['FOOERRORBAR'])),
-                Scenario(AssertUsbDevices(HUDDLY_GO, lambda devices: True)),
-                Scenario(AssertUsbDevices(ATRUS, lambda devices: True))],
+                Scenario(AssertUsbDevices([HUDDLY_GO], lambda devices: True)),
+                Scenario(AssertUsbDevices([ATRUS], lambda devices: True))],
             run_times=3),
         AssertNoNewCrashes()
     ),

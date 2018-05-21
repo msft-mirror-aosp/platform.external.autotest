@@ -19,16 +19,10 @@ import time
 import common
 
 from autotest_lib.client.common_lib import global_config
-from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import retry
 
-try:
-    from chromite.lib import metrics
-    from chromite.lib import ts_mon_config
-except ImportError:
-    metrics = utils.metrics_mock
-    ts_mon_config = utils.metrics_mock
-
+from chromite.lib import metrics
+from chromite.lib import ts_mon_config
 
 AT_DIR='/usr/local/autotest'
 DEFAULT_USER = global_config.global_config.get_config_value(
@@ -39,22 +33,22 @@ DEFAULT_PASSWD = global_config.global_config.get_config_value(
 LOOP_INTERVAL = 60
 
 EMITTED_STATUSES_COUNTERS = [
-        'bytes_received',
-        'bytes_sent',
-        'connections',
-        'Innodb_buffer_pool_read_requests',
-        'Innodb_buffer_pool_reads',
-        'Innodb_row_lock_waits',
-        'questions',
-        'slow_queries',
-        'threads_created',
+    'bytes_received',
+    'bytes_sent',
+    'connections',
+    'Innodb_buffer_pool_read_requests',
+    'Innodb_buffer_pool_reads',
+    'Innodb_row_lock_waits',
+    'questions',
+    'slow_queries',
+    'threads_created',
 ]
 
 EMITTED_STATUS_GAUGES = [
-        'Innodb_row_lock_time_avg',
-        'Innodb_row_lock_current_waits',
-        'threads_running',
-        'threads_connected',
+    'Innodb_row_lock_time_avg',
+    'Innodb_row_lock_current_waits',
+    'threads_running',
+    'threads_connected',
 ]
 
 
@@ -151,7 +145,9 @@ def main():
     conn = RetryingConnection('localhost', DEFAULT_USER, DEFAULT_PASSWD)
     conn.Connect()
 
-    with ts_mon_config.SetupTsMonGlobalState('mysql_stats', indirect=True):
+    # TODO(crbug.com/803566) Use indirect=False to mitigate orphan mysql_stats
+    # processes overwhelming shards.
+    with ts_mon_config.SetupTsMonGlobalState('mysql_stats', indirect=False):
       QueryLoop(conn)
 
 

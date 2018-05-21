@@ -61,16 +61,25 @@ class ModelLabel(base_label.StringPrefixLabel):
     _NAME = ds_constants.MODEL_LABEL
 
     def generate_labels(self, host):
-        # TODO - Return the existing label once model labels become more stable.
+        # Based on the issue explained in BoardLabel, return the existing
+        # label if it has already been set once.
+        for label in host._afe_host.labels:
+            if label.startswith(self._NAME + ':'):
+                return [label.split(':')[-1]]
 
         lsb_output = _parse_lsb_output(host)
         model = None
 
         if lsb_output.unibuild:
-            cmd = 'mosys platform model'
-            result = host.run(command=cmd, ignore_status=True)
+            test_label_cmd = 'cros_config / test-label'
+            result = host.run(command=test_label_cmd, ignore_status=True)
             if result.exit_status == 0:
                 model = result.stdout.strip()
+            if not model:
+                mosys_cmd = 'mosys platform model'
+                result = host.run(command=mosys_cmd, ignore_status=True)
+                if result.exit_status == 0:
+                    model = result.stdout.strip()
 
         # We need some sort of backwards compatibility for boards that
         # are not yet supported with mosys and unified builds.
@@ -581,6 +590,15 @@ class HWIDLabel(base_label.StringLabel):
         return all_hwid_labels, all_hwid_labels
 
 
+class DetachableBaseLabel(base_label.BaseLabel):
+    """Label indicating if device has detachable keyboard."""
+
+    _NAME = 'detachablebase'
+
+    def exists(self, host):
+        return host.run('which hammerd', ignore_status=True).exit_status == 0
+
+
 CROS_LABELS = [
     AccelsLabel(),
     ArcLabel(),
@@ -593,6 +611,7 @@ CROS_LABELS = [
     ChameleonPeripheralsLabel(),
     common_label.OSLabel(),
     CtsArchLabel(),
+    DetachableBaseLabel(),
     ECLabel(),
     HWIDLabel(),
     InternalDisplayLabel(),

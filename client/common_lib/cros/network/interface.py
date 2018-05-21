@@ -33,9 +33,10 @@ NAME_ATHEROS_AR9280 = 'Atheros AR9280'
 NAME_ATHEROS_AR9382 = 'Atheros AR9382'
 NAME_ATHEROS_AR9462 = 'Atheros AR9462'
 NAME_QUALCOMM_ATHEROS_QCA6174 = 'Qualcomm Atheros QCA6174'
-NAME_QUALCOMM_ATHEROS_NFA344A = 'Qualcomm Atheros NFA344A/QCA6174'
 NAME_INTEL_7260 = 'Intel 7260'
 NAME_INTEL_7265 = 'Intel 7265'
+NAME_INTEL_9000 = 'Intel 9000'
+NAME_INTEL_9260 = 'Intel 9260'
 NAME_BROADCOM_BCM4354_SDIO = 'Broadcom BCM4354 SDIO'
 NAME_BROADCOM_BCM4356_PCIE = 'Broadcom BCM4356 PCIE'
 NAME_BROADCOM_BCM4371_PCIE = 'Broadcom BCM4371 PCIE'
@@ -53,13 +54,14 @@ DEVICE_NAME_LOOKUP = {
     DeviceInfo('0x168c', '0x0030'): NAME_ATHEROS_AR9382,
     DeviceInfo('0x168c', '0x0034'): NAME_ATHEROS_AR9462,
     DeviceInfo('0x168c', '0x003e'): NAME_QUALCOMM_ATHEROS_QCA6174,
-    DeviceInfo('0x105b', '0xe09d'): NAME_QUALCOMM_ATHEROS_NFA344A,
+    DeviceInfo('0x105b', '0xe09d'): NAME_QUALCOMM_ATHEROS_QCA6174,
     DeviceInfo('0x8086', '0x08b1'): NAME_INTEL_7260,
-    # TODO(wiley): Why is this number slightly different on some platforms?
-    #              Is it just a different part source?
     DeviceInfo('0x8086', '0x08b2'): NAME_INTEL_7260,
     DeviceInfo('0x8086', '0x095a'): NAME_INTEL_7265,
     DeviceInfo('0x8086', '0x095b'): NAME_INTEL_7265,
+    DeviceInfo('0x8086', '0x9df0'): NAME_INTEL_9000,
+    DeviceInfo('0x8086', '0x31dc'): NAME_INTEL_9000,
+    DeviceInfo('0x8086', '0x2526'): NAME_INTEL_9260,
     DeviceInfo('0x02d0', '0x4354'): NAME_BROADCOM_BCM4354_SDIO,
     DeviceInfo('0x14e4', '0x43ec'): NAME_BROADCOM_BCM4356_PCIE,
     DeviceInfo('0x14e4', '0x440d'): NAME_BROADCOM_BCM4371_PCIE,
@@ -214,9 +216,9 @@ class Interface:
         return bool(self.addresses)
 
 
-    @property
-    def is_up(self):
-        """@return True if this interface is UP, False otherwise."""
+
+    def get_ip_flags(self):
+        """@return List of flags from 'ip addr show'."""
         # "ip addr show %s 2> /dev/null" returns something that looks like:
         #
         # 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast
@@ -234,13 +236,37 @@ class Interface:
         if result.exit_status != 0:
             # The "ip" command will return non-zero if the interface does
             # not exist.
-            return False
+            return []
         status_line = address_info.splitlines()[0]
         flags_str = status_line[status_line.find('<')+1:status_line.find('>')]
-        flags = flags_str.split(',')
-        if 'UP' not in flags:
+        return flags_str.split(',')
+
+
+    @property
+    def is_up(self):
+        """@return True if this interface is UP, False otherwise."""
+        return 'UP' in self.get_ip_flags()
+
+
+    @property
+    def is_lower_up(self):
+        """
+        Check if the interface is in LOWER_UP state. This usually means (e.g.,
+        for ethernet) a link is detected.
+
+        @return True if this interface is LOWER_UP, False otherwise."""
+        return 'LOWER_UP' in self.get_ip_flags()
+
+
+    def is_link_operational(self):
+        """@return True if RFC 2683 IfOperStatus is UP (i.e., is able to pass
+        packets).
+        """
+        command = 'ip link show %s' % self._name
+        result = self._run(command, ignore_status=True)
+        if result.exit_status:
             return False
-        return True
+        return result.stdout.find('state UP') >= 0
 
 
     @property
@@ -425,6 +451,16 @@ class Interface:
         logging.error('Failed to find noise level for %s at %d MHz.',
                       self._name, frequency_mhz)
         return None
+
+
+def get_interfaces():
+    """
+    Retrieve the list of network interfaces found on the system.
+
+    @return List of interfaces.
+
+    """
+    return [Interface(nic.strip()) for nic in os.listdir(DEVICE_INFO_ROOT)]
 
 
 def get_prioritized_default_route(host=None, interface_name_regex=None):

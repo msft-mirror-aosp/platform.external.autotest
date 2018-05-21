@@ -99,6 +99,11 @@ class provision_AutoUpdate(test.test):
             ds = dev_server.ImageServer.resolve(image, host.hostname)
             ds.stage_artifacts(image, ['full_payload', 'stateful',
                                        'autotest_packages'])
+            try:
+                ds.stage_artifacts(image, ['quick_provision'])
+            except dev_server.DevServerException as e:
+                logging.warning('Unable to stage quick provision payload: %s',
+                                e)
         except dev_server.DevServerException as e:
             raise error.TestFail, str(e), sys.exc_info()[2]
         finally:
@@ -116,7 +121,6 @@ class provision_AutoUpdate(test.test):
         try:
             afe_utils.machine_install_and_update_labels(
                     host,
-                    force_update=True,
                     update_url=url,
                     force_full_update=force,
                     with_cheets=with_cheets)

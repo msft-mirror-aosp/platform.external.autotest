@@ -21,7 +21,7 @@ class firmware_CorruptRecoveryCache(FirmwareTest):
 
     REBUILD_CACHE_MSG = "MRC: cache data 'RECOVERY_MRC_CACHE' needs update."
     RECOVERY_CACHE_SECTION = 'RECOVERY_MRC_CACHE'
-    FIRMWARE_LOG_CMD = 'cbmem -c'
+    FIRMWARE_LOG_CMD = 'cbmem -1' + ' | grep ' + REBUILD_CACHE_MSG[:3]
     FMAP_CMD = 'mosys eeprom map'
 
     def initialize(self, host, cmdline_args, dev_mode=False):
@@ -106,8 +106,11 @@ class firmware_CorruptRecoveryCache(FirmwareTest):
         if not self.cache_exist():
             raise error.TestNAError('No RECOVERY_MRC_CACHE was found on DUT.')
 
-        self.faft_client.bios.corrupt_body('rec')
+        self.faft_client.bios.corrupt_body('rec', True)
         self.boot_to_recovery()
 
         if not self.check_cache_rebuilt():
             raise error.TestFail('Recovery Cache was not rebuilt.')
+
+        logging.info('Reboot out of Recovery')
+        self.switcher.simple_reboot()

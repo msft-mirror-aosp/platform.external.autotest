@@ -45,14 +45,12 @@ DEPENDENCIES_FILE = 'test_suites/dependency_info'
 _ARTIFACT_STAGE_POLLING_INTERVAL = 5
 # Artifacts that should be staged when client calls devserver RPC to stage an
 # image.
-_ARTIFACTS_TO_BE_STAGED_FOR_IMAGE = ('full_payload,test_suites,stateful,'
-                                     'quick_provision')
+_ARTIFACTS_TO_BE_STAGED_FOR_IMAGE = 'full_payload,test_suites,stateful'
 # Artifacts that should be staged when client calls devserver RPC to stage an
 # image with autotest artifact.
 _ARTIFACTS_TO_BE_STAGED_FOR_IMAGE_WITH_AUTOTEST = ('full_payload,test_suites,'
                                                    'control_files,stateful,'
-                                                   'autotest_packages,'
-                                                   'quick_provision')
+                                                   'autotest_packages')
 # Artifacts that should be staged when client calls devserver RPC to stage an
 # Android build.
 _BRILLO_ARTIFACTS_TO_BE_STAGED_FOR_IMAGE = ('zip_images,vendor_partitions')
@@ -148,10 +146,20 @@ AUTO_UPDATE_LOG_DIR = 'autoupdate_logs'
 
 DEFAULT_SUBNET_MASKBIT = 19
 
+# Metrics basepaths.
+METRICS_PATH = 'chromeos/autotest'
+PROVISION_PATH = METRICS_PATH + '/provision'
+
 
 class DevServerException(Exception):
     """Raised when the dev server returns a non-200 HTTP response."""
     pass
+
+
+class BadBuildException(DevServerException):
+    """Raised when build failed to boot on DUT."""
+    pass
+
 
 class RetryableProvisionException(DevServerException):
     """Raised when provision fails due to a retryable reason."""
@@ -164,6 +172,59 @@ class DevServerOverloadException(Exception):
 class DevServerFailToLocateException(Exception):
     """Raised when fail to locate any devserver."""
     pass
+
+
+class DevServerExceptionClassifier(object):
+    """A Class represents exceptions raised from DUT by calling auto_update."""
+    def __init__(self, err, keep_full_trace=True):
+        """
+        @param err: A single string representing one time provision
+            error happened in auto_update().
+        @param keep_full_trace: True to keep the whole track trace of error.
+            False when just keep the last line.
+        """
+        self._err = err if keep_full_trace else err.split('\n')[-1]
+        self._classification = None
+
+    def _classify(self):
+        for err_pattern, classification in _EXCEPTION_PATTERNS:
+            if re.match(err_pattern, self._err):
+                return classification
+
+        return '(0) Unknown exception'
+
+    @property
+    def classification(self):
+        """Classify the error
+
+        @return: return a classified exception type (string) from
+            _EXCEPTION_PATTERNS or 'Unknown exception'. Current patterns in
+            _EXCEPTION_PATTERNS are very specific so that errors cannot match
+            more than one pattern.
+        """
+        if not self._classification:
+            self._classification = self._classify()
+        return self._classification
+
+    @property
+    def summary(self):
+        """Use one line to show the error message."""
+        return ' '.join(self._err.splitlines())
+
+    @property
+    def classified_exception(self):
+        """What kind of exception will be raised to higher.
+
+        @return: return a special Exception when the raised error is an
+            RootfsUpdateError. Otherwise, return general DevServerException.
+        """
+        # The classification of RootfsUpdateError in _EXCEPTION_PATTERNS starts
+        # with "(4)"
+        if self.classification.startswith('(4)'):
+            return BadBuildException
+
+        return DevServerException
+
 
 class MarkupStripper(HTMLParser.HTMLParser):
     """HTML parser that strips HTML tags, coded characters like &amp;
@@ -227,6 +288,28 @@ def _get_storage_server_for_artifacts(artifacts=None):
     if artifacts and factory_artifact and factory_artifact in artifacts:
         return _get_canary_channel_server()
     return _get_image_storage_server()
+
+
+def _gs_or_local_archive_url_args(archive_url):
+    """Infer the devserver call arguments to use with the given archive_url.
+
+    @param archive_url: The archive url to include the in devserver RPC. This
+            can either e a GS path or a local path.
+    @return: A dict of arguments to include in the devserver call.
+    """
+    if not archive_url:
+        return {}
+    elif archive_url.startswith('gs://'):
+        return {'archive_url': archive_url}
+    else:
+        # For a local path, we direct the devserver to move the files while
+        # staging. This is the fastest way to stage local files, but deletes the
+        # files from the source. This is OK because the files are available on
+        # the devserver once staged.
+        return {
+                'local_path': archive_url,
+                'delete_source': True,
+        }
 
 
 def _reverse_lookup_from_config(address):
@@ -545,6 +628,12 @@ class DevServer(object):
         @param kwargs: a dict mapping arg names to arg values.
         @return the URL string.
         """
+        # If the archive_url is a local path, the args expected by the devserver
+        # are a little different.
+        archive_url_args = _gs_or_local_archive_url_args(
+                kwargs.pop('archive_url', None))
+        kwargs.update(archive_url_args)
+
         argstr = '&'.join(map(lambda x: "%s=%s" % x, kwargs.iteritems()))
         return "%(host)s/%(method)s?%(argstr)s" % dict(
                 host=host, method=method, argstr=argstr)
@@ -1601,6 +1690,18 @@ class ImageServer(ImageServerBase):
         return self._get_image_url(image) + '/chromiumos_test_image.bin'
 
 
+    def get_recovery_image_url(self, image):
+        """Returns a URL to a staged recovery image.
+
+        @param image: the image that was fetched.
+
+        @return A fully qualified URL that can be used for downloading the
+                image.
+
+        """
+        return self._get_image_url(image) + '/recovery_image.bin'
+
+
     @remote_devserver_call()
     def get_dependencies_file(self, build):
         """Ask the dev server for the contents of the suite dependencies file.
@@ -1995,33 +2096,6 @@ class ImageServer(ImageServerBase):
             return finished, raised_error, pid
 
 
-    def _parse_AU_error(self, response):
-        """Parse auto_update error returned from devserver."""
-        return re.split('\n', response)[-1]
-
-
-    def _classify_exceptions(self, target_error):
-        """Parse the error that was raised from auto_update.
-
-        @param target_error: A single string representing one time provision
-            error happened in auto_update().
-
-        @return: If target_error is empty, return None. Otherwise, return a
-            classified exception type (string) from _EXCEPTION_PATTERNS
-            or 'Unknown exception'. Current patterns in _EXCEPTION_PATTERNS are
-            very specific so that errors cannot match more than one pattern.
-        """
-        if not target_error:
-            return None
-
-        for err_pattern, classification in _EXCEPTION_PATTERNS:
-            match = re.match(err_pattern, target_error)
-            if match:
-                return classification
-
-        return '(0) Unknown exception'
-
-
     def _check_error_message(self, error_patterns_to_check, error_msg):
         """Detect whether specific error pattern exist in error message.
 
@@ -2078,18 +2152,74 @@ class ImageServer(ImageServerBase):
         return board, build_type, milestone
 
 
-    def _emit_auto_update_metrics(self, error_list, duration_list,
-                                  is_au_success, board, build_type, milestone,
-                                  dut_host_name, is_aue2etest):
-        """Send metrics for auto_update.
+    def _emit_auto_update_metrics(self, board, build_type, dut_host_name,
+                                  build_name, attempt,
+                                  success, failure_reason, duration):
+        """Send metrics for a single auto_update attempt.
+
+        @param board: a field in metrics representing which board this
+            auto_update tries to update.
+        @param build_type: a field in metrics representing which build type this
+            auto_update tries to update.
+        @param dut_host_name: a field in metrics representing which DUT this
+            auto_update tries to update.
+        @param build_name: auto update build being updated to.
+        @param attempt: a field in metrics, representing which attempt/retry
+            this auto_update is.
+        @param success: a field in metrics, representing whether this
+            auto_update succeeds or not.
+        @param failure_reason: DevServerExceptionClassifier object to show
+            auto update failure reason, or None.
+        @param duration: auto update duration time, in seconds.
+        """
+        # The following is high cardinality, but sparse.
+        # Each DUT is of a single board type, and likely build type.
+        # The affinity also results in each DUT being attached to the same
+        # dev_server as well.
+        fields = {
+                'board': board,
+                'build_type': build_type,
+                'dut_host_name': dut_host_name,
+                'dev_server': self.resolved_hostname,
+                'attempt': attempt,
+                'success': success,
+        }
+
+        # reset_after=True is required for String gauges events to ensure that
+        # the metrics are not repeatedly emitted until the server restarts.
+
+        metrics.String(PROVISION_PATH + '/auto_update_build_by_devserver_dut',
+                       reset_after=True).set(build_name, fields=fields)
+
+        if not success:
+            metrics.String(
+                PROVISION_PATH +
+                '/auto_update_failure_reason_by_devserver_dut',
+                reset_after=True).set(
+                    failure_reason.classification if failure_reason else '',
+                    fields=fields)
+
+        metrics.SecondsDistribution(
+                PROVISION_PATH + '/auto_update_duration_by_devserver_dut').add(
+                        duration, fields=fields)
+
+
+    def _emit_provision_metrics(self, error_list, duration_list,
+                                is_au_success, board, build_type, milestone,
+                                dut_host_name, is_aue2etest,
+                                total_duration, build_name):
+        """Send metrics for provision request.
+
+        Provision represents potentially multiple auto update attempts.
 
         Please note: to avoid reaching or exceeding the monarch field
         cardinality limit, we avoid a metric that includes both dut hostname
         and other high cardinality fields.
 
-        @param error_list: a list of errors happened in provision. Usually it
-            contains 1 ~ AU_RETRY_LIMIT errors since we only retry provision
-            for several times.
+        @param error_list: a list of DevServerExceptionClassifier objects to
+            show errors happened in provision. Usually it contains 1 ~
+            AU_RETRY_LIMIT objects since we only retry provision for several
+            times.
         @param duration_list: a list of provision duration time, counted by
             seconds.
         @param is_au_success: a field in metrics, representing whether this
@@ -2105,74 +2235,35 @@ class ImageServer(ImageServerBase):
         @param is_aue2etest: a field in metrics representing if provision was
             done as part of the autoupdate_EndToEndTest.
         """
-        # Per-devserver cros_update metric.
-        c1 = metrics.Counter(
-                'chromeos/autotest/provision/cros_update_per_devserver')
-        f1 = {'dev_server': self.resolved_hostname,
-              'success': is_au_success,
-              'board': board,
-              'build_type': build_type,
-              'milestone': milestone,
-              'error': '',
-              'is_aue2etest': is_aue2etest}
-        # Per-DUT cros_update metric.
-        c2 = metrics.Counter('chromeos/autotest/provision/cros_update_by_dut')
-        f2 = {'success': is_au_success,
-              'board': board,
-              'dut_host_name': dut_host_name,
-              'error': '',
-              'is_aue2etest': is_aue2etest}
-        # Per auto_update metric.
-        c3 = metrics.Counter(
-                'chromeos/autotest/provision/cros_update_failure_by_devserver')
-        f3 = {'dev_server': self.resolved_hostname,
-              'board': board,
-              'build_type': build_type,
-              'milestone': milestone,
-              'error': '',
-              'is_aue2etest': is_aue2etest}
-        # Per auto_update duration metric.
-        c4 = metrics.Counter(
-                'chromeos/autotest/provision/auto_update_duration_by_devserver')
-        c5 = metrics.Counter(
-                'chromeos/autotest/provision/provision_duration_by_devserver')
-        f_duration = {'dev_server': self.resolved_hostname,
-                      'success': is_au_success,
-                      'board': board,
-                      'build_type': build_type,
-                      'milestone': milestone,
-                      'duration_seconds': 0,
-                      'is_aue2etest': is_aue2etest}
+        # The following is high cardinality, but sparse.
+        # Each DUT is of a single board type, and likely build type.
+        # The affinity also results in each DUT being attached to the same
+        # dev_server as well.
+        fields = {
+                'board': board,
+                'build_type': build_type,
+                'dut_host_name': dut_host_name,
+                'dev_server': self.resolved_hostname,
+                'success': is_au_success,
+        }
 
-        # Add a field |error| here. Current error's pattern is manually
-        # specified in _EXCEPTION_PATTERNS.
-        if not error_list:
-            c1.increment(fields=f1)
-            c2.increment(fields=f2)
-        else:
-            # In metrics, use the first error as the real provision errors.
-            raised_error = str(self._classify_exceptions(error_list[0]))
-            f1['error'] = raised_error
-            c1.increment(fields=f1)
-            f2['error'] = raised_error
-            c2.increment(fields=f2)
+        # reset_after=True is required for String gauges events to ensure that
+        # the metrics are not repeatedly emitted until the server restarts.
 
-            # Record all errors in metrics cros_update_failure_by_devserver,
-            # to make it truly reflect whether there're some particular errors
-            # hit lab frequently. Previously, all errors raised in the second
-            # try of auto_update will be eaten.
-            for err in error_list:
-                f3['error'] = str(self._classify_exceptions(err))
-                c3.increment(fields=f3)
+        metrics.String(PROVISION_PATH + '/provision_build_by_devserver_dut',
+                       reset_after=True).set(build_name, fields=fields)
 
-        total_provision_duration = 0
-        for per_au_duration in duration_list:
-            total_provision_duration += per_au_duration
-            f_duration['duration_seconds'] = per_au_duration
-            c4.increment(fields=f_duration)
+        if error_list:
+            metrics.String(
+                    PROVISION_PATH +
+                    '/provision_failure_reason_by_devserver_dut',
+                    reset_after=True).set(error_list[0].classification,
+                                          fields=fields)
 
-        f_duration['duration_seconds'] = total_provision_duration
-        c5.increment(fields=f_duration)
+        metrics.SecondsDistribution(
+                PROVISION_PATH + '/provision_duration_by_devserver_dut').add(
+                        total_duration, fields=fields)
+
 
     def _parse_buildname_from_gs_uri(self, uri):
         """Get parameters needed for AU metrics when build_name is not known.
@@ -2272,10 +2363,12 @@ class ImageServer(ImageServerBase):
             board, build_type, milestone = self._parse_buildname_safely(
                 build_name)
 
+        provision_start_time = time.time()
         for au_attempt in range(AU_RETRY_LIMIT):
             logging.debug('Start CrOS auto-update for host %s at %d time(s).',
                           host_name, au_attempt + 1)
-            start_time = time.time()
+            au_start_time = time.time()
+            failure_reason = None
             # No matter _trigger_auto_update succeeds or fails, the auto-update
             # track_status_file should be cleaned, and the auto-update execute
             # log should be collected to directory sysinfo. Also, the error
@@ -2306,7 +2399,7 @@ class ImageServer(ImageServerBase):
                     response = self._trigger_auto_update(**kwargs)
             except DevServerException as e:
                 logging.debug(error_msg_attempt, au_attempt+1, str(e))
-                error_list.append(str(e))
+                failure_reason = DevServerExceptionClassifier(str(e))
             else:
                 _, raised_error, pid = self.check_for_auto_update_finished(
                         response, **kwargs)
@@ -2339,23 +2432,32 @@ class ImageServer(ImageServerBase):
                         logging.debug('Failed to kill auto_update process %d',
                                       pid)
                     if raised_error:
-                        logging.debug(error_msg_attempt, au_attempt+1,
-                                      str(raised_error))
+                        error_str = str(raised_error)
+                        logging.debug(error_msg_attempt, au_attempt + 1,
+                                      error_str)
                         if au_log_dir:
                             logging.debug('Please see error details in log %s',
                                           self._get_au_log_filename(
                                                   au_log_dir,
                                                   kwargs['host_name'],
                                                   pid))
-                        error_list.append(self._parse_AU_error(str(raised_error)))
-                        if self._is_retryable(str(raised_error)):
+                        failure_reason = DevServerExceptionClassifier(
+                            error_str, keep_full_trace=False)
+                        if self._is_retryable(error_str):
                             retry_with_another_devserver = True
 
-                        if self._should_use_original_payload(str(raised_error)):
+                        if self._should_use_original_payload(error_str):
                             force_original = True
 
             finally:
-                duration_list.append(int(time.time() - start_time))
+                duration = int(time.time() - au_start_time)
+                duration_list.append(duration)
+                if failure_reason:
+                    error_list.append(failure_reason)
+                self._emit_auto_update_metrics(board, build_type, host_name,
+                                               build_name, au_attempt + 1,
+                                               is_au_success, failure_reason,
+                                               duration)
                 if retry_with_another_devserver:
                     break
 
@@ -2368,9 +2470,10 @@ class ImageServer(ImageServerBase):
                             'AU failed, trying IP instead of hostname: %s',
                             host_name_ip)
 
-        self._emit_auto_update_metrics(error_list, duration_list, is_au_success,
-                                       board, build_type, milestone, host_name,
-                                       is_aue2etest)
+        total_duration = int(time.time() - provision_start_time)
+        self._emit_provision_metrics(error_list, duration_list, is_au_success,
+                                     board, build_type, milestone, host_name,
+                                     is_aue2etest, total_duration, build_name)
 
         if is_au_success:
             return (is_au_success, pid)
@@ -2381,16 +2484,14 @@ class ImageServer(ImageServerBase):
         # auto-update logs, or killing auto-update processes, just report a
         # common error here.
         if error_list:
-            real_error = ''
-            for i in range(len(error_list)):
-                real_error += '%d) %s, ' % (
-                        i, ' '.join(error_list[i].splitlines()))
+            real_error = ', '.join(['%d) %s' % (i, e.summary)
+                                    for i, e in enumerate(error_list)])
             if retry_with_another_devserver:
                 raise RetryableProvisionException(
                         error_msg % (host_name, real_error))
             else:
-                raise DevServerException(
-                        error_msg % (host_name, real_error))
+                raise error_list[0].classified_exception(
+                    error_msg % (host_name, real_error))
         else:
             raise DevServerException(error_msg % (
                         host_name, ('RPC calls after the whole auto-update '

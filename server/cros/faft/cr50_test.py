@@ -40,6 +40,25 @@ class Cr50Test(FirmwareTest):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
 
+        args = {}
+        for arg in cmdline_args:
+            if '=' in arg:
+                k, v = arg.split('=')
+                args[k] = v
+            else:
+                logging.debug('ignoring misformatted arg "%s"', arg)
+
+        self.ccd_lockout = args.get('ccd_lockout', '').lower == 'true'
+        self.can_set_ccd_level = (not self.cr50.using_ccd() or
+            self.cr50.testlab_is_on()) and not self.ccd_lockout
+        self.original_ccd_level = self.cr50.get_ccd_level()
+        self.original_ccd_settings = self.cr50.get_cap_dict()
+        if self.can_set_ccd_level:
+            # Lock cr50 so the console will be restricted
+            self.cr50.set_ccd_level('lock')
+        elif self.original_ccd_level != 'lock':
+            raise error.TestNAError('Lock the console before running cr50 test')
+
         self.host = host
         self._save_original_state()
         # We successfully saved the device state
@@ -73,26 +92,46 @@ class Cr50Test(FirmwareTest):
 
         This will download running cr50 image and the device image.
         """
-        _, dut_rw, dut_bid = self._original_state['device_image_ver']
+        # Copy the prod and prepvt images from the DUT
+        _, prod_rw, prod_bid = self._original_state['device_prod_ver']
+        filename = 'prod_device_image_' + prod_rw
+        self._device_prod_image = os.path.join(self.resultsdir,
+                filename)
+        self.host.get_file(cr50_utils.CR50_PROD,
+                self._device_prod_image)
 
-        # Copy the image from the DUT
-        filename = 'device_image_' + dut_rw
-        self._original_device_image = os.path.join(self.resultsdir, filename)
-        self.host.get_file(cr50_utils.CR50_FILE, self._original_device_image)
+        if cr50_utils.HasPrepvtImage(self.host):
+            _, prepvt_rw, prepvt_bid = self._original_state['device_prepvt_ver']
+            filename = 'prepvt_device_image_' + prepvt_rw
+            self._device_prepvt_image = os.path.join(self.resultsdir,
+                    filename)
+            self.host.get_file(cr50_utils.CR50_PREPVT,
+                    self._device_prepvt_image)
+            prepvt_bid = cr50_utils.GetBoardIdInfoString(prepvt_bid)
+        else:
+            self._device_prepvt_image = None
+            prepvt_rw = None
+            prepvt_bid = None
 
         # If the running cr50 image version matches the image on the DUT use
         # the DUT image as the original image. If the versions don't match
         # download the image from google storage
         _, running_rw, running_bid = self.get_saved_cr50_original_version()
 
-        # Make sure dut_bid and running_bid are in the same format
-        dut_bid = cr50_utils.GetBoardIdInfoString(dut_bid)
+        # Make sure prod_bid and running_bid are in the same format
+        prod_bid = cr50_utils.GetBoardIdInfoString(prod_bid)
         running_bid = cr50_utils.GetBoardIdInfoString(running_bid)
-        if running_rw == dut_rw and running_bid == dut_bid:
-            logging.info('Using device cr50 image %s %s', dut_rw, dut_bid)
-            self._original_cr50_image = self._original_device_image
+        if running_rw == prod_rw and running_bid == prod_bid:
+            logging.info('Using device cr50 prod image %s %s', prod_rw,
+                    prod_bid)
+            self._original_cr50_image = self._device_prod_image
+        elif running_rw == prepvt_rw and running_bid == prepvt_bid:
+            logging.info('Using device cr50 prepvt image %s %s', prepvt_rw,
+                    prepvt_bid)
+            self._original_cr50_image = self._device_prepvt_image
         else:
-            logging.info('Downloading cr50 image %s %s', dut_rw, dut_bid)
+            logging.info('Downloading cr50 image %s %s', running_rw,
+                    running_bid)
             self._original_cr50_image = self.download_cr50_release_image(
                 running_rw, running_bid)[0]
 
@@ -188,10 +227,19 @@ class Cr50Test(FirmwareTest):
             logging.warning('Did not save the original images. Cannot restore '
                             'state')
             return
+        # Remove the prepvt image if the test installed one.
+        if (not self._original_state['has_prepvt'] and
+            cr50_utils.HasPrepvtImage(self.host)):
+            self.host.run('rm %s' % cr50_utils.CR50_PREPVT)
         # If rootfs verification has been disabled, copy the cr50 device image
         # back onto the DUT.
         if self._rootfs_verification_is_disabled():
-            cr50_utils.InstallImage(self.host, self._original_device_image)
+            cr50_utils.InstallImage(self.host, self._device_prod_image,
+                    cr50_utils.CR50_PROD)
+            # Install the prepvt image if there was one.
+            if self._device_prepvt_image:
+                cr50_utils.InstallImage(self.host, self._device_prepvt_image,
+                        cr50_utils.CR50_PREPVT)
 
         chip_bid_info = self._original_state['chip_bid']
         bid_is_erased = chip_bid_info == cr50_utils.ERASED_CHIP_BID
@@ -204,7 +252,9 @@ class Cr50Test(FirmwareTest):
         cr50_utils.SetRLZ(self.host, self._original_state['rlz'])
 
         # Verify everything is still the same
-        self._check_original_state()
+        mismatch = self._check_original_state()
+        if mismatch:
+            raise error.TestError('Could not restore state: %s' % mismatch)
 
         logging.info('Successfully restored the original cr50 state')
 
@@ -219,7 +269,14 @@ class Cr50Test(FirmwareTest):
         state = {}
         state['mosys platform brand'] = self.host.run('mosys platform brand',
             ignore_status=True).stdout.strip()
-        state['device_image_ver'] = cr50_utils.GetBinVersion(self.host)
+        state['device_prod_ver'] = cr50_utils.GetBinVersion(self.host,
+                cr50_utils.CR50_PROD)
+        state['has_prepvt'] = cr50_utils.HasPrepvtImage(self.host)
+        if state['has_prepvt']:
+            state['device_prepvt_ver'] = cr50_utils.GetBinVersion(self.host,
+                    cr50_utils.CR50_PREPVT)
+        else:
+            state['device_prepvt_ver'] = None
         state['rlz'] = cr50_utils.GetRLZ(self.host)
         state['chip_bid'] = cr50_utils.GetChipBoardId(self.host)
         state['chip_bid_str'] = '%08x:%08x:%08x' % state['chip_bid']
@@ -259,6 +316,23 @@ class Cr50Test(FirmwareTest):
         return mismatch
 
 
+    def _reset_ccd_settings(self):
+        """Reset the ccd lock and capability states"""
+        current_settings = self.cr50.get_cap_dict()
+        if self.original_ccd_settings != current_settings:
+            self.servo.set_nocheck('cr50_testlab', 'open')
+            self.cr50.set_ccd_level('open')
+            self.cr50.set_caps(self.original_ccd_settings)
+
+        # First try using testlab open to open the device
+        if self.cr50.testlab_is_on() and self.original_ccd_level == 'open':
+            self.servo.set_nocheck('cr50_testlab', 'open')
+        if (self.can_set_ccd_level and
+            self.original_ccd_level != self.cr50.get_ccd_level()):
+            self.cr50.set_ccd_level(self.original_ccd_level)
+
+
+
     def cleanup(self):
         """Make sure the device state is the same as the start of the test"""
         state_mismatch = self._check_original_state()
@@ -268,6 +342,11 @@ class Cr50Test(FirmwareTest):
             if self._raise_error_on_mismatch:
                 raise error.TestError('Unexpected state mismatch during '
                                       'cleanup %s' % state_mismatch)
+
+        # Restore the ccd privilege level
+        if hasattr(self, 'original_ccd_level'):
+            self._reset_ccd_settings()
+
         super(Cr50Test, self).cleanup()
 
 
@@ -355,19 +434,19 @@ class Cr50Test(FirmwareTest):
         return dest, ver
 
 
-    def download_cr50_release_image(self, rw_ver, image_bid=''):
+    def download_cr50_release_image(self, image_rw, image_bid=''):
         """download the cr50 release file
 
         Get the file with the matching version and image board id info
 
         Args:
-            rw_ver: the rw version string
+            image_rw: the rw version string
             image_bid: the image board id info string or list
         Returns:
             A tuple with the release image local path and version
         """
         # Release images can be found using the rw version
-        filename = self.CR50_PROD_FILE % rw_ver
+        filename = self.CR50_PROD_FILE % image_rw
 
         # Download the image
         dest, ver = self.download_cr50_gs_image(filename, image_bid=image_bid,
@@ -375,17 +454,17 @@ class Cr50Test(FirmwareTest):
 
         # Compare the rw version and board id info to make sure the right image
         # was found
-        if rw_ver != ver[1]:
+        if image_rw != ver[1]:
             raise error.TestError('Could not download image with matching '
                                   'rw version')
         return dest, ver
 
 
-    def _cr50_verify_update(self, expected_ver, expect_rollback):
+    def _cr50_verify_update(self, expected_rw, expect_rollback):
         """Verify the expected version is running on cr50
 
         Args:
-            expect_ver: The RW version string we expect to be running
+            expected_rw: The RW version string we expect to be running
             expect_rollback: True if cr50 should have rolled back during the
                              update
 
@@ -393,16 +472,16 @@ class Cr50Test(FirmwareTest):
             TestFail if there is any unexpected update state
         """
         errors = []
-        running_ver = self.cr50.get_version()
-        if expected_ver != running_ver:
-            errors.append('running %s not %s' % (running_ver, expected_ver))
+        running_rw = self.cr50.get_version()
+        if expected_rw != running_rw:
+            errors.append('running %s not %s' % (running_rw, expected_rw))
 
         if expect_rollback != self.cr50.rolledback():
             errors.append('%srollback detected' %
                           'no ' if expect_rollback else '')
         if len(errors):
             raise error.TestFail('cr50_update failed: %s' % ', '.join(errors))
-        logging.info('RUNNING %s after %s', expected_ver,
+        logging.info('RUNNING %s after %s', expected_rw,
                      'rollback' if expect_rollback else 'update')
 
 
@@ -418,7 +497,7 @@ class Cr50Test(FirmwareTest):
         tmp_dest = '/tmp/' + os.path.basename(path)
 
         dest, image_ver = cr50_utils.InstallImage(self.host, path, tmp_dest)
-        cr50_utils.UsbUpdater(self.host, ['-s', dest])
+        cr50_utils.GSCTool(self.host, ['-a', dest])
         return image_ver[1]
 
 
@@ -443,13 +522,13 @@ class Cr50Test(FirmwareTest):
         Raises:
             TestFail if the update failed
         """
-        original_ver = self.cr50.get_version()
+        original_rw = self.cr50.get_version()
 
         # Cr50 is going to reject an update if it hasn't been up for more than
         # 60 seconds. Wait until that passes before trying to run the update.
         self.cr50.wait_until_update_is_allowed()
 
-        rw_ver = self._cr50_run_update(path)
+        image_rw = self._cr50_run_update(path)
 
         # Running the update may cause cr50 to reboot. Wait for that before
         # sending more commands. The reboot should happen quickly. Wait a
@@ -462,6 +541,6 @@ class Cr50Test(FirmwareTest):
         if rollback:
             self.cr50.rollback(chip_bid=chip_bid, chip_flags=chip_flags)
 
-        expected_ver = original_ver if expect_rollback else rw_ver
+        expected_rw = original_rw if expect_rollback else image_rw
         # If we expect a rollback, the version should remain unchanged
-        self._cr50_verify_update(expected_ver, rollback or expect_rollback)
+        self._cr50_verify_update(expected_rw, rollback or expect_rollback)

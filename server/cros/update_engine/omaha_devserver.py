@@ -46,18 +46,23 @@ class OmahaDevserver(object):
     _DEVSERVER_TIMELIMIT_SECONDS = 12 * 60 * 60
 
 
-    def __init__(self, omaha_host, update_payload_staged_url):
+    def __init__(self, omaha_host, update_payload_staged_url, max_updates=1,
+                 critical_update=True):
         """Starts a private devserver instance, operating at Omaha capacity.
 
         @param omaha_host: host address where the devserver is spawned.
         @param update_payload_staged_url: URL to provision for update requests.
-
+        @param max_updates: int number of updates this devserver will handle.
+                            This is passed to src/platform/dev/devserver.py.
+        @param critical_update: Whether to set a deadline in responses.
         """
         self._devserver_dir = '/home/chromeos-test/chromiumos/src/platform/dev'
 
         if not update_payload_staged_url:
             raise error.TestError('Missing update payload url')
 
+        self._critical_update = critical_update
+        self._max_updates = max_updates
         self._omaha_host = omaha_host
         self._devserver_pid = 0
         self._devserver_port = 0  # Determined later from devserver portfile.
@@ -65,6 +70,8 @@ class OmahaDevserver(object):
 
         self._devserver_ssh = hosts.SSHHost(self._omaha_host,
                                             user='chromeos-test')
+        hosts.send_creation_metric(self._devserver_ssh,
+                                   context='omaha_devserver')
 
         # Temporary files for various devserver outputs.
         self._devserver_logfile = None
@@ -103,7 +110,8 @@ class OmahaDevserver(object):
         logging.info(remote_cmd)
 
         try:
-            result = self._devserver_ssh.run(remote_cmd, ignore_status=True)
+            result = self._devserver_ssh.run(remote_cmd, ignore_status=True,
+                                             ssh_failure_retry_ok=True)
         except error.AutoservRunError as e:
             self._log_and_raise_remote_ssh_error(e)
         if result.exit_status != 0:
@@ -155,7 +163,8 @@ class OmahaDevserver(object):
                 time.sleep(self._WAIT_SLEEP_INTERVAL)
         else:
             try:
-                self._devserver_ssh.run_output('uptime')
+                self._devserver_ssh.run_output('uptime',
+                                               ssh_failure_retry_ok=True)
             except error.AutoservRunError as e:
                 logging.debug('Failed to run uptime on the devserver: %s', e)
             raise OmahaDevserverFailedToStart(
@@ -215,17 +224,21 @@ class OmahaDevserver(object):
                 '--logfile=%s' % self._devserver_logfile,
                 '--remote_payload',
                 '--urlbase=%s' % update_payload_url_base,
-                '--max_updates=1',
+                '--max_updates=%s' % self._max_updates,
                 '--host_log',
-                '--static_dir=%s' % self._devserver_static_dir,
-                '--critical_update',
+                '--static_dir=%s' % self._devserver_static_dir
         ]
+
+        if self._critical_update:
+            cmdlist.append('--critical_update')
+
         remote_cmd = '( %s ) </dev/null >%s 2>&1 &' % (
                 ' '.join(cmdlist), self._devserver_stdoutfile)
 
         logging.info('Starting devserver with %r', remote_cmd)
         try:
-            self._devserver_ssh.run_output(remote_cmd)
+            self._devserver_ssh.run_output(remote_cmd,
+                                           ssh_failure_retry_ok=True)
         except error.AutoservRunError as e:
             self._log_and_raise_remote_ssh_error(e)
 
@@ -249,7 +262,7 @@ class OmahaDevserver(object):
 
         for signal in 'SIGTERM', 'SIGKILL':
             remote_cmd = 'kill -s %s %s' % (signal, self._devserver_pid)
-            self._devserver_ssh.run(remote_cmd)
+            self._devserver_ssh.run(remote_cmd, ssh_failure_retry_ok=True)
             try:
                 client_utils.poll_for_condition(
                         devserver_down, sleep_interval=1, desc='devserver down')
@@ -288,7 +301,8 @@ class OmahaDevserver(object):
     def _get_devserver_file_content(self, filename):
         """Returns the content of a file on the devserver."""
         return self._devserver_ssh.run_output('cat %s' % filename,
-                                              stdout_tee=None)
+                                              stdout_tee=None,
+                                              ssh_failure_retry_ok=True)
 
 
     def _get_devserver_log(self):
@@ -329,9 +343,14 @@ class OmahaDevserver(object):
             event_log_resp = conn.read()
             conn.close()
             hostlog = json.loads(event_log_resp)
-            if wait_for_reboot_events and len(hostlog) < expected_events_count:
-                time.sleep(5)
-                continue
+            logging.debug('hostlog returned: %s', hostlog)
+            if wait_for_reboot_events:
+                if 'event_type' in hostlog[-1] and \
+                        hostlog[-1]['event_type'] == 54:
+                    return hostlog
+                else:
+                    time.sleep(5)
+                    continue
             else:
                 return hostlog
 

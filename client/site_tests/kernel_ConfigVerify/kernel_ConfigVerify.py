@@ -77,6 +77,11 @@ class kernel_ConfigVerify(test.test):
         'FW_LOADER_USER_HELPER',
         'FW_LOADER_USER_HELPER_FALLBACK',
     ]
+    MISSING_OK = [
+        # Due to a bug (crbug.com/782034), modifying this file together with
+        # kernel changes might cause failures in the CQ. In order to avoid that,
+        # this list contains modules that are okay that they are missing.
+    ]
     IS_EXCLUSIVE = [
         # Security; no surprise binary formats.
         {
@@ -85,6 +90,8 @@ class kernel_ConfigVerify(test.test):
                 'BINFMT_ELF',
             ],
             'module': [
+            ],
+            'enabled': [
             ],
             'missing': [
                 # Sanity checks; one disabled, one does not exist.
@@ -110,6 +117,8 @@ class kernel_ConfigVerify(test.test):
                 'UDF_FS',
                 'VFAT_FS',
             ],
+            'enabled': [
+            ],
             'missing': [
                 # Sanity checks; one disabled, one does not exist.
                 'EXT2_FS',
@@ -129,6 +138,8 @@ class kernel_ConfigVerify(test.test):
             ],
             'module': [
             ],
+            'enabled': [
+            ],
             'missing': [
                 # Sanity checks; one disabled, one does not exist.
                 'LDM_PARTITION',
@@ -137,13 +148,16 @@ class kernel_ConfigVerify(test.test):
         },
     ]
 
-    def is_arm_family(self, arch):
-      return arch in ['armv7l', 'aarch64']
-
     def is_x86_family(self, arch):
+      """
+      Returns true if the architecture is x86 family.
+      """
       return arch in ['i386', 'x86_64']
 
     def run_once(self):
+        """
+        The actual test.
+        """
         # Cache the architecture to avoid redundant execs to "uname".
         arch = utils.get_arch()
         userspace_arch = utils.get_arch_userspace()
@@ -155,7 +169,7 @@ class kernel_ConfigVerify(test.test):
 
         # Load the list of kernel config variables.
         config = kernel_config.KernelConfig()
-        config.initialize()
+        config.initialize(missing_ok=self.MISSING_OK)
 
         # Adjust for kernel-version-specific changes
         kernel_ver = os.uname()[2]
@@ -176,11 +190,20 @@ class kernel_ConfigVerify(test.test):
             for entry in self.IS_EXCLUSIVE:
                 if entry['regex'] == '.*_FS$':
                     entry['builtin'].append('SND_PROC_FS')
+                    entry['builtin'].append('USB_CONFIGFS_F_FS')
+                    entry['enabled'].append('CONFIGFS_FS')
+                    entry['module'].append('USB_F_FS')
 
         if utils.compare_versions(kernel_ver, "4.4") < 0:
             for entry in self.IS_EXCLUSIVE:
                 if entry['regex'] == '.*_FS$':
                     entry['builtin'].append('EXT4_USE_FOR_EXT23')
+
+        if utils.compare_versions(kernel_ver, "4.4") >= 0 and \
+            utils.compare_versions(kernel_ver, "4.12") < 0:
+            for entry in self.IS_EXCLUSIVE:
+                if entry['regex'] == '.*_FS$':
+                    entry['builtin'].append('ESD_FS')
 
         if utils.compare_versions(kernel_ver, "3.14") >= 0:
             self.IS_MISSING.remove('INET_DIAG')
@@ -195,13 +218,11 @@ class kernel_ConfigVerify(test.test):
         # Run the dynamic checks.
 
         # Security; NULL-address hole should be as large as possible.
-        # Upstream kernel recommends 64k, which should be large enough to
-        # catch nearly all dereferenced structures.
-        wanted = '65536'
-        if self.is_arm_family(arch):
-            # ... except on ARM where it shouldn't be larger than 32k due
-            # to historical ELF load location.
-            wanted = '32768'
+        # Upstream kernel recommends 64k, which should be large enough
+        # to catch nearly all dereferenced structures. For
+        # compatibility with ARM binaries (even on x86) this needs to
+        # be 32k.
+        wanted = '32768'
         config.has_value('DEFAULT_MMAP_MIN_ADDR', [wanted])
 
         # Security; make sure NX page table bits are usable.

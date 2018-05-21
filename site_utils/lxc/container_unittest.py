@@ -7,7 +7,6 @@ import os
 import random
 import shutil
 import tempfile
-import time
 import unittest
 from contextlib import contextmanager
 
@@ -22,11 +21,12 @@ from autotest_lib.site_utils.lxc import unittest_setup
 from autotest_lib.site_utils.lxc import utils as lxc_utils
 
 
-class ContainerTests(unittest.TestCase):
+class ContainerTests(lxc_utils.LXCTests):
     """Unit tests for the Container class."""
 
     @classmethod
     def setUpClass(cls):
+        super(ContainerTests, cls).setUpClass()
         cls.test_dir = tempfile.mkdtemp(dir=lxc.DEFAULT_CONTAINER_PATH,
                                         prefix='container_unittest_')
 
@@ -359,7 +359,7 @@ class ContainerTests(unittest.TestCase):
         self.assertEqual(container_inode, host_inode)
 
 
-class ContainerIdTests(unittest.TestCase):
+class ContainerIdTests(lxc_utils.LXCTests):
     """Unit tests for the ContainerId class."""
 
     def setUp(self):
@@ -382,9 +382,8 @@ class ContainerIdTests(unittest.TestCase):
 
 def random_container_id():
     """Generate a random container ID for testing."""
-    return lxc.ContainerId(random.randint(0, 1000), time.time(), os.getpid())
+    return lxc.ContainerId.create(random.randint(0, 1000))
 
 
 if __name__ == '__main__':
-    unittest_setup.setup()
     unittest.main()

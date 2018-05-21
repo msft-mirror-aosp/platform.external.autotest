@@ -18,12 +18,13 @@ import os
 from autotest_lib.server import utils
 from autotest_lib.server.cros import tradefed_test
 
-_PARTNER_GTS_LOCATION = 'gs://chromeos-partner-gts/gts-5.0_r2-4389763.zip'
+_PARTNER_GTS_LOCATION = 'gs://chromeos-partner-gts/gts-5.1_r4-4697968.zip'
 
 
 class cheets_GTS(tradefed_test.TradefedTest):
     """Sets up tradefed to run GTS tests."""
     version = 1
+    _SHARD_CMD = '--shard-count'
 
     def _get_default_bundle_url(self, bundle):
         return _PARTNER_GTS_LOCATION
@@ -46,6 +47,9 @@ class cheets_GTS(tradefed_test.TradefedTest):
             args += ['--module', target_module]
         elif plan is not None and session_id is not None:
             args += ['--plan', plan, '--retry', '%d' % session_id]
+        # We occasionly saw business logic service issue at setup stage on our
+        # dashboard, ignore this type of failure and let the test run.
+        args += ['--ignore-business-logic-failure']
         return args
 
 
@@ -56,7 +60,7 @@ class cheets_GTS(tradefed_test.TradefedTest):
         @return: The result object from utils.run.
         """
         gts_tradefed = os.path.join(self._repository, 'tools', 'gts-tradefed')
-        with tradefed_test.adb_keepalive(self._get_adb_target(),
+        with tradefed_test.adb_keepalive(self._get_adb_targets(),
                                          self._install_paths):
             for command in commands:
                 logging.info('RUN: ./gts-tradefed %s', ' '.join(command))
@@ -71,15 +75,15 @@ class cheets_GTS(tradefed_test.TradefedTest):
         return output
 
 
-    def run_once(self, target_package=None, gts_tradefed_args=None):
+    def run_once(self, target_package=None, tradefed_args=None):
         """Runs GTS with either a target module or a custom command line.
 
         @param target_package: the name of test module to be run.
-        @param gts_tradefed_args: used to pass any specific cmd to GTS binary.
+        @param tradefed_args: used to pass any specific cmd to GTS binary.
         """
-        if gts_tradefed_args:
-            test_command = gts_tradefed_args
-            test_name = ' '.join(gts_tradefed_args)
+        if tradefed_args:
+            test_command = tradefed_args
+            test_name = ' '.join(tradefed_args)
         else:
             test_command = self._tradefed_run_command(target_package)
             test_name = 'module.%s' % target_package

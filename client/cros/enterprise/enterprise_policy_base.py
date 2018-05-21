@@ -2,15 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import json
 import logging
 import os
 
 from autotest_lib.client.bin import test
-from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import enrollment
+from autotest_lib.client.common_lib.cros import policy
 from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros.enterprise import enterprise_fake_dmserver
@@ -62,21 +63,24 @@ class EnterprisePolicyTest(test.test):
     WEB_HOST = 'http://localhost:%d' % WEB_PORT
     CHROME_POLICY_PAGE = 'chrome://policy'
 
-    def setup(self):
-        """Make the files needed for fake-dms."""
-        os.chdir(self.srcdir)
-        utils.make()
-
 
     def initialize(self, **kwargs):
-        """Initialize test parameters."""
+        """
+        Initialize test parameters.
+
+        Consume the check_client_result parameter if this test was started
+        from a server test.
+
+        """
+        kwargs.pop('check_client_result', False)
         self._initialize_enterprise_policy_test(**kwargs)
 
 
     def _initialize_enterprise_policy_test(
             self, case='', env='dm-fake', dms_name=None,
             username=USERNAME, password=PASSWORD, gaia_id=GAIA_ID):
-        """Initialize test parameters, fake DM Server, and Chrome flags.
+        """
+        Initialize test parameters and fake DM Server.
 
         @param case: String name of the test case to run.
         @param env: String environment of DMS and Gaia servers.
@@ -84,6 +88,7 @@ class EnterprisePolicyTest(test.test):
         @param password: String password login credential.
         @param gaia_id: String gaia_id login credential.
         @param dms_name: String name of test DM Server.
+
         """
         self.case = case
         self.env = env
@@ -94,14 +99,16 @@ class EnterprisePolicyTest(test.test):
         self.dms_is_fake = (env == 'dm-fake')
         self._enforce_variable_restrictions()
 
+        # Install protobufs and add import path.
+        policy.install_protobufs(self.autodir, self.job)
+
         # Initialize later variables to prevent error after an early failure.
         self._web_server = None
         self.cr = None
 
         # Start AutoTest DM Server if using local fake server.
         if self.dms_is_fake:
-            self.fake_dm_server = enterprise_fake_dmserver.FakeDMServer(
-                self.srcdir)
+            self.fake_dm_server = enterprise_fake_dmserver.FakeDMServer()
             self.fake_dm_server.start(self.tmpdir, self.debugdir)
 
         # Get enterprise directory of shared resources.
@@ -128,7 +135,7 @@ class EnterprisePolicyTest(test.test):
             self._web_server.stop()
 
         # Close Chrome instance if opened.
-        if self.cr:
+        if self.cr and self._auto_logout:
             self.cr.close()
 
 
@@ -160,8 +167,10 @@ class EnterprisePolicyTest(test.test):
 
     def setup_case(self, user_policies={}, suggested_user_policies={},
                    device_policies={}, skip_policy_value_verification=False,
-                   enroll=False, auto_login=True):
-        """Set up and confirm the preconditions of a test case.
+                   enroll=False, auto_login=True, auto_logout=True,
+                   init_network_controller=False, extension_paths=[],
+                   extra_chrome_flags=[]):
+        """Set up DMS, log in, and verify policy values.
 
         If the AutoTest fake DM Server is used, make a JSON policy blob
         and upload it to the fake DM server.
@@ -179,16 +188,25 @@ class EnterprisePolicyTest(test.test):
                 verify that the correct policy value shows on policy page.
         @param enroll: True for enrollment instead of login.
         @param auto_login: Sign in to chromeos.
+        @param auto_logout: Sign out of chromeos when test is complete.
+        @param init_network_controller: whether to init network controller.
+        @param extension_paths: list of extensions to install.
+        @param extra_chrome_flags: list of flags to add to Chrome.
 
         @raises error.TestError if cryptohome vault is not mounted for user.
         @raises error.TestFail if |policy_name| and |policy_value| are not
                 shown on the Policies page.
         """
+        self._auto_logout = auto_logout
+
         if self.dms_is_fake:
             self.fake_dm_server.setup_policy(self._make_json_blob(
                 user_policies, suggested_user_policies, device_policies))
 
-        self._create_chrome(enroll, auto_login)
+        self._create_chrome(enroll=enroll, auto_login=auto_login,
+                            init_network_controller=init_network_controller,
+                            extension_paths=extension_paths,
+                            extra_chrome_flags=extra_chrome_flags)
         # Skip policy check upon request or if we enroll but don't log in.
         skip_policy_value_verification = (
                 skip_policy_value_verification or not auto_login)
@@ -211,12 +229,14 @@ class EnterprisePolicyTest(test.test):
 
         @returns: JSON policy blob to send to the fake DM server.
         """
-        user_p = user_policies.copy()
-        s_user_p = suggested_user_policies.copy()
-        device_p = device_policies.copy()
+
+        user_p = copy.deepcopy(user_policies)
+        s_user_p = copy.deepcopy(suggested_user_policies)
+        device_p = copy.deepcopy(device_policies)
 
         # Remove "Not set" policies and json-ify dicts because the
-        # FakeDMServer expects "policy": "{value}" not "policy": {value}.
+        # FakeDMServer expects "policy": "{value}" not "policy": {value}
+        # or "policy": ["{value}"] not "policy": [{value}].
         for policies_dict in [user_p, s_user_p, device_p]:
             policies_to_pop = []
             for policy in policies_dict:
@@ -227,7 +247,9 @@ class EnterprisePolicyTest(test.test):
                     policies_dict[policy] = encode_json_string(value)
                 elif isinstance(value, list):
                     if len(value) > 0 and isinstance(value[0], dict):
-                        policies_dict[policy] = encode_json_string(value)
+                        for i in xrange(len(value)):
+                            value[i] = encode_json_string(value[i])
+                        policies_dict[policy] = value
             for policy in policies_to_pop:
                 policies_dict.pop(policy)
 
@@ -244,7 +266,7 @@ class EnterprisePolicyTest(test.test):
             if user_p:
                 user_modes_dict['mandatory'] = user_p
             if suggested_user_policies:
-                user_modes_dict['suggested'] = s_user_p
+                user_modes_dict['recommended'] = s_user_p
             management_dict['google/chromeos/user'] = user_modes_dict
 
         if device_p:
@@ -489,14 +511,21 @@ class EnterprisePolicyTest(test.test):
         return env_flag_list
 
 
-    def _create_chrome(self, enroll, auto_login):
+    def _create_chrome(self, enroll=False, auto_login=True,
+                       init_network_controller=False,
+                       extension_paths=[], extra_chrome_flags=[]):
         """
         Create a Chrome object. Enroll and/or sign in.
 
+        Function results in self.cr set as the Chrome object.
+
         @param enroll: enroll the device.
         @param auto_login: sign in to chromeos.
+        @param extension_paths: list of extensions to install.
+        @param init_network_controller: whether to init network controller.
+        @param extra_chrome_flags: list of flags to add.
         """
-        extra_flags = self._initialize_chrome_extra_flags()
+        extra_flags = self._initialize_chrome_extra_flags() + extra_chrome_flags
 
         logging.info('Chrome Browser Arguments:')
         logging.info('  extra_browser_args: %s', extra_flags)
@@ -506,7 +535,8 @@ class EnterprisePolicyTest(test.test):
 
         if enroll:
             self.cr = chrome.Chrome(auto_login=False,
-                                    extra_browser_args=extra_flags)
+                                    extra_browser_args=extra_flags,
+                                    expect_policy_fetch=True)
             if self.dms_is_fake:
                 enrollment.EnterpriseFakeEnrollment(
                     self.cr.browser, self.username, self.password, self.gaia_id,
@@ -522,12 +552,16 @@ class EnterprisePolicyTest(test.test):
                                     password=self.password,
                                     gaia_login=not self.dms_is_fake,
                                     disable_gaia_services=self.dms_is_fake,
-                                    autotest_ext=True)
+                                    autotest_ext=True,
+                                    init_network_controller=init_network_controller,
+                                    expect_policy_fetch=True,
+                                    extension_paths=extension_paths)
         else:
             self.cr = chrome.Chrome(auto_login=False,
                                     extra_browser_args=extra_flags,
                                     disable_gaia_services=self.dms_is_fake,
-                                    autotest_ext=True)
+                                    autotest_ext=True,
+                                    expect_policy_fetch=True)
 
         if auto_login:
             if not cryptohome.is_vault_mounted(user=self.username,
@@ -542,6 +576,7 @@ class EnterprisePolicyTest(test.test):
         @param url: URL of web page to load.
         @param tab: browser tab to load (if any).
         @returns: browser tab loaded with web page.
+        @raises: telemetry TimeoutException if document ready state times out.
         """
         logging.info('Navigating to URL: %r', url)
         if not tab:

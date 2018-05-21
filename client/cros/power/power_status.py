@@ -9,6 +9,7 @@ import contextlib
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, enum
 from autotest_lib.client.cros import kernel_trace
+from autotest_lib.client.cros.power import power_utils
 
 BatteryDataReportType = enum.Enum('CHARGE', 'ENERGY')
 
@@ -37,12 +38,14 @@ class DevStat(object):
 
 
     def read_val(self,  file_name, field_type):
+        """Read a value from file.
+        """
         try:
             path = file_name
             if not file_name.startswith('/'):
                 path = os.path.join(self.path, file_name)
             f = open(path, 'r')
-            out = f.readline()
+            out = f.readline().rstrip('\n')
             val = field_type(out)
             return val
 
@@ -51,11 +54,19 @@ class DevStat(object):
 
 
     def read_all_vals(self):
+        """Read all values.
+        """
         for field, prop in self.fields.iteritems():
             if prop[0]:
                 val = self.read_val(prop[0], prop[1])
                 setattr(self, field, val)
 
+    def update(self):
+        """Update the DevStat.
+
+        Need to implement in subclass.
+        """
+        pass
 
 class ThermalStatACPI(DevStat):
     """
@@ -183,10 +194,10 @@ class ThermalStat(object):
         for thermal_glob_path, thermal_type in thermal_stat_types:
             try:
                 thermal_path = glob.glob(thermal_glob_path)[0]
-                logging.debug('Using %s for thermal info.' % thermal_path)
+                logging.debug('Using %s for thermal info.', thermal_path)
                 self._thermals.append(thermal_type(thermal_path))
             except:
-                logging.debug('Could not find thermal path %s, skipping.' %
+                logging.debug('Could not find thermal path %s, skipping.',
                               thermal_glob_path)
 
 
@@ -246,6 +257,7 @@ class BatteryStat(DevStat):
         'energy_full':          ['energy_full', float],
         'energy_full_design':   ['energy_full_design', float],
         'power_now':            ['power_now', float],
+        'present':              ['present', int],
         'energy_rate':          ['', ''],
         'remaining_time':       ['', '']
         }
@@ -344,7 +356,7 @@ class BatteryStat(DevStat):
             self.remaining_time =  self.energy / self.energy_rate
 
 
-class LineStatDummy(object):
+class LineStatDummy(DevStat):
     """
     Dummy line stat for devices which don't provide power_supply related sysfs
     interface.
@@ -366,7 +378,8 @@ class LineStat(DevStat):
     """
 
     linepower_fields = {
-        'is_online':             ['online', int]
+        'is_online':             ['online', int],
+        'status':                ['status', str]
         }
 
 
@@ -457,13 +470,40 @@ class SysStat(object):
             on_ac &= (not self.battery_discharging())
         return on_ac
 
+
+    def ac_charging(self):
+        """
+        Returns true if device is currently charging from AC power.
+        """
+        charging = False
+        for linepower in self.linepower:
+            charging |= (linepower.status == 'Charging')
+        return charging
+
+
     def battery_discharging(self):
         """
-        Returns true if battery is currently discharging.
+        Returns true if battery is currently discharging or false otherwise.
         """
+        if not self.battery_path:
+            logging.warn('Unable to determine battery discharge status')
+            return False
+
         return(self.battery[0].status.rstrip() == 'Discharging')
 
+
+    def battery_discharge_ok_on_ac(self):
+        """Returns True if battery is ok to discharge on AC presently.
+
+        some devices cycle between charge & discharge above a certain
+        SoC.  If AC is charging and SoC > 95% we can safely assume that.
+        """
+        return self.ac_charging() and (self.percent_current_charge() > 95)
+
+
     def percent_current_charge(self):
+        """Returns current charge compare to design capacity in percent.
+        """
         return self.battery[0].charge_now * 100 / \
                self.battery[0].charge_full_design
 
@@ -520,7 +560,7 @@ class AbstractStats(object):
         """
         total = sum(stats.itervalues())
         if total == 0:
-            return {}
+            return {k: 0 for k in stats}
         return dict((k, v * 100.0 / total) for (k, v) in stats.iteritems())
 
 
@@ -623,15 +663,20 @@ class CPUFreqStats(AbstractStats):
     """
     CPU Frequency statistics
     """
+    MSR_PLATFORM_INFO = 0xce
+    MSR_IA32_MPERF = 0xe7
+    MSR_IA32_APERF = 0xe8
 
     def __init__(self, start_cpu=-1, end_cpu=-1):
         cpufreq_stats_path = '/sys/devices/system/cpu/cpu*/cpufreq/stats/' + \
                              'time_in_state'
-        intel_pstate_stats_path = '/sys/devices/system/cpu/intel_pstate/' + \
-                             'aperf_mperf'
+        cpufreq_key_path = '/sys/devices/system/cpu/cpu*/cpufreq/' + \
+                           'scaling_available_frequencies'
+        intel_pstate_msr_path = '/dev/cpu/*/msr'
         self._file_paths = glob.glob(cpufreq_stats_path)
+        cpufreq_key_paths = glob.glob(cpufreq_key_path)
         num_cpus = len(self._file_paths)
-        self._intel_pstate_file_paths = glob.glob(intel_pstate_stats_path)
+        intel_pstate_msr_paths = glob.glob(intel_pstate_msr_path)
         self._running_intel_pstate = False
         self._initial_perf = None
         self._current_perf = None
@@ -639,14 +684,22 @@ class CPUFreqStats(AbstractStats):
         name = 'cpufreq'
         if not self._file_paths:
             logging.debug('time_in_state file not found')
-            if self._intel_pstate_file_paths:
-                logging.debug('intel_pstate frequency stats file found')
+            if intel_pstate_msr_paths:
+                logging.debug('intel_pstate msr file found')
+                self._num_cpus = len(intel_pstate_msr_paths)
                 self._running_intel_pstate = True
         else:
             if (start_cpu >= 0 and end_cpu >= 0
                     and not (start_cpu == 0 and end_cpu == num_cpus - 1)):
                 self._file_paths = self._file_paths[start_cpu : end_cpu]
+                cpufreq_key_paths = cpufreq_key_paths[start_cpu : end_cpu]
                 name += '_' + str(start_cpu) + '_' + str(end_cpu)
+
+        self._available_freqs = set()
+        for path in cpufreq_key_paths:
+            if os.path.exists(path):
+                self._available_freqs |= \
+                        set(int(x) for x in utils.read_file(path).split())
 
         super(CPUFreqStats, self).__init__(name=name)
 
@@ -656,27 +709,26 @@ class CPUFreqStats(AbstractStats):
             aperf = 0
             mperf = 0
 
-            for path in self._intel_pstate_file_paths:
-                if not os.path.exists(path):
-                    logging.debug('%s is not found', path)
-                    continue
-                data = utils.read_file(path)
-                for line in data.splitlines():
-                    pair = line.split()
-                    # max_freq is supposed to be the same for all CPUs
-                    # and remain constant throughout.
-                    # So, we set the entry only once
-                    if not self._max_freq:
-                        self._max_freq = int(pair[0])
-                    aperf += int(pair[1])
-                    mperf += int(pair[2])
+            for cpu in range(self._num_cpus):
+                aperf += utils.rdmsr(self.MSR_IA32_APERF, cpu)
+                mperf += utils.rdmsr(self.MSR_IA32_MPERF, cpu)
+
+            # max_freq is supposed to be the same for all CPUs and remain
+            # constant throughout. So, we set the entry only once.
+            # Note that this is max non-turbo frequency, some CPU can run at
+            # higher turbo frequency in some condition.
+            if not self._max_freq:
+                platform_info = utils.rdmsr(self.MSR_PLATFORM_INFO)
+                mul = platform_info >> 8 & 0xff
+                bclk = utils.get_intel_bclk_khz()
+                self._max_freq = mul * bclk
 
             if not self._initial_perf:
                 self._initial_perf = (aperf, mperf)
 
             self._current_perf = (aperf, mperf)
 
-        stats = {}
+        stats = dict((k, 0) for k in self._available_freqs)
         for path in self._file_paths:
             if not os.path.exists(path):
                 logging.debug('%s is not found', path)
@@ -1163,6 +1215,18 @@ def get_cpu_sibling_groups():
     return sibling_groups
 
 
+def get_avaliable_cpu_stats():
+    """Return CPUFreq/CPUIdleStats groups by big-small siblings groups."""
+    ret = []
+    cpu_sibling_groups = get_cpu_sibling_groups()
+    if not cpu_sibling_groups:
+        ret.append(CPUFreqStats())
+        ret.append(CPUIdleStats())
+    for cpu_start, cpu_end in cpu_sibling_groups:
+        ret.append(CPUFreqStats(cpu_start, cpu_end))
+        ret.append(CPUIdleStats(cpu_start, cpu_end))
+    return ret
+
 
 class StatoMatic(object):
     """Class to aggregate and monitor a bunch of power related statistics."""
@@ -1171,13 +1235,7 @@ class StatoMatic(object):
         self._astats = [USBSuspendStats(),
                         GPUFreqStats(incremental=False),
                         CPUPackageStats()]
-        cpu_sibling_groups = get_cpu_sibling_groups()
-        if not len(cpu_sibling_groups):
-            self._astats.append(CPUFreqStats())
-            self._astats.append(CPUIdleStats())
-        for cpu_start, cpu_end in cpu_sibling_groups:
-            self._astats.append(CPUFreqStats(cpu_start, cpu_end))
-            self._astats.append(CPUIdleStats(cpu_start, cpu_end))
+        self._astats.extend(get_avaliable_cpu_stats())
         if os.path.isdir(DevFreqStats._DIR):
             self._astats.extend([DevFreqStats(f) for f in \
                                  os.listdir(DevFreqStats._DIR)])
@@ -1355,7 +1413,8 @@ class MeasurementLogger(threading.Thread):
         domains: list of  domain strings being measured
 
     Public methods:
-        run: launches the thread to gather measuremnts
+        run: launches the thread to gather measurements
+        refresh: perform data samplings for every measurements
         calc: calculates
         save_results:
 
@@ -1394,19 +1453,31 @@ class MeasurementLogger(threading.Thread):
 
         self.done = False
 
+    def refresh(self):
+        """Perform data samplings for every measurements.
+
+        Returns:
+            list of sampled data for every measurements.
+        """
+        readings = []
+        for meas in self._measurements:
+            readings.append(meas.refresh())
+        return readings
 
     def run(self):
         """Threads run method."""
+        loop = 0
+        start_time = time.time()
         while(not self.done):
-            readings = []
-            for meas in self._measurements:
-                readings.append(meas.refresh())
             # TODO (dbasehore): We probably need proper locking in this file
             # since there have been race conditions with modifying and accessing
             # data.
-            self.readings.append(readings)
-            self.times.append(time.time())
-            time.sleep(self.seconds_period)
+            self.readings.append(self.refresh())
+            current_time = time.time()
+            self.times.append(current_time)
+            loop += 1
+            next_measurement_time = start_time + loop * self.seconds_period
+            time.sleep(next_measurement_time - current_time)
 
     @contextlib.contextmanager
     def checkblock(self, tname=''):
@@ -1488,9 +1559,9 @@ class MeasurementLogger(threading.Thread):
                     meas_array = meas[numpy.bitwise_and(tstart < t, t < tend)]
                 except ValueError, e:
                     logging.debug('Error logging measurements: %s', str(e))
-                    logging.debug('timestamps %d %s' % (t.len, t))
-                    logging.debug('timestamp start, end %f %f' % (tstart, tend))
-                    logging.debug('measurements %d %s' % (meas.len, meas))
+                    logging.debug('timestamps %d %s', t.len, t)
+                    logging.debug('timestamp start, end %f %f', tstart, tend)
+                    logging.debug('measurements %d %s', meas.len, meas)
 
                 # If sub-test terminated early, avoid calculating avg, std and
                 # min
@@ -1531,7 +1602,69 @@ class MeasurementLogger(threading.Thread):
                 f.write(line + '\n')
 
 
+class CPUStatsLogger(MeasurementLogger):
+    """Class to measure CPU Frequency and CPU Idle Stats.
+
+    CPUStatsLogger derived from MeasurementLogger class but overload data
+    samplings method because MeasurementLogger assumed that each sampling is
+    independent to each other. However, in this case it is not. For example,
+    CPU time spent in C0 state is measure by time not spent in all other states.
+
+    CPUStatsLogger also collects the weight average in each time period if the
+    underlying AbstractStats support weight average function.
+
+    Private attributes:
+       _stats: list of CPU AbstractStats objects to be sampled.
+       _refresh_count: number of times refresh() has been called.
+       _last_wavg: dict of wavg when refresh() was last called.
+    """
+    def __init__(self, seconds_period=1.0):
+        """Initialize a CPUStatsLogger.
+
+        Args:
+            seconds_period: float, probing interval in seconds.  Default 1.0
+        """
+        # We don't use measurements since CPU stats can't measure separately.
+        super(CPUStatsLogger, self).__init__([], seconds_period)
+
+        self._stats = get_avaliable_cpu_stats()
+        self.domains = []
+        for stat in self._stats:
+            self.domains.extend([stat.name + '_' + str(state_name)
+                                 for state_name in stat.refresh()])
+            if stat.weighted_average():
+                self.domains.append('wavg_' + stat.name)
+        self._refresh_count = 0
+        self._last_wavg = collections.defaultdict(int)
+
+    def refresh(self):
+        self._refresh_count += 1
+        count = self._refresh_count
+        ret = []
+        for stat in self._stats:
+            ret.extend(stat.refresh().values())
+            wavg = stat.weighted_average()
+            if wavg:
+                last_wavg = self._last_wavg[stat.name]
+                self._last_wavg[stat.name] = wavg
+
+                # Calculate weight average in this period using current total
+                # weight average and last total weight average.
+                # The result will lose some precision with higher number of
+                # count but still good enough for 11 significant digits even if
+                # we logged the data every 1 second for a day.
+                ret.append(wavg * count - last_wavg * (count - 1))
+        return ret
+
+    def save_results(self, resultsdir, fname=None):
+        if not fname:
+            fname = 'cpu_results_%.0f.txt' % time.time()
+        super(CPUStatsLogger, self).save_results(resultsdir, fname)
+
+
 class PowerLogger(MeasurementLogger):
+    """Class to measure power consumption.
+    """
     def save_results(self, resultsdir, fname=None):
         if not fname:
             fname = 'power_results_%.0f.txt' % time.time()
@@ -1571,6 +1704,40 @@ class TempMeasurement(object):
         return int(utils.read_one_line(self._path)) / 1000.
 
 
+class BatteryTempMeasurement(TempMeasurement):
+    """Class to measure battery temperature."""
+    def __init__(self):
+        super(BatteryTempMeasurement, self).__init__('battery', 'battery_temp')
+
+
+    def refresh(self):
+        """Perform battery temperature reading.
+
+        Returns:
+            float, temperature in degrees Celsius.
+        """
+        result = utils.run(self._path, timeout=5, ignore_status=True)
+        return float(result.stdout)
+
+
+def has_battery_temp():
+    """Determine if DUT can provide battery temperature.
+
+    Returns:
+        Boolean, True if battery temperature available.  False otherwise.
+    """
+    if not power_utils.has_battery():
+        return False
+
+    btemp = BatteryTempMeasurement()
+    try:
+        btemp.refresh()
+    except ValueError:
+        return False
+
+    return True
+
+
 class TempLogger(MeasurementLogger):
     """A thread that logs temperature readings in millidegrees Celsius."""
     def __init__(self, measurements, seconds_period=30.0):
@@ -1585,6 +1752,9 @@ class TempLogger(MeasurementLogger):
                 fpath = tstats.fields[kname][0]
                 new_meas = TempMeasurement(domain, fpath)
                 measurements.append(new_meas)
+
+            if has_battery_temp():
+                measurements.append(BatteryTempMeasurement())
         super(TempLogger, self).__init__(measurements, seconds_period)
 
 

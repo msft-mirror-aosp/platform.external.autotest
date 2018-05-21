@@ -205,7 +205,17 @@ class FirmwareTest(FAFTBase):
             'rw_fwid': self.faft_client.system.get_crossystem_value('fwid'),
             'servod_version': self._client._servo_host.run(
                 'servod --version').stdout.strip(),
+            'os_version': self._client.get_release_builder_path(),
+            'servo_type': self.servo.get_servo_version()
         }
+
+        # Record the servo v4 and servo micro versions when possible
+        if 'servo_micro' in system_info['servo_type']:
+            system_info['servo_micro_version'] = self.servo.get(
+                    'servo_micro_version')
+
+        if 'servo_v4' in system_info['servo_type']:
+            system_info['servo_v4_version'] = self.servo.get('servo_v4_version')
 
         if hasattr(self, 'cr50'):
             system_info['cr50_version'] = self.servo.get('cr50_version')
@@ -471,8 +481,11 @@ class FirmwareTest(FAFTBase):
             logging.info('Changing GBB flags from 0x%x to 0x%x.',
                          gbb_flags, new_flags)
             self.faft_client.bios.set_gbb_flags(new_flags)
-            # If changing FORCE_DEV_SWITCH_ON flag, reboot to get a clear state
-            if ((gbb_flags ^ new_flags) & vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON):
+            # If changing FORCE_DEV_SWITCH_ON or DISABLE_EC_SOFTWARE_SYNC flag,
+            # reboot to get a clear state
+            if ((gbb_flags ^ new_flags) &
+                (vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON |
+                 vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)):
                 self.switcher.mode_aware_reboot()
         else:
             logging.info('Current GBB flags look good for test: 0x%x.',
@@ -569,6 +582,22 @@ class FirmwareTest(FAFTBase):
                         to_part=part)
             self.reset_and_prioritize_kernel(part)
             self.switcher.mode_aware_reboot()
+
+    def ensure_dev_internal_boot(self, original_dev_boot_usb):
+        """Ensure internal device boot in developer mode.
+
+        If not internal device boot, it will try to reboot the device and
+        bypass dev mode to boot into internal device.
+
+        @param original_dev_boot_usb: Original dev_boot_usb value.
+        """
+        logging.info('Checking internal device boot.')
+        if self.faft_client.system.is_removable_device_boot():
+            logging.info('Reboot into internal disk...')
+            self.faft_client.system.set_dev_boot_usb(original_dev_boot_usb)
+            self.switcher.mode_aware_reboot()
+        self.check_state((self.checkers.dev_boot_usb_checker, False,
+                          'Device not booted from internal disk properly.'))
 
     def set_hardware_write_protect(self, enable):
         """Set hardware write protect pin.
@@ -1115,6 +1144,12 @@ class FirmwareTest(FAFTBase):
                     'Should shut the device down after calling %s.' %
                     shutdown_action.__name__)
         except ConnectionError:
+            if self.check_ec_capability(['x86'], suppress_warning=True):
+                PWR_RETRIES=5
+                if not self.wait_power_state("G3", PWR_RETRIES):
+                    raise error.TestFail("System not shutdown properly and EC"
+                                         "fails to enter into G3 state.")
+                logging.info('System entered into G3 state..')
             logging.info(
                 'DUT is surely shutdown. We are going to power it on again...')
 
@@ -1238,10 +1273,11 @@ class FirmwareTest(FAFTBase):
         """Clear the firmware saved by the method backup_firmware."""
         self._backup_firmware_sha = ()
 
-    def restore_firmware(self, suffix='.original'):
+    def restore_firmware(self, suffix='.original', restore_ec=True):
         """Restore firmware from host in resultsdir.
 
         @param suffix: a string appended to backup file name
+        @param restore_ec: True to restore the ec firmware; False not to do.
         """
         if not self.is_firmware_changed():
             return
@@ -1257,7 +1293,7 @@ class FirmwareTest(FAFTBase):
         self.faft_client.bios.write_whole(
             os.path.join(remote_temp_dir, 'bios'))
 
-        if self.faft_config.chrome_ec:
+        if self.faft_config.chrome_ec and restore_ec:
             self._client.send_file(os.path.join(self.resultsdir, 'ec' + suffix),
                 os.path.join(remote_temp_dir, 'ec'))
             self.faft_client.ec.write_whole(

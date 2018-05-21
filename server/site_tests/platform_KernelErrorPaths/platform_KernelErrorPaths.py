@@ -18,9 +18,7 @@ class platform_KernelErrorPaths(test.test):
         try:
             # Simply sending the trigger into lkdtm resets the target
             # immediately, leaving files unsaved to disk and the master ssh
-            # connection wedged for a long time. The sequence below borrowed
-            # from logging_KernelCrashServer.py makes sure that the test
-            # proceeds smoothly.
+            # connection wedged for a long time.
             self.client.run(
                 'sh -c "sync; sleep 1; %s" >/dev/null 2>&1 &' % command)
         except error.AutoservRunError, e:
@@ -124,10 +122,14 @@ class platform_KernelErrorPaths(test.test):
 
         result = self.client.run('cat %s/kernel.*.kcrash' %
                                  self._crash_log_dir)
-        if text not in result.stdout:
+        if not type(text) == tuple:
+           match = (text,)
+        else:
+           match = text
+        if not any(s in result.stdout for s in match):
             raise error.TestFail(
-                "No '%s' in the log after sending '%s' on cpu %d" %
-                (text, trigger, cpu))
+                "'%s' not found in log after sending '%s' on cpu %d" %
+                ((match,), trigger, cpu))
 
     def _client_run_output(self, cmd):
         return self.client.run(cmd).stdout.strip()
@@ -154,9 +156,14 @@ class platform_KernelErrorPaths(test.test):
             try:
                 if parent:
                     ppid = self._client_run_output('ps -C %s -o pid=' % parent)
-                    pid = self._client_run_output('ps --ppid %s -o pid=' % ppid)
-                    new_comm = self._client_run_output('ps -p %s -o comm=' %
-                                                       pid)
+                    pid_list = self._client_run_output('ps --ppid %s -o pid= -o comm=' %
+                                                       ppid).splitlines()
+                    for line in pid_list:
+                        pair = line.split()
+                        pid = pair[0]
+                        new_comm = pair[1]
+                        if comm == new_comm:
+                            break
                     if comm != new_comm:
                         logging.info("comm mismatch: %s != %s", comm, new_comm)
                         time.sleep(1)
@@ -290,7 +297,8 @@ class platform_KernelErrorPaths(test.test):
             'SOFTLOCKUP' : (None, 25, False, 'BUG: soft lockup'),
             'HARDLOCKUP' : ('nmiwatchdog', 50, False,
                             'Watchdog detected hard LOCKUP'),
-            'SPINLOCKUP' : (None, 25, False, 'softlockup: hung tasks'),
+            'SPINLOCKUP' : (None, 25, False, ('softlockup: hung tasks',
+                                              'BUG: scheduling while atomic')),
             'EXCEPTION' : ('nullptr',     10, True,
              # x86 gives "BUG: unable to" while ARM gives "Unableto".
                            'nable to handle kernel NULL pointer '

@@ -12,6 +12,7 @@ inheritance with, just a collection of static methods.
 # pylint: disable=missing-docstring
 
 import StringIO
+import collections
 import errno
 import inspect
 import itertools
@@ -121,7 +122,8 @@ def _join_with_nickname(base_string, nickname):
 # semantics problem in BgJob. See crbug.com/279312
 class BgJob(object):
     def __init__(self, command, stdout_tee=None, stderr_tee=None, verbose=True,
-                 stdin=None, stderr_level=DEFAULT_STDERR_LEVEL, nickname=None,
+                 stdin=None, stdout_level=DEFAULT_STDOUT_LEVEL,
+                 stderr_level=DEFAULT_STDERR_LEVEL, nickname=None,
                  unjoinable=False, env=None, extra_paths=None):
         """Create and start a new BgJob.
 
@@ -158,10 +160,11 @@ class BgJob(object):
         @param verbose: Boolean, make BgJob logging more verbose.
         @param stdin: Stream object, will be passed to Popen as the new
                       process's stdin.
-        @param stderr_level: A logging level value. If stderr_tee was set to
+        @param stdout_level: A logging level value. If stdout_tee was set to
                              TEE_TO_LOGS, sets the level that tee'd
-                             stderr output will be logged at. Ignored
+                             stdout output will be logged at. Ignored
                              otherwise.
+        @param stderr_level: Same as stdout_level, but for stderr.
         @param nickname: Optional string, to be included in logging messages
         @param unjoinable: Optional bool, default False.
                            This should be True for BgJobs running in background
@@ -186,7 +189,7 @@ class BgJob(object):
                 'stdout_tee and stderr_tee must be DEVNULL for '
                 'unjoinable BgJob')
         self._stdout_tee = get_stream_tee_file(
-                stdout_tee, DEFAULT_STDOUT_LEVEL,
+                stdout_tee, stdout_level,
                 prefix=_join_with_nickname(STDOUT_PREFIX, nickname))
         self._stderr_tee = get_stream_tee_file(
                 stderr_tee, stderr_level,
@@ -660,16 +663,16 @@ def update_version(srcdir, preserve_srcdir, new_version, install,
             pickle.dump(new_version, open(versionfile, 'w'))
 
 
-def get_stderr_level(stderr_is_expected):
+def get_stderr_level(stderr_is_expected, stdout_level=DEFAULT_STDOUT_LEVEL):
     if stderr_is_expected:
-        return DEFAULT_STDOUT_LEVEL
+        return stdout_level
     return DEFAULT_STDERR_LEVEL
 
 
-def run(command, timeout=None, ignore_status=False,
-        stdout_tee=None, stderr_tee=None, verbose=True, stdin=None,
-        stderr_is_expected=None, args=(), nickname=None, ignore_timeout=False,
-        env=None, extra_paths=None):
+def run(command, timeout=None, ignore_status=False, stdout_tee=None,
+        stderr_tee=None, verbose=True, stdin=None, stderr_is_expected=None,
+        stdout_level=None, stderr_level=None, args=(), nickname=None,
+        ignore_timeout=False, env=None, extra_paths=None):
     """
     Run a command on the host.
 
@@ -681,13 +684,16 @@ def run(command, timeout=None, ignore_status=False,
             code of the command is.
     @param stdout_tee: optional file-like object to which stdout data
             will be written as it is generated (data will still be stored
-            in result.stdout).
+            in result.stdout unless this is DEVNULL).
     @param stderr_tee: likewise for stderr.
     @param verbose: if True, log the command being run.
     @param stdin: stdin to pass to the executed process (can be a file
             descriptor, a file object of a real file or a string).
     @param stderr_is_expected: if True, stderr will be logged at the same level
             as stdout
+    @param stdout_level: logging level used if stdout_tee is TEE_TO_LOGS;
+            if None, a default is used.
+    @param stderr_level: like stdout_level but for stderr.
     @param args: sequence of strings of arguments to be given to the command
             inside " quotes after they have been escaped for that; each
             element in the sequence will be given as a separate command
@@ -719,13 +725,18 @@ def run(command, timeout=None, ignore_status=False,
         command = ' '.join([sh_quote_word(arg) for arg in command])
 
     command = ' '.join([command] + [sh_quote_word(arg) for arg in args])
+
     if stderr_is_expected is None:
         stderr_is_expected = ignore_status
+    if stdout_level is None:
+        stdout_level = DEFAULT_STDOUT_LEVEL
+    if stderr_level is None:
+        stderr_level = get_stderr_level(stderr_is_expected, stdout_level)
 
     try:
         bg_job = join_bg_jobs(
             (BgJob(command, stdout_tee, stderr_tee, verbose, stdin=stdin,
-                   stderr_level=get_stderr_level(stderr_is_expected),
+                   stdout_level=stdout_level, stderr_level=stderr_level,
                    nickname=nickname, env=env, extra_paths=extra_paths),),
             timeout)[0]
     except error.CmdTimeoutError:
@@ -1822,27 +1833,24 @@ _setup_restricted_subnets()
 WIRELESS_SSID_PATTERN = 'wireless_ssid_(.*)/(\d+)'
 
 
-def get_built_in_ethernet_nic_name():
+def get_moblab_serial_number():
     """Gets the moblab public network interface.
 
     If the eth0 is an USB interface, try to use eth1 instead. Otherwise
     use eth0 by default.
     """
     try:
-        cmd_result = run('readlink -f /sys/class/net/eth0')
-        if cmd_result.exit_status == 0 and 'usb' in cmd_result.stdout:
-            cmd_result = run('readlink -f /sys/class/net/eth1')
-            if cmd_result.exit_status == 0 and not ('usb' in cmd_result.stdout):
-                logging.info('Eth0 is a USB dongle, use eth1 as moblab nic.')
-                return _MOBLAB_ETH_1
-    except error.CmdError:
-        # readlink is not supported.
-        logging.info('No readlink available, use eth0 as moblab nic.')
+        cmd_result = run('sudo vpd -g serial_number')
+        if cmd_result.stdout:
+          return cmd_result.stdout
+    except error.CmdError as e:
+        logging.error(str(e))
+        logging.info('Serial number ')
         pass
-    return _MOBLAB_ETH_0
+    return 'NoSerialNumber'
 
 
-def ping(host, deadline=None, tries=None, timeout=60):
+def ping(host, deadline=None, tries=None, timeout=60, user=None):
     """Attempt to ping |host|.
 
     Shell out to 'ping' if host is an IPv4 addres or 'ping6' if host is an
@@ -1865,14 +1873,18 @@ def ping(host, deadline=None, tries=None, timeout=60):
     @return exit code of ping command.
     """
     args = [host]
-    ping_cmd = 'ping6' if re.search(r':.*:', host) else 'ping'
+    cmd = 'ping6' if re.search(r':.*:', host) else 'ping'
 
     if deadline:
         args.append('-w%d' % deadline)
     if tries:
         args.append('-c%d' % tries)
 
-    return run(ping_cmd, args=args, verbose=True,
+    if user != None:
+        args = [user, '-c', ' '.join([cmd] + args)]
+        cmd = 'su'
+
+    return run(cmd, args=args, verbose=True,
                           ignore_status=True, timeout=timeout,
                           stdout_tee=TEE_TO_LOGS,
                           stderr_tee=TEE_TO_LOGS).exit_status
@@ -1943,24 +1955,6 @@ def get_chrome_version(job_views):
     return None
 
 
-def get_default_interface_mac_address():
-    """Returns the default moblab MAC address."""
-    return get_interface_mac_address(
-            get_built_in_ethernet_nic_name())
-
-
-def get_interface_mac_address(interface):
-    """Return the MAC address of a given interface.
-
-    @param interface: Interface to look up the MAC address of.
-    """
-    interface_link = run(
-            'ip addr show %s | grep link/ether' % interface).stdout
-    # The output will be in the format of:
-    # 'link/ether <mac> brd ff:ff:ff:ff:ff:ff'
-    return interface_link.split()[1]
-
-
 def get_moblab_id():
     """Gets the moblab random id.
 
@@ -2010,9 +2004,7 @@ def get_offload_gsuri():
     if not gsuri:
         gsuri = "%sresults/" % CONFIG.get_config_value('CROS', 'image_storage_server')
 
-    return '%s%s/%s/' % (
-            gsuri, get_interface_mac_address(get_built_in_ethernet_nic_name()),
-            get_moblab_id())
+    return '%s%s/%s/' % (gsuri, get_moblab_serial_number(), get_moblab_id())
 
 
 # TODO(petermayo): crosbug.com/31826 Share this with _GsUpload in
@@ -2715,16 +2707,17 @@ def poll_for_condition(condition,
                        timeout=10,
                        sleep_interval=0.1,
                        desc=None):
-    """Polls until a condition becomes true.
+    """Polls until a condition is evaluated to true.
 
-    @param condition: function taking no args and returning bool
-    @param exception: exception to throw if condition doesn't become true
+    @param condition: function taking no args and returning anything that will
+                      evaluate to True in a conditional check
+    @param exception: exception to throw if condition doesn't evaluate to true
     @param timeout: maximum number of seconds to wait
     @param sleep_interval: time to sleep between polls
     @param desc: description of default TimeoutError used if 'exception' is
                  None
 
-    @return The true value that caused the poll loop to terminate.
+    @return The evaluated value that caused the poll loop to terminate.
 
     @raise 'exception' arg if supplied; TimeoutError otherwise
     """
@@ -2752,3 +2745,45 @@ def poll_for_condition(condition,
 class metrics_mock(metrics_mock_class.mock_class_base):
     """mock class for metrics in case chromite is not installed."""
     pass
+
+
+MountInfo = collections.namedtuple('MountInfo', ['root', 'mount_point', 'tags'])
+
+
+def get_mount_info(process='self', mount_point=None):
+    """Retrieves information about currently mounted file systems.
+
+    @param mount_point: (optional) The mount point (a path).  If this is
+                        provided, only information about the given mount point
+                        is returned.  If this is omitted, info about all mount
+                        points is returned.
+    @param process: (optional) The process id (or the string 'self') of the
+                    process whose mountinfo will be obtained.  If this is
+                    omitted, info about the current process is returned.
+
+    @return A generator yielding one MountInfo object for each relevant mount
+            found in /proc/PID/mountinfo.
+    """
+    with open('/proc/{}/mountinfo'.format(process)) as f:
+        for line in f.readlines():
+            # These lines are formatted according to the proc(5) manpage.
+            # Sample line:
+            # 36 35 98:0 /mnt1 /mnt2 rw,noatime master:1 - ext3 /dev/root \
+            #     rw,errors=continue
+            # Fields (descriptions omitted for fields we don't care about)
+            # 3: the root of the mount.
+            # 4: the mount point.
+            # 5: mount options.
+            # 6: tags.  There can be more than one of these.  This is where
+            #    shared mounts are indicated.
+            # 7: a dash separator marking the end of the tags.
+            mountinfo = line.split()
+            if mount_point is None or mountinfo[4] == mount_point:
+                tags = []
+                for field in mountinfo[6:]:
+                    if field == '-':
+                        break
+                    tags.append(field.split(':')[0])
+                yield MountInfo(root = mountinfo[3],
+                                mount_point = mountinfo[4],
+                                tags = tags)

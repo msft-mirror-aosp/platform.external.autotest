@@ -7,88 +7,44 @@ Unit tests for functions in `assign_stable_images`.
 """
 
 
-import json
-import os
-import sys
+import mock
 import unittest
 
 import common
 from autotest_lib.site_utils.stable_images import assign_stable_images
+from autotest_lib.site_utils.stable_images import build_data
 
-
-# _OMAHA_TEST_DATA - File with JSON data to be used as test input to
-#   `_make_omaha_versions()`.  In the file, the various items in the
-#   `omaha_data` list are selected to capture various specific test
-#   cases:
-#     + Board with no "beta" channel.
-#     + Board with "beta" and another channel.
-#     + Board with only a "beta" channel.
-#     + Board with no "chrome_version" entry.
-#     + Obsolete board with "is_active" set to false.
-# The JSON content of the file is a subset of an actual
-# `omaha_status.json` file copied when the unit test was last
-# updated.
-#
-# _EXPECTED_OMAHA_VERSIONS - The expected output produced by
-#   _STUB_OMAHA_DATA.
-#
-_OMAHA_TEST_DATA = 'test_omaha_status.json'
-
-_EXPECTED_OMAHA_VERSIONS = {'auron-paine': 'R55-8872.54.0',
-                            'gale': 'R55-8872.40.9',
-                            'kevin': 'R55-8872.64.0',
-                            'zako-freon': 'R41-6680.52.0'}
 
 _DEFAULT_BOARD = assign_stable_images._DEFAULT_BOARD
 
 
-class OmahaDataTests(unittest.TestCase):
-    """Tests for the `_make_omaha_versions()` function."""
+class GetFirmwareUpgradesTests(unittest.TestCase):
+    """Tests for _get_firmware_upgrades."""
 
-    def test_make_omaha_versions(self):
-        """
-        Test `_make_omaha_versions()` against one simple input.
+    @mock.patch.object(build_data, 'get_firmware_versions')
+    def test_get_firmware_upgrades(self, mock_get_firmware_versions):
+        """Test _get_firmware_upgrades."""
+        mock_get_firmware_versions.side_effect = [
+            {'auron_paine': 'fw_version'},
+            {'blue': 'fw_version',
+             'robo360': 'fw_version',
+             'porbeagle': 'fw_version'}
+        ]
+        cros_versions = {
+            'coral': 'R64-10176.65.0',
+            'auron_paine': 'R64-10176.65.0'
+        }
+        boards = ['auron_paine', 'coral']
 
-        This is a trivial sanity test that confirms that a single
-        hard-coded input returns a correct hard-coded output.
-        """
-        module_dir = os.path.dirname(sys.modules[__name__].__file__)
-        data_file_path = os.path.join(module_dir, _OMAHA_TEST_DATA)
-        omaha_versions = assign_stable_images._make_omaha_versions(
-                json.load(open(data_file_path, 'r')))
-        self.assertEqual(omaha_versions, _EXPECTED_OMAHA_VERSIONS)
-
-
-class KeyPathTests(unittest.TestCase):
-    """Tests for the `_get_by_key_path()` function."""
-
-    DICTDICT = {'level0': 'OK', 'level1_a': {'level1_b': 'OK'}}
-
-    def _get_by_key_path(self, keypath):
-        get_by_key_path = assign_stable_images._get_by_key_path
-        return get_by_key_path(self.DICTDICT, keypath)
-
-    def _check_path_valid(self, keypath):
-        self.assertEqual(self._get_by_key_path(keypath), 'OK')
-
-    def _check_path_invalid(self, keypath):
-        self.assertIsNone(self._get_by_key_path(keypath))
-
-    def test_one_element(self):
-        """Test a single-element key path with a valid key."""
-        self._check_path_valid(['level0'])
-
-    def test_two_element(self):
-        """Test a two-element key path with a valid key."""
-        self._check_path_valid(['level1_a', 'level1_b'])
-
-    def test_one_element_invalid(self):
-        """Test a single-element key path with an invalid key."""
-        self._check_path_invalid(['absent'])
-
-    def test_two_element_invalid(self):
-        """Test a two-element key path with an invalid key."""
-        self._check_path_invalid(['level1_a', 'absent'])
+        firmware_upgrades = assign_stable_images._get_firmware_upgrades(
+            cros_versions)
+        expected_firmware_upgrades = {
+            'auron_paine': 'fw_version',
+            'blue': 'fw_version',
+            'robo360': 'fw_version',
+            'porbeagle': 'fw_version'
+        }
+        self.assertEqual(firmware_upgrades, expected_firmware_upgrades)
 
 
 class GetUpgradeTests(unittest.TestCase):
@@ -363,6 +319,7 @@ class _TestUpdater(assign_stable_images._VersionUpdater):
                                    self._expected_mappings)
 
     def report(self, message):
+        """Report message."""
         pass
 
     def report_default_changed(self, old_default, new_default):

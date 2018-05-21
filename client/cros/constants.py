@@ -31,7 +31,7 @@ CRASH_DIR = '/var/spool/crash'
 CRASH_REPORTER_RESIDUE_DIR = '/tmp/crash_reporter'
 
 # LOGS to collect from DUTs
-LOG_PSTORE_DIRS = ('/dev/pstore', '/sys/fs/pstore')
+LOG_PSTORE_DIRS = ('/sys/fs/pstore',)
 LOG_I915_ERROR_STATE = '/sys/kernel/debug/dri/0/i915_error_state'
 
 CREDENTIALS = {
@@ -45,7 +45,7 @@ SHADOW_ROOT = '/home/.shadow'
 
 CRYPTOHOME_DEV_REGEX_ANY = r'.*'
 CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW = r'^/home/\.shadow/.*/vault$'
-CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE = r'^/dev/[^/]*$'
+CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE = r'^/dev/(?!loop[0-9]+$)[^/]*$'
 CRYPTOHOME_DEV_REGEX_REGULAR_USER_EPHEMERAL = r'^ephemeralfs/.*$'
 # Ecryptfs-based user home directory mounts the SHADOW encrypted directory,
 # while ext4-crypto based user home is a bind-mount to an encrypted directory
@@ -55,6 +55,7 @@ CRYPTOHOME_DEV_REGEX_REGULAR_USER = r'(%s|%s|%s)' % (
    CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW,
    CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE,
    CRYPTOHOME_DEV_REGEX_REGULAR_USER_EPHEMERAL)
+CRYPTOHOME_DEV_REGEX_LOOP_DEVICE = r'^/dev/loop[0-9]+$'
 CRYPTOHOME_DEV_REGEX_GUEST = r'^guestfs$'
 
 CRYPTOHOME_FS_REGEX_ANY = r'.*'
@@ -130,7 +131,6 @@ TOKEN_AUTH_NEW_URL = '/TokenAuth'
 UI_LOG = '/var/log/ui/ui.LATEST'
 UI_RESPAWN_TIMESTAMPS_FILE = '/tmp/ui-respawn-timestamps'
 UI_TOO_CRASHY_TIMESTAMPS_FILE = '/tmp/ui-too-crashy-timestamps'
-UPDATE_ENGINE_LOG = '/var/log/update_engine.log'
 
 RESOLV_CONF_FILE = '/etc/resolv.conf'
 
@@ -185,8 +185,10 @@ MULTIMEDIA_XMLRPC_SERVER_READY_METHOD = 'ready'
 MULTIMEDIA_XMLRPC_SERVER_LOG_FILE= '/var/log/multimedia_xmlrpc_server.log'
 MULTIMEDIA_XMLRPC_SERVER_REQUEST_TIMEOUT = 180
 
-MULTIMEDIA_TEST_EXTENSION = (
-        '/usr/local/autotest/cros/multimedia/multimedia_test_extension')
+AUDIO_TEST_EXTENSION = (
+        '/usr/local/autotest/cros/multimedia/audio_test_extension')
+DISPLAY_TEST_EXTENSION = (
+        '/usr/local/autotest/cros/multimedia/display_test_extension')
 
 APMANAGER_XMLRPC_SERVER_PORT = 9992
 APMANAGER_XMLRPC_SERVER_COMMAND = (

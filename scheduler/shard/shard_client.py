@@ -6,6 +6,7 @@
 # found in the LICENSE file.
 
 import argparse
+import datetime
 import httplib
 import logging
 import os
@@ -26,11 +27,13 @@ from autotest_lib.scheduler import scheduler_lib
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.server import utils as server_utils
 from chromite.lib import timeout_util
+from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 
 try:
     from chromite.lib import metrics
     from chromite.lib import ts_mon_config
+    from infra_libs import ts_mon
 except ImportError:
     metrics = server_utils.metrics_mock
     ts_mon_config = server_utils.metrics_mock
@@ -94,6 +97,7 @@ On the client side, this will happen:
 
 
 HEARTBEAT_AFE_ENDPOINT = 'shard_heartbeat'
+_METRICS_PREFIX  = 'chromeos/autotest/shard_client/heartbeat/'
 
 RPC_TIMEOUT_MIN = 5
 RPC_DELAY_SEC = 5
@@ -114,7 +118,7 @@ class ShardClient(object):
                                                  delay_sec=RPC_DELAY_SEC)
         self.hostname = shard_hostname
         self.tick_pause_sec = tick_pause_sec
-        self._shutdown = False
+        self._shutdown_requested = False
         self._shard = None
 
 
@@ -206,7 +210,11 @@ class ShardClient(object):
         if not incorrect_host_ids:
             return
 
-        models.Host.objects.filter(id__in=incorrect_host_ids).delete()
+        try:
+            models.Host.objects.filter(id__in=incorrect_host_ids).delete()
+        except MultipleObjectsReturned as e:
+            logging.exception('Failed to remove incorrect hosts %s',
+                              incorrect_host_ids)
 
 
     @property
@@ -274,8 +282,10 @@ class ShardClient(object):
         @returns: Tuple of three lists. The first one contains job ids, the
                   second one host ids, and the third one host statuses.
         """
-        job_ids = list(models.Job.objects.filter(
-                hostqueueentry__complete=False).values_list('id', flat=True))
+        jobs = models.Job.objects.filter(hostqueueentry__complete=False)
+        job_ids = list(jobs.values_list('id', flat=True))
+        self._report_job_time_distribution(jobs)
+
         host_models = models.Host.objects.filter(invalid=0)
         host_ids = []
         host_statuses = []
@@ -306,7 +316,33 @@ class ShardClient(object):
                 'known_job_ids': known_job_ids,
                 'known_host_ids': known_host_ids,
                 'known_host_statuses': known_host_statuses,
-                'jobs': jobs, 'hqes': hqes}
+                'jobs': jobs,
+                'hqes': hqes}
+
+
+    def _report_job_time_distribution(self, jobs):
+        """Report distribution of job durations to monarch."""
+        jobs_time_distribution = metrics.Distribution(
+                _METRICS_PREFIX + 'known_jobs_durations')
+        now = datetime.datetime.now()
+
+        # The type expected by the .set(...) of a distribution is a
+        # distribution.
+        dist = ts_mon.Distribution(ts_mon.GeometricBucketer())
+        for job in jobs:
+            duration = int(
+                    max(0, (now - job.created_on).total_seconds()))
+            dist.add(duration)
+        jobs_time_distribution.set(dist)
+
+    def _report_packet_metrics(self, packet):
+        """Report stats about outgoing packet to monarch."""
+        metrics.Gauge(_METRICS_PREFIX + 'known_job_ids_count').set(
+                len(packet['known_job_ids']))
+        metrics.Gauge(_METRICS_PREFIX + 'jobs_upload_count').set(
+                len(packet['jobs']))
+        metrics.Gauge(_METRICS_PREFIX + 'known_host_ids_count').set(
+                len(packet['known_host_ids']))
 
 
     def _heartbeat_failure(self, log_message, failure_type_str=''):
@@ -326,11 +362,11 @@ class ShardClient(object):
 
         Returns: True if the heartbeat ran successfully, False otherwise.
         """
-        heartbeat_metrics_prefix  = 'chromeos/autotest/shard_client/heartbeat/'
 
         logging.info("Performing heartbeat.")
         packet = self._heartbeat_packet()
-        metrics.Gauge(heartbeat_metrics_prefix + 'request_size').set(
+        self._report_packet_metrics(packet)
+        metrics.Gauge(_METRICS_PREFIX + 'request_size').set(
             len(str(packet)))
 
         try:
@@ -356,7 +392,7 @@ class ShardClient(object):
                                     'JSONRPCException')
             return False
 
-        metrics.Gauge(heartbeat_metrics_prefix + 'response_size').set(
+        metrics.Gauge(_METRICS_PREFIX + 'response_size').set(
             len(str(response)))
         self._mark_jobs_as_uploaded([job['id'] for job in packet['jobs']])
         self.process_heartbeat_response(response)
@@ -371,10 +407,13 @@ class ShardClient(object):
             metrics.Counter('chromeos/autotest/shard_client/tick').increment()
 
 
+    def loop(self, lifetime_hours):
+        """Calls tick() until shutdown() is called or lifetime expires.
 
-    def loop(self):
-        """Calls tick() until shutdown() is called."""
-        while not self._shutdown:
+        @param lifetime_hours: (int) hours to loop for.
+        """
+        loop_start_time = time.time()
+        while self._continue_looping(lifetime_hours, loop_start_time):
             self.tick()
             # Sleep with +/- 10% fuzzing to avoid phaselock of shards.
             tick_fuzz = self.tick_pause_sec * 0.2 * (random.random() - 0.5)
@@ -384,7 +423,26 @@ class ShardClient(object):
     def shutdown(self):
         """Stops the shard client after the current tick."""
         logging.info("Shutdown request received.")
-        self._shutdown = True
+        self._shutdown_requested = True
+
+
+    def _continue_looping(self, lifetime_hours, loop_start_time):
+        """Determines if we should continue with the next mainloop iteration.
+
+        @param lifetime_hours: (float) number of hours to loop for. None
+                implies no deadline.
+        @param process_start_time: Time when we started looping.
+        @returns True if we should continue looping, False otherwise.
+        """
+        if self._shutdown_requested:
+            return False
+
+        if (lifetime_hours is None
+            or time.time() - loop_start_time < lifetime_hours * 3600):
+            return True
+        logging.info('Process lifetime %0.3f hours exceeded. Shutting down.',
+                     lifetime_hours)
+        return False
 
 
 def handle_signal(signum, frame):
@@ -429,26 +487,44 @@ def get_shard_client():
 
 
 def main():
-    ts_mon_config.SetupTsMonGlobalState('shard_client')
-
-    try:
-        metrics.Counter('chromeos/autotest/shard_client/start').increment()
-        main_without_exception_handling()
-    except Exception as e:
-        metrics.Counter('chromeos/autotest/shard_client/uncaught_exception'
-                        ).increment()
-        message = 'Uncaught exception. Terminating shard_client.'
-        email_manager.manager.log_stacktrace(message)
-        logging.exception(message)
-        raise
-    finally:
-        email_manager.manager.send_queued_emails()
-
-
-def main_without_exception_handling():
     parser = argparse.ArgumentParser(description='Shard client.')
+    parser.add_argument(
+            '--lifetime-hours',
+            type=float,
+            default=None,
+            help='If provided, number of hours we should run for. '
+                 'At the expiry of this time, the process will exit '
+                 'gracefully.',
+    )
+    parser.add_argument(
+            '--metrics-file',
+            help='If provided, drop metrics to this local file instead of '
+                 'reporting to ts_mon',
+            type=str,
+            default=None,
+    )
     options = parser.parse_args()
 
+    with ts_mon_config.SetupTsMonGlobalState(
+          'shard_client',
+          indirect=True,
+          debug_file=options.metrics_file,
+    ):
+        try:
+            metrics.Counter('chromeos/autotest/shard_client/start').increment()
+            main_without_exception_handling(options)
+        except Exception as e:
+            metrics.Counter('chromeos/autotest/shard_client/uncaught_exception'
+                            ).increment()
+            message = 'Uncaught exception. Terminating shard_client.'
+            email_manager.manager.log_stacktrace(message)
+            logging.exception(message)
+            raise
+        finally:
+            email_manager.manager.send_queued_emails()
+
+
+def main_without_exception_handling(options):
     scheduler_lib.setup_logging(
             os.environ.get('AUTOTEST_SCHEDULER_LOG_DIR', None),
             None, timestamped_logfile_prefix='shard_client')
@@ -460,7 +536,7 @@ def main_without_exception_handling():
     logging.info("Starting shard client.")
     global _heartbeat_client
     _heartbeat_client = get_shard_client()
-    _heartbeat_client.loop()
+    _heartbeat_client.loop(options.lifetime_hours)
 
 
 if __name__ == '__main__':

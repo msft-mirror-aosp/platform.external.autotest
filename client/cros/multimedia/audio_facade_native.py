@@ -16,6 +16,7 @@ from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import cmd_utils
 from autotest_lib.client.cros.audio import cras_dbus_utils
 from autotest_lib.client.cros.audio import cras_utils
+from autotest_lib.client.cros.audio import alsa_utils
 from autotest_lib.client.cros.multimedia import audio_extension_handler
 
 
@@ -86,7 +87,7 @@ class AudioFacadeNative(object):
         """Multimedia test extension handler."""
         if not self._loaded_extension_handler:
             extension = self._resource.get_extension(
-                    constants.MULTIMEDIA_TEST_EXTENSION)
+                    constants.AUDIO_TEST_EXTENSION)
             logging.debug('Loaded extension: %s', extension)
             self._loaded_extension_handler = (
                     audio_extension_handler.AudioExtensionHandler(extension))
@@ -151,6 +152,16 @@ class AudioFacadeNative(object):
             node_id = cras_utils.get_node_id_from_node_type(
                     input_node_type, True)
             self._extension_handler.set_active_node_id(node_id)
+
+
+    def check_audio_stream_at_selected_device(self):
+        """Checks the audio output is at expected node"""
+        output_device_name = cras_utils.get_selected_output_device_name()
+        output_device_type = cras_utils.get_selected_output_device_type()
+        logging.info("Output device name is %s", output_device_name)
+        logging.info("Output device type is %s", output_device_type)
+        alsa_utils.check_audio_stream_at_selected_device(output_device_name,
+                                                         output_device_type)
 
 
     def cleanup(self):

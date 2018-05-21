@@ -1,9 +1,11 @@
 import copy
+import datetime
 import re
 
 import common
 
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.frontend.afe import rpc_client_lib
 
 
 # Number of times to retry if a gs command fails. Defaults to 10,
@@ -48,9 +50,13 @@ _CRBUG_URL = global_config.global_config.get_config_value(
 
 
 WMATRIX_RETRY_URL = global_config.global_config.get_config_value(
-    BUG_CONFIG_SECTION, 'wmatrix_retry_url')
+    BUG_CONFIG_SECTION, 'wmatrix_retry_url', default='')
 WMATRIX_TEST_HISTORY_URL = global_config.global_config.get_config_value(
-    BUG_CONFIG_SECTION, 'wmatrix_test_history_url')
+    BUG_CONFIG_SECTION, 'wmatrix_test_history_url', default='')
+STAINLESS_RETRY_URL = global_config.global_config.get_config_value(
+    BUG_CONFIG_SECTION, 'stainless_retry_url', default='')
+STAINLESS_TEST_HISTORY_URL = global_config.global_config.get_config_value(
+    BUG_CONFIG_SECTION, 'stainless_test_history_url', default='')
 
 
 class InvalidBugTemplateException(Exception):
@@ -198,8 +204,8 @@ def link_job(job_id, instance_server=None):
     if not instance_server:
         instance_server = global_config.global_config.get_config_value(
             'SERVER', 'hostname', default='localhost')
-    if 'cautotest' in instance_server:
-        instance_server += '.corp.google.com'
+
+    instance_server = rpc_client_lib.add_protocol(instance_server)
     return _job_view % (instance_server, job_id)
 
 
@@ -257,7 +263,7 @@ def link_status_log(job_id, result_owner, hostname):
     return 'NA'
 
 
-def link_retry_url(test_name):
+def link_wmatrix_retry_url(test_name):
     """Link to the wmatrix retry stats page for this test.
 
     @param test_name: Test we want to search the retry stats page for.
@@ -267,14 +273,40 @@ def link_retry_url(test_name):
     return WMATRIX_RETRY_URL % test_name
 
 
+def link_retry_url(test_name):
+    """Link to the retry stats page for this test.
+
+    @param test_name: Test we want to search the retry stats page for.
+
+    @return: A link to the retry stats dashboard for this test.
+    """
+    if STAINLESS_RETRY_URL:
+        args_dict = {
+            'test_name_re': '^%s$' % re.escape(test_name),
+        }
+        return STAINLESS_RETRY_URL % args_dict
+    return WMATRIX_RETRY_URL % test_name
+
+
 def link_test_history(test_name):
-  """Link to the wmatrix test history page for this test.
+    """Link to the test history page for this test.
 
-  @param test_name: Test we want to search the test history for.
+    @param test_name: Test we want to search the test history for.
 
-  @return: A link to the wmatrix test history page for this test.
-  """
-  return WMATRIX_TEST_HISTORY_URL % test_name
+    @return: A link to the test history page for this test.
+    """
+    date_format = '%Y-%m-%d'
+    now = datetime.datetime.utcnow()
+    last_date = now.strftime(date_format)
+    first_date = (now - datetime.timedelta(days=28)).strftime(date_format)
+    # Please note that stainless url doesn't work for tests whose test name is
+    # different from its job name. E.g. for moblab_RunSuite/control.dummyServer
+    #     Its job name (NAME in control file) is moblab_DummyServerSuite.
+    #     Its test name is moblab_RunSuite.
+    # Stainless use 'moblab_DummyServerSuite' as the test name, however,
+    # TKO uses 'moblab_RunSuite' as the test name.
+    return STAINLESS_TEST_HISTORY_URL % (
+        '^%s$' % re.escape(test_name), first_date, last_date)
 
 
 def link_crbug(bug_id):

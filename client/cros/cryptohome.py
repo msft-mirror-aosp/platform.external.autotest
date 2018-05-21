@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import dbus, gobject, logging, os, random, re, shutil, string, time
+import dbus, gobject, logging, os, random, re, shutil, string, sys, time
 from dbus.mainloop.glib import DBusGMainLoop
 
 import common, constants
@@ -16,6 +16,9 @@ UNAVAILABLE_ACTION = 'Unknown action or no action given.'
 MOUNT_RETRY_COUNT = 20
 TEMP_MOUNT_PATTERN = '/home/.shadow/%s/temporary_mount'
 VAULT_PATH_PATTERN = '/home/.shadow/%s/vault'
+
+DBUS_PROTOS_DEP = 'dbus_protos'
+
 
 class ChromiumOSError(error.TestError):
     """Generic error for ChromiumOS-specific exceptions."""
@@ -65,6 +68,7 @@ def ensure_clean_cryptohome_for(user, password=None):
     """
     if not password:
         password = ''.join(random.sample(string.ascii_lowercase, 6))
+    unmount_vault(user)
     remove_vault(user)
     mount_vault(user, password, create=True)
 
@@ -234,13 +238,21 @@ def get_tpm_attestation_status():
     return status
 
 
-def take_tpm_ownership():
+def take_tpm_ownership(wait_for_ownership=True):
     """Take TPM owernship.
 
-    Blocks until TPM is owned.
+    Args:
+        wait_for_ownership: block until TPM is owned if true
     """
     __run_cmd(CRYPTOHOME_CMD + ' --action=tpm_take_ownership')
-    __run_cmd(CRYPTOHOME_CMD + ' --action=tpm_wait_ownership')
+    if wait_for_ownership:
+        # Note that waiting for the 'Ready' flag is more correct than waiting
+        # for the 'Owned' flag, as the latter is set by cryptohomed before some
+        # of the ownership tasks are completed.
+        utils.poll_for_condition(
+                lambda: get_tpm_status()['Ready'],
+                timeout=300,
+                exception=error.TestError('Timeout waiting for TPM ownership'))
 
 
 def verify_ek():
@@ -276,12 +288,16 @@ def remove_all_vaults():
             shutil.rmtree(abs_item)
 
 
-def mount_vault(user, password, create=False):
-    """Mount the given user's vault."""
-    args = [CRYPTOHOME_CMD, '--action=mount', '--user=%s' % user,
+def mount_vault(user, password, create=False, key_label='bar'):
+    """Mount the given user's vault. Mounts should be created by calling this
+    function with create=True, and can be used afterwards with create=False.
+    Only try to mount existing vaults created with this function.
+
+    """
+    args = [CRYPTOHOME_CMD, '--action=mount_ex', '--user=%s' % user,
             '--password=%s' % password, '--async']
     if create:
-        args.append('--create')
+        args += ['--key_label=%s' % key_label, '--create']
     logging.info(__run_cmd(' '.join(args)))
     # Ensure that the vault exists in the shadow directory.
     user_hash = get_user_hash(user)
@@ -306,18 +322,20 @@ def mount_vault(user, password, create=False):
 
 
 def mount_guest():
-    """Mount the given user's vault."""
+    """Mount the guest vault."""
     args = [CRYPTOHOME_CMD, '--action=mount_guest', '--async']
     logging.info(__run_cmd(' '.join(args)))
-    # Ensure that the guest tmpfs is mounted.
+    # Ensure that the guest vault is mounted.
     if not is_guest_vault_mounted(allow_fail=True):
-        raise ChromiumOSError('Cryptohome did not mount tmpfs.')
+        raise ChromiumOSError('Cryptohome did not mount guest vault.')
 
 
 def test_auth(user, password):
-    cmd = [CRYPTOHOME_CMD, '--action=test_auth', '--user=%s' % user,
+    cmd = [CRYPTOHOME_CMD, '--action=check_key_ex', '--user=%s' % user,
            '--password=%s' % password, '--async']
-    return 'Authentication succeeded' in utils.system_output(cmd)
+    out = __run_cmd(' '.join(cmd))
+    logging.info(out)
+    return 'Key authenticated.' in out
 
 
 def unmount_vault(user):
@@ -403,9 +421,12 @@ def is_vault_mounted(user, regexes=None, allow_fail=False):
         if not re.match(device_regex, mount_info[0]):
             return False
 
-        if re.match(constants.CRYPTOHOME_FS_REGEX_EXT4, mount_info[2]):
-            # We are using ext4 crypto. Check there is an encryption key for
-            # that directory.
+        if (re.match(constants.CRYPTOHOME_FS_REGEX_EXT4, mount_info[2])
+            and not(re.match(constants.CRYPTOHOME_DEV_REGEX_LOOP_DEVICE,
+                             mount_info[0]))):
+            # Ephemeral cryptohome uses ext4 mount from a loop device,
+            # otherwise it should be ext4 crypto. Check there is an encryption
+            # key for that directory.
             find_key_cmd_list = ['e4crypt  get_policy %s' % (mount_info[1]),
                                  'cut -d \' \' -f 2']
             key = __run_cmd(' | ' .join(find_key_cmd_list))
@@ -419,10 +440,17 @@ def is_vault_mounted(user, regexes=None, allow_fail=False):
 
 
 def is_guest_vault_mounted(allow_fail=False):
-    """Check whether a vault backed by tmpfs is mounted for the guest user."""
+    """Check whether a vault is mounted for the guest user.
+       It should be a mount of an ext4 partition on a loop device
+       or be backed by tmpfs.
+    """
     return is_vault_mounted(
         user=GUEST_USER_NAME,
         regexes={
+            # Remove tmpfs support when it becomes unnecessary as all guest
+            # modes will use ext4 on a loop device.
+            constants.CRYPTOHOME_FS_REGEX_EXT4 :
+                constants.CRYPTOHOME_DEV_REGEX_LOOP_DEVICE,
             constants.CRYPTOHOME_FS_REGEX_TMPFS :
                 constants.CRYPTOHOME_DEV_REGEX_GUEST,
         },
@@ -541,6 +569,20 @@ def do_dircrypto_migration(user, password, timeout=600):
                 'Timeout waiting for dircrypto migration to finish'))
 
 
+def change_password(user, password, new_password):
+    args = [
+            CRYPTOHOME_CMD,
+            '--action=migrate_key',
+            '--async',
+            '--user=%s' % user,
+            '--old_password=%s' % password,
+            '--password=%s' % new_password]
+    out = __run_cmd(' '.join(args))
+    logging.info(out)
+    if 'Key migration succeeded.' not in out:
+        raise ChromiumOSError('Key migration failed.')
+
+
 class CryptohomeProxy(DBusClient):
     """A DBus proxy client for testing the Cryptohome DBus server.
     """
@@ -554,7 +596,14 @@ class CryptohomeProxy(DBusClient):
     DBUS_PROPERTIES_INTERFACE = 'org.freedesktop.DBus.Properties'
 
 
-    def __init__(self, bus_loop=None):
+    def __init__(self, bus_loop=None, autodir=None, job=None):
+        if autodir and job:
+            # Install D-Bus protos necessary for some methods.
+            dep_dir = os.path.join(autodir, 'deps', DBUS_PROTOS_DEP)
+            job.install_pkg(DBUS_PROTOS_DEP, 'dep', dep_dir)
+            sys.path.append(dep_dir)
+
+        # Set up D-Bus main loop and interface.
         self.main_loop = gobject.MainLoop()
         if bus_loop is None:
             bus_loop = DBusGMainLoop(set_as_default=True)
@@ -622,19 +671,29 @@ class CryptohomeProxy(DBusClient):
         return result
 
 
-    def mount(self, user, password, create=False, async=True):
+    def mount(self, user, password, create=False, async=True, key_label='bar'):
         """Mounts a cryptohome.
 
         Returns True if the mount succeeds or False otherwise.
-        TODO(ellyjones): Migrate mount_vault() to use a multi-user-safe
-        heuristic, then remove this method. See <crosbug.com/20778>.
         """
-        if async:
-            return self.__async_call(self.iface.AsyncMount, user, password,
-                                     create, False, [])['return_status']
-        out = self.__call(self.iface.Mount, user, password, create, False, [])
-        # Sync returns (return code, return status)
-        return out[1] if len(out) > 1 else False
+        import rpc_pb2
+
+        acc = rpc_pb2.AccountIdentifier()
+        acc.account_id = user
+
+        auth = rpc_pb2.AuthorizationRequest()
+        auth.key.secret = password
+        auth.key.data.label = key_label
+
+        mount_req = rpc_pb2.MountRequest()
+        if create:
+            mount_req.create.copy_authorization_key = True
+
+        out = self.__call(self.iface.MountEx, acc.SerializeToString(),
+            auth.SerializeToString(), mount_req.SerializeToString())
+        parsed_out = rpc_pb2.BaseReply()
+        parsed_out.ParseFromString(''.join(map(chr, out)))
+        return parsed_out.error == rpc_pb2.CRYPTOHOME_ERROR_NOT_SET
 
 
     def unmount(self, user):
@@ -684,3 +743,15 @@ class CryptohomeProxy(DBusClient):
             password = ''.join(random.sample(string.ascii_lowercase, 6))
         self.remove(user)
         self.mount(user, password, create=True)
+
+    def lock_install_attributes(self, attrs):
+        """Set and lock install attributes for the device.
+
+        @param attrs: dict of install attributes.
+        """
+        take_tpm_ownership()
+        for key, value in attrs.items():
+            if not self.__call(self.iface.InstallAttributesSet, key,
+                               dbus.ByteArray(value + '\0')):
+                return False
+        return self.__call(self.iface.InstallAttributesFinalize)

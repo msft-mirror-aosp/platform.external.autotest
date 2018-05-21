@@ -207,6 +207,14 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.dhcp_low = 1
         self.dhcp_high = 128
 
+        # Tear down hostapbr bridge interfaces
+        result = self.host.run('ls -d /sys/class/net/%s*' %
+                               self.HOSTAP_BRIDGE_INTERFACE_PREFIX,
+                               ignore_status=True)
+        if result.exit_status == 0:
+            for path in result.stdout.splitlines():
+                self.delete_link(path.split('/')[-1])
+
         # Kill hostapd and dhcp server if already running.
         self._kill_process_instance('hostapd', timeout_seconds=30)
         self.stop_dhcp_server(instance=None)
@@ -446,11 +454,14 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             if site_linux_system.LinuxSystem.CAPABILITY_VHT not in router_caps:
                 raise error.TestNAError('Router does not have AC support')
 
+        if configuration.use_bridge:
+            configuration._bridge = self.get_brif()
+
         self.start_hostapd(configuration)
         interface = self.hostapd_instances[-1].interface
         self.iw_runner.set_tx_power(interface, 'auto')
         self.set_beacon_footer(interface, configuration.beacon_footer)
-        self.start_local_server(interface)
+        self.start_local_server(interface, bridge=configuration.bridge)
         logging.info('AP configured.')
 
 
@@ -504,6 +515,15 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         """
         return '%d.%d.%d.%d' % (self.SUBNET_PREFIX_OCTETS + (index, 253))
 
+    def local_bridge_address(self, index):
+        """Get the bridge address for an interface.
+
+        This address is assigned to a local bridge device.
+
+        @param index int describing which local server this is for.
+
+        """
+        return '%d.%d.%d.%d' % (self.SUBNET_PREFIX_OCTETS + (index, 252))
 
     def local_peer_mac_address(self):
         """Get the MAC address of the peer interface.
@@ -550,12 +570,14 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     def start_local_server(self,
                            interface,
                            ap_num=None,
-                           server_address_index=None):
+                           server_address_index=None,
+                           bridge=None):
         """Start a local server on an interface.
 
         @param interface string (e.g. wlan0)
         @param ap_num int the ap instance to start the server for
         @param server_address_index int server address index
+        @param bridge string (e.g. br0)
 
         """
         logging.info('Starting up local server...')
@@ -582,6 +604,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             (server_addr.get_addr_in_block(1),
              server_addr.get_addr_in_block(128)))
         params['interface'] = interface
+        params['bridge'] = bridge
         params['ip_params'] = ('%s broadcast %s dev %s' %
                                (server_addr.netblock,
                                 server_addr.broadcast,
@@ -598,6 +621,12 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                         (self.cmd_ip, params['ip_params']))
         self.router.run('%s link set %s up' %
                         (self.cmd_ip, interface))
+        if params['bridge']:
+            bridge_addr = netblock.from_addr(
+                    self.local_bridge_address(server_address_index),
+                    prefix_len=24)
+            self.router.run("ifconfig %s %s" %
+                           (params['bridge'], bridge_addr.netblock))
         self.start_dhcp_server(interface)
 
 
@@ -636,7 +665,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             'log-dhcp',
             'dhcp-range=%s' % ','.join((server_addr.get_addr_in_block(1),
                                         server_addr.get_addr_in_block(128))),
-            'interface=%s' % params['interface'],
+            'interface=%s' % (params['bridge'] or params['interface']),
             'dhcp-leasefile=%s' % self.dhcpd_leases])
         self.router.run('cat <<EOF >%s\n%s\nEOF\n' %
             (dhcpd_conf_file, dhcp_conf))
@@ -803,6 +832,20 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         for server in local_servers:
             self.stop_local_server(server)
 
+        for brif in range(self._brif_index):
+            self.delete_link('%s%d' %
+                             (self.HOSTAP_BRIDGE_INTERFACE_PREFIX, brif))
+
+
+    def delete_link(self, name):
+        """Delete link using the `ip` command.
+
+        @param name string link name.
+
+        """
+        self.host.run('%s link del %s' % (self.cmd_ip, name),
+                      ignore_status=True)
+
 
     def set_ap_interface_down(self, instance=0):
         """Bring down the hostapd interface.
@@ -856,6 +899,18 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.router.run('%s -p%s deauthenticate %s' %
                         (self.cmd_hostapd_cli, control_if, client_mac))
 
+    def send_bss_tm_req(self, client_mac, neighbor_list):
+        """Send a BSS Transition Management Request to a client.
+
+        @param client_mac string containing the mac address of the client.
+        @param neighbor_list list of strings containing mac addresses of
+               candidate APs.
+
+        """
+        control_if = self.hostapd_instances[0].config_dict['ctrl_interface']
+        self.router.run('%s -p%s BSS_TM_REQ %s neighbor=%s,0,0,0,0 pref=1' %
+                        (self.cmd_hostapd_cli, control_if, client_mac,
+                         ',0,0,0,0 neighbor='.join(neighbor_list)))
 
     def _prep_probe_response_footer(self, footer):
         """Write probe response footer temporarily to a local file and copy

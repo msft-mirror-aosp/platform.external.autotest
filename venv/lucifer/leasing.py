@@ -4,10 +4,6 @@
 
 """Job leasing utilities
 
-See infra/lucifer for the implementation of job leasing.
-
-https://chromium.googlesource.com/chromiumos/infra/lucifer
-
 Jobs are leased to processes to own and run.  A process owning a job
 obtain a job lease.  Ongoing ownership of the lease is established using
 an exclusive fcntl lock on the lease file.
@@ -133,6 +129,13 @@ class Lease(object):
         sent = sock.send('abort')
         # TODO(ayatane): I don't know if it is possible for sent to be 0
         assert sent > 0
+
+    def maybe_abort(self):
+        """Abort the job, ignoring errors."""
+        try:
+            self.abort()
+        except socket.error as e:
+            logger.debug('Error aborting socket: %s', e)
 
     @property
     def _sock_path(self):

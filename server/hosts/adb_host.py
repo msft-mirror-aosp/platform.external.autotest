@@ -21,7 +21,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
-from autotest_lib.server import autoserv_parser
 from autotest_lib.server import constants as server_constants
 from autotest_lib.server import utils
 from autotest_lib.server.cros import provision
@@ -148,8 +147,6 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
     label_decorator = functools.partial(utils.add_label_detector,
                                         _LABEL_FUNCTIONS,
                                         _DETECTABLE_LABELS)
-
-    _parser = autoserv_parser.autoserv_parser
 
     # Minimum build id that supports server side packaging. Older builds may
     # not have server side package built or with Autotest code change to support
@@ -426,11 +423,6 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         except client_utils.TimeoutError:
             return ''
 
-
-    def get_device_aliases(self):
-        """Get all aliases for this device."""
-        product = self.get_product_name()
-        return android_utils.AndroidAliases.get_product_aliases(product)
 
     def get_product_name(self):
         """Get the product name of the device, eg., shamu, bat"""
@@ -913,17 +905,8 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         return
 
 
-    def repair(self, board=None, os=None):
-        """Attempt to get the DUT to pass `self.verify()`.
-
-        @param board: Board name of the device. For host created in testbed,
-                      it does not have host labels and attributes. Therefore,
-                      the board name needs to be passed in from the testbed
-                      repair call.
-        @param os: OS of the device. For host created in testbed, it does not
-                   have host labels and attributes. Therefore, the OS needs to
-                   be passed in from the testbed repair call.
-        """
+    def repair(self):
+        """Attempt to get the DUT to pass `self.verify()`."""
         if self.is_up():
             logging.debug('The device is up and accessible by adb. No need to '
                           'repair.')
@@ -934,10 +917,9 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         # have to change it back to fastboot mode manually again.
         logging.debug('Verifying the device is accessible via fastboot.')
         self.ensure_bootloader_mode()
-        subdir_tag = self.adb_serial if board else None
         if not self.job.run_test(
                 'provision_AndroidUpdate', host=self, value=None, force=True,
-                repair=True, board=board, os=os, subdir_tag=subdir_tag):
+                repair=True):
             raise error.AutoservRepairTotalFailure(
                     'Unable to repair the device.')
 
@@ -1566,9 +1548,8 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
         """Install the DUT.
 
         @param build_url: The url to use for downloading Android artifacts.
-                pattern: http://$devserver:###/static/$build. If build_url is
-                set to None, the code may try _parser.options.image to do the
-                installation. If none of them is set, machine_install will fail.
+                pattern: http://$devserver:###/static/$build.  If not set,
+                machine_install will fail.
         @param build_local_path: The path to a local directory that contains the
                 image files needed to provision the device.
         @param wipe: If true, userdata will be wiped before flashing.
@@ -1585,9 +1566,6 @@ class ADBHost(abstract_ssh.AbstractSSHHost):
                 is a url to the build staged on devserver.
         """
         os_type = os_type or self.get_os_type()
-        if not build_url and self._parser.options.image:
-            build_url, _ = self.stage_build_for_install(
-                    self._parser.options.image, os_type=os_type)
         if os_type == OS_TYPE_ANDROID:
             self.install_android(
                     build_url=build_url, build_local_path=build_local_path,

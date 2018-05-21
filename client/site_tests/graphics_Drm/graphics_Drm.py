@@ -4,7 +4,6 @@
 
 import logging
 import os
-from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import service_stopper
@@ -70,16 +69,12 @@ class DrmTest(object):
             logging.warning('Baytrail is on kernel v4.4, but there is no '
                             'intention to enable atomic.')
             return False
-        if (self.name == 'vgem_test' and
-           (soc == 'rockchip' or soc == 'tegra' or soc == 'mediatek')):
-            if utils.compare_versions(kernel_version, '4.4') < 0:
-                logging.warning('Some ARM SoCs have issues with the vgem_test '
-                                'and we are not going to fix them.')
-                return False
         return True
 
     def run(self):
         try:
+            # Flush log files to disk in case of hang/reboot.
+            utils.run('sync')
             # TODO(pwang): consider TEE to another file if drmtests keep
             # spewing so much output.
             cmd_result = utils.run(
@@ -113,14 +108,14 @@ class DrmTest(object):
 drm_tests = {
     test.name: test
     for test in (
-        DrmTest('atomictest', 'atomictest -t all', min_kernel_version='4.4',
+        DrmTest('atomictest', 'atomictest -a -t all', min_kernel_version='4.4',
                 timeout=300),
         DrmTest('drm_cursor_test'),
         DrmTest('linear_bo_test'),
         DrmTest('mmap_test', timeout=300),
         DrmTest('null_platform_test'),
         DrmTest('swrast_test', display_required=False),
-        DrmTest('vgem_test', display_required=False),
+        DrmTest('vgem_test'),
         DrmTest('vk_glow', vulkan_required=True),
     )
 }
@@ -143,23 +138,27 @@ class graphics_Drm(graphics_utils.GraphicsTest):
     # graphics_Drm runs all available tests if tests = None.
     def run_once(self, tests=None, perf_report=False):
         self._test_failure_report_enable = perf_report
+        self._test_failure_report_subtest = perf_report
         for test in drm_tests.itervalues():
             if tests and test.name not in tests:
                 continue
 
             logging.info('-----------------[%s]-----------------' % test.name)
+            self.add_failures(test.name, subtest=test.name)
+            passed = False
             if test.should_run():
                 if test.can_run():
                     logging.debug('Running test %s.', test.name)
                     passed = test.run()
-                    if not passed:
-                        self.add_failures(test.name)
                 else:
-                    logging.info('Failed: test %s can not be run on current '
-                                 'configurations.' % test.name)
-                    self.add_failures(test.name)
+                    logging.info('Failed: test %s can not be run on current'
+                                 ' configurations.' % test.name)
             else:
+                passed = True
                 logging.info('Skipping test: %s.' % test.name)
+
+            if passed:
+                self.remove_failures(test.name, subtest=test.name)
 
         if self.get_failures():
             raise error.TestFail('Failed: %s' % self.get_failures())

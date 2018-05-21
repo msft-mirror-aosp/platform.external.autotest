@@ -25,7 +25,6 @@ ATEST_PATH = '%s/cli/atest' % AUTOTEST_INSTALL_DIR
 SUBNET_DUT_SEARCH_RE = (
         r'/?.*\((?P<ip>192.168.231.*)\) at '
         '(?P<mac>[0-9a-fA-F][0-9a-fA-F]:){5}([0-9a-fA-F][0-9a-fA-F])')
-MOBLAB_IMAGE_STORAGE = '/mnt/moblab/static'
 MOBLAB_HOME = '/home/moblab'
 MOBLAB_BOTO_LOCATION = '%s/.boto' % MOBLAB_HOME
 MOBLAB_LAUNCH_CONTROL_KEY_LOCATION = '%s/.launch_control_key' % MOBLAB_HOME
@@ -86,11 +85,6 @@ class MoblabHost(cros_host.CrosHost):
         # _repair_strategy, and now we're re-initializing it here.
         # That's awkward, if not actually wrong.
         self._repair_strategy = cros_repair.create_moblab_repair_strategy()
-
-        # Clear the Moblab Image Storage so that staging an image is properly
-        # tested.
-        if dargs.get('retain_image_storage') is not True:
-            self.run('rm -rf %s/*' % MOBLAB_IMAGE_STORAGE)
         self.timeout_min = dargs.get('rpc_timeout_min', 1)
         self._initialize_frontend_rpcs(self.timeout_min)
 
@@ -147,21 +141,6 @@ class MoblabHost(cros_host.CrosHost):
         """
         command = "su - moblab -c '%s'" % command
         return self.run(command, **kwargs)
-
-
-    def reboot(self, **dargs):
-        """Reboot the Moblab Host and wait for its services to restart."""
-        super(MoblabHost, self).reboot(**dargs)
-        # In general after a reboot, we want to wait till the web frontend
-        # and other Autotest services are up before executing. However should
-        # something be wrong with these services, repair needs to be able
-        # to continue and reimage the device.
-        try:
-            self.wait_afe_up()
-        except Exception as e:
-            logging.error(
-                    'DUT has rebooted but AFE has failed to load: %s', e)
-            logging.error('Ignoring this error condition')
 
 
     def wait_afe_up(self, timeout_min=5):

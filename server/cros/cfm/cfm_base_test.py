@@ -7,6 +7,7 @@ import os
 import time
 
 from autotest_lib.server import test
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 
@@ -22,7 +23,7 @@ class CfmBaseTest(test.test):
     for both flavors.
     """
 
-    def initialize(self, host, run_test_only=False):
+    def initialize(self, host, run_test_only=False, skip_enrollment=False):
         """
         Initializes common test properties.
 
@@ -31,10 +32,13 @@ class CfmBaseTest(test.test):
             deprovisioning, enrollment and system reboot. If set to 'True',
             the DUT must already be enrolled and past the OOB screen to be able
             to execute the test.
+        @param skip_enrollment: Whether to skip the enrollment step. Cleanup
+            at the end of the test is done regardless.
         """
         super(CfmBaseTest, self).initialize()
         self._host = host
         self._run_test_only = run_test_only
+        self._skip_enrollment = skip_enrollment
         self._facade_factory = remote_facade_factory.RemoteFacadeFactory(
             self._host, no_chrome = True)
         self.cfm_facade = self._facade_factory.create_cfm_facade()
@@ -51,13 +55,16 @@ class CfmBaseTest(test.test):
         if self._host.servo:
             self._setup_servo()
 
-        if self._run_test_only:
+        if self._run_test_only or self._skip_enrollment:
             # We need to restart the browser to obtain the handle for it when
             # running in test_only mode.
             self.cfm_facade.restart_chrome_for_cfm()
         else:
+            logging.info('Clearing TPM')
             tpm_utils.ClearTPMOwnerRequest(self._host)
+            logging.info('Enrolling device')
             self.cfm_facade.enroll_device()
+            logging.info('Skipping OOBE')
             self.cfm_facade.skip_oobe_after_enrollment()
 
     def _setup_servo(self):
@@ -65,11 +72,22 @@ class CfmBaseTest(test.test):
         Enables the USB port such that any peripheral connected to it is visible
         to the DUT.
         """
-        self._host.servo.switch_usbkey('dut')
-        self._host.servo.set('usb_mux_sel3', 'dut_sees_usbkey')
-        time.sleep(SHORT_TIMEOUT)
-        self._host.servo.set('dut_hub1_rst1', 'off')
-        time.sleep(SHORT_TIMEOUT)
+        try:
+            # Servos have a USB key connected for recovery. The following code
+            # sets up the servo so that the DUT (and not the servo) sees this
+            # USB key as a device.
+            # We do not generally need this in tests, why we ignore any
+            # errors here. This also seems to fail on Servo V4 but we
+            # don't need it in any tests with that setup.
+            self._host.servo.switch_usbkey('dut')
+            self._host.servo.set('usb_mux_sel3', 'dut_sees_usbkey')
+            time.sleep(SHORT_TIMEOUT)
+            self._host.servo.set('dut_hub1_rst1', 'off')
+            time.sleep(SHORT_TIMEOUT)
+        except error.TestFail:
+            logging.warn('Failed to configure servo. This is not fatal unless '
+                         'your test is explicitly using the servo.',
+                         exc_info=True)
 
     def cleanup(self, run_test_only=False):
         """Takes a screenshot, saves log files and clears the TPM."""

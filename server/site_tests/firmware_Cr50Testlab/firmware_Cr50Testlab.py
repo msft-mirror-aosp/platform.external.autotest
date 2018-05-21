@@ -5,10 +5,10 @@
 import logging
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
 
-class firmware_Cr50Testlab(FirmwareTest):
+class firmware_Cr50Testlab(Cr50Test):
     """Verify cr50 testlab enable/disable."""
     version = 1
     ACCESS_DENIED = 'Access Denied'
@@ -37,7 +37,7 @@ class firmware_Cr50Testlab(FirmwareTest):
         """Try to modify ccd testlab mode.
 
         Args:
-            mode: The testlab command: 'enable', 'disable', or 'open'
+            mode: The testlab command: 'on', 'off', or 'open'
             err: An empty string if the command should succeed or the error
                  message.
 
@@ -55,12 +55,13 @@ class firmware_Cr50Testlab(FirmwareTest):
             return
 
         if mode == 'open':
-            if mode not in self.servo.get('cr50_ccd_level').lower():
+            if mode != self.cr50.get_ccd_level():
                 raise error.TestFail('ccd testlab open did not open the device')
         else:
             self.cr50.run_pp(self.cr50.PP_SHORT)
-            if mode not in self.servo.get('cr50_testlab'):
-                raise error.TestFail('Testlab mode not %sd' % mode)
+            if (mode == 'on') != self.cr50.testlab_is_on():
+                raise error.TestFail('Testlab mode could not be turned %s' %
+                        mode)
             logging.info('Set ccd testlab %s', mode)
 
 
@@ -75,16 +76,27 @@ class firmware_Cr50Testlab(FirmwareTest):
         """Enable ccd testlab mode and set the privilege level to open"""
         logging.info('Resetting CCD state')
         # If testlab mode is enabled, use that to open ccd. It is a lot faster.
-        if 'enable' in self.servo.get('cr50_testlab'):
+        if self.cr50.testlab_is_on():
             self.try_testlab('open')
         else:
-            self.cr50.ccd_set_level('open')
-        self.try_testlab('enable')
+            self.cr50.set_ccd_level('open')
+        self.try_testlab('on')
         self.check_reset_count()
 
 
-    def run_once(self):
+    def run_once(self, ccd_lockout):
         """Try to set testlab mode from different privilege levels."""
+        # ccd testlab can only be enabled after ccd is opened. This test wont
+        # do much if we can't open the device. firmware_Cr50Open should be
+        # enough to test ccd open capabilities. Do a basic test to make sure
+        # testlab mode can't be enabled while the device is locked, then raise
+        # test NA error.
+        if ccd_lockout:
+            self.cr50.set_ccd_level('lock')
+            self.try_testlab('on', err=self.ACCESS_DENIED)
+            raise error.TestNAError('Skipping firmware_Cr50Testlab when ccd is '
+                    'locked out.')
+
         # Dummy isn't a valid mode. Make sure it fails
         self.reset_ccd()
         self.try_testlab('dummy', err=self.INVALID_PARAM)
@@ -92,45 +104,46 @@ class firmware_Cr50Testlab(FirmwareTest):
         # If ccd is locked, ccd testlab dummy should fail with access denied not
         # invalid param.
         self.reset_ccd()
-        self.cr50.ccd_set_level('lock')
+        self.cr50.set_ccd_level('lock')
         self.try_testlab('dummy', err=self.ACCESS_DENIED)
 
         # CCD can be opened without physical presence if testlab mode is enabled
         self.reset_ccd()
-        self.try_testlab('enable')
+        self.try_testlab('on')
         self.try_testlab('open')
         self.check_reset_count()
 
         # You shouldn't be able to use testlab open if it is disabled
         self.reset_ccd()
-        self.try_testlab('disable')
+        self.try_testlab('off')
         self.try_testlab('open', err=self.ACCESS_DENIED)
         self.check_reset_count()
 
-        # You can't enable testlab mode while ccd is locked
+        # You can't turn on testlab mode while ccd is locked
         self.reset_ccd()
-        self.cr50.ccd_set_level('lock')
-        self.try_testlab('enable', err=self.ACCESS_DENIED)
+        self.cr50.set_ccd_level('lock')
+        self.try_testlab('on', err=self.ACCESS_DENIED)
         self.check_reset_count()
 
-        # You can't disable testlab mode while ccd is locked
+        # You can't turn off testlab mode while ccd is locked
         self.reset_ccd()
-        self.cr50.ccd_set_level('lock')
-        self.try_testlab('disable', err=self.ACCESS_DENIED)
+        self.cr50.set_ccd_level('lock')
+        self.try_testlab('off', err=self.ACCESS_DENIED)
         self.check_reset_count()
 
         # If testlab mode is enabled, you can open the device without physical
         # presence by using 'ccd testlab open'.
         self.reset_ccd()
-        self.try_testlab('enable')
-        self.cr50.ccd_set_level('lock')
+        self.try_testlab('on')
+        self.cr50.set_ccd_level('lock')
         self.try_testlab('open')
         self.check_reset_count()
 
         # If testlab mode is disabled, testlab open should fail with access
         # denied.
         self.reset_ccd()
-        self.try_testlab('disable')
-        self.cr50.ccd_set_level('lock')
+        self.try_testlab('off')
+        self.cr50.set_ccd_level('lock')
         self.try_testlab('open', err=self.ACCESS_DENIED)
         self.check_reset_count()
+        logging.info('ccd testlab is accessbile')

@@ -15,19 +15,14 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
-from autotest_lib.client.common_lib.cros import autoupdater
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.client.cros import cros_ui
-from autotest_lib.client.cros.audio import cras_utils
-from autotest_lib.client.cros.input_playback import input_playback
-from autotest_lib.client.cros.video import constants as video_test_constants
 from autotest_lib.server import afe_utils
-from autotest_lib.server import autoserv_parser
 from autotest_lib.server import autotest
-from autotest_lib.server import constants
 from autotest_lib.server import utils as server_utils
+from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools, frontend_wrappers
@@ -35,8 +30,8 @@ from autotest_lib.server.cros.faft.config.config import Config as FAFTConfig
 from autotest_lib.server.cros.servo import plankton
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
-from autotest_lib.server.hosts import cros_label
 from autotest_lib.server.hosts import chameleon_host
+from autotest_lib.server.hosts import cros_label
 from autotest_lib.server.hosts import cros_repair
 from autotest_lib.server.hosts import plankton_host
 from autotest_lib.server.hosts import servo_host
@@ -66,7 +61,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     VERSION_PREFIX = provision.CROS_VERSION_PREFIX
 
-    _parser = autoserv_parser.autoserv_parser
     _AFE = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10)
     support_devserver_provision = ENABLE_DEVSERVER_TRIGGER_AUTO_UPDATE
 
@@ -123,12 +117,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     _LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
     _RPM_HOSTNAME_REGEX = ('chromeos(\d+)(-row(\d+))?-rack(\d+[a-z]*)'
                            '-host(\d+)')
-    _LIGHTSENSOR_FILES = [ "in_illuminance0_input",
-                           "in_illuminance_input",
-                           "in_illuminance0_raw",
-                           "in_illuminance_raw",
-                           "illuminance0_input"]
-    _LIGHTSENSOR_SEARCH_DIR = '/sys/bus/iio/devices'
 
     # Constants used in ping_wait_up() and ping_wait_down().
     #
@@ -341,12 +329,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.plankton = None
 
 
-    def _get_cros_repair_image_name(self):
+    def get_cros_repair_image_name(self):
         info = self.host_info_store.get()
         if info.board is None:
             raise error.AutoservError('Cannot obtain repair image name. '
                                       'No board label value found')
-
         return afe_utils.get_stable_cros_image_name(info.board)
 
 
@@ -496,7 +483,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                     'autotest_server_package.tar.bz2')
 
 
-    def _try_stateful_update(self, update_url, force_update, updater):
+    def _try_stateful_update(self, update_url, updater):
         """Try to use stateful update to initialize DUT.
 
         When DUT is already running the same version that machine_install
@@ -506,8 +493,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         updating the kernel is time consuming and not necessary.
 
         @param update_url: url of the image.
-        @param force_update: Set to True to update the image even if the DUT
-            is running the same version.
         @param updater: ChromiumOSUpdater instance used to update the DUT.
         @returns: True if the DUT was updated with stateful update.
 
@@ -521,10 +506,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if not re.match(release_pattern, image_name):
             return False
         if not updater.check_version():
-            return False
-        if not force_update:
-            logging.info('Canceling stateful update because the new and '
-                         'old versions are the same.')
             return False
         # Following folders should be rebuilt after stateful update.
         # A test file is used to confirm each folder gets rebuilt after
@@ -565,13 +546,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 expected_kernel, rollback_message=
                 'Build %s failed to boot on %s; system rolled back to previous '
                 'build' % (updater.update_version, self.hostname))
-        # Check that we've got the build we meant to install.
-        if not updater.check_version_to_confirm_install():
-            raise autoupdater.ChromiumOSError(
-                'Failed to update %s to build %s; found build '
-                '%s instead' % (self.hostname,
-                                updater.update_version,
-                                self.get_release_version()))
 
         logging.debug('Cleaning up old autotest directories.')
         try:
@@ -581,36 +555,26 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.debug('No autotest installed directory found.')
 
 
-    def _stage_image_for_update(self, image_name=None):
-        """Stage a build on a devserver and return the update_url and devserver.
-
-        @param image_name: a name like lumpy-release/R27-3837.0.0
-        @returns a tuple with an update URL like:
-            http://172.22.50.205:8082/update/lumpy-release/R27-3837.0.0
-            and the devserver instance.
-        """
-        if not image_name:
-            image_name = self._get_cros_repair_image_name()
-        logging.info('Staging build for AU: %s', image_name)
-        devserver = dev_server.ImageServer.resolve(image_name, self.hostname)
-        devserver.trigger_download(image_name, synchronous=False)
-        return (tools.image_url_pattern() % (devserver.url(), image_name),
-                devserver)
-
-
-    def stage_image_for_servo(self, image_name=None):
+    def stage_image_for_servo(self, image_name=None, artifact='test_image'):
         """Stage a build on a devserver and return the update_url.
 
         @param image_name: a name like lumpy-release/R27-3837.0.0
+        @param artifact: a string like 'test_image'. Requests
+            appropriate image to be staged.
         @returns an update URL like:
             http://172.22.50.205:8082/update/lumpy-release/R27-3837.0.0
         """
         if not image_name:
-            image_name = self._get_cros_repair_image_name()
+            image_name = self.get_cros_repair_image_name()
         logging.info('Staging build for servo install: %s', image_name)
         devserver = dev_server.ImageServer.resolve(image_name, self.hostname)
-        devserver.stage_artifacts(image_name, ['test_image'])
-        return devserver.get_test_image_url(image_name)
+        devserver.stage_artifacts(image_name, [artifact])
+        if artifact == 'test_image':
+            return devserver.get_test_image_url(image_name)
+        elif artifact == 'recovery_image':
+            return devserver.get_recovery_image_url(image_name)
+        else:
+            raise error.AutoservError("Bad artifact!")
 
 
     def stage_factory_image_for_servo(self, image_name):
@@ -673,14 +637,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def _retry_auto_update_with_new_devserver(self, build, last_devserver,
-                                              force_update, force_full_update,
-                                              force_original, quick_provision):
+                                              force_full_update, force_original,
+                                              quick_provision):
         """Kick off auto-update by devserver and send metrics.
 
         @param build: the build to update.
         @param last_devserver: the last devserver that failed to provision.
-        @param force_update: see |machine_install_by_devserver|'s force_udpate
-                             for details.
         @param force_full_update: see |machine_install_by_devserver|'s
                                   force_full_update for details.
         @param force_original: Whether to force stateful update with the
@@ -715,15 +677,13 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         ds_constants.BOARD_PREFIX, ''),
                 original_release_version=self.get_release_version(),
                 log_dir=self.job.resultdir,
-                force_update=force_update,
+                force_update=True,
                 full_update=force_full_update,
                 force_original=force_original,
                 quick_provision=quick_provision)
 
 
-    def machine_install_by_devserver(self, update_url=None, force_update=False,
-                    local_devserver=False, repair=False,
-                    force_full_update=False):
+    def machine_install_by_devserver(self, update_url, force_full_update=False):
         """Ultiize devserver to install the DUT.
 
         (TODO) crbugs.com/627269: The logic in this function has some overlap
@@ -731,11 +691,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         not in the same CL.
 
         @param update_url: The update_url or build for the host to update.
-        @param force_update: Force an update even if the version installed
-                is the same. Default:False
-        @param local_devserver: Used by test_that to allow people to
-                use their local devserver. Default: False
-        @param repair: Forces update to repair image. Implies force_update.
         @param force_full_update: If True, do not attempt to run stateful
                 update, force a full reimage. If False, try stateful update
                 first when the dut is already installed with the same version.
@@ -750,18 +705,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 `job_repo_url`: repo_url, where repo_url is a devserver url to
                 autotest packages.
         """
-        if repair:
-            update_url = self._get_cros_repair_image_name()
-            force_update = True
-
-        if not update_url and not self._parser.options.image:
-            raise error.AutoservError(
-                    'There is no update URL, nor a method to get one.')
-
-        if not update_url and self._parser.options.image:
-            update_url = self._parser.options.image
-
-
         # Get build from parameter or AFE.
         # If the build is not a URL, let devserver to stage it first.
         # Otherwise, choose a devserver to trigger auto-update.
@@ -822,7 +765,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                             ds_constants.BOARD_PREFIX, ''),
                     original_release_version=self.get_release_version(),
                     log_dir=self.job.resultdir,
-                    force_update=force_update,
+                    force_update=True,
                     full_update=force_full_update,
                     force_original=force_original,
                     quick_provision=quick_provision)
@@ -838,7 +781,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.debug('Checking whether host %s is online.', self.hostname)
             if utils.ping(self.hostname, tries=1, deadline=1) == 0:
                 self._retry_auto_update_with_new_devserver(
-                        build, devserver, force_update, force_full_update,
+                        build, devserver, force_full_update,
                         force_original, quick_provision)
             else:
                 raise error.AutoservError(
@@ -862,9 +805,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         pass
 
 
-    def machine_install(self, update_url=None, force_update=False,
-                        local_devserver=False, repair=False,
-                        force_full_update=False):
+    def machine_install(self, update_url, force_full_update=False):
         """Install the DUT.
 
         Use stateful update if the DUT is already running the same build.
@@ -882,11 +823,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 stable image listed in afe_stable_versions table. If the table
                 is not setup, global_config value under CROS.stable_cros_version
                 will be used instead.
-        @param force_update: Force an update even if the version installed
-                is the same. Default:False
-        @param local_devserver: Used by test_that to allow people to
-                use their local devserver. Default: False
-        @param repair: Forces update to repair image. Implies force_update.
         @param force_full_update: If True, do not attempt to run stateful
                 update, force a full reimage. If False, try stateful update
                 first when the dut is already installed with the same version.
@@ -901,27 +837,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 `job_repo_url`: repo_url, where repo_url is a devserver url to
                 autotest packages.
         """
-        devserver = None
-        if repair:
-            update_url, devserver = self._stage_image_for_update()
-            force_update = True
-
-        if not update_url and not self._parser.options.image:
-            raise error.AutoservError(
-                    'There is no update URL, nor a method to get one.')
-
-        if not update_url and self._parser.options.image:
-            # This is the base case where we have no given update URL i.e.
-            # dynamic suites logic etc. This is the most flexible case where we
-            # can serve an update from any of our fleet of devservers.
-            requested_build = self._parser.options.image
-            if not requested_build.startswith('http://'):
-                logging.debug('Update will be staged for this installation')
-                update_url, devserver = self._stage_image_for_update(
-                        requested_build)
-            else:
-                update_url = requested_build
-
         logging.debug('Update URL is %s', update_url)
 
         # Report provision stats.
@@ -934,52 +849,24 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.run('touch %s' % self.PROVISION_FAILED)
 
         update_complete = False
-        updater = autoupdater.ChromiumOSUpdater(
-                 update_url, host=self, local_devserver=local_devserver)
+        updater = autoupdater.ChromiumOSUpdater(update_url, host=self)
         if not force_full_update:
             try:
                 # If the DUT is already running the same build, try stateful
                 # update first as it's much quicker than a full re-image.
-                update_complete = self._try_stateful_update(
-                        update_url, force_update, updater)
+                update_complete = self._try_stateful_update(update_url, updater)
             except Exception as e:
                 logging.exception(e)
 
         inactive_kernel = None
-        if update_complete or (not force_update and updater.check_version()):
+        if update_complete:
             logging.info('Install complete without full update')
         else:
             logging.info('DUT requires full update.')
             self.reboot(timeout=self.REBOOT_TIMEOUT, wait=True)
             self.prepare_for_update()
 
-            num_of_attempts = provision.FLAKY_DEVSERVER_ATTEMPTS
-
-            while num_of_attempts > 0:
-                num_of_attempts -= 1
-                try:
-                    updater.run_update()
-                except Exception:
-                    logging.warn('Autoupdate did not complete.')
-                    # Do additional check for the devserver health. Ideally,
-                    # the autoupdater.py could raise an exception when it
-                    # detected network flake but that would require
-                    # instrumenting the update engine and parsing it log.
-                    if (num_of_attempts <= 0 or
-                            devserver is None or
-                            dev_server.ImageServer.devserver_healthy(
-                                    devserver.url())):
-                        raise
-
-                    logging.warn('Devserver looks unhealthy. Trying another')
-                    update_url, devserver = self._stage_image_for_update(
-                            requested_build)
-                    logging.debug('New Update URL is %s', update_url)
-                    updater = autoupdater.ChromiumOSUpdater(
-                            update_url, host=self,
-                            local_devserver=local_devserver)
-                else:
-                    break
+            updater.run_update()
 
             # Give it some time in case of IO issues.
             time.sleep(10)
@@ -1126,12 +1013,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 self._add_fw_version_label(build, rw_only)
         finally:
             tmpd.clean()
-
-
-    def show_update_engine_log(self):
-        """Output update engine log."""
-        logging.debug('Dumping %s', client_constants.UPDATE_ENGINE_LOG)
-        self.run('cat %s' % client_constants.UPDATE_ENGINE_LOG)
 
 
     def servo_install(self, image_url=None, usb_boot_timeout=USB_BOOT_TIMEOUT,
@@ -1400,6 +1281,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 lsb_release_content=self._get_lsb_release_content())
 
 
+    def get_release_builder_path(self):
+        """Get the value of CHROMEOS_RELEASE_BUILDER_PATH from lsb-release.
+
+        @returns The version string in lsb-release, under attribute
+                 CHROMEOS_RELEASE_BUILDER_PATH.
+        """
+        return lsbrelease_utils.get_chromeos_release_builder_path(
+                lsb_release_content=self._get_lsb_release_content())
+
+
     def get_chromeos_release_milestone(self):
         """Get the value of attribute CHROMEOS_RELEASE_BUILD_TYPE
         from lsb-release.
@@ -1427,20 +1318,28 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 host__hostname=self.hostname)
         mismatch_found = False
         if labels:
-            # Get CHROMEOS_RELEASE_VERSION from lsb-release, e.g., 6908.0.0.
-            # Note that it's different from cros-version label, which has
-            # builder and branch info, e.g.,
-            # cros-version:peppy-release/R43-6908.0.0
-            release_version = self.get_release_version()
+            # Ask the DUT for its canonical image name.  This will be in
+            # a form like this:  kevin-release/R66-10405.0.0
+            release_builder_path = self.get_release_builder_path()
             host_list = [self.hostname]
             for label in labels:
                 # Remove any cros-version label that does not match
-                # release_version.
+                # the DUT's installed image.
+                #
+                # TODO(jrbarnette):  Tests sent to the `arc-presubmit`
+                # pool install images matching the format above, but
+                # then apply a label with `-cheetsth` appended.  Probably,
+                # it's wrong for ARC presubmit testing to make that change,
+                # but until it's fixed, this code specifically excuses that
+                # behavior.
                 build_version = label.name[len(ds_constants.VERSION_PREFIX):]
-                if not utils.version_match(build_version, release_version):
-                    logging.warn('cros-version label "%s" does not match '
-                                 'release version %s. Removing the label.',
-                                 label.name, release_version)
+                if build_version.endswith('-cheetsth'):
+                    build_version = build_version[:-len('-cheetsth')]
+                if build_version != release_builder_path:
+                    logging.warn(
+                        'cros-version label "%s" does not match '
+                        'release_builder_path %s. Removing the label.',
+                        label.name, release_builder_path)
                     label.remove_hosts(hosts=host_list)
                     mismatch_found = True
         if mismatch_found:
@@ -1983,14 +1882,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns a string representing this host's platform.
         """
-        cmd = 'mosys platform model'
-        result = self.run(command=cmd, ignore_status=True)
-        if result.exit_status == 0:
-            return result.stdout.strip()
-        else:
-            # $(mosys platform model) should support all platforms, but it
-            # currently doesn't, so this reverts to parsing the fw
-            # for any unsupported mosys platforms.
+        release_info = utils.parse_cmd_output('cat /etc/lsb-release',
+                                              run_method=self.run)
+        unibuild = release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1'
+        platform = ''
+        if unibuild:
+            cmd = 'mosys platform model'
+            result = self.run(command=cmd, ignore_status=True)
+            if result.exit_status == 0:
+                platform = result.stdout.strip()
+
+        if not platform:
+            # Look at the firmware for non-unibuild cases or if mosys fails.
             crossystem = utils.Crossystem(self)
             crossystem.init()
             # Extract fwid value and use the leading part as the platform id.
@@ -1998,7 +1901,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # Example: Alex.X.YYY.Z or Google_Alex.X.YYY.Z
             platform = crossystem.fwid().split('.')[0].lower()
             # Newer platforms start with 'Google_' while the older ones do not.
-            return platform.replace('google_', '')
+            platform = platform.replace('google_', '')
+        return platform
 
 
     def get_architecture(self):
@@ -2026,6 +1930,163 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         version_string = self.run(client_constants.CHROME_VERSION_COMMAND).stdout
         return utils.parse_chrome_version(version_string)
+
+
+    def get_ec_version(self):
+        """Get the ec version as strings.
+
+        @returns a string representing this host's ec version.
+        """
+        command = 'mosys ec info -s fw_version'
+        result = self.run(command, ignore_status=True)
+        if result.exit_status != 0:
+            return ''
+        return result.stdout.strip()
+
+
+    def get_firmware_version(self):
+        """Get the firmware version as strings.
+
+        @returns a string representing this host's firmware version.
+        """
+        crossystem = utils.Crossystem(self)
+        crossystem.init()
+        return crossystem.fwid()
+
+
+    def get_hardware_revision(self):
+        """Get the hardware revision as strings.
+
+        @returns a string representing this host's hardware revision.
+        """
+        command = 'mosys platform version'
+        result = self.run(command, ignore_status=True)
+        if result.exit_status != 0:
+            return ''
+        return result.stdout.strip()
+
+
+    def get_kernel_version(self):
+        """Get the kernel version as strings.
+
+        @returns a string representing this host's kernel version.
+        """
+        return self.run('uname -r').stdout.strip()
+
+
+    def get_cpu_name(self):
+        """Get the cpu name as strings.
+
+        @returns a string representing this host's cpu name.
+        """
+
+        # Try get cpu name from device tree first
+        if self.path_exists('/proc/device-tree/compatible'):
+            command = ' | '.join(
+                    ["sed -e 's/\\x0/\\n/g' /proc/device-tree/compatible",
+                     'tail -1'])
+            return self.run(command).stdout.strip().replace(',', ' ')
+
+        # Get cpu name from uname -p
+        command = 'uname -p'
+        ret = self.run(command).stdout.strip()
+
+        # 'uname -p' return variant of unknown or amd64 or x86_64 or i686
+        # Try get cpu name from /proc/cpuinfo instead
+        if re.match("unknown|amd64|[ix][0-9]?86(_64)?", ret, re.IGNORECASE):
+            command = "grep model.name /proc/cpuinfo | cut -f 2 -d: | head -1"
+            self = self.run(command).stdout.strip()
+
+        # Remove bloat from CPU name, for example
+        # Intel(R) Core(TM) i5-7Y57 CPU @ 1.20GHz       -> Intel Core i5-7Y57
+        # Intel(R) Xeon(R) CPU E5-2690 v4 @ 2.60GHz     -> Intel Xeon E5-2690 v4
+        # AMD A10-7850K APU with Radeon(TM) R7 Graphics -> AMD A10-7850K
+        # AMD GX-212JC SOC with Radeon(TM) R2E Graphics -> AMD GX-212JC
+        trim_re = r' (@|processor|apu|soc|radeon).*|\(.*?\)| cpu'
+        return re.sub(trim_re, '', ret, flags=re.IGNORECASE)
+
+
+    def get_screen_resolution(self):
+        """Get the screen(s) resolution as strings.
+        In case of more than 1 monitor, return resolution for each monitor
+        separate with plus sign.
+
+        @returns a string representing this host's screen(s) resolution.
+        """
+        command = 'for f in /sys/class/drm/*/*/modes; do head -1 $f; done'
+        ret = self.run(command, ignore_status=True)
+        # We might have Chromebox without a screen
+        if ret.exit_status != 0:
+            return ''
+        return ret.stdout.strip().replace('\n', '+')
+
+
+    def get_mem_total_gb(self):
+        """Get total memory available in the system in GiB (2^20).
+
+        @returns an integer representing total memory
+        """
+        mem_total_kb = self.read_from_meminfo('MemTotal')
+        kb_in_gb = float(2 ** 20)
+        return int(round(mem_total_kb / kb_in_gb))
+
+
+    def get_disk_size_gb(self):
+        """Get size of disk in GB (10^9)
+
+        @returns an integer representing  size of disk, 0 in Error Case
+        """
+        command = 'grep $(rootdev -s -d | cut -f3 -d/)$ /proc/partitions'
+        result = self.run(command, ignore_status=True)
+        if result.exit_status != 0:
+            return 0
+        _, _, block, _ = re.split(r' +', result.stdout.strip())
+        byte_per_block = 1024.0
+        disk_kb_in_gb = 1e9
+        return int(int(block) * byte_per_block / disk_kb_in_gb + 0.5)
+
+
+    def get_battery_size(self):
+        """Get size of battery in Watt-hour via sysfs
+
+        This method assumes that battery support voltage_min_design and
+        charge_full_design sysfs.
+
+        @returns a float representing Battery size, 0 if error.
+        """
+        # sysfs report data in micro scale
+        battery_scale = 1e6
+
+        command = 'cat /sys/class/power_supply/*/voltage_min_design'
+        result = self.run(command, ignore_status=True)
+        if result.exit_status != 0:
+            return 0
+        voltage = float(result.stdout.strip()) / battery_scale
+
+        command = 'cat /sys/class/power_supply/*/charge_full_design'
+        result = self.run(command, ignore_status=True)
+        if result.exit_status != 0:
+            return 0
+        amphereHour = float(result.stdout.strip()) / battery_scale
+
+        return voltage * amphereHour
+
+
+    def get_low_battery_shutdown_percent(self):
+        """Get the percent-based low-battery shutdown threshold.
+
+        @returns a float representing low-battery shutdown percent, 0 if error.
+        """
+        ret = 0.0
+        try:
+            command = 'check_powerd_config --low_battery_shutdown_percent'
+            ret = float(self.run(command).stdout)
+        except error.CmdError:
+            logging.debug("Can't run %s", command)
+        except ValueError:
+            logging.debug("Didn't get number from %s", command)
+
+        return ret
 
 
     def is_chrome_switch_present(self, switch):
@@ -2073,103 +2134,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return lsbrelease_utils.get_chromeos_channel(
                 lsb_release_content=self._get_lsb_release_content())
 
-    def has_lightsensor(self):
-        """Determine the correct board label for this host.
-
-        @returns the string 'lightsensor' if this host has a lightsensor or
-                 None if it does not.
-        """
-        search_cmd = "find -L %s -maxdepth 4 | egrep '%s'" % (
-            self._LIGHTSENSOR_SEARCH_DIR, '|'.join(self._LIGHTSENSOR_FILES))
-        try:
-            # Run the search cmd following the symlinks. Stderr_tee is set to
-            # None as there can be a symlink loop, but the command will still
-            # execute correctly with a few messages printed to stderr.
-            self.run(search_cmd, stdout_tee=None, stderr_tee=None)
-            return 'lightsensor'
-        except error.AutoservRunError:
-            # egrep exited with a return code of 1 meaning none of the possible
-            # lightsensor files existed.
-            return None
-
-
-    def has_bluetooth(self):
-        """Determine the correct board label for this host.
-
-        @returns the string 'bluetooth' if this host has bluetooth or
-                 None if it does not.
-        """
-        try:
-            self.run('test -d /sys/class/bluetooth/hci0')
-            # test exited with a return code of 0.
-            return 'bluetooth'
-        except error.AutoservRunError:
-            # test exited with a return code 1 meaning the directory did not
-            # exist.
-            return None
-
-
-    def get_accels(self):
-        """
-        Determine the type of accelerometers on this host.
-
-        @returns a string representing this host's accelerometer type.
-        At present, it only returns "accel:cros-ec", for accelerometers
-        attached to a Chrome OS EC, or none, if no accelerometers.
-        """
-        # Check to make sure we have ectool
-        rv = self.run('which ectool', ignore_status=True)
-        if rv.exit_status:
-            logging.info("No ectool cmd found, assuming no EC accelerometers")
-            return None
-
-        # Check that the EC supports the motionsense command
-        rv = self.run('ectool motionsense', ignore_status=True)
-        if rv.exit_status:
-            logging.info("EC does not support motionsense command "
-                         "assuming no EC accelerometers")
-            return None
-
-        # Check that EC motion sensors are active
-        active = self.run('ectool motionsense active').stdout.split('\n')
-        if active[0] == "0":
-            logging.info("Motion sense inactive, assuming no EC accelerometers")
-            return None
-
-        logging.info("EC accelerometers found")
-        return 'accel:cros-ec'
-
-
-    def has_chameleon(self):
-        """Determine if a Chameleon connected to this host.
-
-        @returns a list containing two strings ('chameleon' and
-                 'chameleon:' + label, e.g. 'chameleon:hdmi') if this host
-                 has a Chameleon or None if it has not.
-        """
-        if self._chameleon_host:
-            return ['chameleon', 'chameleon:' + self.chameleon.get_label()]
-        else:
-            return None
-
-
-    def has_loopback_dongle(self):
-        """Determine if an audio loopback dongle is plugged to this host.
-
-        @returns 'audio_loopback_dongle' when there is an audio loopback dongle
-                                         plugged to this host.
-                 None                    when there is no audio loopback dongle
-                                         plugged to this host.
-        """
-        nodes_info = self.run(command=cras_utils.get_cras_nodes_cmd(),
-                              ignore_status=True).stdout
-        if (cras_utils.node_type_is_plugged('HEADPHONE', nodes_info) and
-            cras_utils.node_type_is_plugged('MIC', nodes_info)):
-                return 'audio_loopback_dongle'
-        else:
-                return None
-
-
     def get_power_supply(self):
         """
         Determine what type of power supply the host has
@@ -2195,77 +2159,28 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return 'power:%s' % psu_str
 
 
-    def get_storage(self):
+    def has_battery(self):
+        """Determine if DUT has a battery.
+
+        Returns:
+            Boolean, False if known not to have battery, True otherwise.
         """
-        Determine the type of boot device for this host.
+        rv = True
+        power_supply = self.get_power_supply()
+        if power_supply == 'power:battery':
+            _NO_BATTERY_BOARD_TYPE = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
+            board_type = self.get_board_type()
+            if board_type in _NO_BATTERY_BOARD_TYPE:
+                logging.warn('Do NOT believe type %s has battery. '
+                             'See debug for mosys details', board_type)
+                psu = self.system_output('mosys -vvvv psu type',
+                                         ignore_status=True)
+                logging.debug(psu)
+                rv = False
+        elif power_supply == 'power:AC_only':
+            rv = False
 
-        Determine if the internal device is SCSI or dw_mmc device.
-        Then check that it is SSD or HDD or eMMC or something else.
-
-        @returns a string representing this host's internal device type.
-                 'storage:ssd' when internal device is solid state drive
-                 'storage:hdd' when internal device is hard disk drive
-                 'storage:mmc' when internal device is mmc drive
-                 None          When internal device is something else or
-                               when we are unable to determine the type
-        """
-        # The output should be /dev/mmcblk* for SD/eMMC or /dev/sd* for scsi
-        rootdev_cmd = ' '.join(['. /usr/sbin/write_gpt.sh;',
-                                '. /usr/share/misc/chromeos-common.sh;',
-                                'load_base_vars;',
-                                'get_fixed_dst_drive'])
-        rootdev = self.run(command=rootdev_cmd, ignore_status=True)
-        if rootdev.exit_status:
-            logging.info("Fail to run %s", rootdev_cmd)
-            return None
-        rootdev_str = rootdev.stdout.strip()
-
-        if not rootdev_str:
-            return None
-
-        rootdev_base = os.path.basename(rootdev_str)
-
-        mmc_pattern = '/dev/mmcblk[0-9]'
-        if re.match(mmc_pattern, rootdev_str):
-            # Use type to determine if the internal device is eMMC or somthing
-            # else. We can assume that MMC is always an internal device.
-            type_cmd = 'cat /sys/block/%s/device/type' % rootdev_base
-            type = self.run(command=type_cmd, ignore_status=True)
-            if type.exit_status:
-                logging.info("Fail to run %s", type_cmd)
-                return None
-            type_str = type.stdout.strip()
-
-            if type_str == 'MMC':
-                return 'storage:mmc'
-
-        scsi_pattern = '/dev/sd[a-z]+'
-        if re.match(scsi_pattern, rootdev.stdout):
-            # Read symlink for /sys/block/sd* to determine if the internal
-            # device is connected via ata or usb.
-            link_cmd = 'readlink /sys/block/%s' % rootdev_base
-            link = self.run(command=link_cmd, ignore_status=True)
-            if link.exit_status:
-                logging.info("Fail to run %s", link_cmd)
-                return None
-            link_str = link.stdout.strip()
-            if 'usb' in link_str:
-                return None
-
-            # Read rotation to determine if the internal device is ssd or hdd.
-            rotate_cmd = str('cat /sys/block/%s/queue/rotational'
-                              % rootdev_base)
-            rotate = self.run(command=rotate_cmd, ignore_status=True)
-            if rotate.exit_status:
-                logging.info("Fail to run %s", rotate_cmd)
-                return None
-            rotate_str = rotate.stdout.strip()
-
-            rotate_dict = {'0':'storage:ssd', '1':'storage:hdd'}
-            return rotate_dict.get(rotate_str)
-
-        # All other internal device / error case will always fall here
-        return None
+        return rv
 
 
     def get_servo(self):
@@ -2277,65 +2192,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                  returns None.
         """
         return 'servo' if self._servo_host else None
-
-
-    def get_video_labels(self):
-        """Run /usr/local/bin/avtest_label_detect to get a list of video labels.
-
-        Sample output of avtest_label_detect:
-        Detected label: hw_video_acc_vp8
-        Detected label: webcam
-
-        @return: A list of labels detected by tool avtest_label_detect.
-        """
-        try:
-            result = self.run('/usr/local/bin/avtest_label_detect').stdout
-            return re.findall('^Detected label: (\w+)$', result, re.M)
-        except error.AutoservRunError:
-            # The tool is not installed.
-            return []
-
-
-    def is_video_glitch_detection_supported(self):
-        """ Determine if a board under test is supported for video glitch
-        detection tests.
-
-        @return: 'video_glitch_detection' if board is supported, None otherwise.
-        """
-        board = self.get_board().replace(ds_constants.BOARD_PREFIX, '')
-
-        if board in video_test_constants.SUPPORTED_BOARDS:
-            return 'video_glitch_detection'
-
-        return None
-
-
-    def get_touch(self):
-        """
-        Determine whether board under test has a touchpad or touchscreen.
-
-        @return: A list of some combination of 'touchscreen' and 'touchpad',
-            depending on what is present on the device.
-
-        """
-        labels = []
-        looking_for = ['touchpad', 'touchscreen']
-        player = input_playback.InputPlayback()
-        input_events = self.run('ls /dev/input/event*').stdout.strip().split()
-        filename = '/tmp/touch_labels'
-        for event in input_events:
-            self.run('evtest %s > %s' % (event, filename), timeout=1,
-                     ignore_timeout=True)
-            properties = self.run('cat %s' % filename).stdout
-            input_type = player._determine_input_type(properties)
-            if input_type in looking_for:
-                labels.append(input_type)
-                looking_for.remove(input_type)
-            if len(looking_for) == 0:
-                break
-        self.run('rm %s' % filename)
-
-        return labels
 
 
     def has_internal_display(self):
@@ -2435,11 +2291,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def get_os_type(self):
         return 'cros'
-
-
-    def enable_adb_testing(self):
-        """Mark this host as an adb tester."""
-        self.run('touch %s' % constants.ANDROID_TESTER_FILEFLAG)
 
 
     def get_labels(self):

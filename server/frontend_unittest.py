@@ -38,11 +38,23 @@ class RpcClientTest(BaseRpcClientTest):
     def test_init(self):
         os.environ['LOGNAME'] = 'unittest-user'
         GLOBAL_CONFIG.override_config_value('SERVER', 'hostname', 'test-host')
+        rpc_client_lib.add_protocol.expect_call('test-host').and_return(
+                'http://test-host')
         rpc_client_lib.get_proxy.expect_call(
                 'http://test-host/path',
                 headers={'AUTHORIZATION': 'unittest-user'})
         frontend.RpcClient('/path', None, None, None, None, None)
         self.god.check_playback()
+
+
+class CrosVersionFormatTestCase(unittest.TestCase):
+    def test_format_cros_image_name(self):
+        test_board = 'fubar-board'
+        test_version = 'R99-20000.15.0'
+        image_name = frontend.format_cros_image_name(
+                test_board, test_version)
+        self.assertIn(test_board, image_name)
+        self.assertIn(test_version, image_name)
 
 
 if __name__ == '__main__':

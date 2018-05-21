@@ -71,10 +71,11 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server import constants
 from autotest_lib.server import frontend
 from autotest_lib.server import hosts
+from autotest_lib.server.cros.dynamic_suite.constants import VERSION_PREFIX
 from autotest_lib.server.hosts import afe_store
 from autotest_lib.server.hosts import servo_host
-from autotest_lib.site_utils.deployment import commandline
-from autotest_lib.site_utils.stable_images import assign_stable_images
+from autotest_lib.site_utils.deployment import cmdvalidate
+from autotest_lib.site_utils.stable_images import build_data
 
 
 _LOG_FORMAT = '%(asctime)s | %(levelname)-10s | %(message)s'
@@ -122,7 +123,7 @@ class _MultiFileWriter(object):
 def _get_upload_log_path(arguments):
     return 'gs://{bucket}/{name}'.format(
         bucket=_LOG_BUCKET_NAME,
-        name=commandline.get_default_logdir_name(arguments))
+        name=arguments.upload_basename)
 
 
 def _upload_logs(dirpath, gspath):
@@ -176,7 +177,9 @@ def _update_build(afe, report_log, arguments):
     the most up-to-date version.
 
     The stable firmware version will be set to whatever firmware is
-    bundled in the selected repair image.
+    bundled in the selected repair image. If the selected repair image bundles
+    firmware for more than one model, then the firmware for every model in the
+    build will be updated.
 
     This function will log information about the available versions
     prior to selection.  After selection the repair and firmware
@@ -199,46 +202,47 @@ def _update_build(afe, report_log, arguments):
     report_log.write('Omaha  version is %s.\n' % omaha_cros)
     report_log.write('AFE   firmware is %s.\n' % afe_fw)
     cros_version = afe_cros
-    fw_version = afe_fw
 
     # Check whether we should upgrade the repair build to either
     # the Omaha or the user's requested build.  If we do, we must
     # also update the firmware version.
-    if (omaha_cros is not None and
-             utils.compare_versions(cros_version, omaha_cros) < 0):
+    if (omaha_cros is not None
+            and (cros_version is None or
+                 utils.compare_versions(cros_version, omaha_cros) < 0)):
         cros_version = omaha_cros
-        fw_version = None
     if arguments.build and arguments.build != cros_version:
-        if utils.compare_versions(cros_version, arguments.build) < 0:
+        if (cros_version is None
+                or utils.compare_versions(cros_version, arguments.build) < 0):
             cros_version = arguments.build
-            fw_version = None
         else:
             report_log.write('Selected version %s is too old; '
                              'using version %s'
                              % (arguments.build, cros_version))
-    if fw_version is None:
-        fw_version = assign_stable_images.get_firmware_version(
-                cros_version_map, arguments.board, cros_version)
 
+    afe_fw_versions = {arguments.board: afe_fw}
+    fw_versions = build_data.get_firmware_versions(
+        arguments.board, cros_version)
     # At this point `cros_version` is our new repair build, and
     # `fw_version` is our new target firmware.  Call the AFE back with
     # updates as necessary.
-    if not arguments.nostable:
+    if not arguments.dry_run:
         if cros_version != afe_cros:
             cros_version_map.set_version(arguments.board, cros_version)
-        if fw_version != afe_fw:
-            if fw_version is not None:
-                fw_version_map.set_version(arguments.board,
-                                           fw_version)
-            else:
-                fw_version_map.delete_version(arguments.board)
+
+            if fw_versions != afe_fw_versions:
+                for model, fw_version in fw_versions.iteritems():
+                    if fw_version is not None:
+                        fw_version_map.set_version(model, fw_version)
+                    else:
+                        fw_version_map.delete_version(model)
 
     # Report the new state of the world.
     report_log.write(_DIVIDER)
-    report_log.write('Repair version for board %s is now %s.\n' %
+    report_log.write('Repair CrOS version for board %s is now %s.\n' %
                      (arguments.board, cros_version))
-    report_log.write('Firmware       for board %s is now %s.\n' %
-                     (arguments.board, fw_version))
+    for model, fw_version in fw_versions.iteritems():
+        report_log.write('Firmware version for model %s is now %s.\n' %
+                         (model, fw_version))
     return cros_version
 
 
@@ -297,26 +301,22 @@ def _try_unlock_host(afe_host):
     return True
 
 
-def _update_host_attributes(afe, hostname, host_attr_dict):
+def _update_host_attributes(afe, hostname, host_attrs):
     """Update the attributes for a given host.
 
-    @param afe             AFE object for RPC calls.
-    @param hostname        Name of the host to be updated.
-    @param host_attr_dict  Dict of host attributes to store in the AFE.
+    @param afe          AFE object for RPC calls.
+    @param hostname     Host name of the DUT.
+    @param host_attrs   Dictionary with attributes to be applied to the
+                        host.
     """
-    # Let's grab the servo hostname/port/serial from host_attr_dict
-    # if possible.
-    host_attr_servo_host = None
-    host_attr_servo_port = None
-    host_attr_servo_serial = None
-    if hostname in host_attr_dict:
-        host_attr_servo_host = host_attr_dict[hostname].get(
-                servo_host.SERVO_HOST_ATTR)
-        host_attr_servo_port = host_attr_dict[hostname].get(
-                servo_host.SERVO_PORT_ATTR)
-        host_attr_servo_serial = host_attr_dict[hostname].get(
-                servo_host.SERVO_SERIAL_ATTR)
-
+    # Grab the servo hostname/port/serial from `host_attrs` if supplied.
+    # For new servo V4 deployments, we require the user to supply the
+    # attributes (because there are no appropriate defaults).  So, if
+    # none are supplied, we assume it can't be V4, and apply the
+    # defaults for servo V3.
+    host_attr_servo_host = host_attrs.get(servo_host.SERVO_HOST_ATTR)
+    host_attr_servo_port = host_attrs.get(servo_host.SERVO_PORT_ATTR)
+    host_attr_servo_serial = host_attrs.get(servo_host.SERVO_SERIAL_ATTR)
     servo_hostname = (host_attr_servo_host or
                       servo_host.make_servo_hostname(hostname))
     servo_port = (host_attr_servo_port or
@@ -333,7 +333,7 @@ def _update_host_attributes(afe, hostname, host_attr_dict):
                                hostname=hostname)
 
 
-def _get_afe_host(afe, hostname, arguments, host_attr_dict):
+def _get_afe_host(afe, hostname, host_attrs, arguments):
     """Get an AFE Host object for the given host.
 
     If the host is found in the database, return the object
@@ -342,10 +342,11 @@ def _get_afe_host(afe, hostname, arguments, host_attr_dict):
     If no host is found, create one with appropriate servo
     attributes and the given board label.
 
-    @param afe             AFE from which to get the host.
-    @param hostname        Name of the host to look up or create.
-    @param arguments       Command line arguments with options.
-    @param host_attr_dict  Dict of host attributes to store in the AFE.
+    @param afe          AFE object for RPC calls.
+    @param hostname     Host name of the DUT.
+    @param host_attrs   Dictionary with attributes to be applied to the
+                        host.
+    @param arguments    Command line arguments with options.
 
     @return A tuple of the afe_host, plus a flag. The flag indicates
             whether the Host should be unlocked if subsequent operations
@@ -364,13 +365,17 @@ def _get_afe_host(afe, hostname, arguments, host_attr_dict):
             if unlock_on_failure and not _try_unlock_host(afe_host):
                 raise Exception('Host is in use, and failed to unlock it')
             raise Exception('Host is in use by Autotest')
+        # This host was pre-existing; if the user didn't supply
+        # attributes, don't update them, because the defaults may
+        # not be correct.
+        if host_attrs:
+            _update_host_attributes(afe, hostname, host_attrs)
     else:
         afe_host = afe.create_host(hostname,
                                    locked=True,
                                    lock_reason=_LOCK_REASON_NEW_HOST)
         afe_host.add_labels([constants.Labels.BOARD_PREFIX + arguments.board])
-
-    _update_host_attributes(afe, hostname, host_attr_dict)
+        _update_host_attributes(afe, hostname, host_attrs)
     afe_host = afe.get_hosts([hostname])[0]
     return afe_host, unlock_on_failure
 
@@ -433,22 +438,30 @@ def _install_test_image(host, arguments):
     # since we can't pass None through the xml rpcs, use 0 to indicate None.
     if not host.servo.probe_host_usb_dev(timeout=0):
         raise Exception('No USB stick detected on Servo host')
-    try:
-        if not arguments.noinstall:
-            if not arguments.nostage:
-                host.servo.image_to_servo_usb(
-                        host.stage_image_for_servo())
-            if arguments.full_deploy:
-                _install_firmware(host)
+    if arguments.dry_run:
+        return
+    if arguments.stageusb:
+        try:
+            host.servo.image_to_servo_usb(
+                    host.stage_image_for_servo())
+        except Exception as e:
+            logging.exception('Failed to stage image on USB: %s', e)
+            raise Exception('USB staging failed')
+    if arguments.install_firmware:
+        try:
+            _install_firmware(host)
+        except error.AutoservRunError as e:
+            logging.exception('Firmware update failed: %s', e)
+            raise Exception('chromeos-firmwareupdate failed')
+    if arguments.install_test_image:
+        try:
             host.servo_install()
-    except error.AutoservRunError as e:
-        logging.exception('Failed to install: %s', e)
-        raise Exception('chromeos-install failed')
-    finally:
-        host.close()
+        except error.AutoservRunError as e:
+            logging.exception('Failed to install: %s', e)
+            raise Exception('chromeos-install failed')
 
 
-def _install_and_update_afe(afe, hostname, arguments, host_attr_dict):
+def _install_and_update_afe(afe, hostname, host_attrs, arguments):
     """Perform all installation and AFE updates.
 
     First, lock the host if it exists and is unlocked.  Then,
@@ -459,33 +472,39 @@ def _install_and_update_afe(afe, hostname, arguments, host_attr_dict):
     If installation succeeds, make sure the DUT is in the AFE,
     and make sure that it has basic labels.
 
-    @param afe               AFE object for RPC calls.
-    @param hostname          Host name of the DUT.
-    @param arguments         Command line arguments with options.
-    @param host_attr_dict    Dict of host attributes to store in the AFE.
+    @param afe          AFE object for RPC calls.
+    @param hostname     Host name of the DUT.
+    @param host_attrs   Dictionary with attributes to be applied to the
+                        host.
+    @param arguments    Command line arguments with options.
     """
-    afe_host, unlock_on_failure = _get_afe_host(afe, hostname, arguments,
-                                                host_attr_dict)
+    afe_host, unlock_on_failure = _get_afe_host(afe, hostname, host_attrs,
+                                                arguments)
+    host = None
     try:
         host = _create_host(hostname, afe, afe_host)
         _install_test_image(host, arguments)
-        host.labels.update_labels(host)
-        platform_labels = afe.get_labels(
-                host__hostname=hostname, platform=True)
-        if not platform_labels:
-            platform = host.get_platform()
-            new_labels = afe.get_labels(name=platform)
-            if not new_labels:
-                afe.create_label(platform, platform=True)
-            afe_host.add_labels([platform])
+        if arguments.install_test_image and not arguments.dry_run:
+            host.labels.update_labels(host)
+            platform_labels = afe.get_labels(
+                    host__hostname=hostname, platform=True)
+            if not platform_labels:
+                platform = host.get_platform()
+                new_labels = afe.get_labels(name=platform)
+                if not new_labels:
+                    afe.create_label(platform, platform=True)
+                afe_host.add_labels([platform])
         version = [label for label in afe_host.labels
-                       if label.startswith(constants.VERSION_PREFIX)]
-        if version:
+                       if label.startswith(VERSION_PREFIX)]
+        if version and not arguments.dry_run:
             afe_host.remove_labels(version)
     except Exception as e:
         if unlock_on_failure and not _try_unlock_host(afe_host):
             logging.error('Failed to unlock host!')
         raise
+    finally:
+        if host is not None:
+            host.close()
 
     if not _try_unlock_host(afe_host):
         raise Exception('Install succeeded, but failed to unlock the DUT.')
@@ -494,33 +513,32 @@ def _install_and_update_afe(afe, hostname, arguments, host_attr_dict):
 def _install_dut(arguments, host_attr_dict, hostname):
     """Deploy or repair a single DUT.
 
-    Implementation note: This function is expected to run in a
-    subprocess created by a multiprocessing Pool object.  As such,
-    it can't (shouldn't) write to shared files like `sys.stdout`.
-
-    @param hostname        Host name of the DUT to install on.
     @param arguments       Command line arguments with options.
-    @param host_attr_dict  Dict of host attributes to store in the AFE.
+    @param host_attr_dict  Dict mapping hostnames to attributes to be
+                           stored in the AFE.
+    @param hostname        Host name of the DUT to install on.
 
     @return On success, return `None`.  On failure, return a string
             with an error message.
     """
-    logpath = os.path.join(arguments.logdir, hostname + '.log')
-    logfile = open(logpath, 'w')
-
     # In some cases, autotest code that we call during install may
     # put stuff onto stdout with 'print' statements.  Most notably,
     # the AFE frontend may print 'FAILED RPC CALL' (boo, hiss).  We
     # want nothing from this subprocess going to the output we
-    # inherited from our parent, so redirect stdout and stderr here,
-    # before we make any AFE calls.  Note that this does what we
-    # want only because we're in a subprocess.
+    # inherited from our parent, so redirect stdout and stderr, before
+    # we make any AFE calls.  Note that this is reasonable because we're
+    # in a subprocess.
+
+    logpath = os.path.join(arguments.logdir, hostname + '.log')
+    logfile = open(logpath, 'w')
     sys.stderr = sys.stdout = logfile
     _configure_logging_to_file(logfile)
 
     afe = frontend.AFE(server=arguments.web)
     try:
-        _install_and_update_afe(afe, hostname, arguments, host_attr_dict)
+        _install_and_update_afe(afe, hostname,
+                                host_attr_dict.get(hostname, {}),
+                                arguments)
     except Exception as e:
         logging.exception('Original exception: %s', e)
         return str(e)
@@ -734,7 +752,7 @@ def _get_host_attributes(host_info_list, afe):
     return host_attributes
 
 
-def install_duts(argv, full_deploy):
+def install_duts(arguments):
     """Install a test image on DUTs, and deploy them.
 
     This handles command line parsing for both the repair and
@@ -743,25 +761,20 @@ def install_duts(argv, full_deploy):
     dev-signed firmware on the DUT prior to installing the test
     image.
 
-    @param argv         Command line arguments to be parsed.
-    @param full_deploy  If true, do the full deployment that includes
-                        flashing dev-signed RO firmware onto the DUT.
+    @param arguments    Command line arguments with options, as
+                        returned by `argparse.Argparser`.
     """
+    arguments = cmdvalidate.validate_arguments(arguments)
+    if arguments is None:
+        sys.exit(1)
+    sys.stderr.write('Installation output logs in %s\n' % arguments.logdir)
+
     # Override tempfile.tempdir.  Some of the autotest code we call
     # will create temporary files that don't get cleaned up.  So, we
     # put the temp files in our results directory, so that we can
-    # clean up everything in one fell swoop.
+    # clean up everything at one fell swoop.
     tempfile.tempdir = tempfile.mkdtemp()
-    # MALCOLM:
-    #   Be comforted.
-    #   Let's make us med'cines of our great revenge,
-    #   To cure this deadly grief.
     atexit.register(shutil.rmtree, tempfile.tempdir)
-
-    arguments = commandline.parse_command(argv, full_deploy)
-    if not arguments:
-        sys.exit(1)
-    sys.stderr.write('Installation output logs in %s\n' % arguments.logdir)
 
     # We don't want to distract the user with logging output, so we catch
     # logging output in a file.
@@ -773,6 +786,9 @@ def install_duts(argv, full_deploy):
     with open(report_log_path, 'w') as report_log_file:
         report_log = _MultiFileWriter([report_log_file, sys.stdout])
         afe = frontend.AFE(server=arguments.web)
+        if arguments.dry_run:
+            report_log.write('Dry run - installation and most testing '
+                             'will be skipped.\n')
         current_build = _update_build(afe, report_log, arguments)
         host_attr_dict = _get_host_attributes(arguments.host_info_list, afe)
         install_pool = multiprocessing.Pool(len(arguments.hostnames))
@@ -781,16 +797,16 @@ def install_duts(argv, full_deploy):
         results_list = install_pool.map(install_function, arguments.hostnames)
         _report_results(afe, report_log, arguments.hostnames, results_list)
 
-        gspath = _get_upload_log_path(arguments)
-        report_log.write('Logs will be uploaded to %s\n' % (gspath,))
-
-    try:
-        _upload_logs(arguments.logdir, gspath)
-    except Exception as e:
-        upload_failure_log_path = os.path.join(arguments.logdir,
-                                               'gs_upload_failure.log')
-        with open(upload_failure_log_path, 'w') as file:
-            traceback.print_exc(limit=None, file=file)
-        sys.stderr.write('Failed to upload logs;'
-                         ' failure details are stored in {}.\n'
-                         .format(upload_failure_log_path))
+    if arguments.upload:
+        try:
+            gspath = _get_upload_log_path(arguments)
+            sys.stderr.write('Logs will be uploaded to %s\n' % (gspath,))
+            _upload_logs(arguments.logdir, gspath)
+        except Exception as e:
+            upload_failure_log_path = os.path.join(arguments.logdir,
+                                                   'gs_upload_failure.log')
+            with open(upload_failure_log_path, 'w') as file:
+                traceback.print_exc(limit=None, file=file)
+            sys.stderr.write('Failed to upload logs;'
+                             ' failure details are stored in {}.\n'
+                             .format(upload_failure_log_path))

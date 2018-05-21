@@ -28,16 +28,16 @@ def allow_multiple_section_input(image_operator):
     @param image_operator: Method accepting one section as its argument.
     """
     @functools.wraps(image_operator)
-    def wrapper(self, section):
+    def wrapper(self, section, *args, **dargs):
         """Wrapper method to support multiple sections.
 
         @param section: A list of sections of just a section.
         """
         if type(section) in (tuple, list):
             for sec in section:
-                image_operator(self, sec)
+                image_operator(self, sec, *args, **dargs)
         else:
-            image_operator(self, section)
+            image_operator(self, section, *args, **dargs)
     return wrapper
 
 
@@ -403,12 +403,12 @@ class RPCFunctions(object):
         self._bios_handler.restore_firmware(section)
 
     @allow_multiple_section_input
-    def _bios_corrupt_body(self, section):
+    def _bios_corrupt_body(self, section, corrupt_all=False):
         """Corrupt the requested firmware section body.
 
         @param section: A firmware section, either 'a' or 'b'.
         """
-        self._bios_handler.corrupt_firmware_body(section)
+        self._bios_handler.corrupt_firmware_body(section, corrupt_all)
 
     @allow_multiple_section_input
     def _bios_restore_body(self, section):
@@ -550,6 +550,19 @@ class RPCFunctions(object):
             self._ec_handler.enable_write_protect()
         else:
             self._ec_handler.disable_write_protect()
+
+    def _ec_is_efs(self):
+        """Return True if the EC supports EFS."""
+        return self._ec_handler.has_section_body('rw_b')
+
+    def _ec_copy_rw(self, from_section, to_section):
+        """Copy EC RW from from_section to to_section."""
+        self._ec_handler.copy_from_to(from_section, to_section)
+
+    def _ec_reboot_to_switch_slot(self):
+        """Reboot EC to switch the active RW slot."""
+        self._os_if.run_shell_command(
+                'ectool reboot_ec cold switch-slot')
 
     @allow_multiple_section_input
     def _kernel_corrupt_sig(self, section):
@@ -697,11 +710,11 @@ class RPCFunctions(object):
         return self._updater.start_daemon()
 
     def _updater_get_fwid(self):
-        """Retrieve shellball's fwid.
+        """Retrieve shellball's RW fwid.
 
-        @return: Shellball's fwid.
+        @return: Shellball's RW fwid.
         """
-        return self._updater.retrieve_fwid()
+        return self._updater.retrieve_fwid()[1]
 
     def _updater_get_ecid(self):
         """Retrieve shellball's ecid.
@@ -709,6 +722,16 @@ class RPCFunctions(object):
         @return: Shellball's ecid.
         """
         return self._updater.retrieve_ecid()
+
+    def _updater_modify_ecid_and_flash_to_bios(self):
+        """Modify ecid, put it to AP firmware, and flash it to the system."""
+        self._updater.modify_ecid_and_flash_to_bios()
+
+    def _updater_get_ec_hash(self):
+        """Return the hex string of the EC hash."""
+        blob = self._updater.retrieve_ec_hash()
+        # Format it to a hex string
+        return ''.join('%02x' % ord(c) for c in blob)
 
     def _updater_resign_firmware(self, version):
         """Resign firmware with version.

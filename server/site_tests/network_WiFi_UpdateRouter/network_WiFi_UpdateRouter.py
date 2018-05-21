@@ -39,8 +39,9 @@ class network_WiFi_UpdateRouter(test.test):
                                 '7424.0.2015_09_03_1514'),
         'panther': StableVersion('trybot-panther-test-ap/R47-7424.0.0-b10',
                                  '7424.0.2015_09_03_1532'),
-        'whirlwind': StableVersion('trybot-whirlwind-test-ap/R63-10007.0.0-b5',
-                                   '10007.0.2017_10_06_1120')
+        'whirlwind': StableVersion('trybot-whirlwind-test-ap-tryjob/'
+                                   'R65-10323.83.0-c40829',
+                                   '10323.83.2018_04_30_1605')
     }
 
 
@@ -74,6 +75,11 @@ class network_WiFi_UpdateRouter(test.test):
 
 
     def run_once(self, host):
+        """Update route associated with host.
+
+        @param host DUT connected to AP that needs update
+
+        """
         router_hostname = site_linux_router.build_router_hostname(
                 client_hostname=host.hostname,
                 router_hostname=self._router_hostname_from_cmdline)
@@ -112,7 +118,7 @@ class network_WiFi_UpdateRouter(test.test):
 
         url = self.get_update_url(ds.url(), desired.builder_version)
         try:
-            router_host.machine_install(force_update=True, update_url=url)
+            router_host.machine_install(update_url=url)
         except error.InstallError as e:
             logging.error(e)
             raise error.TestFail(str(e))

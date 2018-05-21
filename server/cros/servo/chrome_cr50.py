@@ -12,14 +12,14 @@ from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.servo import chrome_ec
 
 
-def ccd_command(func):
-    """Decorator for methods only relevant to devices using CCD."""
+def servo_v4_command(func):
+    """Decorator for methods only relevant to tests running with servo v4."""
     @functools.wraps(func)
     def wrapper(instance, *args, **kwargs):
-        """Ignore ccd functions if we aren't using ccd"""
-        if instance.using_ccd():
+        """Ignore servo v4 functions it's not being used."""
+        if instance.using_servo_v4():
             return func(instance, *args, **kwargs)
-        logging.info("not using ccd. ignoring %s", func.func_name)
+        logging.info("not using servo v4. ignoring %s", func.func_name)
     return wrapper
 
 
@@ -55,9 +55,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # BID B:   00000000:00000000:00000000 Yes
     # Use the first group from ACTIVE_VERSION to match the active board id
     # partition.
-    BID_FORMAT = ':\s+([a-f0-9:]+) '
-    ACTIVE_BID = r'%s.*\1%s' % (ACTIVE_VERSION, BID_FORMAT)
-    WAKE_CHAR = '\n'
+    BID_ERROR = 'read_board_id: failed'
+    BID_FORMAT = ':\s+[a-f0-9:]+ '
+    ACTIVE_BID = r'%s.*(\1%s|%s.*>)' % (ACTIVE_VERSION, BID_FORMAT,
+            BID_ERROR)
+    WAKE_CHAR = '\n\n'
+    WAKE_RESPONSE = ['(>|Console is enabled)']
     START_UNLOCK_TIMEOUT = 20
     GETTIME = ['= (\S+)']
     FWMP_LOCKED_PROD = ["Managed device console can't be unlocked"]
@@ -66,10 +69,17 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     START_STR = ['(.*Console is enabled;)']
     REBOOT_DELAY_WITH_CCD = 60
     REBOOT_DELAY_WITH_FLEX = 3
+    ON_STRINGS = ['enable', 'enabled', 'on']
 
 
     def __init__(self, servo):
         super(ChromeCr50, self).__init__(servo, 'cr50_uart')
+
+
+    def wake_cr50(self):
+        """Wake up cr50 by sending some linebreaks and wait for the response"""
+        logging.debug(super(ChromeCr50, self).send_command_get_output(
+                self.WAKE_CHAR, self.WAKE_RESPONSE))
 
 
     def send_command(self, commands):
@@ -80,8 +90,56 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         real command to make sure cr50 is awake.
         """
         if not self.using_ccd():
-            super(ChromeCr50, self).send_command(self.WAKE_CHAR)
+            self.wake_cr50()
         super(ChromeCr50, self).send_command(commands)
+
+
+    def set_cap(self, cap, config):
+        """Set the capability to the config value"""
+        self.set_caps({ cap : config })
+
+
+    def set_caps(self, cap_dict):
+        """Use cap_dict to set all the cap values
+
+        Set all of the capabilities in cap_dict to the correct config.
+
+        Args:
+            cap_dict: A dictionary with the capability as key and the desired
+                setting as values
+        """
+        for cap, config in cap_dict.iteritems():
+            self.send_command('ccd set %s %s' % (cap, config))
+        current_cap_settings = self.get_cap_dict()
+        for cap, config in cap_dict.iteritems():
+            if current_cap_settings[cap].lower() != config.lower():
+                raise error.TestFail('Failed to set %s to %s' % (cap, config))
+
+
+    def get_cap_dict(self):
+        """Get the current ccd capability settings.
+
+        Returns:
+            A dictionary with the capability as the key and the setting as the
+            value
+        """
+        caps = {}
+        rv = self.send_command_get_output('ccd',
+                ["Capabilities:\s+[\da-f]+\s(.*)Use 'ccd help'"])[0][1]
+        for line in rv.splitlines():
+            # Line information is separated with an =
+            #   RebootECAP      Y 0=Default (IfOpened)
+            # Extract the capability name and the value. The first word after
+            # the equals sign is the only one that matters. 'Default' is the
+            # value not IfOpened
+            line = line.strip()
+            if '=' not in line:
+                continue
+            logging.info(line)
+            start, end = line.split('=')
+            caps[start.split()[0]] = end.split()[0]
+        logging.debug(caps)
+        return caps
 
 
     def send_command_get_output(self, command, regexp_list):
@@ -92,7 +150,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         real command to make sure cr50 is awake.
         """
         if not self.using_ccd():
-            super(ChromeCr50, self).send_command(self.WAKE_CHAR)
+            self.wake_cr50()
         return super(ChromeCr50, self).send_command_get_output(command,
                                                                regexp_list)
 
@@ -108,6 +166,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         result = self.send_command_get_output('idle c', [self.IDLE_COUNT])
         if int(result[0][1]):
             raise error.TestFail("Could not clear deep sleep count")
+
+
+    def get_board_properties(self):
+        """Get information from the version command"""
+        rv = self.send_command_get_output('brdprop',
+                ['properties = (\S+)'])
+        return int(rv[0][1], 16)
 
 
     def has_command(self, cmd):
@@ -201,12 +266,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if set_bid:
             self.send_command('bid 0x%x 0x%x' % (chip_bid, chip_flags))
 
-        self.send_command('rollback')
-
-        # If we aren't using ccd, we should be able to detect the reboot
-        # almost immediately
-        self.wait_for_reboot(self.REBOOT_DELAY_WITH_CCD if self.using_ccd() else
-                self.REBOOT_DELAY_WITH_FLEX)
+        if self.using_ccd():
+            self.send_command('rollback')
+            self.wait_for_reboot()
+        else:
+            logging.debug(self.send_command_get_output('rollback',
+                    ['.*Console is enabled'])[0])
 
         running_partition = self.get_active_version_info()[0]
         if inactive_partition != running_partition:
@@ -215,7 +280,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def rolledback(self):
         """Returns true if cr50 just rolled back"""
-        return int(self._servo.get('cr50_reset_count')) > self.MAX_RETRY_COUNT
+        return 'Rollback detected' in self.send_command_get_output('sysinfo',
+                ['.*>'])[0]
 
 
     def get_version_info(self, regexp):
@@ -233,6 +299,14 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return self.get_version_info(self.ACTIVE_VERSION)
 
 
+    def using_prod_rw_keys(self):
+        """Returns True if the RW keyid is prod"""
+        rv = self.send_command_get_output('sysinfo',
+                ['RW keyid:.*\(([a-z]+)\)'])
+        logging.info(rv)
+        return rv[0][1] == 'prod'
+
+
     def get_active_board_id_str(self):
         """Get the running image board id.
 
@@ -246,24 +320,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         #
         # If board id is not supported on the device, return None. This is
         # still expected on all current non board id locked release images.
-        #
-        # TODO(mruthven): switch to only trying once when getting the cr50
-        # console command output becomes entirely reliable.
-        for i in range(3):
-            try:
-                version_info = self.get_version_info(self.ACTIVE_BID)
-                break
-            except error.TestFail, e:
-                logging.info(e.message)
-                version_info = None
-
-        if not version_info:
+        try:
+            version_info = self.get_version_info(self.ACTIVE_BID)
+        except error.TestFail, e:
+            logging.info(e.message)
             logging.info('Cannot use the version to get the board id')
             return None
 
-        bid = version_info[-1]
-        logging.info('%r %r', version_info, bid)
-
+        if self.BID_ERROR in version_info[4]:
+            raise error.TestError(version_info)
+        bid = version_info[4].split()[1]
         return bid if bid != cr50_utils.EMPTY_IMAGE_BID else None
 
 
@@ -282,18 +348,26 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return 'ccd_cr50' in self._servo.get_servo_version()
 
 
-    @ccd_command
-    def get_ccd_state(self):
-        """Get the CCD state from servo
+    def ccd_is_enabled(self):
+        """Return True if ccd is enabled.
+
+        If the test is running through ccd, return the ccd_state value. If
+        a flex cable is being used, use the CCD_MODE_L gpio setting to determine
+        if Cr50 has ccd enabled.
 
         Returns:
             'off' or 'on' based on whether the cr50 console is working.
         """
-        return self._servo.get('ccd_state')
+        if self.using_ccd():
+            return self._servo.get('ccd_state') == 'on'
+        else:
+            result = self.send_command_get_output('gpioget',
+                    ['(0|1)..CCD_MODE_L'])
+            return not bool(int(result[0][1]))
 
 
-    @ccd_command
-    def wait_for_ccd_state(self, state, timeout, raise_error=True):
+    @servo_v4_command
+    def wait_for_ccd_state(self, state, timeout, raise_error):
         """Wait up to timeout seconds for CCD to be 'on' or 'off'
         Args:
             state: a string either 'on' or 'off'.
@@ -303,44 +377,48 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         Raises
             TestFail if ccd never reaches the specified state
         """
+        wait_for_enable = state == 'on'
         logging.info("Wait until ccd is '%s'", state)
-        value = utils.wait_for_value(self.get_ccd_state, state,
+        value = utils.wait_for_value(self.ccd_is_enabled, wait_for_enable,
                                      timeout_sec=timeout)
-        if value != state:
+        if value != wait_for_enable:
             error_msg = "timed out before detecting ccd '%s'" % state
             if raise_error:
                 raise error.TestFail(error_msg)
             logging.warning(error_msg)
-        logging.info("ccd is '%s'", value)
+        logging.info("ccd is '%s'", state)
 
 
-    @ccd_command
+    @servo_v4_command
     def wait_for_ccd_disable(self, timeout=60, raise_error=True):
         """Wait for the cr50 console to stop working"""
         self.wait_for_ccd_state('off', timeout, raise_error)
 
 
-    @ccd_command
-    def wait_for_ccd_enable(self, timeout=60):
+    @servo_v4_command
+    def wait_for_ccd_enable(self, timeout=60, raise_error=False):
         """Wait for the cr50 console to start working"""
-        self.wait_for_ccd_state('on', timeout)
+        self.wait_for_ccd_state('on', timeout, raise_error)
 
 
-    def ccd_disable(self):
+    @servo_v4_command
+    def ccd_disable(self, raise_error=True):
         """Change the values of the CC lines to disable CCD"""
-        if self.using_servo_v4():
-            logging.info("disable ccd")
-            self._servo.set_nocheck('servo_v4_dts_mode', 'off')
-            self.wait_for_ccd_disable()
+        logging.info("disable ccd")
+        self._servo.set_nocheck('servo_v4_dts_mode', 'off')
+        self.wait_for_ccd_disable(raise_error=raise_error)
 
 
-    @ccd_command
-    def ccd_enable(self):
+    @servo_v4_command
+    def ccd_enable(self, raise_error=False):
         """Reenable CCD and reset servo interfaces"""
         logging.info("reenable ccd")
         self._servo.set_nocheck('servo_v4_dts_mode', 'on')
-        self._servo.set_nocheck('power_state', 'ccd_reset')
-        self.wait_for_ccd_enable()
+        # If the test is actually running with ccd, reset usb and wait for
+        # communication to come up.
+        if self.using_ccd():
+            self._servo.set_nocheck('power_state', 'ccd_reset')
+        self.wait_for_ccd_enable(raise_error=raise_error)
 
 
     def _level_change_req_pp(self, level):
@@ -350,11 +428,22 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return testlab_pp or open_pp
 
 
-    def ccd_set_testlab(self, state):
+    def _state_to_bool(self, state):
+        """Converts the state string to True or False"""
+        # TODO(mruthven): compare to 'on' once servo is up to date in the lab
+        return state.lower() in self.ON_STRINGS
+
+
+    def testlab_is_on(self):
+        """Returns True of testlab mode is on"""
+        return self._state_to_bool(self._servo.get('cr50_testlab'))
+
+
+    def set_ccd_testlab(self, state):
         """Set the testlab mode
 
         Args:
-            state: the desired testlab mode string: 'enable' or 'disable'
+            state: the desired testlab mode string: 'on' or 'off'
 
         Raises:
             TestFail if testlab mode was not changed
@@ -363,43 +452,61 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestError('Cannot set testlab mode with CCD. Use flex '
                     'cable instead.')
 
-        state = state.lower()
-        current_state = self._servo.get('cr50_testlab').lower()
-        if state in current_state:
-            logging.info('ccd testlab already set to %s', state)
+        request_on = self._state_to_bool(state)
+        testlab_on = self.testlab_is_on()
+        request_str = 'on' if request_on else 'off'
+
+        if testlab_on == request_on:
+            logging.info('ccd testlab already set to %s', request_str)
             return
 
-        original_level = self._servo.get('cr50_ccd_level').lower()
+        original_level = self.get_ccd_level()
 
         # We can only change the testlab mode when the device is open. If
         # testlab mode is already enabled, we can go directly to open using 'ccd
         # testlab open'. This will save 5 minutes, because we can skip the
         # physical presence check.
-        if 'enable' in current_state:
+        if testlab_on:
             self.send_command('ccd testlab open')
         else:
-            self.ccd_set_level('open')
+            self.set_ccd_level('open')
 
         # Set testlab mode
-        rv = self.send_command_get_output('ccd testlab %s' % state, ['.*>'])[0]
+        rv = self.send_command_get_output('ccd testlab %s' % request_str,
+                ['.*>'])[0]
         if 'Access Denied' in rv:
-            raise error.TestFail("'ccd %s' %s" % (state, rv))
+            raise error.TestFail("'ccd %s' %s" % (request_str, rv))
 
         # Press the power button once a second for 15 seconds.
         self.run_pp(self.PP_SHORT)
 
-        self.ccd_set_level(original_level)
+        self.set_ccd_level(original_level)
 
-        if state not in self._servo.get('cr50_testlab'):
+        if request_on != self.testlab_is_on():
             raise error.TestFail('Failed to set ccd testlab to %s' % state)
 
 
-    def ccd_set_level(self, level):
-        """Increase the console timeout and try disabling the lock."""
-        # TODO(mruthven): add support for CCD password
-        level = level.lower().strip()
+    def get_ccd_level(self):
+        """Returns the current ccd privilege level"""
+        # TODO(mruthven): delete the part removing the trailing 'ed' once
+        # servo is up to date in the lab
+        return self._servo.get('cr50_ccd_level').lower().rstrip('ed')
 
-        if level in self._servo.get('cr50_ccd_level').lower():
+
+    def set_ccd_level(self, level):
+        """Set the Cr50 CCD privilege level.
+
+        Args:
+            level: a string of the ccd privilege level: 'open', 'lock', or
+                   'unlock'.
+
+        Raises:
+            TestFail if the level couldn't be set
+        ."""
+        # TODO(mruthven): add support for CCD password
+        level = level.lower()
+
+        if level == self.get_ccd_level():
             logging.info('CCD privilege level is already %s', level)
             return
 
@@ -407,7 +514,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestError("Can't change testlab mode using "
                 "ccd_set_level")
 
-        testlab_enabled = self._servo.get('cr50_testlab') == 'enabled'
+        testlab_on = self._state_to_bool(self._servo.get('cr50_testlab'))
         req_pp = self._level_change_req_pp(level)
         has_pp = not self.using_ccd()
         dbg_en = 'DBG' in self._servo.get('cr50_version')
@@ -416,7 +523,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestError("Can't change privilege level to '%s' "
                 "without physical presence." % level)
 
-        if not testlab_enabled and not has_pp:
+        if not testlab_on and not has_pp:
             raise error.TestError("Wont change privilege level without "
                 "physical presence or testlab mode enabled")
 
@@ -431,7 +538,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             # DBG images have shorter unlock processes
             self.run_pp(self.PP_SHORT if dbg_en else self.PP_LONG)
 
-        if level not in self._servo.get('cr50_ccd_level').lower():
+        if level != self.get_ccd_level():
             raise error.TestFail('Could not set privilege level to %s' % level)
 
         logging.info('Successfully set CCD privelege level to %s', level)
@@ -470,6 +577,31 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Get the current cr50 system time"""
         result = self.send_command_get_output('gettime', [' = (.*) s'])
         return float(result[0][1])
+
+
+    def servo_v4_supports_dts_mode(self):
+        """Returns True if cr50 registers changes in servo v4 dts mode."""
+        # This is to test that Cr50 actually recognizes the change in ccd state
+        # We cant do that with tests using ccd, because the cr50 communication
+        # goes down once ccd is enabled.
+        if 'servo_v4_with_servo_micro' != self._servo.get_servo_version():
+            return False
+
+        ccd_start = 'on' if self.ccd_is_enabled() else 'off'
+        dts_start = self._servo.get('servo_v4_dts_mode')
+        try:
+            # Verify both ccd enable and disable
+            self.ccd_disable(raise_error=True)
+            self.ccd_enable(raise_error=True)
+            rv = True
+        except Exception, e:
+            logging.info(e)
+            rv = False
+        self._servo.set_nocheck('servo_v4_dts_mode', dts_start)
+        self.wait_for_ccd_state(ccd_start, 60, True)
+        logging.info('Test setup does%s support servo DTS mode',
+                '' if rv else 'n\'t')
+        return rv
 
 
     def wait_until_update_is_allowed(self):

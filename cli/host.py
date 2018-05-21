@@ -23,11 +23,18 @@ import common
 import re
 import socket
 
-from autotest_lib.cli import action_common, rpc, topic_common
+from autotest_lib.cli import action_common, rpc, topic_common, skylab_utils
 from autotest_lib.client.bin import utils as bin_utils
 from autotest_lib.client.common_lib import error, host_protections
 from autotest_lib.server import frontend, hosts
 from autotest_lib.server.hosts import host_info
+
+
+try:
+    from skylab_inventory import text_manager
+    from skylab_inventory.lib import device
+except ImportError:
+    pass
 
 
 class host(topic_common.atest):
@@ -61,6 +68,20 @@ class host(topic_common.atest):
         if options.lock and options.unlock:
             self.invalid_syntax('Only specify one of '
                                 '--lock and --unlock.')
+
+        if options.skylab and options.unlock and options.unlock_lock_id is None:
+            self.invalid_syntax('Must provide --unlock-lock-id with "--skylab '
+                                '--unlock".')
+
+        if (not (options.skylab and options.unlock) and
+            options.unlock_lock_id is not None):
+            self.invalid_syntax('--unlock-lock-id is only valid with '
+                                '"--skylab --unlock".')
+
+        self.lock = options.lock
+        self.unlock = options.unlock
+        self.lock_reason = options.lock_reason
+        self.unlock_lock_id = options.unlock_lock_id
 
         if options.lock:
             self.data['locked'] = True
@@ -109,17 +130,21 @@ class host_list(action_common.atest_list, host):
         self.parser.add_option('-b', '--label',
                                default='',
                                help='Only list hosts with all these labels '
-                               '(comma separated)')
+                               '(comma separated). When --skylab is provided, '
+                               'a label must be in the format of '
+                               'label-key:label-value (e.g., board:lumpy).')
         self.parser.add_option('-s', '--status',
                                default='',
                                help='Only list hosts with any of these '
                                'statuses (comma separated)')
         self.parser.add_option('-a', '--acl',
                                default='',
-                               help='Only list hosts within this ACL')
+                               help=('Only list hosts within this ACL. %s' %
+                                     skylab_utils.MSG_INVALID_IN_SKYLAB))
         self.parser.add_option('-u', '--user',
                                default='',
-                               help='Only list hosts available to this user')
+                               help=('Only list hosts available to this user. '
+                                     '%s' % skylab_utils.MSG_INVALID_IN_SKYLAB))
         self.parser.add_option('-N', '--hostnames-only', help='Only return '
                                'hostnames for the machines queried.',
                                action='store_true')
@@ -131,7 +156,14 @@ class host_list(action_common.atest_list, host):
                                default=False,
                                help='Only list unlocked hosts',
                                action='store_true')
+        self.parser.add_option('--full-output',
+                               default=False,
+                               help=('Print out the full content of the hosts. '
+                                     'Only supported with --skylab.'),
+                               action='store_true',
+                               dest='full_output')
 
+        self.add_skylab_options()
 
 
     def parse(self):
@@ -149,13 +181,52 @@ class host_list(action_common.atest_list, host):
         if options.locked and options.unlocked:
             self.invalid_syntax('--locked and --unlocked are '
                                 'mutually exclusive')
+
         self.locked = options.locked
         self.unlocked = options.unlocked
+        self.label_map = None
+
+        if self.skylab:
+            if options.user or options.acl or options.status:
+                self.invalid_syntax('--user, --acl or --status is not '
+                                    'supported with --skylab.')
+            self.full_output = options.full_output
+            if self.full_output and self.hostnames_only:
+                self.invalid_syntax('--full-output is conflicted with '
+                                    '--hostnames-only.')
+
+            if self.labels:
+                self.label_map = device.convert_to_label_map(self.labels)
+        else:
+            if options.full_output:
+                self.invalid_syntax('--full_output is only supported with '
+                                    '--skylab.')
+
         return (options, leftover)
+
+
+    def execute_skylab(self):
+        """Execute 'atest host list' with --skylab."""
+        inventory_repo = skylab_utils.InventoryRepo(self.inventory_repo_dir)
+        inventory_repo.initialize()
+        lab = text_manager.load_lab(inventory_repo.get_data_dir())
+
+        # TODO(nxia): support filtering on run-time labels and status.
+        return device.get_devices(
+            lab,
+            'duts',
+            self.environment,
+            label_map=self.label_map,
+            hostnames=self.hosts,
+            locked=self.locked,
+            unlocked=self.unlocked)
 
 
     def execute(self):
         """Execute 'atest host list'."""
+        if self.skylab:
+            return self.execute_skylab()
+
         filters = {}
         check_results = {}
         if self.hosts:
@@ -200,17 +271,23 @@ class host_list(action_common.atest_list, host):
 
         @param results: the results to be printed.
         """
-        if results:
+        if results and not self.skylab:
             # Remove the platform from the labels.
             for result in results:
                 result['labels'] = self._cleanup_labels(result['labels'],
                                                         result['platform'])
+        if self.skylab and self.full_output:
+            print results
+            return
+
+        if self.skylab:
+            results = device.convert_to_autotest_hosts(results)
+
         if self.hostnames_only:
             self.print_list(results, key='hostname')
         else:
-            keys = ['hostname', 'status',
-                    'shard', 'locked', 'lock_reason', 'locked_by', 'platform',
-                    'labels']
+            keys = ['hostname', 'status', 'shard', 'locked', 'lock_reason',
+                    'locked_by', 'platform', 'labels']
             super(host_list, self).output(results, keys=keys)
 
 
@@ -257,7 +334,7 @@ class host_stat(host):
         for stats, acls, labels, attributes in results:
             print '-'*5
             self.print_fields(stats,
-                              keys=['hostname', 'platform',
+                              keys=['hostname', 'id', 'platform',
                                     'status', 'locked', 'locked_by',
                                     'lock_time', 'lock_reason', 'protection',])
             self.print_by_ids(acls, 'ACLs', line_before=True)
@@ -340,19 +417,24 @@ class BaseHostModCreate(host):
         self.host_ids = {}
         super(BaseHostModCreate, self).__init__()
         self.parser.add_option('-l', '--lock',
-                               help='Lock hosts',
-                               action='store_true')
-        self.parser.add_option('-u', '--unlock',
-                               help='Unlock hosts',
+                               help='Lock hosts.',
                                action='store_true')
         self.parser.add_option('-r', '--lock_reason',
-                               help='Reason for locking hosts',
+                               help='Reason for locking hosts.',
                                default='')
+        self.parser.add_option('-u', '--unlock',
+                               help='Unlock hosts.',
+                               action='store_true')
+        self.parser.add_option('--unlock-lock-id',
+                               help=('Unlock the lock with the lock-id. Only '
+                                     'useful when unlocking skylab hosts.'),
+                               default=None)
         self.parser.add_option('-p', '--protection', type='choice',
                                help=('Set the protection level on a host.  '
-                                     'Must be one of: %s' %
-                                     ', '.join('"%s"' % p
-                                               for p in self.protections)),
+                                     'Must be one of: %s. %s' %
+                                     (', '.join('"%s"' % p
+                                               for p in self.protections),
+                                      skylab_utils.MSG_INVALID_IN_SKYLAB)),
                                choices=self.protections)
         self._attributes = []
         self.parser.add_option('--attribute', '-i',
@@ -363,19 +445,29 @@ class BaseHostModCreate(host):
                                      'be unset by providing an empty value.'),
                                action='append')
         self.parser.add_option('-b', '--labels',
-                               help='Comma separated list of labels')
+                               help=('Comma separated list of labels. '
+                                     'When --skylab is provided, a label must '
+                                     'be in the format of label-key:label-value'
+                                     ' (e.g., board:lumpy).'))
         self.parser.add_option('-B', '--blist',
                                help='File listing the labels',
                                type='string',
                                metavar='LABEL_FLIST')
         self.parser.add_option('-a', '--acls',
-                               help='Comma separated list of ACLs')
+                               help=('Comma separated list of ACLs. %s' %
+                                     skylab_utils.MSG_INVALID_IN_SKYLAB))
         self.parser.add_option('-A', '--alist',
-                               help='File listing the acls',
+                               help=('File listing the acls. %s' %
+                                     skylab_utils.MSG_INVALID_IN_SKYLAB),
                                type='string',
                                metavar='ACL_FLIST')
         self.parser.add_option('-t', '--platform',
-                               help='Sets the platform label')
+                               help=('Sets the platform label. This is '
+                                     'deprecated for --skylab. Please set '
+                                     'platform in labels (e.g., '
+                                     '-b platform:platform_name).'))
+
+        self.add_skylab_options()
 
 
     def parse(self):
@@ -393,6 +485,18 @@ class BaseHostModCreate(host):
                                                              req_items='hosts')
 
         self._parse_lock_options(options)
+
+        self.label_map = None
+        if self.skylab:
+            # TODO(nxia): drop these flags when all hosts are migrated to skylab
+            if (options.protection or options.acls or options.alist or
+                options.platform):
+                self.invalid_syntax(
+                        '--protection, --acls, --alist or --platform is not '
+                        'supported with --skylab.')
+
+            if self.labels:
+                self.label_map = device.convert_to_label_map(self.labels)
 
         if options.protection:
             self.data['protection'] = options.protection
@@ -508,7 +612,8 @@ class host_mod(BaseHostModCreate):
                                help='Forcefully lock\unlock a host',
                                action='store_true')
         self.parser.add_option('--remove_acls',
-                               help='Remove all active acls.',
+                               help=('Remove all active acls. %s' %
+                                     skylab_utils.MSG_INVALID_IN_SKYLAB),
                                action='store_true')
         self.parser.add_option('--remove_labels',
                                help='Remove all labels.',
@@ -522,14 +627,72 @@ class host_mod(BaseHostModCreate):
         if options.force_modify_locking:
              self.data['force_modify_locking'] = True
 
+        if self.skylab and options.remove_acls:
+            # TODO(nxia): drop the flag when all hosts are migrated to skylab
+            self.invalid_syntax('--remove_acls is not supported with --skylab.')
+
         self.remove_acls = options.remove_acls
         self.remove_labels = options.remove_labels
 
         return (options, leftover)
 
 
+    def execute_skylab(self):
+        """Execute atest host mod with --skylab.
+
+        @return A list of hostnames which have been successfully modified.
+        """
+        inventory_repo = skylab_utils.InventoryRepo(self.inventory_repo_dir)
+        inventory_repo.initialize()
+        data_dir = inventory_repo.get_data_dir()
+        lab = text_manager.load_lab(data_dir)
+
+        locked_by = None
+        if self.lock:
+            locked_by = inventory_repo.git_repo.config('user.email')
+
+        successes = []
+        for hostname in self.hosts:
+            try:
+                device.modify(
+                        lab,
+                        'duts',
+                        hostname,
+                        self.environment,
+                        lock=self.lock,
+                        locked_by=locked_by,
+                        lock_reason = self.lock_reason,
+                        unlock=self.unlock,
+                        unlock_lock_id=self.unlock_lock_id,
+                        attributes=self.attributes,
+                        remove_labels=self.remove_labels,
+                        label_map=self.label_map)
+                successes.append(hostname)
+            except device.SkylabDeviceActionError as e:
+                print('Cannot modify host %s: %s' % (hostname, e))
+
+        if successes:
+            text_manager.dump_lab(data_dir, lab)
+
+            status = inventory_repo.git_repo.status()
+            if not status:
+                print('Nothing is changed for hosts %s.' % successes)
+                return []
+
+            message = skylab_utils.construct_commit_message(
+                    'Modify %d hosts.\n\n%s' % (len(successes), successes))
+            self.change_number = inventory_repo.upload_change(
+                    message, draft=self.draft, dryrun=self.dryrun,
+                    submit=self.submit)
+
+        return successes
+
+
     def execute(self):
         """Execute 'atest host mod'."""
+        if self.skylab:
+            return self.execute_skylab()
+
         successes = []
         for host in self.execute_rpc('get_hosts', hostname__in=self.hosts):
             self.host_ids[host['hostname']] = host['id']
@@ -573,6 +736,11 @@ class host_mod(BaseHostModCreate):
         """
         for msg in self.messages:
             self.print_wrapped(msg, hosts)
+
+        if hosts and self.skylab:
+            print ('Modified hosts: %s.' % ', '.join(hosts))
+            if self.skylab and not self.dryrun and not self.submit:
+                print (skylab_utils.get_cl_message(self.change_number))
 
 
 class HostInfo(object):
@@ -666,13 +834,9 @@ class host_create(BaseHostModCreate):
         try:
             if bin_utils.ping(host, tries=1, deadline=1) == 0:
                 serials = self.attributes.get('serials', '').split(',')
-                if serials and len(serials) > 1:
-                    host_dut = hosts.create_testbed(machine,
-                                                    adb_serials=serials)
-                else:
-                    adb_serial = self.attributes.get('serials')
-                    host_dut = hosts.create_host(machine,
-                                                 adb_serial=adb_serial)
+                adb_serial = self.attributes.get('serials')
+                host_dut = hosts.create_host(machine,
+                                             adb_serial=adb_serial)
 
                 info = HostInfo(host, host_dut.get_platform(),
                                 host_dut.get_labels())
@@ -719,8 +883,53 @@ class host_create(BaseHostModCreate):
             self._set_attributes(host, self.attributes)
 
 
+    def execute_skylab(self):
+        """Execute atest host create with --skylab.
+
+        @return A list of hostnames which have been successfully created.
+        """
+        inventory_repo = skylab_utils.InventoryRepo(self.inventory_repo_dir)
+        inventory_repo.initialize()
+        data_dir = inventory_repo.get_data_dir()
+        lab = text_manager.load_lab(data_dir)
+
+        locked_by = None
+        if self.lock:
+            locked_by = inventory_repo.git_repo.config('user.email')
+
+        successes = []
+        for hostname in self.hosts:
+            try:
+                device.create(
+                        lab,
+                        'duts',
+                        hostname,
+                        self.environment,
+                        lock=self.lock,
+                        locked_by=locked_by,
+                        lock_reason = self.lock_reason,
+                        attributes=self.attributes,
+                        label_map=self.label_map)
+                successes.append(hostname)
+            except device.SkylabDeviceActionError as e:
+                print('Cannot create host %s: %s' % (hostname, e))
+
+        if successes:
+            text_manager.dump_lab(data_dir, lab)
+            message = skylab_utils.construct_commit_message(
+                    'Create %d hosts.\n\n%s' % (len(successes), successes))
+            self.change_number = inventory_repo.upload_change(
+                    message, draft=self.draft, dryrun=self.dryrun,
+                    submit=self.submit)
+
+        return successes
+
+
     def execute(self):
         """Execute 'atest host create'."""
+        if self.skylab:
+            return self.execute_skylab()
+
         successful_hosts = []
         for host in self.hosts:
             try:

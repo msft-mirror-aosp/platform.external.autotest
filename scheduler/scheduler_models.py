@@ -54,6 +54,10 @@ _base_url = None
 _db = None
 _drone_manager = None
 
+RESPECT_STATIC_LABELS = global_config.global_config.get_config_value(
+        'SKYLAB', 'respect_static_labels', type=bool, default=False)
+
+
 def initialize():
     global _db
     _db = scheduler_lib.ConnectionManager().get_connection()
@@ -177,7 +181,8 @@ class DBObject(object):
 
 
     def _fetch_row_from_db(self, row_id):
-        sql = 'SELECT * FROM %s WHERE ID=%%s' % self.__table
+        fields = ', '.join(self._fields)
+        sql = 'SELECT %s FROM %s WHERE ID=%%s' % (fields, self.__table)
         rows = _db.execute(sql, (row_id,))
         if not rows:
             raise DBError("row not found (table=%s, row id=%s)"
@@ -308,8 +313,13 @@ class DBObject(object):
         """
         order_by = cls._prefix_with(order_by, 'ORDER BY ')
         where = cls._prefix_with(where, 'WHERE ')
-        query = ('SELECT %(table)s.* FROM %(table)s %(joins)s '
-                 '%(where)s %(order_by)s' % {'table' : cls._table_name,
+        fields = []
+        for field in cls._fields:
+            fields.append('%s.%s' % (cls._table_name, field))
+
+        query = ('SELECT %(fields)s FROM %(table)s %(joins)s '
+                 '%(where)s %(order_by)s' % {'fields' : ', '.join(fields),
+                                             'table' : cls._table_name,
                                              'joins' : joins,
                                              'where' : where,
                                              'order_by' : order_by})
@@ -363,21 +373,65 @@ class Host(DBObject):
         self.update_field('status',status)
 
 
+    def _get_labels_with_platform(self, non_static_rows, static_rows):
+        """Helper function to fetch labels & platform for a host."""
+        if not RESPECT_STATIC_LABELS:
+            return non_static_rows
+
+        combined_rows = []
+        replaced_labels = _db.execute(
+                'SELECT label_id FROM afe_replaced_labels')
+        replaced_label_ids = {l[0] for l in replaced_labels}
+
+        # We respect afe_labels more, which means:
+        #   * if non-static labels are replaced, we find its replaced static
+        #   labels from afe_static_labels by label name.
+        #   * if non-static labels are not replaced, we keep it.
+        #   * Drop static labels which don't have reference non-static labels.
+        static_label_names = []
+        for label_id, label_name, is_platform in non_static_rows:
+            if label_id not in replaced_label_ids:
+                combined_rows.append((label_id, label_name, is_platform))
+            else:
+                static_label_names.append(label_name)
+
+        # Only keep static labels who have replaced non-static labels.
+        for label_id, label_name, is_platform in static_rows:
+            if label_name in static_label_names:
+                combined_rows.append((label_id, label_name, is_platform))
+
+        return combined_rows
+
+
     def platform_and_labels(self):
         """
         Returns a tuple (platform_name, list_of_all_label_names).
         """
-        rows = _db.execute("""
-                SELECT afe_labels.name, afe_labels.platform
-                FROM afe_labels
-                INNER JOIN afe_hosts_labels ON
-                        afe_labels.id = afe_hosts_labels.label_id
-                WHERE afe_hosts_labels.host_id = %s
-                ORDER BY afe_labels.name
-                """, (self.id,))
+        template = ('SELECT %(label_table)s.id, %(label_table)s.name, '
+                    '%(label_table)s.platform FROM %(label_table)s INNER '
+                    'JOIN %(host_label_table)s '
+                    'ON %(label_table)s.id = %(host_label_table)s.%(column)s '
+                    'WHERE %(host_label_table)s.host_id = %(host_id)s '
+                    'ORDER BY %(label_table)s.name')
+        static_query = template % {
+                'host_label_table': 'afe_static_hosts_labels',
+                'label_table': 'afe_static_labels',
+                'column': 'staticlabel_id',
+                'host_id': self.id
+        }
+        non_static_query = template % {
+                'host_label_table': 'afe_hosts_labels',
+                'label_table': 'afe_labels',
+                'column': 'label_id',
+                'host_id': self.id
+        }
+        non_static_rows = _db.execute(non_static_query)
+        static_rows = _db.execute(static_query)
+
+        rows = self._get_labels_with_platform(non_static_rows, static_rows)
         platform = None
         all_labels = []
-        for label_name, is_platform in rows:
+        for _, label_name, is_platform in rows:
             if is_platform:
                 platform = label_name
             all_labels.append(label_name)
@@ -1111,8 +1165,7 @@ class Job(DBObject):
 
     def _next_group_name(self):
         """@returns a directory name to use for the next host group results."""
-        group_name = ''
-        group_count_re = re.compile(r'%sgroup(\d+)' % re.escape(group_name))
+        group_count_re = re.compile(r'group(\d+)')
         query = models.HostQueueEntry.objects.filter(
             job=self.id).values('execution_subdir').distinct()
         subdirs = (entry['execution_subdir'] for entry in query)
@@ -1122,7 +1175,7 @@ class Job(DBObject):
             next_id = max(ids) + 1
         else:
             next_id = 0
-        return '%sgroup%d' % (group_name, next_id)
+        return 'group%d' % (next_id,)
 
 
     def get_group_entries(self, queue_entry_from_group):
@@ -1164,9 +1217,10 @@ class Job(DBObject):
         can_verify = (queue_entry.host.protection !=
                          host_protections.Protection.DO_NOT_VERIFY)
         can_reboot = self.reboot_before != model_attributes.RebootBefore.NEVER
-        return (can_reboot and can_verify and (self.run_reset or
-                (self._should_run_cleanup(queue_entry) and
-                 self._should_run_verify(queue_entry))))
+        return (can_reboot and can_verify
+                and (self.run_reset
+                     or (self._should_run_cleanup(queue_entry)
+                         and self._should_run_verify(queue_entry))))
 
 
     def _should_run_provision(self, queue_entry):

@@ -12,8 +12,10 @@ GBM_BO_USE_SCANOUT = c_uint(1)
 GBM_BO_TRANSFER_READ = c_uint(1)
 GBM_MAX_PLANES = 4
 
+
 def __gbm_fourcc_code(a, b, c, d):
     return ord(a) | (ord(b) << 8) | (ord(c) << 16) | (ord(d) << 24)
+
 
 GBM_FORMAT_ARGB8888 = __gbm_fourcc_code("A", "R", "2", "4")
 GBM_LIBRARIES = ["libgbm.so", "libgbm.so.1"]
@@ -68,7 +70,6 @@ def loadGBM():
 
     if l is None:
         raise RuntimeError("Could not load GBM library.")
-        return None
 
     l.gbm_create_device.argtypes = [c_int]
     l.gbm_create_device.restype = POINTER(gbm_device)
@@ -99,6 +100,10 @@ class GBMBuffer(object):
     def __init__(self, library, buffer):
         self._l = library
         self._buffer = buffer
+
+    def __del__(self):
+        if self._l:
+            self._l.gbm_bo_destroy(self._buffer)
 
     @classmethod
     def fromFD(cls, device, fd, width, height, stride, bo_format, usage):
@@ -137,7 +142,8 @@ class GBMBuffer(object):
         if width == 0 or height == 0:
             raise RuntimeError("Map width and/or height is 0")
         map_p = self._l.gbm_bo_map(self._buffer, x, y, width, height, flags,
-                                   byref(stride_out), byref(self._map_p), plane)
+                                   byref(stride_out), byref(self._map_p),
+                                   plane)
         if stride_out is 0:
             raise RuntimeError("gbm_bo_map() stride is 0")
         if map_p is 0:
@@ -212,8 +218,8 @@ def crtcScreenshot(crtc_id=None):
         map_buffer = buffer_from_memory(map_void_p, map_bytes)
 
         # Make a copy of the bytes. Doing this is faster than the conversion,
-        # and is more likely to capture a consistent snapshot of the framebuffer
-        # contents, as a process may be writing to it.
+        # and is more likely to capture a consistent snapshot of the
+        # framebuffer contents, as a process may be writing to it.
         buffer_bytes = bytes(map_buffer)
 
         # Load the image, converting from the BGRX format to a PIL Image in RGB
@@ -223,6 +229,7 @@ def crtcScreenshot(crtc_id=None):
                 'RGB', (framebuffer.width, framebuffer.height), buffer_bytes,
                 'raw', 'BGRX', stride_bytes.value, 1)
         bo.unmap(bo._map_p)
+        del bo
         return image
 
     raise RuntimeError(
@@ -256,4 +263,5 @@ def crtcGetPixel(x, y, crtc_id=None):
     map_int_p = cast(map_void_p, POINTER(c_int))
     pixel = _bgrx24(map_int_p[0])
     bo.unmap(bo._map_p)
+    del bo
     return pixel

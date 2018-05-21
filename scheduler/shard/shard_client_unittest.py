@@ -4,6 +4,7 @@
 
 import datetime
 import mox
+import time
 import unittest
 
 import common
@@ -11,10 +12,12 @@ import common
 from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.afe import frontend_test_utils
 from autotest_lib.frontend.afe import models
+from autotest_lib.frontend.afe import model_logic
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.scheduler.shard import shard_client
+from django.core.exceptions import MultipleObjectsReturned
 
 
 class ShardClientTest(mox.MoxTestBase,
@@ -32,6 +35,10 @@ class ShardClientTest(mox.MoxTestBase,
                 'SHARD', 'global_afe_hostname', self.GLOBAL_AFE_HOSTNAME)
 
         self._frontend_common_setup(fill_data=False)
+
+
+    def tearDown(self):
+        self.mox.UnsetStubs()
 
 
     def setup_mocks(self):
@@ -358,7 +365,42 @@ class ShardClientTest(mox.MoxTestBase,
 
         self.mox.ReplayAll()
         sut = shard_client.get_shard_client()
-        sut.loop()
+        sut.loop(None)
+
+        self.mox.VerifyAll()
+
+
+    def testLoopWithDeadline(self):
+        """Test looping over heartbeats with a timeout."""
+        self.setup_mocks()
+        self.setup_global_config()
+        self.mox.StubOutWithMock(time, 'time')
+
+        global_config.global_config.override_config_value(
+                'SHARD', 'heartbeat_pause_sec', '0.01')
+        time.time().AndReturn(1516894000)
+        time.time().AndReturn(1516894000)
+        self.expect_heartbeat()
+        # Set expectation that heartbeat took 1 minute.
+        time.time().MultipleTimes().AndReturn(1516894000 + 60)
+
+        self.mox.ReplayAll()
+        sut = shard_client.get_shard_client()
+        # 36 seconds
+        sut.loop(lifetime_hours=0.01)
+        self.mox.VerifyAll()
+
+    def test_remove_incorrect_hosts(self):
+        """Test _remove_incorrect_hosts with MultipleObjectsReturned."""
+        self.setup_mocks()
+        self.setup_global_config()
+        self.mox.StubOutWithMock(model_logic.ModelWithInvalidQuerySet, 'delete')
+        call = models.Host.objects.filter(id__in=[1]).delete()
+        call.AndRaise(MultipleObjectsReturned('e'))
+
+        self.mox.ReplayAll()
+        sut = shard_client.get_shard_client()
+        sut._remove_incorrect_hosts(incorrect_host_ids=[1])
 
         self.mox.VerifyAll()
 

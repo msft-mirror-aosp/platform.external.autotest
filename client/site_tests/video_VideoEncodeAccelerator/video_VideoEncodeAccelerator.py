@@ -12,6 +12,8 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.cros import chrome_binary_test
+from autotest_lib.client.cros.video import device_capability
+from autotest_lib.client.cros.video import encoder_utils
 from autotest_lib.client.cros.video import helper_logger
 
 DOWNLOAD_BASE = 'http://commondatastorage.googleapis.com/chromiumos-test-assets-public/'
@@ -109,7 +111,8 @@ class video_VideoEncodeAccelerator(chrome_binary_test.ChromeBinaryTest):
 
     @helper_logger.video_log_wrapper
     @chrome_binary_test.nuke_chrome
-    def run_once(self, in_cloud, streams, profile, gtest_filter=None):
+    def run_once(self, in_cloud, streams, profile, capability,
+                 gtest_filter=None):
         """Runs video_encode_accelerator_unittest on the streams.
 
         @param in_cloud: Input file needs to be downloaded first.
@@ -119,6 +122,7 @@ class video_VideoEncodeAccelerator(chrome_binary_test.ChromeBinaryTest):
 
         @raises error.TestFail for video_encode_accelerator_unittest failures.
         """
+        device_capability.DeviceCapability().ensure_capability(capability)
 
         last_test_failure = None
         for path, width, height, bit_rate in streams:
@@ -136,6 +140,8 @@ class video_VideoEncodeAccelerator(chrome_binary_test.ChromeBinaryTest):
                     input_path, width, height, profile, output_path, bit_rate))
             cmd_line_list.append(helper_logger.chrome_vmodule_flag())
             cmd_line_list.append('--ozone-platform=gbm')
+            if encoder_utils.has_broken_flush():
+                cmd_line_list.append('--disable_flush')
 
             # Command line |gtest_filter| can override get_filter_option().
             predefined_filter = self.get_filter_option(profile, (width, height))

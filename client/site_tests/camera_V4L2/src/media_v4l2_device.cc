@@ -5,6 +5,7 @@
 #include "media_v4l2_device.h"
 
 #include <assert.h>
+#include <poll.h>
 #include <time.h>
 #include <sys/stat.h>
 
@@ -31,8 +32,12 @@ V4L2Device::V4L2Device(const char* dev_name,
 }
 
 V4L2Device::~V4L2Device() {
-  if (initialized_)
+  if (initialized_) {
+    if (stream_on_) {
+      StopCapture();
+    }
     UninitDevice();
+  }
   CloseDevice();
 }
 
@@ -90,18 +95,6 @@ bool V4L2Device::InitDevice(IOMethod io,
                             ConstantFramerate constant_framerate,
                             uint32_t num_skip_frames) {
   io_ = io;
-  // Crop/Format setting could live across session.
-  // We should always initialized them when supported.
-  v4l2_cropcap cropcap;
-  memset(&cropcap, 0, sizeof(cropcap));
-  if (GetCropCap(&cropcap)) {
-    v4l2_crop crop;
-    memset(&crop, 0, sizeof(crop));
-    // Use default capture rectangle.
-    crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    crop.c = cropcap.defrect;
-    SetCrop(&crop);
-  }
 
   v4l2_format fmt;
   if (!GetV4L2Format(&fmt))
@@ -195,6 +188,9 @@ bool V4L2Device::InitDevice(IOMethod io,
 }
 
 bool V4L2Device::UninitDevice() {
+  if (!initialized_) {
+    return true;
+  }
   v4l2_requestbuffers req;
   memset(&req, 0, sizeof(req));
   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -243,10 +239,13 @@ bool V4L2Device::StartCapture() {
     printf("<<< Error: VIDIOC_STREAMON on %s.>>>\n", dev_name_);
     return false;
   }
+  stream_on_ = true;
 
   uint32_t buf_index, data_size;
   for (size_t i = 0; i < num_skip_frames_; i++) {
-    if (!ReadOneFrame(&buf_index, &data_size))
+    int ret;
+    while ((ret = ReadOneFrame(&buf_index, &data_size)) == 0);
+    if (ret < 0)
       return false;
     if (!EnqueueBuffer(buf_index))
       return false;
@@ -256,6 +255,9 @@ bool V4L2Device::StartCapture() {
 }
 
 bool V4L2Device::StopCapture() {
+  if (!stream_on_) {
+    return true;
+  }
   v4l2_buf_type type;
   switch (io_) {
     case IO_METHOD_MMAP:
@@ -270,6 +272,7 @@ bool V4L2Device::StopCapture() {
       printf("<<< Error: IO method should be defined.>>>\n");
       return false;
   }
+  stream_on_ = false;
   return true;
 }
 
@@ -302,10 +305,6 @@ bool V4L2Device::Run(uint32_t time_in_sec) {
   // All resolutions should have at least 1 fps.
   float actual_fps = static_cast<float>(GetNumFrames()) / time_in_sec;
   printf("\n<<< Info: Actual fps is %f on %s.>>>\n", actual_fps, dev_name_);
-  if (actual_fps < 1.0) {
-    printf("<<< Error: The actual fps is too low on %s.>>>\n", dev_name_);
-    return false;
-  }
   return true;
 }
 
@@ -326,25 +325,21 @@ int32_t V4L2Device::DoIoctl(int32_t request, void* arg) {
 // return 0 : EAGAIN
 // negative : error
 int32_t V4L2Device::ReadOneFrame(uint32_t* buffer_index, uint32_t* data_size) {
-  fd_set fds;
-  FD_ZERO(&fds);
-  FD_SET(fd_, &fds);
-  timeval tv;
-  tv.tv_sec = 2;  // Normal timeout will be 2 seconds.
-  tv.tv_usec = 0;
-  int32_t r = select(fd_ + 1, &fds, NULL, NULL, &tv);
-  if (-1 == r) {
-    if (EINTR == errno)  // If interrupted, try again.
-      return 0;
-    printf("<<< Error: select() failed on %s.>>>\n", dev_name_);
+  const int kCaptureTimeoutMs = 1000;
+  pollfd device_pfd = {};
+  device_pfd.fd = fd_;
+  device_pfd.events = POLLIN;
+  const int result = poll(&device_pfd, 1, kCaptureTimeoutMs);
+  if (result < 0) {
+    printf("<<< Error: poll() failed on %s: %s.>>>\n", dev_name_, strerror(errno));
     return -1;
   }
-  if (0 == r) {
-    printf("<<< Error: select() timeout on %s.>>>\n", dev_name_);
-    return -1;
+  if (result == 0) {
+    return 0;
   }
 
   v4l2_buffer buf;
+  int64_t ts;
   memset(&buf, 0, sizeof(buf));
   switch (io_) {
     case IO_METHOD_MMAP:
@@ -362,14 +357,13 @@ int32_t V4L2Device::ReadOneFrame(uint32_t* buffer_index, uint32_t* data_size) {
             return -2;
         }
       }
-      // We cannot use the timestamp in v4l2_buffer because
-      // 1. The time delta between the first and the second frame may be bigger
-      //    because it includes sensor initialization time.
-      // 2. Even if we ignore the first frame timestamp, v4l2_buffer timestamps
-      //    on Kevin are totally wrong for unknown reasons.
-      // 3. Kernel version <= 3.18 doesn't have the fix to disable hardware
-      //    timestamp. https://patchwork.kernel.org/patch/6874491/
-      frame_timestamps_.push_back(Now());
+      // For checking constant frame rate, we have to use HW timestamp from
+      // v4l2_buffer to get more stable timestamp.
+      // Since kerenel after 3.18 have a fix to disable hardware timestamp
+      // (https://patchwork.kernel.org/patch/6874491/), we have to manually
+      // enable HW timestamp via /sys/module/uvcvideo/parameters/hwtimestamps.
+      ts = buf.timestamp.tv_sec * 1000000000LL + buf.timestamp.tv_usec * 1000;
+      frame_timestamps_.push_back(ts);
       CHECK(buf.index < num_buffers_);
       // TODO: uvcvideo driver ignores this field. This is negligible,
       // so disabling this for now until we get a fix into the upstream driver.
@@ -390,7 +384,8 @@ int32_t V4L2Device::ReadOneFrame(uint32_t* buffer_index, uint32_t* data_size) {
             return -2;
         }
       }
-      frame_timestamps_.push_back(Now());
+      ts = buf.timestamp.tv_sec * 1000000000LL + buf.timestamp.tv_usec * 1000;
+      frame_timestamps_.push_back(ts);
       CHECK(buf.index < num_buffers_);
       break;
     default:
@@ -518,12 +513,13 @@ bool V4L2Device::InitUserPtrIO(uint32_t buffer_size) {
     return false;
   }
 
-  if (!AllocateBuffer(4))
+  if (!AllocateBuffer(req.count))
     return false;
 
-  for (num_buffers_ = 0; num_buffers_ < min_buffers_; ++num_buffers_) {
+  for (num_buffers_ = 0; num_buffers_ < req.count; ++num_buffers_) {
     v4l2_buffers_[num_buffers_].length = buffer_size;
     v4l2_buffers_[num_buffers_].start = memalign(page_size, buffer_size);
+
     if (!v4l2_buffers_[num_buffers_].start) {
       printf("<<< Error: Out of memory.>>>\n");
       return false;

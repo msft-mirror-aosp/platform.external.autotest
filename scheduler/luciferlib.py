@@ -7,17 +7,21 @@
 import os
 import logging
 import pipes
+import socket
+import subprocess
 
 import common
 from autotest_lib.client.bin import local_host
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.server.hosts import ssh_host
+from autotest_lib.frontend.afe import models
 
 _config = global_config.global_config
 _SECTION = 'LUCIFER'
 
 # TODO(crbug.com/748234): Move these to shadow_config.ini
 # See also drones.AUTOTEST_INSTALL_DIR
+_ENV = '/usr/bin/env'
 _AUTOTEST_DIR = '/usr/local/autotest'
 _JOB_REPORTER_PATH = os.path.join(_AUTOTEST_DIR, 'bin', 'job_reporter')
 
@@ -26,63 +30,165 @@ logger = logging.getLogger(__name__)
 
 def is_lucifer_enabled():
     """Return True if lucifer is enabled in the config."""
-    return _config.get_config_value(_SECTION, 'send_jobs_to_lucifer',
-                                    type=bool)
+    return True
+
+
+def is_enabled_for(level):
+    """Return True if lucifer is enabled for the given level.
+
+    @param level: string, e.g. 'PARSING', 'GATHERING'
+    """
+    if not is_lucifer_enabled():
+        return False
+    config_level = (_config.get_config_value(_SECTION, 'lucifer_level')
+                    .upper())
+    return level.upper() == config_level
 
 
 def is_lucifer_owned(job):
-    """Return True if job is already sent to lucifer."""
+    """Return True if job is already sent to lucifer.
+
+    @param job: frontend.afe.models.Job instance
+    """
+    assert isinstance(job, models.Job)
     return hasattr(job, 'jobhandoff')
 
 
-def spawn_job_handler(manager, job, autoserv_exit, pidfile_id=None):
+def is_lucifer_owned_by_id(job_id):
+    """Return True if job is already sent to lucifer."""
+    return models.JobHandoff.objects.filter(job_id=job_id).exists()
+
+
+def is_split_job(hqe_id):
+    """Return True if HQE is part of a job with HQEs in a different group.
+
+    For examples if the given HQE have execution_subdir=foo and the job
+    has an HQE with execution_subdir=bar, then return True.  The only
+    situation where this happens is if provisioning in a multi-DUT job
+    fails, the HQEs will each be in their own group.
+
+    See https://bugs.chromium.org/p/chromium/issues/detail?id=811877
+
+    @param hqe_id: HQE id
+    """
+    hqe = models.HostQueueEntry.objects.get(id=hqe_id)
+    hqes = hqe.job.hostqueueentry_set.all()
+    try:
+        _get_consistent_execution_path(hqes)
+    except ExecutionPathError:
+        return True
+    return False
+
+
+# TODO(crbug.com/748234): This is temporary to enable toggling
+# lucifer rollouts with an option.
+def spawn_starting_job_handler(manager, job):
     """Spawn job_reporter to handle a job.
 
     Pass all arguments by keyword.
 
-    @param manager: DroneManager instance
+    @param manager: scheduler.drone_manager.DroneManager instance
+    @param job: Job instance
+    @returns: Drone instance
+    """
+    manager = _DroneManager(manager)
+    drone = manager.pick_drone_to_use()
+    results_dir = _results_dir(manager, job)
+    args = [
+            _JOB_REPORTER_PATH,
+
+            # General configuration
+            '--jobdir', _get_jobdir(),
+            '--run-job-path', _get_run_job_path(),
+
+            # Job specific
+            '--lucifer-level', 'STARTING',
+            '--job-id', str(job.id),
+            '--results-dir', results_dir,
+
+            # STARTING specific
+            '--execution-tag', _working_directory(job),
+    ]
+    if _get_gcp_creds():
+        args = [
+                'GOOGLE_APPLICATION_CREDENTIALS=%s'
+                % pipes.quote(_get_gcp_creds()),
+        ] + args
+    drone.spawn(_ENV, args,
+                output_file=_prepare_output_file(drone, results_dir))
+    return drone
+
+
+# TODO(crbug.com/748234): This is temporary to enable toggling
+# lucifer rollouts with an option.
+def spawn_parsing_job_handler(manager, job, autoserv_exit, pidfile_id=None):
+    """Spawn job_reporter to handle a job.
+
+    Pass all arguments by keyword.
+
+    @param manager: scheduler.drone_manager.DroneManager instance
     @param job: Job instance
     @param autoserv_exit: autoserv exit status
     @param pidfile_id: PidfileId instance
+    @returns: Drone instance
     """
     manager = _DroneManager(manager)
     if pidfile_id is None:
         drone = manager.pick_drone_to_use()
     else:
         drone = manager.get_drone_for_pidfile(pidfile_id)
-    args = [
-            '--run-job-path', _get_run_job_path(),
-            '--jobdir', _get_jobdir(),
-            '--job-id', str(job.id),
-            '--autoserv-exit', str(autoserv_exit),
-    ]
-    # lucifer_run_job arguments
     results_dir = _results_dir(manager, job)
-    args.extend([
-            '--',
-            '-resultsdir', results_dir,
-            '-autotestdir', _AUTOTEST_DIR,
-            '-watcherpath', _get_watcher_path(),
-    ])
+    args = [
+            _JOB_REPORTER_PATH,
+
+            # General configuration
+            '--jobdir', _get_jobdir(),
+            '--run-job-path', _get_run_job_path(),
+
+            # Job specific
+            '--job-id', str(job.id),
+            '--lucifer-level', 'GATHERING',
+            '--autoserv-exit', str(autoserv_exit),
+            '--results-dir', results_dir,
+    ]
+    if _get_gcp_creds():
+        args = [
+                'GOOGLE_APPLICATION_CREDENTIALS=%s'
+                % pipes.quote(_get_gcp_creds()),
+        ] + args
     output_file = os.path.join(results_dir, 'job_reporter_output.log')
-    drone.spawn(_JOB_REPORTER_PATH, args, output_file=output_file)
+    drone.spawn(_ENV, args, output_file=output_file)
+    return drone
+
+
+_LUCIFER_DIR = 'lucifer'
+
+
+def _prepare_output_file(drone, results_dir):
+    logdir = os.path.join(results_dir, _LUCIFER_DIR)
+    drone.run('mkdir', ['-p', logdir])
+    return os.path.join(logdir, 'job_reporter_output.log')
 
 
 def _get_jobdir():
-    return _config.get_config_value(_SECTION, 'jobdir', type=str)
+    return _config.get_config_value(_SECTION, 'jobdir')
 
 
 def _get_run_job_path():
     return os.path.join(_get_binaries_path(), 'lucifer_run_job')
 
 
-def _get_watcher_path():
-    return os.path.join(_get_binaries_path(), 'lucifer_watcher')
-
-
 def _get_binaries_path():
     """Get binaries dir path from config.."""
-    return _config.get_config_value(_SECTION, 'binaries_path', type=str)
+    return _config.get_config_value(_SECTION, 'binaries_path')
+
+
+def _get_gcp_creds():
+    """Return path to GCP service account credentials.
+
+    This is the empty string by default, if no credentials will be used.
+    """
+    return _config.get_config_value(_SECTION, 'gcp_creds', default='')
 
 
 class _DroneManager(object):
@@ -94,6 +200,17 @@ class _DroneManager(object):
         @param old_manager: old style DroneManager
         """
         self._manager = old_manager
+
+    def get_num_tests_failed(self, pidfile_id):
+        """Return the number of tests failed for autoserv by pidfile.
+
+        @param pidfile_id: PidfileId instance.
+        @returns: int (-1 if missing)
+        """
+        state = self._manager.get_pidfile_contents(pidfile_id)
+        if state.num_tests_failed is None:
+            return -1
+        return state.num_tests_failed
 
     def get_drone_for_pidfile(self, pidfile_id):
         """Return a drone to use from a pidfile.
@@ -153,16 +270,43 @@ def _working_directory(job):
 def _get_consistent_execution_path(execution_entries):
     first_execution_path = execution_entries[0].execution_path()
     for execution_entry in execution_entries[1:]:
-        assert execution_entry.execution_path() == first_execution_path, (
-            '%s (%s) != %s (%s)' % (execution_entry.execution_path(),
-                                    execution_entry,
-                                    first_execution_path,
-                                    execution_entries[0]))
+        if execution_entry.execution_path() != first_execution_path:
+            raise ExecutionPathError(
+                    '%s (%s) != %s (%s)'
+                    % (execution_entry.execution_path(),
+                       execution_entry,
+                       first_execution_path,
+                       execution_entries[0]))
     return first_execution_path
+
+
+class ExecutionPathError(Exception):
+    """Raised by _get_consistent_execution_path()."""
 
 
 class Drone(object):
     """Simplified drone API."""
+
+    def hostname(self):
+        """Return the hostname of the drone."""
+
+    def run(self, path, args):
+        """Run a command synchronously.
+
+        path must be an absolute path.  path may be on a remote machine.
+        args is a list of arguments.
+
+        The process may or may not have its own session.  The process
+        should be short-lived.  It should not try to obtain a
+        controlling terminal.
+
+        The new process will have stdin, stdout, and stderr opened to
+        /dev/null.
+
+        This method intentionally has a very restrictive API.  It should
+        be used to perform setup local to the drone, when the drone may
+        be a remote machine.
+        """
 
     def spawn(self, path, args, output_file):
         """Spawn an independent process.
@@ -184,6 +328,14 @@ class Drone(object):
 class LocalDrone(Drone):
     """Local implementation of Drone."""
 
+    def hostname(self):
+        return socket.gethostname()
+
+    def run(self, path, args):
+        with open(os.devnull, 'r+b') as null:
+            subprocess.call([path] + args, stdin=null,
+                            stdout=null, stderr=null)
+
     def spawn(self, path, args, output_file):
         _spawn(path, [path] + args, output_file)
 
@@ -195,6 +347,15 @@ class RemoteDrone(Drone):
         if not isinstance(host, ssh_host.SSHHost):
             raise TypeError('RemoteDrone must be passed an SSHHost')
         self._host = host
+
+    def hostname(self):
+        return self._host.hostname
+
+    def run(self, path, args):
+        cmd_parts = [path] + args
+        safe_cmd = ' '.join(pipes.quote(part) for part in cmd_parts)
+        self._host.run('%(cmd)s <%(null)s >%(null)s 2>&1'
+                       % {'cmd': safe_cmd, 'null': os.devnull})
 
     def spawn(self, path, args, output_file):
         cmd_parts = [path] + args
@@ -222,8 +383,13 @@ def _spawn(path, argv, output_file):
     """
     logger.info('Spawning %r, %r, %r', path, argv, output_file)
     assert all(isinstance(arg, basestring) for arg in argv)
-    if os.fork():
+    pid = os.fork()
+    if pid:
+        os.waitpid(pid, 0)
         return
+    # Double fork to reparent to init since monitor_db does not reap.
+    if os.fork():
+        os._exit(os.EX_OK)
     os.setsid()
     null_fd = os.open(os.devnull, os.O_RDONLY)
     os.dup2(null_fd, 0)

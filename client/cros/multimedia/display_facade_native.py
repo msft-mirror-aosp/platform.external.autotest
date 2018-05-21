@@ -63,7 +63,7 @@ class DisplayFacadeNative(object):
         @return array of dict for display info.
         """
         extension = self._resource.get_extension(
-                constants.MULTIMEDIA_TEST_EXTENSION)
+                constants.DISPLAY_TEST_EXTENSION)
         extension.ExecuteJavaScript('window.__display_info = null;')
         extension.ExecuteJavaScript(
                 "chrome.system.display.getInfo(function(info) {"
@@ -126,6 +126,18 @@ class DisplayFacadeNative(object):
         return display['rotation']
 
 
+    def get_display_notifications(self):
+        """Gets the display notifications
+
+        @return: Returns a list of display related notifications only.
+        """
+        display_notifications = []
+        for notification in self._resource.get_visible_notifications():
+            if notification['id'] == 'chrome://settings/display':
+                display_notifications.append(notification)
+        return display_notifications
+
+
     def set_display_rotation(self, display_id, rotation,
                              delay_before_rotation=0, delay_after_rotation=0):
         """Sets the display rotation for the specified display.
@@ -137,15 +149,15 @@ class DisplayFacadeNative(object):
         """
         time.sleep(delay_before_rotation)
         extension = self._resource.get_extension(
-                constants.MULTIMEDIA_TEST_EXTENSION)
+                constants.DISPLAY_TEST_EXTENSION)
         extension.ExecuteJavaScript(
                 """
                 window.__set_display_rotation_has_error = null;
                 chrome.system.display.setDisplayProperties('%(id)s',
                     {"rotation": %(rotation)d}, () => {
-                    if (runtime.lastError) {
+                    if (chrome.runtime.lastError) {
                         console.error('Failed to set display rotation',
-                            runtime.lastError);
+                            chrome.runtime.lastError);
                         window.__set_display_rotation_has_error = "failure";
                     } else {
                         window.__set_display_rotation_has_error = "success";
@@ -157,8 +169,12 @@ class DisplayFacadeNative(object):
         utils.wait_for_value(lambda: (
                 extension.EvaluateJavaScript(
                     'window.__set_display_rotation_has_error') != None),
-                expected_value="success")
+                expected_value=True)
         time.sleep(delay_after_rotation)
+        result = extension.EvaluateJavaScript(
+                'window.__set_display_rotation_has_error')
+        if result != 'success':
+            raise RuntimeError('Failed to set display rotation: %r' % result)
 
 
     def get_available_resolutions(self, display_id):
@@ -166,9 +182,14 @@ class DisplayFacadeNative(object):
 
         @return a list of (width, height) tuples.
         """
-        modes = self.get_display_modes(display_id)
+        display = self._get_display_by_id(display_id)
+        modes = display['modes']
         if 'widthInNativePixels' not in modes[0]:
             raise RuntimeError('Cannot find widthInNativePixels attribute')
+        if display['isInternal']:
+            logging.info("Getting resolutions of internal display")
+            return list(set([(mode['width'], mode['height']) for mode in
+                             modes]))
         return list(set([(mode['widthInNativePixels'],
                           mode['heightInNativePixels']) for mode in modes]))
 
@@ -208,7 +229,7 @@ class DisplayFacadeNative(object):
         """
 
         extension = self._resource.get_extension(
-                constants.MULTIMEDIA_TEST_EXTENSION)
+                constants.DISPLAY_TEST_EXTENSION)
         extension.ExecuteJavaScript(
                 """
                 window.__set_resolution_progress = null;
@@ -219,8 +240,6 @@ class DisplayFacadeNative(object):
                             for (var m of info['modes']) {
                                 if (m['width'] == %(width)d &&
                                     m['height'] == %(height)d) {
-                                    window.__set_resolution_progress =
-                                        "found_mode";
                                     mode = m;
                                     break;
                                 }
@@ -237,9 +256,9 @@ class DisplayFacadeNative(object):
 
                     chrome.system.display.setDisplayProperties('%(id)s',
                         {'displayMode': mode}, () => {
-                            if (runtime.lastError) {
-                                window.__set_resolution_progress = "failed " +
-                                    runtime.lastError;
+                            if (chrome.runtime.lastError) {
+                                window.__set_resolution_progress = "failed: " +
+                                    chrome.runtime.lastError.message;
                             } else {
                                 window.__set_resolution_progress = "succeeded";
                             }
@@ -252,7 +271,11 @@ class DisplayFacadeNative(object):
         utils.wait_for_value(lambda: (
                 extension.EvaluateJavaScript(
                     'window.__set_resolution_progress') != None),
-                expected_value="success")
+                expected_value=True)
+        result = extension.EvaluateJavaScript(
+                'window.__set_resolution_progress')
+        if result != 'succeeded':
+            raise RuntimeError('Failed to set resolution: %r' % result)
 
 
     @_retry_display_call

@@ -17,7 +17,6 @@ import argparse
 import logging
 import os
 import tempfile
-import time
 
 import common
 from autotest_lib.client.bin import utils
@@ -30,6 +29,10 @@ TEST_JOB_ID = 123
 TEST_JOB_FOLDER = '123-debug_user'
 # Create a temp directory for functional tests. The directory is not under /tmp
 # for Moblab to be able to run the test.
+#But first, ensure that the containing directory exists:
+
+if not os.path.exists(lxc.DEFAULT_CONTAINER_PATH):
+    os.makedirs(lxc.DEFAULT_CONTAINER_PATH)
 TEMP_DIR = tempfile.mkdtemp(dir=lxc.DEFAULT_CONTAINER_PATH,
                             prefix='container_test_')
 RESULT_PATH = os.path.join(TEMP_DIR, 'results', str(TEST_JOB_ID))
@@ -341,7 +344,7 @@ def main(options):
     setup_base(TEMP_DIR)
     bucket = lxc.ContainerBucket(TEMP_DIR)
 
-    container_id = lxc.ContainerId(TEST_JOB_ID, time.time(), os.getpid())
+    container_id = lxc.ContainerId.create(TEST_JOB_ID)
     container = setup_test(bucket, container_id, options.skip_cleanup)
     test_share(container)
     test_autoserv(container)

@@ -24,8 +24,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _DL_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-    'arm': _DL_CTS + 'android-cts-7.1_r12-linux_x86-arm.zip',
-    'x86': _DL_CTS + 'android-cts-7.1_r12-linux_x86-x86.zip',
+    'arm': _DL_CTS + 'android-cts-7.1_r17-linux_x86-arm.zip',
+    'x86': _DL_CTS + 'android-cts-7.1_r17-linux_x86-x86.zip',
     'media': _DL_CTS + 'android-cts-media-1.4.zip',
 }
 
@@ -37,6 +37,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
     # TODO(bmgordon): Remove kahlee once the bulk of failing tests are fixed.
     _BOARD_RETRY = {'betty': 0, 'kahlee': 0}
     _CHANNEL_RETRY = {'dev': 5, 'beta': 5, 'stable': 5}
+    _SHARD_CMD = '--shards'
 
     def _get_default_bundle_url(self, bundle):
         return _CTS_URI[bundle]
@@ -84,8 +85,8 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
             cmd = ['run', 'commandAndExit', 'cts', '--plan', plan,
                    '--retry', '%d' % session_id]
         elif plan is not None:
-            # TODO(ihf): This needs testing to support media team.
-            cmd = ['run', 'commandAndExit', 'cts', '--plan', plan]
+            # Subplan for any customized CTS test plan in form of xml.
+            cmd = ['run', 'commandAndExit', 'cts', '--subplan', plan]
         else:
             logging.warning('Running all tests. This can take several days.')
             cmd = ['run', 'commandAndExit', 'cts']
@@ -116,8 +117,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
         """Returns the factor to be multiplied to the timeout parameter.
         The factor is determined by the number of ABIs to run."""
         if self._timeoutfactor is None:
-            abilist = self._run('adb', args=('shell', 'getprop',
-                'ro.product.cpu.abilist')).stdout.split(',')
+            abilist = self._get_abilist()
             prefix = {'x86': 'x86', 'arm': 'armeabi-'}.get(self._abi)
             self._timeoutfactor = (1 if prefix is None else
                 sum(1 for abi in abilist if abi.startswith(prefix)))
@@ -131,19 +131,21 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
         @return: The result object from utils.run.
         """
         cts_tradefed = os.path.join(self._repository, 'tools', 'cts-tradefed')
-        for command in commands:
-            logging.info('RUN: ./cts-tradefed %s', ' '.join(command))
-            output = self._run(
-                cts_tradefed,
-                args=tuple(command),
-                timeout=self._timeout * self._get_timeout_factor(),
-                verbose=True,
-                ignore_status=False,
-                # Make sure to tee tradefed stdout/stderr to autotest logs
-                # continuously during the test run.
-                stdout_tee=utils.TEE_TO_LOGS,
-                stderr_tee=utils.TEE_TO_LOGS)
-            logging.info('END: ./cts-tradefed %s\n', ' '.join(command))
+        with tradefed_test.adb_keepalive(self._get_adb_targets(),
+                                         self._install_paths):
+            for command in commands:
+                logging.info('RUN: ./cts-tradefed %s', ' '.join(command))
+                output = self._run(
+                    cts_tradefed,
+                    args=tuple(command),
+                    timeout=self._timeout * self._get_timeout_factor(),
+                    verbose=True,
+                    ignore_status=False,
+                    # Make sure to tee tradefed stdout/stderr to autotest logs
+                    # continuously during the test run.
+                    stdout_tee=utils.TEE_TO_LOGS,
+                    stderr_tee=utils.TEE_TO_LOGS)
+                logging.info('END: ./cts-tradefed %s\n', ' '.join(command))
         return output
 
     def _should_skip_test(self):
@@ -151,20 +153,20 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
         # newbie and novato are x86 VMs without binary translation. Skip the ARM
         # tests.
         no_ARM_ABI_test_boards = ('newbie', 'novato', 'novato-arc64')
-        if self._get_board_name(self._host) in no_ARM_ABI_test_boards:
+        if self._get_board_name() in no_ARM_ABI_test_boards:
             if self._abi == 'arm':
                 return True
         return False
 
     def generate_test_command(self, target_module, target_plan, target_class,
-                              target_method, cts_tradefed_args, session_id=0):
+                              target_method, tradefed_args, session_id=0):
         """Generates the CTS command and name to use based on test arguments.
 
         @param target_module: the name of test module to run.
         @param target_plan: the name of the test plan to run.
         @param target_class: the name of the class to be tested.
         @param target_method: the name of the method to be tested.
-        @param cts_tradefed_args: a list of args to pass to tradefed.
+        @param tradefed_args: a list of args to pass to tradefed.
         @param session_id: tradefed session_id.
         """
         if target_module is not None:
@@ -183,15 +185,15 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                     module=target_module, session_id=session_id)
         elif target_plan is not None:
             test_name = 'plan.%s' % target_plan
-            test_command = self._tradefed_run_command(
-                plan=target_plan, session_id=session_id)
-        elif cts_tradefed_args is not None:
-            test_name = 'run tradefed %s' % ' '.join(cts_tradefed_args)
-            test_command = cts_tradefed_args
+            test_command = self._tradefed_run_command(plan=target_plan)
+        elif tradefed_args is not None:
+            test_name = 'run tradefed %s' % ' '.join(tradefed_args)
+            test_command = tradefed_args
         else:
             test_command = self._tradefed_run_command()
             test_name = 'all_CTS'
 
+        logging.info('CTS command: %s', test_command)
         return test_command, test_name
 
     def run_once(self,
@@ -200,7 +202,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                  target_class=None,
                  target_method=None,
                  needs_push_media=False,
-                 cts_tradefed_args=None,
+                 tradefed_args=None,
                  precondition_commands=[],
                  login_precondition_commands=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
@@ -224,12 +226,12 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
         dut before the test is run, the scripts must already be installed.
         @param login_precondition_commands: a list of scripts to be run on the
         dut before the log-in for the test is performed.
-        @param cts_tradefed_args: a list of args to pass to tradefed.
+        @param tradefed_args: a list of args to pass to tradefed.
         """
 
         # On dev and beta channels timeouts are sharp, lenient on stable.
         self._timeout = timeout
-        if self._get_release_channel == 'stable':
+        if self._get_release_channel() == 'stable':
             self._timeout += 3600
         # Retries depend on channel.
         self._timeoutfactor = None
@@ -238,7 +240,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                                                              target_plan,
                                                              target_class,
                                                              target_method,
-                                                             cts_tradefed_args)
+                                                             tradefed_args)
 
         self._run_tradefed_with_retries(target_module, test_command, test_name,
                                         target_plan, needs_push_media, _CTS_URI,

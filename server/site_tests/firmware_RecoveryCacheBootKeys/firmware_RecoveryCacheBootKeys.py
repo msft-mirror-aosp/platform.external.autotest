@@ -7,7 +7,6 @@ import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.faft.firmware_test import ConnectionError
 
 class firmware_RecoveryCacheBootKeys(FirmwareTest):
     """
@@ -20,7 +19,7 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
                       'Using data from RECOVERY_MRC_CACHE')
     REBUILD_CACHE_MSG = "MRC: cache data 'RECOVERY_MRC_CACHE' needs update."
     RECOVERY_CACHE_SECTION = 'RECOVERY_MRC_CACHE'
-    FIRMWARE_LOG_CMD = 'cbmem -c'
+    FIRMWARE_LOG_CMD = 'cbmem -1' + ' | grep ' + REBUILD_CACHE_MSG[:3]
     FMAP_CMD = 'mosys eeprom map'
     RECOVERY_REASON_REBUILD_CMD = 'crossystem recovery_request=0xC4'
 
@@ -29,20 +28,18 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
                                                               cmdline_args)
         self.client = host
         self.dev_mode = dev_mode
-        self.backup_firmware()
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
         self.setup_usbkey(usbkey=True, host=False)
 
     def cleanup(self):
-        try:
-            self.restore_firmware()
-        except ConnectionError:
-            logging.error("ERROR: DUT did not come up.  Need to cleanup!")
         super(firmware_RecoveryCacheBootKeys, self).cleanup()
 
-    def boot_to_recovery(self):
+    def boot_to_recovery(self, rebuild_mrc_cache=False):
         """Boot device into recovery mode."""
-        self.switcher.reboot_to_mode(to_mode='rec')
+        if rebuild_mrc_cache:
+            self.switcher.reboot_to_mode(to_mode='rec_force_mrc')
+        else:
+            self.switcher.reboot_to_mode(to_mode='rec')
 
         self.check_state((self.checkers.crossystem_checker,
                           {'mainfw_type': 'recovery'}))
@@ -120,6 +117,9 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
         if not self.cache_exist():
             raise error.TestNAError('No RECOVERY_MRC_CACHE was found on DUT.')
 
+        logging.info('Ensure we\'ve done memory training.')
+        self.boot_to_recovery()
+
         logging.info('Checking 3-Key recovery boot.')
         self.boot_to_recovery()
 
@@ -127,11 +127,12 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
             raise error.TestFail('[3-Key] - Recovery Cache was not used.')
 
         logging.info('Checking 4-key recovery rebuilt cache boot.')
-
-        self.ec.send_command('apshutdown')
-        self.ec.send_command('hostevent set 0x20004000')
-        self.ec.send_command('powerbtn')
+        self.boot_to_recovery(rebuild_mrc_cache=True)
         self.switcher.wait_for_client()
 
         if not self.check_cache_rebuilt():
             raise error.TestFail('[4-key] - Recovery Cache was not rebuilt.')
+
+        logging.info('Reboot out of Recovery')
+        self.switcher.simple_reboot()
+

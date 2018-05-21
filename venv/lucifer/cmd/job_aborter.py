@@ -20,12 +20,12 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
-import datetime
 import logging
 import sys
 import time
 
 from lucifer import autotest
+from lucifer import handoffs
 from lucifer import leasing
 from lucifer import loglib
 
@@ -43,35 +43,48 @@ def main(args):
     loglib.add_logging_options(parser)
     args = parser.parse_args(args)
     loglib.configure_logging_with_args(parser, args)
+    logger.info('Starting with args: %r', args)
 
     autotest.monkeypatch()
-    _main_loop(jobdir=args.jobdir)
-    return 0
+    ts_mon_config = autotest.chromite_load('ts_mon_config')
+    with ts_mon_config.SetupTsMonGlobalState('job_aborter'):
+        _main_loop(jobdir=args.jobdir)
+    assert False  # cannot exit normally
 
 
 def _main_loop(jobdir):
+    transaction = autotest.deps_load('django.db.transaction')
+
+    @transaction.commit_manually
+    def flush_transaction():
+        """Flush transaction https://stackoverflow.com/questions/3346124/"""
+        transaction.commit()
+
+    metrics = _Metrics()
+    metrics.send_starting()
     while True:
         logger.debug('Tick')
-        _main_loop_body(jobdir)
+        metrics.send_tick()
+        _main_loop_body(metrics, jobdir)
+        flush_transaction()
         time.sleep(20)
 
 
-def _main_loop_body(jobdir):
-    models = autotest.load('frontend.afe.models')
+def _main_loop_body(metrics, jobdir):
     active_leases = {
             lease.id: lease for lease in leasing.leases_iter(jobdir)
             if not lease.expired()
     }
-    _mark_expired_jobs_failed(models, active_leases)
-    _abort_timed_out_jobs(models, active_leases)
-    _abort_jobs_marked_aborting(models, active_leases)
+    _mark_expired_jobs_failed(metrics, active_leases)
+    _abort_timed_out_jobs(active_leases)
+    _abort_jobs_marked_aborting(active_leases)
     _abort_special_tasks_marked_aborted()
     _clean_up_expired_leases(jobdir)
     # TODO(crbug.com/748234): abort_jobs_past_max_runtime goes into
     # lucifer_run_job
 
 
-def _mark_expired_jobs_failed(models, active_leases):
+def _mark_expired_jobs_failed(metrics, active_leases):
     """Mark expired jobs failed.
 
     Expired jobs are jobs that have an incomplete JobHandoff and that do
@@ -79,39 +92,42 @@ def _mark_expired_jobs_failed(models, active_leases):
     job_reporter, but that job_reporter has crashed.  These jobs are
     marked failed in the database.
 
-    @param models: frontend.afe.models
+    @param metrics: _Metrics instance.
     @param active_leases: dict mapping job ids to Leases.
     """
     logger.debug('Looking for expired jobs')
-    job_ids_to_mark = []
-    for handoff in _incomplete_handoffs_queryset(models.JobHandoff):
+    job_ids = []
+    for handoff in handoffs.incomplete():
         logger.debug('Found handoff: %d', handoff.job_id)
         if handoff.job_id not in active_leases:
-            logger.debug('Handoff %d is missing active lease', handoff.job_id)
-            job_ids_to_mark.append(handoff.job_id)
-    _mark_failed(models, job_ids_to_mark)
+            logger.info('Handoff %d is missing active lease; cleaning up',
+                        handoff.job_id)
+            job_ids.append(handoff.job_id)
+    handoffs.clean_up(job_ids)
+    handoffs.mark_complete(job_ids)
+    metrics.send_expired_jobs(len(job_ids))
 
 
-def _abort_timed_out_jobs(models, active_leases):
+def _abort_timed_out_jobs(active_leases):
     """Send abort to timed out jobs.
 
-    @param models: frontend.afe.models
     @param active_leases: dict mapping job ids to Leases.
     """
-    for job in _timed_out_jobs_queryset(models.Job):
+    for job in _timed_out_jobs_queryset():
         if job.id in active_leases:
-            active_leases[job.id].abort()
+            logger.info('Job %d is timed out; aborting', job.id)
+            active_leases[job.id].maybe_abort()
 
 
-def _abort_jobs_marked_aborting(models, active_leases):
+def _abort_jobs_marked_aborting(active_leases):
     """Send abort to jobs marked aborting in Autotest database.
 
-    @param models: frontend.afe.models
     @param active_leases: dict mapping job ids to Leases.
     """
-    for job in _aborting_jobs_queryset(models.Job):
+    for job in _aborting_jobs_queryset():
         if job.id in active_leases:
-            active_leases[job.id].abort()
+            logger.info('Job %d is marked for aborting; aborting', job.id)
+            active_leases[job.id].maybe_abort()
 
 
 def _abort_special_tasks_marked_aborted():
@@ -132,89 +148,57 @@ def _clean_up_expired_leases(jobdir):
             lease.cleanup()
 
 
-_JOB_GRACE_SECS = 10
-
-
-def _incomplete_handoffs_queryset(JobHandoff):
-    """Return a QuerySet of incomplete JobHandoffs.
-
-    JobHandoff created within a cutoff period are exempt to allow the
-    job the chance to acquire its lease file; otherwise, incomplete jobs
-    without an active lease are considered dead.
-
-    @param JobHandoff: Django model for JobHandoff
-    @returns: Django QuerySet
-    """
-    # Time ---*---------|---------*-------|--->
-    #    incomplete   cutoff   newborn   now
-    cutoff = (datetime.datetime.now()
-              - datetime.timedelta(seconds=_JOB_GRACE_SECS))
-    return JobHandoff.objects.filter(completed=False, created__lt=cutoff)
-
-
-def _timed_out_jobs_queryset(Job):
+def _timed_out_jobs_queryset():
     """Return a QuerySet of timed out Jobs.
 
-    @param Job: Django model for Job
     @returns: Django QuerySet
     """
+    models = autotest.load('frontend.afe.models')
     return (
-            Job.objects
+            models.Job.objects
             .filter(hostqueueentry__complete=False)
             .extra(where=['created_on + INTERVAL timeout_mins MINUTE < NOW()'])
             .distinct()
     )
 
 
-def _aborting_jobs_queryset(Job):
+def _aborting_jobs_queryset():
     """Return a QuerySet of aborting Jobs.
 
-    @param Job: Django model for Job
     @returns: Django QuerySet
     """
+    models = autotest.load('frontend.afe.models')
     return (
-            Job.objects
+            models.Job.objects
             .filter(hostqueueentry__aborted=True)
             .filter(hostqueueentry__complete=False)
             .distinct()
     )
 
 
-def _filter_leased(jobdir, dbjobs):
-    """Filter Job models for leased jobs.
+class _Metrics(object):
 
-    Yields pairs of Job model and Lease instances.
+    """Class for sending job_aborter metrics."""
 
-    @param jobdir: job lease file directory
-    @param dbjobs: iterable of Django model Job instances
-    @returns: iterator of Leases
-    """
-    our_jobs = {job.id: job for job in leasing.leases_iter(jobdir)}
-    for dbjob in dbjobs:
-        if dbjob.id in our_jobs:
-            yield dbjob, our_jobs[dbjob.id]
+    def __init__(self):
+        metrics = autotest.chromite_load('metrics')
+        prefix = 'chromeos/lucifer/job_aborter'
+        self._starting_m = metrics.Counter(prefix + '/start')
+        self._tick_m = metrics.Counter(prefix + '/tick')
+        self._expired_m = metrics.Counter(prefix + '/expired_jobs')
 
+    def send_starting(self):
+        """Send starting metric."""
+        self._starting_m.increment()
 
-def _mark_failed(models, job_ids):
-    """Mark jobs failed in database.
+    def send_tick(self):
+        """Send tick metric."""
+        self._tick_m.increment()
 
-    This also marks the corresponding JobHandoffs as completed.
-    """
-    if not job_ids:
-        return
-    logger.info('Marking jobs failed: %r', job_ids)
-    (models.HostQueueEntry.objects
-     .filter(job_id__in=job_ids)
-     .update(complete=True,
-             status=models.HostQueueEntry.Status.FAILED))
-    (models.HostQueueEntry.objects
-     .filter(job_id__in=job_ids)
-     .exclude(started_on=None)
-     .update(finished_on=datetime.datetime.now()))
-    (models.JobHandoff.objects
-     .filter(job_id__in=job_ids)
-     .update(completed=True))
+    def send_expired_jobs(self, count):
+        """Send expired_jobs metric."""
+        self._expired_m.increment_by(count)
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    main(sys.argv[1:])

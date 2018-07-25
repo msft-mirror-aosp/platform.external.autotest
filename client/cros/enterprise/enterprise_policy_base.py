@@ -72,13 +72,12 @@ class EnterprisePolicyTest(test.test):
         from a server test.
 
         """
-        kwargs.pop('check_client_result', False)
         self._initialize_enterprise_policy_test(**kwargs)
 
 
     def _initialize_enterprise_policy_test(
             self, case='', env='dm-fake', dms_name=None,
-            username=USERNAME, password=PASSWORD, gaia_id=GAIA_ID):
+            username=USERNAME, password=PASSWORD, gaia_id=GAIA_ID, **kwargs):
         """
         Initialize test parameters and fake DM Server.
 
@@ -88,6 +87,7 @@ class EnterprisePolicyTest(test.test):
         @param password: String password login credential.
         @param gaia_id: String gaia_id login credential.
         @param dms_name: String name of test DM Server.
+        @param kwargs: Not used.
 
         """
         self.case = case
@@ -236,7 +236,7 @@ class EnterprisePolicyTest(test.test):
 
         # Remove "Not set" policies and json-ify dicts because the
         # FakeDMServer expects "policy": "{value}" not "policy": {value}
-        # or "policy": ["{value}"] not "policy": [{value}].
+        # and "policy": "[{value}]" not "policy": [{value}].
         for policies_dict in [user_p, s_user_p, device_p]:
             policies_to_pop = []
             for policy in policies_dict:
@@ -246,10 +246,8 @@ class EnterprisePolicyTest(test.test):
                 elif isinstance(value, dict):
                     policies_dict[policy] = encode_json_string(value)
                 elif isinstance(value, list):
-                    if len(value) > 0 and isinstance(value[0], dict):
-                        for i in xrange(len(value)):
-                            value[i] = encode_json_string(value[i])
-                        policies_dict[policy] = value
+                    if value and isinstance(value[0], dict):
+                        policies_dict[policy] = encode_json_string(value)
             for policy in policies_to_pop:
                 policies_dict.pop(policy)
 

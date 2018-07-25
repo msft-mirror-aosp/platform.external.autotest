@@ -109,7 +109,7 @@ class Lease(object):
             os.unlink(self._sock_path)
         except OSError as e:
             # This is fine; it means that job_reporter crashed, but
-            # lucifer_run_job was able to run its cleanup.
+            # lucifer was able to run its cleanup.
             logger.debug('Error removing %s: %s', self._sock_path, e)
 
     def abort(self):
@@ -122,6 +122,7 @@ class Lease(object):
         call will raise socket.error with ECONNREFUSED.
         """
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        sock.setblocking(0)
         logger.debug('Connecting to abort socket %s', self._sock_path)
         sock.connect(self._sock_path)
         logger.debug('Sending abort to %s', self._sock_path)

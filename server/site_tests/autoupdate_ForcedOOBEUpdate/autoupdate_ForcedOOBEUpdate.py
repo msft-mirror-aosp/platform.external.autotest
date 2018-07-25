@@ -30,6 +30,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         Repeated check status of update. It should move from DOWNLOADING to
         FINALIZING to COMPLETE (then reboot) to IDLE.
         """
+        # 20 minute timeout.
+        timeout_minutes = 20
+        timeout = time.time() + 60 * timeout_minutes
         while True:
             status = self._get_update_engine_status(timeout=10)
 
@@ -38,6 +41,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 if self._UPDATE_STATUS_IDLE == status[self._CURRENT_OP]:
                     break
             time.sleep(1)
+            if time.time() > timeout:
+                raise error.TestFail('OOBE update did not finish in %d '
+                                     'minutes.' % timeout_minutes)
 
 
     def run_once(self, full_payload=True, cellular=False,
@@ -94,23 +100,43 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             logging.debug('Progress when we will interrupt: %f', progress)
             self._wait_for_progress(progress)
             logging.info('We will start interrupting the update.')
-            completed = self._get_update_progress()
 
             # Reboot the DUT during the update.
+            completed = self._get_update_progress()
             self._host.reboot()
+            # Screenshot to check that if OOBE was not skipped by interruption.
+            self._take_screenshot('after_reboot.png')
+            if self._is_update_finished_downloading():
+                raise error.TestError('Reboot interrupt: Update finished '
+                                      'downloading before any more '
+                                      'interruptions. Started interrupting '
+                                      'at: %f' % progress)
             if not self._update_continued_where_it_left_off(completed):
                 raise error.TestFail('The update did not continue where it '
                                      'left off before rebooting.')
-            completed = self._get_update_progress()
 
+            # Disconnect / Reconnect network.
+            completed = self._get_update_progress()
             self._disconnect_then_reconnect_network(update_url)
+            self._take_screenshot('after_network.png')
+            if self._is_update_finished_downloading():
+                raise error.TestError('Network interrupt: Update finished '
+                                      'downloading before any more '
+                                      'interruptions. Started interrupting '
+                                      'at: %f' % progress)
             if not self._update_continued_where_it_left_off(completed):
                 raise error.TestFail('The update did not continue where it '
                                      'left off before disconnecting network.')
-            completed = self._get_update_progress()
 
-            # Suspend / Resume
+            # Suspend / Resume.
+            completed = self._get_update_progress()
             self._suspend_then_resume()
+            self._take_screenshot('after_suspend.png')
+            if self._is_update_finished_downloading():
+                raise error.TestError('Suspend interrupt: Update finished '
+                                      'downloading before any more '
+                                      'interruptions. Started interrupting '
+                                      'at: %f' % progress)
             if not self._update_continued_where_it_left_off(completed):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after suspend/resume.')

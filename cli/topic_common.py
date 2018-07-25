@@ -414,10 +414,10 @@ class atest(object):
         self.no_confirmation = False
         # Whether the topic or command supports skylab inventory repo.
         self.allow_skylab = False
+        self.enforce_skylab = False
         self.topic_parse_info = item_parse_info(attribute_name='not_used')
 
         self.parser = optparse.OptionParser(self._get_usage())
-        # TODO(nxia): add an option to set logging level (default to critical).
         self.parser.add_option('-g', '--debug',
                                help='Print debugging information',
                                action='store_true', default=False)
@@ -451,48 +451,55 @@ class atest(object):
                                dest='log_level')
 
 
-    def add_skylab_options(self):
+    def add_skylab_options(self, enforce_skylab=False):
         """Add options for reading and writing skylab inventory repository."""
         self.allow_skylab = True
-        self.parser.add_option('--skylab',
-                               help=('Use the skylab inventory as the data '
-                                     'source.'),
-                               action='store_true', dest='skylab',
-                               default=False)
+        self.enforce_skylab = enforce_skylab
+
+        if not self.enforce_skylab:
+            self.parser.add_option('--skylab',
+                                   help=('Use the skylab inventory as the data '
+                                         'source.'),
+                                   action='store_true', dest='skylab',
+                                   default=False)
+
         self.parser.add_option('--env',
-                               help=('Environment of the server. Only useful '
-                                     'when --skylab is enabled'),
+                               help=('Environment of the server. %s' %
+                                     skylab_utils.MSG_ONLY_VALID_IN_SKYLAB),
                                dest='environment',
                                default='prod')
         self.parser.add_option('--inventory-repo-dir',
-                               help=('The path to clone skylab inventory repo. '
+                               help=('The path of directory to clone skylab '
+                                     'inventory repo into. It can be an empty '
+                                     'folder or an existing clean checkout of '
+                                     'infra_internal/skylab_inventory.'
                                      'If not provided, a temporary dir will be '
-                                     'created and used as the repo dir.'
-                                     'Only useful when --skylab is enabled'),
+                                     'created and used as the repo dir. %s' %
+                                     skylab_utils.MSG_ONLY_VALID_IN_SKYLAB),
                                dest='inventory_repo_dir')
         self.parser.add_option('--keep-repo-dir',
                                help=('Keep the repo dir after the command '
                                      'completes, otherwise the dir will be '
-                                     'cleaned up. Only useful when --skylab is '
-                                     'enabled.'),
+                                     'cleaned up. %s' %
+                                     skylab_utils.MSG_ONLY_VALID_IN_SKYLAB),
                                action='store_true',
                                dest='keep_repo_dir')
         self.parser.add_option('--draft',
-                               help=('Upload server change CL as a draft. Only'
-                                     ' useful when --skylab is enabled.'),
+                               help=('Upload server change CL as a draft. %s' %
+                                     skylab_utils.MSG_ONLY_VALID_IN_SKYLAB),
                                action='store_true',
                                dest='draft',
                                default=False)
         self.parser.add_option('--dryrun',
-                               help=('Execute the action as a dryrun. Only '
-                                     'useful when --skylab is enabled.'),
+                               help=('Execute the action as a dryrun. %s' %
+                                     skylab_utils.MSG_ONLY_VALID_IN_SKYLAB),
                                action='store_true',
                                dest='dryrun',
                                default=False)
         self.parser.add_option('--submit',
                                help=('Submit the change CL directly without '
-                                     'reviewing it in Gerrit. Only useful when '
-                                     '--skylab is enabled.'),
+                                     'reviewing it in Gerrit. %s' %
+                                     skylab_utils.MSG_ONLY_VALID_IN_SKYLAB),
                                action='store_true',
                                dest='submit',
                                default=False)
@@ -518,7 +525,7 @@ class atest(object):
 
         @param: options: Option values parsed by the parser.
         """
-        self.skylab = options.skylab
+        self.skylab = self.enforce_skylab or options.skylab
         if not self.skylab:
             return
 

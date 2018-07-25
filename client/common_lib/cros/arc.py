@@ -2,13 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import glob
 import logging
 import os
 import pipes
 import re
 import shutil
-import subprocess
+import socket
 import sys
 import tempfile
 
@@ -24,6 +25,9 @@ _ANDROID_CONTAINER_ROOT_PATH = '/opt/google/containers/android/rootfs'
 _SCREENSHOT_DIR_PATH = '/var/log/arc-screenshots'
 _SCREENSHOT_BASENAME = 'arc-screenshot'
 _MAX_SCREENSHOT_NUM = 10
+# This address should match the one present in
+# https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/master/chromeos-base/arc-sslh-init/files/sslh.conf
+_ADBD_ADDRESS = ('100.115.92.2', 5555)
 _ADBD_PID_PATH = '/run/arc/adbd.pid'
 _SDCARD_PID_PATH = '/run/arc/sdcard.pid'
 _ANDROID_ADB_KEYS_PATH = '/data/misc/adb/adb_keys'
@@ -31,7 +35,6 @@ _PROCESS_CHECK_INTERVAL_SECONDS = 1
 _WAIT_FOR_ADB_READY = 60
 _WAIT_FOR_ANDROID_PROCESS_SECONDS = 60
 _WAIT_FOR_DATA_MOUNTED_SECONDS = 60
-_VAR_LOGCAT_PATH = '/var/log/logcat'
 _PLAY_STORE_PKG = 'com.android.vending'
 _SETTINGS_PKG = 'com.android.settings'
 
@@ -98,6 +101,16 @@ def get_product():
     return _android_shell('getprop ro.build.product')
 
 
+def _is_tcp_port_reachable(address):
+    """Return whether a TCP port described by |address| is reachable."""
+    try:
+        s = socket.create_connection(address)
+        s.close()
+        return True
+    except socket.error:
+        return False
+
+
 def _wait_for_data_mounted(timeout=_WAIT_FOR_DATA_MOUNTED_SECONDS):
     utils.poll_for_condition(
             condition=_is_android_data_mounted,
@@ -131,7 +144,7 @@ def wait_for_adb_ready(timeout=_WAIT_FOR_ADB_READY):
     _android_shell('setprop sys.usb.config mtp')
     _android_shell('setprop sys.usb.config mtp,adb')
 
-    exception = error.TestFail('adb is not ready in %d seconds.' % timeout)
+    exception = error.TestFail('Failed to connect to adb in %d seconds.' % timeout)
 
     # Keeps track of how many times adb has attempted to establish a
     # connection.
@@ -143,17 +156,39 @@ def wait_for_adb_ready(timeout=_WAIT_FOR_ADB_READY):
         utils.poll_for_condition(_adb_connect_wrapper,
                                  exception,
                                  timeout)
-    except utils.TimeoutError:
-        # The operation has failed, but let's grab some logs.
-        logging.error('ARC booted: %s',
-                      _android_shell('getprop sys.boot_completed',
-                                     ignore_status=True))
-        logging.error('ARC system events: %s',
-                      _android_shell('logcat -d -b events *:S arc_system_event',
-                                     ignore_status=True))
-        logging.error('adbd process: %s', _android_shell('pidof adbd'))
-        logging.error('adb state: %s',
-                      utils.system_output('adb get-state', ignore_status=True))
+    except (utils.TimeoutError, error.TestFail):
+        # The operation has failed, but let's try to clarify the failure to
+        # avoid shifting blame to adb.
+
+        # First, collect some information and log it.
+        arc_alive = is_android_container_alive()
+        arc_booted = _android_shell('getprop sys.boot_completed',
+                                    ignore_status=True)
+        arc_system_events = _android_shell(
+            'logcat -d -b events *:S arc_system_event', ignore_status=True)
+        adbd_pid = _android_shell('pidof -s adbd', ignore_status=True)
+        adbd_port_reachable = _is_tcp_port_reachable(_ADBD_ADDRESS)
+        adb_state = utils.system_output('adb get-state', ignore_status=True)
+        logging.debug('ARC alive: %s', arc_alive)
+        logging.debug('ARC booted: %s', arc_booted)
+        logging.debug('ARC system events: %s', arc_system_events)
+        logging.debug('adbd process: %s', adbd_pid)
+        logging.debug('adbd port reachable: %s', adbd_port_reachable)
+        logging.debug('adb state: %s', adb_state)
+
+        # Now go through the usual suspects and raise nicer errors to make the
+        # actual failure clearer.
+        if not arc_alive:
+            raise error.TestFail('ARC is not alive.')
+        if not adbd_pid:
+            raise error.TestFail('adbd is not running.')
+        if arc_booted != '1':
+            raise error.TestFail('ARC did not finish booting.')
+        if not adbd_port_reachable:
+            raise error.TestFail('adbd TCP port is not reachable.')
+
+        # We exhausted all possibilities. Fall back to printing the generic
+        # error.
         raise
 
 
@@ -380,6 +415,30 @@ def _write_android_file(filename, data):
     utils.run(cros_cmd, stdin=data)
 
 
+def get_android_file_stats(filename):
+    """Returns an object of file stats for an Android file.
+
+    The returned object supported limited attributes, but can be easily extended
+    if needed. Note that the value are all string.
+
+    This uses _android_shell to run as root, so that it can access to all files
+    inside the container. On non-debuggable build, adb shell is not rootable.
+    """
+    mapping = {
+        '%a': 'mode',
+        '%g': 'gid',
+        '%h': 'nlink',
+        '%u': 'uid',
+    }
+    output = _android_shell(
+        'stat -c "%s" %s' % (' '.join(mapping.keys()), pipes.quote(filename)))
+    stats = output.split(' ')
+    if len(stats) != len(mapping):
+      raise error.TestError('Unexpected output from stat: %s' % output)
+    _Stats = collections.namedtuple('_Stats', mapping.values())
+    return _Stats(*stats)
+
+
 def remove_android_file(filename):
     """Removes a file in Android filesystem.
 
@@ -506,12 +565,9 @@ def _after_iteration_hook(obj):
         if obj.num_screenshots <= _MAX_SCREENSHOT_NUM:
             logging.warning('Iteration %d failed, taking a screenshot.',
                             obj.iteration)
-            from cros.graphics.gbm import crtcScreenshot
             try:
-                image = crtcScreenshot()
-                image.save('{}/{}_iter{}.png'.format(_SCREENSHOT_DIR_PATH,
-                                                     _SCREENSHOT_BASENAME,
-                                                     obj.iteration))
+                utils.run('screenshot "{}/{}_iter{}.png"'.format(
+                    _SCREENSHOT_DIR_PATH, _SCREENSHOT_BASENAME, obj.iteration))
             except Exception as e:
                 logging.warning('Unable to capture screenshot. %s', e)
         else:
@@ -564,6 +620,23 @@ def set_device_mode(device_mode, use_fake_sensor_with_lifetime_secs=0):
         args.extend(['--create_dev', '--dev_lifetime=%d' %
                      use_fake_sensor_with_lifetime_secs])
     utils.run('inject_powerd_input_event', args=args)
+
+
+def wait_for_userspace_ready():
+    """Waits for userspace apps to be launchable.
+
+    Launches and then closes Android settings as a way to ensure all basic
+    services are ready. This goes a bit beyond waiting for boot-up to complete,
+    as being able to launch an activity requires more of the framework to have
+    started. The boot-complete signal happens fairly early, and the framework
+    system server is still starting services. By waiting for ActivityManager to
+    respond, we automatically wait on more services to be ready.
+    """
+    output = adb_shell('am start -W -a android.settings.SETTINGS')
+    if not output.endswith('Complete'):
+        logging.debug('Output was: %s', output)
+        raise error.TestError('Could not launch SETTINGS')
+    adb_shell('am force-stop com.android.settings')
 
 
 class ArcTest(test.test):
@@ -656,7 +729,8 @@ class ArcTest(test.test):
             raise error.TestFail(err)
         finally:
             try:
-                self._stop_logcat()
+                if self.logcat_proc:
+                    self.logcat_proc.close()
             finally:
                 if self._chrome is not None:
                     self._chrome.close()
@@ -762,13 +836,7 @@ class ArcTest(test.test):
             logging.info('Setting up dependent package(s) %s', packages)
             self.job.setup_dep(packages)
 
-        # TODO(b/29341443): Run logcat on non ArcTest test cases too.
-        with open(_VAR_LOGCAT_PATH, 'w') as f:
-            self.logcat_proc = subprocess.Popen(
-                ['android-sh', '-c', 'logcat -v threadtime'],
-                stdout=f,
-                stderr=subprocess.STDOUT,
-                close_fds=True)
+        self.logcat_proc = arc_common.Logcat()
 
         wait_for_adb_ready()
 
@@ -792,29 +860,6 @@ class ArcTest(test.test):
             self._should_reenable_play_store = True
         if block_outbound:
             self.block_outbound()
-
-    def _stop_logcat(self):
-        """Stop the adb logcat process gracefully."""
-        if not self.logcat_proc:
-            return
-        # Running `adb kill-server` should have killed `adb logcat`
-        # process, but just in case also send termination signal.
-        self.logcat_proc.terminate()
-
-        class TimeoutException(Exception):
-            """Termination timeout timed out."""
-
-        try:
-            utils.poll_for_condition(
-                condition=lambda: self.logcat_proc.poll() is not None,
-                exception=TimeoutException,
-                timeout=10,
-                sleep_interval=0.1,
-                desc='Waiting for adb logcat to terminate')
-        except TimeoutException:
-            logging.info('Killing adb logcat due to timeout')
-            self.logcat_proc.kill()
-            self.logcat_proc.wait()
 
     def arc_teardown(self):
         """ARC test teardown.

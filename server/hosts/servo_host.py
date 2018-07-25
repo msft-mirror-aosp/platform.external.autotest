@@ -13,6 +13,7 @@ import httplib
 import logging
 import socket
 import xmlrpclib
+import os
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import control_data
@@ -64,7 +65,7 @@ _SERVO_HOST_FORCE_REBOOT_TEST_NAME = 'servohost_Reboot.force_reboot'
 class ServoHost(ssh_host.SSHHost):
     """Host class for a host that controls a servo, e.g. beaglebone."""
 
-    DEFAULT_PORT = 9999
+    DEFAULT_PORT = int(os.getenv('SERVOD_PORT', '9999'))
 
     # Timeout for initializing servo signals.
     INITIALIZE_SERVO_TIMEOUT_SECS = 60
@@ -84,7 +85,9 @@ class ServoHost(ssh_host.SSHHost):
 
         @param servo_host: Name of the host where the servod process
                            is running.
-        @param servo_port: Port the servod process is listening on.
+        @param servo_port: Port the servod process is listening on. Defaults
+                           to the SERVOD_PORT environment variable if set,
+                           otherwise 9999.
         @param servo_board: Board that the servo is connected to.
         @param is_in_lab: True if the servo host is in Cros Lab. Default is set
                           to None, for which utils.host_is_in_lab_zone will be
@@ -521,8 +524,6 @@ class ServoHost(ssh_host.SSHHost):
         @raises dev_server.DevServerException: If all the devservers are down.
         @raises site_utils.ParseBuildNameException: If the devserver returns
             an invalid build name.
-        @raises autoupdater.ChromiumOSError: If something goes wrong in the
-            checking update engine client status or applying an update.
         @raises AutoservRunError: If the update_engine_client isn't present on
             the host, and the host is a cros_host.
 

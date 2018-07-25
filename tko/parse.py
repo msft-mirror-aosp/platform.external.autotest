@@ -25,7 +25,6 @@ from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.tko import models as tko_models
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.dynamic_suite import constants
-from autotest_lib.site_utils import job_overhead
 from autotest_lib.site_utils.sponge_lib import sponge_utils
 from autotest_lib.tko import db as tko_db, utils as tko_utils
 from autotest_lib.tko import models, parser_lib
@@ -684,14 +683,31 @@ def _detach_from_parent_process():
     if os.getpid() != os.getpgid(0):
         os.setsid()
 
+
 def main():
-    """Main entrance."""
+    """tko_parse entry point."""
+    options, args = parse_args()
+
+    # We are obliged to use indirect=False, not use the SetupTsMonGlobalState
+    # context manager, and add a manual flush, because tko/parse is expected to
+    # be a very short lived (<1 min) script when working effectively, and we
+    # can't afford to either a) wait for up to 1min for metrics to flush at the
+    # end or b) drop metrics that were sent within the last minute of execution.
+    site_utils.SetupTsMonGlobalState('tko_parse', indirect=False,
+                                     short_lived=True)
+    try:
+        with metrics.SuccessCounter('chromeos/autotest/tko_parse/runs'):
+            _main_with_options(options, args)
+    finally:
+        metrics.Flush()
+
+
+def _main_with_options(options, args):
+    """Entry point with options parsed and metrics already set up."""
     start_time = datetime.datetime.now()
     # Record the processed jobs so that
     # we can send the duration of parsing to metadata db.
     processed_jobs = set()
-
-    options, args = parse_args()
 
     if options.detach:
         _detach_from_parent_process()
@@ -702,9 +718,6 @@ def main():
                                   options.export_to_gcloud_path)
     results_dir = os.path.abspath(args[0])
     assert os.path.exists(results_dir)
-
-    site_utils.SetupTsMonGlobalState('tko_parse', indirect=False,
-                                     short_lived=True)
 
     pid_file_manager = pidfile.PidFileManager("parser", results_dir)
 
@@ -753,8 +766,6 @@ def main():
         raise
     else:
         pid_file_manager.close_file(0)
-    finally:
-        metrics.Flush()
     duration_secs = (datetime.datetime.now() - start_time).total_seconds()
 
 

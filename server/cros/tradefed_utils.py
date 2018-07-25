@@ -125,43 +125,60 @@ def parse_tradefed_result(result, waivers=None):
     end_re = re.compile(r'(%s) %s (?:complet|fail)ed in .*\.'
                         r' (\d+) passed, (\d+) failed, (\d+) not executed' %
                         (abi_re, module_re))
+    fail_re = re.compile(r'I/ConsoleReporter.* (\S+) fail:')
+    inaccurate_re = re.compile(r'IMPORTANT: Some modules failed to run to '
+                                'completion, tests counts may be inaccurate')
     abis = set()
+    waived_count = dict()
+    failed_tests = set()
+    accurate = True
     for line in result.splitlines():
         match = start_re.search(line)
         if match:
             abis = abis.union([match.group(1)])
+            continue
         match = end_re.search(line)
         if match:
             abi = match.group(1)
             if abi not in abis:
                 logging.error('Trunk end with %s abi but have not seen '
                               'any trunk start with this abi.(%s)', abi, line)
-    logging.debug('Total ABIs: %s', abis)
+            continue
+        match = fail_re.search(line)
+        if match:
+            testname = match.group(1)
+            if waivers and testname in waivers:
+                waived_count[testname] = waived_count.get(testname, 0) + 1
+            else:
+                failed_tests.add(testname)
+            continue
+        # b/66899135, tradefed may reported inaccuratly with `list results`.
+        # Add warning if summary section shows that the result is inacurrate.
+        match = inaccurate_re.search(line)
+        if match:
+            accurate = False
 
-    # TODO(rohitbm): make failure parsing more robust by extracting the list
-    # of failing tests instead of searching in the result blob. As well as
-    # only parse for waivers for the running ABI.
+    logging.debug('Total ABIs: %s', abis)
+    # TODO(crbug.com/842659): Output to somewhere more convenient.
+    if failed_tests:
+        logging.debug('Failed (but not waived) tests:\n%s',
+            '\n'.join(sorted(failed_tests)))
+
+    # TODO(dhaddock): Find a more robust way to apply waivers.
     waived = []
-    if waivers:
-        for testname in waivers:
-            # TODO(dhaddock): Find a more robust way to apply waivers.
-            fail_count = (
-                result.count(testname + ' FAIL') +
-                result.count(testname + ' fail'))
-            if fail_count:
-                if fail_count > len(abis):
-                    # This should be an error.TestFail, but unfortunately
-                    # tradefed has a bug that emits "fail" twice when a
-                    # test failed during teardown. It will anyway causes
-                    # a test count inconsistency and visible on the dashboard.
-                    logging.error('Found %d failures for %s '
-                                  'but there are only %d abis: %s', fail_count,
-                                  testname, len(abis), abis)
-                waived += [testname] * fail_count
-                logging.info('Waived failure for %s %d time(s)', testname,
-                             fail_count)
+    for testname, fail_count in waived_count.items():
+        if fail_count > len(abis):
+            # This should be an error.TestFail, but unfortunately
+            # tradefed has a bug that emits "fail" twice when a
+            # test failed during teardown. It will anyway causes
+            # a test count inconsistency and visible on the dashboard.
+            logging.error('Found %d failures for %s but there are only %d '
+                          'abis: %s', fail_count, testname, len(abis), abis)
+            fail_count = len(abis)
+        waived += [testname] * fail_count
+        logging.info('Waived failure for %s %d time(s)', testname, fail_count)
     logging.info('Total waived = %s', waived)
-    return waived
+    return waived, accurate
 
 
 def select_32bit_java():

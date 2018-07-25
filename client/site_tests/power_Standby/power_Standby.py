@@ -10,8 +10,8 @@ from autotest_lib.client.cros import rtc
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_telemetry_utils
+from autotest_lib.client.cros.power import power_suspend
 from autotest_lib.client.cros.power import power_utils
-from autotest_lib.client.cros.power import sys_power
 
 
 class power_Standby(test.test):
@@ -26,7 +26,7 @@ class power_Standby(test.test):
 
     def run_once(self, test_hours=None, sample_hours=None,
                  max_milliwatts_standby=500, ac_ok=False,
-                 force_discharge=False):
+                 force_discharge=False, suspend_state=''):
         """Put DUT to suspend state for |sample_hours| and measure power."""
         if not power_utils.has_battery():
             raise error.TestNAError('Skipping test because DUT has no battery.')
@@ -64,16 +64,19 @@ class power_Standby(test.test):
         if max_hours < test_hours:
             raise error.TestFail('Battery not charged adequately for test.')
 
+        suspender = power_suspend.Suspender(self.resultsdir,
+                                            suspend_state=suspend_state)
+
         elapsed_hours = 0
 
         results = {}
         loop = 0
-        power_telemetry_utils.start_measurement()
+        start_ts = time.time()
 
         while elapsed_hours < test_hours:
             charge_before = power_stats.battery[0].charge_now
             before_suspend_secs = rtc.get_seconds()
-            sys_power.do_suspend(sample_hours * 3600)
+            suspender.suspend(duration=sample_hours * 3600)
             after_suspend_secs = rtc.get_seconds()
 
             power_stats.refresh()
@@ -100,7 +103,11 @@ class power_Standby(test.test):
                     charge_used)
             loop += 1
 
-        power_telemetry_utils.end_measurement()
+        end_ts = time.time()
+        offset = (end_ts - start_ts - elapsed_hours * 3600) / 2.
+        offset += suspender.get_suspend_delay()
+        power_telemetry_utils.start_measurement(start_ts + offset)
+        power_telemetry_utils.end_measurement(end_ts - offset)
         charge_end = power_stats.battery[0].charge_now
         total_charge_used = charge_start - charge_end
         if total_charge_used <= 0:

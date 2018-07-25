@@ -1091,12 +1091,10 @@ class _BaseSuite(object):
             self._retry_handler = RetryHandler(
                     initial_jobs_to_tests=self._jobs_to_tests,
                     max_retries=self._max_retries)
-            logging.debug("jobs_to_tests being passed: %s.",
-                          self._jobs_to_tests)
             logging.debug("retry map created: %s ",
                           self._retry_handler._retry_map)
         else:
-            logging.debug("Will not retry jobs from suite %s.", self._tag)
+            logging.info("Will not retry jobs from suite %s.", self._tag)
         return len(scheduled_test_names)
 
 
@@ -1638,6 +1636,8 @@ def _load_dummy_test(
         else:
             build = suite_common.get_test_source_build(
                     builds, test_source_build=test_source_build)
+            devserver.stage_artifacts(image=build,
+                                      artifacts=['control_files'])
             cf_getter = _create_ds_getter(build, devserver)
     retriever = _ControlFileRetriever(cf_getter,
                                       run_prod_code=run_prod_code,

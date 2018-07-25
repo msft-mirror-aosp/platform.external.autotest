@@ -4,6 +4,7 @@
 
 import functools
 import logging
+import pprint
 import time
 
 from autotest_lib.client.bin import utils
@@ -30,6 +31,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     provides many interfaces to set and get its behavior via console commands.
     This class is to abstract these interfaces.
     """
+    OPEN = 'open'
+    UNLOCK = 'unlock'
+    LOCK = 'lock'
     # The amount of time you need to show physical presence.
     PP_SHORT = 15
     PP_LONG = 300
@@ -70,6 +74,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     REBOOT_DELAY_WITH_CCD = 60
     REBOOT_DELAY_WITH_FLEX = 3
     ON_STRINGS = ['enable', 'enabled', 'on']
+    CONSERVATIVE_CCD_WAIT = 10
+    CCD_SHORT_PRESSES = 5
 
 
     def __init__(self, servo):
@@ -116,6 +122,42 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 raise error.TestFail('Failed to set %s to %s' % (cap, config))
 
 
+    def in_dev_mode(self):
+        """Return True if cr50 thinks the device is in dev mode"""
+        return 'dev_mode' in self.get_ccd_info()['TPM']
+
+
+    def get_ccd_info(self):
+        """Get the current ccd state.
+
+        Take the output of 'ccd' and convert it to a dictionary.
+
+        Returns:
+            A dictionary with the ccd state name as the key and setting as
+            value.
+        """
+        info = {}
+        original_timeout = float(self._servo.get('cr50_uart_timeout'))
+        # Change the console timeout to 10s, it may take longer than 3s to read
+        # ccd info
+        self._servo.set_nocheck('cr50_uart_timeout', self.CONSERVATIVE_CCD_WAIT)
+        try:
+            rv = self.send_command_get_output('ccd', ["ccd.*>"])[0]
+        finally:
+            self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
+        for line in rv.splitlines():
+            # CCD information is separated with an :
+            #   State: Opened
+            # Extract the state name and the value.
+            line = line.strip()
+            if ':' not in line or '[' in line:
+                continue
+            key, value = line.split(':')
+            info[key.strip()] = value.strip()
+        logging.info('Current CCD settings:\n%s', pprint.pformat(info))
+        return info
+
+
     def get_cap_dict(self):
         """Get the current ccd capability settings.
 
@@ -151,26 +193,64 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """
         if not self.using_ccd():
             self.wake_cr50()
+
+        # We have started prepending '\n' to separate cr50 console junk from
+        # the real command. If someone is just searching for .*>, then they will
+        # only get the output from the first '\n' we added. Raise an error to
+        # change the test to look for something more specific ex command.*>.
+        # cr50 will print the command in the output, so that is an easy way to
+        # modify '.*>' to match the real command output.
+        if '.*>' in regexp_list:
+            raise error.TestError('Send more specific regexp %r %r' % (command,
+                    regexp_list))
+
+        # prepend \n to separate the command from any junk that may have been
+        # sent to the cr50 uart.
+        command = '\n' + command
         return super(ChromeCr50, self).send_command_get_output(command,
                                                                regexp_list)
+
+    def send_command_retry_get_output(self, command, regexp_list, tries=3):
+        """Retry sending a command if we can't find the output.
+
+        Cr50 may print irrelevant output while printing command output. It may
+        prevent the regex from matching. Send command and get the output. If it
+        fails try again.
+
+        If it fails every time, raise an error.
+
+        Don't use this to set something that should only be set once.
+        """
+        # TODO(b/80319784): once chan is unrestricted, use it to restrict what
+        # output cr50 prints while we are sending commands.
+        for i in range(tries):
+            try:
+                return self.send_command_get_output(command, regexp_list)
+            except error.TestFail, e:
+                logging.info('Failed to get %r output: %r', command, e.message)
+        # Raise the last error, if we never successfully returned the command
+        # output
+        logging.info('Could not get %r output after %d tries', command, tries)
+        raise
+
 
 
     def get_deep_sleep_count(self):
         """Get the deep sleep count from the idle task"""
-        result = self.send_command_get_output('idle', [self.IDLE_COUNT])
+        result = self.send_command_retry_get_output('idle', [self.IDLE_COUNT])
         return int(result[0][1])
 
 
     def clear_deep_sleep_count(self):
         """Clear the deep sleep count"""
-        result = self.send_command_get_output('idle c', [self.IDLE_COUNT])
+        result = self.send_command_retry_get_output('idle c', [self.IDLE_COUNT])
         if int(result[0][1]):
             raise error.TestFail("Could not clear deep sleep count")
 
 
     def get_board_properties(self):
         """Get information from the version command"""
-        rv = self.send_command_get_output('brdprop',
+        rv = self.send_command_retry_get_output('brdprop',
                 ['properties = (\S+)'])
         return int(rv[0][1], 16)
 
@@ -178,7 +258,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def has_command(self, cmd):
         """Returns 1 if cr50 has the command 0 if it doesn't"""
         try:
-            self.send_command_get_output('help', [cmd])
+            self.send_command_retry_get_output('help', [cmd])
         except:
             logging.info("Image does not include '%s' command", cmd)
             return 0
@@ -281,12 +361,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def rolledback(self):
         """Returns true if cr50 just rolled back"""
         return 'Rollback detected' in self.send_command_get_output('sysinfo',
-                ['.*>'])[0]
+                ['sysinfo.*>'])[0]
 
 
     def get_version_info(self, regexp):
         """Get information from the version command"""
-        return self.send_command_get_output('ver', [regexp])[0][1::]
+        return self.send_command_retry_get_output('ver', [regexp])[0][1::]
 
 
     def get_inactive_version_info(self):
@@ -301,7 +381,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def using_prod_rw_keys(self):
         """Returns True if the RW keyid is prod"""
-        rv = self.send_command_get_output('sysinfo',
+        rv = self.send_command_retry_get_output('sysinfo',
                 ['RW keyid:.*\(([a-z]+)\)'])
         logging.info(rv)
         return rv[0][1] == 'prod'
@@ -361,7 +441,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if self.using_ccd():
             return self._servo.get('ccd_state') == 'on'
         else:
-            result = self.send_command_get_output('gpioget',
+            result = self.send_command_retry_get_output('gpioget',
                     ['(0|1)..CCD_MODE_L'])
             return not bool(int(result[0][1]))
 
@@ -473,7 +553,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         # Set testlab mode
         rv = self.send_command_get_output('ccd testlab %s' % request_str,
-                ['.*>'])[0]
+                ['ccd.*>'])[0]
         if 'Access Denied' in rv:
             raise error.TestFail("'ccd %s' %s" % (request_str, rv))
 
@@ -488,17 +568,17 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def get_ccd_level(self):
         """Returns the current ccd privilege level"""
-        # TODO(mruthven): delete the part removing the trailing 'ed' once
-        # servo is up to date in the lab
-        return self._servo.get('cr50_ccd_level').lower().rstrip('ed')
+        return self._servo.get('cr50_ccd_level').lower()
 
 
-    def set_ccd_level(self, level):
+    def set_ccd_level(self, level, password=''):
         """Set the Cr50 CCD privilege level.
 
         Args:
             level: a string of the ccd privilege level: 'open', 'lock', or
                    'unlock'.
+            password: send the ccd command with password. This will still
+                    require the same physical presence.
 
         Raises:
             TestFail if the level couldn't be set
@@ -527,11 +607,23 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestError("Wont change privilege level without "
                 "physical presence or testlab mode enabled")
 
+        original_timeout = float(self._servo.get('cr50_uart_timeout'))
+        # Change the console timeout to CONSERVATIVE_CCD_WAIT, running 'ccd' may
+        # take more than 3 seconds.
+        self._servo.set_nocheck('cr50_uart_timeout', self.CONSERVATIVE_CCD_WAIT)
         # Start the unlock process.
-        rv = self.send_command_get_output('ccd %s' % level, ['.*>'])[0]
+        try:
+            cmd = 'ccd %s%s' % (level, (' ' + password) if password else '')
+            rv = self.send_command_get_output(cmd, [cmd + '(.*)>'])[0][1]
+        finally:
+            self._servo.set('cr50_uart_timeout', original_timeout)
         logging.info(rv)
+        if 'ccd_open denied: fwmp' in rv:
+            raise error.TestFail('FWMP disabled %r: %s' % (cmd, rv))
         if 'Access Denied' in rv:
-            raise error.TestFail("'ccd %s' %s" % (level, rv))
+            raise error.TestFail("%r %s" % (cmd, rv))
+        if 'Busy' in rv:
+            raise error.TestFail("cr50 is too busy to run %r: %s" % (cmd, rv))
 
         # Press the power button once a second, if we need physical presence.
         if req_pp:
@@ -575,7 +667,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def gettime(self):
         """Get the current cr50 system time"""
-        result = self.send_command_get_output('gettime', [' = (.*) s'])
+        result = self.send_command_retry_get_output('gettime', [' = (.*) s'])
         return float(result[0][1])
 
 

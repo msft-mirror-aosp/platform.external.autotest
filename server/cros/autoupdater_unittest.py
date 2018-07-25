@@ -4,19 +4,91 @@
 # found in the LICENSE file.
 
 import mox
-import os
+import time
 import unittest
 
 import common
-import time
-
-import autoupdater
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.test_utils import mock
+from autotest_lib.server.cros import autoupdater
+
+
+class _StubUpdateError(autoupdater._AttributedUpdateError):
+    STUB_MESSAGE = 'Stub message'
+    STUB_PATTERN = 'Stub pattern matched'
+    _SUMMARY = 'Stub summary'
+    _CLASSIFIERS = [
+        (STUB_MESSAGE, STUB_MESSAGE),
+        ('Stub .*', STUB_PATTERN),
+    ]
+
+    def __init__(self, info, msg):
+        super(_StubUpdateError, self).__init__(
+            'Stub %s' % info, msg)
+
+
+class TestErrorClassifications(unittest.TestCase):
+    """Test error message handling in `_AttributedUpdateError`."""
+
+    def test_exception_message(self):
+        """Test that the exception string includes its arguments."""
+        info = 'info marker'
+        msg = 'an error message'
+        stub = _StubUpdateError(info, msg)
+        self.assertIn(info, str(stub))
+        self.assertIn(msg, str(stub))
+
+    def test_classifier_message(self):
+        """Test that the exception classifier can match a simple string."""
+        info = 'info marker'
+        stub = _StubUpdateError(info, _StubUpdateError.STUB_MESSAGE)
+        self.assertNotIn(info, stub.failure_summary)
+        self.assertIn(_StubUpdateError._SUMMARY, stub.failure_summary)
+        self.assertIn(_StubUpdateError.STUB_MESSAGE, stub.failure_summary)
+
+    def test_classifier_pattern(self):
+        """Test that the exception classifier can match a regex."""
+        info = 'info marker'
+        stub = _StubUpdateError(info, 'Stub this is a test')
+        self.assertNotIn(info, stub.failure_summary)
+        self.assertIn(_StubUpdateError._SUMMARY, stub.failure_summary)
+        self.assertIn(_StubUpdateError.STUB_PATTERN, stub.failure_summary)
+
+    def test_classifier_unmatched(self):
+        """Test exception summary when no classifier matches."""
+        info = 'info marker'
+        stub = _StubUpdateError(info, 'This matches no pattern')
+        self.assertNotIn(info, stub.failure_summary)
+        self.assertIn(_StubUpdateError._SUMMARY, stub.failure_summary)
+
+    def test_host_update_error(self):
+        """Sanity test the `HostUpdateError` classifier."""
+        exception = autoupdater.HostUpdateError(
+                'chromeos6-row3-rack3-host19', 'Fake message')
+        self.assertTrue(isinstance(exception.failure_summary, str))
+
+    def test_dev_server_error(self):
+        """Sanity test the `DevServerError` classifier."""
+        exception = autoupdater.DevServerError(
+                'chromeos4-devserver7.cros', 'Fake message')
+        self.assertTrue(isinstance(exception.failure_summary, str))
+
+    def test_image_install_error(self):
+        """Sanity test the `ImageInstallError` classifier."""
+        exception = autoupdater.ImageInstallError(
+                'chromeos6-row3-rack3-host19',
+                'chromeos4-devserver7.cros',
+                'Fake message')
+        self.assertTrue(isinstance(exception.failure_summary, str))
+
+    def test_new_build_update_error(self):
+        """Sanity test the `NewBuildUpdateError` classifier."""
+        exception = autoupdater.NewBuildUpdateError(
+                'R68-10621.0.0', 'Fake message')
+        self.assertTrue(isinstance(exception.failure_summary, str))
+
 
 class TestAutoUpdater(mox.MoxTestBase):
     """Test autoupdater module."""
-
 
     def testParseBuildFromUpdateUrlwithUpdate(self):
         """Test that we properly parse the build from an update_url."""
@@ -25,364 +97,6 @@ class TestAutoUpdater(mox.MoxTestBase):
         expected_value = 'lumpy-release/R27-3837.0.0'
         self.assertEqual(autoupdater.url_to_image_name(update_url),
                          expected_value)
-
-
-    def testCheckVersion_1(self):
-        """Test version check methods work for any build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        1. trybot paladin build.
-        update version: trybot-lumpy-paladin/R27-3837.0.0-b123
-        booted version: 3837.0.2013_03_21_1340
-
-        """
-        update_url = ('http://172.22.50.205:8082/update/trybot-lumpy-paladin/'
-                      'R27-1111.0.0-b123')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '1111.0.2013_03_21_1340')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '1111.0.0-rc1')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('1111.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-pgo-generate')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-
-    def testCheckVersion_2(self):
-        """Test version check methods work for any build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        2. trybot release build.
-        update version: trybot-lumpy-release/R27-3837.0.0-b456
-        booted version: 3837.0.0
-
-        """
-        update_url = ('http://172.22.50.205:8082/update/trybot-lumpy-release/'
-                      'R27-2222.0.0-b456')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '2222.0.2013_03_21_1340')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '2222.0.0-rc1')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('2222.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-pgo-generate')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-
-    def testCheckVersion_3(self):
-        """Test version check methods work for any build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        3. buildbot official release build.
-        update version: lumpy-release/R27-3837.0.0
-        booted version: 3837.0.0
-
-        """
-        update_url = ('http://172.22.50.205:8082/update/lumpy-release/'
-                      'R27-3333.0.0')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '3333.0.2013_03_21_1340')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '3333.0.0-rc1')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('3333.0.0')
-        self.mox.ReplayAll()
-
-        self.assertTrue(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-pgo-generate')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-
-    def testCheckVersion_4(self):
-        """Test version check methods work for any build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        4. non-official paladin rc build.
-        update version: lumpy-paladin/R27-3837.0.0-rc7
-        booted version: 3837.0.0-rc7
-
-        """
-        update_url = ('http://172.22.50.205:8082/update/lumpy-paladin/'
-                      'R27-4444.0.0-rc7')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.2013_03_21_1340')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '4444.0.0-rc7')
-        self.mox.ReplayAll()
-
-        self.assertTrue(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('4444.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-pgo-generate')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-
-    def testCheckVersion_5(self):
-        """Test version check methods work for any build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        5. chrome-perf build.
-        update version: lumpy-chrome-perf/R28-3837.0.0-b2996
-        booted version: 3837.0.0
-
-        """
-        update_url = ('http://172.22.50.205:8082/update/lumpy-chrome-perf/'
-                      'R28-4444.0.0-b2996')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.2013_03_21_1340')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '4444.0.0-rc7')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('4444.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-pgo-generate')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-
-    def testCheckVersion_6(self):
-        """Test version check methods work for any build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        6. pgo-generate build.
-        update version: lumpy-release-pgo-generate/R28-3837.0.0-b2996
-        booted version: 3837.0.0-pgo-generate
-
-        """
-        update_url = ('http://172.22.50.205:8082/update/lumpy-release-pgo-'
-                      'generate/R28-4444.0.0-b2996')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-2013_03_21_1340')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '4444.0.0-rc7')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('4444.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                                                    '4444.0.0-pgo-generate')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-
-    def testCheckVersion_7(self):
-        """Test version check methods work for a test-ap build.
-
-        Test two methods used to check version, check_version and
-        check_version_to_confirm_install, for:
-        6. test-ap build.
-        update version: trybot-stumpy-test-ap/R46-7298.0.0-b23
-        booted version: 7298.0.0
-
-        """
-        update_url = ('http://100.107.160.2:8082/update/trybot-stumpy-test-api'
-                      '/R46-7298.0.0-b23')
-        updater = autoupdater.ChromiumOSUpdater(
-                update_url, host=self.mox.CreateMockAnything())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '7298.0.2015_07_24_1640')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '7298.0.2015_07_24_1640')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertTrue(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn('7298.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
-        self.mox.UnsetStubs()
-        self.mox.StubOutWithMock(updater.host, 'get_release_version')
-        updater.host.get_release_version().MultipleTimes().AndReturn(
-                '7298.0.0')
-        self.mox.ReplayAll()
-
-        self.assertFalse(updater.check_version())
-        self.assertFalse(updater.check_version_to_confirm_install())
-
 
     def _host_run_for_update(self, cmd, exception=None,
                              bad_update_status=False):
@@ -404,14 +118,13 @@ class TestAutoUpdater(mox.MoxTestBase):
             result.status = 0
             self.host.run(command=cmd).AndReturn(result)
 
-
     def testTriggerUpdate(self):
         """Tests that we correctly handle updater errors."""
         update_url = 'http://server/test/url'
         self.host = self.mox.CreateMockAnything()
         self.mox.StubOutWithMock(self.host, 'run')
         self.mox.StubOutWithMock(autoupdater.ChromiumOSUpdater,
-                                 'get_last_update_error')
+                                 '_get_last_update_error')
         self.host.hostname = 'test_host'
         updater_control_bin = '/usr/bin/update_engine_client'
         test_url = 'http://server/test/url'
@@ -505,26 +218,24 @@ class TestAutoUpdater(mox.MoxTestBase):
 
         self.mox.VerifyAll()
 
-
     def testUpdateStateful(self):
         """Tests that we call the stateful update script with the correct args.
         """
         self.mox.StubOutWithMock(autoupdater.ChromiumOSUpdater, '_run')
         self.mox.StubOutWithMock(autoupdater.ChromiumOSUpdater,
-                                 'get_stateful_update_script')
+                                 '_get_stateful_update_script')
         update_url = ('http://172.22.50.205:8082/update/lumpy-chrome-perf/'
                       'R28-4444.0.0-b2996')
         static_update_url = ('http://172.22.50.205:8082/static/'
                              'lumpy-chrome-perf/R28-4444.0.0-b2996')
+        update_script = '/usr/local/bin/stateful_update'
 
         # Test with clobber=False.
-        autoupdater.ChromiumOSUpdater.get_stateful_update_script().AndReturn(
-                autoupdater.ChromiumOSUpdater.REMOTE_STATEFUL_UPDATE_PATH)
+        autoupdater.ChromiumOSUpdater._get_stateful_update_script().AndReturn(
+                update_script)
         autoupdater.ChromiumOSUpdater._run(
                 mox.And(
-                        mox.StrContains(
-                                autoupdater.ChromiumOSUpdater.
-                                REMOTE_STATEFUL_UPDATE_PATH),
+                        mox.StrContains(update_script),
                         mox.StrContains(static_update_url),
                         mox.Not(mox.StrContains('--stateful_change=clean'))),
                 timeout=mox.IgnoreArg())
@@ -536,13 +247,11 @@ class TestAutoUpdater(mox.MoxTestBase):
 
         # Test with clobber=True.
         self.mox.ResetAll()
-        autoupdater.ChromiumOSUpdater.get_stateful_update_script().AndReturn(
-                autoupdater.ChromiumOSUpdater.REMOTE_STATEFUL_UPDATE_PATH)
+        autoupdater.ChromiumOSUpdater._get_stateful_update_script().AndReturn(
+                update_script)
         autoupdater.ChromiumOSUpdater._run(
                 mox.And(
-                        mox.StrContains(
-                                autoupdater.ChromiumOSUpdater.
-                                REMOTE_STATEFUL_UPDATE_PATH),
+                        mox.StrContains(update_script),
                         mox.StrContains(static_update_url),
                         mox.StrContains('--stateful_change=clean')),
                 timeout=mox.IgnoreArg())
@@ -551,44 +260,37 @@ class TestAutoUpdater(mox.MoxTestBase):
         updater.update_stateful(clobber=True)
         self.mox.VerifyAll()
 
-
-    def testGetStatefulUpdateScript(self):
-        """ Test that get_stateful_update_script look for stateful_update.
-
-        Check get_stateful_update_script is trying hard to find
-        stateful_update and assert if it can't.
-
-        """
+    def testGetRemoteScript(self):
+        """Test _get_remote_script() behaviors."""
         update_url = ('http://172.22.50.205:8082/update/lumpy-chrome-perf/'
                       'R28-4444.0.0-b2996')
-        script_loc = os.path.join(autoupdater.STATEFUL_UPDATE_PATH,
-                                  autoupdater.STATEFUL_UPDATE_SCRIPT)
-        self.god = mock.mock_god()
-        self.god.stub_function(os.path, 'exists')
+        script_name = 'fubar'
+        local_script = '/usr/local/bin/%s' % script_name
         host = self.mox.CreateMockAnything()
         updater = autoupdater.ChromiumOSUpdater(update_url, host=host)
-        os.path.exists.expect_call(script_loc).and_return(False)
-        host.path_exists('/usr/local/bin/stateful_update').AndReturn(False)
+        host.path_exists(local_script).AndReturn(True)
 
         self.mox.ReplayAll()
-        # No existing files, no URL, we should assert.
-        self.assertRaises(
-                autoupdater.ChromiumOSError,
-                updater.get_stateful_update_script)
+        # Simple case:  file exists on DUT
+        self.assertEqual(updater._get_remote_script(script_name),
+                         local_script)
         self.mox.VerifyAll()
 
-        # No existing files, but stateful URL, we will try.
         self.mox.ResetAll()
-        os.path.exists.expect_call(script_loc).and_return(True)
-        host.send_file(
-                script_loc,
-                '/tmp/stateful_update', delete_dest=True).AndReturn(True)
-        self.mox.ReplayAll()
-        self.assertEqual(
-                updater.get_stateful_update_script(),
-                '/tmp/stateful_update')
-        self.mox.VerifyAll()
+        fake_shell = '/bin/ash'
+        tmp_script = '/tmp/%s' % script_name
+        fake_result = self.mox.CreateMockAnything()
+        fake_result.stdout = ' %s\n' % fake_shell
+        host.path_exists(local_script).AndReturn(False)
+        host.run(mox.IgnoreArg(),
+                 ignore_status=True).AndReturn(fake_result)
 
+        self.mox.ReplayAll()
+        # Complicated case:  script not on DUT, so try to download it.
+        self.assertEqual(
+                updater._get_remote_script(script_name),
+                '%s %s' % (fake_shell, tmp_script))
+        self.mox.VerifyAll()
 
     def testRollbackRootfs(self):
         """Tests that we correctly rollback the rootfs when requested."""

@@ -6,10 +6,9 @@
 
 See http://goto.google.com/monitor_db_per_job_refactor
 
-See also lucifer_run_job in
-https://chromium.googlesource.com/chromiumos/infra/lucifer
+See also https://chromium.googlesource.com/chromiumos/infra/lucifer
 
-job_reporter is a thin wrapper around lucifer_run_job and only updates the
+job_reporter is a thin wrapper around lucifer and only updates the
 Autotest database according to status events.
 """
 
@@ -55,14 +54,14 @@ def _parse_args_and_configure_logging(args):
     # General configuration
     parser.add_argument('--jobdir', default='/usr/local/autotest/leases',
                         help='Path to job leases directory.')
-    parser.add_argument('--run-job-path', default='/usr/bin/lucifer_run_job',
-                        help='Path to lucifer_run_job binary')
+    parser.add_argument('--lucifer-path', default='/usr/bin/lucifer',
+                        help='Path to lucifer binary')
 
     # Job specific
 
     # General
     parser.add_argument('--lucifer-level', required=True,
-                        help='Lucifer level')
+                        help='Lucifer level', choices=['STARTING'])
     parser.add_argument('--job-id', type=int, required=True,
                         help='Autotest Job ID')
     parser.add_argument('--results-dir', required=True,
@@ -71,34 +70,13 @@ def _parse_args_and_configure_logging(args):
     # STARTING flags
     parser.add_argument('--execution-tag', default=None,
                         help='Autotest execution tag.')
-
-    # GATHERING flags
-    parser.add_argument('--autoserv-exit', type=int, default=None, help='''
-autoserv exit status.  If this is passed, then autoserv will not be run
-as the caller has presumably already run it.
-''')
-    parser.add_argument('--need-gather', action='store_true',
-                        help='Whether to gather logs'
-                        ' (only with --lucifer-level GATHERING)')
-    parser.add_argument('--num-tests-failed', type=int, default=-1,
-                        help='Number of tests failed'
-                        ' (only with --need-gather)')
+    parser.add_argument('--parsing-only', action='store_true',
+                        help='Whether to only do parsing'
+                        ' (only with --lucifer-level STARTING)')
 
     args = parser.parse_args(args)
-    _validate_args(args)
     loglib.configure_logging_with_args(parser, args)
     return args
-
-
-# TODO(crbug.com/810141): These options are optional to support
-# GATHERING, so validation is done here rather than making them required
-# during argument parsing.  Can be removed and the arguments made
-# required after GATHERING is removed.
-def _validate_args(args):
-    if args.lucifer_level != 'STARTING':
-        return
-    if args.execution_tag is None:
-        raise Exception('--execution-tag must be provided for STARTING')
 
 
 def _main(args):
@@ -122,8 +100,7 @@ def _run_autotest_job(args):
     """
     models = autotest.load('frontend.afe.models')
     job = models.Job.objects.get(id=args.job_id)
-    if args.lucifer_level == 'STARTING':
-        _prepare_autotest_job_files(args, job)
+    _prepare_autotest_job_files(args, job)
     handler = _make_handler(args, job)
     ret = _run_lucifer_job(handler, args, job)
     if handler.completed:
@@ -137,35 +114,34 @@ def _prepare_autotest_job_files(args, job):
 
 
 def _make_handler(args, job):
-    """Make event handler for lucifer_run_job."""
-    assert not (args.lucifer_level == 'GATHERING'
-                and args.autoserv_exit is None)
+    """Make event handler for lucifer."""
     return handlers.EventHandler(
             metrics=handlers.Metrics(),
             job=job,
-            autoserv_exit=args.autoserv_exit,
+            autoserv_exit=None,
             results_dir=args.results_dir,
     )
 
 
 def _run_lucifer_job(event_handler, args, job):
-    """Run lucifer_run_job.
+    """Run lucifer test.
 
     Issued events will be handled by event_handler.
 
     @param event_handler: callable that takes an Event
     @param args: parsed arguments
-    @returns: exit status of lucifer_run_job
+    @returns: exit status of lucifer
     """
-    command_args = [args.run_job_path]
+    command_args = [args.lucifer_path]
     command_args.extend([
+            'test',
             '-autotestdir', '/usr/local/autotest',
 
             '-abortsock', _abort_sock_path(args.jobdir, args.job_id),
             '-hosts', ','.join(jobx.hostnames(job)),
 
             '-x-level', args.lucifer_level,
-            '-x-resultsdir', args.results_dir,
+            '-resultsdir', args.results_dir,
     ])
     _add_level_specific_args(command_args, args, job)
     return eventlib.run_event_command(
@@ -173,7 +149,7 @@ def _run_lucifer_job(event_handler, args, job):
 
 
 def _add_level_specific_args(command_args, args, job):
-    """Add level specific arguments for lucifer_run_job.
+    """Add level specific arguments for lucifer test.
 
     command_args is modified in place.
     """
@@ -184,7 +160,7 @@ def _add_level_specific_args(command_args, args, job):
 
 
 def _add_starting_args(command_args, args, job):
-    """Add STARTING level arguments for lucifer_run_job.
+    """Add STARTING level arguments for lucifer test.
 
     command_args is modified in place.
     """
@@ -192,12 +168,15 @@ def _add_starting_args(command_args, args, job):
     command_args.extend([
         '-x-control-file', jobx.control_file_path(args.results_dir),
     ])
-    command_args.extend(['-x-execution-tag', args.execution_tag])
+    if args.execution_tag is not None:
+        command_args.extend(['-x-execution-tag', args.execution_tag])
     command_args.extend(['-x-job-owner', job.owner])
     command_args.extend(['-x-job-name', job.name])
     command_args.extend(
             ['-x-reboot-after',
              RebootAfter.get_string(job.reboot_after).lower()])
+    if args.parsing_only:
+        command_args.append('-x-parse-only')
     if job.run_reset:
         command_args.append('-x-run-reset')
     command_args.extend(['-x-test-retries', str(job.test_retry)])

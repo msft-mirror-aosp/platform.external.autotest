@@ -23,6 +23,20 @@ class firmware_Cr50CCDServoCap(Cr50Test):
     # state once a second. Wait 2 seconds to be conservative.
     SLEEP = 2
 
+    # The responses we care about for ccdstate
+    #
+    # We look for the exact states, so send_command_get_output can tell if we
+    # are missing any of the output and retry.
+    #
+    # TODO(b/80540170): change ccdstate regex to 'ccdstate.*>' when we know the
+    # cr50 console wont drop characters
+    CCDSTATE_RESPONSE_LIST = [
+        'ccdstate',
+        'Rdd:\s+(disconnected|connected|undetectable)',
+        'Servo:\s+(disconnected|connected|undetectable)',
+        'State flags:\s+(UARTAP(\+TX)? )?UARTEC(\+TX)?( I2C)?( SPI)?[\r\n]',
+        '>'
+    ]
     # A list of the actions we should verify
     TEST_CASES = [
         'fake_servo on, cr50_run reboot',
@@ -111,9 +125,9 @@ class firmware_Cr50CCDServoCap(Cr50Test):
     }
 
 
-    def initialize(self, host, cmdline_args, ccd_lockout):
-        self.ccd_lockout = ccd_lockout
-        super(firmware_Cr50CCDServoCap, self).initialize(host, cmdline_args)
+    def initialize(self, host, cmdline_args, full_args):
+        super(firmware_Cr50CCDServoCap, self).initialize(host, cmdline_args,
+                full_args)
         if not hasattr(self, 'cr50'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
@@ -135,11 +149,10 @@ class firmware_Cr50CCDServoCap(Cr50Test):
             self.STATE_VALUES[self.ON].extend(self.ON_CCD_ACCESSIBLE)
 
         self.check_servo_monitor()
-        self.cr50.set_ccd_testlab('on')
+        # Make sure cr50 is open with testlab enabled.
+        self.fast_open(enable_testlab=True)
         if not self.cr50.testlab_is_on():
             raise error.TestNAError('Cr50 testlab mode needs to be enabled')
-
-        self.cr50.send_command('ccd testlab open')
         logging.info('Cr50 is %s', self.servo.get('cr50_ccd_level'))
         self.cr50.set_cap('UartGscTxECRx', 'Always')
 
@@ -168,8 +181,8 @@ class firmware_Cr50CCDServoCap(Cr50Test):
 
     def get_ccdstate(self):
         """Get the current Cr50 CCD states"""
-        rv = self.cr50.send_command_get_output('ccdstate',
-            ['ccdstate(.*)>'])[0][1]
+        regex = '.*'.join(self.CCDSTATE_RESPONSE_LIST)
+        rv = self.cr50.send_command_retry_get_output('ccdstate', [regex])[0][0]
         logging.info(rv)
         # I2C isn't a reliable flag, because the hardware often doesn't support
         # it. Remove any I2C flags from the ccdstate output.

@@ -28,15 +28,13 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     # This information is in ec/board/cr50/scratch_reg1.h
     RELEVANT_PROPERTIES = 0x63
     BRDPROP_FORMAT = ['properties = (0x\d+)\s']
-    HELP_FORMAT = [ 'Known commands:(.*)HELP LIST.*>']
-    GENERAL_FORMAT = [ '\n(.*)>']
     COMPARE_LINES = '\n'
     COMPARE_WORDS = None
     SORTED = True
     TESTS = [
-        ['pinmux', GENERAL_FORMAT, COMPARE_LINES, not SORTED],
-        ['help', HELP_FORMAT, COMPARE_WORDS, SORTED],
-        ['gpiocfg', GENERAL_FORMAT, COMPARE_LINES, not SORTED],
+        ['pinmux', 'pinmux(.*)>', COMPARE_LINES, not SORTED],
+        ['help', 'Known commands:(.*)HELP LIST.*>', COMPARE_WORDS, SORTED],
+        ['gpiocfg', 'gpiocfg(.*)>', COMPARE_LINES, not SORTED],
     ]
     CCD_HOOK_WAIT = 2
     # Lists connecting the board property values to the labels.
@@ -49,8 +47,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         [0x40, 'plt_rst', 'sys_rst'],
     ]
 
-    def initialize(self, host, cmdline_args):
-        super(firmware_Cr50ConsoleCommands, self).initialize(host, cmdline_args)
+    def initialize(self, host, cmdline_args, full_args):
+        super(firmware_Cr50ConsoleCommands, self).initialize(host, cmdline_args,
+                full_args)
         self.host = host
         self.missing = []
         self.extra = []
@@ -60,8 +59,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         caps = self.cr50.get_cap_dict()
         if caps['GscFullConsole'] == 'Always':
             logging.info('Restricting console')
-            self.cr50.send_command('ccd testlab open')
-            self.cr50.set_ccd_level('open')
+            self.fast_open(enable_testlab=True)
             self.cr50.set_cap('GscFullConsole', 'IfOpened')
             time.sleep(self.CCD_HOOK_WAIT)
             self.cr50.set_ccd_level('lock')
@@ -81,7 +79,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
 
     def get_output(self, cmd, regexp, split_str, sort):
         """Return the cr50 console output"""
-        output = self.cr50.send_command_get_output(cmd, regexp)[0][1].strip()
+        output = self.cr50.send_command_get_output(cmd, [regexp])[0][1].strip()
         logging.debug('%s output:%s\n', cmd, output)
 
         # Record the original command output

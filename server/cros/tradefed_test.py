@@ -136,13 +136,14 @@ class TradefedTest(test.test):
                                         self._get_tradefed_base_dir())
 
         # Load expected test failures to exclude them from re-runs.
-        self._waivers = self._get_expected_failures('expectations')
+        self._waivers = self._get_expected_failures('expectations', bundle)
         if not retry_manual_tests:
             self._waivers.update(
-                self._get_expected_failures('manual_tests'))
+                    self._get_expected_failures('manual_tests', bundle))
 
         # Load modules with no tests.
-        self._notest_modules = self._get_expected_failures('notest_modules')
+        self._notest_modules = self._get_expected_failures('notest_modules',
+                bundle)
 
     def cleanup(self):
         """Cleans up any dirtied state."""
@@ -167,7 +168,7 @@ class TradefedTest(test.test):
         # Check ChromeOS ARC VERSION. E.g.
         arc_version = set(host.get_arc_version() for host in self._hosts)
         if len(arc_version) > 1:
-            raise error.TestFail('Hosts\' CHROMEOS_ARC_VERSION is different: ',
+            raise error.TestFail('Hosts\' CHROMEOS_ARC_VERSION is different: '
                                  '%s', arc_version)
 
         # Check ChromeOS model for unibuild.
@@ -335,7 +336,8 @@ class TradefedTest(test.test):
         def _intent_helper_running():
             result = self._run_adb_cmd(
                 host,
-                args=('shell', 'pgrep', '-f', 'org.chromium.arc.intent_helper'))
+                args=('shell', 'pgrep', '-f', 'org.chromium.arc.intent_helper'),
+                ignore_status=True)
             return bool(result.stdout)
 
         utils.poll_for_condition(
@@ -371,8 +373,8 @@ class TradefedTest(test.test):
         # Kill existing adb server to ensure that the env var is picked up.
         self._run_adb_cmd(verbose=True, args=('kill-server',))
 
-        # TODO(pwang): ready_arc takes 10+ seconds on a single DUT. Parallelize
-        #              it if it becomes a bottleneck.
+        # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
+        #              Parallelize it if it becomes a bottleneck.
         for host in self._hosts:
             self._connect_adb(host, pubkey_path)
             self._disable_adb_install_dialog(host)
@@ -772,11 +774,12 @@ class TradefedTest(test.test):
         """
         return parse_tradefed_result(result.stdout, waivers)
 
-    def _get_expected_failures(self, *directories):
+    def _get_expected_failures(self, directory, bundle_abi):
         """Return a list of expected failures or no test module.
 
-        @param directories: A list of directories with expected no tests
-                            or failures files.
+        @param directory: A directory with expected no tests or failures files.
+        @param bundle_abi: 'arm' or 'x86' if the test is for the particular ABI.
+                           None otherwise (like GTS, built for multi-ABI.)
         @return: A list of expected failures or no test modules for the current
                  testing device.
         """
@@ -784,14 +787,13 @@ class TradefedTest(test.test):
         expected_fail_files = []
         test_board = self._get_board_name()
         test_arch = self._get_board_arch()
-        for directory in directories:
-            expected_fail_dir = os.path.join(self.bindir, directory)
-            if os.path.exists(expected_fail_dir):
-                expected_fail_files += glob.glob(expected_fail_dir + '/*.yaml')
+        expected_fail_dir = os.path.join(self.bindir, directory)
+        if os.path.exists(expected_fail_dir):
+            expected_fail_files += glob.glob(expected_fail_dir + '/*.yaml')
 
         waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
             expected_fail_files)
-        return waivers.find_waivers(test_board, test_arch)
+        return waivers.find_waivers(test_arch, test_board, bundle_abi)
 
     def _get_abilist(self):
         """Return the abilist supported by calling adb command.
@@ -814,7 +816,8 @@ class TradefedTest(test.test):
     def _get_board_arch(self):
         """Return target DUT arch name."""
         if not self._board_arch:
-            self._board_arch = 'arm' if self._hosts[0] == 'arm' else 'x86'
+            self._board_arch = ('arm' if self._hosts[0].get_cpu_arch() == 'arm'
+                else 'x86')
         return self._board_arch
 
     def _get_board_name(self):
@@ -997,16 +1000,19 @@ class TradefedTest(test.test):
             lastmatch = (session, passed, failed, done == total)
         return lastmatch
 
-    def _tradefed_retry_command(self, run_command, session_id):
-        """Builds the tradefed 'retry' command line."""
-        return run_command + ['--retry', '%d' % session_id]
+    def _tradefed_retry_command(self, template, session_id):
+        raise NotImplementedError('Subclass should override this function')
+
+    def _tradefed_run_command(self, template):
+        raise NotImplementedError('Subclass should override this function')
 
     def _run_tradefed_with_retries(self,
-                                   target_module,
-                                   test_command,
                                    test_name,
-                                   target_plan=None,
+                                   run_template,
+                                   retry_template,
                                    needs_push_media=False,
+                                   target_module=None,
+                                   target_plan=None,
                                    cts_uri=None,
                                    login_precondition_commands=[],
                                    precondition_commands=[]):
@@ -1016,17 +1022,17 @@ class TradefedTest(test.test):
         on the next MAX_RETRY iterations.
         """
         if self._should_skip_test():
-            logging.warning('Skipped test %s', ' '.join(test_command))
+            logging.warning('Skipped test %s', ' '.join(test_name))
             return
 
         steps = -1  # For historic reasons the first iteration is not counted.
         pushed_media = False
         self.summary = ''
+        accurate = []
         board = self._get_board_name()
         session_id = None
 
         self._setup_result_directories()
-
         # This loop retries failures. For this reason please do not raise
         # TestFail in this loop if you suspect the failure might be fixed
         # in the next loop iteration.
@@ -1052,18 +1058,20 @@ class TradefedTest(test.test):
                         self._install_plan(target_plan)
 
                     logging.info('Running %s:', test_name)
-                    commands = [test_command]
+                    commands = [self._tradefed_run_command(run_template)]
                 else:
                     logging.info('Retrying failures of %s with session_id %d:',
                                  test_name, session_id)
-                    commands = [self._tradefed_retry_command(list(test_command),
+                    commands = [self._tradefed_retry_command(retry_template,
                                                              session_id)]
 
                 # TODO(pwang): Evaluate if it is worth it to get the number of
                 #              not-excecuted, for instance, by collecting all
                 #              tests on startup (very expensive, may take 30
                 #              minutes).
-                waived_tests = self._run_and_parse_tradefed(commands)
+                waived_tests, acc = self._run_and_parse_tradefed(
+                    commands)
+                accurate.append(acc)
                 result = self._run_tradefed_list_results()
                 if not result:
                     logging.error('Did not find any test results. Retry.')
@@ -1116,12 +1124,18 @@ class TradefedTest(test.test):
                             'Passed: after %d retries passing %d tests, '
                             'waived=%d. %s' % (steps, passed, waived,
                                                self.summary))
+                    if not all(accurate):
+                        raise error.TestWarn(
+                            'Passed: after %d retries passing %d tests, '
+                            'waived=%d. Tests may not be accurate. %s' % (
+                                steps, passed, waived, self.summary))
                     return
 
         if session_id == None:
             raise error.TestFail('Error: Could not find any tests in module.')
         raise error.TestFail(
             'Failed: after %d retries giving up. '
-            'passed=%d, failed=%d, waived=%d%s. %s' %
+            'passed=%d, failed=%d, waived=%d%s%s. %s' %
             (steps, passed, failed, waived, '' if all_done else ', notexec>=1',
+             '' if all(accurate) else ', Tests may not be accurate.',
              self.summary))

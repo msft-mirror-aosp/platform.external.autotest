@@ -25,7 +25,6 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import test as test_utils
-from autotest_lib.client.cros.graphics import gbm
 from autotest_lib.client.cros.input_playback import input_playback
 from autotest_lib.client.cros.power import power_utils
 from functools import wraps
@@ -199,8 +198,6 @@ class GraphicsTest(test.test):
         target = self._get_failure(name, subtest=subtest)
         if name in target['names']:
             target['names'].remove(name)
-            if len(target['names']) == 0:
-                self._failures.remove(target)
 
 
     def _output_perf(self):
@@ -219,8 +216,9 @@ class GraphicsTest(test.test):
         total_failures = 0
         # Report subtests failures
         for failure in self._failures:
-            logging.debug('GraphicsTest failure: %s' % failure['names'])
-            total_failures += len(failure['names'])
+            if len(failure['names']) > 0:
+                logging.debug('GraphicsTest failure: %s' % failure['names'])
+                total_failures += len(failure['names'])
 
             if not self._test_failure_report_subtest:
                 continue
@@ -495,12 +493,11 @@ def activate_focus_at(rel_x, rel_y):
     _uinput_emit(device, 'BTN_TOUCH', 0, syn=True)
 
 
-def take_screenshot(resultsdir, fname_prefix, extension='png'):
+def take_screenshot(resultsdir, fname_prefix):
     """Take screenshot and save to a new file in the results dir.
     Args:
       @param resultsdir:   Directory to store the output in.
       @param fname_prefix: Prefix for the output fname.
-      @param extension:    String indicating file format ('png', 'jpg', etc).
     Returns:
       the path of the saved screenshot file
     """
@@ -508,14 +505,13 @@ def take_screenshot(resultsdir, fname_prefix, extension='png'):
     old_exc_type = sys.exc_info()[0]
 
     next_index = len(glob.glob(
-        os.path.join(resultsdir, '%s-*.%s' % (fname_prefix, extension))))
+        os.path.join(resultsdir, '%s-*.png' % fname_prefix)))
     screenshot_file = os.path.join(
-        resultsdir, '%s-%d.%s' % (fname_prefix, next_index, extension))
+        resultsdir, '%s-%d.png' % (fname_prefix, next_index))
     logging.info('Saving screenshot to %s.', screenshot_file)
 
     try:
-        image = gbm.crtcScreenshot()
-        image.save(screenshot_file)
+        utils.run('screenshot "%s"' % screenshot_file)
     except Exception as err:
         # Do not raise an exception if the screenshot fails while processing
         # another exception.
@@ -526,69 +522,25 @@ def take_screenshot(resultsdir, fname_prefix, extension='png'):
     return screenshot_file
 
 
-def take_screenshot_crop_by_height(fullpath, final_height, x_offset_pixels,
-                                   y_offset_pixels):
-    """
-    Take a screenshot, crop to final height starting at given (x, y) coordinate.
-    Image width will be adjusted to maintain original aspect ratio).
-
-    @param fullpath: path, fullpath of the file that will become the image file.
-    @param final_height: integer, height in pixels of resulting image.
-    @param x_offset_pixels: integer, number of pixels from left margin
-                            to begin cropping.
-    @param y_offset_pixels: integer, number of pixels from top margin
-                            to begin cropping.
-    """
-    image = gbm.crtcScreenshot()
-    image.crop()
-    width, height = image.size
-    # Preserve aspect ratio: Wf / Wi == Hf / Hi
-    final_width = int(width * (float(final_height) / height))
-    box = (x_offset_pixels, y_offset_pixels,
-           x_offset_pixels + final_width, y_offset_pixels + final_height)
-    cropped = image.crop(box)
-    cropped.save(fullpath)
-    return fullpath
-
-
-def take_screenshot_crop_x(fullpath, box=None):
-    """
-    Take a screenshot using import tool, crop according to dim given by the box.
-    @param fullpath: path, full path to save the image to.
-    @param box: 4-tuple giving the upper left and lower right pixel coordinates.
-    """
-
-    if box:
-        img_w, img_h, upperx, uppery = box
-        cmd = ('/usr/local/bin/import -window root -depth 8 -crop '
-                      '%dx%d+%d+%d' % (img_w, img_h, upperx, uppery))
-    else:
-        cmd = ('/usr/local/bin/import -window root -depth 8')
-
-    old_exc_type = sys.exc_info()[0]
-    try:
-        utils.system('%s %s' % (cmd, fullpath))
-    except Exception as err:
-        # Do not raise an exception if the screenshot fails while processing
-        # another exception.
-        if old_exc_type is None:
-            raise
-        logging.error(err)
-
-
 def take_screenshot_crop(fullpath, box=None, crtc_id=None):
     """
     Take a screenshot using import tool, crop according to dim given by the box.
     @param fullpath: path, full path to save the image to.
     @param box: 4-tuple giving the upper left and lower right pixel coordinates.
+    @param crtc_id: if set, take a screen shot of the specified CRTC.
     """
+    cmd = 'screenshot'
     if crtc_id is not None:
-        image = gbm.crtcScreenshot(crtc_id)
+        cmd += ' --crtc-id=%d' % crtc_id
     else:
-        image = gbm.crtcScreenshot(get_internal_crtc())
+        cmd += ' --internal'
     if box:
-        image = image.crop(box)
-    image.save(fullpath)
+        x, y, r, b = box
+        w = r - x
+        h = b - y
+        cmd += ' --crop=%dx%d+%d+%d' % (w, h, x, y)
+    cmd += ' "%s"' % fullpath
+    utils.run(cmd)
     return fullpath
 
 
@@ -1248,3 +1200,37 @@ class GraphicsApiHelper(object):
             self.DEQP_EXECUTABLE[api]
         )
         return executable
+
+# Possible paths of the kernel DRI debug text file.
+_DRI_DEBUG_FILE_PATH_0 = "/sys/kernel/debug/dri/0/state"
+_DRI_DEBUG_FILE_PATH_1 = "/sys/kernel/debug/dri/1/state"
+
+# The DRI debug file will have a lot of information, including the position and
+# sizes of each plane, in lines starting with "crtc-pos="; many of them will be
+# zeros, this regex is used to filter those out.
+_CRTC_POS_PATTERN = re.compile(r'crtc-pos=(?!0x0\+0\+0)')
+
+def get_num_hardware_overlays():
+    """
+    Counts the amount of hardware overlay planes in use.  There's always at
+    least 2 overlays active: the whole screen and the cursor -- unless the
+    cursor has never moved (e.g. in autotests), and it's not present.
+
+    Raises: RuntimeError if the DRI debug file is not present.
+            OSError/IOError if the file cannot be open()ed or read().
+    """
+    file_path = _DRI_DEBUG_FILE_PATH_0;
+    if os.path.exists(_DRI_DEBUG_FILE_PATH_0):
+        file_path = _DRI_DEBUG_FILE_PATH_0;
+    elif os.path.exists(_DRI_DEBUG_FILE_PATH_1):
+        file_path = _DRI_DEBUG_FILE_PATH_1;
+    else:
+        raise RuntimeError('No DRI debug file exists (%s, %s)' %
+            (_DRI_DEBUG_FILE_PATH_0, _DRI_DEBUG_FILE_PATH_1))
+
+    filetext = open(file_path).read()
+    logging.debug(filetext)
+    matches = re.findall(_CRTC_POS_PATTERN, filetext)
+
+    # TODO(crbug.com/865112): return also the sizes/locations.
+    return len(matches)

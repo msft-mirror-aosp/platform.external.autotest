@@ -24,9 +24,10 @@ INTERNAL_GERRIT_HOST_URL = 'https://%s' % INTERNAL_GERRIT_HOST
 INTERNAL_INVENTORY_REPO_URL = ('https://chrome-internal.googlesource.com/'
                                'chromeos/infra_internal/skylab_inventory.git')
 INTERNAL_INVENTORY_CHANGE_PATTERN = (
-        r'https://chrome-internal-review.googlesource.com/#/c/chromeos/'
+        r'https://chrome-internal-review.googlesource.com/c/chromeos/'
         'infra_internal/skylab_inventory/\\+/([0-9]*)')
 MSG_INVALID_IN_SKYLAB = 'This is currently not supported with --skylab.'
+MSG_ONLY_VALID_IN_SKYLAB = 'This is only supported with --skylab.'
 
 
 class SkylabInventoryNotImported(Exception):
@@ -35,6 +36,10 @@ class SkylabInventoryNotImported(Exception):
 
 class InventoryRepoChangeNotFound(Exception):
     """Error raised when no inventory repo change number is found."""
+
+
+class InventoryRepoDirNotClean(Exception):
+    """Error raised when the given inventory_repo_dir contains local changes."""
 
 
 def get_cl_url(change_number):
@@ -68,7 +73,8 @@ def extract_inventory_change(output):
     m = re.search(INTERNAL_INVENTORY_CHANGE_PATTERN, output)
 
     if not m:
-        raise InventoryRepoChangeNotFound()
+        raise InventoryRepoChangeNotFound(
+                'Could not extract CL number from "%r"' % output)
 
     return int(m.group(1))
 
@@ -110,12 +116,19 @@ class InventoryRepo(object):
                 abs_work_tree=self.inventory_repo_dir)
 
         if self.git_repo.is_repo_initialized():
+            if self.git_repo.status():
+                raise InventoryRepoDirNotClean(
+                       'The inventory_repo_dir "%s" contains uncommitted '
+                       'changes. Please clean up the local repo directory or '
+                       'use another clean directory.' % self.inventory_repo_dir)
+
             logging.info('Inventory repo was already initialized, start '
                          'pulling.')
+            self.git_repo.checkout('master')
             self.git_repo.pull()
         else:
             logging.info('No inventory repo was found, start cloning.')
-            self.git_repo.clone()
+            self.git_repo.clone(shallow=True)
 
 
     def get_data_dir(self, data_subdir='skylab'):
@@ -136,8 +149,9 @@ class InventoryRepo(object):
         """
         self.git_repo.commit(commit_message)
 
+        remote = self.git_repo.remote()
         output = self.git_repo.upload_cl(
-                'origin', 'master', draft=draft, dryrun=dryrun)
+                remote, 'master', draft=draft, dryrun=dryrun)
 
         if not dryrun:
             change_number = extract_inventory_change(output)

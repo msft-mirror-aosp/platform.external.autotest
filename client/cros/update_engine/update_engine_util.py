@@ -4,9 +4,15 @@
 
 import logging
 import os
+import shutil
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
+
+
+_DEFAULT_RUN = utils.run
+_DEFAULT_COPY = shutil.copy
 
 class UpdateEngineUtil(object):
     """Utility code shared between client and server update_engine autotests"""
@@ -23,6 +29,7 @@ class UpdateEngineUtil(object):
     _UPDATE_ENGINE_DOWNLOADING = 'UPDATE_STATUS_DOWNLOADING'
     _UPDATE_ENGINE_FINALIZING = 'UPDATE_STATUS_FINALIZING'
     _UPDATE_STATUS_UPDATED_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
+    _UPDATE_STATUS_REPORTING_ERROR_EVENT = 'UPDATE_STATUS_REPORTING_ERROR_EVENT'
 
     # Files used by the tests.
     _UPDATE_ENGINE_LOG = '/var/log/update_engine.log'
@@ -33,6 +40,28 @@ class UpdateEngineUtil(object):
     # Public key used to force update_engine to verify omaha response data on
     # test images.
     _IMAGE_PUBLIC_KEY = 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFxZE03Z25kNDNjV2ZRenlydDE2UQpESEUrVDB5eGcxOE9aTys5c2M4aldwakMxekZ0b01Gb2tFU2l1OVRMVXArS1VDMjc0ZitEeElnQWZTQ082VTVECkpGUlBYVXp2ZTF2YVhZZnFsalVCeGMrSlljR2RkNlBDVWw0QXA5ZjAyRGhrckduZi9ya0hPQ0VoRk5wbTUzZG8Kdlo5QTZRNUtCZmNnMUhlUTA4OG9wVmNlUUd0VW1MK2JPTnE1dEx2TkZMVVUwUnUwQW00QURKOFhtdzRycHZxdgptWEphRm1WdWYvR3g3K1RPbmFKdlpUZU9POUFKSzZxNlY4RTcrWlppTUljNUY0RU9zNUFYL2xaZk5PM1JWZ0cyCk83RGh6emErbk96SjNaSkdLNVI0V3daZHVobjlRUllvZ1lQQjBjNjI4NzhxWHBmMkJuM05wVVBpOENmL1JMTU0KbVFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=='
+
+
+    def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
+        """
+        Initialize this class.
+
+        @param run_func: the function to use to run commands on the client.
+                         Defaults for use by client tests, but can be
+                         overwritten to run remotely from a server test.
+        @param get_file: the function to use when copying a file.  Defaults
+                         for use by client tests.  Called with
+                         (file, destination) syntax.
+
+        """
+        self._create_update_engine_variables(run_func, get_file)
+
+
+    def _create_update_engine_variables(self, run_func=_DEFAULT_RUN,
+                                        get_file=_DEFAULT_COPY):
+        """See __init__()."""
+        self._run = run_func
+        self._get_file = get_file
 
 
     def _wait_for_progress(self, progress):
@@ -68,9 +97,12 @@ class UpdateEngineUtil(object):
             if self._UPDATE_STATUS_IDLE == status[self._CURRENT_OP]:
                 raise error.TestFail('Update status was idle while trying to '
                                      'get download status.')
+            if self._UPDATE_STATUS_REPORTING_ERROR_EVENT == status[
+                self._CURRENT_OP]:
+                raise error.TestFail('Update status reported error.')
             if self._UPDATE_STATUS_UPDATED_NEED_REBOOT == status[
                 self._CURRENT_OP]:
-                raise error.TestFail('Update status was Needs Reboot while '
+                raise error.TestFail('Update status was NEEDS_REBOOT while '
                                      'trying to get download status.')
             # If we call this right after reboot it may not be downloading yet.
             if self._UPDATE_ENGINE_DOWNLOADING != status[self._CURRENT_OP]:
@@ -81,11 +113,19 @@ class UpdateEngineUtil(object):
 
     def _wait_for_update_to_fail(self):
         """Waits for the update to retry until failure."""
+        timeout_minutes = 20
+        timeout = time.time() + 60 * timeout_minutes
         while True:
             if self._check_update_engine_log_for_entry('Reached max attempts ',
                                                        raise_error=False):
-                break
+                logging.debug('Found log entry for failed update.')
+                if self._is_update_engine_idle():
+                    break
             time.sleep(1)
+            self._get_update_engine_status()
+            if time.time() > timeout:
+                raise error.TestFail('Update did not fail as expected. Timeout'
+                                     ': %d minutes.' % timeout_minutes)
 
 
     def _wait_for_update_to_complete(self, finalizing_ok=False):
@@ -103,6 +143,9 @@ class UpdateEngineUtil(object):
 
             # During reboot, status will be None
             if status is not None:
+                if self._UPDATE_STATUS_REPORTING_ERROR_EVENT == status[
+                    self._CURRENT_OP]:
+                    raise error.TestFail('Update status reported error.')
                 if status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE:
                     raise error.TestFail('Update status was unexpectedly '
                                          'IDLE when we were waiting for the '
@@ -113,13 +156,15 @@ class UpdateEngineUtil(object):
             time.sleep(1)
 
 
-    def _get_update_engine_status(self, timeout=3600):
+    def _get_update_engine_status(self, timeout=3600, ignore_status=True):
         """Returns a dictionary version of update_engine_client --status"""
         status = self._run('update_engine_client --status', timeout=timeout,
-                           ignore_timeout=True)
+                           ignore_timeout=True, ignore_status=ignore_status)
         if status is None:
             return None
         logging.debug(status)
+        if status.exit_status != 0:
+            return None
         status_dict = {}
         for line in status.stdout.splitlines():
             entry = line.partition('=')
@@ -160,6 +205,19 @@ class UpdateEngineUtil(object):
             else:
                 return False
         return True
+
+
+    def _is_update_finished_downloading(self):
+        """Checks if the update has moved to the final stages."""
+        s = self._get_update_engine_status()
+        return s[self._CURRENT_OP] in [self._UPDATE_ENGINE_FINALIZING,
+                                       self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
+
+
+    def _is_update_engine_idle(self):
+        """Checks if the update engine is idle."""
+        status = self._get_update_engine_status()
+        return status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE
 
 
     def _update_continued_where_it_left_off(self, progress):
@@ -226,3 +284,51 @@ class UpdateEngineUtil(object):
                           self._UPDATE_ENGINE_LOG_DIR).stdout.splitlines()
         return self._run('cat %s%s' % (self._UPDATE_ENGINE_LOG_DIR,
                                        files[1])).stdout
+
+
+    def _create_custom_lsb_release(self, update_url, build='0.0.0.0'):
+        """
+        Create a custom lsb-release file.
+
+        In order to tell OOBE to ping a different update server than the
+        default we need to create our own lsb-release. We will include a
+        deserver update URL.
+
+        @param update_url: String of url to use for update check.
+        @param build: String of the build number to use. Represents the
+                      Chrome OS build this device thinks it is on.
+
+        """
+        self._run('mkdir %s' % os.path.dirname(self._CUSTOM_LSB_RELEASE),
+                  ignore_status=True)
+        self._run('touch %s' % self._CUSTOM_LSB_RELEASE)
+        self._run('echo CHROMEOS_RELEASE_VERSION=%s > %s' %
+                  (build, self._CUSTOM_LSB_RELEASE))
+        self._run('echo CHROMEOS_AUSERVER=%s >> %s' %
+                  (update_url, self._CUSTOM_LSB_RELEASE))
+
+
+    def _clear_custom_lsb_release(self):
+        """
+        Delete the custom release file, if any.
+
+        Intended to clear work done by _create_custom_lsb_release().
+
+        """
+        self._run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
+
+
+    def _take_screenshot(self, filename):
+        """
+        Take a screenshot and save in resultsdir.
+
+        @param filename: The name of the file to save
+
+        """
+        try:
+            file_location = os.path.join('/tmp', filename)
+            screenshot_cmd = '/usr/local/autotest/bin/screenshot.py %s'
+            self._host.run(screenshot_cmd % file_location)
+            self._host.get_file(file_location, self.resultsdir)
+        except error.AutoservRunError:
+            logging.exception('Failed to take screenshot.')

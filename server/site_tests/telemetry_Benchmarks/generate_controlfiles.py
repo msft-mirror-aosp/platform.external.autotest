@@ -25,25 +25,18 @@ PERF_PER_BUILD_TESTS = (
     'jetstream',
     'kraken',
     'octane',
-    'smoothness.top_25_smooth',
     'speedometer',
+    'speedometer2',
 )
 
 PERF_DAILY_RUN_TESTS = (
-    'dromaeo.domcoreattr',
-    'dromaeo.domcoremodify',
-    'dromaeo.domcorequery',
-    'dromaeo.domcoretraverse',
+    'cros_tab_switching.typical_24',
+    'dromaeo',
     'image_decoding.image_decoding_measurement',
     'memory.desktop',
     'page_cycler_v2.typical_25',
     'robohornet_pro',
-    'smoothness.tough_animation_cases',
-    'smoothness.tough_canvas_cases',
-    'smoothness.tough_filters_cases',
     'smoothness.tough_pinch_zoom_cases',
-    'smoothness.tough_scrolling_cases',
-    'smoothness.tough_webgl_cases',
     'sunspider',
     'webrtc',
 )

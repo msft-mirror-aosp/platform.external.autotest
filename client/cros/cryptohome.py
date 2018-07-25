@@ -323,7 +323,7 @@ def mount_vault(user, password, create=False, key_label='bar'):
 
 def mount_guest():
     """Mount the guest vault."""
-    args = [CRYPTOHOME_CMD, '--action=mount_guest', '--async']
+    args = [CRYPTOHOME_CMD, '--action=mount_guest_ex']
     logging.info(__run_cmd(' '.join(args)))
     # Ensure that the guest vault is mounted.
     if not is_guest_vault_mounted(allow_fail=True):
@@ -572,8 +572,7 @@ def do_dircrypto_migration(user, password, timeout=600):
 def change_password(user, password, new_password):
     args = [
             CRYPTOHOME_CMD,
-            '--action=migrate_key',
-            '--async',
+            '--action=migrate_key_ex',
             '--user=%s' % user,
             '--old_password=%s' % password,
             '--password=%s' % new_password]
@@ -595,8 +594,11 @@ class CryptohomeProxy(DBusClient):
     )
     DBUS_PROPERTIES_INTERFACE = 'org.freedesktop.DBus.Properties'
 
+    # Default timeout in seconds for the D-Bus connection.
+    DEFAULT_DBUS_TIMEOUT = 30
 
-    def __init__(self, bus_loop=None, autodir=None, job=None):
+    def __init__(self, bus_loop=None, autodir=None, job=None,
+                 timeout=DEFAULT_DBUS_TIMEOUT):
         if autodir and job:
             # Install D-Bus protos necessary for some methods.
             dep_dir = os.path.join(autodir, 'deps', DBUS_PROTOS_DEP)
@@ -610,7 +612,8 @@ class CryptohomeProxy(DBusClient):
         self.bus = dbus.SystemBus(mainloop=bus_loop)
         super(CryptohomeProxy, self).__init__(self.main_loop, self.bus,
                                               self.CRYPTOHOME_BUS_NAME,
-                                              self.CRYPTOHOME_OBJECT_PATH)
+                                              self.CRYPTOHOME_OBJECT_PATH,
+                                              timeout)
         self.iface = dbus.Interface(self.proxy_object,
                                     self.CRYPTOHOME_INTERFACE)
         self.properties = dbus.Interface(self.proxy_object,
@@ -716,14 +719,6 @@ class CryptohomeProxy(DBusClient):
         """Raises a test failure if a user's cryptohome is not mounted."""
         utils.require_mountpoint(user_path(user))
         utils.require_mountpoint(system_path(user))
-
-
-    def migrate(self, user, oldkey, newkey, async=True):
-        """Migrates the specified user's cryptohome from one key to another."""
-        if async:
-            return self.__async_call(self.iface.AsyncMigrateKey,
-                                     user, oldkey, newkey)['return_status']
-        return self.__call(self.iface.MigrateKey, user, oldkey, newkey)
 
 
     def remove(self, user, async=True):

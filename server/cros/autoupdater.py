@@ -6,13 +6,16 @@ import glob
 import logging
 import os
 import re
-import urlparse
 import urllib2
+import urlparse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, global_config
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.server import autotest
 from autotest_lib.server import utils as server_utils
+from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
+from autotest_lib.server.cros.dynamic_suite import tools
 from chromite.lib import retry_util
 
 try:
@@ -20,14 +23,12 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
-try:
-    import devserver
-    STATEFUL_UPDATE_PATH = devserver.__path__[0]
-except ImportError:
-    STATEFUL_UPDATE_PATH = '/usr/bin'
+
+def _metric_name(base_name):
+    return 'chromeos/autotest/provision/' + base_name
+
 
 # Local stateful update path is relative to the CrOS source directory.
-STATEFUL_UPDATE_SCRIPT = 'stateful_update'
 UPDATER_IDLE = 'UPDATE_STATUS_IDLE'
 UPDATER_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
 # A list of update engine client states that occur after an update is triggered.
@@ -36,19 +37,172 @@ UPDATER_PROCESSING_UPDATE = ['UPDATE_STATUS_CHECKING_FORUPDATE',
                              'UPDATE_STATUS_DOWNLOADING',
                              'UPDATE_STATUS_FINALIZING']
 
-class ChromiumOSError(error.InstallError):
-    """Generic error for ChromiumOS-specific exceptions."""
+
+_STATEFUL_UPDATE_SCRIPT = 'stateful_update'
+_QUICK_PROVISION_SCRIPT = 'quick-provision'
+
+_UPDATER_BIN = '/usr/bin/update_engine_client'
+_UPDATER_LOGS = ['/var/log/messages', '/var/log/update_engine']
+
+_KERNEL_A = {'name': 'KERN-A', 'kernel': 2, 'root': 3}
+_KERNEL_B = {'name': 'KERN-B', 'kernel': 4, 'root': 5}
+
+# Time to wait for new kernel to be marked successful after
+# auto update.
+_KERNEL_UPDATE_TIMEOUT = 120
 
 
-class RootFSUpdateError(ChromiumOSError):
+# PROVISION_FAILED - A flag file to indicate provision failures.  The
+# file is created at the start of any AU procedure (see
+# `ChromiumOSUpdater._prepare_host()`).  The file's location in
+# stateful means that on successul update it will be removed.  Thus, if
+# this file exists, it indicates that we've tried and failed in a
+# previous attempt to update.
+PROVISION_FAILED = '/var/tmp/provision_failed'
+
+
+# A flag file used to enable special handling in lab DUTs.  Some
+# parts of the system in Chromium OS test images will behave in ways
+# convenient to the test lab when this file is present.  Generally,
+# we create this immediately after any update completes.
+_LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
+
+
+# _TARGET_VERSION - A file containing the new version to which we plan
+# to update.  This file is used by the CrOS shutdown code to detect and
+# handle certain version downgrade cases.  Specifically:  Downgrading
+# may trigger an unwanted powerwash in the target build when the
+# following conditions are met:
+#  * Source build is a v4.4 kernel with R69-10756.0.0 or later.
+#  * Target build predates the R69-10756.0.0 cutoff.
+# When this file is present and indicates a downgrade, the OS shutdown
+# code on the DUT knows how to prevent the powerwash.
+_TARGET_VERSION = '/run/update_target_version'
+
+
+# _REBOOT_FAILURE_MESSAGE - This is the standard message text returned
+# when the Host.reboot() method fails.  The source of this text comes
+# from `wait_for_restart()` in client/common_lib/hosts/base_classes.py.
+
+_REBOOT_FAILURE_MESSAGE = 'Host did not return from reboot'
+
+
+class RootFSUpdateError(error.TestFail):
     """Raised when the RootFS fails to update."""
 
 
-class StatefulUpdateError(ChromiumOSError):
+class StatefulUpdateError(error.TestFail):
     """Raised when the stateful partition fails to update."""
 
 
-def url_to_version(update_url):
+class _AttributedUpdateError(error.TestFail):
+    """Update failure with an attributed cause."""
+
+    def __init__(self, attribution, msg):
+        super(_AttributedUpdateError, self).__init__(
+            '%s: %s' % (attribution, msg))
+        self._message = msg
+
+    def _classify(self):
+        for err_pattern, classification in self._CLASSIFIERS:
+            if re.match(err_pattern, self._message):
+                return classification
+        return None
+
+    @property
+    def failure_summary(self):
+        """Summarize this error for metrics reporting."""
+        classification = self._classify()
+        if classification:
+            return '%s: %s' % (self._SUMMARY, classification)
+        else:
+            return self._SUMMARY
+
+
+class HostUpdateError(_AttributedUpdateError):
+    """Failure updating a DUT attributable to the DUT.
+
+    This class of exception should be raised when the most likely cause
+    of failure was a condition existing on the DUT prior to the update,
+    such as a hardware problem, or a bug in the software on the DUT.
+    """
+
+    DUT_DOWN = 'No answer to ssh'
+
+    _SUMMARY = 'DUT failed prior to update'
+    _CLASSIFIERS = [
+        (DUT_DOWN, DUT_DOWN),
+        (_REBOOT_FAILURE_MESSAGE, 'Reboot failed'),
+    ]
+
+    def __init__(self, hostname, msg):
+        super(HostUpdateError, self).__init__(
+            'Error on %s prior to update' % hostname, msg)
+
+
+class DevServerError(_AttributedUpdateError):
+    """Failure updating a DUT attributable to the devserver.
+
+    This class of exception should be raised when the most likely cause
+    of failure was the devserver serving the target image for update.
+    """
+
+    _SUMMARY = 'Devserver failed prior to update'
+    _CLASSIFIERS = []
+
+    def __init__(self, devserver, msg):
+        super(DevServerError, self).__init__(
+            'Devserver error on %s' % devserver, msg)
+
+
+class ImageInstallError(_AttributedUpdateError):
+    """Failure updating a DUT when installing from the devserver.
+
+    This class of exception should be raised when the target DUT fails
+    to download and install the target image from the devserver, and
+    either the devserver or the DUT might be at fault.
+    """
+
+    _SUMMARY = 'Image failed to download and install'
+    _CLASSIFIERS = []
+
+    def __init__(self, hostname, devserver, msg):
+        super(ImageInstallError, self).__init__(
+            'Download and install failed from %s onto %s'
+            % (devserver, hostname), msg)
+
+
+class NewBuildUpdateError(_AttributedUpdateError):
+    """Failure updating a DUT attributable to the target build.
+
+    This class of exception should be raised when updating to a new
+    build fails, and the most likely cause of the failure is a bug in
+    the newly installed target build.
+    """
+
+    CHROME_FAILURE = 'Chrome failed to reach login screen'
+    UPDATE_ENGINE_FAILURE = ('update-engine failed to call '
+                             'chromeos-setgoodkernel')
+    ROLLBACK_FAILURE = 'System rolled back to previous build'
+
+    _SUMMARY = 'New build failed'
+    _CLASSIFIERS = [
+        (CHROME_FAILURE, 'Chrome did not start'),
+        (UPDATE_ENGINE_FAILURE, 'update-engine did not start'),
+        (ROLLBACK_FAILURE, ROLLBACK_FAILURE),
+    ]
+
+    def __init__(self, update_version, msg):
+        super(NewBuildUpdateError, self).__init__(
+            'Failure in build %s' % update_version, msg)
+
+    @property
+    def failure_summary(self):
+        #pylint: disable=missing-docstring
+        return 'Build failed to work after installing'
+
+
+def _url_to_version(update_url):
     """Return the version based on update_url.
 
     @param update_url: url to the image to update to.
@@ -76,6 +230,31 @@ def url_to_image_name(update_url):
     return '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
 
 
+def get_update_failure_reason(exception):
+    """Convert an exception into a failure reason for metrics.
+
+    The passed in `exception` should be one raised by failure of
+    `ChromiumOSUpdater.run_update`.  The returned string will describe
+    the failure.  If the input exception value is not a truish value
+    the return value will be `None`.
+
+    The number of possible return strings is restricted to a limited
+    enumeration of values so that the string may be safely used in
+    Monarch metrics without worrying about cardinality of the range of
+    string values.
+
+    @param exception  Exception to be converted to a failure reason.
+
+    @return A string suitable for use in Monarch metrics, or `None`.
+    """
+    if exception:
+        if isinstance(exception, _AttributedUpdateError):
+            return exception.failure_summary
+        else:
+            return 'Unknown Error: %s' % type(exception).__name__
+    return None
+
+
 def _get_devserver_build_from_update_url(update_url):
     """Get the devserver and build from the update url.
 
@@ -101,7 +280,7 @@ def _get_devserver_build_from_update_url(update_url):
     return parts.groups()
 
 
-def list_image_dir_contents(update_url):
+def _list_image_dir_contents(update_url):
     """Lists the contents of the devserver for a given build/update_url.
 
     @param update_url: An update url. Eg: http://devserver:port/update/build.
@@ -125,25 +304,52 @@ def list_image_dir_contents(update_url):
         logging.warning('%s: %s', error_msg, e)
 
 
+def _get_metric_fields(update_url):
+    """Return a dict of metric fields.
+
+    This is used for sending autoupdate metrics for the given update URL.
+
+    @param update_url  Metrics fields will be calculated from this URL.
+    """
+    build_name = url_to_image_name(update_url)
+    try:
+        board, build_type, milestone, _ = server_utils.ParseBuildName(
+            build_name)
+    except server_utils.ParseBuildNameException:
+        logging.warning('Unable to parse build name %s for metrics. '
+                        'Continuing anyway.', build_name)
+        board, build_type, milestone = ('', '', '')
+    return {
+        'dev_server': dev_server.get_resolved_hostname(update_url),
+        'board': board,
+        'build_type': build_type,
+        'milestone': milestone,
+    }
+
+
 # TODO(garnold) This implements shared updater functionality needed for
 # supporting the autoupdate_EndToEnd server-side test. We should probably
 # migrate more of the existing ChromiumOSUpdater functionality to it as we
 # expand non-CrOS support in other tests.
-class BaseUpdater(object):
-    """Platform-agnostic DUT update functionality."""
+class ChromiumOSUpdater(object):
+    """Chromium OS specific DUT update functionality."""
 
-    def __init__(self, updater_ctrl_bin, update_url, host, interactive=True):
+    def __init__(self, update_url, host=None, interactive=True):
         """Initializes the object.
 
-        @param updater_ctrl_bin: Path to update_engine_client.
         @param update_url: The URL we want the update to use.
         @param host: A client.common_lib.hosts.Host implementation.
         @param interactive: Bool whether we are doing an interactive update.
         """
-        self.updater_ctrl_bin = updater_ctrl_bin
         self.update_url = update_url
         self.host = host
         self.interactive = interactive
+        self.update_version = _url_to_version(update_url)
+
+
+    def _run(self, cmd, *args, **kwargs):
+        """Abbreviated form of self.host.run(...)"""
+        return self.host.run(cmd, *args, **kwargs)
 
 
     def check_update_status(self):
@@ -153,16 +359,74 @@ class BaseUpdater(object):
         indicating the update state, e.g. "CURRENT_OP=UPDATE_STATUS_IDLE".
         """
         update_status = self.host.run(command='%s -status | grep CURRENT_OP' %
-                                      self.updater_ctrl_bin)
+                                      _UPDATER_BIN)
         return update_status.stdout.strip().split('=')[-1]
 
 
-    def get_last_update_error(self):
+    def _rootdev(self, options=''):
+        """Returns the stripped output of rootdev <options>.
+
+        @param options: options to run rootdev.
+
+        """
+        return self._run('rootdev %s' % options).stdout.strip()
+
+
+    def get_kernel_state(self):
+        """Returns the (<active>, <inactive>) kernel state as a pair.
+
+        @raise RootFSUpdateError if the DUT reports a root partition
+                number that isn't one of the known valid values.
+        """
+        active_root = int(re.findall('\d+\Z', self._rootdev('-s'))[0])
+        if active_root == _KERNEL_A['root']:
+            return _KERNEL_A, _KERNEL_B
+        elif active_root == _KERNEL_B['root']:
+            return _KERNEL_B, _KERNEL_A
+        else:
+            raise RootFSUpdateError(
+                    'Encountered unknown root partition: %s' % active_root)
+
+
+    def _cgpt(self, flag, kernel):
+        """Return numeric cgpt value for the specified flag, kernel, device."""
+        return int(self._run('cgpt show -n -i %d %s $(rootdev -s -d)' % (
+            kernel['kernel'], flag)).stdout.strip())
+
+
+    def _get_next_kernel(self):
+        """Return the kernel that has priority for the next boot."""
+        priority_a = self._cgpt('-P', _KERNEL_A)
+        priority_b = self._cgpt('-P', _KERNEL_B)
+        if priority_a > priority_b:
+            return _KERNEL_A
+        else:
+            return _KERNEL_B
+
+
+    def _get_kernel_success(self, kernel):
+        """Return boolean success flag for the specified kernel.
+
+        @param kernel: information of the given kernel, either _KERNEL_A
+            or _KERNEL_B.
+        """
+        return self._cgpt('-S', kernel) != 0
+
+
+    def _get_kernel_tries(self, kernel):
+        """Return tries count for the specified kernel.
+
+        @param kernel: information of the given kernel, either _KERNEL_A
+            or _KERNEL_B.
+        """
+        return self._cgpt('-T', kernel)
+
+
+    def _get_last_update_error(self):
         """Get the last autoupdate error code."""
-        error_msg = self.host.run(
-                 '%s --last_attempt_error' % self.updater_ctrl_bin)
-        error_msg = (error_msg.stdout.strip()).replace('\n', ', ')
-        return error_msg
+        command_result = self._run(
+                 '%s --last_attempt_error' % _UPDATER_BIN)
+        return command_result.stdout.strip().replace('\n', ', ')
 
 
     def _base_update_handler_no_retry(self, run_args):
@@ -235,22 +499,85 @@ class BaseUpdater(object):
 
         # Expect the update engine to be idle.
         if status != UPDATER_IDLE:
-            raise ChromiumOSError('%s is not in an installable state' %
-                                  self.host.hostname)
+            raise RootFSUpdateError(
+                    'Update engine status is %s (%s was expected).'
+                    % (status, UPDATER_IDLE))
+
+
+    def _reset_update_engine(self):
+        """Resets the host to prepare for a clean update regardless of state."""
+        self._run('stop ui || true')
+        self._run('stop update-engine || true')
+        self._run('start update-engine')
+        self._wait_for_update_service()
+
+
+    def _reset_stateful_partition(self):
+        """Clear any pending stateful update request."""
+        self._run('%s --stateful_change=reset 2>&1'
+                  % self._get_stateful_update_script())
+        self._run('rm -f %s' % _TARGET_VERSION)
+
+
+    def _set_target_version(self):
+        """Set the "target version" for the update."""
+        version_number = self.update_version.split('-')[1]
+        self._run('echo %s > %s' % (version_number, _TARGET_VERSION))
+
+
+    def _revert_boot_partition(self):
+        """Revert the boot partition."""
+        part = self._rootdev('-s')
+        logging.warning('Reverting update; Boot partition will be %s', part)
+        return self._run('/postinst %s 2>&1' % part)
+
+
+    def _verify_kernel_state(self):
+        """Verify that the next kernel to boot is correct for update.
+
+        This tests that the kernel state is correct for a successfully
+        downloaded and installed update.  That is, the next kernel to
+        boot must be the currently inactive kernel.
+
+        @raise RootFSUpdateError if the DUT next kernel isn't the
+                expected next kernel.
+        """
+        inactive_kernel = self.get_kernel_state()[1]
+        next_kernel = self._get_next_kernel()
+        if next_kernel != inactive_kernel:
+            raise RootFSUpdateError(
+                    'Update failed.  The kernel for next boot is %s, '
+                    'but %s was expected.'
+                    % (next_kernel['name'], inactive_kernel['name']))
+        return inactive_kernel
+
+
+    def _verify_update_completed(self):
+        """Verifies that an update has completed.
+
+        @raise RootFSUpdateError if the DUT doesn't indicate that
+                download is complete and the DUT is ready for reboot.
+        """
+        status = self.check_update_status()
+        if status != UPDATER_NEED_REBOOT:
+            error_msg = ''
+            if status == UPDATER_IDLE:
+                error_msg = 'Update error: %s' % self._get_last_update_error()
+            raise RootFSUpdateError(
+                    'Update engine status is %s (%s was expected).  %s'
+                    % (status, UPDATER_NEED_REBOOT, error_msg))
+        return self._verify_kernel_state()
 
 
     def trigger_update(self):
-        """Triggers a background update.
-
-        @raise RootFSUpdateError or unknown Exception if anything went wrong.
-        """
-        # If this function is called immediately after reboot (which it is at
-        # this time), there is no guarantee that the update service is up and
-        # running yet, so wait for it.
+        """Triggers a background update."""
+        # If this function is called immediately after reboot (which it
+        # can be), there is no guarantee that the update engine is up
+        # and running yet, so wait for it.
         self._wait_for_update_service()
 
         autoupdate_cmd = ('%s --check_for_update --omaha_url=%s' %
-                          (self.updater_ctrl_bin, self.update_url))
+                          (_UPDATER_BIN, self.update_url))
         run_args = {'command': autoupdate_cmd}
         err_prefix = 'Failed to trigger an update on %s. ' % self.host.hostname
         logging.info('Triggering update via: %s', autoupdate_cmd)
@@ -260,50 +587,14 @@ class BaseUpdater(object):
             metric_fields['success'] = True
         finally:
             c = metrics.Counter('chromeos/autotest/autoupdater/trigger')
-            metric_fields.update(self._get_metric_fields())
+            metric_fields.update(_get_metric_fields(self.update_url))
             c.increment(fields=metric_fields)
 
 
-    def _get_metric_fields(self):
-        """Return a dict of metric fields.
-
-        This is used for sending autoupdate metrics for this instance.
-        """
-        build_name = url_to_image_name(self.update_url)
-        try:
-            board, build_type, milestone, _ = server_utils.ParseBuildName(
-                build_name)
-        except server_utils.ParseBuildNameException:
-            logging.warning('Unable to parse build name %s for metrics. '
-                            'Continuing anyway.', build_name)
-            board, build_type, milestone = ('', '', '')
-        return {
-            'dev_server': dev_server.get_hostname(self.update_url),
-            'board': board,
-            'build_type': build_type,
-            'milestone': milestone,
-        }
-
-
-    def _verify_update_completed(self):
-        """Verifies that an update has completed.
-
-        @raise RootFSUpdateError: if verification fails.
-        """
-        status = self.check_update_status()
-        if status != UPDATER_NEED_REBOOT:
-            error_msg = ''
-            if status == UPDATER_IDLE:
-                error_msg = 'Update error: %s' % self.get_last_update_error()
-            raise RootFSUpdateError('Update did not complete with correct '
-                                    'status. Expecting %s, actual %s. %s' %
-                                    (UPDATER_NEED_REBOOT, status, error_msg))
-
-
     def update_image(self):
-        """Updates the device image and verifies success."""
+        """Updates the device root FS and kernel and verifies success."""
         autoupdate_cmd = ('%s --update --omaha_url=%s' %
-                          (self.updater_ctrl_bin, self.update_url))
+                          (_UPDATER_BIN, self.update_url))
         if not self.interactive:
             autoupdate_cmd = '%s --interactive=false' % autoupdate_cmd
         run_args = {'command': autoupdate_cmd, 'timeout': 3600}
@@ -316,144 +607,60 @@ class BaseUpdater(object):
             metric_fields['success'] = True
         finally:
             c = metrics.Counter('chromeos/autotest/autoupdater/update')
-            metric_fields.update(self._get_metric_fields())
+            metric_fields.update(_get_metric_fields(self.update_url))
             c.increment(fields=metric_fields)
-
-        self._verify_update_completed()
-
-
-class ChromiumOSUpdater(BaseUpdater):
-    """Helper class used to update DUT with image of desired version."""
-    REMOTE_STATEFUL_UPDATE_PATH = os.path.join(
-            '/usr/local/bin', STATEFUL_UPDATE_SCRIPT)
-    REMOTE_TMP_STATEFUL_UPDATE = os.path.join(
-            '/tmp', STATEFUL_UPDATE_SCRIPT)
-    UPDATER_BIN = '/usr/bin/update_engine_client'
-    UPDATED_MARKER = '/run/update_engine_autoupdate_completed'
-    UPDATER_LOGS = ['/var/log/messages', '/var/log/update_engine']
-
-    KERNEL_A = {'name': 'KERN-A', 'kernel': 2, 'root': 3}
-    KERNEL_B = {'name': 'KERN-B', 'kernel': 4, 'root': 5}
-    # Time to wait for new kernel to be marked successful after
-    # auto update.
-    KERNEL_UPDATE_TIMEOUT = 120
-
-    def __init__(self, update_url, host=None, interactive=True):
-        super(ChromiumOSUpdater, self).__init__(self.UPDATER_BIN, update_url,
-                                                host, interactive=interactive)
-        self.update_version = url_to_version(update_url)
+        return self._verify_update_completed()
 
 
-    def reset_update_engine(self):
-        """Resets the host to prepare for a clean update regardless of state."""
-        self._run('rm -f %s' % self.UPDATED_MARKER)
-        self._run('stop ui || true')
-        self._run('stop update-engine || true')
-        self._run('start update-engine')
+    def _get_remote_script(self, script_name):
+        """Ensure that `script_name` is present on the DUT.
 
-        # Wait for update engine to be ready.
-        self._wait_for_update_service()
+        The given script (e.g. `stateful_update`) may be present in the
+        stateful partition under /usr/local/bin, or we may have to
+        download it from the devserver.
 
+        Determine whether the script is present or must be downloaded
+        and download if necessary.  Then, return a command fragment
+        sufficient to run the script from whereever it now lives on the
+        DUT.
 
-    def _run(self, cmd, *args, **kwargs):
-        """Abbreviated form of self.host.run(...)"""
-        return self.host.run(cmd, *args, **kwargs)
-
-
-    def rootdev(self, options=''):
-        """Returns the stripped output of rootdev <options>.
-
-        @param options: options to run rootdev.
-
+        @param script_name  The name of the script as expected in
+                            /usr/local/bin and on the devserver.
+        @return A string with the command (minus arguments) that will
+                run the target script.
         """
-        return self._run('rootdev %s' % options).stdout.strip()
+        remote_script = '/usr/local/bin/%s' % script_name
+        if self.host.path_exists(remote_script):
+            return remote_script
+        remote_tmp_script = '/tmp/%s' % script_name
+        server_name = urlparse.urlparse(self.update_url)[1]
+        script_url = 'http://%s/static/%s' % (server_name, script_name)
+        fetch_script = (
+            'curl -o %s %s && head -1 %s | grep "^#!" | sed "s/#!//"') % (
+                   remote_tmp_script, script_url, remote_tmp_script)
+        script_interpreter = self._run(fetch_script,
+                                       ignore_status=True).stdout.strip()
+        if not script_interpreter:
+            return None
+        return '%s %s' % (script_interpreter, remote_tmp_script)
 
 
-    def get_kernel_state(self):
-        """Returns the (<active>, <inactive>) kernel state as a pair."""
-        active_root = int(re.findall('\d+\Z', self.rootdev('-s'))[0])
-        if active_root == self.KERNEL_A['root']:
-            return self.KERNEL_A, self.KERNEL_B
-        elif active_root == self.KERNEL_B['root']:
-            return self.KERNEL_B, self.KERNEL_A
-        else:
-            raise ChromiumOSError('Encountered unknown root partition: %s' %
-                                  active_root)
+    def _get_stateful_update_script(self):
+        """Returns a command to run the stateful update script.
 
+        Find `stateful_update` on the target or install it, as
+        necessary.  If installation fails, raise an exception.
 
-    def _cgpt(self, flag, kernel, dev='$(rootdev -s -d)'):
-        """Return numeric cgpt value for the specified flag, kernel, device. """
-        return int(self._run('cgpt show -n -i %d %s %s' % (
-            kernel['kernel'], flag, dev)).stdout.strip())
-
-
-    def get_kernel_priority(self, kernel):
-        """Return numeric priority for the specified kernel.
-
-        @param kernel: information of the given kernel, KERNEL_A or KERNEL_B.
-
+        @raise StatefulUpdateError if the script can't be found or
+            installed.
+        @return A string that can be joined with arguments to run the
+            `stateful_update` command on the DUT.
         """
-        return self._cgpt('-P', kernel)
-
-
-    def get_kernel_success(self, kernel):
-        """Return boolean success flag for the specified kernel.
-
-        @param kernel: information of the given kernel, KERNEL_A or KERNEL_B.
-
-        """
-        return self._cgpt('-S', kernel) != 0
-
-
-    def get_kernel_tries(self, kernel):
-        """Return tries count for the specified kernel.
-
-        @param kernel: information of the given kernel, KERNEL_A or KERNEL_B.
-
-        """
-        return self._cgpt('-T', kernel)
-
-
-    def get_stateful_update_script(self):
-        """Returns the path to the stateful update script on the target.
-
-        When runnning test_that, stateful_update is in chroot /usr/sbin,
-        as installed by chromeos-base/devserver packages.
-        In the lab, it is installed with the python module devserver, by
-        build_externals.py command.
-
-        If we can find it, we hope it exists already on the DUT, we assert
-        otherwise.
-        """
-        stateful_update_file = os.path.join(STATEFUL_UPDATE_PATH,
-                                            STATEFUL_UPDATE_SCRIPT)
-        if os.path.exists(stateful_update_file):
-            self.host.send_file(
-                    stateful_update_file, self.REMOTE_TMP_STATEFUL_UPDATE,
-                    delete_dest=True)
-            return self.REMOTE_TMP_STATEFUL_UPDATE
-
-        if self.host.path_exists(self.REMOTE_STATEFUL_UPDATE_PATH):
-            logging.warning('Could not chroot %s script, falling back on %s',
-                   STATEFUL_UPDATE_SCRIPT, self.REMOTE_STATEFUL_UPDATE_PATH)
-            return self.REMOTE_STATEFUL_UPDATE_PATH
-        else:
-            raise ChromiumOSError('Could not locate %s',
-                                  STATEFUL_UPDATE_SCRIPT)
-
-
-    def reset_stateful_partition(self):
-        """Clear any pending stateful update request."""
-        statefuldev_cmd = [self.get_stateful_update_script()]
-        statefuldev_cmd += ['--stateful_change=reset', '2>&1']
-        self._run(' '.join(statefuldev_cmd))
-
-
-    def revert_boot_partition(self):
-        """Revert the boot partition."""
-        part = self.rootdev('-s')
-        logging.warning('Reverting update; Boot partition will be %s', part)
-        return self._run('/postinst %s 2>&1' % part)
+        script_command = self._get_remote_script(_STATEFUL_UPDATE_SCRIPT)
+        if not script_command:
+            raise StatefulUpdateError('Could not install %s on DUT'
+                                      % _STATEFUL_UPDATE_SCRIPT)
+        return script_command
 
 
     def rollback_rootfs(self, powerwash):
@@ -462,7 +669,6 @@ class ChromiumOSUpdater(BaseUpdater):
         @param powerwash: If true, powerwash as part of rollback.
 
         @raise RootFSUpdateError if anything went wrong.
-
         """
         version = self.host.get_release_version()
         # Introduced can_rollback in M36 (build 5772). # etc/lsb-release matches
@@ -474,7 +680,7 @@ class ChromiumOSUpdater(BaseUpdater):
             build_number = 0
 
         if build_number >= 5772:
-            can_rollback_cmd = '%s --can_rollback' % self.UPDATER_BIN
+            can_rollback_cmd = '%s --can_rollback' % _UPDATER_BIN
             logging.info('Checking for rollback.')
             try:
                 self._run(can_rollback_cmd)
@@ -482,7 +688,7 @@ class ChromiumOSUpdater(BaseUpdater):
                 raise RootFSUpdateError("Rollback isn't possible on %s: %s" %
                                         (self.host.hostname, str(e)))
 
-        rollback_cmd = '%s --rollback --follow' % self.UPDATER_BIN
+        rollback_cmd = '%s --rollback --follow' % _UPDATER_BIN
         if not powerwash:
             rollback_cmd += ' --nopowerwash'
 
@@ -496,25 +702,20 @@ class ChromiumOSUpdater(BaseUpdater):
         self._verify_update_completed()
 
 
-    # TODO(garnold) This is here for backward compatibility and should be
-    # deprecated once we shift to using update_image() everywhere.
-    def update_rootfs(self):
-        """Run the standard command to force an update."""
-        return self.update_image()
-
-
     def update_stateful(self, clobber=True):
         """Updates the stateful partition.
 
         @param clobber: If True, a clean stateful installation.
+
+        @raise StatefulUpdateError if the update script fails to
+                complete successfully.
         """
         logging.info('Updating stateful partition...')
-        statefuldev_url = self.update_url.replace('update',
-                                                  'static')
+        statefuldev_url = self.update_url.replace('update', 'static')
 
         # Attempt stateful partition update; this must succeed so that the newly
         # installed host is testable after update.
-        statefuldev_cmd = [self.get_stateful_update_script(), statefuldev_url]
+        statefuldev_cmd = [self._get_stateful_update_script(), statefuldev_url]
         if clobber:
             statefuldev_cmd.append('--stateful_change=clean')
 
@@ -522,156 +723,30 @@ class ChromiumOSUpdater(BaseUpdater):
         try:
             self._run(' '.join(statefuldev_cmd), timeout=1200)
         except error.AutoservRunError:
-            update_error = StatefulUpdateError(
+            raise StatefulUpdateError(
                     'Failed to perform stateful update on %s' %
                     self.host.hostname)
-            raise update_error
-
-    def run_update(self, update_root=True):
-        """Update the DUT with image of specific version.
-
-        @param update_root: True to force a rootfs update.
-        """
-        booted_version = self.host.get_release_version()
-        logging.info('Updating from version %s to %s.',
-                     booted_version, self.update_version)
-
-        # Check that Dev Server is accepting connections (from autoserv's host).
-        # If we can't talk to it, the machine host probably can't either.
-        auserver_host = 'http://%s' % urlparse.urlparse(self.update_url)[1]
-        try:
-            if not dev_server.ImageServer.devserver_healthy(auserver_host):
-                raise ChromiumOSError(
-                    'Update server at %s not healthy' % auserver_host)
-        except Exception as e:
-            logging.debug('Error happens in connection to devserver: %r', e)
-            raise ChromiumOSError(
-                'Update server at %s not available' % auserver_host)
-
-        logging.info('Installing from %s to %s', self.update_url,
-                     self.host.hostname)
-
-        # Reset update state.
-        self.reset_update_engine()
-        self.reset_stateful_partition()
-
-        try:
-            try:
-                if not update_root:
-                    logging.info('Root update is skipped.')
-                else:
-                    self.update_rootfs()
-
-                self.update_stateful()
-            except:
-                self.revert_boot_partition()
-                self.reset_stateful_partition()
-                raise
-
-            logging.info('Update complete.')
-        except:
-            # Collect update engine logs in the event of failure.
-            if self.host.job:
-                logging.info('Collecting update engine logs due to failure...')
-                self.host.get_file(
-                        self.UPDATER_LOGS, self.host.job.sysinfo.sysinfodir,
-                        preserve_perm=False)
-            list_image_dir_contents(self.update_url)
-            raise
-        finally:
-            logging.info('Update engine log has downloaded in '
-                         'sysinfo/update_engine dir. Check the lastest.')
 
 
-    def check_version(self):
-        """Check the image running in DUT has the desired version.
-
-        @returns: True if the DUT's image version matches the version that
-            the autoupdater tries to update to.
-
-        """
-        booted_version = self.host.get_release_version()
-        return self.update_version.endswith(booted_version)
-
-
-    def check_version_to_confirm_install(self):
-        """Check image running in DUT has the desired version to be installed.
-
-        The method should not be used to check if DUT needs to have a full
-        reimage. Only use it to confirm a image is installed.
-
-        The method is designed to verify version for following 6 scenarios with
-        samples of version to update to and expected booted version:
-        1. trybot paladin build.
-        update version: trybot-lumpy-paladin/R27-3837.0.0-b123
-        booted version: 3837.0.2013_03_21_1340
-
-        2. trybot release build.
-        update version: trybot-lumpy-release/R27-3837.0.0-b456
-        booted version: 3837.0.0
-
-        3. buildbot official release build.
-        update version: lumpy-release/R27-3837.0.0
-        booted version: 3837.0.0
-
-        4. non-official paladin rc build.
-        update version: lumpy-paladin/R27-3878.0.0-rc7
-        booted version: 3837.0.0-rc7
-
-        5. chrome-perf build.
-        update version: lumpy-chrome-perf/R28-3837.0.0-b2996
-        booted version: 3837.0.0
-
-        6. pgo-generate build.
-        update version: lumpy-release-pgo-generate/R28-3837.0.0-b2996
-        booted version: 3837.0.0-pgo-generate
-
-        When we are checking if a DUT needs to do a full install, we should NOT
-        use this method to check if the DUT is running the same version, since
-        it may return false positive for a DUT running trybot paladin build to
-        be updated to another trybot paladin build.
-
-        TODO: This logic has a bug if a trybot paladin build failed to be
-        installed in a DUT running an older trybot paladin build with same
-        platform number, but different build number (-b###). So to conclusively
-        determine if a tryjob paladin build is imaged successfully, we may need
-        to find out the date string from update url.
-
-        @returns: True if the DUT's image version (without the date string if
-            the image is a trybot build), matches the version that the
-            autoupdater is trying to update to.
-
-        """
-        # Always try the default check_version method first, this prevents
-        # any backward compatibility issue.
-        if self.check_version():
-            return True
-
-        return utils.version_match(self.update_version,
-                                   self.host.get_release_version(),
-                                   self.update_url)
-
-
-    def verify_boot_expectations(self, expected_kernel_state, rollback_message):
+    def verify_boot_expectations(self, expected_kernel, rollback_message):
         """Verifies that we fully booted given expected kernel state.
 
         This method both verifies that we booted using the correct kernel
         state and that the OS has marked the kernel as good.
 
-        @param expected_kernel_state: kernel state that we are verifying with
+        @param expected_kernel: kernel that we are verifying with,
             i.e. I expect to be booted onto partition 4 etc. See output of
             get_kernel_state.
-        @param rollback_message: string to raise as a ChromiumOSError
+        @param rollback_message: string include in except message text
             if we booted with the wrong partition.
 
-        @raises ChromiumOSError: If we didn't.
+        @raise NewBuildUpdateError if any of the various checks fail.
         """
         # Figure out the newly active kernel.
-        active_kernel_state = self.get_kernel_state()[0]
+        active_kernel = self.get_kernel_state()[0]
 
         # Check for rollback due to a bad build.
-        if (expected_kernel_state and
-                active_kernel_state != expected_kernel_state):
+        if active_kernel != expected_kernel:
 
             # Kernel crash reports should be wiped between test runs, but
             # may persist from earlier parts of the test, or from problems
@@ -698,24 +773,246 @@ class ChromiumOSUpdater(BaseUpdater):
             self._run('cgpt show $(rootdev -s -d)')
             logging.debug('Dumping crossystem for firmware debugging.')
             self._run('crossystem --all')
-            raise ChromiumOSError(rollback_message)
+            raise NewBuildUpdateError(self.update_version, rollback_message)
 
         # Make sure chromeos-setgoodkernel runs.
         try:
             utils.poll_for_condition(
-                lambda: (self.get_kernel_tries(active_kernel_state) == 0
-                         and self.get_kernel_success(active_kernel_state)),
-                exception=ChromiumOSError(),
-                timeout=self.KERNEL_UPDATE_TIMEOUT, sleep_interval=5)
-        except ChromiumOSError:
+                lambda: (self._get_kernel_tries(active_kernel) == 0
+                         and self._get_kernel_success(active_kernel)),
+                exception=RootFSUpdateError(),
+                timeout=_KERNEL_UPDATE_TIMEOUT, sleep_interval=5)
+        except RootFSUpdateError:
             services_status = self._run('status system-services').stdout
             if services_status != 'system-services start/running\n':
-                event = ('Chrome failed to reach login screen')
+                event = NewBuildUpdateError.CHROME_FAILURE
             else:
-                event = ('update-engine failed to call '
-                         'chromeos-setgoodkernel')
-            raise ChromiumOSError(
-                    'After update and reboot, %s '
-                    'within %d seconds' % (event,
-                                           self.KERNEL_UPDATE_TIMEOUT))
+                event = NewBuildUpdateError.UPDATE_ENGINE_FAILURE
+            raise NewBuildUpdateError(self.update_version, event)
 
+
+    def _prepare_host(self):
+        """Make sure the target DUT is working and ready for update.
+
+        Initially, the target DUT's state is unknown.  The DUT is
+        expected to be online, but we strive to be forgiving if Chrome
+        and/or the update engine aren't fully functional.
+        """
+        # Summary of work, and the rationale:
+        #  1. Reboot, because it's a good way to clear out problems.
+        #  2. Touch the PROVISION_FAILED file, to allow repair to detect
+        #     failure later.
+        #  3. Run the hook for host class specific preparation.
+        #  4. Stop Chrome, because the system is designed to eventually
+        #     reboot if Chrome is stuck in a crash loop.
+        #  5. Force `update-engine` to start, because if Chrome failed
+        #     to start properly, the status of the `update-engine` job
+        #     will be uncertain.
+        if not self.host.is_up():
+            raise HostUpdateError(self.host.hostname,
+                                  HostUpdateError.DUT_DOWN)
+        self._reset_stateful_partition()
+        self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
+        self._run('touch %s' % PROVISION_FAILED)
+        self.host.prepare_for_update()
+        self._reset_update_engine()
+        logging.info('Updating from version %s to %s.',
+                     self.host.get_release_version(),
+                     self.update_version)
+
+
+    def _verify_devserver(self):
+        """Check that our chosen devserver is still working.
+
+        @raise DevServerError if the devserver fails any sanity check.
+        """
+        server = 'http://%s' % urlparse.urlparse(self.update_url)[1]
+        try:
+            if not dev_server.ImageServer.devserver_healthy(server):
+                raise DevServerError(
+                        server, 'Devserver is not healthy')
+        except Exception as e:
+            raise DevServerError(
+                    server, 'Devserver is not up and available')
+
+
+    def _install_via_update_engine(self):
+        """Install an updating using the production AU flow.
+
+        This uses the standard AU flow and the `stateful_update` script
+        to download and install a root FS, kernel and stateful
+        filesystem content.
+
+        @return The kernel expected to be booted next.
+        """
+        logging.info('Installing image using update_engine.')
+        expected_kernel = self.update_image()
+        self.update_stateful()
+        self._set_target_version()
+        return expected_kernel
+
+
+    def _install_via_quick_provision(self):
+        """Install an updating using the `quick-provision` script.
+
+        This uses the `quick-provision` script to download and install
+        a root FS, kernel and stateful filesystem content.
+
+        @return The kernel expected to be booted next.
+        """
+        build_re = global_config.global_config.get_config_value(
+                'CROS', 'quick_provision_build_regex', type=str, default='')
+        image_name = url_to_image_name(self.update_url)
+        if not build_re or re.match(build_re, image_name) is None:
+            logging.info('Not eligible for quick-provision.')
+            return None
+        logging.info('Installing image using quick-provision.')
+        provision_command = self._get_remote_script(_QUICK_PROVISION_SCRIPT)
+        server_name = urlparse.urlparse(self.update_url)[1]
+        static_url = 'http://%s/static' % server_name
+        command = '%s --noreboot %s %s' % (
+                      provision_command, image_name, static_url)
+        try:
+            self._run(command)
+            self._set_target_version()
+            return self._verify_kernel_state()
+        except Exception:
+            # N.B.  We handle only `Exception` here.  Non-Exception
+            # classes (such as KeyboardInterrupt) are handled by our
+            # caller.
+            logging.exception('quick-provision script failed; '
+                              'will fall back to update_engine.')
+            self._revert_boot_partition()
+            self._reset_stateful_partition()
+            self._reset_update_engine()
+            return None
+
+
+    def _install_update(self):
+        """Install the requested image on the DUT, but don't start it.
+
+        This downloads and installs a root FS, kernel and stateful
+        filesystem content.  This does not reboot the DUT, so the update
+        is merely pending when the method returns.
+
+        @return The kernel expected to be booted next.
+        """
+        logging.info('Installing image at %s onto %s',
+                     self.update_url, self.host.hostname)
+        try:
+            return (self._install_via_quick_provision()
+                    or self._install_via_update_engine())
+        except:
+            # N.B. This handling code includes non-Exception classes such
+            # as KeyboardInterrupt.  We need to clean up, but we also must
+            # re-raise.
+            self._revert_boot_partition()
+            self._reset_stateful_partition()
+            self._reset_update_engine()
+            # Collect update engine logs in the event of failure.
+            if self.host.job:
+                logging.info('Collecting update engine logs due to failure...')
+                self.host.get_file(
+                        _UPDATER_LOGS, self.host.job.sysinfo.sysinfodir,
+                        preserve_perm=False)
+            _list_image_dir_contents(self.update_url)
+            raise
+
+
+    def _complete_update(self, expected_kernel):
+        """Finish the update, and confirm that it succeeded.
+
+        Initial condition is that the target build has been downloaded
+        and installed on the DUT, but has not yet been booted.  This
+        function is responsible for rebooting the DUT, and checking that
+        the new build is running successfully.
+
+        @param expected_kernel: kernel expected to be active after reboot.
+        """
+        # Regarding the 'crossystem' command below: In some cases,
+        # the update flow puts the TPM into a state such that it
+        # fails verification.  We don't know why.  However, this
+        # call papers over the problem by clearing the TPM during
+        # the reboot.
+        #
+        # We ignore failures from 'crossystem'.  Although failure
+        # here is unexpected, and could signal a bug, the point of
+        # the exercise is to paper over problems; allowing this to
+        # fail would defeat the purpose.
+        self._run('crossystem clear_tpm_owner_request=1',
+                  ignore_status=True)
+        self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
+
+        # Touch the lab machine file to leave a marker that
+        # distinguishes this image from other test images.
+        # Afterwards, we must re-run the autoreboot script because
+        # it depends on the _LAB_MACHINE_FILE.
+        autoreboot_cmd = ('FILE="%s" ; [ -f "$FILE" ] || '
+                          '( touch "$FILE" ; start autoreboot )')
+        self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
+        self.verify_boot_expectations(
+                expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE)
+
+        logging.debug('Cleaning up old autotest directories.')
+        try:
+            installed_autodir = autotest.Autotest.get_installed_autodir(
+                    self.host)
+            self._run('rm -rf ' + installed_autodir)
+        except autotest.AutodirNotFoundError:
+            logging.debug('No autotest installed directory found.')
+
+
+    def run_update(self):
+        """Perform a full update of a DUT in the test lab.
+
+        This downloads and installs the root FS and stateful partition
+        content needed for the update specified in `self.host` and
+        `self.update_url`.  The update is performed according to the
+        requirements for provisioning a DUT for testing the requested
+        build.
+
+        At the end of the procedure, metrics are reported describing the
+        outcome of the operation.
+
+        @returns A tuple of the form `(image_name, attributes)`, where
+            `image_name` is the name of the image installed, and
+            `attributes` is new attributes to be applied to the DUT.
+        """
+        server_name = dev_server.get_resolved_hostname(self.update_url)
+        metrics.Counter(_metric_name('install')).increment(
+                fields={'devserver': server_name})
+
+        self._verify_devserver()
+
+        try:
+            self._prepare_host()
+        except _AttributedUpdateError:
+            raise
+        except Exception as e:
+            logging.exception('Failure preparing host prior to update.')
+            raise HostUpdateError(self.host.hostname, str(e))
+
+        try:
+            expected_kernel = self._install_update()
+        except _AttributedUpdateError:
+            raise
+        except Exception as e:
+            logging.exception('Failure during download and install.')
+            server_name = dev_server.get_resolved_hostname(self.update_url)
+            raise ImageInstallError(self.host.hostname, server_name, str(e))
+
+        try:
+            self._complete_update(expected_kernel)
+        except _AttributedUpdateError:
+            raise
+        except Exception as e:
+            logging.exception('Failure from build after update.')
+            raise NewBuildUpdateError(self.update_version, str(e))
+
+        image_name = url_to_image_name(self.update_url)
+        # update_url is different from devserver url needed to stage autotest
+        # packages, therefore, resolve a new devserver url here.
+        devserver_url = dev_server.ImageServer.resolve(
+                image_name, self.host.hostname).url()
+        repo_url = tools.get_package_url(devserver_url, image_name)
+        return image_name, {ds_constants.JOB_REPO_URL: repo_url}

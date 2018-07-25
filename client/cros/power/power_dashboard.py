@@ -14,6 +14,7 @@ import urllib2
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
 
@@ -95,7 +96,12 @@ class BaseDashboard(object):
         data_obj = {'data': json.dumps(powerlog_dict)}
         encoded = urllib.urlencode(data_obj)
         req = urllib2.Request(uploadurl, encoded)
-        urllib2.urlopen(req)
+
+        @retry.retry(urllib2.URLError, blacklist=[urllib2.HTTPError])
+        def _do_upload():
+            urllib2.urlopen(req)
+
+        _do_upload()
 
     def _convert(self):
         """Convert data from self._logger object to raw power measurement
@@ -132,8 +138,14 @@ class ClientTestDashboard(BaseDashboard):
         Returns:
             DUT info dictionary
         """
+        board = utils.get_board()
+        platform = utils.get_platform()
+
+        if not platform.startswith(board):
+            board += '_' + platform
+
         dut_info_dict = {
-            'board': utils.get_board(),
+            'board': board,
             'version': {
                 'hw': utils.get_hardware_revision(),
                 'milestone': lsbrelease_utils.get_chromeos_release_milestone(),
@@ -272,14 +284,39 @@ class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
         super(CPUStatsLoggerDashboard, self).__init__(logger, testname,
                                                       resultsdir, uploadurl)
 
+    @staticmethod
+    def _split_domain(domain):
+        """Return domain_type and domain_name for given domain.
+
+        Example: Split ................... to ........... and .......
+                       cpuidle_C1E-SKL        cpuidle         C1E-SKL
+                       cpuidle_0_3_C0         cpuidle_0_3     C0
+                       cpupkg_C0_C1           cpupkg          C0_C1
+                       cpufreq_0_3_1512000    cpufreq_0_3     1512000
+
+        Args:
+            domain: cpu stat domain name to split
+
+        Return:
+            tuple of domain_type and domain_name
+        """
+        # Regex explanation
+        # .*?           matches type non-greedily                 (cpuidle)
+        # (?:_\d+_\d+)? matches cpu part, ?: makes it not a group (_0_3)
+        # .*            matches name greedily                     (C0_C1)
+        return re.match(r'(.*?(?:_\d+_\d+)?)_(.*)', domain).groups()
+
     def _convert(self):
         power_dict = super(CPUStatsLoggerDashboard, self)._convert()
         for rail in power_dict['data']:
-            if rail.startswith('wavg_'):
+            if rail.startswith('wavg_cpu'):
                 power_dict['type'][rail] = 'cpufreq_wavg'
                 power_dict['unit'][rail] = 'kilohertz'
+            elif rail.startswith('wavg_gpu'):
+                power_dict['type'][rail] = 'gpufreq_wavg'
+                power_dict['unit'][rail] = 'megahertz'
             else:
-                power_dict['type'][rail] = rail.rsplit('_', 1)[0]
+                power_dict['type'][rail] = self._split_domain(rail)[0]
                 power_dict['unit'][rail] = 'percent'
         return power_dict
 
@@ -294,11 +331,10 @@ class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
         which make it in alphabetically order.
         """
         longest = collections.defaultdict(int)
-        searcher = re.compile("[0-9]+")
+        searcher = re.compile(r'\d+')
         number_strs = []
-        # Split cpuidle_C1E-SKL to "cpuidle" and "C1E-SKL"
         splitted_domains = \
-            [domain.rsplit('_', 1) for domain in self._logger.domains]
+                [self._split_domain(domain) for domain in self._logger.domains]
         for domain_type, domain_name in splitted_domains:
             result = searcher.search(domain_name)
             if not result:
@@ -319,7 +355,7 @@ class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
 
             # Change "cpuidle_C1E-SKL" to "cpuidle_C{:.>2s}E-SKL"
             formatter_str = domain_type + '_' + \
-                            searcher.sub(formatter_component, domain_name)
+                    searcher.sub(formatter_component, domain_name, count=1)
 
             # Run "cpuidle_C{:_>2s}E-SKL".format("1") to get "cpuidle_C.1E-SKL"
             self._padded_domains.append(formatter_str.format(number_strs[i]))

@@ -71,6 +71,10 @@ class Suspender(object):
         # Hard disk sync and overall just slow
         'parrot': 8,
         'kiev': 9,
+
+        # Temporary increased delay for octopus until suspend time is better
+        # b/79782439/
+        'octopus': 8,
     }
 
     # alarm/not_before value guaranteed to raise SpuriousWakeup in _hwclock_ts
@@ -486,6 +490,11 @@ class Suspender(object):
             return 'unknown'
 
 
+    def get_suspend_delay(self):
+            return self._SUSPEND_DELAY.get(self._get_board(),
+                                           self._DEFAULT_SUSPEND_DELAY)
+
+
     def suspend(self, duration=10, ignore_kernel_warns=False,
                 measure_arc=False):
         """
@@ -511,8 +520,7 @@ class Suspender(object):
                 utils.open_write_close(self.HWCLOCK_FILE, '')
                 self._reset_logs()
                 utils.system('sync')
-                board_delay = self._SUSPEND_DELAY.get(self._get_board(),
-                        self._DEFAULT_SUSPEND_DELAY)
+                board_delay = self.get_suspend_delay()
                 # Clear the ARC logcat to make parsing easier.
                 if measure_arc:
                     command = 'android-sh -c "logcat -c"'

@@ -4,7 +4,7 @@ brdprop
 ccd
 -ccdblock
 ccdstate
--chan
+(?P<mp>-)?chan
 ecrst
 gettime
 gpiocfg
@@ -23,10 +23,9 @@ pinmux
 -reboot
 recbtnforce
 rma_auth
-(?P<prepvt>-s3term)?
 -serialno
 shmem
-(?P<prepvt>sleepmask)?
+sleepmask
 (?P<mp>-)?spihash
 sysinfo
 sysrst

@@ -73,6 +73,7 @@ suite:chameleon_hdmi
 suite:chameleon_hdmi_nightly
 suite:chameleon_hdmi_perbuild
 suite:chameleon_hdmi_stress
+suite:chameleon_peripherals
 suite:chameleon_vga
 suite:chrome-informational
 suite:cr50_stress_experimental
@@ -89,6 +90,7 @@ suite:dummyclientretries
 suite:dummyflake
 suite:ent-nightly
 suite:ent-perbuild
+suite:ent-wificell
 suite:experimental
 suite:factory
 suite:faft
@@ -98,6 +100,8 @@ suite:faft_bios_au_2
 suite:faft_bios_au_3
 suite:faft_bios_ec3po
 suite:faft_bios_tot
+suite:faft_cr50_prepvt
+suite:faft_cr50_pvt
 suite:faft_dev
 suite:faft_dev_ryu
 suite:faft_ec
@@ -161,6 +165,7 @@ suite:power_idle
 suite:power_loadtest
 suite:power_loadtest_1hour
 suite:power_loadtest_fast
+suite:power_measurement_wrapper
 suite:power_requirements
 suite:powerplay
 suite:push_to_prod

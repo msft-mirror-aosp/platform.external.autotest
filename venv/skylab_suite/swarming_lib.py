@@ -19,7 +19,6 @@ from lucifer import autotest
 
 
 SERVICE_ACCOUNT = '/creds/skylab_swarming_bot/skylab_bot_service_account.json'
-SWARMING_SERVER = 'chrome-swarming.appspot.com'
 SKYLAB_DRONE_POOL = 'ChromeOSSkylab'
 SKYLAB_SUITE_POOL = 'ChromeOSSkylab-suite'
 
@@ -44,7 +43,7 @@ TASK_FINISHED_STATUS = [TASK_COMPLETED,
 TASK_STATUS_TO_RETRY = [TASK_EXPIRED, TASK_TIMEDOUT, TASK_BOT_DIED,
                         TASK_NO_RESOURCE]
 
-DEFAULT_EXPIRATION_SECS = 30
+DEFAULT_EXPIRATION_SECS = 10 * 60
 DEFAULT_TIMEOUT_SECS = 60 * 60
 
 # A mapping of priorities for skylab hwtest tasks. In swarming,
@@ -120,7 +119,7 @@ def _get_client():
 def get_basic_swarming_cmd(command):
     return [_get_client(), command,
             '--auth-service-account-json', SERVICE_ACCOUNT,
-            '--swarming', SWARMING_SERVER]
+            '--swarming', os.environ.get('SWARMING_SERVER')]
 
 
 def make_fallback_request_dict(cmds, slices_dimensions, task_name, priority,
@@ -219,7 +218,7 @@ def _to_raw_request(request):
 
 
 def get_task_link(task_id):
-    return 'https://%s/user/task/%s' % (SWARMING_SERVER, task_id)
+    return '%s/user/task/%s' % (os.environ.get('SWARMING_SERVER'), task_id)
 
 
 def get_task_final_state(task):

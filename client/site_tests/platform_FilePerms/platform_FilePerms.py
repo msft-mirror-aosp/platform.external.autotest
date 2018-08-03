@@ -76,15 +76,7 @@ class platform_FilePerms(test.test):
             'device': loop_device,
             'type': ['squashfs'],
             'options': ['ro', 'noexec']},
-        '/opt/google/containers/arc-downloads-filesystem/mountpoints/container-root': {
-            'device': loop_device,
-            'type': ['squashfs'],
-            'options': ['ro', 'noexec']},
         '/opt/google/containers/arc-obb-mounter/mountpoints/container-root': {
-            'device': loop_device,
-            'type': ['squashfs'],
-            'options': ['ro', 'noexec']},
-        '/opt/google/containers/arc-removable-media/mountpoints/container-root': {
             'device': loop_device,
             'type': ['squashfs'],
             'options': ['ro', 'noexec']},

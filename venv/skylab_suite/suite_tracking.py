@@ -8,12 +8,34 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import contextlib
 import logging
 import logging.config
 
 from lucifer import autotest
 from skylab_suite import swarming_lib
 
+
+@contextlib.contextmanager
+def _annotate_step(step_name):
+    try:
+        print('@@@SEED_STEP %s@@@' % step_name)
+        print('@@@STEP_CURSOR %s@@@' % step_name)
+        print('@@@STEP_STARTED@@@')
+        yield
+    finally:
+        print('@@@STEP_CLOSED@@@')
+
+
+def print_child_test_annotations(suite_handler):
+    """Print LogDog annotations for child tests."""
+    with _annotate_step('Scheduled Tests'):
+        for task_id, hspec in suite_handler.task_to_test_maps.iteritems():
+            anchor_test = hspec.test_spec.test.name
+            if suite_handler.is_provision():
+                anchor_test += '-' + hspec.test_spec.dut_name
+
+            _print_logs_link_for_task(anchor_test, task_id)
 
 
 def log_suite_results(suite_name, suite_handler):
@@ -44,6 +66,28 @@ def log_suite_results(suite_name, suite_handler):
     return return_code
 
 
+def _print_logs_link_for_task(anchor_test, task_id):
+    """Print the link of task logs.
+
+    Given anchor_test: 'dummy_Pass-chromeos4-row7-rack6-host19'
+          task_id: '3ee300e77a576e10'
+
+    The printed output will be:
+      [Test-logs]: dummy_Pass-chromeos4-row7-rack6-host19
+
+    Click it will direct you to
+      https://chrome-swarming.appspot.com/task?id=3ee300e77a576e10
+
+    @param anchor_test: a string to show on link.
+    @param task_id: a string task_id to form the swarming url.
+    """
+    annotations = autotest.chromite_load('buildbot_annotations')
+    show_text = '[{prefix}]: {anchor}'.format(
+            prefix='Test-logs', anchor=anchor_test)
+    print(annotations.StepLink(
+            show_text, swarming_lib.get_task_link(task_id)))
+
+
 def _log_buildbot_links(suite_handler, suite_name, test_results):
     logging.info('Links for buildbot:')
     annotations = autotest.chromite_load('buildbot_annotations')
@@ -65,12 +109,7 @@ def _log_buildbot_links(suite_handler, suite_name, test_results):
             if suite_handler.is_provision():
                 anchor_test += '-' + result['dut_name']
 
-            show_text = '[{prefix}]: {anchor}'.format(
-                    prefix='Test-logs',
-                    anchor=anchor_test)
-            print(annotations.StepLink(
-                    show_text,
-                    swarming_lib.get_task_link(result['task_ids'][0])))
+            _print_logs_link_for_task(anchor_test, result['task_ids'][0])
 
             if not suite_handler.is_provision():
                 print(annotations.StepLink(

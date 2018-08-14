@@ -9,10 +9,12 @@ the state of the graphics driver.
 
 import collections
 import contextlib
+import fcntl
 import glob
 import logging
 import os
 import re
+import struct
 import sys
 import time
 #import traceback
@@ -59,7 +61,7 @@ class GraphicsTest(test.test):
     def __init__(self, *args, **kwargs):
         """Initialize flag setting."""
         super(GraphicsTest, self).__init__(*args, **kwargs)
-        self._failures = []
+        self._failures_by_description = {}
         self._player = None
 
     def initialize(self, raise_error_on_hang=False, *args, **kwargs):
@@ -99,12 +101,12 @@ class GraphicsTest(test.test):
 
     @contextlib.contextmanager
     def failure_report(self, name, subtest=None):
-        """Record the failure of an operation to the self._failures.
+        """Record the failure of an operation to self._failures_by_description.
 
         Records if the operation taken inside executed normally or not.
         If the operation taken inside raise unexpected failure, failure named
-        |name|, will be added to the self._failures list and reported to the
-        chrome perf dashboard in the cleanup stage.
+        |name|, will be added to the self._failures_by_description dictionary
+        and reported to the chrome perf dashboard in the cleanup stage.
 
         Usage:
             # Record failure of doSomething
@@ -183,7 +185,7 @@ class GraphicsTest(test.test):
                 'graph': self._get_failure_graph_name(),
                 'names': [name],
             }
-            self._failures.append(target)
+            self._failures_by_description[target['description']] = target
         return target
 
     def remove_failures(self, name, subtest=None):
@@ -215,7 +217,7 @@ class GraphicsTest(test.test):
 
         total_failures = 0
         # Report subtests failures
-        for failure in self._failures:
+        for failure in self._failures_by_description.values():
             if len(failure['names']) > 0:
                 logging.debug('GraphicsTest failure: %s' % failure['names'])
                 total_failures += len(failure['names'])
@@ -248,16 +250,13 @@ class GraphicsTest(test.test):
     def _get_failure(self, name, subtest):
         """Get specific failures."""
         description = self._get_failure_description(name, subtest=subtest)
-        for failure in self._failures:
-            if failure['description'] == description:
-                return failure
-        return None
+        return self._failures_by_description.get(description, None)
 
     def get_failures(self):
         """
         Get currently recorded failures list.
         """
-        return [name for failure in self._failures
+        return [name for failure in self._failures_by_description.values()
                 for name in failure['names']]
 
     def open_vt1(self):
@@ -1234,3 +1233,52 @@ def get_num_hardware_overlays():
 
     # TODO(crbug.com/865112): return also the sizes/locations.
     return len(matches)
+
+def is_drm_debug_supported():
+    """
+    @returns true if either of the DRI debug files are present.
+    """
+    return (os.path.exists(_DRI_DEBUG_FILE_PATH_0) or
+            os.path.exists(_DRI_DEBUG_FILE_PATH_1))
+
+# Path and file name regex defining the filesystem location for DRI devices.
+_DEV_DRI_FOLDER_PATH = '/dev/dri'
+_DEV_DRI_CARD_PATH = '/dev/dri/card?'
+
+# IOCTL code and associated parameter to set the atomic cap. Defined originally
+# in the kernel's include/uapi/drm/drm.h file.
+_DRM_IOCTL_SET_CLIENT_CAP = 0x4010640d
+_DRM_CLIENT_CAP_ATOMIC = 3
+
+def is_drm_atomic_supported():
+    """
+    @returns true if there is at least a /dev/dri/card? file that seems to
+    support drm_atomic mode (accepts a _DRM_IOCTL_SET_CLIENT_CAP ioctl).
+    """
+    if not os.path.isdir(_DEV_DRI_FOLDER_PATH):
+        # This should never ever happen.
+        raise error.TestError('path %s inexistent', _DEV_DRI_FOLDER_PATH);
+
+    for dev_path in glob.glob(_DEV_DRI_CARD_PATH):
+        try:
+            logging.debug('trying device %s', dev_path);
+            with open(dev_path, 'rw') as dev:
+                # Pack a struct drm_set_client_cap: two u64.
+                drm_pack = struct.pack("QQ", _DRM_CLIENT_CAP_ATOMIC, 1)
+                result = fcntl.ioctl(dev, _DRM_IOCTL_SET_CLIENT_CAP, drm_pack)
+
+                if result is None or len(result) != len(drm_pack):
+                    # This should never ever happen.
+                    raise error.TestError('ioctl failure')
+
+                logging.debug('%s supports atomic', dev_path);
+
+                if not is_drm_debug_supported():
+                    raise error.TestError('platform supports DRM but there '
+                                          ' are no debug files for it')
+                return True
+        except IOError as err:
+            logging.warning('ioctl failed on %s: %s', dev_path, str(err));
+
+    logging.debug('No dev files seems to support atomic');
+    return False

@@ -12,6 +12,7 @@ from __future__ import print_function
 
 import itertools
 import json
+import requests
 import unittest
 
 import mock
@@ -59,6 +60,13 @@ class ApiTest(unittest.TestCase):
                 self.api.extract(gs_cache_client._CROS_IMAGE_ARCHIVE_BUCKET,
                                  'archive', 'file')
 
+            m.side_effect = error.CmdError('cmd', mock.MagicMock(
+                    exit_status=gs_cache_client._CURL_RC_CANNOT_CONNECT_TO_HOST)
+            )
+            with self.assertRaises(gs_cache_client.NoGsCacheServerError):
+                self.api.extract(gs_cache_client._CROS_IMAGE_ARCHIVE_BUCKET,
+                                 'archive', 'file')
+
             m.side_effect = None
             m.return_value.stdout = '...'
             with self.assertRaises(gs_cache_client.ResponseContentError):
@@ -77,6 +85,11 @@ class ApiTest(unittest.TestCase):
 
             m.return_value = mock.MagicMock(ok=True, content='...')
             with self.assertRaises(gs_cache_client.ResponseContentError):
+                self.api.extract(gs_cache_client._CROS_IMAGE_ARCHIVE_BUCKET,
+                                 'archive', 'file')
+
+            m.side_effect = requests.ConnectionError('Gs Cache is not running.')
+            with self.assertRaises(gs_cache_client.NoGsCacheServerError):
                 self.api.extract(gs_cache_client._CROS_IMAGE_ARCHIVE_BUCKET,
                                  'archive', 'file')
 

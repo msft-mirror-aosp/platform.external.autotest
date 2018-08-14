@@ -1,4 +1,4 @@
-# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,18 +6,17 @@
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = 'sbasi, achuith, rohitbm'
-NAME = 'telemetry_Benchmarks.webrtc.buddy.kepler'
-ATTRIBUTES = 'suite:crosbolt_perf_nightly'
+AUTHOR = 'Chrome OS Team'
+NAME = 'telemetry_Benchmarks.loading.desktop'
+ATTRIBUTES = 'suite:crosbolt_perf_perbuild'
 TIME = 'LONG'
 TEST_CATEGORY = 'Benchmark'
 TEST_CLASS = 'performance'
 TEST_TYPE = 'server'
-DEPENDENCIES = "board:buddy, hw_video_acc_enc_vp8"
 
 DOC = '''
 This server side test suite executes the Telemetry Benchmark:
-webrtc
+loading.desktop
 This is part of Chrome for Chrome OS performance testing.
 
 Pass local=True to run with local telemetry and no AFE server.
@@ -25,9 +24,11 @@ Pass local=True to run with local telemetry and no AFE server.
 
 def run_benchmark(machine):
     host = hosts.create_host(machine)
+    dargs = utils.args_to_dict(args)
+    dargs['extra_args'] = '--story-tag-filter=typical'.split()
     job.run_test('telemetry_Benchmarks', host=host,
-                 benchmark='webrtc',
-                 tag='webrtc.buddy.kepler',
-                 args=utils.args_to_dict(args))
+                 benchmark='loading.desktop',
+                 tag='loading.desktop',
+                 args=dargs)
 
 parallel_simple(run_benchmark, machines)

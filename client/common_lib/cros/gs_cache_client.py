@@ -43,6 +43,9 @@ _USE_SSH_CONNECTION = _CONFIG.get_config_value(
         default=False)
 _SSH_CALL_TIMEOUT_SECONDS = 60
 
+# Exit code of `curl` when cannot connect to host. Man curl for details.
+_CURL_RC_CANNOT_CONNECT_TO_HOST = 7
+
 
 class CommunicationError(Exception):
     """Raised when has errors in communicate with GS Cache server."""
@@ -50,6 +53,10 @@ class CommunicationError(Exception):
 
 class ResponseContentError(Exception):
     """Error raised when response content has problems."""
+
+
+class NoGsCacheServerError(Exception):
+    """Error raised when we cannot connect to Gs Cache server."""
 
 
 class _GsCacheAPI(object):
@@ -80,12 +87,18 @@ class _GsCacheAPI(object):
         try:
             result = utils.run(cmd, timeout=_SSH_CALL_TIMEOUT_SECONDS)
         except error.CmdError as err:
+            if err.result_obj.exit_status == _CURL_RC_CANNOT_CONNECT_TO_HOST:
+                raise NoGsCacheServerError(
+                        'Cannot connect to Gs Cache at %s via SSH.'
+                        % self._netloc)
+
             raise CommunicationError('Error occurred: rc=%d, cmd=%s' %
                                      (err.result_obj.exit_status, err.command))
 
         return result.stdout
 
-    @retry.retry(CommunicationError, timeout_min=3, delay_sec=5)
+    @retry.retry((CommunicationError, ResponseContentError), timeout_min=3,
+                 delay_sec=5)
     def _call(self, action, bucket, path, queries):
         """Helper function to make a call to GS Cache server.
 
@@ -115,7 +128,12 @@ class _GsCacheAPI(object):
             return self._ssh_call(url)
         else:
             # TODO(guocb): Re-use the TCP connection.
-            rsp = requests.get(url)
+            try:
+                rsp = requests.get(url)
+            except requests.ConnectionError:
+                raise NoGsCacheServerError(
+                        'Cannot connect to Gs Cache at %s via HTTP.'
+                        % self._netloc)
             if not rsp.ok:
                 msg = 'HTTP request: GET %s\nHTTP Response: %d: %s' % (
                         rsp.url, rsp.status_code, rsp.content)
@@ -178,8 +196,10 @@ class GsCacheClient(object):
         """
         try:
             return self._list_suite_controls(build, suite_name)
-        except (requests.ConnectionError, CommunicationError,
-                ResponseContentError) as err:
+        # We have to catch error.TimeoutException here because that's the
+        # default exception we can get when the code doesn't run in main
+        # thread.
+        except Exception as err:
             logging.warn('GS Cache Error: %s', err)
             logging.warn(
                     'Falling back to devserver call of "list_suite_controls".')

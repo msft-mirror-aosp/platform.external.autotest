@@ -66,6 +66,9 @@ class tast(test.test):
     # status.log files.
     _TEST_NAME_PREFIX = 'tast.'
 
+    # Prefixes of keyval keys recorded for missing tests.
+    _MISSING_TEST_KEYVAL_PREFIX = 'tast_missing_test.'
+
     # Job start/end TKO event status codes from base_client_job._rungroup in
     # client/bin/job.py.
     _JOB_STATUS_START = 'START'
@@ -232,9 +235,13 @@ class tast(test.test):
         except error.CmdError as e:
             # The tast command's output generally ends with a line describing
             # the error that was encountered; include it in the first line of
-            # the TestFail exception.
-            lines = e.result_obj.stdout.strip().split('\n')
-            msg = (' (last line: %s)' % lines[-1].strip()) if lines else ''
+            # the TestFail exception. Fall back to stderr if stdout is empty (as
+            # is the case with the "list" subcommand, which uses stdout to print
+            # test data).
+            get_last_line = lambda s: s.strip().split('\n')[-1].strip()
+            last_line = (get_last_line(e.result_obj.stdout) or
+                         get_last_line(e.result_obj.stderr))
+            msg = (' (last line: %s)' % last_line) if last_line else ''
             raise error.TestFail('Failed to run tast%s: %s' % (msg, str(e)))
         except error.CmdTimeoutError as e:
             raise error.TestFail('Got timeout while running tast: %s' % str(e))
@@ -328,6 +335,9 @@ class tast(test.test):
 
         missing = [t['name'] for t in self._tests_to_run
                    if t['name'] not in seen_test_names]
+
+        if missing:
+            self._record_missing_tests(missing)
 
         failure_msg = self._get_failure_message(failed, missing)
         if failure_msg:
@@ -430,6 +440,16 @@ class tast(test.test):
         entry = base_job.status_log_entry(status_code, None, full_name, message,
                                           None, timestamp=int(timestamp))
         self.job.record_entry(entry, False)
+
+    def _record_missing_tests(self, missing):
+        """Records tests with missing results in job keyval file.
+
+        @param missing: List of string names of Tast tests with missing results.
+        """
+        keyvals = {}
+        for i, name in enumerate(sorted(missing)):
+            keyvals['%s%d' % (self._MISSING_TEST_KEYVAL_PREFIX, i)] = name
+        utils.write_keyval(self.job.resultdir, keyvals)
 
 
 class _LessBrokenParserInfo(dateutil.parser.parserinfo):

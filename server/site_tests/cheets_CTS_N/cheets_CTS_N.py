@@ -24,8 +24,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _DL_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-    'arm': _DL_CTS + 'android-cts-7.1_r20-linux_x86-arm.zip',
-    'x86': _DL_CTS + 'android-cts-7.1_r20-linux_x86-x86.zip',
+    'arm': _DL_CTS + 'android-cts-7.1_r24-linux_x86-arm.zip',
+    'x86': _DL_CTS + 'android-cts-7.1_r24-linux_x86-x86.zip',
     'media': _DL_CTS + 'android-cts-media-1.4.zip',
 }
 
@@ -34,12 +34,11 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
     """Sets up tradefed to run CTS tests."""
     version = 1
 
-    # TODO(bmgordon): Remove kahlee once the bulk of failing tests are fixed.
-    _BOARD_RETRY = {'betty': 0, 'kahlee': 0}
-    _CHANNEL_RETRY = {'dev': 5, 'beta': 5, 'stable': 5}
+    _BOARD_RETRY = {'betty': 0}
+    _CHANNEL_RETRY = {'dev': 9, 'beta': 9, 'stable': 9}
     _SHARD_CMD = '--shards'
     # TODO(pwang): b/110966363, remove it once scarlet is fixed.
-    _NEED_DEVICE_INFO_BOARDS = ['scarlet']
+    _NEED_DEVICE_INFO_BOARDS = ['scarlet', 'veyron_tiger']
 
     def _tradefed_retry_command(self, template, session_id):
         """Build tradefed 'retry' command from template."""
@@ -101,9 +100,8 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
 
     def _should_skip_test(self, bundle):
         """Some tests are expected to fail and are skipped."""
-        # newbie and novato are x86 VMs without binary translation. Skip the ARM
-        # tests.
-        no_ARM_ABI_test_boards = ('newbie', 'novato', 'novato-arc64')
+        # novato* are x86 VMs without binary translation. Skip the ARM tests.
+        no_ARM_ABI_test_boards = ('novato', 'novato-arc64')
         if self._get_board_name() in no_ARM_ABI_test_boards and bundle == 'arm':
             return True
         return False

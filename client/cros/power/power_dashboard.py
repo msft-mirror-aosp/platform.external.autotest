@@ -4,7 +4,9 @@
 
 import collections
 import json
+import logging
 import numpy
+import operator
 import os
 import re
 import time
@@ -64,18 +66,21 @@ class BaseDashboard(object):
     dashboard.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None):
+    def __init__(self, logger, testname, start_ts=None, resultsdir=None,
+                 uploadurl=None):
         """Create BaseDashboard objects.
 
         Args:
             logger: object that store the log. This will get convert to
                     dictionary by self._convert()
             testname: name of current test
+            start_ts: timestamp of when test started in seconds since epoch
             resultsdir: directory to save the power json
             uploadurl: url to upload power data
         """
         self._logger = logger
         self._testname = testname
+        self._start_ts = start_ts if start_ts else time.time()
         self._resultsdir = resultsdir
         self._uploadurl = uploadurl
 
@@ -90,12 +95,13 @@ class BaseDashboard(object):
             A dictionary of powerlog
         """
         powerlog_dict = {
-            'format_version': 4,
-            'timestamp': time.time(),
+            'format_version': 5,
+            'timestamp': self._start_ts,
             'test': self._testname,
             'dut': self._create_dut_info_dict(raw_measurement['data'].keys()),
             'power': raw_measurement,
         }
+
         return powerlog_dict
 
     def _create_dut_info_dict(self, power_rails):
@@ -123,8 +129,11 @@ class BaseDashboard(object):
         if not os.path.exists(resultsdir):
             raise error.TestError('resultsdir %s does not exist.' % resultsdir)
         filename = os.path.join(resultsdir, filename)
+        json_str = json.dumps(powerlog_dict, indent=4, separators=(',', ': '),
+                              ensure_ascii=False)
+        json_str = utils.strip_non_printable(json_str)
         with file(filename, 'a') as f:
-            json.dump(powerlog_dict, f, indent=4, separators=(',', ': '))
+            f.write(json_str)
 
     def _save_html(self, powerlog_dict, resultsdir, filename='power_log.html'):
         """Convert powerlog dict to chart in HTML page and append to
@@ -180,15 +189,73 @@ class BaseDashboard(object):
             powerlog_dict: dictionary of power data
             uploadurl: url to upload the power data
         """
-        data_obj = {'data': json.dumps(powerlog_dict)}
+        json_str = json.dumps(powerlog_dict, ensure_ascii=False)
+        data_obj = {'data': utils.strip_non_printable(json_str)}
         encoded = urllib.urlencode(data_obj)
         req = urllib2.Request(uploadurl, encoded)
 
-        @retry.retry(urllib2.URLError, blacklist=[urllib2.HTTPError])
+        @retry.retry(urllib2.URLError, blacklist=[urllib2.HTTPError],
+                     timeout_min=5.0, delay_sec=1, backoff=2)
         def _do_upload():
             urllib2.urlopen(req)
 
         _do_upload()
+
+    def _create_checkpoint_dict(self):
+        """Create dictionary for checkpoint.
+
+        @returns a dictionary of tags to their corresponding intervals in the
+                 following format:
+                 {
+                      tag1: [(start1, end1), (start2, end2), ...],
+                      tag2: [(start3, end3), (start4, end4), ...],
+                      ...
+                 }
+        """
+        raise NotImplementedError
+
+    def _tag_with_checkpoint(self, power_dict):
+        """Tag power_dict with checkpoint data.
+
+        This function translates the checkpoint intervals into a list of tags
+        for each data point.
+
+        @param power_dict: a dictionary with power data; assume this dictionary
+                           has attributes 'sample_count' and 'sample_duration'.
+        """
+        checkpoint_dict = self._create_checkpoint_dict()
+
+        # Create list of check point event tuple.
+        # Tuple format: (checkpoint_name:str, event_time:float, is_start:bool)
+        checkpoint_event_list = []
+        for name, intervals in checkpoint_dict.iteritems():
+            for start, finish in intervals:
+                checkpoint_event_list.append((name, start, True))
+                checkpoint_event_list.append((name, finish, False))
+
+        checkpoint_event_list = sorted(checkpoint_event_list,
+                                       key=operator.itemgetter(1))
+
+        # Add dummy check point at 1e9 seconds.
+        checkpoint_event_list.append(('dummy', 1e9, True))
+
+        interval_set = set()
+        event_index = 0
+        checkpoint_list = []
+        for i in range(power_dict['sample_count']):
+            curr_time = i * power_dict['sample_duration']
+
+            # Process every checkpoint event until current point of time
+            while checkpoint_event_list[event_index][1] <= curr_time:
+                name, _, is_start = checkpoint_event_list[event_index]
+                if is_start:
+                    interval_set.add(name)
+                else:
+                    interval_set.discard(name)
+                event_index += 1
+
+            checkpoint_list.append(list(interval_set))
+        power_dict['checkpoint'] = checkpoint_list
 
     def _convert(self):
         """Convert data from self._logger object to raw power measurement
@@ -205,6 +272,9 @@ class BaseDashboard(object):
         """Upload powerlog to dashboard and save data to results directory.
         """
         raw_measurement = self._convert()
+        if raw_measurement is None:
+            return
+
         powerlog_dict = self._create_powerlog_dict(raw_measurement)
         if self._resultsdir is not None:
             self._save_json(powerlog_dict, self._resultsdir)
@@ -216,6 +286,24 @@ class BaseDashboard(object):
 class ClientTestDashboard(BaseDashboard):
     """Dashboard class for autotests that run on client side.
     """
+
+    def __init__(self, logger, testname, start_ts=None, resultsdir=None,
+                 uploadurl=None, note=''):
+        """Create BaseDashboard objects.
+
+        Args:
+            logger: object that store the log. This will get convert to
+                    dictionary by self._convert()
+            testname: name of current test
+            start_ts: timestamp of when test started in seconds since epoch
+            resultsdir: directory to save the power json
+            uploadurl: url to upload power data
+            note: note for current test run
+        """
+        super(ClientTestDashboard, self).__init__(logger, testname, start_ts,
+                                                  resultsdir, uploadurl)
+        self._note = note
+
 
     def _create_dut_info_dict(self, power_rails):
         """Create a dictionary that contain information of the DUT.
@@ -256,7 +344,7 @@ class ClientTestDashboard(BaseDashboard):
                 'version': 0,
                 'ina': power_rails,
             },
-            'note': '',
+            'note': self._note,
         }
 
         if power_utils.has_battery():
@@ -273,25 +361,56 @@ class MeasurementLoggerDashboard(ClientTestDashboard):
     """Dashboard class for power_status.MeasurementLogger.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None):
-        super(MeasurementLoggerDashboard, self).__init__(logger, testname,
-                                                         resultsdir, uploadurl)
+    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
+                 note=''):
+        super(MeasurementLoggerDashboard, self).__init__(logger, testname, None,
+                                                         resultsdir, uploadurl,
+                                                         note)
         self._unit = None
         self._type = None
         self._padded_domains = None
+
+    def _create_powerlog_dict(self, raw_measurement):
+        """Create powerlog dictionary from raw measurement data
+        Data format in go/power-dashboard-data.
+
+        Args:
+            raw_measurement: dictionary contains raw measurement data
+
+        Returns:
+            A dictionary of powerlog
+        """
+        powerlog_dict = \
+                super(MeasurementLoggerDashboard, self)._create_powerlog_dict(
+                        raw_measurement)
+
+        # Using start time of the logger as the timestamp of powerlog dict.
+        powerlog_dict['timestamp'] = self._logger.times[0]
+
+        return powerlog_dict
 
     def _create_padded_domains(self):
         """Pad the domains name for dashboard to make the domain name better
         sorted in alphabetical order"""
         pass
 
+    def _create_checkpoint_dict(self):
+        """Create dictionary for checkpoint.
+        """
+        start_time = self._logger.times[0]
+        return self._logger._checkpoint_logger.convert_relative(start_time)
+
     def _convert(self):
         """Convert data from power_status.MeasurementLogger object to raw
         power measurement dictionary.
 
         Return:
-            raw measurement dictionary
+            raw measurement dictionary or None if no readings
         """
+        if len(self._logger.readings) == 0:
+            logging.warn('No readings in logger ... ignoring')
+            return None
+
         power_dict = collections.defaultdict(dict, {
             'sample_count': len(self._logger.readings) - 1,
             'sample_duration': 0,
@@ -317,6 +436,8 @@ class MeasurementLoggerDashboard(ClientTestDashboard):
                 power_dict['unit'][domain] = self._unit
             if self._type:
                 power_dict['type'][domain] = self._type
+
+        self._tag_with_checkpoint(power_dict)
         return power_dict
 
 
@@ -324,31 +445,48 @@ class PowerLoggerDashboard(MeasurementLoggerDashboard):
     """Dashboard class for power_status.PowerLogger.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None):
+    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
+                 note=''):
         if uploadurl is None:
             uploadurl = 'http://chrome-power.appspot.com/rapl'
         super(PowerLoggerDashboard, self).__init__(logger, testname, resultsdir,
-                                                   uploadurl)
+                                                   uploadurl, note)
         self._unit = 'watt'
         self._type = 'power'
+
+
+class TempLoggerDashboard(MeasurementLoggerDashboard):
+    """Dashboard class for power_status.PowerLogger.
+    """
+
+    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
+                 note=''):
+        if uploadurl is None:
+            uploadurl = 'http://chrome-power.appspot.com/rapl'
+        super(TempLoggerDashboard, self).__init__(logger, testname, resultsdir,
+                                                  uploadurl, note)
+        self._unit = 'celsius'
+        self._type = 'temperature'
 
 
 class SimplePowerLoggerDashboard(ClientTestDashboard):
     """Dashboard class for simple system power measurement taken and publishing
     it to the dashboard.
     """
-    def __init__(self, duration_secs, power_watts, testname, resultsdir=None,
-                 uploadurl=None):
+
+    def __init__(self, duration_secs, power_watts, testname, start_ts,
+                 resultsdir=None, uploadurl=None, note=''):
 
         if uploadurl is None:
             uploadurl = 'http://chrome-power.appspot.com/rapl'
         super(SimplePowerLoggerDashboard, self).__init__(
-            None, testname, resultsdir, uploadurl)
+                None, testname, start_ts, resultsdir, uploadurl, note)
 
         self._unit = 'watt'
         self._type = 'power'
         self._duration_secs = duration_secs
         self._power_watts = power_watts
+        self._testname = testname
 
     def _convert(self):
         """Convert vbat to raw power measurement dictionary.
@@ -359,10 +497,11 @@ class SimplePowerLoggerDashboard(ClientTestDashboard):
         power_dict = {
             'sample_count': 1,
             'sample_duration': self._duration_secs,
-            'average': {'vbat': self._power_watts},
-            'data': {'vbat': [self._power_watts]},
-            'unit': {'vbat': self._unit},
-            'type': {'vbat': self._type},
+            'average': {'system': self._power_watts},
+            'data': {'system': [self._power_watts]},
+            'unit': {'system': self._unit},
+            'type': {'system': self._type},
+            'checkpoint': [[self._testname]],
         }
         return power_dict
 
@@ -371,11 +510,12 @@ class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
     """Dashboard class for power_status.CPUStatsLogger.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None):
+    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
+                 note=''):
         if uploadurl is None:
             uploadurl = 'http://chrome-power.appspot.com/rapl'
-        super(CPUStatsLoggerDashboard, self).__init__(logger, testname,
-                                                      resultsdir, uploadurl)
+        super(CPUStatsLoggerDashboard, self).__init__(
+                logger, testname, resultsdir, uploadurl, note)
 
     @staticmethod
     def _split_domain(domain):

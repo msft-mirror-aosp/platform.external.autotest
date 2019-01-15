@@ -69,7 +69,40 @@
     "dashboard_test_name": "cheets_StartAndroid"
   },
   {
-    "autotest_name": "enterprise_CFM_Perf",
+    "autotest_name": "cheets_CTS_.*CtsDeqpTestCases$",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "cheets_CTS"
+  },
+  {
+    "autotest_name": "cheets_CTS_.*CtsGraphicsTestCases$",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "cheets_CTS"
+  },
+  {
+    "autotest_name": "cheets_CTS_.*CtsGraphics2TestCases$",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "cheets_CTS"
+  },
+  {
+    "autotest_name": "cheets_CTS_.*CtsSkQPTestCases$",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "cheets_CTS"
+  },
+  {
+    "autotest_name": "cheets_CTS_.*CtsViewTestCases$",
+    "master_name": "ChromeOS_Graphics",
+    "dashboard_test_name": "cheets_CTS"
+  },
+  {
+    "autotest_name": "enterprise_CFM_MeetingRoomScenario.idle_in_meeting_with_bots",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_CFM_MeetingRoomScenario.idle_on_landing_page",
+    "master_name": "ChromeOS_Enterprise"
+  },
+  {
+    "autotest_name": "enterprise_CFM_MeetingRoomScenario.join_leave_meeting_with_bots",
     "master_name": "ChromeOS_Enterprise"
   },
   {
@@ -562,6 +595,25 @@
     "master_name": "ChromeOSPower"
   },
   {
+    "autotest_name": "tast.informational-chrome",
+    "master_name": "ChromeOSTastInformationalChrome"
+  },
+  {
+    "autotest_name": "telemetry_Benchmarks.backdrop_filter.rendering.desktop",
+    "master_name": "ChromeOSPerf",
+    "dashboard_test_name": "rendering.desktop"
+  },
+  {
+    "autotest_name": "telemetry_Benchmarks.blink_perf.image_decoder",
+    "master_name": "ChromeOSPerf",
+    "dashboard_test_name": "blink_perf.image_decoder"
+  },
+  {
+    "autotest_name": "telemetry_Benchmarks.cros_tab_switching.typical_24",
+    "master_name": "ChromeOSPerf",
+    "dashboard_test_name": "cros_tab_switching.typical_24"
+  },
+  {
     "autotest_name": "telemetry_Benchmarks.cros_ui_smoothness",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "cros_ui_smoothness"
@@ -570,11 +622,6 @@
     "autotest_name": "telemetry_Benchmarks.dromaeo",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "dromaeo"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.image_decoding.image_decoding_measurement",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "image_decoding.image_decoding_measurement"
   },
   {
     "autotest_name": "telemetry_Benchmarks.jetstream",
@@ -587,14 +634,14 @@
     "dashboard_test_name": "kraken"
   },
   {
+    "autotest_name": "telemetry_Benchmarks.loading.desktop",
+    "master_name": "ChromeOSPerf",
+    "dashboard_test_name": "loading.desktop"
+  },
+  {
     "autotest_name": "telemetry_Benchmarks.memory.desktop",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "memory.desktop"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.memory.top_7_stress",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "memory.top_7_stress"
   },
   {
     "autotest_name": "telemetry_Benchmarks.octane",
@@ -602,39 +649,14 @@
     "dashboard_test_name": "octane"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.page_cycler.typical_25",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "page_cycler.typical_25"
-  },
-  {
     "autotest_name": "telemetry_Benchmarks.page_cycler_v2.typical_25",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "page_cycler_v2.typical_25"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.session_restore.cold.typical_25",
+    "autotest_name": "telemetry_Benchmarks.rendering.desktop",
     "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "session_restore.cold.typical_25"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.smoothness.top_25_smooth",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "smoothness.top_25_smooth"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.smoothness.tough_animation_cases",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "smoothness.tough_animation_cases"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.smoothness.tough_canvas_cases",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "smoothness.tough_canvas_cases"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.smoothness.tough_filters_cases",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "smoothness.tough_filters_cases"
+    "dashboard_test_name": "rendering.desktop"
   },
   {
     "autotest_name": "telemetry_Benchmarks.smoothness.tough_pinch_zoom_cases",
@@ -642,24 +664,14 @@
     "dashboard_test_name": "smoothness.tough_pinch_zoom_cases"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.smoothness.tough_scrolling_cases",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "smoothness.tough_scrolling_cases"
-  },
-  {
-    "autotest_name": "telemetry_Benchmarks.smoothness.tough_webgl_cases",
-    "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "smoothness.tough_webgl_cases"
-  },
-  {
     "autotest_name": "telemetry_Benchmarks.speedometer",
     "master_name": "ChromeOSPerf",
     "dashboard_test_name": "speedometer"
   },
   {
-    "autotest_name": "telemetry_Benchmarks.tab_switching.top_10",
+    "autotest_name": "telemetry_Benchmarks.speedometer2",
     "master_name": "ChromeOSPerf",
-    "dashboard_test_name": "tab_switching.top_10"
+    "dashboard_test_name": "speedometer2"
   },
   {
     "autotest_name": "telemetry_Benchmarks.tab_switching.typical_25",
@@ -681,6 +693,10 @@
   },
   {
     "autotest_name": "video_JDAPerf.power",
+    "master_name": "ChromeOSVideo"
+  },
+  {
+    "autotest_name": "video_JEAPerf",
     "master_name": "ChromeOSVideo"
   },
   {

@@ -37,26 +37,21 @@ PERF_PER_BUILD_TESTS = (
 )
 
 PERF_DAILY_RUN_TESTS = (
+    'blink_perf.image_decoder',
     'cros_tab_switching.typical_24',
     'dromaeo',
-    'image_decoding.image_decoding_measurement',
+    'media.desktop',
     'memory.desktop',
     'smoothness.tough_pinch_zoom_cases',
     'webrtc',
 )
 
 PERF_WEEKLY_RUN_TESTS = (
-    'system_health.memory_desktop',
-)
-
-PERF_NO_SUITE = (
-    'page_cycler.typical_25',
 )
 
 ALL_TESTS = (PERF_PER_BUILD_TESTS +
              PERF_DAILY_RUN_TESTS +
-             PERF_WEEKLY_RUN_TESTS +
-             PERF_NO_SUITE)
+             PERF_WEEKLY_RUN_TESTS)
 
 EXTRA_ARGS_MAP = {
     'loading.desktop': '--story-tag-filter=typical',

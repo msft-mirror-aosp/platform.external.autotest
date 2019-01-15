@@ -8,10 +8,12 @@ class TestBase;
 TestBase* GetAttributeFetchShaderTest();
 TestBase* GetClearTest();
 TestBase* GetContextTest();
+TestBase* GetDrawSizeTest();
 TestBase* GetFboFillRateTest();
 TestBase* GetFillRateTest();
 TestBase* GetReadPixelTest();
 TestBase* GetSwapTest();
+TestBase* GetTextureRebindTest();
 TestBase* GetTextureReuseTest();
 TestBase* GetTextureUpdateTest();
 TestBase* GetTextureUploadTest();
@@ -20,6 +22,6 @@ TestBase* GetVaryingsAndDdxyShaderTest();
 TestBase* GetWindowManagerCompositingTest(bool scissor);
 TestBase* GetYuvToRgbTest();
 
-} // namespace glbench
+}  // namespace glbench
 
-#endif // BENCH_GL_ALL_TESTS_H_
+#endif  // BENCH_GL_ALL_TESTS_H_

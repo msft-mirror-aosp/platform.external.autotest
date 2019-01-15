@@ -234,7 +234,7 @@ def adb_install(apk, auto_grant_permissions=True):
     permissions. Most tests should not care.
     """
     flags = '-g' if auto_grant_permissions else ''
-    return adb_cmd('install -r %s %s' % (flags, apk), timeout=60*5)
+    return adb_cmd('install -r -t %s %s' % (flags, apk), timeout=60*5)
 
 
 def adb_uninstall(apk):
@@ -251,7 +251,7 @@ def adb_reboot():
     You must connect first.
     """
     old_pid = get_container_pid()
-    logging.info('Trying to reboot PID:%s' % old_pid)
+    logging.info('Trying to reboot PID:%s', old_pid)
     adb_cmd('reboot', ignore_status=True)
     # Ensure that the old container is no longer booted
     utils.poll_for_condition(
@@ -330,13 +330,33 @@ def get_sdcard_pid():
     return utils.read_one_line(_SDCARD_PID_PATH)
 
 
-def get_removable_media_pid():
-    """Returns the PID of the arc-removable-media FUSE daemon."""
-    job_pid = get_job_pid('arc-removable-media')
+def _get_removable_media_pid_internal(job_name):
+    """Returns the PID of the arc-removable-media* FUSE daemon."""
+    job_pid = get_job_pid(job_name)
     # |job_pid| is the minijail process, obtain the PID of the process running
     # inside the mount namespace.
     # FUSE process is the only process running as chronos in the session.
     return utils.system_output('pgrep -u chronos -s %s' % job_pid)
+
+
+def get_removable_media_pid():
+    """Returns the PID of the arc-removable-media FUSE daemon."""
+    return _get_removable_media_pid_internal('arc-removable-media')
+
+
+def get_removable_media_default_pid():
+    """Returns the PID of the arc-removable-media-default FUSE daemon."""
+    return _get_removable_media_pid_internal('arc-removable-media-default')
+
+
+def get_removable_media_read_pid():
+    """Returns the PID of the arc-removable-media-read FUSE daemon."""
+    return _get_removable_media_pid_internal('arc-removable-media-read')
+
+
+def get_removable_media_write_pid():
+    """Returns the PID of the arc-removable-media-write FUSE daemon."""
+    return _get_removable_media_pid_internal('arc-removable-media-write')
 
 
 def get_obb_mounter_pid():
@@ -506,8 +526,8 @@ def _is_in_installed_packages_list(package, option=None):
     ret = package_entry in packages
 
     if not ret:
-        logging.info('Could not find "%s" in %s' %
-                     (package_entry, str(packages)))
+        logging.info('Could not find "%s" in %s',
+                     package_entry, str(packages))
     return ret
 
 
@@ -619,7 +639,21 @@ def set_device_mode(device_mode, use_fake_sensor_with_lifetime_secs=0):
     if use_fake_sensor_with_lifetime_secs > 0:
         args.extend(['--create_dev', '--dev_lifetime=%d' %
                      use_fake_sensor_with_lifetime_secs])
-    utils.run('inject_powerd_input_event', args=args)
+
+    try:
+        utils.run('inject_powerd_input_event', args=args)
+    except error.CmdError as err:
+        # TODO: Fragile code ahead. Correct way to do it is to check
+        # if device is already in desired mode, and do nothing if so.
+        # ATM we don't have a way to check current device mode.
+
+        # Assuming that CmdError means that device does not support
+        # --code=tablet parameter, meaning that device only supports clamshell
+        # mode.
+        if device_mode == 'clamshell' and \
+                use_fake_sensor_with_lifetime_secs == 0:
+                    return
+        raise err
 
 
 def wait_for_userspace_ready():
@@ -747,7 +781,7 @@ class ArcTest(test.test):
             for apk in apks:
                 logging.info('Installing %s', apk)
                 out = adb_install('%s/%s' % (apk_path, apk))
-                logging.info('Install apk output: %s' % str(out))
+                logging.info('Install apk output: %s', str(out))
             # Verify if package(s) are installed correctly
             if not full_pkg_names:
                 raise error.TestError('Package names of apks expected')
@@ -900,11 +934,15 @@ class ArcTest(test.test):
             all local connections, e.g. uiautomator.
         """
         logging.info('Blocking outbound connection')
+        # ipv6
+        _android_shell('ip6tables -I OUTPUT -j REJECT')
+        _android_shell('ip6tables -I OUTPUT -d ip6-localhost -j ACCEPT')
+        # ipv4
         _android_shell('iptables -I OUTPUT -j REJECT')
         _android_shell('iptables -I OUTPUT -p tcp -s 100.115.92.2 '
                        '--sport 5555 '
                        '-j ACCEPT')
-        _android_shell('iptables -I OUTPUT -p tcp -d localhost -j ACCEPT')
+        _android_shell('iptables -I OUTPUT -d localhost -j ACCEPT')
 
     def unblock_outbound(self):
         """ Unblocks the connection from the container to outer network.
@@ -914,11 +952,15 @@ class ArcTest(test.test):
             unblock the outbound connections during the test if needed.
         """
         logging.info('Unblocking outbound connection')
-        _android_shell('iptables -D OUTPUT -p tcp -d localhost -j ACCEPT')
+        # ipv4
+        _android_shell('iptables -D OUTPUT -d localhost -j ACCEPT')
         _android_shell('iptables -D OUTPUT -p tcp -s 100.115.92.2 '
                        '--sport 5555 '
                        '-j ACCEPT')
         _android_shell('iptables -D OUTPUT -j REJECT')
+        # ipv6
+        _android_shell('ip6tables -D OUTPUT -d ip6-localhost -j ACCEPT')
+        _android_shell('ip6tables -D OUTPUT -j REJECT')
 
     def _add_ui_object_not_found_handler(self):
         """Logs the device dump upon uiautomator.UiObjectNotFoundException."""

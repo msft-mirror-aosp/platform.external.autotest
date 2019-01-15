@@ -18,7 +18,7 @@ from autotest_lib.server import crashcollect
 from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
-from autotest_lib.server.hosts import repair
+from autotest_lib.server.hosts import repair_utils
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
@@ -405,6 +405,22 @@ class JetstreamServicesVerifier(hosts.Verifier):
         return 'Jetstream services must be running'
 
 
+class KvmExistsVerifier(hosts.Verifier):
+    """Verify that /dev/kvm exists if it should be there"""
+
+    def verify(self, host):
+        # pylint: disable=missing-docstring
+        result = host.run('[ ! -e /dev/kvm -a -f /usr/bin/vm_concierge ]',
+                          ignore_status=True)
+        if result.exit_status == 0:
+            raise hosts.AutoservVerifyError('/dev/kvm is missing')
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return '/dev/kvm should exist if device supports Linux VMs'
+
+
 class _ResetRepairAction(hosts.RepairAction):
     """Common handling for repair actions that reset a DUT."""
 
@@ -427,7 +443,7 @@ class _ResetRepairAction(hosts.RepairAction):
                 # If the DUT is up, we want to declare success, even if
                 # log gathering fails for some reason.  So, if there's
                 # a failure, just log it and move on.
-                logging.exception('Unexpected failure in log '
+                logging.exception('Non-critical failure in log '
                                   'collection during %s.',
                                   self.tag)
             return
@@ -447,9 +463,7 @@ class ServoSysRqRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        if not host.servo:
-            raise hosts.AutoservRepairError(
-                    '%s has no servo support.' % host.hostname)
+        repair_utils.require_servo(host)
         # Press 3 times Alt+VolUp+X
         # no checking DUT health between each press as
         # killing Chrome is not really likely to fix the DUT SSH.
@@ -474,9 +488,7 @@ class ServoResetRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        if not host.servo:
-            raise hosts.AutoservRepairError(
-                    '%s has no servo support.' % host.hostname)
+        repair_utils.require_servo(host)
         host.servo.get_power_state_controller().reset()
         self._check_reset_success(host)
 
@@ -486,7 +498,7 @@ class ServoResetRepair(_ResetRepairAction):
         return 'Reset the DUT via servo'
 
 
-class CrosRebootRepair(repair.RebootRepair):
+class CrosRebootRepair(repair_utils.RebootRepair):
     """Repair a CrOS target by clearing dev mode and rebooting it."""
 
     def repair(self, host):
@@ -560,15 +572,31 @@ class ServoInstallRepair(hosts.RepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        if not host.servo:
-            raise hosts.AutoservRepairError(
-                    '%s has no servo support.' % host.hostname)
+        repair_utils.require_servo(host)
         host.servo_install(host.stage_image_for_servo())
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
         return 'Reinstall from USB using servo'
+
+
+class ColdRebootRepair(_ResetRepairAction):
+    """
+    Repair a Chrome device by performing a cold reboot that resets the EC.
+
+    Use ectool to perform a cold reboot which will reset the EC.
+    """
+
+    def repair(self, host):
+        # pylint: disable=missing-docstring
+        host.reboot(reboot_cmd='ectool reboot_ec cold')
+        self._check_reset_success(host)
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Reset the DUT via cold reboot with ectool'
 
 
 class JetstreamTpmRepair(hosts.RepairAction):
@@ -607,18 +635,19 @@ def _cros_verify_dag():
     FirmwareStatusVerifier = cros_firmware.FirmwareStatusVerifier
     FirmwareVersionVerifier = cros_firmware.FirmwareVersionVerifier
     verify_dag = (
-        (repair.SshVerifier,         'ssh',      ()),
-        (DevModeVerifier,            'devmode',  ('ssh',)),
-        (HWIDVerifier,               'hwid',     ('ssh',)),
-        (ACPowerVerifier,            'power',    ('ssh',)),
-        (EXT4fsErrorVerifier,        'ext4',     ('ssh',)),
-        (WritableVerifier,           'writable', ('ssh',)),
-        (TPMStatusVerifier,          'tpm',      ('ssh',)),
-        (UpdateSuccessVerifier,      'good_au',  ('ssh',)),
-        (FirmwareStatusVerifier,     'fwstatus', ('ssh',)),
-        (FirmwareVersionVerifier,    'rwfw',     ('ssh',)),
-        (PythonVerifier,             'python',   ('ssh',)),
-        (repair.LegacyHostVerifier,  'cros',     ('ssh',)),
+        (repair_utils.SshVerifier,        'ssh',      ()),
+        (DevModeVerifier,                 'devmode',  ('ssh',)),
+        (HWIDVerifier,                    'hwid',     ('ssh',)),
+        (ACPowerVerifier,                 'power',    ('ssh',)),
+        (EXT4fsErrorVerifier,             'ext4',     ('ssh',)),
+        (WritableVerifier,                'writable', ('ssh',)),
+        (TPMStatusVerifier,               'tpm',      ('ssh',)),
+        (UpdateSuccessVerifier,           'good_au',  ('ssh',)),
+        (FirmwareStatusVerifier,          'fwstatus', ('ssh',)),
+        (FirmwareVersionVerifier,         'rwfw',     ('ssh',)),
+        (PythonVerifier,                  'python',   ('ssh',)),
+        (repair_utils.LegacyHostVerifier, 'cros',     ('ssh',)),
+        (KvmExistsVerifier,               'ec_reset', ('ssh',)),
     )
     return verify_dag
 
@@ -629,7 +658,7 @@ def _cros_basic_repair_actions():
     repair_actions = (
         # RPM cycling must precede Servo reset:  if the DUT has a dead
         # battery, we need to reattach AC power before we reset via servo.
-        (repair.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
+        (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
         (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
         (ServoResetRepair, 'servoreset', (), ('ssh',)),
 
@@ -642,6 +671,8 @@ def _cros_basic_repair_actions():
         (FirmwareRepair, 'firmware', (), ('ssh', 'fwstatus', 'good_au',)),
 
         (CrosRebootRepair, 'reboot', ('ssh',), ('devmode', 'writable',)),
+
+        (ColdRebootRepair, 'coldboot', ('ssh',), ('ec_reset',)),
     )
     return repair_actions
 
@@ -678,18 +709,18 @@ def create_cros_repair_strategy():
     """Return a `RepairStrategy` for a `CrosHost`."""
     verify_dag = _cros_verify_dag()
     repair_actions = _cros_repair_actions()
-    return hosts.RepairStrategy(verify_dag, repair_actions)
+    return hosts.RepairStrategy(verify_dag, repair_actions, 'cros')
 
 
 def _moblab_verify_dag():
     """Return the verification DAG for a `MoblabHost`."""
     FirmwareVersionVerifier = cros_firmware.FirmwareVersionVerifier
     verify_dag = (
-        (repair.SshVerifier,         'ssh',     ()),
-        (ACPowerVerifier,            'power',   ('ssh',)),
-        (FirmwareVersionVerifier,    'rwfw',    ('ssh',)),
-        (PythonVerifier,             'python',  ('ssh',)),
-        (repair.LegacyHostVerifier,  'cros',    ('ssh',)),
+        (repair_utils.SshVerifier,        'ssh',     ()),
+        (ACPowerVerifier,                 'power',   ('ssh',)),
+        (FirmwareVersionVerifier,         'rwfw',    ('ssh',)),
+        (PythonVerifier,                  'python',  ('ssh',)),
+        (repair_utils.LegacyHostVerifier, 'cros',    ('ssh',)),
     )
     return verify_dag
 
@@ -697,7 +728,7 @@ def _moblab_verify_dag():
 def _moblab_repair_actions():
     """Return the repair actions for a `MoblabHost`."""
     repair_actions = (
-        (repair.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
+        (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
         (AutoUpdateRepair, 'au', ('ssh',), _CROS_AU_TRIGGERS),
     )
     return repair_actions
@@ -727,7 +758,7 @@ def create_moblab_repair_strategy():
     """
     verify_dag = _moblab_verify_dag()
     repair_actions = _moblab_repair_actions()
-    return hosts.RepairStrategy(verify_dag, repair_actions)
+    return hosts.RepairStrategy(verify_dag, repair_actions, 'moblab')
 
 
 def _jetstream_repair_actions():
@@ -772,7 +803,7 @@ def create_jetstream_repair_strategy():
     """
     verify_dag = _jetstream_verify_dag()
     repair_actions = _jetstream_repair_actions()
-    return hosts.RepairStrategy(verify_dag, repair_actions)
+    return hosts.RepairStrategy(verify_dag, repair_actions, 'jetstream')
 
 
 # TODO(pprabhu) Move this to a better place. I have no idea what that place

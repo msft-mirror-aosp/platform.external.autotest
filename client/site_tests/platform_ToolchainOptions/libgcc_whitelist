@@ -1,4 +1,6 @@
 /opt/google/chrome/nacl_helper
+# crbug.com/887869, remove this after Intel fixes their parser
+/opt/intel/fw_parser
 # Rust compiler is using libgcc_s, remove this after rust is fixed.
 /usr/sbin/mosys
 # These files are delivered as binaries in Chrome OS.
@@ -16,5 +18,10 @@
 /usr/bin/crosvm
 /usr/bin/memd
 /usr/bin/9s
+/usr/bin/crostini_client
 /usr/lib*/libqcow_utils.so
 /usr/lib64/libcrosvm_plugin.so
+# Remove these files after mesa is fixed to not need libgcc_s.
+# https://crbug.com/808264
+/usr/lib/dri/kms_swrast_dri.so
+/usr/lib/dri/swrast_dri.so

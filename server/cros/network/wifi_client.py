@@ -90,11 +90,9 @@ def _is_conductive(host):
 
     @param host: A Host object.
     """
-    if utils.host_could_be_in_afe(host.hostname):
-        info = host.host_info_store.get()
-        conductive = info.get_label_value('conductive')
-        return conductive.lower() == 'true'
-    return False
+    info = host.host_info_store.get()
+    conductive = info.get_label_value('conductive')
+    return conductive.lower() == 'true'
 
 
 class WiFiClient(site_linux_system.LinuxSystem):
@@ -230,6 +228,11 @@ class WiFiClient(site_linux_system.LinuxSystem):
         """@return Name of kernel module in use by this interface."""
         return self._interface.module_name
 
+    @property
+    def parent_device_name(self):
+        """
+        @return Path of the parent device for the net device"""
+        return self._interface.parent_device_name
 
     @property
     def wifi_if(self):
@@ -254,6 +257,11 @@ class WiFiClient(site_linux_system.LinuxSystem):
         """@return string IPv4 subnet prefix of self.wifi_if."""
         return self._interface.ipv4_subnet
 
+
+    @property
+    def wifi_phy_name(self):
+        """@return wiphy name (e.g., 'phy0') or None"""
+        return self._interface.wiphy_name
 
     @property
     def wifi_signal_level(self):
@@ -358,6 +366,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         # to workaround the lazy loading of the capabilities cache and supported
         # frequency list. This is needed for tests that may need access to these
         # when the DUT is unreachable (for ex: suspended).
+        #pylint: disable=pointless-statement
         self.capabilities
 
 
@@ -602,6 +611,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
       """
       # If the scan returns None, return 0, else return the matching count
+      num_bss_actual = 0
       def are_all_bsses_discovered():
           """Determine if all BSSes associated with the SSID from parent
           function are discovered in the scan
@@ -609,18 +619,24 @@ class WiFiClient(site_linux_system.LinuxSystem):
           @return boolean representing whether the expected bss count matches
           how many in the scan match the given ssid
           """
-          scan_results = self.iw_runner.scan(
-                  self.wifi_if,
-                  frequencies=[],
-                  ssids=[ssid])
-          if scan_results is None:
-              return False
-          return num_bss_expected == sum(
-                  ssid == bss.ssid for bss in scan_results)
+          self.claim_wifi_if() # Stop shill/supplicant scans
+          try:
+            scan_results = self.iw_runner.scan(
+                    self.wifi_if,
+                    frequencies=[],
+                    ssids=[ssid])
+            if scan_results is None:
+                return False
+            num_bss_actual = sum(ssid == bss.ssid for bss in scan_results)
+            return num_bss_expected == num_bss_actual
+          finally:
+            self.release_wifi_if()
 
       utils.poll_for_condition(
               condition=are_all_bsses_discovered,
-              exception=error.TestFail('Failed to discover all BSSes.'),
+              exception=error.TestFail('Failed to discover all BSSes. Found %d,'
+                                      ' wanted %d with SSID %s' %
+                                      (num_bss_actual, num_bss_expected, ssid)),
               timeout=timeout_seconds,
               sleep_interval=0.5)
 
@@ -633,11 +649,11 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
         """
         logging.info('Waiting for %s to reach one of %r...', ssid, states)
-        success, state, time  = self._shill_proxy.wait_for_service_states(
+        success, state, duration  = self._shill_proxy.wait_for_service_states(
                 ssid, states, timeout_seconds)
         logging.info('...ended up in state \'%s\' (%s) after %f seconds.',
-                     state, 'success' if success else 'failure', time)
-        return success, state, time
+                     state, 'success' if success else 'failure', duration)
+        return success, state, duration
 
 
     def do_suspend(self, seconds):
@@ -930,7 +946,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         return True
 
 
-    def request_roam_dbus(self, bssid, interface):
+    def request_roam_dbus(self, bssid, iface):
         """Request that we roam to the specified BSSID through dbus.
 
         Note that this operation assumes that:
@@ -939,11 +955,11 @@ class WiFiClient(site_linux_system.LinuxSystem):
         2) There is a BSS with an appropriate ID in our scan results.
 
         @param bssid: string MAC address of bss to roam to.
-        @param interface: interface to use
+        @param iface: interface to use
 
         """
         self._assert_method_supported('request_roam_dbus')
-        self._shill_proxy.request_roam_dbus(bssid, interface)
+        self._shill_proxy.request_roam_dbus(bssid, iface)
 
 
     def wait_for_roam(self, bssid, timeout_seconds=10.0):
@@ -1053,7 +1069,6 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
         @returns a named tuple of (state, time)
         """
-        POLLING_INTERVAL_SECONDS = 1.0
         start_time = time.time()
         duration = lambda: time.time() - start_time
         state = [None] # need mutability for the nested method to save state
@@ -1333,17 +1348,17 @@ class WiFiClient(site_linux_system.LinuxSystem):
         return True
 
 
-    def set_dhcp_property(self, dhcp_prop_name, dhcp_prop_value):
-        """Sets the given DHCP_Property to the value provided.
+    def set_manager_property(self, prop_name, prop_value):
+        """Sets the given manager property to the value provided.
 
-        @param dhcp_prop_name: the dhcp_property to be set
-        @param dhcp_prop_value: value to assign to the dhcp_prop_name
+        @param prop_name: the property to be set
+        @param prop_value: value to assign to the prop_name
         @return a context manager for the setting
 
         """
         return TemporaryManagerDBusProperty(self._shill_proxy,
-                                            dhcp_prop_name,
-                                            dhcp_prop_value)
+                                            prop_name,
+                                            prop_value)
 
 
 class TemporaryDeviceDBusProperty:
@@ -1355,18 +1370,18 @@ class TemporaryDeviceDBusProperty:
 
     """
 
-    def __init__(self, shill_proxy, interface, prop_name, value):
+    def __init__(self, shill_proxy, iface, prop_name, value):
         """Construct a TemporaryDeviceDBusProperty context manager.
 
 
         @param shill_proxy: the shill proxy to use to communicate via dbus
-        @param interface: device whose property to change (e.g. 'wlan0')
+        @param iface: device whose property to change (e.g. 'wlan0')
         @param prop_name: the name of the property we want to set
         @param value: the desired value of the property
 
         """
         self._shill = shill_proxy
-        self._interface = interface
+        self._interface = iface
         self._prop_name = prop_name
         self._value = value
         self._saved_value = None
@@ -1434,7 +1449,9 @@ class TemporaryManagerDBusProperty:
                                                              self._value):
                 raise error.TestFail('Could not set optional manager property.')
         else:
-            if not self._shill.set_manager_property(self._prop_name, self._value):
+            setprop_result = self._shill.set_manager_property(self._prop_name,
+                                                              self._value)
+            if not setprop_result:
                 raise error.TestFail('Could not set manager property')
 
         logging.info('- Changed value from [%s] to [%s]',

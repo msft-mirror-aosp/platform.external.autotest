@@ -14,8 +14,10 @@ import logging
 import operator
 import os
 import urllib
+import uuid
 
 from lucifer import autotest
+from skylab_suite import errors
 
 
 SERVICE_ACCOUNT = '/creds/skylab_swarming_bot/skylab_bot_service_account.json'
@@ -32,12 +34,14 @@ TASK_RUNNING = 'RUNNING'
 TASK_PENDING = 'PENDING'
 TASK_BOT_DIED = 'BOT_DIED'
 TASK_NO_RESOURCE = 'NO_RESOURCE'
+TASK_KILLED = 'KILLED'
 TASK_FINISHED_STATUS = [TASK_COMPLETED,
                         TASK_EXPIRED,
                         TASK_CANCELED,
                         TASK_TIMEDOUT,
                         TASK_BOT_DIED,
-                        TASK_NO_RESOURCE]
+                        TASK_NO_RESOURCE,
+                        TASK_KILLED]
 # The swarming task failure status to retry. TASK_CANCELED won't get
 # retried since it's intentionally aborted.
 TASK_STATUS_TO_RETRY = [TASK_EXPIRED, TASK_TIMEDOUT, TASK_BOT_DIED,
@@ -52,6 +56,7 @@ DEFAULT_TIMEOUT_SECS = 60 * 60
 # Use the same priorities mapping as chromite/lib/constants.py
 SKYLAB_HWTEST_PRIORITIES_MAP = {
     'Weekly': 230,
+    'CTS': 215,
     'Daily': 200,
     'PostBuild': 170,
     'Default': 140,
@@ -66,11 +71,12 @@ SORTED_SKYLAB_HWTEST_PRIORITY = sorted(
 
 # TODO (xixuan): Use proto library or some future APIs instead of hardcoding.
 SWARMING_DUT_POOL_MAP = {
-        'cq': 'DUT_POOL_CQ',
-        'bvt': 'DUT_POOL_BVT',
-        'suites': 'DUT_POOL_SUITES',
-        'cts': 'DUT_POOL_CTS',
         'arc-presubmit': 'DUT_POOL_CTS_PERBUILD',
+        'bvt': 'DUT_POOL_BVT',
+        'cq': 'DUT_POOL_CQ',
+        'cts': 'DUT_POOL_CTS',
+        'quota-metered': 'DUT_POOL_QUOTA_METERED',
+        'suites': 'DUT_POOL_SUITES',
 }
 SWARMING_DUT_READY_STATUS = 'ready'
 
@@ -116,14 +122,61 @@ def _get_client():
             'chromiumos/chromite/third_party/swarming.client/swarming.py')
 
 
+def to_swarming_pool_label(pool):
+    """Transfer passed-in suite pool label to swarming-recognized pool label."""
+    return SWARMING_DUT_POOL_MAP.get(pool, pool)
+
+
 def get_basic_swarming_cmd(command):
     return [_get_client(), command,
             '--auth-service-account-json', SERVICE_ACCOUNT,
-            '--swarming', os.environ.get('SWARMING_SERVER')]
+            '--swarming', get_swarming_server()]
 
 
-def make_fallback_request_dict(cmds, slices_dimensions, task_name, priority,
-                               tags, user,
+def make_logdog_annotation_url():
+    """Return a unique LogDog annotation URL.
+
+    If the appropriate LogDog server cannot be determined, return an
+    empty string.
+    """
+    logdog_server = get_logdog_server()
+    if not logdog_server:
+        return ''
+    return ('logdog://%s/chromeos/skylab/%s/+/annotations'
+            % (logdog_server, uuid.uuid4().hex))
+
+
+def get_swarming_server():
+    """Return the swarming server for the current environment."""
+    try:
+        return os.environ['SWARMING_SERVER']
+    except KeyError:
+        raise errors.DroneEnvironmentError(
+                'SWARMING_SERVER environment variable not set'
+        )
+
+
+def get_logdog_server():
+    """Return the LogDog server for the current environment.
+
+    If the appropriate server cannot be determined, return an empty
+    string.
+    """
+    try:
+        return os.environ['LOGDOG_SERVER']
+    except KeyError:
+        raise errors.DroneEnvironmentError(
+                'LOGDOG_SERVER environment variable not set'
+        )
+
+
+def get_new_task_swarming_cmd():
+    """Return a list of command args for creating a new task."""
+    return get_basic_swarming_cmd('post') + ['tasks/new']
+
+
+def make_fallback_request_dict(cmds, slices_dimensions, slices_expiration_secs,
+                               task_name, priority, tags, user,
                                parent_task_id='',
                                expiration_secs=DEFAULT_EXPIRATION_SECS,
                                grace_period_secs=DEFAULT_TIMEOUT_SECS,
@@ -134,10 +187,10 @@ def make_fallback_request_dict(cmds, slices_dimensions, task_name, priority,
     @param cmds: A list of cmd to run on swarming bots.
     @param slices_dimensions: A list of dict to indicates different tries'
         dimensions.
+    @param slices_expiration_secs: A list of Integer to indicates each slice's
+        expiration_secs.
     @param task_name: The request's name.
     @param priority: The request's priority. An integer.
-    @param expiration_secs: The expiration seconds for the each cmd to wait
-        to be expired.
     @param grace_period_secs: The seconds to send a task after a SIGTERM before
         sending it a SIGKILL.
     @param execution_timeout_secs: The seconds to run before a task gets
@@ -148,8 +201,10 @@ def make_fallback_request_dict(cmds, slices_dimensions, task_name, priority,
     @return a json-compatible dict, as a request for swarming call.
     """
     assert len(cmds) == len(slices_dimensions)
+    assert len(cmds) == len(slices_expiration_secs)
     task_slices = []
-    for cmd, dimensions in zip(cmds, slices_dimensions):
+    for cmd, dimensions, expiration_secs in zip(cmds, slices_dimensions,
+                                                slices_expiration_secs):
         properties = TaskProperties(
                 command=cmd,
                 dimensions=dimensions,
@@ -332,7 +387,7 @@ def query_bots_list(dimensions):
                                          urllib.urlencode(conditions)]
     cros_build_lib = autotest.chromite_load('cros_build_lib')
     result = cros_build_lib.RunCommand(swarming_cmd, capture_output=True)
-    return json.loads(result.output)['items']
+    return json.loads(result.output).get('items', [])
 
 
 def bot_available(bot):
@@ -344,3 +399,21 @@ def bot_available(bot):
     @return True if a bot is available to run task, otherwise False.
     """
     return not (bot['is_dead'] or bot['quarantined'])
+
+
+def get_child_tasks(parent_task_id):
+    """Get the child tasks based on a parent swarming task id.
+
+    @param parent_task_id: The parent swarming task id.
+
+    @return a list of dicts, each dict refers to the whole stats of a task,
+        keys include 'name', 'bot_dimensions', 'tags', 'bot_id', 'state', etc.
+    """
+    swarming_cmd = get_basic_swarming_cmd('query')
+    swarming_cmd += ['tasks/list?tags=parent_task_id:%s' % parent_task_id]
+    timeout_util = autotest.chromite_load('timeout_util')
+    cros_build_lib = autotest.chromite_load('cros_build_lib')
+    with timeout_util.Timeout(60):
+        child_tasks = cros_build_lib.RunCommand(
+                swarming_cmd, capture_output=True)
+        return json.loads(child_tasks.output)['items']

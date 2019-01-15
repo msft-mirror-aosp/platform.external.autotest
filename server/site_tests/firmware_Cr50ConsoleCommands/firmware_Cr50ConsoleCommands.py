@@ -27,7 +27,6 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     #
     # This information is in ec/board/cr50/scratch_reg1.h
     RELEVANT_PROPERTIES = 0x63
-    BRDPROP_FORMAT = ['properties = (0x\d+)\s']
     COMPARE_LINES = '\n'
     COMPARE_WORDS = None
     SORTED = True
@@ -56,8 +55,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         self.past_matches = {}
 
         # Make sure the console is restricted
-        caps = self.cr50.get_cap_dict()
-        if caps['GscFullConsole'] == 'Always':
+        if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_REQ] == 'Always':
             logging.info('Restricting console')
             self.fast_open(enable_testlab=True)
             self.cr50.set_cap('GscFullConsole', 'IfOpened')
@@ -173,6 +171,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         else:
             self.exclude.append('mp')
             self.include.append('prepvt')
+        logging.info('%s brdprop 0x%x: %s', self.servo.get('ec_board'),
+                     brdprop, ', '.join(self.include))
 
 
     def run_once(self, host):

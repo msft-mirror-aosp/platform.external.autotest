@@ -22,6 +22,7 @@ import platform
 import re
 import shutil
 import signal
+import string
 import tempfile
 import time
 import uuid
@@ -242,29 +243,23 @@ def get_cpuinfo():
 
 def get_cpu_arch():
     """Work out which CPU architecture we're running on"""
-    f = open('/proc/cpuinfo', 'r')
-    cpuinfo = f.readlines()
-    f.close()
-    if list_grep(cpuinfo, '^cpu.*(RS64|POWER3|Broadband Engine)'):
-        return 'power'
-    elif list_grep(cpuinfo, '^cpu.*POWER4'):
-        return 'power4'
-    elif list_grep(cpuinfo, '^cpu.*POWER5'):
-        return 'power5'
-    elif list_grep(cpuinfo, '^cpu.*POWER6'):
-        return 'power6'
-    elif list_grep(cpuinfo, '^cpu.*POWER7'):
-        return 'power7'
-    elif list_grep(cpuinfo, '^cpu.*PPC970'):
-        return 'power970'
-    elif list_grep(cpuinfo, 'ARM'):
+
+    # Using 'uname -m' should be a very portable way to do this since the
+    # format is pretty standard.
+    machine_name = utils.system_output('uname -m').strip()
+
+    # Apparently ARM64 and ARM have both historically returned the string 'arm'
+    # here so continue the tradition.  Use startswith() because:
+    # - On most of our arm devices we'll actually see the string armv7l.
+    # - In theory the machine name could include a suffix for endianness.
+    if machine_name.startswith('aarch64') or machine_name.startswith('arm'):
         return 'arm'
-    elif list_grep(cpuinfo, '^flags.*:.* lm .*'):
-        return 'x86_64'
-    elif list_grep(cpuinfo, 'CPU.*implementer.*0x41'):
-        return 'arm'
-    else:
-        return 'i386'
+
+    # Historically we _have_ treated x86_64 and i386 separately.
+    if machine_name in ('x86_64', 'i386'):
+        return machine_name
+
+    raise error.TestError('unsupported machine type %s' % machine_name)
 
 
 def get_arm_soc_family_from_devicetree():
@@ -276,12 +271,14 @@ def get_arm_soc_family_from_devicetree():
     if not os.path.isfile(devicetree_compatible):
         return None
     f = open(devicetree_compatible, 'r')
-    compatible = f.readlines()
+    compatible = f.read().split(chr(0))
     f.close()
-    if list_grep(compatible, 'rk3399'):
+    if list_grep(compatible, '^rockchip,'):
         return 'rockchip'
-    elif list_grep(compatible, 'mt8173'):
+    elif list_grep(compatible, '^mediatek,'):
         return 'mediatek'
+    elif list_grep(compatible, '^qcom,'):
+        return 'qualcomm'
     return None
 
 
@@ -968,6 +965,34 @@ def get_storage_error_msg(disk_name, reason):
         msg += ' firmware: %s' % fw
 
     return msg
+
+
+_IOSTAT_FIELDS = ('transfers_per_s', 'read_kb_per_s', 'written_kb_per_s',
+                  'read_kb', 'written_kb')
+_IOSTAT_RE = re.compile('ALL' + len(_IOSTAT_FIELDS) * r'\s+([\d\.]+)')
+
+def get_storage_statistics(device=None):
+    """
+    Fetches statistics for a storage device.
+
+    Using iostat(1) it retrieves statistics for a device since last boot.  See
+    the man page for iostat(1) for details on the different fields.
+
+    @param device: Path to a block device. Defaults to the device where root
+            is mounted.
+
+    @returns a dict mapping each field to its statistic.
+
+    @raises ValueError: If the output from iostat(1) can not be parsed.
+    """
+    if device is None:
+        device = get_root_device()
+    cmd = 'iostat -d -k -g ALL -H %s' % device
+    output = utils.system_output(cmd, ignore_status=True)
+    match = _IOSTAT_RE.search(output)
+    if not match:
+        raise ValueError('Unable to get iostat for %s' % device)
+    return dict(zip(_IOSTAT_FIELDS, map(float, match.groups())))
 
 
 def load_module(module_name, params=None):
@@ -1798,12 +1823,17 @@ def get_temperature_critical():
     paths = _get_hwmon_paths('temp*_crit')
     for path in paths:
         temperature = _get_float_from_file(path, 0, None, None) * 0.001
-        # Today typical for Intel is 98'C to 105'C while ARM is 85'C. Clamp to
-        # the lowest known value.
+        # Today typical for Intel is 98'C to 105'C while ARM is 85'C. Clamp to 98
+        # if Intel device or the lowest known value otherwise.
+        result = utils.system_output('crossystem arch', retain_output=True,
+                                     ignore_status=True)
         if (min_temperature < 60.0) or min_temperature > 150.0:
-            logging.warning('Critical temperature of %.1fC was reset to 85.0C.',
+            if 'x86' in result:
+                min_temperature = 98.0
+            else:
+                min_temperature = 85.0
+            logging.warning('Critical temperature was reset to %.1fC.',
                             min_temperature)
-            min_temperature = 85.0
 
         min_temperature = min(temperature, min_temperature)
     return min_temperature
@@ -2207,6 +2237,8 @@ def get_gpu_family():
         return 'mali-unrecognized'
     if socfamily == 'tegra':
         return 'tegra'
+    if socfamily == 'qualcomm':
+        return 'qualcomm'
     if os.path.exists('/sys/kernel/debug/pvr'):
         return 'rogue'
 
@@ -2355,22 +2387,6 @@ def graphics_api():
     return 'gl'
 
 
-def is_vm():
-    """Check if the process is running in a virtual machine.
-
-    @return: True if the process is running in a virtual machine, otherwise
-             return False.
-    """
-    try:
-        virt = utils.run('sudo -n virt-what').stdout.strip()
-        logging.debug('virt-what output: %s', virt)
-        return bool(virt)
-    except error.CmdError:
-        logging.warn('Package virt-what is not installed, default to assume '
-                     'it is not a virtual machine.')
-        return False
-
-
 def is_package_installed(package):
     """Check if a package is installed already.
 
@@ -2414,3 +2430,13 @@ def run_sql_cmd(server, user, password, command, database=''):
     # Set verbose to False so the command line won't be logged, as it includes
     # database credential.
     return utils.run(cmd, verbose=False).stdout
+
+
+def strip_non_printable(s):
+    """Strip non printable characters from string.
+
+    @param s: Input string
+
+    @return: The input string with only printable characters.
+    """
+    return ''.join(x for x in s if x in string.printable)

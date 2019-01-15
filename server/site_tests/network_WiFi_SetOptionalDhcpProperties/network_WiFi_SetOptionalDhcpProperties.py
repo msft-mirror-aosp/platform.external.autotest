@@ -37,7 +37,7 @@ class network_WiFi_SetOptionalDhcpProperties(
                        % (self.VENDORCLASS_VALUE, self.HOSTNAME_VALUE));
         dhcp_frames = tcpdump_analyzer.get_frames(pcap_result.local_pcap_path,
                                                   dhcp_filter,
-                                                  bad_fcs='include')
+                                                  reject_bad_fcs=False)
         if not dhcp_frames:
             raise error.TestFail('Packet capture did not contain a DHCP '
                                  'negotiation!')
@@ -61,10 +61,10 @@ class network_WiFi_SetOptionalDhcpProperties(
 
         # set hostname and vendorclass for this test
         client = self.context.client
-        with client.set_dhcp_property(self.HOSTNAME_PROPERTY,
-                                      self.HOSTNAME_VALUE):
-            with client.set_dhcp_property(self.VENDORCLASS_PROPERTY,
-                                          self.VENDORCLASS_VALUE):
+        with client.set_manager_property(self.HOSTNAME_PROPERTY,
+                                         self.HOSTNAME_VALUE):
+            with client.set_manager_property(self.VENDORCLASS_PROPERTY,
+                                             self.VENDORCLASS_VALUE):
                 self.context.capture_host.start_capture(
                         configuration.frequency,
                         ht_type=configuration.ht_packet_capture_mode)

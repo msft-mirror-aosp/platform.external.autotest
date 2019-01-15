@@ -57,19 +57,24 @@ public class SuiteRunnerView extends TabView {
   private static List<String> suiteNames = Arrays.asList(
     "bvt-cq",
     "bvt-inline",
+    "bvt-tast-cq",
+    "check_setup_cts_N",
+    "check_setup_storage_qual",
     "cts_N",
     "cts_P",
     "gts",
     "hardware_memoryqual",
     "hardware_storagequal",
     "hardware_storagequal_quick",
-    "moblab_setup",
     "power_idle",
     "power_loadtest",
     "power_loadtest_1hour",
     "power_loadtest_fast",
     "power_measurement_wrapper",
-    "usb-camera"
+    "power_sanity",
+    "usb-camera",
+    "wifi_matfunc",
+    "wifi_perf"
   );
 
   private static String TEST_LIST_PLACEHOLDER = "arm.CtsAnimationTestCases, x86.CtsDeqpTestCases";
@@ -172,10 +177,10 @@ public class SuiteRunnerView extends TabView {
     thirdOptionalLine = createHorizontalLineItem("Only run specified tests (Optional):",
                                                  suiteArgsTextArea);
     thirdOptionalLine.setVisible(false);
-    fourthOptionalLine = createHorizontalLineItem("AVL process bug ID (Optional):",
+    fourthOptionalLine = createHorizontalLineItem("AVL process bug ID:",
                                                  bugIdTextBox);
     fourthOptionalLine.setVisible(false);
-    fifthOptionalLine = createHorizontalLineItem("AVL part number (Optional):",
+    fifthOptionalLine = createHorizontalLineItem("AVL part number:",
                                                  partIdTextBox);
     fifthOptionalLine.setVisible(false);
     sixthOptionalLine = createHorizontalLineItem("Test args:",
@@ -279,14 +284,14 @@ public class SuiteRunnerView extends TabView {
       fourthOptionalLine.setVisible(false);
       fifthOptionalLine.setVisible(false);
       sixthOptionalLine.setVisible(false);
-    } else if(listIndex == suiteNames.indexOf("hardware_storagequal") ||
-        listIndex == suiteNames.indexOf("hardware_storagequal_quick") ||
-        listIndex == suiteNames.indexOf("hardware_memoryqual")) {
+    } else if (isAvlSuite(suiteNames.get(listIndex))) {
       thirdOptionalLine.setVisible(false);
       fourthOptionalLine.setVisible(true);
       fifthOptionalLine.setVisible(true);
       sixthOptionalLine.setVisible(false);
-    } else if(listIndex == suiteNames.indexOf("power_measurement_wrapper")) {
+    } else if(listIndex == suiteNames.indexOf("power_measurement_wrapper") ||
+        listIndex == suiteNames.indexOf("wifi_matfunc") ||
+        listIndex == suiteNames.indexOf("wifi_perf")) {
       thirdOptionalLine.setVisible(false);
       fourthOptionalLine.setVisible(false);
       fifthOptionalLine.setVisible(false);
@@ -419,6 +424,11 @@ public class SuiteRunnerView extends TabView {
     });
   }
 
+  private boolean isAvlSuite(String suite) {
+    return Arrays.asList("hardware_storagequal", "hardware_storagequal_quick",
+      "hardware_memoryqual").contains(suite);
+  }
+
 
   /**
    * For the selection option of board, build, suite and pool make a RPC call that will instruct
@@ -433,9 +443,9 @@ public class SuiteRunnerView extends TabView {
    * @param suiteArgs, optional params to pass to the suite.
    * @param testArgs, optional params to pass to tests in the suite.
    * @param bugId, an optional param indicates the bugnizer ticket for
-   * memory/hardware avl process.
+   * memory/hardware avl process. Required for AVL suites.
    * @param partId, an optional param identifies the component involved for
-   * memory/hardare avl process.
+   * memory/hardware avl process. Required for AVL suites.
    */
   private void runSuite(String board, String model, String build, String suite,
       String pool, String rwFirmware, String roFirmware, String suiteArgs,
@@ -444,6 +454,22 @@ public class SuiteRunnerView extends TabView {
     if (pool != null && !pool.isEmpty()) {
       realPoolLabel = pool.trim();
     }
+
+    // partId, bugId required for avl suites
+    if (isAvlSuite(suite)) {
+      if ((bugId == null || bugId.isEmpty()) ||
+        (partId == null || partId.isEmpty())) {
+          Window.alert("Part ID and Bug ID are required for suite " + suite);
+          return;
+      }
+
+      // bug id is an integer id
+      if (!bugId.matches("\\d+")) {
+          Window.alert("Bug ID must be numeric");
+          return;
+      }
+    }
+
     MoblabRpcHelper.runSuite(board, model, build, suite, realPoolLabel,
         rwFirmware, roFirmware, suiteArgs, testArgs, bugId, partId,
         new RunSuiteCallback() {

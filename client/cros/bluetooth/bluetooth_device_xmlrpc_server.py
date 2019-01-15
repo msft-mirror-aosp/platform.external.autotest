@@ -12,8 +12,6 @@ import gobject
 import json
 import logging
 import logging.handlers
-import os
-import shutil
 
 import common
 from autotest_lib.client.bin import utils

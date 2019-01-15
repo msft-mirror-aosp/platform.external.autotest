@@ -6,10 +6,14 @@ TIME = "SHORT"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+ATTRIBUTES = "suite:power_sanity"
 
 DOC = """
 This test records power related statistics while displaying different static
 pages using maximum brightness level.
 """
 
-job.run_test('power_Display', max_brightness=True, tag=NAME.split('.')[1])
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_Display', max_brightness=True, tag=NAME.split('.')[1],
+             pdash_note=pdash_note)

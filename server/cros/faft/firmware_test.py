@@ -190,6 +190,7 @@ class FirmwareTest(FAFTBase):
         self._restore_ec_write_protect()
         self._restore_gbb_flags()
         self.faft_client.updater.start_daemon()
+        self.faft_client.updater.cleanup()
         self._remove_faft_lockfile()
         self._record_servo_log()
         self._record_faft_client_log()
@@ -402,7 +403,7 @@ class FirmwareTest(FAFTBase):
                 raise error.TestError('USB stick in servo contains a %s '
                     'image, but DUT is a %s' % (usb_board, dut_board))
         finally:
-            for cmd in ('umount -l %s' % rootfs, 'sync', 'rm -rf %s' % tmpd):
+            for cmd in ('umount -l %s' % tmpd, 'sync', 'rm -rf %s' % tmpd):
                 self.servo.system(cmd)
 
         self.mark_setup_done('usb_check')
@@ -669,27 +670,36 @@ class FirmwareTest(FAFTBase):
                       not write-protected; None to do nothing.
         """
         if ec_wp is None:
-            self._old_ec_wp = None
+            self._old_wpsw_boot = None
             return
-        self._old_ec_wp = self.checkers.crossystem_checker({'wpsw_boot': '1'})
-        if ec_wp != self._old_ec_wp:
+        self._old_wpsw_cur = self.checkers.crossystem_checker(
+                                    {'wpsw_cur': '1'}, suppress_logging=True)
+        self._old_wpsw_boot = self.checkers.crossystem_checker(
+                                   {'wpsw_boot': '1'}, suppress_logging=True)
+        if not (ec_wp == self._old_wpsw_cur == self._old_wpsw_boot):
             logging.info('The test required EC is %swrite-protected. Reboot '
                          'and flip the state.', '' if ec_wp else 'not ')
             self.switcher.mode_aware_reboot(
                     'custom',
                      lambda:self.set_ec_write_protect_and_reboot(ec_wp))
+        wpsw_boot = wpsw_cur = '1' if ec_wp == True else '0'
+        self.check_state((self.checkers.crossystem_checker, {
+                               'wpsw_boot': wpsw_boot, 'wpsw_cur': wpsw_cur}))
 
     def _restore_ec_write_protect(self):
         """Restore the original EC write-protection."""
-        if (not hasattr(self, '_old_ec_wp')) or (self._old_ec_wp is None):
+        if (not hasattr(self, '_old_wpsw_boot')) or (self._old_wpsw_boot is
+                                                     None):
             return
-        if not self.checkers.crossystem_checker(
-                {'wpsw_boot': '1' if self._old_ec_wp else '0'}):
+        if not self.checkers.crossystem_checker({'wpsw_boot': '1' if
+                       self._old_wpsw_boot else '0'}, suppress_logging=True):
             logging.info('Restore original EC write protection and reboot.')
             self.switcher.mode_aware_reboot(
                     'custom',
                     lambda:self.set_ec_write_protect_and_reboot(
-                            self._old_ec_wp))
+                            self._old_wpsw_boot))
+        self.check_state((self.checkers.crossystem_checker, {
+                           'wpsw_boot': '1' if self._old_wpsw_boot else '0'}))
 
     def _setup_uart_capture(self):
         """Setup the CPU/EC/PD UART capture."""
@@ -697,6 +707,8 @@ class FirmwareTest(FAFTBase):
         self.servo.set('cpu_uart_capture', 'on')
         self.cr50_uart_file = None
         self.ec_uart_file = None
+        self.servo_micro_uart_file = None
+        self.servo_v4_uart_file = None
         self.usbpd_uart_file = None
         try:
             # Check that the console works before declaring the cr50 console
@@ -728,6 +740,20 @@ class FirmwareTest(FAFTBase):
                                      'usbpd_uart_capture is not supported.')
         else:
             logging.info('Not a Google EC, cannot capture ec console output.')
+        try:
+            self.servo.set('servo_micro_uart_capture', 'on')
+            self.servo_micro_uart_file = os.path.join(self.resultsdir,
+                                                      'servo_micro_uart.txt')
+        except error.TestFail as e:
+            if 'No control named' in str(e):
+                logging.warn('servo micro console not supported.')
+        try:
+            self.servo.set('servo_v4_uart_capture', 'on')
+            self.servo_v4_uart_file = os.path.join(self.resultsdir,
+                                                   'servo_v4_uart.txt')
+        except error.TestFail as e:
+            if 'No control named' in str(e):
+                logging.warn('servo v4 console not supported.')
 
     def _record_uart_capture(self):
         """Record the CPU/EC/PD UART output stream to files."""
@@ -740,6 +766,14 @@ class FirmwareTest(FAFTBase):
         if self.ec_uart_file and self.faft_config.chrome_ec:
             with open(self.ec_uart_file, 'a') as f:
                 f.write(ast.literal_eval(self.servo.get('ec_uart_stream')))
+        if self.servo_micro_uart_file:
+            with open(self.servo_micro_uart_file, 'a') as f:
+                f.write(ast.literal_eval(self.servo.get(
+                        'servo_micro_uart_stream')))
+        if self.servo_v4_uart_file:
+            with open(self.servo_v4_uart_file, 'a') as f:
+                f.write(ast.literal_eval(self.servo.get(
+                        'servo_v4_uart_stream')))
         if (self.usbpd_uart_file and self.faft_config.chrome_ec and
             self.check_ec_capability(['usbpd_uart'], suppress_warning=True)):
             with open(self.usbpd_uart_file, 'a') as f:
@@ -754,6 +788,10 @@ class FirmwareTest(FAFTBase):
             self.servo.set('cr50_uart_capture', 'off')
         if self.ec_uart_file and self.faft_config.chrome_ec:
             self.servo.set('ec_uart_capture', 'off')
+        if self.servo_micro_uart_file:
+            self.servo.set('servo_micro_uart_capture', 'off')
+        if self.servo_v4_uart_file:
+            self.servo.set('servo_v4_uart_capture', 'off')
         if (self.usbpd_uart_file and self.faft_config.chrome_ec and
             self.check_ec_capability(['usbpd_uart'], suppress_warning=True)):
             self.servo.set('usbpd_uart_capture', 'off')

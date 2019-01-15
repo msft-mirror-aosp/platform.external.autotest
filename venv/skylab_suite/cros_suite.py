@@ -38,10 +38,12 @@ SuiteSpec = collections.namedtuple(
                 'suite_args',
                 'priority',
                 'board',
+                'model',
                 'pool',
                 'job_keyvals',
                 'minimum_duts',
                 'timeout_mins',
+                'quota_account',
         ])
 
 SuiteHandlerSpec = collections.namedtuple(
@@ -54,7 +56,6 @@ SuiteHandlerSpec = collections.namedtuple(
                 'passed_mins',
                 'test_retry',
                 'max_retries',
-                'use_fallback',
                 'provision_num_required',
         ])
 
@@ -72,6 +73,7 @@ TestSpec = collections.namedtuple(
                 'test',
                 'priority',
                 'board',
+                'model',
                 'pool',
                 'build',
                 'keyvals',
@@ -81,6 +83,7 @@ TestSpec = collections.namedtuple(
                 'grace_period_secs',
                 'execution_timeout_secs',
                 'io_timeout_secs',
+                'quota_account',
         ])
 
 
@@ -97,7 +100,6 @@ class SuiteHandler(object):
         self._provision_num_required = specs.provision_num_required
         self._test_retry = specs.test_retry
         self._max_retries = specs.max_retries
-        self.use_fallback = specs.use_fallback
         self.passed_mins = specs.passed_mins
 
         # The swarming task id of the suite that this suite_handler is handling.
@@ -120,14 +122,6 @@ class SuiteHandler(object):
     def is_provision(self):
         """Return whether the suite handler is for provision suite."""
         return self._suite_name == 'provision'
-
-    def should_use_fallback(self):
-        """Return whether to use fallback to trigger child tests.
-
-        It's either specified by user with --use_fallback, or it's a
-        provision suite.
-        """
-        return self.use_fallback or self.is_provision()
 
     def set_suite_id(self, suite_id):
         """Set swarming task id for a suite.
@@ -190,8 +184,7 @@ class SuiteHandler(object):
         """Get the max num of retries of a suite."""
         return self._max_retries
 
-    @property
-    def active_child_tasks(self):
+    def get_active_child_tasks(self, suite_id):
         """Get the child tasks which is actively monitored by a suite.
 
         The active child tasks list includes tasks which are currently running
@@ -202,13 +195,14 @@ class SuiteHandler(object):
         The final active child task list will include task x1_2 and x2_1, won't
         include x1_1 since it's a task which is finished but get retried later.
         """
-        return self._active_child_tasks
+        all_tasks = swarming_lib.get_child_tasks(suite_id)
+        return [t for t in all_tasks if t['task_id'] in self._task_to_test_maps]
 
-    def handle_results(self, all_tasks):
+    def handle_results(self, suite_id):
         """Handle child tasks' results."""
-        self._active_child_tasks = [t for t in all_tasks if t['task_id'] in
-                                    self._task_to_test_maps]
-        self.retried_tasks = [t for t in all_tasks if self._should_retry(t)]
+        self._active_child_tasks = self.get_active_child_tasks(suite_id)
+        self.retried_tasks = [t for t in self._active_child_tasks
+                              if self._should_retry(t)]
         logging.info('Found %d tests to be retried.', len(self.retried_tasks))
 
     def _check_all_tasks_finished(self):
@@ -295,10 +289,12 @@ class Suite(object):
         self.suite_file_name = spec.suite_file_name
         self.priority = spec.priority
         self.board = spec.board
+        self.model = spec.model
         self.pool = spec.pool
         self.job_keyvals = spec.job_keyvals
         self.minimum_duts = spec.minimum_duts
         self.timeout_mins = spec.timeout_mins
+        self.quota_account = spec.quota_account
 
     @property
     def ds(self):
@@ -363,6 +359,7 @@ class Suite(object):
                 test=test,
                 priority=self.priority,
                 board=self.board,
+                model=self.model,
                 pool=self.pool,
                 build=self.test_source_build,
                 bot_id=bot_id,
@@ -372,6 +369,7 @@ class Suite(object):
                 grace_period_secs=swarming_lib.DEFAULT_TIMEOUT_SECS,
                 execution_timeout_secs=swarming_lib.DEFAULT_TIMEOUT_SECS,
                 io_timeout_secs=swarming_lib.DEFAULT_TIMEOUT_SECS,
+                quota_account=self.quota_account,
         )
 
     def _get_test_specs(self, tests, available_bots, keyvals):
@@ -412,7 +410,7 @@ class Suite(object):
         """Get available bots for suites."""
         bots = swarming_lib.query_bots_list({
                 'pool': swarming_lib.SKYLAB_DRONE_POOL,
-                'label-pool': swarming_lib.SWARMING_DUT_POOL_MAP.get(self.pool),
+                'label-pool': swarming_lib.to_swarming_pool_label(self.pool),
                 'label-board': self.board})
         return [bot for bot in bots if swarming_lib.bot_available(bot)]
 

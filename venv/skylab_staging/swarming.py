@@ -64,9 +64,12 @@ class Client(object):
     @returns: json response from the Swarming call.
     """
     cros_build_lib = autotest.chromite_load('cros_build_lib')
-    cmd = self._base_cmd('query') + [
-        '%s?%s' % (path, urllib.urlencode(qargs)),
-    ]
+    cmdarg = path
+    if qargs:
+      cmdarg += "?%s" % urllib.urlencode(qargs)
+
+    cmd = self._base_cmd('query') + [cmdarg]
+
     result = cros_build_lib.RunCommand(cmd, capture_output=True)
     return json.loads(result.output)
 
@@ -122,7 +125,7 @@ class Client(object):
         'board': board,
         'build': build,
         # Required for proper rendering of MILO UI.
-        'luci_project': 'chromiumos',
+        'luci_project': 'chromeos',
         'skylab': 'run_suite',
         'skylab': 'staging',
         'suite': suite_name,
@@ -148,7 +151,7 @@ class Client(object):
       cmd += ['--'] + raw_cmd
 
       cros_build_lib = autotest.chromite_load('cros_build_lib')
-      cros_build_lib.RunCommand(cmd)
+      cros_build_lib.RunCommand(cmd, error_code_ok=True)
       return _extract_run_id(summary_file)
 
 
@@ -160,6 +163,11 @@ class Client(object):
     if self._service_account_json is not None:
       cmd += ['--auth-service-account-json', self._service_account_json]
     return cmd
+
+
+  def task_url(self, task_id):
+    """Generate the task url based on task id."""
+    return '%s/user/task/%s' % (self._host, task_id)
 
 
 def _extract_run_id(path):

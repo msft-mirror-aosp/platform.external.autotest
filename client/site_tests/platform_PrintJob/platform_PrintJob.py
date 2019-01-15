@@ -13,8 +13,8 @@ from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.client.cros.input_playback import input_playback
 
 _CHECK_TIMEOUT = 20
-_GO_TO_CHANGE_BUTTON = 2
-_GO_TO_USB_PRINTER = 4
+_GO_TO_CHANGE_BUTTON = 1
+_GO_TO_USB_PRINTER = 2
 _NOTIF_TITLE = "Successfully printed"
 _NOW_PRINTING_STATUS = "Now printing"
 _PRINTER_NAME = "HP OfficeJet g55"
@@ -57,6 +57,18 @@ class platform_PrintJob(test.test):
             input_type='keyboard', filename='keyboard_tab')
 
 
+    def _press_down(self):
+        """Use keyboard shortcut to press down."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_down')
+
+
+    def _press_shift_tab(self):
+        """Use keyboard shortcut to press Shift-Tab."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_shift+tab')
+
+
     def _press_enter(self):
         """Use keyboard shortcut to press Enter."""
         self._player.blocking_playback_of_default_file(
@@ -97,10 +109,14 @@ class platform_PrintJob(test.test):
         # Navigate to and select the emulated printer
         for x in range(_GO_TO_USB_PRINTER):
             self._press_tab()
+        self._press_down()
         self._press_enter()
 
         # Check printer is in the peinter's list
         self._check_printer_in_dialog()
+
+        # Go back to Print button
+        self._press_shift_tab()
 
         # Send the print job
         self._press_enter()
@@ -136,6 +152,11 @@ class platform_PrintJob(test.test):
 
     def run_once(self, host, args):
         """Run the test."""
+
+        # Make chameleon host known to the DUT host crbug.com/862646
+        chameleon_args = 'chameleon_host=' + host.hostname + '-chameleon'
+        args.append(chameleon_args)
+
         chameleon_board = chameleon.create_chameleon_board(host.hostname, args)
         chameleon_board.setup_and_reset(self.outputdir)
         usb_printer = chameleon_board.get_usb_printer()

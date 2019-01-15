@@ -7,6 +7,7 @@ import contextlib
 import ctypes
 import fcntl
 import glob
+import itertools
 import json
 import logging
 import math
@@ -28,6 +29,9 @@ BatteryDataReportType = enum.Enum('CHARGE', 'ENERGY')
 BATTERY_DATA_SCALE = 1e6
 # number of times to retry reading the battery in the case of bad data
 BATTERY_RETRY_COUNT = 3
+# default filename when saving CheckpointLogger data to file
+CHECKPOINT_LOG_DEFAULT_FNAME = 'checkpoint_log.json'
+
 
 class DevStat(object):
     """
@@ -355,16 +359,16 @@ class BatteryStat(DevStat):
         voltage_nominal = voltage_nominal / \
                           BATTERY_DATA_SCALE
 
-        if self.charge_full > (self.charge_full_design * 1.5):
-            raise error.TestError('Unreasonable charge_full value')
-        if self.charge_now > (self.charge_full_design * 1.5):
-            raise error.TestError('Unreasonable charge_now value')
-
         self.energy_rate =  self.voltage_now * self.current_now
 
         self.remaining_time = 0
         if self.current_now and self.energy_rate:
             self.remaining_time =  self.energy / self.energy_rate
+
+        if self.charge_full > (self.charge_full_design * 1.5):
+            raise error.TestError('Unreasonable charge_full value')
+        if self.charge_now > (self.charge_full_design * 1.5):
+            raise error.TestError('Unreasonable charge_now value')
 
 
 class LineStatDummy(DevStat):
@@ -670,6 +674,36 @@ class AbstractStats(object):
         raise NotImplementedError('Override _read_stats in the subclass!')
 
 
+CPU_BASE_PATH = '/sys/devices/system/cpu/'
+
+def get_all_cpus():
+    """
+    Retrieve all numbers of 'cpu\d+' files under |CPU_BASE_PATH|.
+    """
+    cpu_entry_re = re.compile(r'cpu(\d+)')
+    cpus = []
+    for f in os.listdir(CPU_BASE_PATH):
+      match = cpu_entry_re.match(f)
+      if match:
+        cpus.append(int(match.groups()[0]))
+    return frozenset(cpus)
+
+def get_cpus_filepaths_for_suffix(cpus, suffix):
+    """
+    For each cpu in |cpus| check whether |CPU_BASE_PATH|/cpu%d/|suffix| exists.
+    Return tuple of two lists t:
+                    t[0]: all cpu ids where the condition above holds
+                    t[1]: all full paths where condition above holds.
+    """
+    available_cpus = []
+    available_paths = []
+    for c in cpus:
+        c_file_path = os.path.join(CPU_BASE_PATH, 'cpu%d' % c, suffix)
+        if os.path.exists(c_file_path):
+          available_cpus.append(c)
+          available_paths.append(c_file_path)
+    return (available_cpus, available_paths)
+
 class CPUFreqStats(AbstractStats):
     """
     CPU Frequency statistics
@@ -678,39 +712,35 @@ class CPUFreqStats(AbstractStats):
     MSR_IA32_MPERF = 0xe7
     MSR_IA32_APERF = 0xe8
 
-    def __init__(self, start_cpu=-1, end_cpu=-1):
-        cpufreq_stats_path = '/sys/devices/system/cpu/cpu*/cpufreq/stats/' + \
-                             'time_in_state'
-        cpufreq_key_path = '/sys/devices/system/cpu/cpu*/cpufreq/' + \
-                           'scaling_available_frequencies'
+    def __init__(self, cpus=None):
+        name = 'cpufreq'
+        stats_suffix = 'cpufreq/stats/time_in_state'
+        key_suffix = 'cpufreq/scaling_available_frequencies'
         intel_pstate_msr_path = '/dev/cpu/*/msr'
-        self._file_paths = glob.glob(cpufreq_stats_path)
-        cpufreq_key_paths = glob.glob(cpufreq_key_path)
-        num_cpus = len(self._file_paths)
+        all_cpus = get_all_cpus()
+        if not cpus:
+            cpus = all_cpus
+        cpus, self._file_paths = get_cpus_filepaths_for_suffix(cpus,
+                                                               stats_suffix)
+        if len(cpus) and len(cpus) < len(all_cpus):
+            name = '%s_%s' % (name, '_'.join([str(c) for c in cpus]))
+        _, cpufreq_key_paths = get_cpus_filepaths_for_suffix(cpus, key_suffix)
         intel_pstate_msr_paths = glob.glob(intel_pstate_msr_path)
         self._running_intel_pstate = False
         self._initial_perf = None
         self._current_perf = None
         self._max_freq = 0
-        name = 'cpufreq'
         if not self._file_paths:
             logging.debug('time_in_state file not found')
             if intel_pstate_msr_paths:
                 logging.debug('intel_pstate msr file found')
                 self._num_cpus = len(intel_pstate_msr_paths)
                 self._running_intel_pstate = True
-        else:
-            if (start_cpu >= 0 and end_cpu >= 0
-                    and not (start_cpu == 0 and end_cpu == num_cpus - 1)):
-                self._file_paths = self._file_paths[start_cpu : end_cpu]
-                cpufreq_key_paths = cpufreq_key_paths[start_cpu : end_cpu]
-                name += '_' + str(start_cpu) + '_' + str(end_cpu)
 
         self._available_freqs = set()
         for path in cpufreq_key_paths:
-            if os.path.exists(path):
-                self._available_freqs |= \
-                        set(int(x) for x in utils.read_file(path).split())
+            self._available_freqs |= set(int(x) for x in
+                                         utils.read_file(path).split())
 
         super(CPUFreqStats, self).__init__(name=name)
 
@@ -781,15 +811,15 @@ class CPUIdleStats(AbstractStats):
     # as ac <-> battery transitions.
     # TODO (snanda): Handle non-S0 states. Time spent in suspend states is
     # currently not factored out.
-    def __init__(self, start_cpu=-1, end_cpu=-1):
-        cpuidle_path = '/sys/devices/system/cpu/cpu*/cpuidle'
-        self._cpus = glob.glob(cpuidle_path)
-        num_cpus = len(self._cpus)
+    def __init__(self, cpus=None):
         name = 'cpuidle'
-        if (start_cpu >= 0 and end_cpu >= 0
-                and not (start_cpu == 0 and end_cpu == num_cpus - 1)):
-            self._cpus = self._cpus[start_cpu : end_cpu]
-            name = name + '_' + str(start_cpu) + '_' + str(end_cpu)
+        cpuidle_suffix = 'cpuidle'
+        all_cpus = get_all_cpus()
+        if not cpus:
+            cpus = all_cpus
+        cpus, self._cpus = get_cpus_filepaths_for_suffix(cpus, cpuidle_suffix)
+        if len(cpus) and len(cpus) < len(all_cpus):
+            name = '%s_%s' % (name, '_'.join([str(c) for c in cpus]))
         super(CPUIdleStats, self).__init__(name=name)
 
 
@@ -1220,34 +1250,39 @@ def get_cpu_sibling_groups():
     In systems with both small core and big core,
     returns groups of small and big sibling groups.
     """
-    siblings_paths = '/sys/devices/system/cpu/cpu*/topology/' + \
-                    'core_siblings_list'
+    siblings_suffix = 'topology/core_siblings_list'
     sibling_groups = []
-    sibling_file_paths = glob.glob(siblings_paths)
-    if not len(sibling_file_paths) > 0:
-        return sibling_groups;
-    total_cpus = len(sibling_file_paths)
-    i = 0
-    sibling_list_pattern = re.compile('(\d+)-(\d+)')
-    while (i <  total_cpus):
-        siblings_data = utils.read_file(sibling_file_paths[i])
-        sibling_match = sibling_list_pattern.match(siblings_data)
-        sibling_start, sibling_end = (int(x) for x in sibling_match.groups())
-        sibling_groups.append((sibling_start, sibling_end))
-        i = sibling_end + 1
-    return sibling_groups
+    cpus_processed = set()
+    cpus, sibling_file_paths = get_cpus_filepaths_for_suffix(get_all_cpus(),
+                                                             siblings_suffix)
+    for c, siblings_path in zip(cpus, sibling_file_paths):
+        if c in cpus_processed:
+            # This cpu is already part of a sibling group. Skip.
+            continue
+        siblings_data = utils.read_file(siblings_path)
+        sibling_group = set()
+        for sibling_entry in siblings_data.split(','):
+            entry_data = sibling_entry.split('-')
+            sibling_start = sibling_end = int(entry_data[0])
+            if len(entry_data) > 1:
+              sibling_end = int(entry_data[1])
+            siblings = set(range(sibling_start, sibling_end + 1))
+            sibling_group |= siblings
+        cpus_processed |= sibling_group
+        sibling_groups.append(frozenset(sibling_group))
+    return tuple(sibling_groups)
 
 
-def get_avaliable_cpu_stats():
+def get_available_cpu_stats():
     """Return CPUFreq/CPUIdleStats groups by big-small siblings groups."""
     ret = [CPUPackageStats()]
     cpu_sibling_groups = get_cpu_sibling_groups()
     if not cpu_sibling_groups:
         ret.append(CPUFreqStats())
         ret.append(CPUIdleStats())
-    for cpu_start, cpu_end in cpu_sibling_groups:
-        ret.append(CPUFreqStats(cpu_start, cpu_end))
-        ret.append(CPUIdleStats(cpu_start, cpu_end))
+    for cpu_group in cpu_sibling_groups:
+        ret.append(CPUFreqStats(cpu_group))
+        ret.append(CPUIdleStats(cpu_group))
     return ret
 
 
@@ -1256,7 +1291,7 @@ class StatoMatic(object):
     def __init__(self):
         self._start_uptime_secs = kernel_trace.KernelTrace.uptime_secs()
         self._astats = [USBSuspendStats(), GPUFreqStats(incremental=False)]
-        self._astats.extend(get_avaliable_cpu_stats())
+        self._astats.extend(get_available_cpu_stats())
         if os.path.isdir(DevFreqStats._DIR):
             self._astats.extend([DevFreqStats(f) for f in \
                                  os.listdir(DevFreqStats._DIR)])
@@ -1405,25 +1440,200 @@ class SystemPower(PowerMeasurement):
         return float(keyvals['Battery']['energy rate'])
 
 
+class CheckpointLogger(object):
+    """Class to log checkpoint data.
+
+    Public attributes:
+        checkpoint_data: dictionary of (tname, tlist).
+            tname: String of testname associated with these time intervals
+            tlist: list of tuples.  Tuple contains:
+                tstart: Float of time when subtest started
+                tend: Float of time when subtest ended
+
+    Public methods:
+        start: records a start timestamp
+        checkpoint
+        checkblock
+        save_checkpoint_data
+        load_checkpoint_data
+
+    Static methods:
+        load_checkpoint_data_static
+
+    Private attributes:
+       _start_time: start timestamp for checkpoint logger
+    """
+
+    def __init__(self):
+        self.checkpoint_data = collections.defaultdict(list)
+        self.start()
+
+    # If multiple MeasurementLoggers call start() on the same CheckpointLogger,
+    # the latest one will register start time.
+    def start(self):
+        """Set start time for CheckpointLogger."""
+        self._start_time = time.time()
+
+    @contextlib.contextmanager
+    def checkblock(self, tname=''):
+        """Check point for the following block with test tname.
+
+        Args:
+            tname: String of testname associated with this time interval
+        """
+        start_time = time.time()
+        yield
+        self.checkpoint(tname, start_time)
+
+    def checkpoint(self, tname='', tstart=None, tend=None):
+        """Check point the times in seconds associated with test tname.
+
+        Args:
+            tname: String of testname associated with this time interval
+            tstart: Float in seconds of when tname test started. Should be based
+                off time.time(). If None, use start timestamp for the checkpoint
+                logger.
+            tend: Float in seconds of when tname test ended. Should be based
+                off time.time(). If None, then value computed in the method.
+        """
+        if not tstart and self._start_time:
+            tstart = self._start_time
+        if not tend:
+            tend = time.time()
+        self.checkpoint_data[tname].append((tstart, tend))
+        logging.info('Finished test "%s" between timestamps [%s, %s]',
+                     tname, tstart, tend)
+
+    def convert_relative(self, start_time=None):
+        """Convert data from power_status.CheckpointLogger object to relative
+        checkpoint data dictionary. Timestamps are converted to time in seconds
+        since the test started.
+
+        Args:
+            start_time: Float in seconds of the desired start time reference.
+                Should be based off time.time(). If None, use start timestamp
+                for the checkpoint logger.
+        """
+        if start_time is None:
+            start_time = self._start_time
+
+        checkpoint_dict = {}
+        for tname, tlist in self.checkpoint_data.iteritems():
+            checkpoint_dict[tname] = [(tstart - start_time, tend - start_time)
+                    for tstart, tend in tlist]
+
+        return checkpoint_dict
+
+    def save_checkpoint_data(self, resultsdir, fname=CHECKPOINT_LOG_DEFAULT_FNAME):
+        """Save checkpoint data.
+
+        Args:
+            resultsdir: String, directory to write results to
+            fname: String, name of file to write results to
+        """
+        fname = os.path.join(resultsdir, fname)
+        with file(fname, 'wt') as f:
+            json.dump(self.checkpoint_data, f, indent=4, separators=(',', ': '))
+
+    def load_checkpoint_data(self, resultsdir,
+                             fname=CHECKPOINT_LOG_DEFAULT_FNAME):
+        """Load checkpoint data.
+
+        Args:
+            resultsdir: String, directory to load results from
+            fname: String, name of file to load results from
+        """
+        fname = os.path.join(resultsdir, fname)
+        try:
+            with open(fname, 'r') as f:
+                self.checkpoint_data = json.load(f,
+                                                 object_hook=to_checkpoint_data)
+                # Set start time to the earliest start timestamp in file.
+                self._start_time = min(
+                        ts_pair[0] for ts_pair in itertools.chain.from_iterable(
+                                self.checkpoint_data.itervalues()))
+        except Exception as exc:
+            logging.warning('Failed to load checkpoint data from json file %s, '
+                            'see exception: %s', fname, exc)
+
+    @staticmethod
+    def load_checkpoint_data_static(resultsdir,
+                                    fname=CHECKPOINT_LOG_DEFAULT_FNAME):
+        """Load checkpoint data.
+
+        Args:
+            resultsdir: String, directory to load results from
+            fname: String, name of file to load results from
+        """
+        fname = os.path.join(resultsdir, fname)
+        with file(fname, 'r') as f:
+            checkpoint_data = json.load(f)
+        return checkpoint_data
+
+
+def to_checkpoint_data(json_dict):
+    """Helper method to translate json object into CheckpointLogger format.
+
+    Args:
+        json_dict: a json object in the format of python dict
+    Returns:
+        a defaultdict in CheckpointLogger data format
+    """
+    checkpoint_data = collections.defaultdict(list)
+    for tname, tlist in json_dict.iteritems():
+        checkpoint_data[tname].extend([tuple(ts_pair) for ts_pair in tlist])
+    return checkpoint_data
+
+
+def get_checkpoint_logger_from_file(resultsdir,
+                                    fname=CHECKPOINT_LOG_DEFAULT_FNAME):
+    """Create a CheckpointLogger and load checkpoint data from file.
+
+    Args:
+        resultsdir: String, directory to load results from
+        fname: String, name of file to load results from
+    Returns:
+        CheckpointLogger with data from file
+    """
+    checkpoint_logger = CheckpointLogger()
+    checkpoint_logger.load_checkpoint_data(resultsdir, fname)
+    return checkpoint_logger
+
+
 class MeasurementLogger(threading.Thread):
     """A thread that logs measurement readings.
 
     Example code snippet:
-         mylogger = MeasurementLogger([Measurent1, Measurent2])
-         mylogger.run()
-         for testname in tests:
-             with my_logger.checkblock(testname):
-                #run the test method for testname
-         keyvals = mylogger.calc()
+        my_logger = MeasurementLogger([Measurement1, Measurement2])
+        my_logger.start()
+        for testname in tests:
+            # Option 1: use checkblock
+            with my_logger.checkblock(testname):
+               # run the test method for testname
 
-    or
-         mylogger = MeasurementLogger([Measurent1, Measurent2])
-         mylogger.run()
-         for testname in tests:
-             start_time = time.time()
-             #run the test method for testname
-             mlogger.checkpoint(testname, start_time)
-         keyvals = mylogger.calc()
+            # Option 2: use checkpoint
+            start_time = time.time()
+            # run the test method for testname
+            my_logger.checkpoint(testname, start_time)
+
+        keyvals = my_logger.calc()
+
+    or using CheckpointLogger:
+        checkpoint_logger = CheckpointLogger()
+        my_logger = MeasurementLogger([Measurement1, Measurement2],
+                                      checkpoint_logger)
+        my_logger.start()
+        for testname in tests:
+            # Option 1: use checkblock
+            with checkpoint_logger.checkblock(testname):
+               # run the test method for testname
+
+            # Option 2: use checkpoint
+            start_time = time.time()
+            # run the test method for testname
+            checkpoint_logger.checkpoint(testname, start_time)
+
+        keyvals = my_logger.calc()
 
     Public attributes:
         seconds_period: float, probing interval in seconds.
@@ -1440,22 +1650,20 @@ class MeasurementLogger(threading.Thread):
         save_results:
 
     Private attributes:
-       _measurements: list of Measurement objects to be sampled.
-       _checkpoint_data: dictionary of (tname, tlist).
-           tname: String of testname associated with these time intervals
-           tlist: list of tuples.  Tuple contains:
-               tstart: Float of time when subtest started
-               tend: Float of time when subtest ended
-       _results: list of results tuples.  Tuple contains:
-           prefix: String of subtest
-           mean: Float of mean  in watts
-           std: Float of standard deviation of measurements
-           tstart: Float of time when subtest started
-           tend: Float of time when subtest ended
+        _measurements: list of Measurement objects to be sampled.
+        _checkpoint_data: dictionary of (tname, tlist).
+            tname: String of testname associated with these time intervals
+            tlist: list of tuples.  Tuple contains:
+                tstart: Float of time when subtest started
+                tend: Float of time when subtest ended
+        _results: list of results tuples.  Tuple contains:
+            prefix: String of subtest
+            mean: Float of mean  in watts
+            std: Float of standard deviation of measurements
+            tstart: Float of time when subtest started
+            tend: Float of time when subtest ended
     """
-    CHECKPOINT_LOG_DEFAULT_FNAME = 'checkpoint_log.json'
-
-    def __init__(self, measurements, seconds_period=1.0):
+    def __init__(self, measurements, seconds_period=1.0, checkpoint_logger=None):
         """Initialize a logger.
 
         Args:
@@ -1468,14 +1676,20 @@ class MeasurementLogger(threading.Thread):
 
         self.readings = []
         self.times = []
-        self._checkpoint_data = collections.defaultdict(list)
 
         self.domains = []
         self._measurements = measurements
         for meas in self._measurements:
             self.domains.append(meas.domain)
 
+        self._checkpoint_logger = \
+            checkpoint_logger if checkpoint_logger else CheckpointLogger()
+
         self.done = False
+
+    def start(self):
+        self._checkpoint_logger.start()
+        super(MeasurementLogger, self).start()
 
     def refresh(self):
         """Perform data samplings for every measurements.
@@ -1515,7 +1729,7 @@ class MeasurementLogger(threading.Thread):
         self.checkpoint(tname, start_time)
 
     def checkpoint(self, tname='', tstart=None, tend=None):
-        """Check point the times in seconds associated with test tname.
+        """Just a thin method calling the CheckpointLogger checkpoint method.
 
         Args:
            tname: String of testname associated with this time interval
@@ -1524,15 +1738,10 @@ class MeasurementLogger(threading.Thread):
            tend: Float in seconds of when tname test ended.  Should be based
                 off time.time().  If None, then value computed in the method.
         """
-        if not tstart and self.times:
-            tstart = self.times[0]
-        if not tend:
-            tend = time.time()
-        self._checkpoint_data[tname].append((tstart, tend))
-        logging.info('Finished test "%s" between timestamps [%s, %s]',
-                     tname, tstart, tend)
+        self._checkpoint_logger.checkpoint(tname, tstart, tend)
 
-
+    # TODO(seankao): It might be useful to pull this method to CheckpointLogger,
+    # to allow checkpoint usage without an explicit MeasurementLogger.
     def calc(self, mtype=None):
         """Calculate average measurement during each of the sub-tests.
 
@@ -1555,21 +1764,26 @@ class MeasurementLogger(threading.Thread):
 
         t = numpy.array(self.times)
         keyvals = {}
-        results  = []
+        results  = [('domain', 'mean', 'std', 'duration (s)', 'start ts',
+                     'end ts')]
+        # TODO(coconutruben): ensure that values is meaningful i.e. go through
+        # the Loggers and add a unit attribute to each so that the raw
+        # data is readable.
+        raw_results = [('domain', 'values (%s)' % mtype)]
 
         if not self.done:
             self.done = True
         # times 2 the sleep time in order to allow for readings as well.
         self.join(timeout=self.seconds_period * 2)
 
-        if not self._checkpoint_data:
-            self.checkpoint()
+        if not self._checkpoint_logger.checkpoint_data:
+            self._checkpoint_logger.checkpoint()
 
         for i, domain_readings in enumerate(zip(*self.readings)):
             meas = numpy.array(domain_readings)
             domain = self.domains[i]
 
-            for tname, tlist in self._checkpoint_data.iteritems():
+            for tname, tlist in self._checkpoint_logger.checkpoint_data.iteritems():
                 if tname:
                     prefix = '%s_%s' % (tname, domain)
                 else:
@@ -1606,59 +1820,40 @@ class MeasurementLogger(threading.Thread):
                 for tstart, tend in tlist:
                     result = result + (tend - tstart, tstart, tend)
                 results.append(result)
-                keyvals[prefix + '_' + mtype] = list(meas_array)
+                raw_results.append((prefix,) + tuple(meas_array.tolist()))
+
                 keyvals[prefix + '_' + mtype + '_avg'] = meas_mean
                 keyvals[prefix + '_' + mtype + '_cnt'] = meas_array.size
                 keyvals[prefix + '_' + mtype + '_max'] = meas_array.max()
                 keyvals[prefix + '_' + mtype + '_min'] = meas_array.min()
                 keyvals[prefix + '_' + mtype + '_std'] = meas_std
         self._results = results
+        self._raw_results = raw_results
         return keyvals
 
 
-    def save_results(self, resultsdir, fname=None):
+    def save_results(self, resultsdir, fname_prefix=None):
         """Save computed results in a nice tab-separated format.
         This is useful for long manual runs.
 
         Args:
             resultsdir: String, directory to write results to
-            fname: String name of file to write results to
+            fname_prefix: prefix to use for fname. If provided outfiles
+                          will be [fname]_[raw|summary].txt
         """
-        if not fname:
-            fname = 'meas_results_%.0f.txt' % time.time()
-        fname = os.path.join(resultsdir, fname)
-        with file(fname, 'wt') as f:
-            for row in self._results:
-                # First column is name, the rest are numbers. See _calc_power()
-                fmt_row = [row[0]] + ['%.2f' % x for x in row[1:]]
-                line = '\t'.join(fmt_row)
-                f.write(line + '\n')
-
-
-    def save_checkpoint_data(self, resultsdir, fname=CHECKPOINT_LOG_DEFAULT_FNAME):
-        """Save checkpoint data.
-
-        Args:
-            resultsdir: String, directory to write results to
-            fname: String, name of file to write results to
-        """
-        fname = os.path.join(resultsdir, fname)
-        with file(fname, 'wt') as f:
-            json.dump(self._checkpoint_data, f, indent=4, separators=(',', ': '))
-
-
-    @staticmethod
-    def load_checkpoint_data(resultsdir, fname=CHECKPOINT_LOG_DEFAULT_FNAME):
-        """Load checkpoint data.
-
-        Args:
-            resultsdir: String, directory to load results from
-            fname: String, name of file to load results from
-        """
-        fname = os.path.join(resultsdir, fname)
-        with file(fname, 'r') as f:
-            checkpoint_data = json.load(f)
-        return checkpoint_data
+        if not fname_prefix:
+          fname_prefix = 'meas_results_%.0f' % time.time()
+        fname = '%s_summary.txt' % fname_prefix
+        raw_fname = fname.replace('summary', 'raw')
+        for name, data in [(fname, self._results),
+                           (raw_fname, self._raw_results)]:
+          with open(os.path.join(resultsdir, name), 'wt') as f:
+              # First row contains the headers
+              f.write('%s\n' % '\t'.join(data[0]))
+              for row in data[1:]:
+                  # First column name, rest are numbers. See _calc_power()
+                  fmt_row = [row[0]] + ['%.2f' % x for x in row[1:]]
+                  f.write('%s\n' % '\t'.join(fmt_row))
 
 
 class CPUStatsLogger(MeasurementLogger):
@@ -1677,16 +1872,16 @@ class CPUStatsLogger(MeasurementLogger):
        _refresh_count: number of times refresh() has been called.
        _last_wavg: dict of wavg when refresh() was last called.
     """
-    def __init__(self, seconds_period=1.0):
+    def __init__(self, seconds_period=1.0, checkpoint_logger=None):
         """Initialize a CPUStatsLogger.
 
         Args:
             seconds_period: float, probing interval in seconds.  Default 1.0
         """
         # We don't use measurements since CPU stats can't measure separately.
-        super(CPUStatsLogger, self).__init__([], seconds_period)
+        super(CPUStatsLogger, self).__init__([], seconds_period, checkpoint_logger)
 
-        self._stats = get_avaliable_cpu_stats()
+        self._stats = get_available_cpu_stats()
         self._stats.append(GPUFreqStats())
         self.domains = []
         for stat in self._stats:
@@ -1718,19 +1913,19 @@ class CPUStatsLogger(MeasurementLogger):
                     ret.append(wavg)
         return ret
 
-    def save_results(self, resultsdir, fname=None):
-        if not fname:
-            fname = 'cpu_results_%.0f.txt' % time.time()
-        super(CPUStatsLogger, self).save_results(resultsdir, fname)
+    def save_results(self, resultsdir, fname_prefix=None):
+        if not fname_prefix:
+            fname_prefix = 'cpu_results_%.0f' % time.time()
+        super(CPUStatsLogger, self).save_results(resultsdir, fname_prefix)
 
 
 class PowerLogger(MeasurementLogger):
     """Class to measure power consumption.
     """
-    def save_results(self, resultsdir, fname=None):
-        if not fname:
-            fname = 'power_results_%.0f.txt' % time.time()
-        super(PowerLogger, self).save_results(resultsdir, fname)
+    def save_results(self, resultsdir, fname_prefix=None):
+        if not fname_prefix:
+            fname_prefix = 'power_results_%.0f' % time.time()
+        super(PowerLogger, self).save_results(resultsdir, fname_prefix)
 
 
     def calc(self, mtype='pwr'):
@@ -1802,8 +1997,9 @@ def has_battery_temp():
 
 class TempLogger(MeasurementLogger):
     """A thread that logs temperature readings in millidegrees Celsius."""
-    def __init__(self, measurements, seconds_period=30.0):
+    def __init__(self, measurements, seconds_period=30.0, checkpoint_logger=None):
         if not measurements:
+            domains = set()
             measurements = []
             tstats = ThermalStatHwmon()
             for kname in tstats.fields:
@@ -1814,16 +2010,34 @@ class TempLogger(MeasurementLogger):
                 fpath = tstats.fields[kname][0]
                 new_meas = TempMeasurement(domain, fpath)
                 measurements.append(new_meas)
+                domains.add(domain)
 
             if has_battery_temp():
                 measurements.append(BatteryTempMeasurement())
-        super(TempLogger, self).__init__(measurements, seconds_period)
+
+            sysfs_paths = '/sys/class/thermal/thermal_zone*'
+            paths = glob.glob(sysfs_paths)
+            for path in paths:
+                domain_path = os.path.join(path, 'type')
+                temp_path = os.path.join(path, 'temp')
+
+                domain = utils.read_one_line(domain_path)
+
+                # Skip when thermal_zone and hwmon have same domain.
+                if domain in domains:
+                    continue
+
+                domain = domain.replace(' ', '_')
+                new_meas = TempMeasurement(domain, temp_path)
+                measurements.append(new_meas)
+
+        super(TempLogger, self).__init__(measurements, seconds_period, checkpoint_logger)
 
 
-    def save_results(self, resultsdir, fname=None):
-        if not fname:
-            fname = 'temp_results_%.0f.txt' % time.time()
-        super(TempLogger, self).save_results(resultsdir, fname)
+    def save_results(self, resultsdir, fname_prefix=None):
+        if not fname_prefix:
+            fname_prefix = 'temp_results_%.0f' % time.time()
+        super(TempLogger, self).save_results(resultsdir, fname_prefix)
 
 
     def calc(self, mtype='temp'):
@@ -2164,8 +2378,8 @@ class PCHPowergatingStats(object):
         # PCH IP block that is on/off for S0ix depend on features enabled.
         # Add log when these IPs state are on.
         S0IX_WARNLIST = set([
-                'HDA-PGD0', 'HDA-PGD2', 'HDA-PGD3', 'LPSS', 'AVSPGD1',
-                'AVSPGD4'])
+                'HDA-PGD0', 'HDA-PGD1', 'HDA-PGD2', 'HDA-PGD3', 'LPSS',
+                'AVSPGD1', 'AVSPGD4'])
 
         on_ip = set(ip['name'] for ip in self._stat if ip['state'])
         on_ip -= S0IX_WHITELIST

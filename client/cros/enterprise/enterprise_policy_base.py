@@ -58,8 +58,27 @@ GAIA_ID = 'fake-gaia-id'
 # Convert from chrome://policy name to what fake dms expects.
 DEVICE_POLICY_DICT = {
     'DeviceAutoUpdateDisabled': 'update_disabled',
-    'DeviceTargetVersionPrefix': 'target_version_prefix',
-    'DeviceRollbackToTargetVersion': 'rollback_to_target_version'
+    'DeviceEphemeralUsersEnabled': 'ephemeral_users_enabled',
+    'DeviceRollbackToTargetVersion': 'rollback_to_target_version',
+    'DeviceTargetVersionPrefix': 'target_version_prefix'
+}
+# Default settings for managed user policies
+DEFAULT_POLICY = {
+    'AllowDinosaurEasterEgg': False,
+    'ArcBackupRestoreServiceEnabled': 0,
+    'ArcEnabled': False,
+    'ArcGoogleLocationServicesEnabled': 0,
+    'CaptivePortalAuthenticationIgnoresProxy': False,
+    'CastReceiverEnabled': False,
+    'ChromeOsMultiProfileUserBehavior': 'primary-only',
+    'EasyUnlockAllowed': False,
+    'InstantTetheringAllowed': False,
+    'NTLMShareAuthenticationEnabled': False,
+    'NTPContentSuggestionsEnabled': False,
+    'NetBiosShareDiscoveryEnabled': False,
+    'QuickUnlockModeWhitelist': [],
+    'SmartLockSigninAllowed': False,
+    'SmsMessagesAllowed': False
 }
 
 class EnterprisePolicyTest(test.test):
@@ -175,7 +194,8 @@ class EnterprisePolicyTest(test.test):
 
 
     def setup_case(self, user_policies={}, suggested_user_policies={},
-                   device_policies={}, skip_policy_value_verification=False,
+                   device_policies={}, extension_policies={},
+                   skip_policy_value_verification=False,
                    enroll=False, auto_login=True, auto_logout=True,
                    init_network_controller=False, extension_paths=[],
                    extra_chrome_flags=[]):
@@ -193,6 +213,7 @@ class EnterprisePolicyTest(test.test):
                 in name -> value format.
         @param device_policies: dict of device policies in
                 name -> value format.
+        @param extension_policies: dict of extension policies.
         @param skip_policy_value_verification: True if setup_case should not
                 verify that the correct policy value shows on policy page.
         @param enroll: True for enrollment instead of login.
@@ -210,7 +231,8 @@ class EnterprisePolicyTest(test.test):
 
         if self.dms_is_fake:
             self.fake_dm_server.setup_policy(self._make_json_blob(
-                user_policies, suggested_user_policies, device_policies))
+                user_policies, suggested_user_policies, device_policies,
+                extension_policies))
 
         self._create_chrome(enroll=enroll, auto_login=auto_login,
                             init_network_controller=init_network_controller,
@@ -222,10 +244,11 @@ class EnterprisePolicyTest(test.test):
         if not skip_policy_value_verification:
             self.verify_policy_stats(user_policies, suggested_user_policies,
                                      device_policies)
+            self.verify_extension_stats(extension_policies)
 
 
     def _make_json_blob(self, user_policies={}, suggested_user_policies={},
-                        device_policies={}):
+                        device_policies={}, extension_policies={}):
         """Create JSON policy blob from mandatory and suggested policies.
 
         For the status of a policy to be shown as "Not set" on the
@@ -235,6 +258,7 @@ class EnterprisePolicyTest(test.test):
         @param user_policies: mandatory user policies -> values.
         @param suggested user_policies: suggested user policies -> values.
         @param device_policies: mandatory device policies -> values.
+        @param extension_policies: extension policies.
 
         @returns: JSON policy blob to send to the fake DM server.
         """
@@ -242,6 +266,7 @@ class EnterprisePolicyTest(test.test):
         user_p = copy.deepcopy(user_policies)
         s_user_p = copy.deepcopy(suggested_user_policies)
         device_p = copy.deepcopy(device_policies)
+        extension_p = copy.deepcopy(extension_policies)
 
         # Replace all device policies with their FakeDMS-friendly names.
         fixed_device_p = {}
@@ -286,11 +311,100 @@ class EnterprisePolicyTest(test.test):
         if fixed_device_p:
             management_dict['google/chromeos/device'] = fixed_device_p
 
+        if extension_p:
+            management_dict['google/chrome/extension'] = extension_p
+
         logging.info('Created policy blob: %s', management_dict)
         return encode_json_string(management_dict)
 
 
-    def _get_policy_stats_shown(self, policy_tab, policy_name):
+    def _get_extension_policy_table(self, policy_tab, ext_id):
+        """
+        Find the policy table that matches the given extension ID.
+
+        The user and device policies are in table[0]. Extension policies are
+        in their own tables.
+
+        @param policy_tab: Tab displaying the policy page.
+        @param ext_id: Extension ID.
+
+        @returns: Index of the table in the DOM.
+        @raises error.TestError: if the table for the extension ID does
+            not exist.
+
+        """
+        table_index = policy_tab.EvaluateJavaScript("""
+            var table_index = -1
+            var tables = document.getElementsByClassName(
+                'policy-table-section');
+            for (var i = 1; i < tables.length; i++) {
+                var description = tables[i].querySelector('.table-description')
+                if (description !== null) {
+                    var table_id = description.innerText.split(': ').pop();
+                    if (table_id === '%s') {
+                        table_index = i;
+                        break;
+                    }
+                }
+            }
+            table_index;
+            """ % ext_id)
+        if table_index == -1:
+            raise error.TestError(
+                    'Policy table for extension %s does not exist. '
+                    'Make sure the extension is installed.' % ext_id)
+
+        return table_index
+
+
+    def reload_policies(self):
+        """Force a policy fetch."""
+        policy_tab = self.navigate_to_url(self.CHROME_POLICY_PAGE)
+        reload_button = "document.querySelector('button#reload-policies')"
+        policy_tab.ExecuteJavaScript("%s.click()" % reload_button)
+        policy_tab.WaitForJavaScriptCondition("!%s.disabled" % reload_button,
+                                              timeout=1)
+        policy_tab.Close()
+
+
+    def verify_extension_stats(self, extension_policies, sensitive_fields=[]):
+        """
+        Verify the extension policies match what is on chrome://policy.
+
+        @param extension_policies: the dictionary of extension IDs mapping
+            to download_url and secure_hash.
+        @param sensitive_fields: list of fields that should have their value
+            censored.
+        @raises error.TestError: if the shown values do not match what we are
+            expecting.
+
+        """
+        policy_tab = self.navigate_to_url(self.CHROME_POLICY_PAGE)
+
+        for id in extension_policies.keys():
+            table = self._get_extension_policy_table(policy_tab, id)
+            download_url = extension_policies[id]['download_url']
+            policy_file = os.path.join(self.enterprise_dir,
+                                       download_url.split('/')[-1])
+
+            with open(policy_file) as f:
+                policies = json.load(f)
+
+            for policy_name, settings in policies.items():
+                expected_value = settings['Value']
+                value_shown = self._get_policy_stats_shown(
+                        policy_tab, policy_name, table)['value']
+
+                if policy_name in sensitive_fields:
+                    expected_value = '********'
+
+                self._compare_values(policy_name, expected_value, value_shown)
+
+        policy_tab.Close()
+
+
+    def _get_policy_stats_shown(self, policy_tab, policy_name,
+                                table_index=0):
         """Get the info shown for |policy_name| from the |policy_tab| page.
 
         Return a dict of stats for the policy given by |policy_name|, from
@@ -303,6 +417,7 @@ class EnterprisePolicyTest(test.test):
 
         @param policy_tab: Tab displaying the Policies page.
         @param policy_name: The name of the policy.
+        @param table_index: Index of table in DOM to check.
 
         @returns: A dict of stats, including JSON decode 'value' (see caveat).
                   Also included are 'name', 'status', 'level', 'scope',
@@ -312,39 +427,46 @@ class EnterprisePolicyTest(test.test):
 
         row_values = policy_tab.EvaluateJavaScript('''
             var section = document.getElementsByClassName(
-                    "policy-table-section")[0];
+                    "policy-table-section")[%s];
             var table = section.getElementsByTagName('table')[0];
             rowValues = {};
             for (var i = 1, row; row = table.rows[i]; i++) {
                 if (row.className !== 'expanded-value-container') {
                     var name_div = row.getElementsByClassName('name elide')[0];
+                    if (typeof name_div === 'undefined') {
+                        continue;
+                    }
                     var name_links = name_div.getElementsByClassName(
                             'name-link');
                     var name = (name_links.length > 0) ?
                             name_links[0].textContent : name_div.textContent;
                     rowValues['name'] = name;
                     if (name === '%s') {
-                        var value_span = row.getElementsByClassName('value')[0];
-                        rowValues['value'] = value_span.textContent;
-                        stat_names = ['status', 'level', 'scope', 'source'];
+                        stat_names = ['value', 'status', 'level',
+                                      'scope', 'source'];
                         stat_names.forEach(function(entry) {
                             var entry_div = row.getElementsByClassName(
-                                    entry+' elide')[0];
-                            rowValues[entry] = entry_div.textContent;
+                                    entry)[0];
+                            if (typeof entry_div !== 'undefined') {
+                                rowValues[entry] = entry_div.textContent;
+                            }
                         });
                         break;
                     }
                }
             }
             rowValues;
-        ''' % policy_name)
-
-        logging.debug('Policy %s row: %s', policy_name, row_values)
-        if not row_values or len(row_values) < 6:
-            raise error.TestError(
-                    'Could not get policy info for %s!' % policy_name)
+        ''' % (table_index, policy_name))
 
         entries = ['value', 'status', 'level', 'scope', 'source']
+
+        logging.debug('Policy %s row: %s', policy_name, row_values)
+        key_diff = set(entries) - set(row_values.keys())
+        if key_diff:
+            raise error.TestError(
+                    'Could not get policy info for %s. '
+                    'Missing columns: %s.' % (policy_name, key_diff))
+
         for v in entries:
             stats[v] = row_values[v].encode('ascii', 'ignore')
 
@@ -411,31 +533,57 @@ class EnterprisePolicyTest(test.test):
         return stats
 
 
-    def _compare_values(self, policy_name, expected_value, value_shown):
+    def _compare_values(self, policy_name, input_value, value_shown):
         """Pass if an expected value and the chrome://policy version match.
 
         Handles some of the inconsistencies in the chrome://policy JSON format.
 
+        @param policy_name: The policy name to be verified.
+        @param input_value: The setting given for the policy.
+        @param value_shown: The setting of the policy from the DUT.
+
         @raises: error.TestError if policy values do not match.
 
         """
+        expected_value = copy.deepcopy(input_value)
+
         # If we expect a list and don't have a list, modify the value_shown.
         if isinstance(expected_value, list):
             if isinstance(value_shown, str):
-                if '{' in value_shown: # List of dicts.
+                if '{' in value_shown:  # List of dicts.
                     value_shown = decode_json_string('[%s]' % value_shown)
-                elif ',' in value_shown: # List of strs.
+                elif ',' in value_shown:  # List of strs.
                     value_shown = value_shown.split(',')
-                else: # List with one str.
+                else:  # List with one str.
                     value_shown = [value_shown]
-            elif not isinstance(value_shown, list): # List with one element.
+            elif not isinstance(value_shown, list):  # List with one element.
                 value_shown = [value_shown]
 
-        if not expected_value == value_shown:
+        # Special case for user and device network configurations.
+        # Passphrases are hidden on the policy page, so the passphrase
+        # field needs to be converted to asterisks to be compared.
+        SANITIZED_PASSWORD = '*' * 8
+        if policy_name.endswith('OpenNetworkConfiguration'):
+            for network in expected_value['NetworkConfigurations']:
+                wifi = network['WiFi']
+                if 'Passphrase' in wifi:
+                    wifi['Passphrase'] = SANITIZED_PASSWORD
+                if 'EAP' in wifi and 'Password' in wifi['EAP']:
+                    wifi['EAP']['Password'] = SANITIZED_PASSWORD
+            for cert in expected_value.get('Certificates', []):
+                if 'PKCS12' in cert:
+                    cert['PKCS12'] = SANITIZED_PASSWORD
+
+        # Some managed policies have a default value when they are not set.
+        # Replace these unset policies with their default value.
+        elif policy_name in DEFAULT_POLICY and expected_value is None:
+            expected_value = DEFAULT_POLICY[policy_name]
+
+        if expected_value != value_shown:
             raise error.TestError('chrome://policy shows the incorrect value '
                                   'for %s!  Expected %s, got %s.' % (
-                                          policy_name, expected_value,
-                                          value_shown))
+                                      policy_name, expected_value,
+                                      value_shown))
 
 
     def verify_policy_value(self, policy_name, expected_value):

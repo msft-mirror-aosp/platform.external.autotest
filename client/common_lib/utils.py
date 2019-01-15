@@ -54,6 +54,7 @@ from autotest_lib.client.common_lib import logging_manager
 from autotest_lib.client.common_lib import metrics_mock_class
 from autotest_lib.client.cros import constants
 
+# pylint: disable=wildcard-import
 from autotest_lib.client.common_lib.lsbrelease_utils import *
 
 
@@ -354,7 +355,11 @@ def set_ip_local_port_range(lower, upper):
 
 
 def read_one_line(filename):
-    return open(filename, 'r').readline().rstrip('\n')
+    f = open(filename, 'r')
+    try:
+        return f.readline().rstrip('\n')
+    finally:
+        f.close()
 
 
 def read_file(filename):
@@ -590,21 +595,22 @@ def hash(hashtype, input=None):
 
     @param input: Optional input string that will be used to update the hash.
     """
+    # pylint: disable=redefined-builtin
     if hashtype not in ['md5', 'sha1']:
         raise ValueError("Unsupported hash type: %s" % hashtype)
 
     try:
-        hash = hashlib.new(hashtype)
+        computed_hash = hashlib.new(hashtype)
     except NameError:
         if hashtype == 'md5':
-            hash = md5.new()
+            computed_hash = md5.new()
         elif hashtype == 'sha1':
-            hash = sha.new()
+            computed_hash = sha.new()
 
     if input:
-        hash.update(input)
+        computed_hash.update(input)
 
-    return hash
+    return computed_hash
 
 
 def get_file(src, dest, permissions=None):
@@ -758,7 +764,7 @@ def run(command, timeout=None, ignore_status=False, stdout_tee=None,
 
 def run_parallel(commands, timeout=None, ignore_status=False,
                  stdout_tee=None, stderr_tee=None,
-                 nicknames=[]):
+                 nicknames=None):
     """
     Behaves the same as run() with the following exceptions:
 
@@ -769,6 +775,8 @@ def run_parallel(commands, timeout=None, ignore_status=False,
     @return: a list of CmdResult objects
     """
     bg_jobs = []
+    if nicknames is None:
+        nicknames = []
     for (command, nickname) in itertools.izip_longest(commands, nicknames):
         bg_jobs.append(BgJob(command, stdout_tee, stderr_tee,
                              stderr_level=get_stderr_level(ignore_status),
@@ -968,7 +976,7 @@ def signal_pid(pid, sig):
         # The process may have died before we could kill it.
         pass
 
-    for i in range(5):
+    for _ in range(5):
         if not pid_is_alive(pid):
             return True
         time.sleep(1)
@@ -1075,23 +1083,24 @@ def system_output_parallel(commands, timeout=None, ignore_status=False,
     else:
         out = [bg_job.stdout for bg_job in run_parallel(commands,
                                   timeout=timeout, ignore_status=ignore_status)]
-    for x in out:
-        if out[-1:] == '\n': out = out[:-1]
+    for _ in out:
+        if out[-1:] == '\n':
+            out = out[:-1]
     return out
 
 
-def strip_unicode(input):
-    if type(input) == list:
-        return [strip_unicode(i) for i in input]
-    elif type(input) == dict:
+def strip_unicode(input_obj):
+    if type(input_obj) == list:
+        return [strip_unicode(i) for i in input_obj]
+    elif type(input_obj) == dict:
         output = {}
-        for key in input.keys():
-            output[str(key)] = strip_unicode(input[key])
+        for key in input_obj.keys():
+            output[str(key)] = strip_unicode(input_obj[key])
         return output
-    elif type(input) == unicode:
-        return str(input)
+    elif type(input_obj) == unicode:
+        return str(input_obj)
     else:
-        return input
+        return input_obj
 
 
 def get_cpu_percentage(function, *args, **dargs):
@@ -1716,15 +1725,15 @@ def args_to_dict(args):
         dictionary
     """
     arg_re = re.compile(r'(\w+)[:=](.*)$')
-    dict = {}
+    args_dict = {}
     for arg in args:
         match = arg_re.match(arg)
         if match:
-            dict[match.group(1).lower()] = match.group(2)
+            args_dict[match.group(1).lower()] = match.group(2)
         else:
             logging.warning("args_to_dict: argument '%s' doesn't match "
                             "'%s' pattern. Ignored.", arg, arg_re.pattern)
-    return dict
+    return args_dict
 
 
 def get_unused_port():
@@ -1918,7 +1927,6 @@ def get_moblab_serial_number():
       except error.CmdError as e:
           logging.error(str(e))
           logging.info(vpd_key)
-          pass
     return 'NoSerialNumber'
 
 
@@ -1971,6 +1979,7 @@ def host_is_in_lab_zone(hostname):
     host_parts = hostname.split('.')
     dns_zone = CONFIG.get_config_value('CLIENT', 'dns_zone', default=None)
     fqdn = '%s.%s' % (host_parts[0], dns_zone)
+    logging.debug('Checking if host %s is in lab zone.', fqdn)
     try:
         socket.gethostbyname(fqdn)
         return True
@@ -1978,20 +1987,11 @@ def host_is_in_lab_zone(hostname):
         return False
 
 
-def host_could_be_in_afe(hostname):
-    """Check if the host could be in Autotest Front End.
-
-    Report whether or not a host could be in AFE, without actually
-    consulting AFE. This method exists because some systems are in the
-    lab zone, but not actually managed by AFE.
-
-    @param hostname: The hostname to check.
-    @returns True if hostname is in lab zone, and does not match *-dev-*
-    """
-    # Do the 'dev' check first, so that we skip DNS lookup if the
-    # hostname matches. This should give us greater resilience to lab
-    # failures.
-    return (hostname.find('-dev-') == -1) and host_is_in_lab_zone(hostname)
+def in_moblab_ssp():
+    """Detects if this execution is inside an SSP container on moblab."""
+    config_is_moblab = CONFIG.get_config_value('SSP', 'is_moblab', type=bool,
+                                               default=False)
+    return is_in_container() and config_is_moblab
 
 
 def get_chrome_version(job_views):
@@ -2150,7 +2150,7 @@ def gs_ls(uri_pattern):
     return [path.rstrip() for path in result if path]
 
 
-def nuke_pids(pid_list, signal_queue=[signal.SIGTERM, signal.SIGKILL]):
+def nuke_pids(pid_list, signal_queue=None):
     """
     Given a list of pid's, kill them via an esclating series of signals.
 
@@ -2160,6 +2160,8 @@ def nuke_pids(pid_list, signal_queue=[signal.SIGTERM, signal.SIGKILL]):
     @return: A mapping of the signal name to the number of processes it
         was sent to.
     """
+    if signal_queue is None:
+        signal_queue = [signal.SIGTERM, signal.SIGKILL]
     sig_count = {}
     # Though this is slightly hacky it beats hardcoding names anyday.
     sig_names = dict((k, v) for v, k in signal.__dict__.iteritems()
@@ -2520,7 +2522,7 @@ def get_servers_in_same_subnet(host_ip, mask_bits, servers=None,
     return matched_servers
 
 
-def get_restricted_subnet(hostname, restricted_subnets=RESTRICTED_SUBNETS):
+def get_restricted_subnet(hostname, restricted_subnets=None):
     """Get the restricted subnet of given hostname.
 
     @param hostname: Name of the host to look for matched restricted subnet.
@@ -2530,6 +2532,8 @@ def get_restricted_subnet(hostname, restricted_subnets=RESTRICTED_SUBNETS):
     @return: A tuple of (subnet_ip, mask_bits), which defines a restricted
              subnet.
     """
+    if restricted_subnets is None:
+        restricted_subnets=RESTRICTED_SUBNETS
     host_ip = get_ip_address(hostname)
     if not host_ip:
         return
@@ -2758,7 +2762,7 @@ def poll_for_condition(condition,
             if exception:
                 logging.error('Will raise error %r due to unexpected return: '
                               '%r', exception, value)
-                raise exception
+                raise exception # pylint: disable=raising-bad-type
 
             if desc:
                 desc = 'Timed out waiting for condition: ' + desc
@@ -2944,3 +2948,12 @@ def get_mount_info(process='self', mount_point=None):
                 yield MountInfo(root = mountinfo[3],
                                 mount_point = mountinfo[4],
                                 tags = tags)
+
+
+# Appended suffix for chart tablet naming convention in test lab
+CHART_ADDRESS_SUFFIX = '-tablet'
+
+
+def get_lab_chart_address(hostname):
+    """Convert lab DUT hostname to address of camera box chart tablet"""
+    return hostname + CHART_ADDRESS_SUFFIX if is_in_container() else None

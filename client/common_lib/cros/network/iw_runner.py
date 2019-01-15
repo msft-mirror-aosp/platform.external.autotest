@@ -825,7 +825,7 @@ class IwRunner(object):
 
         """
         output = self._run('%s reg get' % self._command_iw).stdout
-        m = re.match('^country (..):', output)
+        m = re.search('^country (..):', output, re.MULTILINE)
         if not m:
             return None
         return m.group(1)
@@ -858,11 +858,15 @@ class IwRunner(object):
         # If the in-progress scan takes more than 30 seconds to
         # complete it will most likely never complete; abort.
         # See crbug.com/309148
-        scan_results = utils.poll_for_condition(
-                condition=lambda: self.scan(interface),
-                timeout=timeout_seconds,
-                sleep_interval=5, # to allow in-progress scans to complete
-                desc='Timed out getting IWBSSes that match desired')
+        scan_results = list()
+        try:
+            scan_results = utils.poll_for_condition(
+                    condition=lambda: self.scan(interface),
+                    timeout=timeout_seconds,
+                    sleep_interval=5, # to allow in-progress scans to complete
+                    desc='Timed out getting IWBSSes that match desired')
+        except utils.TimeoutError as e:
+            pass
 
         if not scan_results: # empty list or None
             return None

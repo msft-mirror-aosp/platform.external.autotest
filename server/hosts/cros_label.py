@@ -313,6 +313,7 @@ class StorageLabel(base_label.StringPrefixLabel):
              * `storage:hdd` when internal device is hard disk drive
              * `storage:mmc` when internal device is mmc drive
              * `storage:nvme` when internal device is NVMe drive
+             * `storage:ufs` when internal device is ufs drive
              * None          When internal device is something else or
                              when we are unable to determine the type
     """
@@ -367,6 +368,9 @@ class StorageLabel(base_label.StringPrefixLabel):
             link_str = link.stdout.strip()
             if 'usb' in link_str:
                 return False
+            elif 'ufs' in link_str:
+              self.type_str = 'ufs'
+              return True
 
             # Read rotation to determine if the internal device is ssd or hdd.
             rotate_cmd = str('cat /sys/block/%s/queue/rotational'
@@ -406,7 +410,7 @@ class ServoLabel(base_label.BaseLabel):
         @returns True if a servo host is detected, False otherwise.
         """
         servo_host_hostname = None
-        servo_args, _ = servo_host._get_standard_servo_args(host)
+        servo_args = servo_host.get_servo_args_for_host(host)
         if servo_args:
             servo_host_hostname = servo_args.get(servo_host.SERVO_HOST_ATTR)
         return (servo_host_hostname is not None
@@ -454,20 +458,31 @@ class ArcLabel(base_label.BaseLabel):
 
 class CtsArchLabel(base_label.StringLabel):
     """Labels to determine the abi of the CTS bundle (arm or x86 only)."""
-    # TODO(ihf): create labels for ABIs supported by container like x86_64.
 
-    _NAME = ['cts_abi_arm', 'cts_abi_x86']
+    _NAME = ['cts_abi_arm', 'cts_abi_x86', 'cts_cpu_arm', 'cts_cpu_x86']
 
-    def _get_cts_abis(self, host):
+    def _get_cts_abis(self, arch):
         """Return supported CTS ABIs.
 
         @return List of supported CTS bundle ABIs.
         """
         cts_abis = {'x86_64': ['arm', 'x86'], 'arm': ['arm']}
-        return cts_abis.get(host.get_cpu_arch(), [])
+        return cts_abis.get(arch, [])
+
+    def _get_cts_cpus(self, arch):
+        """Return supported CTS native CPUs.
+
+        This is needed for CTS_Instant scheduling.
+        @return List of supported CTS native CPUs.
+        """
+        cts_cpus = {'x86_64': ['x86'], 'arm': ['arm']}
+        return cts_cpus.get(arch, [])
 
     def generate_labels(self, host):
-        return ['cts_abi_' + abi for abi in self._get_cts_abis(host)]
+        cpu_arch = host.get_cpu_arch()
+        abi_labels = ['cts_abi_' + abi for abi in self._get_cts_abis(cpu_arch)]
+        cpu_labels = ['cts_cpu_' + cpu for cpu in self._get_cts_cpus(cpu_arch)]
+        return abi_labels + cpu_labels
 
 
 class SparseCoverageLabel(base_label.StringLabel):
@@ -558,7 +573,7 @@ class LucidSleepLabel(base_label.BaseLabel):
     # TODO(kevcheng): See if we can determine if this label is applicable a
     # better way (crbug.com/592146).
     _NAME = 'lucidsleep'
-    LUCID_SLEEP_BOARDS = ['samus', 'lulu']
+    LUCID_SLEEP_BOARDS = ['nocturne', 'poppy']
 
     def exists(self, host):
         board = host.get_board().replace(ds_constants.BOARD_PREFIX, '')

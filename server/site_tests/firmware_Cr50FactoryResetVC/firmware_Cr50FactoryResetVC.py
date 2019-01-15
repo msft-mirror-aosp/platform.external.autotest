@@ -38,13 +38,6 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
                     'command without control of write protect')
 
 
-    def cleanup(self):
-        """Reset ccd to remove the password."""
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('ccd reset')
-        super(firmware_Cr50FactoryResetVC, self).cleanup()
-
-
     def wp_enabled(self):
         """Returns True if write protect is enabled."""
         rv = self.cr50.send_command_get_output('gpioget',
@@ -116,9 +109,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         """Returns True if factory mode is enabled."""
         caps = self.cr50.get_cap_dict()
         caps.pop('GscFullConsole')
-        values = caps.values()
-        # If all capability values are set to Default, factory mode is disabled
-        return not (values.count('Default') == len(values))
+        return self.cr50.get_cap_overview(caps)[0]
 
 
     def get_relevant_state(self):

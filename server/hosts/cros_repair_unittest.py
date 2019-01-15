@@ -13,11 +13,11 @@ from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import cros_repair
-from autotest_lib.server.hosts import repair
+from autotest_lib.server.hosts import repair_utils
 
 
 CROS_VERIFY_DAG = (
-    (repair.SshVerifier, 'ssh', ()),
+    (repair_utils.SshVerifier, 'ssh', ()),
     (cros_repair.DevModeVerifier, 'devmode', ('ssh',)),
     (cros_repair.HWIDVerifier,    'hwid',    ('ssh',)),
     (cros_repair.ACPowerVerifier, 'power', ('ssh',)),
@@ -28,17 +28,20 @@ CROS_VERIFY_DAG = (
     (cros_firmware.FirmwareStatusVerifier, 'fwstatus', ('ssh',)),
     (cros_firmware.FirmwareVersionVerifier, 'rwfw', ('ssh',)),
     (cros_repair.PythonVerifier, 'python', ('ssh',)),
-    (repair.LegacyHostVerifier, 'cros', ('ssh',)),
+    (repair_utils.LegacyHostVerifier, 'cros', ('ssh',)),
+    (cros_repair.KvmExistsVerifier, 'ec_reset', ('ssh',)),
 )
 
 CROS_REPAIR_ACTIONS = (
-    (repair.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
+    (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
     (cros_repair.ServoSysRqRepair, 'sysrq', (), ('ssh',)),
     (cros_repair.ServoResetRepair, 'servoreset', (), ('ssh',)),
     (cros_firmware.FirmwareRepair,
      'firmware', (), ('ssh', 'fwstatus', 'good_au')),
     (cros_repair.CrosRebootRepair,
      'reboot', ('ssh',), ('devmode', 'writable',)),
+    (cros_repair.ColdRebootRepair,
+     'coldboot', ('ssh',), ('ec_reset',)),
     (cros_repair.AutoUpdateRepair,
      'au',
      ('ssh', 'writable', 'tpm', 'good_au', 'ext4'),
@@ -55,21 +58,21 @@ CROS_REPAIR_ACTIONS = (
 )
 
 MOBLAB_VERIFY_DAG = (
-    (repair.SshVerifier, 'ssh', ()),
+    (repair_utils.SshVerifier, 'ssh', ()),
     (cros_repair.ACPowerVerifier, 'power', ('ssh',)),
     (cros_firmware.FirmwareVersionVerifier, 'rwfw', ('ssh',)),
     (cros_repair.PythonVerifier, 'python', ('ssh',)),
-    (repair.LegacyHostVerifier, 'cros', ('ssh',)),
+    (repair_utils.LegacyHostVerifier, 'cros', ('ssh',)),
 )
 
 MOBLAB_REPAIR_ACTIONS = (
-    (repair.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
+    (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
     (cros_repair.AutoUpdateRepair,
      'au', ('ssh',), ('power', 'rwfw', 'python', 'cros',)),
 )
 
 JETSTREAM_VERIFY_DAG = (
-    (repair.SshVerifier, 'ssh', ()),
+    (repair_utils.SshVerifier, 'ssh', ()),
     (cros_repair.DevModeVerifier, 'devmode', ('ssh',)),
     (cros_repair.HWIDVerifier,    'hwid',    ('ssh',)),
     (cros_repair.ACPowerVerifier, 'power', ('ssh',)),
@@ -80,7 +83,8 @@ JETSTREAM_VERIFY_DAG = (
     (cros_firmware.FirmwareStatusVerifier, 'fwstatus', ('ssh',)),
     (cros_firmware.FirmwareVersionVerifier, 'rwfw', ('ssh',)),
     (cros_repair.PythonVerifier, 'python', ('ssh',)),
-    (repair.LegacyHostVerifier, 'cros', ('ssh',)),
+    (repair_utils.LegacyHostVerifier, 'cros', ('ssh',)),
+    (cros_repair.KvmExistsVerifier, 'ec_reset', ('ssh',)),
     (cros_repair.JetstreamTpmVerifier, 'jetstream_tpm', ('ssh',)),
     (cros_repair.JetstreamAttestationVerifier, 'jetstream_attestation',
      ('ssh',)),
@@ -88,13 +92,15 @@ JETSTREAM_VERIFY_DAG = (
 )
 
 JETSTREAM_REPAIR_ACTIONS = (
-    (repair.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
+    (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
     (cros_repair.ServoSysRqRepair, 'sysrq', (), ('ssh',)),
     (cros_repair.ServoResetRepair, 'servoreset', (), ('ssh',)),
     (cros_firmware.FirmwareRepair,
      'firmware', (), ('ssh', 'fwstatus', 'good_au')),
     (cros_repair.CrosRebootRepair,
      'reboot', ('ssh',), ('devmode', 'writable',)),
+    (cros_repair.ColdRebootRepair,
+     'coldboot', ('ssh',), ('ec_reset',)),
     (cros_repair.JetstreamTpmRepair,
      'jetstream_tpm_repair',
      ('ssh', 'writable', 'tpm', 'good_au', 'ext4'),
@@ -228,6 +234,7 @@ TPM Password:
 
 
 class CrosRepairUnittests(unittest.TestCase):
+    # pylint: disable=missing-docstring
 
     maxDiff = None
 

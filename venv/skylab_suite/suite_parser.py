@@ -20,20 +20,22 @@ from skylab_suite import swarming_lib
 def make_parser():
     """Make ArgumentParser instance for run_suite_skylab.py."""
     parser = argparse.ArgumentParser(prog='run_suite_skylab',
-                                     description=__doc__)
+                                     description="Run a test suite in Skylab.")
 
     # Suite-related parameters.
     parser.add_argument('--board', required=True)
     parser.add_argument(
-            '--model',
+            '--model', default=None,
             help=('The device model to run tests against. For non-unified '
                   'builds, model and board are synonymous, but board is more '
                   'accurate in some cases. Only pass this option if your build '
                   'is a unified build.'))
+    # Allow customized pool label temporarily for crbug.com/913623.
     parser.add_argument(
         '--pool', default='suites',
-        help=('Specify the pool of DUTs to run this suite. If you want no '
-              'pool, you can specify it with --pool="". USE WITH CARE.'))
+        help=('Specify the pool of DUTs to run this suite. Default: suites. '
+              'If you want no pool, you can specify it with --pool="". '
+              'USE WITH CARE.'))
     parser.add_argument(
         '--suite_name', required=True,
         help='Specify the suite to run.')
@@ -77,16 +79,16 @@ def make_parser():
         "--minimum_duts", type=int, default=1, action="store",
         help="A minimum required numbers of DUTs to run this suite.")
     parser.add_argument(
-        "--use_fallback", action="store_true",
-        help=('Whether to kick off the child tests with fallback request. '
-              'If it is enabled, the suite will be kicked off no matter '
-              'whether there are well-provisioned DUTs. If not, '
-              'provision will be executed before each test first.'))
+        '--quota_account', default=None, action='store',
+        help=("Quota account to be used for this suite's jobs, if applicable. "
+              "Only relevant for jobs running in a quota scheduler pool "
+              "(e.g. quota-metered)."))
+
+    # TODO(ayatane): Make sure no callers pass --use_fallback before removing.
+    parser.add_argument(
+            "--use_fallback", action="store_true", help='Deprecated')
 
     # Swarming-related parameters.
-    parser.add_argument(
-        '--swarming', default=None,
-        help='The swarming server to call.')
     parser.add_argument(
         '--execution_timeout_seconds', type=int, default=30,
         help='Seconds to allow a task to complete, once execution beings.')
@@ -117,6 +119,10 @@ def make_parser():
     parser.add_argument(
         '--dry_run', action='store_true',
         help=('Used for kicking off a run of suite with fake commands.'))
+    parser.add_argument(
+        '--pre_check', action='store_true',
+        help=('Used for checking whether a same suite is already kicked off'
+              'to Skylab.'))
     parser.add_argument(
         '--do_nothing', action='store_true',
         help=('Used for monitoring purposes, to measure no-op swarming proxy '
@@ -156,8 +162,10 @@ def parse_suite_spec(options):
             suite_args=options.suite_args,
             priority=options.priority,
             board=options.board,
+            model=options.model,
             pool=options.pool,
             job_keyvals=options.job_keyvals,
             minimum_duts=options.minimum_duts,
             timeout_mins=options.timeout_mins,
+            quota_account=options.quota_account,
     )

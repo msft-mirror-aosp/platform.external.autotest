@@ -8,7 +8,6 @@ import string
 
 from autotest_lib.server.cros.network import frame_sender
 from autotest_lib.server.cros.network import hostap_config
-from autotest_lib.server.cros.network import wifi_interface_claim_context
 from autotest_lib.server import site_linux_system
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -149,10 +148,9 @@ class network_WiFi_ChannelScanDwellTime(wifi_cell_test_base.WiFiCellTestBase):
                         timeout=self.SCAN_RETRY_TIMEOUT_SECONDS,
                         sleep_interval=0.5)
             except utils.TimeoutError:
-                if self._bss_list is None:
-                    raise error.TestFail('Unable to trigger scan on client.')
-                else:
-                    raise error.TestFail('Failed to find any BSS')
+                raise error.TestFail('Unable to trigger scan on client.')
+            if not self._bss_list:
+                raise error.TestFail('Failed to find any BSS')
 
             # Remaining work is done outside the FrameSender
             # context. This is to ensure that no additional frames are
@@ -168,7 +166,8 @@ class network_WiFi_ChannelScanDwellTime(wifi_cell_test_base.WiFiCellTestBase):
             raise error.TestFail('Failed to find any BSS for this test')
 
         beacon_frames = tcpdump_analyzer.get_frames(
-            pcap_path, tcpdump_analyzer.WLAN_BEACON_ACCEPTOR, bad_fcs='include')
+            pcap_path, tcpdump_analyzer.WLAN_BEACON_ACCEPTOR,
+            reject_bad_fcs=False)
         # Filter beacon frames based on ssid prefix.
         result_beacon_frames = [frame for frame in beacon_frames if frame.ssid
                                 and frame.ssid.startswith(ssid_prefix)]
@@ -185,11 +184,13 @@ class network_WiFi_ChannelScanDwellTime(wifi_cell_test_base.WiFiCellTestBase):
         # will prevent shill and wpa_supplicant from managing that interface.
         # So this test can have the sole ownership of the interface and can
         # perform scans without interference from shill and wpa_supplicant.
-        with wifi_interface_claim_context.WiFiInterfaceClaimContext(
-                self.context.client):
+        self.context.client.claim_wifi_if()
+        try:
             # Get channel dwell time for single-channel scan
             dwell_time = self._channel_dwell_time_test(True)
             logging.info('Channel dwell time for single-channel scan: %d ms',
                          dwell_time)
             self.write_perf_keyval(
                     {'dwell_time_single_channel_scan': dwell_time})
+        finally:
+            self.context.client.release_wifi_if()

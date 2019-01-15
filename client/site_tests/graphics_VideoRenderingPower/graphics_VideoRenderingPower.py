@@ -6,6 +6,7 @@ import logging, time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.graphics import graphics_utils
 from autotest_lib.client.cros.power import power_rapl
@@ -16,8 +17,11 @@ TEST_NAME_AND_FLAGS = [
     ['hw_overlays_hw_decode', ['']],
     ['no_overlays_hw_decode', ['--enable-hardware-overlays=']],
     ['hw_overlays_sw_decode', ['--disable-accelerated-video-decode']],
-    ['no_overlays_sw_decode',
-        ['--disable-accelerated-video-decode', '--enable-hardware-overlays=']]]
+    [
+        'no_overlays_sw_decode',
+        ['--disable-accelerated-video-decode', '--enable-hardware-overlays=']
+    ]
+]
 # Amount of time to wait for the URL to load and the video to start playing.
 PREAMBLE_DURATION_SECONDS = 8
 # Amount of time to let the video play while measuring power consumption.
@@ -33,6 +37,7 @@ GRAPH_NAME = 'power_consumption'
 
 class graphics_VideoRenderingPower(graphics_utils.GraphicsTest):
     """This test renders on screen for a short while a video from a given
+
     (controlled) URL while measuring the power consumption of the different SoC
     domains.
     """
@@ -60,6 +65,8 @@ class graphics_VideoRenderingPower(graphics_utils.GraphicsTest):
             self._service_stopper.restore_services()
         super(graphics_VideoRenderingPower, self).cleanup()
 
+    @graphics_utils.GraphicsTest.failure_report_decorator(
+        'graphics_VideoRenderingPower')
     def run_once(self, video_url, video_short_name):
         """Runs the graphics_VideoRenderingPower test.
 
@@ -76,7 +83,12 @@ class graphics_VideoRenderingPower(graphics_utils.GraphicsTest):
                             'skipping test.')
             return
 
-        rapl = [power_status.SystemPower(self._power_status.battery_path)]
+        rapl = []
+        if power_utils.has_battery():
+            rapl.append(
+                power_status.SystemPower(self._power_status.battery_path))
+        else:
+            logging.warning('This board has no battery.')
         rapl += power_rapl.create_rapl()
 
         for test_name_and_flags in TEST_NAME_AND_FLAGS:
@@ -115,23 +127,22 @@ class graphics_VideoRenderingPower(graphics_utils.GraphicsTest):
 
                 measurements = power_logger.calc()
                 logging.debug(measurements)
-                measurements = {
-                    key: measurements[key]
-                    for key in measurements
-                    if key.endswith('_pwr_avg')
-                }
 
                 for category in sorted(measurements):
-                    description = '%s_%s_%s' % (
-                        video_short_name, test_name_and_flags[0], category)
-                    self.output_perf_value(
-                        description=description,
-                        value=measurements[category],
-                        units='W',
-                        higher_is_better=False,
-                        graph=GRAPH_NAME)
+                    if category.endswith('_pwr'):
+                        description = '%s_%s_%s' % (
+                            video_short_name, test_name_and_flags[0], category)
+                        self.output_perf_value(
+                            description=description,
+                            value=measurements[category],
+                            units='W',
+                            higher_is_better=False,
+                            graph=GRAPH_NAME)
 
-                    # write_perf_keyval() wants units (W) first in lowercase.
-                    self.write_perf_keyval({
-                        'w_' + description: measurements[category]
-                    })
+                    if category.endswith('_pwr_avg'):
+                        # write_perf_keyval() wants units (W) first in lowercase.
+                        description = '%s_%s_%s' % (
+                            video_short_name, test_name_and_flags[0], category)
+                        self.write_perf_keyval({
+                            'w_' + description: measurements[category]
+                        })

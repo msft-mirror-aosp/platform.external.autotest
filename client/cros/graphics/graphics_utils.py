@@ -93,7 +93,8 @@ class GraphicsTest(test.test):
             self._GSC.finalize()
 
         self._output_perf()
-        self._player.close()
+        if self._player:
+            self._player.close()
 
         if hasattr(super(GraphicsTest, self), "cleanup"):
             test_utils._cherry_pick_call(super(GraphicsTest, self).cleanup,
@@ -555,6 +556,12 @@ _MODETEST_CRTCS_START_PATTERN = re.compile(r'^id\s+fb\s+pos\s+size')
 _MODETEST_CRTC_PATTERN = re.compile(
     r'^(\d+)\s+(\d+)\s+\((\d+),(\d+)\)\s+\((\d+)x(\d+)\)')
 
+_MODETEST_PLANES_START_PATTERN = re.compile(
+    r'^id\s+crtc\s+fb\s+CRTC\s+x,y\s+x,y\s+gamma\s+size\s+possible\s+crtcs')
+
+_MODETEST_PLANE_PATTERN = re.compile(
+    r'^(\d+)\s+(\d+)\s+(\d+)\s+(\d+),(\d+)\s+(\d+),(\d+)\s+(\d+)\s+(0x)(\d+)')
+
 Connector = collections.namedtuple(
     'Connector', [
         'cid',  # connector id (integer)
@@ -574,6 +581,11 @@ CRTC = collections.namedtuple(
         'size',  # size, e.g. (1366,768)
     ])
 
+Plane = collections.namedtuple(
+    'Plane', [
+        'id',  # plane id
+        'possible_crtcs',  # possible associated CRTC indexes.
+    ])
 
 def get_display_resolution():
     """
@@ -677,6 +689,32 @@ def get_modetest_crtcs():
         if re.match(_MODETEST_CRTCS_START_PATTERN, line) is not None:
             found = True
     return crtcs
+
+
+def get_modetest_planes():
+    """
+    Returns a list of planes information.
+
+    Sample:
+        [Plane(id=26, possible_crtcs=1),
+         Plane(id=29, possible_crtcs=1)]
+    """
+    planes = []
+    modetest_output = utils.system_output('modetest -p')
+    found = False
+    for line in modetest_output.splitlines():
+        if found:
+            plane_match = re.match(_MODETEST_PLANE_PATTERN, line)
+            if plane_match is not None:
+                plane_id = int(plane_match.group(1))
+                possible_crtcs = int(plane_match.group(10))
+                if not (plane_id == 0 or possible_crtcs == 0):
+                    planes.append(Plane(plane_id, possible_crtcs))
+            elif line and not line[0].isspace():
+                return planes
+        if re.match(_MODETEST_PLANES_START_PATTERN, line) is not None:
+            found = True
+    return planes
 
 
 def get_modetest_output_state():
@@ -906,8 +944,10 @@ class GraphicsKernelMemory(object):
         'memory': ['/sys/class/misc/mali0/device/memory',
                    '/sys/class/misc/mali0/device/gpu_memory'],
     }
-    mediatek_fields = {}  # TODO(crosbug.com/p/58189) add nodes
-    # TODO Add memory nodes once the GPU patches landed.
+    mediatek_fields = {}
+    # TODO(crosbug.com/p/58189) Add mediatek GPU memory nodes
+    qualcomm_fields = {}
+    # TODO(b/119269602) Add qualcomm GPU memory nodes once GPU patches land
     rockchip_fields = {}
     tegra_fields = {
         'memory': ['/sys/kernel/debug/memblock/memory'],
@@ -926,6 +966,7 @@ class GraphicsKernelMemory(object):
         'exynos5': exynos_fields,
         'i915': i915_fields,
         'mediatek': mediatek_fields,
+        'qualcomm': qualcomm_fields,
         'rockchip': rockchip_fields,
         'tegra': tegra_fields,
         'virtio': virtio_fields,
@@ -1055,7 +1096,8 @@ class GraphicsStateChecker(object):
 
     _BROWSER_VERSION_COMMAND = '/opt/google/chrome/chrome --version'
     _HANGCHECK = ['drm:i915_hangcheck_elapsed', 'drm:i915_hangcheck_hung',
-                  'Hangcheck timer elapsed...']
+                  'Hangcheck timer elapsed...',
+                  'drm/i915: Resetting chip after gpu hang']
     _HANGCHECK_WARNING = ['render ring idle']
     _MESSAGES_FILE = '/var/log/messages'
 
@@ -1205,9 +1247,11 @@ _DRI_DEBUG_FILE_PATH_0 = "/sys/kernel/debug/dri/0/state"
 _DRI_DEBUG_FILE_PATH_1 = "/sys/kernel/debug/dri/1/state"
 
 # The DRI debug file will have a lot of information, including the position and
-# sizes of each plane, in lines starting with "crtc-pos="; many of them will be
-# zeros, this regex is used to filter those out.
-_CRTC_POS_PATTERN = re.compile(r'crtc-pos=(?!0x0\+0\+0)')
+# sizes of each plane. Some planes might be disabled but have some lingering
+# crtc-pos information, those are skipped.
+_CRTC_PLANE_START_PATTERN = re.compile(r'plane\[')
+_CRTC_DISABLED_PLANE = re.compile(r'crtc=\(null\)')
+_CRTC_POS_AND_SIZE_PATTERN = re.compile(r'crtc-pos=(?!0x0\+0\+0)')
 
 def get_num_hardware_overlays():
     """
@@ -1229,7 +1273,18 @@ def get_num_hardware_overlays():
 
     filetext = open(file_path).read()
     logging.debug(filetext)
-    matches = re.findall(_CRTC_POS_PATTERN, filetext)
+
+    matches = []
+    # Split the debug output by planes, skip the disabled ones and extract those
+    # with correct position and size information.
+    planes = re.split(_CRTC_PLANE_START_PATTERN, filetext)
+    for plane in planes:
+        if len(plane) == 0:
+            continue;
+        if len(re.findall(_CRTC_DISABLED_PLANE, plane)) > 0:
+            continue;
+
+        matches.append(re.findall(_CRTC_POS_AND_SIZE_PATTERN, plane))
 
     # TODO(crbug.com/865112): return also the sizes/locations.
     return len(matches)
@@ -1282,3 +1337,23 @@ def is_drm_atomic_supported():
 
     logging.debug('No dev files seems to support atomic');
     return False
+
+def get_max_num_available_drm_planes():
+    """
+    @returns The maximum number of DRM planes available in the system
+    (associated to the same CRTC), or 0 if something went wrong (e.g. modetest
+    failed, etc).
+    """
+
+    planes = get_modetest_planes()
+    if len(planes) == 0:
+        return 0;
+    packed_possible_crtcs = [plane.possible_crtcs for plane in planes]
+    # |packed_possible_crtcs| is actually a bit field of possible CRTCs, e.g.
+    # 0x6 (b1001) means the plane can be associated with CRTCs index 0 and 3 but
+    # not with index 1 nor 2. Unpack those into |possible_crtcs|, an array of
+    # binary arrays.
+    possible_crtcs = [[int(bit) for bit in bin(crtc)[2:].zfill(16)]
+                         for crtc in packed_possible_crtcs]
+    # Accumulate the CRTCs indexes and return the maximum number of 'votes'.
+    return max(map(sum, zip(*possible_crtcs)))

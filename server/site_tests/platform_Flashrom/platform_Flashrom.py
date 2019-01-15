@@ -79,8 +79,7 @@ class platform_Flashrom(FirmwareTest):
         self.run_cmd('flashrom -E -i RW_SECTION_B', 'SUCCESS')
 
         # 3) Reinstall RW B (Test flashrom)
-        self.run_cmd('chromeos-firmwareupdate --mode=factory',
-                     '(factory_install) completed.')
+        self.run_cmd('chromeos-firmwareupdate --mode=factory', 'SUCCESS')
 
         # 4) Check that device can be rebooted.
         self.switcher.mode_aware_reboot()
@@ -117,11 +116,3 @@ class platform_Flashrom(FirmwareTest):
         # 6) Report result.
         if ''.join(result_output) != '':
             raise error.TestFail('Mismatch between %s and %s' % (shball_rw_b, rw_b2))
-
-    def cleanup(self):
-        """Remove temporary objects used by the test."""
-        try:
-            self.faft_client.updater.cleanup()
-        except Exception as e:
-            logging.error("Updater cleanup exception: %s", str(e))
-        super(platform_Flashrom, self).cleanup()

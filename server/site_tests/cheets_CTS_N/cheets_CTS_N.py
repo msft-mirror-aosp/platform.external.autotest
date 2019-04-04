@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _DL_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-    'arm': _DL_CTS + 'android-cts-7.1_r25-linux_x86-arm.zip',
-    'x86': _DL_CTS + 'android-cts-7.1_r25-linux_x86-x86.zip',
+    'arm': _DL_CTS + 'android-cts-7.1_r26-linux_x86-arm.zip',
+    'x86': _DL_CTS + 'android-cts-7.1_r26-linux_x86-x86.zip',
     'media': _DL_CTS + 'android-cts-media-1.4.zip',
 }
 
@@ -150,7 +150,8 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                    load_waivers=True,
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
-                   cmdline_args=None):
+                   cmdline_args=None,
+                   hard_reboot_on_failure=False):
         super(cheets_CTS_N, self).initialize(
                 bundle=bundle,
                 uri=uri,
@@ -159,7 +160,8 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                 max_retry=max_retry,
                 load_waivers=load_waivers,
                 retry_manual_tests=retry_manual_tests,
-                warn_on_test_retry=warn_on_test_retry)
+                warn_on_test_retry=warn_on_test_retry,
+                hard_reboot_on_failure=hard_reboot_on_failure)
         if camera_facing:
             self.initialize_camerabox(camera_facing, cmdline_args)
 

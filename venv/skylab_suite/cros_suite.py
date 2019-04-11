@@ -219,15 +219,13 @@ class SuiteHandler(object):
         return (len(finished_tasks) == len(self._active_child_tasks)
                 and not self.retried_tasks)
 
-    def _set_successful_provisioned_duts(self):
-        """Set successfully provisioned duts."""
+    def _any_task_succeeded(self):
+        """Determines if any child completed with success."""
         for t in self._active_child_tasks:
             if (swarming_lib.get_task_final_state(t) ==
                 swarming_lib.TASK_COMPLETED_SUCCESS):
-                dut_name = self.get_test_by_task_id(
-                        t['task_id']).test_spec.dut_name
-                if dut_name:
-                    self.successfully_provisioned_duts.add(dut_name)
+                return True
+        return False
 
     def is_provision_successfully_finished(self):
         """Check whether provision succeeds."""
@@ -241,9 +239,8 @@ class SuiteHandler(object):
     def is_finished_waiting(self):
         """Check whether the suite should finish its waiting."""
         if self.is_provision():
-            self._set_successful_provisioned_duts()
-            return (self.is_provision_successfully_finished() or
-                    self._check_all_tasks_finished())
+            if self._any_task_succeeded():
+                return True
 
         return self._check_all_tasks_finished()
 
@@ -448,18 +445,11 @@ class ProvisionSuite(Suite):
                     self.board, self.pool, available_bots_num,
                     self._num_required)
 
-        return [dummy_test] * max(self._num_required, available_bots_num)
+        return [dummy_test] * self._num_required
 
     def _get_test_specs(self, tests, available_bots, keyvals):
         test_specs = []
-        for idx, test in enumerate(tests):
-            if idx < len(available_bots):
-                bot = available_bots[idx]
-                test_specs.append(self._create_test_spec(
-                        test, keyvals, bot_id=bot['bot_id'],
-                        dut_name=swarming_lib.get_task_dut_name(
-                                bot['dimensions'])))
-            else:
-                test_specs.append(self._create_test_spec(test, keyvals))
+        for test in tests:
+            test_specs.append(self._create_test_spec(test, keyvals))
 
         return test_specs

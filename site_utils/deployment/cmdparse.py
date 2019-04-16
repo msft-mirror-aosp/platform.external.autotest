@@ -186,6 +186,12 @@ def _add_firmware_subcommand(subcommands):
         subcommands, 'firmware', True,
         'Install firmware and initial test image on DUT')
     _add_stageusb_option(subparser)
+    subparser.add_argument(
+            '--using-servo', action='store_true',
+            help='Flash DUT firmware directly using servo')
+    subparser.add_argument(
+            '--force-firmware', action='store_true', default=False,
+            help='Force firmware installation using chromeos-installfirmware.')
     subparser.set_defaults(install_firmware=True,
                            install_test_image=True)
 

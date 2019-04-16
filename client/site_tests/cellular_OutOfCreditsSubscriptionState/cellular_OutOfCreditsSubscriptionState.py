@@ -36,7 +36,6 @@ class cellular_OutOfCreditsSubscriptionState(test.test):
                 mm1_constants.MM_MODEM_PROPERTY_NAME_PLUGIN,
                 'Altair LTE')
         self.pseudomm.iface_testing.SetSubscriptionState(
-                mm1_constants.MM_MODEM_3GPP_SUBSCRIPTION_STATE_UNKNOWN,
                 subscription_state)
         self.test_env.shill.manager.EnableTechnology(
                 cellular_proxy.CellularProxy.TECHNOLOGY_CELLULAR)
@@ -87,7 +86,6 @@ class cellular_OutOfCreditsSubscriptionState(test.test):
                 self.test_env.shill.wait_for_cellular_service_object()
         logging.info('Mark modem as out-of-credits')
         self.pseudomm.iface_testing.SetSubscriptionState(
-                mm1_constants.MM_MODEM_3GPP_SUBSCRIPTION_STATE_UNKNOWN,
                 mm1_constants.MM_MODEM_3GPP_SUBSCRIPTION_STATE_OUT_OF_DATA)
         logging.info('Verify out-of-credits set in cellular service')
         try:
@@ -110,9 +108,6 @@ class cellular_OutOfCreditsSubscriptionState(test.test):
             self.pseudomm = pm_proxy.PseudoMMProxy.get_proxy()
             self.modem = self.pseudomm.get_modem()
 
-            tests = [self._test_provisioned,
-                     self._test_out_of_credits_at_start,
-                     self._test_out_of_credits_while_connected]
-
-            for test in tests:
-                test()
+            self._test_provisioned()
+            self._test_out_of_credits_at_start()
+            self._test_out_of_credits_while_connected()

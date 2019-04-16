@@ -567,7 +567,7 @@ class ServoHost(ssh_host.SSHHost):
         """
         if self.has_power():
             try:
-                rpm_client.set_power(self.hostname, 'CYCLE')
+                rpm_client.set_power(self, 'CYCLE')
             except (socket.error, xmlrpclib.Error,
                     httplib.BadStatusLine,
                     rpm_client.RemotePowerException) as e:
@@ -588,11 +588,11 @@ class ServoHost(ssh_host.SSHHost):
 
 
     def close(self):
-        """Stop UART logging and close the host object."""
+        """Close the associated servo and the host object."""
         if self._servo:
             # In some cases when we run as lab-tools, the job object is None.
-            if self.job:
-                self._servo.dump_uart_streams(self.job.resultdir)
+            if self.job and not self._servo.uart_logs_dir:
+                self._servo.uart_logs_dir = self.job.resultdir
             self._servo.close()
 
         super(ServoHost, self).close()

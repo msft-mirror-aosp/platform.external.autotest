@@ -24,26 +24,8 @@ class Values(object):
     has_keyboard = True
     has_powerbutton = True
     rec_button_dev_switch = False
-    long_rec_combo = False
-    use_u_boot = False
     ec_capability = list()
-    gbb_version = 1.1
-    wp_voltage = 'pp1800'
     spi_voltage = 'pp1800'
-    key_checker = [[0x29, 'press'],
-                   [0x32, 'press'],
-                   [0x32, 'release'],
-                   [0x29, 'release'],
-                   [0x28, 'press'],
-                   [0x28, 'release']]
-    key_checker_strict = [[0x29, 'press'],
-                          [0x29, 'release'],
-                          [0x32, 'press'],
-                          [0x32, 'release'],
-                          [0x28, 'press'],
-                          [0x28, 'release'],
-                          [0x61, 'press'],
-                          [0x61, 'release']]
 
     # Has eventlog support including proper timestamps. (Only for old boards!
     # Never disable this "temporarily, until we get around to implementing it"!)
@@ -60,17 +42,8 @@ class Values(object):
     # Delay between keypresses in firmware screen
     confirm_screen = 3
 
-    # Only True on Alex/ZGB which needs a transition state to enter dev mode.
-    need_dev_transition = False
-
-    # Delay between passing firmware screen and text mode warning screen
-    legacy_text_screen = 20
-
     # The developer screen timeouts fit our spec
     dev_screen_timeout = 30
-
-    # Delay for waiting beep done
-    beep = 1
 
     # Delay between power-on and plug USB
     usb_plug = 10
@@ -103,12 +76,6 @@ class Values(object):
     # (also known as SHORT_DELAY in hdctools)
     hold_pwr_button_poweron = 0.2
 
-    # devserver startup time
-    devserver = 10
-
-    # Delay for user to power cycle the device
-    user_power_cycle = 20
-
     # Delay after /sbin/shutdown before pressing power button
     powerup_ready = 10
 
@@ -118,4 +85,22 @@ class Values(object):
     # Timeout of confirming DUT doesn't boot on USB image in Recovery screen
     usb_image_boot_timeout = 180
 
+    # Check SMMSTORE exists in FMap for x86 boards
     smm_store = True
+
+    # True if the lid can wake the system from a powered off state
+    lid_wake_from_power_off = True
+
+    # True if AP can access the EC flash while Chrome OS is running
+    ap_access_ec_flash = True
+
+    # True if the device supports power_state:rec_force_mrc, which forces memory
+    # retraining in recovery mode
+    rec_force_mrc = True
+
+    # True if the GSC can wake the EC with it's reset GPIO.
+    gsc_can_wake_ec_with_reset = True
+
+    # True if AP is normally expected to be powered on after the Cr50 reboots
+    # (when AC power is connected).
+    ap_up_after_cr50_reboot = True

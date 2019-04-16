@@ -9,6 +9,7 @@ TEST_TYPE = 'Server'
 # System tests can't be broken by Android or Chrome changes, so these tests
 # don't run in the PFQs.
 ATTRIBUTES = 'suite:bvt-tast-cq'
+MAX_RESULT_SIZE_KB = 50 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
@@ -31,7 +32,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['(!disabled && !"group:*" && !informational && '
-                             '!"dep:android" && '
+                             '!"dep:android" && !"dep:android_all" && '
                              '!"dep:chrome" && !"dep:chrome_login")'],
                  ignore_test_failures=False, max_run_sec=1200)
 

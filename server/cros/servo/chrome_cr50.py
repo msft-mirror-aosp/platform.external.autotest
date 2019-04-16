@@ -85,8 +85,15 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     GET_CAP_TRIES = 3
 
 
-    def __init__(self, servo):
+    def __init__(self, servo, faft_config):
+        """Initializes a ChromeCr50 object.
+
+        Args:
+          servo: A Servo object.
+          faft_config: A Config object.
+        """
         super(ChromeCr50, self).__init__(servo, 'cr50_uart')
+        self.faft_config = faft_config
 
 
     def wake_cr50(self):
@@ -335,10 +342,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 return self.send_command_get_output(command, regexp_list)
             except error.TestFail, e:
                 logging.info('Failed to get %r output: %r', command, str(e))
-        # Raise the last error, if we never successfully returned the command
-        # output
-        logging.info('Could not get %r output after %d tries', command, tries)
-        raise
+                if i == tries - 1:
+                    # Raise the last error, if we never successfully returned
+                    # the command output
+                    logging.info('Could not get %r output after %d tries',
+                                 command, tries)
+                    raise
 
 
     def get_deep_sleep_count(self):
@@ -382,21 +391,18 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def reboot(self):
         """Reboot Cr50 and wait for cr50 to reset"""
-        response = [] if self.using_ccd() else self.START_STR
-        self.send_command_get_output('reboot', response)
-
-        # ccd will stop working after the reboot. Wait until that happens and
-        # reenable it.
-        if self.using_ccd():
-            self.wait_for_reboot()
+        self.wait_for_reboot(cmd='reboot')
 
 
-    def _uart_wait_for_reboot(self, timeout=60):
-        """Wait for the cr50 to reboot and enable the console.
+    def _uart_wait_for_reboot(self, cmd='\n', timeout=60):
+        """Use uart to wait for cr50 to reboot.
 
-        This will wait up to timeout seconds for cr50 to print the start string.
+        If a command is given run it and wait for cr50 to reboot. Monitor
+        the cr50 uart to detect the reset. Wait up to timeout seconds
+        for the reset.
 
         Args:
+            cmd: the command to run to reset cr50.
             timeout: seconds to wait to detect the reboot.
         """
         original_timeout = float(self._servo.get('cr50_uart_timeout'))
@@ -404,7 +410,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # for cr50 to print the start string.
         self._servo.set_nocheck('cr50_uart_timeout', timeout)
         try:
-            self.send_command_get_output('\n', self.START_STR)
+            self.send_command_get_output(cmd, self.START_STR)
             logging.debug('Detected cr50 reboot')
         except error.TestFail, e:
             logging.debug('Failed to detect cr50 reboot')
@@ -412,15 +418,30 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
 
 
-    def wait_for_reboot(self, timeout=60):
-        """Wait for cr50 to reboot"""
+    def wait_for_reboot(self, cmd='\n', timeout=60):
+        """Wait for cr50 to reboot
+
+        Run the cr50 reset command. Wait for cr50 to reset and reenable ccd if
+        necessary.
+
+        Args:
+            cmd: the command to run to reset cr50.
+            timeout: seconds to wait to detect the reboot.
+        """
         if self.using_ccd():
+            self.send_command(cmd)
             # Cr50 USB is reset when it reboots. Wait for the CCD connection to
             # go down to detect the reboot.
             self.wait_for_ccd_disable(timeout, raise_error=False)
             self.ccd_enable()
         else:
-            self._uart_wait_for_reboot(timeout)
+            self._uart_wait_for_reboot(cmd, timeout)
+
+        # On most devices, a Cr50 reset will cause an AP reset. Force this to
+        # happen on devices where the AP is left down.
+        if not self.faft_config.ap_up_after_cr50_reboot:
+            logging.info('Resetting DUT after Cr50 reset')
+            self._servo.get_power_state_controller().reset()
 
 
     def rollback(self, eraseflashinfo=True, chip_bid=None, chip_flags=None):
@@ -452,12 +473,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if set_bid:
             self.send_command('bid 0x%x 0x%x' % (chip_bid, chip_flags))
 
-        if self.using_ccd():
-            self.send_command('rollback')
-            self.wait_for_reboot()
-        else:
-            logging.debug(self.send_command_get_output('rollback',
-                    ['.*Console is enabled'])[0])
+        self.wait_for_reboot(cmd='rollback')
 
         running_partition = self.get_active_version_info()[0]
         if inactive_partition != running_partition:
@@ -466,8 +482,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def rolledback(self):
         """Returns true if cr50 just rolled back"""
-        return 'Rollback detected' in self.send_command_get_output('sysinfo',
-                ['sysinfo.*>'])[0]
+        return 'Rollback detected' in self.send_safe_command_get_output(
+                'sysinfo', ['sysinfo.*>'])[0]
 
 
     def get_version_info(self, regexp):
@@ -487,7 +503,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def using_prod_rw_keys(self):
         """Returns True if the RW keyid is prod"""
-        rv = self.send_command_retry_get_output('sysinfo',
+        rv = self.send_safe_command_get_output('sysinfo',
                 ['RW keyid:.*\(([a-z]+)\)'])
         logging.info(rv)
         return rv[0][1] == 'prod'
@@ -614,10 +630,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Reenable CCD and reset servo interfaces"""
         logging.info("reenable ccd")
         self._servo.set_nocheck('servo_v4_dts_mode', 'on')
-        # If the test is actually running with ccd, reset usb and wait for
-        # communication to come up.
+        # If the test is actually running with ccd, wait for USB communication
+        # to come up after reset.
         if self.using_ccd():
-            self._servo.set_nocheck('power_state', 'ccd_reset')
+            time.sleep(self._servo.USB_DETECTION_DELAY)
         self.wait_for_ccd_enable(raise_error=raise_error)
 
 
@@ -842,3 +858,27 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             logging.info('Cr50 has been up for %ds waiting %ds before update',
                          cr50_time, sleep_time)
             time.sleep(sleep_time)
+
+    def tpm_is_enabled(self):
+        """Query the current TPM mode.
+
+        Returns  True if TPM is enabled,
+                 False otherwise.
+        """
+        result = self.send_command_get_output('sysinfo',
+                ['(?i)TPM\s+MODE:\s+(enabled|disabled)'])[0][1]
+        logging.debug(result)
+
+        return result.lower() == 'enabled'
+
+    def keyladder_is_enabled(self):
+        """Get the status of H1 Key Ladder.
+
+        Returns True if H1 Key Ladder is enabled.
+                False otherwise.
+        """
+        result = self.send_command_get_output('sysinfo',
+                ['(?i)Key\s+Ladder:\s+(enabled|disabled)'])[0][1]
+        logging.debug(result)
+
+        return result.lower() == 'enabled'

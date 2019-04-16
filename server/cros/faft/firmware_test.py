@@ -188,6 +188,7 @@ class FirmwareTest(FAFTBase):
             self._restore_routine_from_timeout()
         self.switcher.restore_mode()
         self._restore_ec_write_protect()
+        self._restore_servo_v4_role()
         self._restore_gbb_flags()
         self.faft_client.updater.start_daemon()
         self.faft_client.updater.cleanup()
@@ -225,7 +226,7 @@ class FirmwareTest(FAFTBase):
         if hasattr(self, 'cr50'):
             system_info['cr50_version'] = self.servo.get('cr50_version')
 
-        logging.info('System info:\n' + pprint.pformat(system_info))
+        logging.info('System info:\n%s', pprint.pformat(system_info))
         self.write_attr_keyval(system_info)
 
     def invalidate_firmware_setup(self):
@@ -408,7 +409,7 @@ class FirmwareTest(FAFTBase):
 
         self.mark_setup_done('usb_check')
 
-    def setup_usbkey(self, usbkey, host=None):
+    def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.
 
         It checks the setup of USB disk and a valid ChromeOS test image inside.
@@ -418,6 +419,9 @@ class FirmwareTest(FAFTBase):
                        not required.
         @param host: Optional, True to mux the USB disk to host, False to mux it
                     to DUT, default to do nothing.
+        @param used_for_recovery: Optional, True if the USB disk is used for
+                                  recovery boot; False if the USB disk is not
+                                  used for recovery boot, like Ctrl-U USB boot.
         """
         if usbkey:
             self.assert_test_image_in_usb_disk()
@@ -429,6 +433,38 @@ class FirmwareTest(FAFTBase):
             self.servo.switch_usbkey('host')
         elif host is False:
             self.servo.switch_usbkey('dut')
+
+        if used_for_recovery is None:
+            # Default value is True if usbkey == True.
+            # As the common usecase of USB disk is for recovery boot. Tests
+            # can define it explicitly if not.
+            used_for_recovery = usbkey
+
+        if used_for_recovery:
+            # In recovery boot, the locked EC RO doesn't support PD for most
+            # of the CrOS devices. The default servo v4 power role is a SRC.
+            # The DUT becomes a SNK. Lack of PD makes CrOS unable to do the
+            # data role swap from UFP to DFP; as a result, DUT can't see the
+            # USB disk and the Ethernet dongle on servo v4.
+            #
+            # This is a workaround to set servo v4 as a SNK, for every FAFT
+            # test which boots into the USB disk in the recovery mode.
+            #
+            # TODO(waihong): Add a check to see if the battery level is too
+            # low and sleep for a while for charging.
+            self.set_servo_v4_role_to_snk()
+
+    def set_servo_v4_role_to_snk(self):
+        """Set the servo v4 role to SNK."""
+        self._needed_restore_servo_v4_role = True
+        self.servo.set_servo_v4_role('snk')
+
+    def _restore_servo_v4_role(self):
+        """Restore the servo v4 role to default SRC."""
+        if not hasattr(self, '_needed_restore_servo_v4_role'):
+            return
+        if self._needed_restore_servo_v4_role:
+            self.servo.set_servo_v4_role('src')
 
     def get_usbdisk_path_on_dut(self):
         """Get the path of the USB disk device plugged-in the servo on DUT.
@@ -610,14 +646,7 @@ class FirmwareTest(FAFTBase):
 
         @param enable: True if asserting write protect pin. Otherwise, False.
         """
-        try:
-            self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
-        except:
-            # TODO(waihong): Remove this fallback when all servos have the
-            # above new fw_wp_state control.
-            self.servo.set('fw_wp_vref', self.faft_config.wp_voltage)
-            self.servo.set('fw_wp_en', 'on')
-            self.servo.set('fw_wp', 'on' if enable else 'off')
+        self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
 
     def set_ec_write_protect_and_reboot(self, enable):
         """Set EC write protect status and reboot to take effect.
@@ -677,6 +706,10 @@ class FirmwareTest(FAFTBase):
         self._old_wpsw_boot = self.checkers.crossystem_checker(
                                    {'wpsw_boot': '1'}, suppress_logging=True)
         if not (ec_wp == self._old_wpsw_cur == self._old_wpsw_boot):
+            if not self.faft_config.ap_access_ec_flash:
+                raise error.TestNAError(
+                        "Cannot change EC write-protect for this device")
+
             logging.info('The test required EC is %swrite-protected. Reboot '
                          'and flip the state.', '' if ec_wp else 'not ')
             self.switcher.mode_aware_reboot(
@@ -716,7 +749,7 @@ class FirmwareTest(FAFTBase):
             self.servo.get('cr50_version')
             self.servo.set('cr50_uart_capture', 'on')
             self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
-            self.cr50 = chrome_cr50.ChromeCr50(self.servo)
+            self.cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
         except error.TestFail as e:
             if 'No control named' in str(e):
                 logging.warn('cr50 console not supported.')
@@ -864,10 +897,6 @@ class FirmwareTest(FAFTBase):
 
     def _setup_gbb_flags(self):
         """Setup the GBB flags for FAFT test."""
-        if self.faft_config.gbb_version < 1.1:
-            logging.info('Skip modifying GBB on versions older than 1.1.')
-            return
-
         if self.check_setup_done('gbb_flags'):
             return
 

@@ -12,6 +12,7 @@ import shutil
 import socket
 import sys
 import tempfile
+import time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -34,7 +35,6 @@ _ANDROID_ADB_KEYS_PATH = '/data/misc/adb/adb_keys'
 _PROCESS_CHECK_INTERVAL_SECONDS = 1
 _WAIT_FOR_ADB_READY = 60
 _WAIT_FOR_ANDROID_PROCESS_SECONDS = 60
-_WAIT_FOR_DATA_MOUNTED_SECONDS = 60
 _PLAY_STORE_PKG = 'com.android.vending'
 _SETTINGS_PKG = 'com.android.settings'
 
@@ -111,7 +111,7 @@ def _is_tcp_port_reachable(address):
         return False
 
 
-def _wait_for_data_mounted(timeout=_WAIT_FOR_DATA_MOUNTED_SECONDS):
+def _wait_for_data_mounted(timeout):
     utils.poll_for_condition(
             condition=_is_android_data_mounted,
             desc='Wait for /data mounted',
@@ -127,7 +127,12 @@ def wait_for_adb_ready(timeout=_WAIT_FOR_ADB_READY):
     # Although adbd is started at login screen, we still need /data to be
     # mounted to set up key-based authentication. /data should be mounted
     # once the user has logged in.
-    _wait_for_data_mounted()
+    start_time = time.time()
+    _wait_for_data_mounted(timeout)
+    timeout -= (time.time() - start_time)
+    start_time = time.time()
+    arc_common.wait_for_android_boot(timeout)
+    timeout -= (time.time() - start_time)
 
     setup_adb_host()
     if is_adb_connected():
@@ -330,52 +335,27 @@ def get_sdcard_pid():
     return utils.read_one_line(_SDCARD_PID_PATH)
 
 
-def _get_removable_media_pid_internal(job_name):
-    """Returns the PID of the arc-removable-media* FUSE daemon."""
-    job_pid = get_job_pid(job_name)
-    # |job_pid| is the minijail process, obtain the PID of the process running
-    # inside the mount namespace.
-    # FUSE process is the only process running as chronos in the session.
-    return utils.system_output('pgrep -u chronos -s %s' % job_pid)
+def get_mount_passthrough_pid_list():
+    """Returns PIDs of ARC mount-passthrough daemon jobs."""
+    JOB_NAMES = [ 'arc-myfiles', 'arc-myfiles-default',
+                  'arc-myfiles-read', 'arc-myfiles-write',
+                  'arc-removable-media', 'arc-removable-media-default',
+                  'arc-removable-media-read', 'arc-removable-media-write' ]
+    pid_list = []
+    for job_name in JOB_NAMES:
+        try:
+            pid = get_job_pid(job_name)
+            pid_list.append(pid)
+        except Exception, e:
+            logging.warning('Failed to find PID for %s : %s', job_name, e)
+            continue
 
-
-def get_removable_media_pid():
-    """Returns the PID of the arc-removable-media FUSE daemon."""
-    return _get_removable_media_pid_internal('arc-removable-media')
-
-
-def get_removable_media_default_pid():
-    """Returns the PID of the arc-removable-media-default FUSE daemon."""
-    return _get_removable_media_pid_internal('arc-removable-media-default')
-
-
-def get_removable_media_read_pid():
-    """Returns the PID of the arc-removable-media-read FUSE daemon."""
-    return _get_removable_media_pid_internal('arc-removable-media-read')
-
-
-def get_removable_media_write_pid():
-    """Returns the PID of the arc-removable-media-write FUSE daemon."""
-    return _get_removable_media_pid_internal('arc-removable-media-write')
+    return pid_list
 
 
 def get_obb_mounter_pid():
     """Returns the PID of the OBB mounter."""
     return utils.system_output('pgrep -f -u root ^/usr/bin/arc-obb-mounter')
-
-
-def _is_android_booted():
-    """Return whether Android has completed booting."""
-    return adb_shell('getprop sys.boot_completed', ignore_status=True) == '1'
-
-
-def wait_for_boot_completed(timeout=60, sleep=1):
-    """Waits until sys.boot_completed becomes 1."""
-    utils.poll_for_condition(
-            condition=_is_android_booted,
-            desc='Wait for Android boot',
-            timeout=timeout,  # sec
-            sleep_interval=sleep)  # sec
 
 
 def is_android_process_running(process_name):

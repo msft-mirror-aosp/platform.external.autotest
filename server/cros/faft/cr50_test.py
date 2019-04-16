@@ -20,6 +20,7 @@ class Cr50Test(FirmwareTest):
     """Base class that sets up helper objects/functions for cr50 tests."""
     version = 1
 
+    RESPONSE_TIMEOUT = 180
     CR50_GS_URL = 'gs://chromeos-localmirror-private/distfiles/chromeos-cr50-%s/'
     CR50_DEBUG_FILE = '*/cr50_dbg_%s.bin'
     CR50_PROD_FILE = 'cr50.%s.bin.prod'
@@ -33,6 +34,14 @@ class Cr50Test(FirmwareTest):
     CLEARED_FWMP_EXIT_STATUS = 1
     CLEARED_FWMP_ERROR_MSG = ('CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS'
                               '_INVALID')
+    # Cr50 may have flash operation errors during the test. Here's an example
+    # of one error message.
+    # do_flash_op:245 errors 20 fsh_pe_control 40720004
+    # The stuff after the ':' may change, but all flash operation errors
+    # contain do_flash_op. do_flash_op is only ever printed if there is an
+    # error during the flash operation. Just search for do_flash_op to simplify
+    # the search string and make it applicable to all flash op errors.
+    CR50_FLASH_OP_ERROR_MSG = 'do_flash_op'
 
     def initialize(self, host, cmdline_args, full_args,
             restore_cr50_state=False, cr50_dev_path='', provision_update=False):
@@ -46,11 +55,9 @@ class Cr50Test(FirmwareTest):
                                     'access to the Cr50 console')
 
         logging.info('Test Args: %r', full_args)
-        self.ccd_lockout = full_args.get('ccd_lockout', '').lower() == 'true'
-        logging.info('ccd is%s locked out', '' if self.ccd_lockout else ' not')
 
         self.can_set_ccd_level = (not self.cr50.using_ccd() or
-            self.cr50.testlab_is_on()) and not self.ccd_lockout
+            self.cr50.testlab_is_on())
         self.original_ccd_level = self.cr50.get_ccd_level()
         self.original_ccd_settings = self.cr50.get_cap_dict(
                 info=self.cr50.CAP_SETTING)
@@ -95,6 +102,7 @@ class Cr50Test(FirmwareTest):
     def after_run_once(self):
         """Log which iteration just ran"""
         logging.info('successfully ran iteration %d', self.iteration)
+        self._confirm_dut_is_pingable()
 
 
     def _save_node_locked_dev_image(self, cr50_dev_path):
@@ -379,18 +387,73 @@ class Cr50Test(FirmwareTest):
         finally:
             super(Cr50Test, self).cleanup()
 
+        # Check the logs captured during firmware_test cleanup for cr50 errors.
+        self._get_cr50_stats_from_uart_capture()
+
+
+    def _get_cr50_stats_from_uart_capture(self):
+        """Check cr50 uart output for errors.
+
+        Use the logs captured during firmware_test cleanup to check for cr50
+        errors. Flash operation issues aren't obvious unless you check the logs.
+        All flash op errors print do_flash_op and it isn't printed during normal
+        operation. Open the cr50 uart file and count the number of times this is
+        printed. Log the number of errors.
+        """
+        if not hasattr(self, 'cr50_uart_file'):
+            logging.info('There is not a cr50 uart file')
+            return
+
+        flash_error_count = 0
+        with open(self.cr50_uart_file, 'r') as f:
+            for line in f:
+                if self.CR50_FLASH_OP_ERROR_MSG in line:
+                    flash_error_count += 1
+
+        # Log any flash operation errors.
+        logging.info('do_flash_op count: %d', flash_error_count)
+
+
+    def _confirm_dut_is_pingable(self):
+        """Reset the DUT if it doesn't respond to ping"""
+        logging.info('checking dut state')
+        end_time = time.time() + self.RESPONSE_TIMEOUT
+        while not self.host.is_up_fast():
+            if time.time() > end_time:
+                raise error.TestFail('DUT is unresponsive')
+            self.servo.get_power_state_controller().reset()
+            logging.info('DUT did not respond. Resetting it.')
+            time.sleep(self.faft_config.delay_reboot_to_ping)
+
 
     def _restore_cr50_state(self):
         """Restore cr50 state, so the device can be used for further testing"""
+        state_mismatch = self._check_original_state()
+        if state_mismatch and not self._provision_update:
+            self._restore_original_state()
+            if self._raise_error_on_mismatch:
+                raise error.TestError('Unexpected state mismatch during '
+                                      'cleanup %s' % state_mismatch)
+
+        # Try to open cr50 and enable testlab mode if it isn't enabled.
+        try:
+            self.fast_open(True)
+        except:
+            # Even if we can't open cr50, do our best to reset the rest of the
+            # system state. Log a warning here.
+            logging.warning('Unable to Open cr50', exc_info=True)
         # Reset the password as the first thing in cleanup. It is important that
         # if some other part of cleanup fails, the password has at least been
         # reset.
-        self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('rddkeepalive disable')
         self.cr50.send_command('ccd reset')
         self.cr50.send_command('wp follow_batt_pres atboot')
 
-        # Reconnect CCD
+        # Reboot cr50 if the console is accessible. This will reset most state.
+        if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_IS_ACCESSIBLE]:
+            self.cr50.reboot()
+
+        # Reenable servo v4 CCD
         self.cr50.ccd_enable()
 
         # reboot to normal mode if the device is in dev mode.
@@ -398,13 +461,6 @@ class Cr50Test(FirmwareTest):
 
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
         self.clear_fwmp()
-
-        state_mismatch = self._check_original_state()
-        if state_mismatch and not self._provision_update:
-            self._restore_original_state()
-            if self._raise_error_on_mismatch:
-                raise error.TestError('Unexpected state mismatch during '
-                                      'cleanup %s' % state_mismatch)
 
         # Restore the ccd privilege level
         if hasattr(self, 'original_ccd_level'):
@@ -594,7 +650,7 @@ class Cr50Test(FirmwareTest):
         # Running the update may cause cr50 to reboot. Wait for that before
         # sending more commands. The reboot should happen quickly. Wait a
         # maximum of 10 seconds.
-        self.cr50.wait_for_reboot(10)
+        self.cr50.wait_for_reboot(timeout=10)
 
         if erase_nvmem and rollback:
             self.cr50.erase_nvmem()
@@ -713,11 +769,25 @@ class Cr50Test(FirmwareTest):
         if self.cr50.get_ccd_level() == 'open':
             return
 
-        self.enter_mode_after_checking_tpm_state('dev')
-        self.ccd_open_from_ap()
-        self.enter_mode_after_checking_tpm_state('normal')
+        # Use the console to open cr50 without entering dev mode if possible. It
+        # takes longer and relies on more systems to enter dev mode and ssh into
+        # the AP. Skip the steps that aren't required.
+        if not self.cr50.get_cap('OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]:
+            self.enter_mode_after_checking_tpm_state('dev')
+
+        if self.cr50.get_cap('OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
+            self.cr50.set_ccd_level(self.cr50.OPEN)
+        else:
+            self.ccd_open_from_ap()
+
         if enable_testlab:
             self.cr50.set_ccd_testlab('on')
+
+        # Make sure the device is in normal mode. After opening cr50, the TPM
+        # should be cleared and the device should automatically reset to normal
+        # mode. Just check to be consistent. It's possible capabilitiy settings
+        # are set to skip wiping the TPM.
+        self.enter_mode_after_checking_tpm_state('normal')
 
 
     def run_gsctool_cmd_with_password(self, password, cmd, name, expect_error):
@@ -828,3 +898,9 @@ class Cr50Test(FirmwareTest):
             self.host.run('cryptohome --action=tpm_wait_ownership')
         self.host.run('cryptohome '
                       '--action=remove_firmware_management_parameters')
+
+    def tpm_is_responsive(self):
+        """Check TPM responsiveness by running tpm_version."""
+        result = self.host.run('tpm_version', ignore_status=True)
+        logging.debug(result.stdout.strip())
+        return not result.exit_status

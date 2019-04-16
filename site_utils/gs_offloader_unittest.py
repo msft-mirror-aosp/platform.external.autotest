@@ -5,13 +5,13 @@
 
 import __builtin__
 import Queue
-import datetime
 import logging
 import os
 import shutil
 import signal
 import stat
 import sys
+import tarfile
 import tempfile
 import time
 import unittest
@@ -21,7 +21,6 @@ import mox
 
 import common
 from autotest_lib.client.common_lib import global_config
-from autotest_lib.client.common_lib import time_utils
 from autotest_lib.client.common_lib import utils
 #For unittest without cloud_client.proto compiled.
 try:
@@ -30,6 +29,7 @@ except ImportError:
     cloud_console_client = None
 from autotest_lib.site_utils import gs_offloader
 from autotest_lib.site_utils import job_directories
+from autotest_lib.site_utils import job_directories_unittest as jd_test
 from autotest_lib.tko import models
 from autotest_lib.utils import gslib
 from autotest_lib.site_utils import pubsub_utils
@@ -37,11 +37,6 @@ from chromite.lib import timeout_util
 
 # Test value to use for `days_old`, if nothing else is required.
 _TEST_EXPIRATION_AGE = 7
-
-# When constructing sample time values for testing expiration,
-# allow this many seconds between the expiration time and the
-# current time.
-_MARGIN_SECS = 10.0
 
 
 def _get_options(argv):
@@ -259,50 +254,6 @@ class OffloaderOptionsTests(mox.MoxTestBase):
         self.mox.VerifyAll()
 
 
-def _make_timestamp(age_limit, is_expired):
-    """Create a timestamp for use by `job_directories.is_job_expired()`.
-
-    The timestamp will meet the syntactic requirements for
-    timestamps used as input to `is_job_expired()`.  If
-    `is_expired` is true, the timestamp will be older than
-    `age_limit` days before the current time; otherwise, the
-    date will be younger.
-
-    @param age_limit    The number of days before expiration of the
-                        target timestamp.
-    @param is_expired   Whether the timestamp should be expired
-                        relative to `age_limit`.
-
-    """
-    seconds = -_MARGIN_SECS
-    if is_expired:
-        seconds = -seconds
-    delta = datetime.timedelta(days=age_limit, seconds=seconds)
-    reference_time = datetime.datetime.now() - delta
-    return reference_time.strftime(time_utils.TIME_FMT)
-
-
-class JobExpirationTests(unittest.TestCase):
-    """Tests to exercise `job_directories.is_job_expired()`."""
-
-    def test_expired(self):
-        """Test detection of an expired job."""
-        timestamp = _make_timestamp(_TEST_EXPIRATION_AGE, True)
-        self.assertTrue(
-            job_directories.is_job_expired(
-                _TEST_EXPIRATION_AGE, timestamp))
-
-
-    def test_alive(self):
-        """Test detection of a job that's not expired."""
-        # N.B.  This test may fail if its run time exceeds more than
-        # about _MARGIN_SECS seconds.
-        timestamp = _make_timestamp(_TEST_EXPIRATION_AGE, False)
-        self.assertFalse(
-            job_directories.is_job_expired(
-                _TEST_EXPIRATION_AGE, timestamp))
-
-
 class _MockJobDirectory(job_directories._JobDirectory):
     """Subclass of `_JobDirectory` used as a helper for tests."""
 
@@ -334,7 +285,7 @@ class _MockJobDirectory(job_directories._JobDirectory):
                         testing.
 
         """
-        self._timestamp = _make_timestamp(days_old, False)
+        self._timestamp = jd_test.make_timestamp(days_old, False)
         self.queue_args[2] = self._timestamp
 
 
@@ -349,7 +300,7 @@ class _MockJobDirectory(job_directories._JobDirectory):
                         testing.
 
         """
-        self._timestamp = _make_timestamp(days_old, True)
+        self._timestamp = jd_test.make_timestamp(days_old, True)
         self.queue_args[2] = self._timestamp
 
 
@@ -457,200 +408,6 @@ class CommandListTests(unittest.TestCase):
         """Test `_get_cmd_list()` as for a special job with True multi."""
         job = _MockJobDirectory('hosts/host1/118-reset')
         self._command_list_assertions(job, multi=True)
-
-
-class _MockJob(object):
-    """Class to mock the return value of `AFE.get_jobs()`."""
-    def __init__(self, created):
-        self.created_on = created
-
-
-class _MockHostQueueEntry(object):
-    """Class to mock the return value of `AFE.get_host_queue_entries()`."""
-    def __init__(self, finished):
-        self.finished_on = finished
-
-
-class _MockSpecialTask(object):
-    """Class to mock the return value of `AFE.get_special_tasks()`."""
-    def __init__(self, finished):
-        self.time_finished = finished
-
-
-class JobDirectorySubclassTests(mox.MoxTestBase):
-    """Test specific to RegularJobDirectory and SpecialJobDirectory.
-
-    This provides coverage for the implementation in both
-    RegularJobDirectory and SpecialJobDirectory.
-
-    """
-
-    def setUp(self):
-        super(JobDirectorySubclassTests, self).setUp()
-        self.mox.StubOutWithMock(job_directories, '_AFE')
-
-
-    def test_regular_job_fields(self):
-        """Test the constructor for `RegularJobDirectory`.
-
-        Construct a regular job, and assert that the `dirname`
-        and `_id` attributes are set as expected.
-
-        """
-        resultsdir = '118-fubar'
-        job = job_directories.RegularJobDirectory(resultsdir)
-        self.assertEqual(job.dirname, resultsdir)
-        self.assertEqual(job._id, '118')
-
-
-    def test_special_job_fields(self):
-        """Test the constructor for `SpecialJobDirectory`.
-
-        Construct a special job, and assert that the `dirname`
-        and `_id` attributes are set as expected.
-
-        """
-        destdir = 'hosts/host1'
-        resultsdir = destdir + '/118-reset'
-        job = job_directories.SpecialJobDirectory(resultsdir)
-        self.assertEqual(job.dirname, resultsdir)
-        self.assertEqual(job._id, '118')
-
-
-    def _check_finished_job(self, jobtime, hqetimes, expected):
-        """Mock and test behavior of a finished job.
-
-        Initialize the mocks for a call to
-        `get_timestamp_if_finished()`, then simulate one call.
-        Assert that the returned timestamp matches the passed
-        in expected value.
-
-        @param jobtime Time used to construct a _MockJob object.
-        @param hqetimes List of times used to construct
-                        _MockHostQueueEntry objects.
-        @param expected Expected time to be returned by
-                        get_timestamp_if_finished
-
-        """
-        job = job_directories.RegularJobDirectory('118-fubar')
-        job_directories._AFE.get_jobs(
-                id=job._id, finished=True).AndReturn(
-                        [_MockJob(jobtime)])
-        job_directories._AFE.get_host_queue_entries(
-                finished_on__isnull=False,
-                job_id=job._id).AndReturn(
-                        [_MockHostQueueEntry(t) for t in hqetimes])
-        self.mox.ReplayAll()
-        self.assertEqual(expected, job.get_timestamp_if_finished())
-        self.mox.VerifyAll()
-
-
-    def test_finished_regular_job(self):
-        """Test getting the timestamp for a finished regular job.
-
-        Tests the return value for
-        `RegularJobDirectory.get_timestamp_if_finished()` when
-        the AFE indicates the job is finished.
-
-        """
-        created_timestamp = _make_timestamp(1, True)
-        hqe_timestamp = _make_timestamp(0, True)
-        self._check_finished_job(created_timestamp,
-                                 [hqe_timestamp],
-                                 hqe_timestamp)
-
-
-    def test_finished_regular_job_multiple_hqes(self):
-        """Test getting the timestamp for a regular job with multiple hqes.
-
-        Tests the return value for
-        `RegularJobDirectory.get_timestamp_if_finished()` when
-        the AFE indicates the job is finished and the job has multiple host
-        queue entries.
-
-        Tests that the returned timestamp is the latest timestamp in
-        the list of HQEs, regardless of the returned order.
-
-        """
-        created_timestamp = _make_timestamp(2, True)
-        older_hqe_timestamp = _make_timestamp(1, True)
-        newer_hqe_timestamp = _make_timestamp(0, True)
-        hqe_list = [older_hqe_timestamp,
-                    newer_hqe_timestamp]
-        self._check_finished_job(created_timestamp,
-                                 hqe_list,
-                                 newer_hqe_timestamp)
-        self.mox.ResetAll()
-        hqe_list.reverse()
-        self._check_finished_job(created_timestamp,
-                                 hqe_list,
-                                 newer_hqe_timestamp)
-
-
-    def test_finished_regular_job_null_finished_times(self):
-        """Test getting the timestamp for an aborted regular job.
-
-        Tests the return value for
-        `RegularJobDirectory.get_timestamp_if_finished()` when
-        the AFE indicates the job is finished and the job has aborted host
-        queue entries.
-
-        """
-        timestamp = _make_timestamp(0, True)
-        self._check_finished_job(timestamp, [], timestamp)
-
-
-    def test_unfinished_regular_job(self):
-        """Test getting the timestamp for an unfinished regular job.
-
-        Tests the return value for
-        `RegularJobDirectory.get_timestamp_if_finished()` when
-        the AFE indicates the job is not finished.
-
-        """
-        job = job_directories.RegularJobDirectory('118-fubar')
-        job_directories._AFE.get_jobs(
-                id=job._id, finished=True).AndReturn([])
-        self.mox.ReplayAll()
-        self.assertIsNone(job.get_timestamp_if_finished())
-        self.mox.VerifyAll()
-
-
-    def test_finished_special_job(self):
-        """Test getting the timestamp for a finished special job.
-
-        Tests the return value for
-        `SpecialJobDirectory.get_timestamp_if_finished()` when
-        the AFE indicates the job is finished.
-
-        """
-        job = job_directories.SpecialJobDirectory(
-                'hosts/host1/118-reset')
-        timestamp = _make_timestamp(0, True)
-        job_directories._AFE.get_special_tasks(
-                id=job._id, is_complete=True).AndReturn(
-                    [_MockSpecialTask(timestamp)])
-        self.mox.ReplayAll()
-        self.assertEqual(timestamp,
-                         job.get_timestamp_if_finished())
-        self.mox.VerifyAll()
-
-
-    def test_unfinished_special_job(self):
-        """Test getting the timestamp for an unfinished special job.
-
-        Tests the return value for
-        `SpecialJobDirectory.get_timestamp_if_finished()` when
-        the AFE indicates the job is not finished.
-
-        """
-        job = job_directories.SpecialJobDirectory(
-                'hosts/host1/118-reset')
-        job_directories._AFE.get_special_tasks(
-                id=job._id, is_complete=True).AndReturn([])
-        self.mox.ReplayAll()
-        self.assertIsNone(job.get_timestamp_if_finished())
-        self.mox.VerifyAll()
 
 
 class _TempResultsDirTestCase(unittest.TestCase):
@@ -1026,6 +783,25 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         timestamp_cts_v2_folder = os.path.join(cts_v2_result_folder, timestamp_str)
         timestamp_gts_folder = os.path.join(gts_result_folder, timestamp_str)
 
+        # Build host keyvals set to parse model info.
+        host_info_path = os.path.join(host_folder, 'host_keyvals')
+        dir_to_create = '/'
+        for tdir in host_info_path.split('/'):
+            dir_to_create = os.path.join(dir_to_create, tdir)
+            if not os.path.exists(dir_to_create):
+                os.mkdir(dir_to_create)
+        with open(os.path.join(host_info_path, 'chromeos4-row9-rack11-host22'), 'w') as store_file:
+            store_file.write('labels=board%3Acoral,hw_video_acc_vp9,cros,'+
+                             'hw_jpeg_acc_dec,bluetooth,model%3Arobo360,'+
+                             'accel%3Acros-ec,'+
+                             'sku%3Arobo360_IntelR_CeleronR_CPU_N3450_1_10GHz_4Gb')
+
+        # .autoserv_execute file is needed for the test results package to look
+        # legit.
+        autoserve_path = os.path.join(host_folder, '.autoserv_execute')
+        with open(autoserve_path, 'w') as temp_file:
+            temp_file.write(' ')
+
         # Test results in cts_result_folder with a different time-stamp.
         timestamp_str_2 = '2016.04.28_10.41.44'
         timestamp_cts_folder_2 = os.path.join(cts_result_folder, timestamp_str_2)
@@ -1037,7 +813,9 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
 
         path_pattern_pair = [(timestamp_cts_folder, gs_offloader.CTS_RESULT_PATTERN),
                              (timestamp_cts_folder_2, gs_offloader.CTS_RESULT_PATTERN),
+                             (timestamp_cts_folder_2, gs_offloader.CTS_COMPRESSED_RESULT_PATTERN),
                              (timestamp_cts_v2_folder, gs_offloader.CTS_V2_RESULT_PATTERN),
+                             (timestamp_cts_v2_folder, gs_offloader.CTS_V2_COMPRESSED_RESULT_PATTERN),
                              (timestamp_gts_folder, gs_offloader.CTS_V2_RESULT_PATTERN)]
 
         # Create timestamp.zip file_path.
@@ -1050,15 +828,29 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         cts_result_file = os.path.join(timestamp_cts_folder, 'testResult.xml')
         cts_result_file_2 = os.path.join(timestamp_cts_folder_2,
                                          'testResult.xml')
+        cts_result_compressed_file_2 = os.path.join(timestamp_cts_folder_2,
+                                                     'testResult.xml.tgz')
         gts_result_file = os.path.join(timestamp_gts_folder, 'test_result.xml')
         cts_v2_result_file = os.path.join(timestamp_cts_v2_folder,
                                          'test_result.xml')
+        cts_v2_result_compressed_file = os.path.join(timestamp_cts_v2_folder,
+                                         'test_result.xml.tgz')
 
         for file_path in [cts_zip_file, cts_zip_file_2, cts_v2_zip_file,
                           gts_zip_file, cts_result_file, cts_result_file_2,
-                          gts_result_file, cts_v2_result_file]:
-            with open(file_path, 'w') as f:
-                f.write('test')
+                          cts_result_compressed_file_2, gts_result_file,
+                          cts_v2_result_file, cts_v2_result_compressed_file]:
+          if file_path.endswith('tgz'):
+              test_result_file = gs_offloader.CTS_COMPRESSED_RESULT_TYPES[
+                      os.path.basename(file_path)]
+              with open(test_result_file, 'w') as f:
+                  f.write('test')
+              with tarfile.open(file_path, 'w:gz') as tar_file:
+                  tar_file.add(test_result_file)
+              os.remove(test_result_file)
+          else:
+              with open(file_path, 'w') as f:
+                  f.write('test')
 
         return (results_folder, host_folder, path_pattern_pair)
 
@@ -1094,6 +886,7 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         for path, pattern in path_pattern_pair:
             models.test.parse_job_keyval(mox.IgnoreArg()).AndReturn({
                 'build': 'veyron_minnie-cheets-release/R52-8248.0.0',
+                'hostname': 'chromeos4-row9-rack11-host22',
                 'parent_job_id': 'p_id',
                 'suite': 'arc-cts'
             })

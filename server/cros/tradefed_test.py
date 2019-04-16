@@ -38,12 +38,6 @@ from autotest_lib.server.cros import tradefed_chromelogin as login
 from autotest_lib.server.cros import tradefed_constants as constants
 from autotest_lib.server.cros import tradefed_utils
 
-# TODO(ihf): If akeshet doesn't fix crbug.com/691046 delete metrics again.
-try:
-    from chromite.lib import metrics
-except ImportError:
-    metrics = utils.metrics_mock
-
 # For convenience, add to our scope.
 parse_tradefed_result = tradefed_utils.parse_tradefed_result
 adb_keepalive = tradefed_utils.adb_keepalive
@@ -53,14 +47,22 @@ class TradefedTest(test.test):
     """Base class to prepare DUT to run tests via tradefed."""
     version = 1
 
-    # Default max_retry based on board and channel.
-    _BOARD_RETRY = {}
-    _CHANNEL_RETRY = {'dev': 5}
+    # Default and upperbounds of max_retry, based on board and revision
+    # after branching (that is, 'y' of R74-12345.y.z).
+    #
+    # By default, 0<=y<1 does 5 retries and 1<=y does 10. The |max_retry|
+    # parameter in control files can override the count, within the
+    # _BRANCH_MAX_RETRY limit below.
+    _BRANCH_DEFAULT_RETRY = [(0, 5), (1, 10)]  # dev=5, beta=stable=10
+    _BRANCH_MAX_RETRY = [(0, 5), (1, 10),      # dev=5, beta=10, stable=99
+        (constants.APPROXIMATE_STABLE_BRANCH_NUMBER, 99)]
+    # TODO(kinaba): betty-arcnext
+    _BOARD_MAX_RETRY = {'betty': 0}
 
     _SHARD_CMD = None
     _board_arch = None
     _board_name = None
-    _release_channel = None
+    _release_branch_number = None  # The 'y' of OS version Rxx-xxxxx.y.z
     _android_version = None
     _num_media_bundles = 0
     _perf_results = []
@@ -81,8 +83,10 @@ class TradefedTest(test.test):
                    host=None,
                    hosts=None,
                    max_retry=None,
+                   load_waivers=True,
                    retry_manual_tests=False,
-                   warn_on_test_retry=True):
+                   warn_on_test_retry=True,
+                   hard_reboot_on_failure=False):
         """Sets up the tools and binary bundles for the test."""
         self._install_paths = []
         # TODO(pwang): Remove host if we enable multiple hosts everywhere.
@@ -139,7 +143,10 @@ class TradefedTest(test.test):
                                         self._get_tradefed_base_dir())
 
         # Load expected test failures to exclude them from re-runs.
-        self._waivers = self._get_expected_failures('expectations', bundle)
+        self._waivers = set()
+        if load_waivers:
+            self._waivers.update(
+                    self._get_expected_failures('expectations', bundle))
         if not retry_manual_tests:
             self._waivers.update(
                     self._get_expected_failures('manual_tests', bundle))
@@ -147,6 +154,7 @@ class TradefedTest(test.test):
         # Load modules with no tests.
         self._notest_modules = self._get_expected_failures('notest_modules',
                 bundle)
+        self._hard_reboot_on_failure = hard_reboot_on_failure
 
     def cleanup(self):
         """Cleans up any dirtied state."""
@@ -156,11 +164,13 @@ class TradefedTest(test.test):
                 self._run_adb_cmd(host, verbose=True, args=('kill-server',))
             except (error.CmdError, AttributeError):
                 pass
-        logging.info('Cleaning up %s.', self._tradefed_install)
-        try:
-            shutil.rmtree(self._tradefed_install)
-        except IOError:
-            pass
+
+        if hasattr(self, '_tradefed_install'):
+            logging.info('Cleaning up %s.', self._tradefed_install)
+            try:
+                shutil.rmtree(self._tradefed_install)
+            except IOError:
+                pass
 
         # Create perf data for Chromeperf.
         for perf in self._perf_results:
@@ -284,29 +294,37 @@ class TradefedTest(test.test):
         @param host: DUT that need to be connected.
         @return boolean indicating if adb connected successfully.
         """
-        # This may fail return failure due to a race condition in adb connect
-        # (b/29370989). If adb is already connected, this command will
-        # immediately return success.
-        host_port = self._get_adb_target(host)
-        result = self._run_adb_cmd(
-            host, args=('connect', host_port), verbose=True, ignore_status=True)
-        if result.exit_status != 0:
-            return False
+        try:
+            # This may fail return failure due to a race condition in adb
+            # connect (b/29370989). If adb is already connected, this command
+            # will immediately return success.
+            host_port = self._get_adb_target(host)
+            result = self._run_adb_cmd(
+                host, args=('connect', host_port), verbose=True,
+                ignore_status=True,
+                timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+            if result.exit_status != 0:
+                return False
 
-        result = self._run_adb_cmd(host, args=('devices',))
-        if not re.search(r'{}\s+(device|unauthorized)'.format(
-                re.escape(host_port)), result.stdout):
-            logging.info('No result found in with pattern: %s',
-                         r'{}\s+(device|unauthorized)'.format(
-                             re.escape(host_port)))
-            return False
+            result = self._run_adb_cmd(host, args=('devices',),
+                timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+            if not re.search(r'{}\s+(device|unauthorized)'.format(
+                    re.escape(host_port)), result.stdout):
+                logging.info('No result found in with pattern: %s',
+                             r'{}\s+(device|unauthorized)'.format(
+                                 re.escape(host_port)))
+                return False
 
-        # Actually test the connection with an adb command as there can be
-        # a race between detecting the connected device and actually being
-        # able to run a commmand with authenticated adb.
-        result = self._run_adb_cmd(
-            host, args=('shell', 'exit'), ignore_status=True)
-        return result.exit_status == 0
+            # Actually test the connection with an adb command as there can be
+            # a race between detecting the connected device and actually being
+            # able to run a commmand with authenticated adb.
+            result = self._run_adb_cmd(
+                host, args=('shell', 'exit'), ignore_status=True,
+                timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+            return result.exit_status == 0
+        except error.CmdTimeoutError as e:
+            logging.warning(e)
+            return False
 
     def _android_shell(self, host, command):
         """Run a command remotely on the device in an android shell
@@ -351,7 +369,6 @@ class TradefedTest(test.test):
         # adbd may take some time to come up. Repeatedly try to connect to adb.
         utils.poll_for_condition(
             lambda: self._try_adb_connect(host),
-            exception=error.TestFail('Error: Failed to set up adb connection'),
             timeout=constants.ADB_READY_TIMEOUT_SECONDS,
             sleep_interval=constants.ADB_POLLING_INTERVAL_SECONDS)
 
@@ -402,16 +419,24 @@ class TradefedTest(test.test):
         pubkey_path = key_path + '.pub'
         self._run_adb_cmd(verbose=True, args=('keygen', pipes.quote(key_path)))
         os.environ['ADB_VENDOR_KEYS'] = key_path
-        # Kill existing adb server to ensure that the env var is picked up.
-        self._run_adb_cmd(verbose=True, args=('kill-server',))
 
-        # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
-        #              Parallelize it if it becomes a bottleneck.
-        for host in self._hosts:
-            self._connect_adb(host, pubkey_path)
-            self._disable_adb_install_dialog(host)
-            self._wait_for_arc_boot(host)
-        self._verify_arc_hosts()
+        for _ in range(2):
+            try:
+                # Kill existing adb server to ensure that the env var is picked
+                # up, and reset any previous bad state.
+                self._run_adb_cmd(verbose=True, args=('kill-server',))
+
+                # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
+                #              Parallelize it if it becomes a bottleneck.
+                for host in self._hosts:
+                    self._connect_adb(host, pubkey_path)
+                    self._disable_adb_install_dialog(host)
+                    self._wait_for_arc_boot(host)
+                self._verify_arc_hosts()
+                return
+            except (utils.TimeoutError, error.CmdTimeoutError):
+                logging.error('Failed to set up adb connection. Retrying...')
+        raise error.TestFail('Error: Failed to set up adb connection')
 
     def _safe_makedirs(self, path):
         """Creates a directory at |path| and its ancestors.
@@ -784,11 +809,12 @@ class TradefedTest(test.test):
                       'ro.product.cpu.abilist')).stdout.split(',')
         return self._abilist
 
-    def _get_release_channel(self):
-        """Returns the DUT channel of the image ('dev', 'beta', 'stable')."""
-        if not self._release_channel:
-            self._release_channel = self._hosts[0].get_channel() or 'dev'
-        return self._release_channel
+    def _get_release_branch_number(self):
+        """Returns the DUT branch number (z of Rxx-yyyyy.z.w) or 0 on error."""
+        if not self._release_branch_number:
+            ver = (self._hosts[0].get_release_version() or '').split('.')
+            self._release_branch_number = (int(ver[1]) if len(ver) >= 3 else 0)
+        return self._release_branch_number
 
     def _get_board_arch(self):
         """Return target DUT arch name."""
@@ -818,9 +844,11 @@ class TradefedTest(test.test):
         @param max_retry: max_retry specified in the control file.
         @return: number of retries for this specific host.
         """
+        if max_retry is None:
+            max_retry = self._get_branch_retry(self._BRANCH_DEFAULT_RETRY)
         candidate = [max_retry]
         candidate.append(self._get_board_retry())
-        candidate.append(self._get_channel_retry())
+        candidate.append(self._get_branch_retry(self._BRANCH_MAX_RETRY))
         return min(x for x in candidate if x is not None)
 
     def _get_board_retry(self):
@@ -829,19 +857,19 @@ class TradefedTest(test.test):
         @return: number of max_retry or None.
         """
         board = self._get_board_name()
-        if board in self._BOARD_RETRY:
-            return self._BOARD_RETRY[board]
+        if board in self._BOARD_MAX_RETRY:
+            return self._BOARD_MAX_RETRY[board]
         logging.info('No board retry specified for board: %s', board)
         return None
 
-    def _get_channel_retry(self):
-        """Returns the maximum number of retries for DUT image channel."""
-        channel = self._get_release_channel()
-        if channel in self._CHANNEL_RETRY:
-            return self._CHANNEL_RETRY[channel]
-        retry = self._CHANNEL_RETRY['dev']
-        logging.warning('Could not establish channel. Using retry=%d.', retry)
-        return retry
+    def _get_branch_retry(self, table):
+        """Returns the retry count for DUT branch number defined in |table|."""
+        number = self._get_release_branch_number()
+        for lowerbound, retry in reversed(table):
+            if lowerbound <= number:
+                return retry
+        logging.warning('Could not establish channel. Using retry=0.')
+        return 0
 
     def _run_precondition_scripts(self, commands, steps):
         """Run precondition scripts on all the hosts."""
@@ -996,6 +1024,7 @@ class TradefedTest(test.test):
                                    test_name,
                                    run_template,
                                    retry_template,
+                                   timeout,
                                    needs_push_media=False,
                                    target_module=None,
                                    target_plan=None,
@@ -1009,6 +1038,12 @@ class TradefedTest(test.test):
         We first kick off the specified module. Then rerun just the failures
         on the next MAX_RETRY iterations.
         """
+        # On dev and beta channels timeouts are sharp, lenient on stable.
+        self._timeout = timeout
+        if (self._get_release_branch_number() >=
+                constants.APPROXIMATE_STABLE_BRANCH_NUMBER):
+            self._timeout += 3600
+
         if self._should_skip_test(bundle):
             logging.warning('Skipped test %s', ' '.join(test_name))
             return
@@ -1032,6 +1067,12 @@ class TradefedTest(test.test):
             with self._login_chrome(
                     board=board,
                     reboot=self._should_reboot(steps),
+                    # TODO(rohitbm): Evaluate if power cycle really helps with
+                    # Bluetooth test failures, and then make the implementation
+                    # more strict by first running complete restart and reboot
+                    # retries and then perform power cycle.
+                    hard_reboot_on_failure=(self._hard_reboot_on_failure
+                                     and steps == self._max_retry),
                     dont_override_profile=keep_media) as current_logins:
                 self._ready_arc()
                 self._calculate_timeout_factor(bundle)
@@ -1108,6 +1149,13 @@ class TradefedTest(test.test):
                 if failed <= waived and all_done:
                     break
 
+                # TODO(b/127908450) Tradefed loses track of not-executed tests
+                # when the commandline pattern included '*', and retry run for
+                # them wrongly declares all tests passed. This is misleading.
+                # Rather, we give up the retry and report the result as FAIL.
+                if not all_done and '*' in ''.join(run_template):
+                    break
+
         # Tradefed finished normally. Record the failures to perf.
         if target_module:
             # Only record the failure by module, which exclude 'all', 'collects-tests-only', etc.
@@ -1116,6 +1164,9 @@ class TradefedTest(test.test):
                 value=failed,
                 graph=bundle
             ))
+
+        if session_id == None:
+            raise error.TestFail('Error: Could not find any tests in module.')
 
         if failed <= waived and all_done:
             if not all(accurate):
@@ -1134,8 +1185,6 @@ class TradefedTest(test.test):
                                        self.summary))
             return
 
-        if session_id == None:
-            raise error.TestFail('Error: Could not find any tests in module.')
         raise error.TestFail(
             'Failed: after %d retries giving up. '
             'passed=%d, failed=%d, waived=%d%s%s. %s' %

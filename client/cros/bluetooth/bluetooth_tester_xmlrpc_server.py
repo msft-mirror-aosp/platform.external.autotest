@@ -44,9 +44,12 @@ class BluetoothTesterXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         'peripheral': LE_PROFILE
     }
 
+    # Class of device/service. This can be generated using
+    # http://bluetooth-pentest.narod.ru/software/bluetooth_class_of_device-service_generator.html
+
     PROFILE_CLASS = {
-        'computer': 0x000104,
-        'peripheral': None
+        'computer': 0x000104, # Desktop computer.
+        'peripheral': 0x000504 # Keyboard.
     }
 
     PROFILE_NAMES = {
@@ -208,6 +211,19 @@ class BluetoothTesterXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                     is None):
             logging.warning('Failed to set local name')
             return False
+
+        # Check and set discoverable property
+        if ((profile_settings ^ current_settings) &
+                    bluetooth_socket.MGMT_SETTING_DISCOVERABLE):
+            logging.debug('Set discoverable to %x ',
+                          profile_settings &
+                          bluetooth_socket.MGMT_SETTING_DISCOVERABLE)
+            if self._control.set_discoverable(
+                   self.index,
+                   profile_settings &
+                   bluetooth_socket.MGMT_SETTING_DISCOVERABLE) is None:
+                logging.warning('Failed to set discoverable setting')
+                return False
 
         # Now the settings have been set, power up the adapter.
         if not self._control.set_powered(

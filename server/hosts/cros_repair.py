@@ -362,10 +362,8 @@ class JetstreamAttestationVerifier(hosts.Verifier):
                 raise hosts.AutoservVerifyError(
                         'Attestation has not been prepared')
 
-            # This output is in text protobuf format.
-            result = host.run('ap-attestation-client '
-                              '--endpoint=get-endorsement-information')
-            if 'ek_certificate' not in result.stdout:
+            result = host.run('cryptohome --action=tpm_attestation_get_ek')
+            if 'EK Certificate' not in result.stdout:
                 raise hosts.AutoservVerifyError(
                         'Endorsement certificate not found')
         except error.AutoservRunError:
@@ -815,8 +813,10 @@ def _is_virtual_machine(host):
     @param host: a hosts.Host object.
     @returns True if the host is a virtual machine, False otherwise.
     """
-    output = host.run('cat /proc/cpuinfo | grep "model name"')
-    return output.stdout and 'qemu' in output.stdout.lower()
+    output = host.run('cat /proc/cpuinfo | grep "model name"',
+                      ignore_status=True)
+    return (output.exit_status == 0 and output.stdout and
+            'qemu' in output.stdout.lower())
 
 
 class CryptohomeStatus(dict):

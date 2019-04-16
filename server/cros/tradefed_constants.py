@@ -11,7 +11,8 @@ ADB_DIR = 'gs://chromeos-arc-images/builds/git_master/4605730'
 ADB_FILES = ['adb']
 
 ADB_POLLING_INTERVAL_SECONDS = 1
-ADB_READY_TIMEOUT_SECONDS = 60
+ADB_CONNECT_TIMEOUT_SECONDS = 10
+ADB_READY_TIMEOUT_SECONDS = 30
 ANDROID_ADB_KEYS_PATH = '/data/misc/adb/adb_keys'
 
 ARC_POLLING_INTERVAL_SECONDS = 1
@@ -46,5 +47,8 @@ TRADEFED_MEDIA_PATH = '/tmp/android-cts-media'
 
 # It looks like the GCE builder can be very slow and login on VMs take much
 # longer than on hardware or bare metal.
-LOGIN_BOARD_TIMEOUT = {'betty': 300}
+LOGIN_BOARD_TIMEOUT = {'betty': 300, 'betty-arcnext': 300}
 LOGIN_DEFAULT_TIMEOUT = 90
+
+# Approximately assume ChromeOS revision Rdd-xxxxx.y.z with y>=45 as stable.
+APPROXIMATE_STABLE_BRANCH_NUMBER = 45

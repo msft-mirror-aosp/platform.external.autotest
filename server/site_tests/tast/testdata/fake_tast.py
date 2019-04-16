@@ -88,9 +88,13 @@ def parse_args():
     def add_common_args(subparser):
         """Adds arguments shared between tast's 'list' and 'run' subcommands."""
         subparser.add_argument('-build', type=to_bool, default=True, nargs='?')
+        subparser.add_argument('-downloadprivatebundles', type=to_bool,
+                               default=False, nargs='?')
+        subparser.add_argument('-devservers')
         subparser.add_argument('-remotebundledir')
         subparser.add_argument('-remotedatadir')
         subparser.add_argument('-remoterunner')
+        subparser.add_argument('-sshretries')
         subparser.add_argument('target')
         subparser.add_argument('patterns', action='append', nargs='*')
 
@@ -103,7 +107,6 @@ def parse_args():
     run_parser.add_argument('-resultsdir')
     run_parser.add_argument('-waituntilready')
     run_parser.add_argument('-timeout')
-    run_parser.add_argument('-devservers')
 
     return parser.parse_args()
 

@@ -60,13 +60,14 @@ def make_parser():
     parser.add_argument(
         '--priority', type=int,
         default=swarming_lib.SKYLAB_HWTEST_PRIORITIES_MAP['Default'],
-        choices=[value for name, value in
-                 swarming_lib.SORTED_SKYLAB_HWTEST_PRIORITY],
-        help=('The priority to run the suite. A high value means this suite '
-              'will be executed in a low priority, e.g. being delayed to '
-              'execute. Each numerical value represents: '+ ', '.join([
-                  '(%s: %d)' % (name, value) for name, value in
-                  swarming_lib.SORTED_SKYLAB_HWTEST_PRIORITY])))
+        choices=range(50,256),
+        # The default metavar in this case is a list of 250 numbers.
+        metavar='PRIORITY',
+        help=('The priority (50-255) to run the suite. A high value means '
+              'this suite will be executed in a low priority, e.g. being '
+              'delayed to execute. Some common values: '+ ', '.join([
+                  '%s=%d' % (name, value) for name, value in
+                  swarming_lib.SORTED_SKYLAB_HWTEST_PRIORITY]) + '.'))
     parser.add_argument(
         "--suite_args", type=ast.literal_eval, default=None,
         action="store",
@@ -83,6 +84,10 @@ def make_parser():
         help=("Quota account to be used for this suite's jobs, if applicable. "
               "Only relevant for jobs running in a quota scheduler pool "
               "(e.g. quota-metered)."))
+    parser.add_argument(
+        '--swarming_auth_json', default=swarming_lib.DEFAULT_SERVICE_ACCOUNT,
+        action='store', help="Path to swarming service account json creds. "
+        "Specify '' to omit. Otherwise, defaults to bot's default creds.")
 
     # TODO(ayatane): Make sure no callers pass --use_fallback before removing.
     parser.add_argument(

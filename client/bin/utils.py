@@ -8,6 +8,7 @@ Convenience functions for use by tests or whomever.
 
 # pylint: disable=missing-docstring
 
+import base64
 import collections
 import commands
 import fnmatch
@@ -887,6 +888,15 @@ def get_disk_firmware_version(disk_name):
     return utils.system_output(cmd)
 
 
+def is_disk_nvme(disk_name):
+    """
+    Return true if disk is a nvme device, return false otherwise
+
+    @param disk_name: disk name to check
+    """
+    return re.match('/dev/nvme[0-9]+n[0-9]+', disk_name)
+
+
 def is_disk_scsi(disk_name):
     """
     Return true if disk is a scsi device, return false otherwise
@@ -945,6 +955,20 @@ def verify_hdparm_feature(disk_name, feature):
     else:
         raise error.TestFail('Error running command %s' % cmd)
 
+def get_nvme_id_ns_feature(disk_name, feature):
+    """
+    Return feature value for NVMe disk using nvme id-ns
+
+    @param disk_name: target disk
+    @param feature: output string of the feature
+    """
+    cmd = "nvme id-ns -n 1 %s | grep %s" % (disk_name, feature)
+    feat = utils.system_output(cmd, ignore_status=True)
+    if not feat:
+        return 'None'
+    start = feat.find(':')
+    value = feat[start+2:]
+    return value
 
 def get_storage_error_msg(disk_name, reason):
     """
@@ -1734,6 +1758,36 @@ def wait_for_cool_machine():
     return False
 
 
+def report_temperature(test, keyname):
+    """Report current max observed temperature with given keyname.
+
+    @param test: autotest_lib.client.bin.test.test instance
+    @param keyname: key to be used when reporting perf value.
+    """
+    temperature = get_temperature_input_max()
+    logging.info('%s = %f degree Celsius', keyname, temperature)
+    test.output_perf_value(
+        description=keyname,
+        value=temperature,
+        units='Celsius',
+        higher_is_better=False)
+
+
+def report_temperature_critical(test, keyname):
+    """Report temperature at which we will see throttling with given keyname.
+
+    @param test: autotest_lib.client.bin.test.test instance
+    @param keyname: key to be used when reporting perf value.
+    """
+    temperature = get_temperature_critical()
+    logging.info('%s = %f degree Celsius', keyname, temperature)
+    test.output_perf_value(
+        description=keyname,
+        value=temperature,
+        units='Celsius',
+        higher_is_better=False)
+
+
 # System paths for machine performance state.
 _CPUINFO = '/proc/cpuinfo'
 _DIRTY_WRITEBACK_CENTISECS = '/proc/sys/vm/dirty_writeback_centisecs'
@@ -1959,7 +2013,7 @@ def get_cpu_model():
     return cpu_model
 
 
-def get_cpu_family():
+def get_cpu_family_intel():
     """
     Returns the CPU family.
     Only works on Intel.
@@ -2433,3 +2487,143 @@ def strip_non_printable(s):
     @return: The input string with only printable characters.
     """
     return ''.join(x for x in s if x in string.printable)
+
+
+def recursive_func(obj, func, types, sequence_types=(list, tuple, set),
+                   dict_types=(dict,), fix_num_key=False):
+    """Apply func to obj recursively.
+
+    This function traverses recursively through any sequence-like and
+    dict-like elements in obj.
+
+    @param obj: the object to apply the function func recursively.
+    @param func: the function to invoke.
+    @param types: the target types in the object to apply func.
+    @param sequence_types: the sequence types in python.
+    @param dict_types: the dict types in python.
+    @param fix_num_key: to indicate if the key of a dict should be
+            converted from str type to a number, int or float, type.
+            It is a culprit of json that it always treats the key of
+            a dict as string.
+            Refer to https://docs.python.org/2/library/json.html
+            for more information.
+
+    @return: the result object after applying the func recursively.
+    """
+    def ancestors(obj, types):
+        """Any ancestor of the object class is a subclass of the types?
+
+        @param obj: the object to apply the function func.
+        @param types: the target types of the object.
+
+        @return: True if any ancestor class of the obj is found in types;
+                 False otherwise.
+        """
+        return any([issubclass(anc, types) for anc in type(obj).__mro__])
+
+    if isinstance(obj, sequence_types) or ancestors(obj, sequence_types):
+        result_lst = [recursive_func(elm, func, types, fix_num_key=fix_num_key)
+                      for elm in obj]
+        # Convert the result list to the object's original sequence type.
+        return type(obj)(result_lst)
+    elif isinstance(obj, dict_types) or ancestors(obj, dict_types):
+        result_lst = [
+                (recursive_func(key, func, types, fix_num_key=fix_num_key),
+                 recursive_func(value, func, types, fix_num_key=fix_num_key))
+                for (key, value) in obj.items()]
+        # Convert the result list to the object's original dict type.
+        return type(obj)(result_lst)
+    # Here are the basic types.
+    elif isinstance(obj, types) or ancestors(obj, types):
+        if fix_num_key:
+            # Check if this is a int or float
+            try:
+                result_obj = int(obj)
+                return result_obj
+            except ValueError:
+                try:
+                    result_obj = float(obj)
+                    return result_obj
+                except ValueError:
+                    pass
+
+        result_obj = func(obj)
+        return result_obj
+    else:
+        return obj
+
+
+def base64_recursive_encode(obj):
+    """Apply base64 encode recursively into the obj structure.
+
+    Most of the string-like types could be traced to basestring and bytearray
+    as follows:
+        str: basestring
+        bytes: basestring
+        dbus.String: basestring
+        dbus.Signature: basestring
+        dbus.ByteArray: basestring
+
+    Note that all the above types except dbus.String could be traced back to
+    str. In order to cover dbus.String, basestring is used as the ancestor
+    class for string-like types.
+
+    The other type that needs encoding with base64 in a structure includes
+        bytearray: bytearray
+
+    The sequence types include (list, tuple, set). The dbus.Array is also
+    covered as
+        dbus.Array: list
+
+    The base dictionary type is dict. The dbus.Dictionary is also covered as
+        dbus.Dictionary: dict
+
+    An example code and output look like
+        obj = {'a': 10, 'b': 'hello',
+               'c': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
+               'd': {784: bytearray(b'@\x14\x01P'),
+                     78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')}}
+        encode_obj = base64_recursive_encode(obj)
+        decode_obj = base64_recursive_decode(encode_obj)
+
+        print 'obj: ', obj
+        print 'encode_obj: ', encode_obj
+        print 'decode_obj: ', decode_obj
+        print 'Equal?', obj == decode_obj
+
+        Output:
+        obj:  {'a': 10,
+               'c': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
+               'b': 'hello',
+               'd': {784: bytearray(b'@\x14\x01P'),
+                     78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')}}
+
+        encode_obj:  {'YQ==': 10,
+                      'Yw==': [100, 200, '8PHy8/Q='],
+                      'Yg==': 'aGVsbG8='
+                      'ZA==': {784: 'QBQBUA==', 78.0: 'EAULELIbAA=='}}
+        decode_obj:  {'a': 10,
+                      'c': [100, 200, '\xf0\xf1\xf2\xf3\xf4'],
+                      'b': 'hello',
+                      'd': {784: '@\x14\x01P',
+                            78.0: '\x10\x05\x0b\x10\xb2\x1b\x00'}}
+        Equal? True
+
+    @param obj: the object to apply base64 encoding recursively.
+
+    @return: the base64 encoded object.
+    """
+    encode_types = (basestring, bytearray)
+    return recursive_func(obj, base64.standard_b64encode, encode_types)
+
+
+def base64_recursive_decode(obj):
+    """Apply base64 decode recursively into the obj structure.
+
+    @param obj: the object to apply base64 decoding recursively.
+
+    @return: the base64 decoded object.
+    """
+    decode_types = (basestring,)
+    return recursive_func(obj, base64.standard_b64decode, decode_types,
+                          fix_num_key=True)

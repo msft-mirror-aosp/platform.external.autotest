@@ -25,16 +25,16 @@ from autotest_lib.site_utils import hwid_lib
 LsbOutput = collections.namedtuple('LsbOutput', ['unibuild', 'board'])
 
 def _parse_lsb_output(host):
-  """Parses the LSB output and returns key data points for labeling.
+    """Parses the LSB output and returns key data points for labeling.
 
-  @param host: Host that the command will be executed against
-  @returns: LsbOutput with the result of parsing the /etc/lsb-release output
-  """
-  release_info = utils.parse_cmd_output('cat /etc/lsb-release',
-                                        run_method=host.run)
+    @param host: Host that the command will be executed against
+    @returns: LsbOutput with the result of parsing the /etc/lsb-release output
+    """
+    release_info = utils.parse_cmd_output('cat /etc/lsb-release',
+                                          run_method=host.run)
 
-  unibuild = release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1'
-  return LsbOutput(unibuild, release_info['CHROMEOS_RELEASE_BOARD'])
+    unibuild = release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1'
+    return LsbOutput(unibuild, release_info['CHROMEOS_RELEASE_BOARD'])
 
 
 class BoardLabel(base_label.StringPrefixLabel):
@@ -48,6 +48,9 @@ class BoardLabel(base_label.StringPrefixLabel):
         # label switching on us if the wrong builds get put on the devices.
         # crbug.com/624207 records one event of the board label switching
         # unexpectedly on us.
+        board = host.host_info_store.get().board
+        if board:
+            return [board]
         for label in host._afe_host.labels:
             if label.startswith(self._NAME + ':'):
                 return [label.split(':')[-1]]
@@ -63,6 +66,9 @@ class ModelLabel(base_label.StringPrefixLabel):
     def generate_labels(self, host):
         # Based on the issue explained in BoardLabel, return the existing
         # label if it has already been set once.
+        model = host.host_info_store.get().model
+        if model:
+            return [model]
         for label in host._afe_host.labels:
             if label.startswith(self._NAME + ':'):
                 return [label.split(':')[-1]]
@@ -417,33 +423,6 @@ class ServoLabel(base_label.BaseLabel):
                 and servo_host.servo_host_is_up(servo_host_hostname))
 
 
-class VideoLabel(base_label.StringLabel):
-    """Labels detailing video capabilities."""
-
-    # List gathered from
-    # https://chromium.googlesource.com/chromiumos/
-    # platform2/+/master/avtest_label_detect/main.c#19
-    # TODO(hiroh): '4k_video' won't be used. It will be removed in the future.
-    _NAME = [
-        'hw_jpeg_acc_dec',
-        'hw_video_acc_h264',
-        'hw_video_acc_vp8',
-        'hw_video_acc_vp9',
-        'hw_video_acc_enc_h264',
-        'hw_video_acc_enc_vp8',
-        'webcam',
-        '4k_video',
-        '4k_video_h264',
-        '4k_video_vp8',
-        '4k_video_vp9',
-    ]
-
-    def generate_labels(self, host):
-        result = host.run('/usr/local/bin/avtest_label_detect',
-                          ignore_status=True).stdout
-        return re.findall('^Detected label: (\w+)$', result, re.M)
-
-
 class ArcLabel(base_label.BaseLabel):
     """Label indicates if host has ARC support."""
 
@@ -483,46 +462,6 @@ class CtsArchLabel(base_label.StringLabel):
         abi_labels = ['cts_abi_' + abi for abi in self._get_cts_abis(cpu_arch)]
         cpu_labels = ['cts_cpu_' + cpu for cpu in self._get_cts_cpus(cpu_arch)]
         return abi_labels + cpu_labels
-
-
-class SparseCoverageLabel(base_label.StringLabel):
-    """Label indicates if it is desirable to cover a test for this build."""
-
-    # Prime numbers. We can easily construct 6, 10, 15 and 30 from these.
-    _NAME = ['sparse_coverage_2', 'sparse_coverage_3', 'sparse_coverage_5']
-
-    def _should_cover(self, host, nth_build):
-        release_info = utils.parse_cmd_output(
-            'cat /etc/lsb-release', run_method=host.run)
-        build = release_info.get('CHROMEOS_RELEASE_BUILD_NUMBER')
-        branch = release_info.get('CHROMEOS_RELEASE_BRANCH_NUMBER')
-        patch = release_info.get('CHROMEOS_RELEASE_PATCH_NUMBER')
-        builder = release_info.get('CHROMEOS_RELEASE_BUILDER_PATH')
-        if not 'release' in builder:
-            # Sparse coverage only makes sense on release/canary builds.
-            return True
-        if patch != '0':
-            # We are on a paladin or pfq build. These are never sparse.
-            # Redundant with release check above but just in case.
-            return True
-        if branch != '0':
-            # We are on a branch. For now these are not sparse.
-            # TODO(ihf): Consider sparse coverage on beta.
-            return True
-        # Now we can be sure we are on master.
-        if int(build) % nth_build == 0:
-            # We only want to cover one in n builds on master. This is the
-            # lucky one.
-            return True
-        # We skip all other builds on master.
-        return False
-
-    def generate_labels(self, host):
-        labels = []
-        for n in [2, 3, 5]:
-            if self._should_cover(host, n):
-                labels.append('sparse_coverage_%d' % n)
-        return labels
 
 
 class VideoGlitchLabel(base_label.BaseLabel):
@@ -647,6 +586,23 @@ class FingerprintLabel(base_label.BaseLabel):
                         ignore_status=True).exit_status == 0
 
 
+class ReferenceDesignLabel(base_label.StringPrefixLabel):
+    """Determine the correct reference design label for the device. """
+
+    _NAME = 'reference_design'
+
+    def __init__(self):
+        self.response = None
+
+    def exists(self, host):
+        self.response = host.run('mosys platform family', ignore_status=True)
+        return self.response.exit_status == 0
+
+    def generate_labels(self, host):
+        if self.exists(host):
+            return [self.response.stdout.strip()]
+
+
 CROS_LABELS = [
     AccelsLabel(),
     ArcLabel(),
@@ -668,9 +624,8 @@ CROS_LABELS = [
     LightSensorLabel(),
     LucidSleepLabel(),
     PowerSupplyLabel(),
+    ReferenceDesignLabel(),
     ServoLabel(),
-    SparseCoverageLabel(),
     StorageLabel(),
     VideoGlitchLabel(),
-    VideoLabel(),
 ]

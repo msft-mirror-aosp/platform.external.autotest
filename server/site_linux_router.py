@@ -186,6 +186,10 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.dhcpd_conf = '/tmp/dhcpd.%s.conf'
         self.dhcpd_leases = '/tmp/dhcpd.leases'
 
+        # TODO(crbug.com/839164): some routers fill their stateful partition
+        # with uncollected metrics.
+        self.host.run('rm -f /var/lib/metrics/uma-events', ignore_status=True)
+
         # Log the most recent message on the router so that we can rebuild the
         # suffix relevant to us when debugging failures.
         last_log_line = self.host.run('tail -1 /var/log/messages',
@@ -494,10 +498,10 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                                 strip()
         want_rng = "tpm-rng"
 
-        logging.info("Available / current RNGs on router: %r / %s",
-                     available, current)
+        logging.debug("Available / current RNGs on router: %r / %s",
+                      available, current)
         if want_rng in available and want_rng != current:
-            logging.info("Switching RNGs: %s -> %s", current, want_rng)
+            logging.debug("Switching RNGs: %s -> %s", current, want_rng)
             self.host.run('echo -n "%s" > %s' % (want_rng, self._RNG_CURRENT))
 
 
@@ -969,7 +973,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         @param client_mac string containing the mac address of the client.
         @param neighbor_list list of strings containing mac addresses of
                candidate APs.
-        @return bool True if BSS_TM_REQ is sent successfully.
+        @return string reply received from command
 
         """
         control_if = self.hostapd_instances[0].config_dict['ctrl_interface']
@@ -977,9 +981,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                    (self.cmd_hostapd_cli, control_if, client_mac,
                     ',0,0,0,0 neighbor='.join(neighbor_list)))
         ret = self.router.run(command).stdout
-        if ret.splitlines()[-1] != 'OK':
-            return False
-        return True
+        return ret.splitlines()[-1]
 
     def _prep_probe_response_footer(self, footer):
         """Write probe response footer temporarily to a local file and copy

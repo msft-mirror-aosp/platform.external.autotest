@@ -35,7 +35,7 @@ class network_WlanDriver(test.test):
                     '3.14': 'wireless-3.8/iwl7000/iwlwifi/iwlwifi.ko',
                     '4.4': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
                     '4.14': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
-                    '4.19': 'wireless/intel/iwlwifi/iwlwifi.ko',
+                    '4.19': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
             },
             'Intel 7265': {
                     '3.8': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
@@ -44,16 +44,21 @@ class network_WlanDriver(test.test):
                     '3.18': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
                     '4.4': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
                     '4.14': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
-                    '4.19': 'wireless/intel/iwlwifi/iwlwifi.ko',
+                    '4.19': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
             },
             'Intel 9000': {
                     '4.14': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
-                    '4.19': 'wireless/intel/iwlwifi/iwlwifi.ko',
+                    '4.19': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
             },
             'Intel 9260': {
                     '4.4': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
                     '4.14': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
-                    '4.19': 'wireless/intel/iwlwifi/iwlwifi.ko',
+                    '4.19': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
+            },
+            'Intel 22260': {
+                    '4.4': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
+                    '4.14': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
+                    '4.19': 'wireless/iwl7000/iwlwifi/iwlwifi.ko',
             },
             'Atheros AR9462': {
                     '3.4': 'wireless/ath/ath9k_btcoex/ath9k_btcoex.ko',
@@ -65,6 +70,9 @@ class network_WlanDriver(test.test):
                     '4.4': 'wireless/ar10k/ath/ath10k/ath10k_pci.ko',
                     '4.14': 'wireless/ath/ath10k/ath10k_pci.ko',
                     '4.19': 'wireless/ath/ath10k/ath10k_pci.ko',
+            },
+            'Qualcomm Atheros QCA6174 SDIO': {
+                    '4.19': 'wireless/ath/ath10k/ath10k_sdio.ko',
             },
             'Qualcomm WCN3990': {
                     '4.14': 'wireless/ath/ath10k/ath10k_snoc.ko',
@@ -118,18 +126,6 @@ class network_WlanDriver(test.test):
             'nyan_kitty',
     ]
 
-
-    def NoDeviceFailure(self, forgive_flaky, message):
-        """
-        No WiFi device found. Forgiveable in some suites, for some boards.
-        """
-        board = utils.get_board()
-        if forgive_flaky and board in self.EXCEPTION_BOARDS:
-            return error.TestWarn('Exception (%s): %s' % (board, message))
-        else:
-            return error.TestFail(message)
-
-
     def run_once(self, forgive_flaky=False):
         """Test main loop"""
         # full_revision looks like "3.4.0".
@@ -153,8 +149,14 @@ class network_WlanDriver(test.test):
         if wlan_ifs:
             net_if = wlan_ifs[0]
         else:
-            raise self.NoDeviceFailure(forgive_flaky,
-                                       'Found no recognized wireless device')
+            board = utils.get_board()
+            if forgive_flaky and board in self.EXCEPTION_BOARDS:
+                logging.error('Found no recognized wirelss device; '
+                              'forgiven for flaky board %s.', board)
+                # "Pass"; apparently error.TestWarn() is considered a failure.
+                return
+            else:
+                raise error.TestFail('Found no recognized wireless device')
 
         # Some systems (e.g., moblab) might blacklist certain devices. We don't
         # rely on shill for most of this test, but it can be a helpful clue if

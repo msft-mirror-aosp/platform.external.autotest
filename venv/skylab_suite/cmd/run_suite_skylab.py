@@ -25,9 +25,7 @@ PROVISION_SUITE_NAME = 'provision'
 
 
 def _parse_suite_handler_spec(options):
-    provision_num_required = 0
-    if 'num_required' in options.suite_args:
-        provision_num_required = options.suite_args['num_required']
+    provision_num_required = options.suite_args.get('num_required', 0)
 
     return cros_suite.SuiteHandlerSpec(
             suite_name=options.suite_name,
@@ -40,10 +38,10 @@ def _parse_suite_handler_spec(options):
             provision_num_required=provision_num_required)
 
 
-def _should_run(suite_spec):
+def _should_run(swarming_client, suite_spec):
     tags = {'build': suite_spec.test_source_build,
             'suite': suite_spec.suite_name}
-    tasks = swarming_lib.query_task_by_tags(tags)
+    tasks = swarming_client.query_task_by_tags(tags)
     current_task_id = suite_tracking.get_task_id_for_task_summaries(
             os.environ.get('SWARMING_TASK_ID'))
     logging.info('The current task id is: %s', current_task_id)
@@ -56,11 +54,12 @@ def _should_run(suite_spec):
 
 
 def _run_suite(options):
+    swarming_client = swarming_lib.Client(options.swarming_auth_json)
     run_suite_common = autotest.load('site_utils.run_suite_common')
     logging.info('Kicked off suite %s', options.suite_name)
     suite_spec = suite_parser.parse_suite_spec(options)
     if options.pre_check:
-        extra_task_ids = _should_run(suite_spec)
+        extra_task_ids = _should_run(swarming_client, suite_spec)
         if extra_task_ids:
             logging.info(
                     'The same suites are already run in the past: \n%s',
@@ -70,9 +69,9 @@ def _run_suite(options):
                     run_suite_common.RETURN_CODES.OK)
 
     if options.suite_name == PROVISION_SUITE_NAME:
-        suite_job = cros_suite.ProvisionSuite(suite_spec)
+        suite_job = cros_suite.ProvisionSuite(suite_spec, swarming_client)
     else:
-        suite_job = cros_suite.Suite(suite_spec)
+        suite_job = cros_suite.Suite(suite_spec, swarming_client)
 
     try:
         suite_job.prepare()
@@ -82,8 +81,9 @@ def _run_suite(options):
                 run_suite_common.RETURN_CODES.INFRA_FAILURE)
 
     suite_handler_spec = _parse_suite_handler_spec(options)
-    suite_handler = cros_suite.SuiteHandler(suite_handler_spec)
-    suite_runner.run(suite_job.test_specs,
+    suite_handler = cros_suite.SuiteHandler(suite_handler_spec, swarming_client)
+    suite_runner.run(swarming_client,
+                     suite_job.test_specs,
                      suite_handler,
                      options.dry_run)
 
@@ -113,11 +113,17 @@ def parse_args():
     return options
 
 
+def _setup_env(options):
+    """Set environment variables based on commandline options."""
+    os.environ['SWARMING_CREDS'] = options.swarming_auth_json
+
+
 def main():
     """Entry point."""
     autotest.monkeypatch()
 
     options = parse_args()
+    _setup_env(options)
     suite_tracking.setup_logging()
     result = _run_suite(options)
     logging.info('Will return from %s with status: %s',

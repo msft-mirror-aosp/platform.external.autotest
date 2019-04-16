@@ -69,6 +69,7 @@ from autotest_lib.client.common_lib import host_states
 from autotest_lib.client.common_lib import time_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import retry
+from autotest_lib.server import afe_utils
 from autotest_lib.server import constants
 from autotest_lib.server import frontend
 from autotest_lib.server import hosts
@@ -76,6 +77,7 @@ from autotest_lib.server.cros.dynamic_suite.constants import VERSION_PREFIX
 from autotest_lib.server.hosts import afe_store
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.site_utils.deployment import cmdvalidate
+from autotest_lib.site_utils.deployment.prepare import dut as preparedut
 from autotest_lib.site_utils.stable_images import build_data
 from autotest_lib.utils import labellib
 
@@ -253,7 +255,11 @@ def _update_build(afe, report_log, arguments):
 
 
 def _create_host(hostname, afe, afe_host):
-    """Create a CrosHost object for a DUT to be installed.
+    """Create a CrosHost object for the DUT.
+
+    This host object is used to update AFE label information for the DUT, but
+    can not be used for installation image on the DUT. In particular, this host
+    object does not have the servo attribute populated.
 
     @param hostname  Hostname of the target DUT.
     @param afe       A frontend.AFE object.
@@ -264,22 +270,7 @@ def _create_host(hostname, afe, afe_host):
             'afe_host': afe_host,
             'host_info_store': afe_store.AfeStore(hostname, afe),
     }
-    host = hosts.create_host(machine_dict)
-    # Stopping `servod` on the servo host will force `repair()` to
-    # restart it.  We want that restart for a few reasons:
-    #   + `servod` caches knowledge about the image on the USB stick.
-    #     We want to clear the cache to force the USB stick to be
-    #     re-imaged unconditionally.
-    #   + If there's a problem with servod that verify and repair
-    #     can't find, this provides a UI through which `servod` can
-    #     be restarted.
-    servo = servo_host.ServoHost(
-            **servo_host.get_servo_args_for_host(host))
-    servo.run('stop servod PORT=%d' % servo.servo_port,
-              ignore_status=True)
-    servo.repair()
-    host.set_servo_host(servo)
-    return host
+    return hosts.create_host(machine_dict)
 
 
 def _try_lock_host(afe_host):
@@ -329,28 +320,36 @@ def _update_host_attributes(afe, hostname, host_attrs):
     @param host_attrs   Dictionary with attributes to be applied to the
                         host.
     """
+    s_hostname, s_port, s_serial = _extract_servo_attributes(hostname,
+                                                             host_attrs)
+    afe.set_host_attribute(servo_host.SERVO_HOST_ATTR,
+                           s_hostname,
+                           hostname=hostname)
+    afe.set_host_attribute(servo_host.SERVO_PORT_ATTR,
+                           s_port,
+                           hostname=hostname)
+    if s_serial:
+        afe.set_host_attribute(servo_host.SERVO_SERIAL_ATTR,
+                               s_serial,
+                               hostname=hostname)
+
+
+def _extract_servo_attributes(hostname, host_attrs):
+    """Extract servo attributes from the host attribute dict, setting defaults.
+
+    @return (servo_hostname, servo_port, servo_serial)
+    """
     # Grab the servo hostname/port/serial from `host_attrs` if supplied.
     # For new servo V4 deployments, we require the user to supply the
     # attributes (because there are no appropriate defaults).  So, if
     # none are supplied, we assume it can't be V4, and apply the
     # defaults for servo V3.
-    host_attr_servo_host = host_attrs.get(servo_host.SERVO_HOST_ATTR)
-    host_attr_servo_port = host_attrs.get(servo_host.SERVO_PORT_ATTR)
-    host_attr_servo_serial = host_attrs.get(servo_host.SERVO_SERIAL_ATTR)
-    servo_hostname = (host_attr_servo_host or
-                      servo_host.make_servo_hostname(hostname))
-    servo_port = (host_attr_servo_port or
-                  str(servo_host.ServoHost.DEFAULT_PORT))
-    afe.set_host_attribute(servo_host.SERVO_HOST_ATTR,
-                           servo_hostname,
-                           hostname=hostname)
-    afe.set_host_attribute(servo_host.SERVO_PORT_ATTR,
-                           servo_port,
-                           hostname=hostname)
-    if host_attr_servo_serial:
-        afe.set_host_attribute(servo_host.SERVO_SERIAL_ATTR,
-                               host_attr_servo_serial,
-                               hostname=hostname)
+    s_hostname = (host_attrs.get(servo_host.SERVO_HOST_ATTR) or
+                  servo_host.make_servo_hostname(hostname))
+    s_port = (host_attrs.get(servo_host.SERVO_PORT_ATTR) or
+              str(servo_host.ServoHost.DEFAULT_PORT))
+    s_serial = host_attrs.get(servo_host.SERVO_SERIAL_ATTR)
+    return s_hostname, s_port, s_serial
 
 
 def _wait_for_idle(afe, host_id):
@@ -478,48 +477,24 @@ def _ensure_label_in_afe(afe_host, label_name, label_value):
                  afe_host.hostname))
 
 
-def _install_firmware(host):
-    """Install dev-signed firmware after removing write-protect.
+def _create_host_for_installation(host, arguments):
+    """Creates a context manager of hosts.CrosHost object for installation.
 
-    At start, it's assumed that hardware write-protect is disabled,
-    the DUT is in dev mode, and the servo's USB stick already has a
-    test image installed.
+    The host object yielded by the returned context manager is agnostic of the
+    infrastructure environment. In particular, it does not have any references
+    to the AFE.
 
-    The firmware is installed by powering on and typing ctrl+U on
-    the keyboard in order to boot the the test image from USB.  Once
-    the DUT is booted, we run a series of commands to install the
-    read-only firmware from the test image.  Then we clear debug
-    mode, and shut down.
+    @param host: A server.hosts.CrosHost object.
+    @param arguments: Parsed commandline arguments for this script.
 
-    @param host   Host instance to use for servo and ssh operations.
+    @return a context manager which yields hosts.CrosHost object.
     """
-    servo = host.servo
-    # First power on.  We sleep to allow the firmware plenty of time
-    # to display the dev-mode screen; some boards take their time to
-    # be ready for the ctrl+U after power on.
-    servo.get_power_state_controller().power_off()
-    servo.switch_usbkey('dut')
-    servo.get_power_state_controller().power_on()
-    time.sleep(10)
-    # Dev mode screen should be up now:  type ctrl+U and wait for
-    # boot from USB to finish.
-    servo.ctrl_u()
-    if not host.wait_up(timeout=host.USB_BOOT_TIMEOUT):
-        raise Exception('DUT failed to boot in dev mode for '
-                        'firmware update')
-    # Disable software-controlled write-protect for both FPROMs, and
-    # install the RO firmware.
-    for fprom in ['host', 'ec']:
-        host.run('flashrom -p %s --wp-disable' % fprom,
-                 ignore_status=True)
-    host.run('chromeos-firmwareupdate --mode=factory')
-    # Get us out of dev-mode and clear GBB flags.  GBB flags are
-    # non-zero because boot from USB was enabled.
-    host.run('/usr/share/vboot/bin/set_gbb_flags.sh 0',
-             ignore_status=True)
-    host.run('crossystem disable_dev_request=1',
-             ignore_status=True)
-    host.halt()
+    info = host.host_info_store.get()
+    s_host, s_port, s_serial = _extract_servo_attributes(host.hostname,
+                                                         info.attributes)
+    return preparedut.create_host(host.hostname, arguments.board,
+                                  arguments.model, s_host, s_port, s_serial,
+                                  arguments.logdir)
 
 
 def _install_test_image(host, arguments):
@@ -531,29 +506,33 @@ def _install_test_image(host, arguments):
     @param host       Host instance for the DUT being installed.
     @param arguments  Command line arguments with options.
     """
-    # Don't timeout probing for the host usb device, there could be a bunch
-    # of servos probing at the same time on the same servo host.  And
-    # since we can't pass None through the xml rpcs, use 0 to indicate None.
-    if not host.servo.probe_host_usb_dev(timeout=0):
-        raise Exception('No USB stick detected on Servo host')
+    repair_image = _get_cros_repair_image_name(host)
+    logging.info('Using repair image %s', repair_image)
     if arguments.dry_run:
         return
     if arguments.stageusb:
         try:
-            host.servo.image_to_servo_usb(
-                    host.stage_image_for_servo())
+            preparedut.download_image_to_servo_usb(host, repair_image)
         except Exception as e:
             logging.exception('Failed to stage image on USB: %s', e)
             raise Exception('USB staging failed')
     if arguments.install_firmware:
         try:
-            _install_firmware(host)
+            if arguments.using_servo:
+                logging.debug('Install FW using servo.')
+                preparedut.flash_firmware_using_servo(host, repair_image)
+            else:
+                logging.debug('Install FW by chromeos-firmwareupdate.')
+                preparedut.install_firmware(host, arguments.force_firmware)
         except error.AutoservRunError as e:
             logging.exception('Firmware update failed: %s', e)
-            raise Exception('chromeos-firmwareupdate failed')
+            msg = '%s failed' % (
+                    'Flashing firmware using servo' if arguments.using_servo
+                    else 'chromeos-firmwareupdate')
+            raise Exception(msg)
     if arguments.install_test_image:
         try:
-            host.servo_install()
+            preparedut.install_test_image(host)
         except error.AutoservRunError as e:
             logging.exception('Failed to install: %s', e)
             raise Exception('chromeos-install failed')
@@ -581,7 +560,10 @@ def _install_and_update_afe(afe, hostname, host_attrs, arguments):
     host = None
     try:
         host = _create_host(hostname, afe, afe_host)
-        _install_test_image(host, arguments)
+        with _create_host_for_installation(host, arguments) as host_to_install:
+            _install_test_image(host_to_install, arguments)
+            _update_servo_type_attribute(host_to_install, host)
+
         if arguments.install_test_image and not arguments.dry_run:
             host.labels.update_labels(host)
             platform_labels = afe.get_labels(
@@ -850,6 +832,18 @@ def _get_host_attributes(host_info_list, afe):
     return host_attributes
 
 
+def _get_cros_repair_image_name(host):
+    """Get the CrOS repair image name for given host.
+
+    @param host: hosts.CrosHost object. This object need not have an AFE
+                 reference.
+    """
+    info = host.host_info_store.get()
+    if not info.board:
+        raise InstallFailedError('Unknown board for given host')
+    return afe_utils.get_stable_cros_image_name(info.board)
+
+
 def install_duts(arguments):
     """Install a test image on DUTs, and deploy them.
 
@@ -900,11 +894,25 @@ def install_duts(arguments):
             gspath = _get_upload_log_path(arguments)
             sys.stderr.write('Logs will be uploaded to %s\n' % (gspath,))
             _upload_logs(arguments.logdir, gspath)
-        except Exception as e:
+        except Exception:
             upload_failure_log_path = os.path.join(arguments.logdir,
                                                    'gs_upload_failure.log')
-            with open(upload_failure_log_path, 'w') as file:
-                traceback.print_exc(limit=None, file=file)
+            with open(upload_failure_log_path, 'w') as file_:
+                traceback.print_exc(limit=None, file=file_)
             sys.stderr.write('Failed to upload logs;'
                              ' failure details are stored in {}.\n'
                              .format(upload_failure_log_path))
+
+
+def _update_servo_type_attribute(host, host_to_update):
+    """Update servo_type attribute for the DUT.
+
+    @param host              A CrOSHost with a initialized servo property.
+    @param host_to_update    A CrOSHost with AfeStore as its host_info_store.
+
+    """
+    info = host_to_update.host_info_store.get()
+    if 'servo_type' not in info.attributes:
+        logging.info("Collecting and adding servo_type attribute.")
+        info.attributes['servo_type'] = host.servo.get_servo_version()
+        host_to_update.host_info_store.commit(info)

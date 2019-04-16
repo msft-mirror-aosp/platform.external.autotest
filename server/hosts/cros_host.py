@@ -24,7 +24,6 @@ from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools, frontend_wrappers
-from autotest_lib.server.cros.faft.config.config import Config as FAFTConfig
 from autotest_lib.server.cros.servo import plankton
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
@@ -40,7 +39,7 @@ from autotest_lib.site_utils.rpm_control_system import rpm_client
 try:
     from chromite.lib import metrics
 except ImportError:
-    metrics =  utils.metrics_mock
+    metrics = utils.metrics_mock
 
 
 CONFIG = global_config.global_config
@@ -105,8 +104,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     # _USB_POWER_TIMEOUT: Time to allow for USB to power toggle ON and OFF.
     # _POWER_CYCLE_TIMEOUT: Time to allow for manual power cycle.
+    # _CHANGE_SERVO_ROLE_TIMEOUT: Time to allow DUT regain network connection
+    #                             since changing servo role will reset USB state
+    #                             and causes temporary ethernet drop.
     _USB_POWER_TIMEOUT = 5
     _POWER_CYCLE_TIMEOUT = 10
+    _CHANGE_SERVO_ROLE_TIMEOUT = 180
 
     _RPM_HOSTNAME_REGEX = ('chromeos(\d+)(-row(\d+))?-rack(\d+[a-z]*)'
                            '-host(\d+)')
@@ -125,16 +128,25 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     # Allowed values for the power_method argument.
 
-    # POWER_CONTROL_RPM: Passed as default arg for power_off/on/cycle() methods.
+    # POWER_CONTROL_RPM: Used in power_off/on/cycle() methods, default for all
+    #                    DUTs except those with servo_v4 CCD.
+    # POWER_CONTROL_CCD: Used in power_off/on/cycle() methods, default for all
+    #                    DUTs with servo_v4 CCD.
     # POWER_CONTROL_SERVO: Used in set_power() and power_cycle() methods.
     # POWER_CONTROL_MANUAL: Used in set_power() and power_cycle() methods.
     POWER_CONTROL_RPM = 'RPM'
+    POWER_CONTROL_CCD = 'CCD'
     POWER_CONTROL_SERVO = 'servoj10'
     POWER_CONTROL_MANUAL = 'manual'
 
     POWER_CONTROL_VALID_ARGS = (POWER_CONTROL_RPM,
+                                POWER_CONTROL_CCD,
                                 POWER_CONTROL_SERVO,
                                 POWER_CONTROL_MANUAL)
+
+    # CCD_SERVO: The string of servo type to compare with the return value of
+    #            self.servo.get_servo_version() to decide default power method.
+    CCD_SERVO = 'servo_v4_with_ccd_cr50'
 
     _RPM_OUTLET_CHANGED = 'outlet_changed'
 
@@ -287,6 +299,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 dut=self, servo_args=servo_args,
                 try_lab_servo=try_lab_servo,
                 try_servo_repair=try_servo_repair))
+        self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
         self._chameleon_host = chameleon_host.create_chameleon_host(
@@ -583,25 +596,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     exceptions that could be raised.
 
         """
-        def extract_from_tarball(tarball, dest_dir, image_candidates):
-            """Try extracting the image_candidates from the tarball.
-
-            @param tarball: The path of the tarball.
-            @param dest_path: The path of the destination.
-            @param image_candidates: A tuple of the paths of image candidates.
-
-            @return: The first path from the image candidates, which succeeds.
-            @raise: TestError if all the image candidates fail.
-            """
-            for image in image_candidates:
-                status = server_utils.system(
-                        ('tar xf %s -C %s %s' % (tarball, dest_dir, image)),
-                        timeout=60, ignore_status=True)
-                if status == 0:
-                    return image
-            raise error.TestError('Failed to extract the image from tarball')
-
-
         if not self.servo:
             raise error.TestError('Host %s does not have servo.' %
                                   self.hostname)
@@ -622,10 +616,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         self.hostname)
             logging.info('Will install firmware from build %s.', build)
 
-        ap_image_without_board = 'image.bin'
-        ap_image_with_board = 'image-%s.bin' % board
-        ec_image_without_board = 'ec.bin'
-        ec_image_with_board = '%s/ec.bin' % board
         ds = dev_server.ImageServer.resolve(build, self.hostname)
         ds.stage_artifacts(build, ['firmware'])
 
@@ -636,24 +626,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             ds.download_file(fwurl, local_tarball)
 
             self._clear_fw_version_labels(rw_only)
-            config = FAFTConfig(board)
-            if config.chrome_ec:
-                logging.info('Will re-program EC %snow', 'RW ' if rw_only else '')
-                ec_image = extract_from_tarball(
-                        local_tarball,
-                        tmpd.name,
-                        (ec_image_without_board, ec_image_with_board))
-                self.servo.program_ec(os.path.join(tmpd.name, ec_image), rw_only)
-            else:
-                logging.info('Not a Chrome EC, ignore re-programing it')
-            logging.info('Will re-program BIOS %snow', 'RW ' if rw_only else '')
-            ap_image = extract_from_tarball(
-                    local_tarball,
-                    tmpd.name,
-                    (ap_image_without_board, ap_image_with_board))
-            self.servo.program_bios(os.path.join(tmpd.name, ap_image), rw_only)
-            self.servo.get_power_state_controller().reset()
-            time.sleep(self.servo.BOOT_DELAY)
+            self.servo.program_firmware(board, local_tarball, rw_only)
             if utils.host_is_in_lab_zone(self.hostname):
                 self._add_fw_version_label(build, rw_only)
         finally:
@@ -855,17 +828,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def _cleanup_poweron(self):
         """Special cleanup method to make sure hosts always get power back."""
-        afe = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10)
-        hosts = afe.get_hosts(hostname=self.hostname)
-        if not hosts or not (self._RPM_OUTLET_CHANGED in
-                             hosts[0].attributes):
+        info = self.host_info_store.get()
+        if self._RPM_OUTLET_CHANGED not in info.attributes:
             return
         logging.debug('This host has recently interacted with the RPM'
                       ' Infrastructure. Ensuring power is on.')
         try:
             self.power_on()
-            afe.set_host_attribute(self._RPM_OUTLET_CHANGED, None,
-                                   hostname=self.hostname)
+            self._remove_rpm_changed_tag()
         except rpm_client.RemotePowerException:
             logging.error('Failed to turn Power On for this host after '
                           'cleanup through the RPM Infrastructure.')
@@ -877,11 +847,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.info('The device has power adapter connected and '
                              'charging. No need to try to turn RPM on '
                              'again.')
-                afe.set_host_attribute(self._RPM_OUTLET_CHANGED, None,
-                                       hostname=self.hostname)
+                self._remove_rpm_changed_tag()
             logging.info('Battery level is now at %s%%. The device may '
                          'still have enough power to run test, so no '
                          'exception will be raised.', battery_percentage)
+
+
+    def _remove_rpm_changed_tag(self):
+        info = self.host_info_store.get()
+        del info.attributes[self._RPM_OUTLET_CHANGED]
+        self.host_info_store.commit(info)
+
+
+    def _add_rpm_changed_tag(self):
+        info = self.host_info_store.get()
+        info.attributes[self._RPM_OUTLET_CHANGED] = 'true'
+        self.host_info_store.commit(info)
+
 
 
     def _is_factory_image(self):
@@ -1508,17 +1490,22 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def _set_power(self, state, power_method):
-        """Sets the power to the host via RPM, Servo or manual.
+        """Sets the power to the host via RPM, CCD, Servo or manual.
 
         @param state Specifies which power state to set to DUT
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" will be used. Valid values
-                            are the strings "RPM", "manual", "servoj10".
+                            use. By default "RPM" or "CCD" will be used based
+                            on servo type. Valid values from
+                            POWER_CONTROL_VALID_ARGS, or None to use default.
 
         """
         ACCEPTABLE_STATES = ['ON', 'OFF']
 
-        if state.upper() not in ACCEPTABLE_STATES:
+        if not power_method:
+            power_method = self.get_default_power_method()
+
+        state = state.upper()
+        if state not in ACCEPTABLE_STATES:
             raise error.TestError('State must be one of: %s.'
                                    % (ACCEPTABLE_STATES,))
 
@@ -1530,52 +1517,67 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.info('You have %d seconds to set the AC power to %s.',
                          self._POWER_CYCLE_TIMEOUT, state)
             time.sleep(self._POWER_CYCLE_TIMEOUT)
+        elif power_method == self.POWER_CONTROL_CCD:
+            servo_role = 'src' if state == 'ON' else 'snk'
+            logging.info('servo ccd power pass through detected,'
+                         ' changing servo_role to %s.', servo_role)
+            self.servo.set_servo_v4_role(servo_role)
+            if not self.ping_wait_up(timeout=self._CHANGE_SERVO_ROLE_TIMEOUT):
+                raise error.AutoservError(
+                    'DUT failed to regain network connection after %d seconds.'
+                    % self._CHANGE_SERVO_ROLE_TIMEOUT)
         else:
             if not self.has_power():
                 raise error.TestFail('DUT does not have RPM connected.')
-            afe = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10)
-            afe.set_host_attribute(self._RPM_OUTLET_CHANGED, True,
-                                   hostname=self.hostname)
-            rpm_client.set_power(self.hostname, state.upper(), timeout_mins=5)
+            self._add_rpm_changed_tag()
+            rpm_client.set_power(self, state, timeout_mins=5)
 
 
-    def power_off(self, power_method=POWER_CONTROL_RPM):
-        """Turn off power to this host via RPM, Servo or manual.
+    def power_off(self, power_method=None):
+        """Turn off power to this host via RPM, CCD, Servo or manual.
 
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" will be used. Valid values
-                            are the strings "RPM", "manual", "servoj10".
+                            use. By default "RPM" or "CCD" will be used based
+                            on servo type. Valid values from
+                            POWER_CONTROL_VALID_ARGS, or None to use default.
 
         """
         self._set_power('OFF', power_method)
 
 
-    def power_on(self, power_method=POWER_CONTROL_RPM):
-        """Turn on power to this host via RPM, Servo or manual.
+    def power_on(self, power_method=None):
+        """Turn on power to this host via RPM, CCD, Servo or manual.
 
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" will be used. Valid values
-                            are the strings "RPM", "manual", "servoj10".
+                            use. By default "RPM" or "CCD" will be used based
+                            on servo type. Valid values from
+                            POWER_CONTROL_VALID_ARGS, or None to use default.
 
         """
         self._set_power('ON', power_method)
 
 
-    def power_cycle(self, power_method=POWER_CONTROL_RPM):
+    def power_cycle(self, power_method=None):
         """Cycle power to this host by turning it OFF, then ON.
 
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" will be used. Valid values
-                            are the strings "RPM", "manual", "servoj10".
+                            use. By default "RPM" or "CCD" will be used based
+                            on servo type. Valid values from
+                            POWER_CONTROL_VALID_ARGS, or None to use default.
 
         """
+        if not power_method:
+            power_method = self.get_default_power_method()
+
         if power_method in (self.POWER_CONTROL_SERVO,
-                            self.POWER_CONTROL_MANUAL):
+                            self.POWER_CONTROL_MANUAL,
+                            self.POWER_CONTROL_CCD):
             self.power_off(power_method=power_method)
             time.sleep(self._POWER_CYCLE_TIMEOUT)
             self.power_on(power_method=power_method)
         else:
-            rpm_client.set_power(self.hostname, 'CYCLE')
+            self._add_rpm_changed_tag()
+            rpm_client.set_power(self, 'CYCLE')
 
 
     def get_platform(self):
@@ -2006,3 +2008,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def get_labels(self):
         """Return the detected labels on the host."""
         return self.labels.get_labels(self)
+
+
+    def get_default_power_method(self):
+        """
+        Get the default power method for power_on/off/cycle() methods.
+        @return POWER_CONTROL_RPM or POWER_CONTROL_CCD
+        """
+        if not self._default_power_method:
+            info = self.host_info_store.get()
+            if info.attributes.get('servo_type') == self.CCD_SERVO:
+                self._default_power_method = self.POWER_CONTROL_CCD
+            else:
+                self._default_power_method = self.POWER_CONTROL_RPM
+        return self._default_power_method

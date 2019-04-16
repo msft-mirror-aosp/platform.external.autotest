@@ -13,11 +13,31 @@ import time
 import xmlrpclib
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.servo import firmware_programmer
 
 # Time to wait when probing for a usb device, it takes on avg 17 seconds
 # to do a full probe.
 _USB_PROBE_TIMEOUT = 40
+
+
+def _extract_image_from_tarball(tarball, dest_dir, image_candidates):
+    """Try extracting the image_candidates from the tarball.
+
+    @param tarball: The path of the tarball.
+    @param dest_path: The path of the destination.
+    @param image_candidates: A tuple of the paths of image candidates.
+
+    @return: The first path from the image candidates, which succeeds, or None
+             if all the image candidates fail.
+    """
+    for image in image_candidates:
+        status = server_utils.system(
+                ('tar xf %s -C %s %s' % (tarball, dest_dir, image)),
+                timeout=60, ignore_status=True)
+        if status == 0:
+            return image
+    return None
 
 
 class _PowerStateController(object):
@@ -117,6 +137,7 @@ class _Uart(object):
     def __init__(self, servo):
         self._servo = servo
         self._streams = []
+        self._logs_dir = None
 
     def start_capture(self):
         """Start capturing Uart streams."""
@@ -131,13 +152,13 @@ class _Uart(object):
                 logging.debug('The servod is too old that ec_uart_capture not '
                               'supported.')
 
-    def dump(self, output_dir):
-        """Dump UART streams to log files accordingly.
+    def dump(self):
+        """Dump UART streams to log files accordingly."""
+        if not self._logs_dir:
+            return
 
-        @param output_dir: A string of output directory name.
-        """
         for stream, logfile in self._streams:
-            logfile_fullname = os.path.join(output_dir, logfile)
+            logfile_fullname = os.path.join(self._logs_dir, logfile)
             try:
                 content = self._servo.get(stream)
             except Exception as err:
@@ -163,6 +184,18 @@ class _Uart(object):
             except Exception as err:
                 logging.warn('Failed to stop UART logging for %s: %s', uart,
                              err)
+
+    @property
+    def logs_dir(self):
+        """Return the directory to save UART logs."""
+        return self._logs_dir
+
+    @logs_dir.setter
+    def logs_dir(self, a_dir):
+        """Set directory to save UART logs.
+
+        @param a_dir  String of logs directory name."""
+        self._logs_dir = a_dir
 
 
 class Servo(object):
@@ -786,7 +819,7 @@ class Servo(object):
         else:
             raise error.TestError(
                     'No firmware programmer for servo version: %s' %
-                         servo_version)
+                    servo_version)
 
 
     def program_bios(self, image, rw_only=False):
@@ -818,9 +851,59 @@ class Servo(object):
         if not self.is_localhost():
             image = self._scp_image(image)
         if rw_only:
-           self._programmer_rw.program_ec(image)
+            self._programmer_rw.program_ec(image)
         else:
-           self._programmer.program_ec(image)
+            self._programmer.program_ec(image)
+
+
+    def _reprogram(self, tarball_path, firmware_name, image_candidates,
+                   rw_only):
+        """Helper function to reprogram firmware for EC or BIOS.
+
+        @param tarball_path: The path of the downloaded build tarball.
+        @param: firmware_name: either 'EC' or 'BIOS'.
+        @param image_candidates: A tuple of the paths of image candidates.
+        @param rw_only: True to only install firmware to its RW portions. Keep
+                the RO portions unchanged.
+
+        @raise: TestError if cannot extract firmware from the tarball.
+        """
+        dest_dir = os.path.dirname(tarball_path)
+        image = _extract_image_from_tarball(tarball_path, dest_dir,
+                                            image_candidates)
+        if not image:
+            if firmware_name == 'EC':
+                logging.info('Not a Chrome EC, ignore re-programming it')
+                return
+            else:
+                raise error.TestError('Failed to extract the %s image from '
+                                      'tarball' % firmware_name)
+
+        logging.info('Will re-program %s %snow', firmware_name,
+                     'RW ' if rw_only else '')
+
+        if firmware_name == 'EC':
+            self.program_ec(os.path.join(dest_dir, image), rw_only)
+        else:
+            self.program_bios(os.path.join(dest_dir, image), rw_only)
+
+
+    def program_firmware(self, model, tarball_path, rw_only=False):
+        """Program firmware (EC, if applied, and BIOS) of the DUT.
+
+        @param model: The DUT model name.
+        @param tarball_path: The path of the downloaded build tarball.
+        @param rw_only: True to only install firmware to its RW portions. Keep
+                the RO portions unchanged.
+        """
+        ap_image_candidates = ('image.bin', 'image-%s.bin' % model)
+        ec_image_candidates = ('ec.bin', '%s/ec.bin' % model)
+
+        self._reprogram(tarball_path, 'EC', ec_image_candidates, rw_only)
+        self._reprogram(tarball_path, 'BIOS', ap_image_candidates, rw_only)
+
+        self.get_power_state_controller().reset()
+        time.sleep(Servo.BOOT_DELAY)
 
 
     def _switch_usbkey_power(self, power_state, detection_delay=False):
@@ -913,17 +996,42 @@ class Servo(object):
         return self._usb_state
 
 
-    def dump_uart_streams(self, output_dir):
-        """Get buffered UART streams and append to log files.
+    def set_servo_v4_role(self, role):
+        """Set the power role of servo v4, either 'src' or 'snk'.
 
-        @param output_dir: A string of directory name to save log files.
+        It does nothing if not a servo v4.
+
+        @param role: Power role for DUT port on servo v4, either 'src' or 'snk'.
         """
+        servo_version = self.get_servo_version()
+        if servo_version.startswith('servo_v4'):
+            value = self.get('servo_v4_role')
+            if value != role:
+                self.set_nocheck('servo_v4_role', role)
+            else:
+                logging.debug('Already in the role: %s.', role)
+        else:
+            logging.debug('Not a servo v4, unable to set role to %s.', role)
+
+
+    @property
+    def uart_logs_dir(self):
+        """Return the directory to save UART logs."""
+        return self._uart.logs_dir if self._uart else ""
+
+
+    @uart_logs_dir.setter
+    def uart_logs_dir(self, logs_dir):
+        """Set directory to save UART logs.
+
+        @param logs_dir  String of directory name."""
         if self._uart:
-            self._uart.dump(output_dir)
+            self._uart.logs_dir = logs_dir
 
 
     def close(self):
         """Close the servo object."""
         if self._uart:
             self._uart.stop_capture()
+            self._uart.dump()
             self._uart = None

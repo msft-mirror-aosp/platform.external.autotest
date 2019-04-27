@@ -70,7 +70,7 @@ class ChromeLogin(object):
             # We used to call cheets_StartAndroid, but it is a little faster to
             # call a script on the DUT. This also saves CPU time on the server.
             self._host.run(
-                self._cmd_builder(),
+                self._cmd_builder(verbose=verbose),
                 ignore_status=False,
                 verbose=verbose,
                 timeout=timeout)
@@ -111,7 +111,8 @@ class ChromeLogin(object):
         """Logs into Chrome with retry."""
         timeout = self._timeout
         logging.info('Ensure Android is running (timeout=%d)...', timeout)
-        if not self.login(timeout=timeout):
+        # TODO(kinaba): remove the temporary verbosity for debugging b/129382439
+        if not self.login(timeout=timeout, verbose=True):
             timeout *= 2
             # The DUT reboots after unsuccessful login, try with more time.
             logging.info('Retrying failed login (timeout=%d)...', timeout)

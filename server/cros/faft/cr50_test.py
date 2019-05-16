@@ -94,6 +94,11 @@ class Cr50Test(FirmwareTest):
             self._save_original_images(full_args.get('release_path', ''))
             # We successfully saved the device images
             self._saved_state |= self.IMAGES
+        except error.CmdError, e:
+            if restore_cr50_state:
+                if 'One or more URLs matched no objects.' in str(e):
+                    raise error.TestNAError('Need DBG image to run test')
+                raise
         except:
             if restore_cr50_state:
                 raise
@@ -422,6 +427,14 @@ class Cr50Test(FirmwareTest):
     def _confirm_dut_is_pingable(self):
         """Reset the DUT if it doesn't respond to ping"""
         logging.info('checking dut state')
+
+        self.servo.set('cold_reset', 'off')
+        self.servo.set('warm_reset', 'off')
+        time.sleep(self.cr50.SHORT_WAIT)
+        if not self.cr50.ap_is_on():
+            logging.info('Pressing power button to turn on AP')
+            self.servo.power_short_press()
+
         end_time = time.time() + self.RESPONSE_TIMEOUT
         while not self.host.ping_wait_up(
                 self.faft_config.delay_reboot_to_ping):

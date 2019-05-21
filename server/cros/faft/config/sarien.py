@@ -16,8 +16,7 @@ class Values(object):
     chrome_ec = False
     ec_capability = []
     has_keyboard = False
-    # Temporary until switch to power button
-    rec_button_dev_switch = True
+    power_button_dev_switch = True
     smm_store = False
     # The EC image is stored in the AP SPI chip, so flashrom -p ec won't work.
     ap_access_ec_flash = False
@@ -28,3 +27,5 @@ class Values(object):
     # TODO(b/129864818): Check if there is an alternate way to do this.
     rec_force_mrc = False
     ap_up_after_cr50_reboot = False
+    ec_forwards_short_pp_press = True
+    serial_number_length = 7

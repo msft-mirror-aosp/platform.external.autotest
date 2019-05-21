@@ -113,8 +113,7 @@ class video_JDAPerf(chrome_binary_test.ChromeBinaryTest):
 
         self._use_ec = True
         if not power_utils.charge_control_by_ectool(is_charge=False):
-            logging.warning('Can\'t stop charging')
-            return {}
+            raise error.TestFail('Can\'t stop charging')
 
         if not self._power_status.battery:
             raise error.TestFail('No valid battery')
@@ -148,8 +147,7 @@ class video_JDAPerf(chrome_binary_test.ChromeBinaryTest):
         @param gtest_filter: gtest_filter argument.
         """
         logging.debug('Starting video_JpegDecodeAccelerator %s', gtest_filter)
-        cmd_line_list = [helper_logger.chrome_vmodule_flag()]
-        cmd_line_list.append('--gtest_filter="%s"' % gtest_filter)
+        cmd_line_list = ['--gtest_filter="%s"' % gtest_filter]
         cmd_line_list.append('--perf_decode_times=%d' %
                              self.perf_jpeg_decode_times)
 

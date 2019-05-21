@@ -11,9 +11,10 @@ from skylab_staging import test_push
 
 EXAMPLE_TEST_RESULTS = [
     ('dummy_PassServer', 'GOOD'),
-    ('dummy_Pass.bluetooth', 'GOOD'),
+    ('dummy_PassServer', 'GOOD'),
     ('dummy_Fail.Fail', 'FAIL'),
     ('dummy_Pass.actionable', 'GOOD'),
+    ('dummy_Pass.bluetooth', 'GOOD'),
     ('dummy_Pass', 'GOOD'),
     ('dummy_Fail.Error', 'ERROR'),
     ('dummy_Fail.Warn', 'WARN'),
@@ -26,6 +27,10 @@ EXAMPLE_TEST_RESULTS = [
     ('dummy_Fail.Crash', 'GOOD'),
     ('login_LoginSuccess', 'GOOD'),
     ('provision_AutoUpdate.double', 'GOOD'),
+    ('tast', 'GOOD'),
+    ('tast.example.Pass', 'GOOD'),
+    ('tast.example.Perf', 'GOOD'),
+    ('tast.example.ReconnectDUT', 'GOOD'),
 ]
 
 

@@ -119,6 +119,8 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     _RNG_AVAILABLE = '/sys/class/misc/hw_random/rng_available'
     _RNG_CURRENT = '/sys/class/misc/hw_random/rng_current'
 
+    _UMA_EVENTS = '/var/lib/metrics/uma-events'
+
     def get_capabilities(self):
         """@return iterable object of AP capabilities for this system."""
         caps = set()
@@ -188,7 +190,9 @@ class LinuxRouter(site_linux_system.LinuxSystem):
 
         # TODO(crbug.com/839164): some routers fill their stateful partition
         # with uncollected metrics.
-        self.host.run('rm -f /var/lib/metrics/uma-events', ignore_status=True)
+        if self.host.path_exists(self._UMA_EVENTS):
+            self.host.run('truncate -s 0 %s' % self._UMA_EVENTS,
+                          ignore_status=True)
 
         # Log the most recent message on the router so that we can rebuild the
         # suffix relevant to us when debugging failures.
@@ -222,13 +226,15 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.dhcp_low = 1
         self.dhcp_high = 128
 
-        # Tear down hostapbr bridge interfaces
-        result = self.host.run('ls -d /sys/class/net/%s*' %
-                               self.HOSTAP_BRIDGE_INTERFACE_PREFIX,
+        # Tear down hostapbr bridge and intermediate functional block
+        # interfaces.
+        result = self.host.run('ls -d /sys/class/net/%s* /sys/class/net/%s*'
+                               ' 2>/dev/null' %
+                               (self.HOSTAP_BRIDGE_INTERFACE_PREFIX,
+                                self.IFB_INTERFACE_PREFIX),
                                ignore_status=True)
-        if result.exit_status == 0:
-            for path in result.stdout.splitlines():
-                self.delete_link(path.split('/')[-1])
+        for path in result.stdout.splitlines():
+            self.delete_link(path.split('/')[-1])
 
         # Kill hostapd and dhcp server if already running.
         self._kill_process_instance('hostapd', timeout_seconds=30)

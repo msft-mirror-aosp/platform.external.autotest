@@ -23,6 +23,7 @@ class Values(object):
     has_lid = True
     has_keyboard = True
     has_powerbutton = True
+    power_button_dev_switch = False
     rec_button_dev_switch = False
     ec_capability = list()
     spi_voltage = 'pp1800'
@@ -104,3 +105,11 @@ class Values(object):
     # True if AP is normally expected to be powered on after the Cr50 reboots
     # (when AC power is connected).
     ap_up_after_cr50_reboot = True
+
+    # True if the EC will send short power button presses, such as those
+    # expected during CCD open, to the AP.
+    ec_forwards_short_pp_press = False
+
+    # Length of serial number that can be set in firmware; if serial number
+    # cannot be set then 0
+    serial_number_length = 0

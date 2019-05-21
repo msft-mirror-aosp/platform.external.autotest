@@ -60,13 +60,14 @@ def make_parser():
     parser.add_argument(
         '--priority', type=int,
         default=swarming_lib.SKYLAB_HWTEST_PRIORITIES_MAP['Default'],
-        choices=[value for name, value in
-                 swarming_lib.SORTED_SKYLAB_HWTEST_PRIORITY],
-        help=('The priority to run the suite. A high value means this suite '
-              'will be executed in a low priority, e.g. being delayed to '
-              'execute. Each numerical value represents: '+ ', '.join([
-                  '(%s: %d)' % (name, value) for name, value in
-                  swarming_lib.SORTED_SKYLAB_HWTEST_PRIORITY])))
+        choices=range(50,256),
+        # The default metavar in this case is a list of 250 numbers.
+        metavar='PRIORITY',
+        help=('The priority (50-255) to run the suite. A high value means '
+              'this suite will be executed in a low priority, e.g. being '
+              'delayed to execute. Some common values: '+ ', '.join([
+                  '%s=%d' % (name, value) for name, value in
+                  swarming_lib.SORTED_SKYLAB_HWTEST_PRIORITY]) + '.'))
     parser.add_argument(
         "--suite_args", type=ast.literal_eval, default=None,
         action="store",
@@ -87,10 +88,6 @@ def make_parser():
         '--swarming_auth_json', default=swarming_lib.DEFAULT_SERVICE_ACCOUNT,
         action='store', help="Path to swarming service account json creds. "
         "Specify '' to omit. Otherwise, defaults to bot's default creds.")
-
-    # TODO(ayatane): Make sure no callers pass --use_fallback before removing.
-    parser.add_argument(
-            "--use_fallback", action="store_true", help='Deprecated')
 
     # Swarming-related parameters.
     parser.add_argument(
@@ -113,9 +110,6 @@ def make_parser():
     parser.add_argument(
         '--timeout_mins', default=90, type=int, action='store',
         help='Maximum minutes to wait for a suite to finish.')
-    parser.add_argument(
-        '--passed_mins', default=0, type=int, action='store',
-        help='The minutes that this suite already runs for.')
     parser.add_argument(
         '--run_prod_code', action='store_true', default=False,
         help='Run the test code that lives in prod aka the test '
@@ -140,6 +134,12 @@ def make_parser():
     parser.add_argument(
         '--suite_task_ids', nargs='*', default=[],
         help=('Specify the parent swarming task id to abort.'))
+
+    # Deprecated arguments.
+    # TODO(akeshet): Remove these after verifying that no callers use them.
+    parser.add_argument('--passed_mins', action='store', help=argparse.SUPPRESS)
+    parser.add_argument('--use_fallback', action="store_true",
+                        help=argparse.SUPPRESS)
 
     return parser
 

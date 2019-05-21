@@ -95,7 +95,7 @@ class ControlData(object):
         self.test_parameters = set()
         self.test_category = ''
         self.test_class = ''
-        self.job_retries = 0
+        self.job_retries = 1
         # Default to require server-side package. Unless require_ssp is
         # explicitly set to False, server-side package will be used for the
         # job. This can be overridden by global config
@@ -292,6 +292,24 @@ class ControlData(object):
 
     def set_fast(self, val):
         self._set_bool('fast', val)
+
+    def set_update_type(self, val):
+        self._set_string('update_type', val)
+
+    def set_source_release(self, val):
+        self._set_string('source_release', val)
+
+    def set_target_release(self, val):
+        self._set_string('target_release', val)
+
+    def set_target_payload_uri(self, val):
+        self._set_string('target_payload_uri', val)
+
+    def set_source_payload_uri(self, val):
+        self._set_string('source_payload_uri', val)
+
+    def set_source_archive_uri(self, val):
+        self._set_string('source_archive_uri', val)
 
     def set_attributes(self, val):
         # Add subsystem:default if subsystem is not specified.

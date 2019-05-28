@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import operator
 import sys
 
 from autotest_lib.client.common_lib import error
@@ -18,6 +19,30 @@ def get_rpc_category_by_name(name):
     raise ValueError("No RPC category defined with category_name=%s" % name)
 
 
+def get_rpc_method_names_from_test_case(test_case):
+    """
+    Extract the method_name or method_names from a test case configuration.
+
+    @param test_case: An element from a test_cases array,
+                      like those in config.RPC_CATEGORIES
+
+    @return: A list of names of RPC methods in that test case.
+
+    """
+    if (("method_name" in test_case) ^ ("method_names" in test_case)):
+        if "method_name" in test_case:
+            return [test_case["method_name"]]
+        elif "method_names" in test_case:
+            return test_case["method_names"]
+        else:
+            err_msg = "Something strange happened while parsing RPC methods"
+            raise ValueError(err_msg)
+    else:
+        err_msg = "test_case must contain EITHER method_name OR method_names"
+        raise ValueError(err_msg)
+
+
+
 class firmware_FAFTRPC(FirmwareTest):
     """
     This test checks that all RPC commands work as intended.
@@ -31,6 +56,7 @@ class firmware_FAFTRPC(FirmwareTest):
 
     """
     version = 1
+    _stored_values = {}
 
 
     def _log_success(self, rpc_name, params, success_message):
@@ -43,6 +69,28 @@ class firmware_FAFTRPC(FirmwareTest):
         """Raise a TestFail error explaining why a test failed."""
         raise error.TestFail("RPC function %s%s had an unexpected result: %s"
                              % (rpc_name, params, error_msg))
+
+
+    def _retrieve_stored_values(self, params):
+        """
+        Replace any operator.itemgetter params with corresponding stored values.
+
+        @param params: A tuple of args that might be passed into an RPC method,
+                       some of which might be operator.itemgetter objects.
+
+        @return: A tuple of pargs to be passed into an RPC method,
+                 with stored values swapped in for operator.itemgetters.
+
+        """
+        new_params = []
+        for old_param in params:
+            if isinstance(old_param, operator.itemgetter):
+                retrieved_value = old_param(self._stored_values)
+                new_params.append(retrieved_value)
+            else:
+                new_params.append(old_param)
+        new_params = tuple(new_params)
+        return new_params
 
 
     def _assert_passes(self, category, method, params, allow_error_msg=None):
@@ -179,17 +227,26 @@ class firmware_FAFTRPC(FirmwareTest):
             logging.info("Testing RPC category '%s'", category_under_test)
         for rpc_category in rpc_categories_to_test:
             category_name = rpc_category["category_name"]
-            rpc_methods = rpc_category["rpc_methods"]
-            logging.info("Testing %d methods for RPC category '%s'",
-                         len(rpc_methods), category_name)
-            for rpc_method in rpc_methods:
-                method_name = rpc_method["method_name"]
-                passing_args = rpc_method.get("passing_args", [])
-                failing_args = rpc_method.get("failing_args", [])
-                allow_error_msg = rpc_method.get("allow_error_msg", None)
-                for passing_arg_tuple in passing_args:
-                    self._assert_passes(category_name, method_name,
-                                        passing_arg_tuple, allow_error_msg)
-                for failing_arg_tuple in failing_args:
-                    self._assert_fails(category_name, method_name,
-                                       failing_arg_tuple)
+            test_cases = rpc_category["test_cases"]
+            logging.info("Testing %d cases for RPC category '%s'",
+                         len(test_cases), category_name)
+            for test_case in test_cases:
+                method_names = get_rpc_method_names_from_test_case(test_case)
+                passing_args = test_case.get("passing_args", [])
+                failing_args = test_case.get("failing_args", [])
+                allow_error_msg = test_case.get("allow_error_msg", None)
+                store_result_as = test_case.get("store_result_as", None)
+                for method_name in method_names:
+                    for passing_arg_tuple in passing_args:
+                        passing_arg_tuple = self._retrieve_stored_values(
+                                passing_arg_tuple)
+                        result = self._assert_passes(category_name, method_name,
+                                                     passing_arg_tuple,
+                                                     allow_error_msg)
+                        if store_result_as is not None:
+                            self._stored_values[store_result_as] = result
+                    for failing_arg_tuple in failing_args:
+                        failing_arg_tuple = self._retrieve_stored_values(
+                                failing_arg_tuple)
+                        self._assert_fails(category_name, method_name,
+                                           failing_arg_tuple)

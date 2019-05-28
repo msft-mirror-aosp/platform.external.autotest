@@ -32,11 +32,10 @@ from lucifer import loglib
 from skylab_staging import errors
 from skylab_staging import swarming
 
-# Hacky late imports that must run after autotest.monkeypatch()
-autotest.monkeypatch()
-cros_build_lib = autotest.chromite_load('cros_build_lib')
-metrics = autotest.chromite_load('metrics')
-ts_mon_config = autotest.chromite_load('ts_mon_config')
+
+cros_build_lib = autotest.deferred_chromite_load('cros_build_lib')
+metrics = autotest.deferred_chromite_load('metrics')
+ts_mon_config = autotest.deferred_chromite_load('ts_mon_config')
 
 
 _METRICS_PREFIX = 'chromeos/autotest/test_push/skylab'
@@ -51,13 +50,11 @@ _EXPECTED_TEST_RESULTS = {'login_LoginSuccess.*':         ['GOOD'],
                           'dummy_Pass.bluetooth$':        ['GOOD'],
                           # ssp and nossp.
                           'dummy_PassServer$':            ['GOOD', 'GOOD'],
-                          # The entire dummy_Fail test is retried.
-                          'dummy_Fail.Fail$':             ['FAIL', 'FAIL'],
-                          'dummy_Fail.Error$':            ['ERROR', 'ERROR'],
-                          'dummy_Fail.Warn$':             ['WARN', 'WARN'],
-                          'dummy_Fail.NAError$':          ['TEST_NA',
-                                                           'TEST_NA'],
-                          'dummy_Fail.Crash$':            ['GOOD', 'GOOD'],
+                          'dummy_Fail.Fail$':             ['FAIL'],
+                          'dummy_Fail.Error$':            ['ERROR'],
+                          'dummy_Fail.Warn$':             ['WARN'],
+                          'dummy_Fail.NAError$':          ['TEST_NA'],
+                          'dummy_Fail.Crash$':            ['GOOD'],
                           'tast.*':                       ['GOOD'],
                           }
 
@@ -182,9 +179,9 @@ def _create_suite_and_wait(dut_board, dut_pool, build, deadline,
                            service_account_json, suite, require_success=True):
   """Create and wait for a skylab suite (in staging).
 
-  Returns: string task id of the completed suite.
+  Returns: string task run id of the completed suite.
 
-  Raises: errors.TestPushError if the suite failed.
+  Raises: errors.TestPushError if the suite failed and require_success is True.
   """
   mins_remaining = int((deadline - time.time())/60)
   cmd = [
@@ -220,10 +217,12 @@ def _create_suite_and_wait(dut_board, dut_pool, build, deadline,
       not json.loads(cmd_result.output)['task-result']['success']):
     raise errors.TestPushError('Suite %s did not succeed.' % suite)
 
+  return json.loads(cmd_result.output)['task-result']['task-run-id']
+
 
 def _verify_test_results(task_id, expected_results):
   """Verify if test results are expected."""
-  _logger.info('Comparing test results...')
+  _logger.info('Comparing test results for suite task %s...', task_id)
   test_views = _get_test_views(task_id)
   available_views = [v for v in test_views if _view_is_preserved(v)]
   logging.debug('Test results:')
@@ -282,4 +281,5 @@ def _ensure_duts_ready(swclient, board, pool, min_duts, timeout_s):
 
 
 if __name__ == '__main__':
+  autotest.monkeypatch()
   sys.exit(main())

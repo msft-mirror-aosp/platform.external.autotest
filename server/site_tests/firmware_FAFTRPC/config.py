@@ -224,6 +224,13 @@ RPC_CATEGORIES = [
         "category_name": "bios",
         "test_cases": [
             {
+                "method_names": [
+                    "reload",
+                ],
+                "passing_args": [NO_ARGS],
+                "failing_args": [ONE_INT_ARG, ONE_STR_ARG]
+            },
+            {
                 "method_name": "get_gbb_flags",
                 "passing_args": [NO_ARGS],
                 "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
@@ -237,11 +244,143 @@ RPC_CATEGORIES = [
                 ],
                 "failing_args": [NO_ARGS],
             },
+            {
+                "method_name": "get_preamble_flags",
+                "passing_args": [
+                    ("a", ),
+                ],
+                "failing_args": [NO_ARGS, ONE_INT_ARG],
+                "store_result_as": "preamble_flags",
+            },
+            {
+                "method_name": "set_preamble_flags",
+                "passing_args": [
+                    ("a", operator.itemgetter("preamble_flags"), ),
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    ONE_INT_ARG,
+                    ONE_STR_ARG,
+                    ("c", operator.itemgetter("preamble_flags"), ),
+                ],
+            },
+            {
+                "method_names": [
+                    "get_body_sha",
+                    "get_sig_sha",
+                    "get_version",
+                    "get_datakey_version",
+                    "get_kernel_subkey_version",
+                ],
+                "passing_args": [
+                    ("a", ),
+                    ("b", ),
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    ONE_INT_ARG,
+                    (("a", "b"), ),
+                    ("c", ),
+                ]
+            },
+            {
+                "method_names": [
+                    "corrupt_sig",
+                    "restore_sig",
+                    "corrupt_body",
+                    "restore_body",
+                    "move_version_backward",
+                    "move_version_forward",
+                ],
+                "passing_args": [
+                    ("a", ),
+                    ("b", ),
+                    ( ("a", "b"), ),
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    ONE_INT_ARG,
+                    ("c", ),
+                ]
+            },
+            {
+                "method_names": [
+                    "dump_whole",
+                    "write_whole",
+                ],
+                "passing_args": [
+                    (SAMPLE_FILE, ),
+                ],
+                "failing_args": [NO_ARGS],
+            },
         ],
     },
     {
         "category_name": "ec",
-        "test_cases": []
+        "test_cases": [
+            {
+                "method_names": [
+                    "reload",
+                    "get_version",
+                    "get_active_hash",
+                    "is_efs",
+                ],
+                "passing_args": [NO_ARGS],
+                "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
+                "allow_error_msg": "list index out of range",
+            },
+            {
+                "method_names": [
+                    "dump_whole",
+                    "write_whole",
+                    "dump_firmware"
+                ],
+                "passing_args": [
+                    (SAMPLE_FILE, ),
+                ],
+                "failing_args": [NO_ARGS],
+            },
+            {
+                "method_name": "corrupt_body",
+                "passing_args": [
+                    ("rw", ),
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    ONE_INT_ARG,
+                    ("ro", ),
+                ],
+            },
+            {
+                "method_name": "set_write_protect",
+                "passing_args": [
+                    (True, ),
+                    (False, ),
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    (True, False),
+                ]
+            },
+            {
+                "method_name": "copy_rw",
+                "passing_args": [
+                    ("rw", "rw"),
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    ("rw", "ro"),
+                    ("ro", "rw"),
+                    ("rw", ),
+                ],
+            },
+            {
+                "method_name": "reboot_to_switch_slot",
+                "passing_args": [NO_ARGS],
+                "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
+                "allow_error_msg": "ShellError",
+            },
+        ],
     },
     {
         "category_name": "kernel",
@@ -362,7 +501,63 @@ RPC_CATEGORIES = [
     },
     {
         "category_name": "updater",
-        "test_cases": []
+        "test_cases": [
+            {
+                "method_names": [
+                    "get_fwid",
+                    "modify_fwid",
+                    "get_installed_fwid",
+                ],
+                "passing_args": [
+                    NO_ARGS,
+                    ("bios", "ro"),
+                    ("bios", "a"),
+                ],
+                "failing_args": [
+                    ("", ),
+                    ("foo", ),
+                    ("bios", ""),
+                    ("bios", "foo"),
+                ],
+                "expected_return_type": str,
+                "allow_error_msg": "is already modified",
+            },
+            {
+                "method_names": [
+                    "get_fwid",
+                    "modify_fwid",
+                    "get_installed_fwid",
+                ],
+                "passing_args": [
+                    ("bios", ()),
+                    ("bios", ("ro",)),
+                    ("bios", ("ro", "a")),
+                ],
+                "failing_args": [
+                    ("", ("ro",)),
+                    ("bios", ("foo",)),
+                    ("bios", ("foo", "bar")),
+                ],
+                "expected_return_type": dict,
+                "allow_error_msg": "is already modified",
+            },
+            {
+                "method_name": "copy_bios",
+                "passing_args": [
+                    ('/tmp/fake-bios.bin', )
+                ],
+                "failing_args": [
+                    NO_ARGS,
+                    ('/tmp/fake-bios.bin', "foo")
+                ],
+                "expected_return_type": str
+            },
+            {
+                "method_name": "reset_shellball",
+                "passing_args": [NO_ARGS],
+                "failing_args": [ONE_INT_ARG, ONE_STR_ARG]
+            }
+        ]
     },
     {
         "category_name": "rootfs",

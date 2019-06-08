@@ -224,8 +224,8 @@ class TradefedTest(test.test):
                                  abilist)
         self._abilist = str(list(abilist)[0]).split(',')
 
-    def _calculate_timeout_factor(self, bundle):
-        """ Calculate the multiplicative factor for timeout.
+    def _calculate_test_count_factor(self, bundle):
+        """ Calculate the multiplicative factor for the test case number.
 
         The value equals to the times each test case is run, which is determined
         by the intersection of the supported ABIs of the CTS/GTS bundle and that
@@ -238,7 +238,8 @@ class TradefedTest(test.test):
             tradefed_abis = x86_abis
         else:
             tradefed_abis = arm_abis | x86_abis
-        self._timeout_factor = len(set(self._get_abilist()) & tradefed_abis)
+        self._test_count_factor = len(set(self._get_abilist()) & tradefed_abis)
+        self._timeout_factor = self._test_count_factor
 
     @contextlib.contextmanager
     def _login_chrome(self, **cts_helper_kwargs):
@@ -729,6 +730,16 @@ class TradefedTest(test.test):
             self._num_media_bundles = len(
                     os.listdir(constants.TRADEFED_MEDIA_PATH))
 
+    def _cleanup_media(self):
+        """Clean up the local copy of cached media files."""
+        self._fail_on_unexpected_media_download()
+        if os.path.islink(constants.TRADEFED_MEDIA_PATH):
+            path = os.readlink(constants.TRADEFED_MEDIA_PATH)
+            os.unlink(constants.TRADEFED_MEDIA_PATH)
+            if os.path.isdir(path):
+                logging.info('Cleaning up media files in %s', path)
+                shutil.rmtree(path)
+
     def _fail_on_unexpected_media_download(self):
         if os.path.isdir(constants.TRADEFED_MEDIA_PATH):
             contents = os.listdir(constants.TRADEFED_MEDIA_PATH)
@@ -1029,6 +1040,7 @@ class TradefedTest(test.test):
                                    enable_default_apps=False,
                                    target_module=None,
                                    target_plan=None,
+                                   executable_test_count=None,
                                    bundle=None,
                                    cts_uri=None,
                                    login_precondition_commands=[],
@@ -1081,7 +1093,7 @@ class TradefedTest(test.test):
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps) as current_logins:
                 self._ready_arc()
-                self._calculate_timeout_factor(bundle)
+                self._calculate_test_count_factor(bundle)
                 self._run_precondition_scripts(precondition_commands, steps)
 
                 # Run tradefed.
@@ -1113,6 +1125,13 @@ class TradefedTest(test.test):
 
                 waived = len(waived_tests)
                 last_session_id, passed, failed, all_done = result
+
+                if passed + failed > 0:
+                    # At least one test had run, which means the media push step
+                    # of tradefed didn't fail. To free up the storage earlier,
+                    # delete the copy on the server side. See crbug.com/970881
+                    self._cleanup_media()
+
                 # If the result is |acc|urate according to the log, or the
                 # inaccuracy is recognized by tradefed (not all_done), then
                 # it is fine.
@@ -1150,6 +1169,13 @@ class TradefedTest(test.test):
                     continue
 
                 session_id = last_session_id
+                if (not all_done and executable_test_count != None and
+                        (passed + failed ==
+                         executable_test_count * self._test_count_factor)):
+                    logging.warning('Overwriting all_done as True, since the '
+                                    'explicitly set executable_test_count '
+                                    'tests have run.')
+                    all_done = True
 
                 # Check if all the tests passed.
                 if failed <= waived and all_done:

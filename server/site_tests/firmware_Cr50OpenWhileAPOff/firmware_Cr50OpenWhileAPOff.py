@@ -41,9 +41,6 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         if 'servo_v4_with_servo_micro' != self.servo.get_servo_version():
             raise error.TestNAError('Run using servo v4 with servo micro')
 
-        if not self.cr50.has_command('ccdstate'):
-            raise error.TestNAError('Cannot test on Cr50 with old CCD version')
-
         dts_mode_works = self.cr50.servo_v4_supports_dts_mode()
         if not dts_mode_works:
             raise error.TestNAError('Plug in servo v4 type c cable into ccd '
@@ -114,8 +111,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
 
         # Verify the cr50 console responds to commands.
         try:
-            logging.info(self.cr50.send_command_get_output('ccdstate',
-                    ['ccdstate.*>']))
+            logging.info(self.cr50.get_ccdstate())
         except error.TestFail, e:
             if 'Timeout waiting for response' in e.message:
                 raise error.TestFail('Could not restore Cr50 console')
@@ -138,11 +134,13 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
 
         time.sleep(self.SHORT_DELAY)
 
-        # Press the power button to turn on the AP
-        if state == 'on':
+        # Press the power button to turn on the AP, if it doesn't automatically
+        # turn on after deasserting the reset signal. ap_is_on will print the
+        # ccdstate which is useful for debugging. Do that first, so it always
+        # happens.
+        if not self.cr50.ap_is_on() and state == 'on':
             self.servo.power_short_press()
-
-        time.sleep(self.SHORT_DELAY)
+            time.sleep(self.SHORT_DELAY)
 
 
     def reset_device_get_deep_sleep_count(self, deep_sleep):

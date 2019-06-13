@@ -55,10 +55,16 @@ class firmware_Cr50DeviceState(Cr50Test):
         193 : 'USB',
     }
     SLEEP_KEYS = [ KEY_REGULAR_SLEEP, KEY_DEEP_SLEEP ]
+    # USB, AP UART, and EC UART should be disabled if ccd is disabled.
+    CCD_KEYS = [ 181, 184, 188, 191, 193 ]
+
     # Cr50 won't enable any form of sleep until it has been up for 20 seconds.
     SLEEP_DELAY = 20
-    # The time in seconds to wait in each state
-    SLEEP_TIME = 30
+    # The time in seconds to wait in each state. Wait one minute so it's long
+    # enough for cr50 to settle into whatever state. 60 seconds is also long
+    # enough that cr50 has enough time to enter deep sleep twice, so we can
+    # catch extra wakeups.
+    SLEEP_TIME = 60
     SHORT_WAIT = 5
     CONSERVATIVE_WAIT_TIME = SLEEP_TIME + SHORT_WAIT + 10
     # Cr50 should wake up twice per second while in regular sleep
@@ -66,7 +72,6 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     DEEP_SLEEP_MAX = 2
     ARM = 'ARM '
-
     # If there are over 100,000 interrupts, it is an interrupt storm.
     DEFAULT_COUNTS = [0, 100000]
     # A dictionary of ok count values for each irq that shouldn't follow the
@@ -101,6 +106,16 @@ class firmware_Cr50DeviceState(Cr50Test):
             raise error.TestNAError("Nothing needs to be tested on this device")
 
 
+    def log_sleep_debug_information(self):
+        """Log some information used for debugging sleep issues"""
+        logging.debug(
+            self.cr50.send_safe_command_get_output('sleepmask',
+                                                   ['sleepmask.*>'])[0])
+        logging.debug(
+            self.cr50.send_safe_command_get_output('sysinfo',
+                                                   ['sysinfo.*>'])[0])
+
+
     def get_taskinfo_output(self):
         """Return a dict with the irq numbers as keys and counts as values"""
         output = self.cr50.send_safe_command_get_output('taskinfo',
@@ -124,6 +139,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         irq_counts[self.KEY_RESET] = int(self.servo.get('cr50_reset_count'))
         irq_counts[self.KEY_DEEP_SLEEP] = int(self.cr50.get_deep_sleep_count())
         irq_counts[self.KEY_TIME] = int(self.cr50.gettime())
+        # Log some information, so we can debug issues with sleep.
+        self.log_sleep_debug_information()
         return irq_counts
 
 
@@ -153,6 +170,9 @@ class firmware_Cr50DeviceState(Cr50Test):
             # many.
             max_count = cr50_time * (self.SLEEP_RATE + 1)
             return [min_count, max_count]
+        # If ccd is disabled, ccd irq counts should not increase.
+        if not self.ccd_enabled and (irq_key in self.CCD_KEYS):
+            return [0, 0]
         return self.EXPECTED_IRQ_COUNT_RANGE.get(irq_key, self.DEFAULT_COUNTS)
 
 

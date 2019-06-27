@@ -90,9 +90,16 @@ class power_SuspendStress(test.test):
                        random.randint(0, self._max_resume_window))
             # Check the network interface to the caller is still available
             if self._check_connection:
-                # Give a 10 second window for the network to come back.
+                # Give a 3 minutes window for the network to come back:
+                # check_ethernet.hook is restarting every minutes.
+                # It could take 30s for the device to come back from storage
+                # to vendor mode.
+                # Give the hook several tries.
+                # Note check_ethernet.hook could reboot the device itself
+                # as well.
                 try:
                     utils.poll_for_condition(iface.is_link_operational,
+                                             timeout=180,
                                              desc='Link is operational')
                 except utils.TimeoutError:
                     logging.error('Link to the server gone, reboot')

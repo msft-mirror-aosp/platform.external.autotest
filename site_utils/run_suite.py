@@ -411,7 +411,14 @@ def make_parser():
                         'control files, rather than SUITE.')
     parser.add_argument('--json_dump', dest='json_dump', action='store_true',
                         default=False,
-                        help='Dump the output of run_suite to stdout.')
+                        help='Dump the output of run_suite to stdout as json; '
+                             'silence other output.')
+    parser.add_argument('--json_dump_postfix', dest='json_dump_postfix',
+                        action='store_true',
+                        help='Dump the output of run_suite to stdout as json; '
+                             'do not silence other logging. Similar to '
+                             '--json_dump, the json payload will be wrapped in '
+                             'a tag to differentiate it from logging.')
     parser.add_argument(
         '--run_prod_code', dest='run_prod_code',
         action='store_true', default=False,
@@ -489,6 +496,9 @@ def verify_and_clean_options(options):
         return False
     if options.no_wait and options.retry:
         print 'Test retry is not available when using --no_wait=True'
+    if options.json_dump and options.json_dump_postfix:
+        print '--json_dump and --json_dump_postfix are mutually exclusive'
+        return False
     # Default to use the test code in CrOS build.
     if not options.test_source_build and options.build:
         options.test_source_build = options.build
@@ -1099,9 +1109,13 @@ class TestView(object):
         """Generate the job_id_owner string for a test.
 
         @returns: A string which looks like 135036-username
-
         """
-        return '%s-%s' % (self.view['afe_job_id'], self.user)
+        # self.user is actually the user that is executing this run_suite
+        # call, which is not necessarily the same as the job-creating user.
+        # The job creating user is available as a keyval; but fall back to
+        # self.user in case that key is missing.
+        job_user = self.view['job_keyvals'].get('user') or self.user
+        return '%s-%s' % (self.view['afe_job_id'], job_user)
 
 
     def get_bug_info(self, suite_job_keyvals):
@@ -1563,8 +1577,8 @@ class ResultCollector(object):
         @returns: A dict of results in the format like:
                   {
                   'tests': {
-                        'test_1': {'status': 'PASSED', 'attributes': [1,2], ...}
-                        'test_2': {'status': 'FAILED', 'attributes': [1],...}
+                        'test_1': {'status': 'GOOD', 'attributes': [1,2], ...}
+                        'test_2': {'status': 'FAIL', 'attributes': [1],...}
                   }
                   'suite_timings': {
                         'download_start': '1998-07-17 00:00:00',
@@ -1583,6 +1597,7 @@ class ResultCollector(object):
                 'attributes': v.get_control_file_attributes() or list(),
                 'reason': v['reason'],
                 'retry_count': self._retry_counts.get(v['test_idx'], 0),
+                'job_id': v['afe_job_id'],
                 })
             # For aborted test, the control file will not be parsed and thus
             # fail to get the attributes info. Therefore, the subsystems the
@@ -2270,7 +2285,7 @@ def _run_with_autotest(options):
     else:
         result = _run_task(options)
 
-    if options.json_dump:
+    if options.json_dump or options.json_dump_postfix:
         run_suite_common.dump_json(result.output_dict)
 
     return result

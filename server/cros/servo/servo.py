@@ -13,6 +13,7 @@ import time
 import xmlrpclib
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.servo import firmware_programmer
 
@@ -340,6 +341,22 @@ class Servo(object):
           True if local hosted; otherwise, False.
         """
         return self._servo_host.is_localhost()
+
+
+    def get_os_version(self):
+        """Returns the chromeos release version."""
+        lsb_release_content = self.system_output('cat /etc/lsb-release',
+                                                 ignore_status=True)
+        return lsbrelease_utils.get_chromeos_release_builder_path(
+                    lsb_release_content=lsb_release_content)
+
+
+    def get_servod_version(self):
+        """Returns the servod version."""
+        result = self._servo_host.run('servod --version')
+        # TODO: use system_output once servod --version prints to stdout
+        stdout = result.stdout.strip()
+        return stdout if stdout else result.stderr.strip()
 
 
     def power_long_press(self):
@@ -909,16 +926,19 @@ class Servo(object):
             self.program_bios(os.path.join(dest_dir, image), rw_only)
 
 
-    def program_firmware(self, model, tarball_path, rw_only=False):
+    def program_firmware(self, board, model, tarball_path, rw_only=False):
         """Program firmware (EC, if applied, and BIOS) of the DUT.
 
+        @param board: The DUT board name.
         @param model: The DUT model name.
         @param tarball_path: The path of the downloaded build tarball.
         @param rw_only: True to only install firmware to its RW portions. Keep
                 the RO portions unchanged.
         """
-        ap_image_candidates = ('image.bin', 'image-%s.bin' % model)
-        ec_image_candidates = ('ec.bin', '%s/ec.bin' % model)
+        ap_image_candidates = ('image.bin', 'image-%s.bin' % model,
+                               'image-%s.bin' % board)
+        ec_image_candidates = ('ec.bin', '%s/ec.bin' % model,
+                               '%s/ec.bin' % board)
 
         self._reprogram(tarball_path, 'EC', ec_image_candidates, rw_only)
         self._reprogram(tarball_path, 'BIOS', ap_image_candidates, rw_only)

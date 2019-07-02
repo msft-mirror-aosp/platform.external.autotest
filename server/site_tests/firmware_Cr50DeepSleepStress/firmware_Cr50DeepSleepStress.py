@@ -33,6 +33,11 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         if not hasattr(self, 'cr50'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
+
+        if self.cr50.using_ccd():
+            raise error.TestNAError('deep sleep tests can only be run with a '
+                                    'servo flex')
+
         # Reset the device
         self.servo.get_power_state_controller().reset()
 
@@ -67,9 +72,6 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
         @param suspend_count: the number of times to reboot the device.
         """
-        if self.cr50.using_ccd():
-            raise error.TestNAError('Reboot deep sleep tests can only be run '
-                    'with a servo flex')
         # This test may be running on servo v4 with servo micro. That servo v4
         # may have a type A cable or type C cable for data communication with
         # the DUT. If it is using a type C cable, that cable will look like a
@@ -128,7 +130,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
     def get_expected_ds_count(self, host, reset_type, suspend_count):
         """Returns the expected deep sleep count"""
-        is_arm = self.check_ec_capability('arm')
+        is_arm = self.check_ec_capability(['arm'], suppress_warning=True)
         # x86 devices should suspend once per reset. ARM will only suspend
         # if the device enters s5.
         return 0 if (reset_type != 'reboot' and is_arm) else suspend_count

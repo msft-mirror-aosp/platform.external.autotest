@@ -209,6 +209,13 @@ class FlashromHandler(object):
         self.image = ''
         self.initialized = False
 
+    def dump_flash(self, target_filename):
+        """Copy the flash device's data into a file, but don't parse it.
+
+        @param target_filename: the file to create
+        """
+        self.fum.dump_flash(target_filename)
+
     def new_image(self, image_file=None):
         """Parse the full flashrom image and store sections into files.
 
@@ -216,7 +223,7 @@ class FlashromHandler(object):
                        flashrom image. If not passed in or empty, the actual
                        flash device is read and its contents are saved into a
                        temporary file which is used instead.
-        @type image_file: str
+        @type image_file: str | None
 
         The input file is parsed and the sections of importance (as defined in
         self.fv_sections) are saved in separate files in the state directory
@@ -224,7 +231,8 @@ class FlashromHandler(object):
         """
 
         if image_file:
-            self.image = open(image_file, 'rb').read()
+            with open(image_file, 'rb') as image_f:
+                self.image = image_f.read()
             self.fum.set_firmware_layout(image_file)
         else:
             self.image = self.fum.read_whole()
@@ -235,9 +243,9 @@ class FlashromHandler(object):
                     continue
                 blob = self.fum.get_section(self.image, subsection_name)
                 if blob:
-                    f = open(self.os_if.state_dir_file(subsection_name), 'wb')
-                    f.write(blob)
-                    f.close()
+                    blob_filename = self.os_if.state_dir_file(subsection_name)
+                    with open(blob_filename, 'wb') as blob_f:
+                        blob_f.write(blob)
 
             blob = self.fum.get_section(self.image, section.get_body_name())
             if blob:
@@ -300,11 +308,10 @@ class FlashromHandler(object):
 
         # All checks passed, let's store the key in a file.
         self.pub_key_file = self.os_if.state_dir_file(self.PUB_KEY_FILE_NAME)
-        keyf = open(self.pub_key_file, 'w')
-        key = gbb_section[rootk_offs:rootk_offs + key_body_offset +
-                          key_body_size]
-        keyf.write(key)
-        keyf.close()
+        with open(self.pub_key_file, 'w') as key_f:
+            key = gbb_section[rootk_offs:rootk_offs + key_body_offset +
+                              key_body_size]
+            key_f.write(key)
 
     def verify_image(self):
         """Confirm the image's validity.
@@ -588,37 +595,26 @@ class FlashromHandler(object):
         blob = self.fum.get_section(self.image, subsection_name)
         return blob
 
-    def get_section_fwid(self, section):
-        """Retrieve fwid blob of a firmware section"""
-        subsection_name = self.fv_sections[section].get_fwid_name()
-        blob = self.fum.get_section(self.image, subsection_name)
-        return blob
-
-    def get_fwid(self, sections):
-        """Retrieve multiple sections' fwids from the image.
-
-        If 'sections' argument is a string, the result is a single fwid string.
-        Otherwise, it's a dict of {section: fwid} for the requested sections.
-
-        @param sections: section(s) to return
-        @return: fwid(s) of the section(s)
-
-        @type sections: str | tuple | list
-        @rtype: str | dict
+    def get_section_fwid(self, section, strip_null=True):
         """
-        single = False
-        if isinstance(sections, str):
-            single = True
-            sections = [sections]
+        Retrieve fwid blob of a firmware section.
 
-        fwids = {}
-        for section in sections:
-            fwid = self.get_section_fwid(section)
-            fwids[section] = fwid.rstrip('\0')
-            if single:
-                return fwids[section]
+        @param section: Name of the section whose fwid to return.
+        @param strip_null: If True, remove \0 from the end of the blob.
+        @return: fwid of the section
 
-        return fwids
+        @type section: str
+        @type strip_null: bool
+        @rtype: str | None
+
+        """
+        subsection_name = self.fv_sections[section].get_fwid_name()
+        if not subsection_name:
+            return None
+        blob = self.fum.get_section(self.image, subsection_name)
+        if strip_null:
+            blob = blob.rstrip('\0')
+        return blob
 
     def set_section_body(self, section, blob, write_through=False):
         """Put the supplied blob to the body of the firmware section"""
@@ -679,11 +675,12 @@ class FlashromHandler(object):
         self.os_if.run_shell_command(cmd)
 
         #  Pad the new signature.
-        new_sig = open(sig_name, 'a')
-        pad = ('%c' % 0) * (sig_size - os.path.getsize(sig_name))
-        new_sig.write(pad)
-        new_sig.close()
+        with open(sig_name, 'a') as sig_f:
+            f_size = os.fstat(sig_f.fileno()).st_size
+            pad = '\0' * (sig_size - f_size)
+            sig_f.write(pad)
 
         # Inject the new signature block into the image
-        new_sig = open(sig_name, 'r').read()
+        with open(sig_name, 'r') as sig_f:
+            new_sig = sig_f.read()
         self.write_partial(fv_section.get_sig_name(), new_sig, write_through)

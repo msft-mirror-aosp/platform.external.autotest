@@ -81,7 +81,6 @@ suite:chameleon_peripherals
 suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational
-suite:cr50_stress_experimental
 suite:crosbolt_arc_perf_nightly
 suite:crosbolt_arc_perf_perbuild
 suite:crosbolt_perf_nightly
@@ -105,8 +104,10 @@ suite:faft_bios_au_2
 suite:faft_bios_au_3
 suite:faft_bios_ec3po
 suite:faft_bios_tot
+suite:faft_cr50_experimental
 suite:faft_cr50_prepvt
 suite:faft_cr50_pvt
+suite:faft_cr50_tot
 suite:faft_dev
 suite:faft_dev_ryu
 suite:faft_ec
@@ -126,6 +127,7 @@ suite:faft_lv4
 suite:faft_lv5
 suite:faft_normal
 suite:faft_normal_ryu
+suite:faft_pd
 suite:faft_setup
 suite:faft_smoke
 suite:faft_stress

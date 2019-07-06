@@ -67,6 +67,7 @@ class OSInterface(object):
         self.log_file = log_file
         self.cs = Crossystem()
         self.is_android = os.path.isfile(self.ANDROID_TESTER_FILE)
+        self.test_mode = False
         if self.is_android:
             self.shell = shell_wrapper.AdbShell()
             self.host_shell = shell_wrapper.LocalShell()
@@ -101,9 +102,19 @@ class OSInterface(object):
         """Return True if a host is connected to DUT."""
         return self.is_android
 
-    def run_shell_command(self, cmd):
-        """Run a shell command."""
-        self.shell.run_command(cmd)
+    def run_shell_command(self, cmd, modifies_device=False):
+        """Run a shell command.
+
+        @param cmd: the command to run
+        @param modifies_device: If True and running in test mode, just log
+                                the command, but don't actually run it.
+                                This should be set for RPC commands that alter
+                                the OS or firmware in some persistent way.
+        """
+        if self.test_mode and modifies_device:
+            self.log('[SKIPPED] %s' % cmd)
+        else:
+            self.shell.run_command(cmd)
 
     def run_shell_command_check_output(self, cmd, success_token):
         """Run shell command and check its stdout for a string."""
@@ -203,8 +214,9 @@ class OSInterface(object):
         """Return True if running on DUT."""
         if self.is_android:
             return True
-        signature = open('/etc/lsb-release', 'r').readlines()[0]
-        return re.search(r'chrom(ium|e)os', signature, re.IGNORECASE) != None
+        with open('/etc/lsb-release', 'r') as lsb_release:
+            signature = lsb_release.readlines()[0]
+        return bool(re.search(r'chrom(ium|e)os', signature, re.IGNORECASE))
 
     def state_dir_file(self, file_name):
         """Get a full path of a file in the state directory."""
@@ -234,7 +246,7 @@ class OSInterface(object):
         with open(self.log_file, 'a') as log_f:
             log_f.write('%s %s\n' % (timestamp, text))
             log_f.flush()
-            os.fdatasync(log_f)
+            os.fdatasync(log_f.fileno())
 
     def is_removable_device(self, device):
         """Check if a certain storage device is removable.

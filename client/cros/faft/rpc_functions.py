@@ -5,7 +5,6 @@
 
 These can be exposed via a xmlrpci server running on the DUT.
 """
-
 import httplib
 import os
 import sys
@@ -47,6 +46,7 @@ class RPCRouter(object):
         self.host = HostServicer(os_if)
         self.kernel = KernelServicer(os_if)
         self.rootfs = RootfsServicer(os_if)
+        self.rpc_settings = RpcSettingsServicer(os_if)
         self.system = SystemServicer(os_if)
         self.tpm = TpmServicer(os_if)
         self.updater = UpdaterServicer(os_if)
@@ -57,6 +57,7 @@ class RPCRouter(object):
                 'ec': self.ec,
                 'host': self.host,
                 'kernel': self.kernel,
+                'rpc_settings': self.rpc_settings,
                 'rootfs': self.rootfs,
                 'system': self.system,
                 'tpm': self.tpm,
@@ -224,10 +225,6 @@ class BiosServicer(object):
         """Reload the firmware image that may be changed."""
         self._bios_handler.new_image()
 
-    def get_fwid(self, sections='a'):
-        """Get FWIDs for the given sections"""
-        return self._bios_handler.get_fwid(sections)
-
     def get_gbb_flags(self):
         """Get the GBB flags.
 
@@ -375,19 +372,22 @@ class CgptServicer(object):
                 'B': self._cgpt_handler.get_partition(rootdev, 'KERN-B')
         }
 
-    def set_attributes(self, attributes):
-        """Set kernel attributes."""
+    def set_attributes(self, a=None, b=None):
+        """Set kernel attributes for either partition (or both)."""
+        partitions = {'A': a, 'B': b}
         rootdev = self._os_if.get_root_dev()
-        allowed = ['priority', 'tries', 'successful']
-        for p in ('A', 'B'):
-            if p not in attributes:
+        modifiable_attributes = self._cgpt_handler.ATTR_TO_COMMAND.keys()
+        for partition_name in partitions.keys():
+            partition = partitions[partition_name]
+            if partition is None:
                 continue
-            attr = dict()
-            for k in allowed:
-                if k in attributes[p]:
-                    attr[k] = attributes[p][k]
-            if attr:
-                self._cgpt_handler.set_partition(rootdev, 'KERN-%s' % p, attr)
+            attributes_to_set = {
+                    key: partition[key]
+                    for key in modifiable_attributes
+            }
+            if attributes_to_set:
+                self._cgpt_handler.set_partition(
+                        rootdev, 'KERN-%s' % partition_name, attributes_to_set)
 
 
 class EcServicer(object):
@@ -428,10 +428,6 @@ class EcServicer(object):
     def reload(self):
         """Reload the firmware image that may be changed."""
         self._ec_handler.new_image()
-
-    def get_fwid(self, sections='rw'):
-        """Get FWIDs for the given sections of EC firmware"""
-        return self._ec_handler.get_fwid(sections)
 
     def get_version(self):
         """Get EC version via mosys.
@@ -641,6 +637,24 @@ class RootfsServicer(object):
         return self._rootfs_handler.verify_rootfs(section)
 
 
+class RpcSettingsServicer(object):
+    """Class to service RPCs for settings of the RPC server itself"""
+
+    def __init__(self, os_if):
+        """
+        @type os_if: os_interface.OSInterface
+        """
+        self._os_if = os_if
+
+    def enable_test_mode(self):
+        """Enable test mode (avoids writing to flash or gpt)"""
+        self._os_if.test_mode = True
+
+    def disable_test_mode(self):
+        """Disable test mode and return to normal operation"""
+        self._os_if.test_mode = False
+
+
 class SystemServicer(object):
     """Class to service all System RPCs"""
 
@@ -709,15 +723,13 @@ class SystemServicer(object):
         return self._os_if.run_shell_command_check_output(
                 command, success_token)
 
-    def run_shell_command_get_output(self, command,
-                                     include_stderr=False):
+    def run_shell_command_get_output(self, command, include_stderr=False):
         """Run shell command and get its console output.
 
         @param command: A shell command to be run.
         @return: A list of strings stripped of the newline characters.
         """
-        return self._os_if.run_shell_command_get_output(command,
-                                                        include_stderr)
+        return self._os_if.run_shell_command_get_output(command, include_stderr)
 
     def run_shell_command_get_status(self, command):
         """Run shell command and get its console status.
@@ -917,17 +929,21 @@ class UpdaterServicer(object):
         """Start update-engine daemon."""
         return self._updater.start_daemon()
 
-    def get_fwid(self, target='bios', sections='a'):
-        """Retrieve shellball's RW and/or RO fwid."""
-        return self._updater.get_fwid(target, sections)
+    def get_section_fwid(self, target='bios', section=None):
+        """Retrieve shellball's RW or RO fwid."""
+        return self._updater.get_section_fwid(target, section)
 
-    def modify_fwid(self, target='bios', sections='a'):
+    def get_all_fwids(self, target='bios'):
+        """Retrieve shellball's RW and/or RO fwids for all sections."""
+        return self._updater.get_all_fwids(target)
+
+    def get_all_installed_fwids(self, target='bios', filename=None):
+        """Retrieve installed (possibly emulated) fwids for the target."""
+        return self._updater.get_all_installed_fwids(target, filename)
+
+    def modify_fwids(self, target='bios', sections=None):
         """Modify the AP fwid in the image, but don't flash it."""
-        return self._updater.modify_fwid(target, sections)
-
-    def get_installed_fwid(self, target='bios', sections=None, filename=None):
-        """Retrieve installed (possibly emulated) RW and/or RO fwids."""
-        return self._updater.get_installed_fwid(target, sections, filename)
+        return self._updater.modify_fwids(target)
 
     def modify_ecid_and_flash_to_bios(self):
         """Modify ecid, put it to AP firmware, and flash it to the system."""
@@ -979,7 +995,7 @@ class UpdaterServicer(object):
         """Run chromeos-firmwareupdate with autoupdate mode."""
         options = ['--noupdate_ec', '--wp=1']
         self._updater.run_firmwareupdate(
-                mode='autoupdate', updater_append=append, options=options)
+                mode='autoupdate', append=append, options=options)
 
     def run_factory_install(self):
         """Run chromeos-firmwareupdate with factory_install mode."""
@@ -989,7 +1005,7 @@ class UpdaterServicer(object):
 
     def run_bootok(self, append):
         """Run chromeos-firmwareupdate with bootok mode."""
-        self._updater.run_firmwareupdate(mode='bootok', updater_append=append)
+        self._updater.run_firmwareupdate(mode='bootok', append=append)
 
     def run_recovery(self):
         """Run chromeos-firmwareupdate with recovery mode."""

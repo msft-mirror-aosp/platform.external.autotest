@@ -25,29 +25,41 @@ class network_WiFi_APSupportedRates(wifi_cell_test_base.WiFiCellTestBase):
         @param supported_rates: List of upported legacy bitrates (Mbps).
 
         """
-        dut_src_display_filter = 'wlan.sa==%s' % self.context.client.wifi_mac
-        # Some chips use self-addressed frames to tune channel
-        # performance. They don't carry host-generated traffic, so
-        # filter them out.
-        dut_dst_display_filter = 'wlan.da==%s' % self.context.client.wifi_mac
+        # Filter notes:
+        # (a) Some chips use self-addressed frames to tune channel performance.
+        #     They don't carry host-generated traffic, so filter them out.
+        # (b) Use TA (not SA), because multicast may retransmit our
+        #     "Source-Addressed" frames at rates we don't control.
+        # (c) BSSID filter: non-BSSID frames include Ack and BlockAck frames;
+        #     these rates tend to match the frames to which they're responding
+        #     (i.e., not under DUT's control).
+        # Items (b) and (c) wouldn't be much problem if our APs actually
+        # respected the Supported Rates IEs that we're configuring, but current
+        # (2019-06-28) test AP builds do not appear to.
+        frame_filter = ('wlan.ta==%s and (not wlan.da==%s) and wlan.bssid==%s' %
+                        (self.context.client.wifi_mac,
+                         self.context.client.wifi_mac,
+                         self.context.router.get_hostapd_mac(0)))
         frames = tcpdump_analyzer.get_frames(pcap_result.local_pcap_path,
-                                             ('%s and not %s' % (
-                                              dut_src_display_filter,
-                                              dut_dst_display_filter)),
-                                             reject_bad_fcs=False)
+                                             frame_filter, reject_bad_fcs=False)
+        if not frames:
+            raise error.TestError('Failed to capture any relevant frames')
 
-        for frame in frames:
-            # Some frames don't have bitrate fields -- for example, if they are
-            # using MCS rates (not legacy rates). For MCS rates, that's OK,
-            # since that satisfies this test requirement (not using
-            # "unsupported legacy rates"). So ignore them.
-            if (frame.bit_rate is not None and
-                frame.bit_rate not in supported_rates):
-                logging.error('Unexpected rate for: %s', frame)
-                raise error.TestFail('Frame at %s was sent at %f Mbps '
-                                     '(expected %r).' %
-                                     (frame.time_string, frame.bit_rate,
-                                      supported_rates))
+        # Some frames don't have bitrate fields -- for example, if they are
+        # using MCS rates (not legacy rates). For MCS rates, that's OK, since
+        # that satisfies this test requirement (not using "unsupported legacy
+        # rates"). So ignore them.
+        bad_frames = [f for f in frames
+                      if f.bit_rate is not None and
+                         f.bit_rate not in supported_rates]
+        if bad_frames:
+            # Remove duplicates.
+            bad_rates = list(set(f.bit_rate for f in bad_frames))
+            logging.error('Unexpected rate for frames:')
+            for f in bad_frames:
+                logging.error('%s', f)
+            raise error.TestFail('Saw frames at rates %r (expected %r).' %
+                                 (bad_rates, supported_rates))
 
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hook into super class to take control files parameters.

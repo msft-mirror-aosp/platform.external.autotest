@@ -63,6 +63,9 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- if max_retries != None %}
             max_retry={{max_retries}},
     {%- endif %}
+    {%- if enable_default_apps %}
+            enable_default_apps=True,
+    {%- endif %}
             needs_push_media={{needs_push_media}},
             tag='{{tag}}',
             test_name='{{name}}',
@@ -227,6 +230,11 @@ _MEDIA_MODULES = [
 ]
 _NEEDS_PUSH_MEDIA = _MEDIA_MODULES + [_ALL]
 
+# Modules that are known to need the default apps of Chrome (eg. Files.app).
+_ENABLE_DEFAULT_APPS = [
+    'CtsAppSecurityHostTestCases',
+]
+
 # Run `eject` for (and only for) each device with RM=1 in lsblk output.
 _EJECT_REMOVABLE_DISK_COMMAND = (
     "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")
@@ -327,6 +335,7 @@ _DISABLE_LOGCAT_ON_FAILURE = set([
     'CtsDeqpTestCases.dEQP-GLES3',
     'CtsDeqpTestCases.dEQP-GLES31',
     'CtsDeqpTestCases.dEQP-VK',
+    'CtsLibcoreTestCases',
 ])
 
 _EXTRA_MODULES = {
@@ -1020,6 +1029,13 @@ def needs_push_media(modules):
     return False
 
 
+def enable_default_apps(modules):
+    """Oracle to determine if to enable default apps (eg. Files.app)."""
+    if modules.intersection(set(_ENABLE_DEFAULT_APPS)):
+        return True
+    return False
+
+
 def get_controlfile_content(combined,
                             modules,
                             abi,
@@ -1068,6 +1084,7 @@ def get_controlfile_content(combined,
         build=build,
         abi=abi,
         needs_push_media=needs_push_media(modules),
+        enable_default_apps=enable_default_apps(modules),
         tag=tag,
         uri=uri,
         DOC=get_doc(modules, abi, is_public),

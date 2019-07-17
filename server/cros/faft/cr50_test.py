@@ -21,9 +21,12 @@ class Cr50Test(FirmwareTest):
     version = 1
 
     RESPONSE_TIMEOUT = 180
-    CR50_GS_URL = 'gs://chromeos-localmirror-private/distfiles/chromeos-cr50-%s/'
-    CR50_DEBUG_FILE = '*/cr50_dbg_%s.bin'
-    CR50_PROD_FILE = 'cr50.%s.bin.prod'
+    GS_PRIVATE = 'gs://chromeos-localmirror-private/distfiles/*/'
+    GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/'
+    CR50_DEBUG_FILE =  '*/cr50_dbg_%s.bin%s'
+    CR50_PROD_FILE = 'cr50.r0.0.10.w%s%s.tbz2'
+    CR50_TOT_VER_FILE = 'tot/LATEST'
+    CR50_TOT_FILE = 'tot/cr50.bin.%s.%s'
     NONE = 0
     # Saved the original device state during init.
     INITIAL_STATE = 1 << 0
@@ -48,6 +51,7 @@ class Cr50Test(FirmwareTest):
         self._saved_state = self.NONE
         self._raise_error_on_mismatch = not restore_cr50_state
         self._provision_update = provision_update
+        self.tot_test_run = full_args.get('tot_test_run', '').lower() == 'true'
         super(Cr50Test, self).initialize(host, cmdline_args)
 
         if not hasattr(self, 'cr50'):
@@ -94,9 +98,9 @@ class Cr50Test(FirmwareTest):
             self._save_original_images(full_args.get('release_path', ''))
             # We successfully saved the device images
             self._saved_state |= self.IMAGES
-        except error.CmdError, e:
+        except error.TestFail as e:
             if restore_cr50_state:
-                if 'One or more URLs matched no objects.' in str(e):
+                if 'Could not find' in str(e):
                     raise error.TestNAError('Need DBG image to run test')
                 raise
         except:
@@ -107,14 +111,13 @@ class Cr50Test(FirmwareTest):
     def after_run_once(self):
         """Log which iteration just ran"""
         logging.info('successfully ran iteration %d', self.iteration)
-        self._confirm_dut_is_pingable()
+        self._try_to_bring_dut_up()
 
 
     def _save_node_locked_dev_image(self, cr50_dev_path):
         """Save or download the node locked dev image.
 
-        Args:
-            cr50_dev_path: The path to the node locked cr50 image.
+        @param cr50_dev_path: The path to the node locked cr50 image.
         """
         if os.path.isfile(cr50_dev_path):
             self._node_locked_cr50_image = cr50_dev_path
@@ -129,16 +132,13 @@ class Cr50Test(FirmwareTest):
 
         This will download running cr50 image and the device image.
 
-        Args:
-            release_path: The release path given by test args
+        @param release_path: The release path given by test args
         """
         # Copy the prod and prepvt images from the DUT
         _, prod_rw, prod_bid = self._original_state['device_prod_ver']
         filename = 'prod_device_image_' + prod_rw
-        self._device_prod_image = os.path.join(self.resultsdir,
-                filename)
-        self.host.get_file(cr50_utils.CR50_PROD,
-                self._device_prod_image)
+        self._device_prod_image = os.path.join(self.resultsdir, filename)
+        self.host.get_file(cr50_utils.CR50_PROD, self._device_prod_image)
 
         if cr50_utils.HasPrepvtImage(self.host):
             _, prepvt_rw, prepvt_bid = self._original_state['device_prepvt_ver']
@@ -157,6 +157,10 @@ class Cr50Test(FirmwareTest):
             self._original_cr50_image = release_path
             logging.info('using supplied image')
             return
+        if self.tot_test_run:
+            self._original_cr50_image = self.download_cr50_tot_image()
+            return
+
         # If the running cr50 image version matches the image on the DUT use
         # the DUT image as the original image. If the versions don't match
         # download the image from google storage
@@ -226,11 +230,10 @@ class Cr50Test(FirmwareTest):
         the DBG image to erase the state that can only be erased by a DBG image.
         Set the chip board id during rollback
 
-        Args:
-            chip_bid: the integer representation of chip board id or None if the
-                      board id should be erased
-            chip_flags: the integer representation of chip board id flags or
-                        None if the board id should be erased
+        @param chip_bid: the integer representation of chip board id or None if
+                         the board id should be erased
+        @param chip_flags: the integer representation of chip board id flags or
+                           None if the board id should be erased
         """
         for i in range(3):
             try:
@@ -245,13 +248,6 @@ class Cr50Test(FirmwareTest):
             except Exception, e:
                 logging.warning('Failed to restore original image attempt %d: '
                                 '%r', i, e)
-
-
-    def rootfs_verification_disable(self):
-        """Remove rootfs verification."""
-        if not self._rootfs_verification_is_disabled():
-            logging.debug('Removing rootfs verification.')
-            self.rootfs_tool.enable()
 
 
     def _rootfs_verification_is_disabled(self):
@@ -334,9 +330,8 @@ class Cr50Test(FirmwareTest):
     def _check_original_state(self):
         """Compare the current cr50 state to the original state.
 
-        Returns:
-            A dictionary with the state that is wrong as the key and
-            the new and old state as the value
+        @return: A dictionary with the state that is wrong as the key and the
+                 new and old state as the value
         """
         if not (self._saved_state & self.INITIAL_STATE):
             logging.warning('Did not save the original state. Cannot verify it '
@@ -424,12 +419,12 @@ class Cr50Test(FirmwareTest):
         logging.info('do_flash_op count: %d', flash_error_count)
 
 
-    def _confirm_dut_is_pingable(self):
-        """Reset the DUT if it doesn't respond to ping"""
+    def _try_to_bring_dut_up(self):
+        """Try to quickly get the dut in a pingable state"""
         logging.info('checking dut state')
 
-        self.servo.set('cold_reset', 'off')
-        self.servo.set('warm_reset', 'off')
+        self.servo.set_nocheck('cold_reset', 'off')
+        self.servo.set_nocheck('warm_reset', 'off')
         time.sleep(self.cr50.SHORT_WAIT)
         if not self.cr50.ap_is_on():
             logging.info('Pressing power button to turn on AP')
@@ -439,7 +434,8 @@ class Cr50Test(FirmwareTest):
         while not self.host.ping_wait_up(
                 self.faft_config.delay_reboot_to_ping):
             if time.time() > end_time:
-                raise error.TestFail('DUT is unresponsive')
+                logging.warn('DUT is unresponsive at end of test')
+                return
             self.servo.get_power_state_controller().reset()
             logging.info('DUT did not respond. Resetting it.')
 
@@ -478,64 +474,87 @@ class Cr50Test(FirmwareTest):
         self._reset_ccd_settings()
 
 
-    def find_cr50_gs_image(self, filename, image_type=None):
+    def find_cr50_gs_image(self, gsurl):
         """Find the cr50 gs image name.
 
-        Args:
-            filename: the cr50 filename to match to
-            image_type: release or debug. If it is not specified we will search
-                        both the release and debug directories
-        Returns:
-            a tuple of the gsutil bucket, filename
+        @param gsurl: the cr50 image location
+        @return: a list of the gsutil bucket, filename or None if the file
+                 can't be found
         """
-        gs_url = self.CR50_GS_URL % (image_type if image_type else '*')
-        gs_filename = os.path.join(gs_url, filename)
-        bucket, gs_filename = utils.gs_ls(gs_filename)[0].rsplit('/', 1)
-        return bucket, gs_filename
+        try:
+            return utils.gs_ls(gsurl)[0].rsplit('/', 1)
+        except error.CmdError:
+            logging.info('%s does not exist', gsurl)
+            return None
 
 
-    def download_cr50_gs_image(self, filename, image_bid='', bucket=None,
-                               image_type=None):
-        """Get the image from gs and save it in the autotest dir.
+    def _extract_cr50_image(self, archive, fn):
+        """Extract the filename from the given archive
+        Aargs:
+            archive: the archive location on the host
+            fn: the file to extract
 
-        Args:
-            filename: The cr50 image basename
-            image_bid: the board id info list or string. It will be added to the
-                       filename.
-            bucket: The gs bucket name
-            image_type: 'debug' or 'release'. This will be used to determine
-                        the bucket if the bucket is not given.
         Returns:
-            A tuple with the local path and version
+            The location of the extracted file
         """
-        # Add the image bid string to the filename
-        if image_bid:
-            bid_str = cr50_utils.GetBoardIdInfoString(image_bid,
-                                                       symbolic=True)
-            filename += '.' + bid_str.replace(':', '_')
+        remote_dir = os.path.dirname(archive)
+        result = self.host.run('tar xfv %s -C %s' % (archive, remote_dir))
+        for line in result.stdout.splitlines():
+            if os.path.basename(line) == fn:
+                return os.path.join(remote_dir, line)
+        raise error.TestFail('%s was not extracted from %s' % (fn , archive))
 
-        if not bucket:
-            bucket, filename = self.find_cr50_gs_image(filename, image_type)
+
+    def download_cr50_gs_file(self, gsurl, extract_fn):
+        """Download and extract the file at gsurl.
+
+        @param gsurl: The gs url for the cr50 image
+        @param extract_fn: The name of the file to extract from the cr50 image
+                        tarball. Don't extract anything if extract_fn is None.
+        @return: a tuple (local path, host path)
+        """
+        file_info = self.find_cr50_gs_image(gsurl)
+        if not file_info:
+            raise error.TestFail('Could not find %s' % gsurl)
+        bucket, fn = file_info
 
         remote_temp_dir = '/tmp/'
-        src = os.path.join(remote_temp_dir, filename)
-        dest = os.path.join(self.resultsdir, filename)
+        src = os.path.join(remote_temp_dir, fn)
+        dest = os.path.join(self.resultsdir, fn)
 
         # Copy the image to the dut
         gsutil_wrapper.copy_private_bucket(host=self.host,
                                            bucket=bucket,
-                                           filename=filename,
+                                           filename=fn,
                                            destination=remote_temp_dir)
+        if extract_fn:
+            src = self._extract_cr50_image(src, extract_fn)
+            logging.info('extracted %s', src)
+            # Remove .tbz2 from the local path.
+            dest = os.path.splitext(dest)[0]
 
         self.host.get_file(src, dest)
+        return dest, src
+
+
+    def download_cr50_gs_image(self, gsurl, extract_fn, image_bid):
+        """Get the image from gs and save it in the autotest dir.
+
+        @param gsurl: The gs url for the cr50 image
+        @param extract_fn: The name of the file to extract from the cr50 image
+                        tarball. Don't extract anything if extract_fn is None.
+        @param image_bid: the image symbolic board id
+        @return: A tuple with the local path and version
+        """
+        dest, src = self.download_cr50_gs_file(gsurl, extract_fn)
         ver = cr50_utils.GetBinVersion(self.host, src)
 
         # Compare the image board id to the downloaded image to make sure we got
         # the right file
         downloaded_bid = cr50_utils.GetBoardIdInfoString(ver[2], symbolic=True)
-        if image_bid and bid_str != downloaded_bid:
+        if image_bid and image_bid != downloaded_bid:
             raise error.TestError('Could not download image with matching '
-                                  'board id wanted %s got %s' % (bid_str,
+                                  'board id wanted %s got %s' % (image_bid,
                                   downloaded_bid))
         return dest, ver
 
@@ -545,21 +564,49 @@ class Cr50Test(FirmwareTest):
 
         Get the file with the matching devid and image board id info
 
-        Args:
-            devid: the cr50_devid string '${DEVID0} ${DEVID1}'
-            image_bid: the image board id info string or list
-        Returns:
-            A tuple with the debug image local path and version
+        @param devid: the cr50_devid string '${DEVID0} ${DEVID1}'
+        @param image_bid: the image board id info string or list
+        @return: A tuple with the debug image local path and version
         """
-        # Debug images are node locked with the devid. Add the devid to the
-        # filename
-        filename = self.CR50_DEBUG_FILE % (devid.replace(' ', '_'))
+        bid_ext = ''
+        # Add the image bid string to the filename
+        if image_bid:
+            image_bid = cr50_utils.GetBoardIdInfoString(image_bid,
+                                                        symbolic=True)
+            bid_ext = '.' + image_bid.replace(':', '_')
 
-        # Download the image
-        dest, ver = self.download_cr50_gs_image(filename, image_bid=image_bid,
-                                                image_type='debug')
+        gsurl = os.path.join(self.GS_PRIVATE,
+                (self.CR50_DEBUG_FILE % (devid.replace(' ', '_'), bid_ext)))
+        return self.download_cr50_gs_image(gsurl, None, image_bid)
 
-        return dest, ver
+
+    def download_cr50_tot_image(self):
+        """download the cr50 TOT image.
+
+        @return: the local path to the TOT image.
+        """
+        # Get the TOT version information
+        ver_file = os.path.join(self.GS_PRIVATE, self.CR50_TOT_VER_FILE)
+        dut_ver_file = self.download_cr50_gs_file(ver_file, False)[1]
+        tot_ver = self.host.run('cat %s' % dut_ver_file).stdout.strip()
+
+        # Download the TOT image for the current board using the devid and TOT
+        # version information.
+        devid_ext = self.servo.get('cr50_devid').replace(' ', '_')
+        tot_file = self.CR50_TOT_FILE % (tot_ver, devid_ext)
+        gsurl = os.path.join(self.GS_PRIVATE, tot_file)
+
+        logging.info('using release image %s', tot_file)
+        return self.download_cr50_gs_image(gsurl, False, None)[0]
+
+
+    def _find_release_image_gsurl(self, fn):
+        """Find the gs url for the release image"""
+        for gsbucket in [self.GS_PUBLIC, self.GS_PRIVATE]:
+            gsurl = os.path.join(gsbucket, fn)
+            if self.find_cr50_gs_image(gsurl):
+                return gsurl
+        raise error.TestFail('%s is not on google storage' % fn)
 
 
     def download_cr50_release_image(self, image_rw, image_bid=''):
@@ -567,18 +614,23 @@ class Cr50Test(FirmwareTest):
 
         Get the file with the matching version and image board id info
 
-        Args:
-            image_rw: the rw version string
-            image_bid: the image board id info string or list
-        Returns:
-            A tuple with the release image local path and version
+        @param image_rw: the rw version string
+        @param image_bid: the image board id info string or list
+        @return: A tuple with the release image local path and version
         """
-        # Release images can be found using the rw version
-        filename = self.CR50_PROD_FILE % image_rw
+        bid_ext = ''
+        # Add the image bid string to the gsurl
+        if image_bid:
+            image_bid = cr50_utils.GetBoardIdInfoString(image_bid,
+                                                      symbolic=True)
+            bid_ext = '_' + image_bid.replace(':', '_')
+        release_fn = self.CR50_PROD_FILE % (image_rw, bid_ext)
+        gsurl = self._find_release_image_gsurl(release_fn)
 
+        # Release images can be found using the rw version
         # Download the image
-        dest, ver = self.download_cr50_gs_image(filename, image_bid=image_bid,
-                                                image_type='release')
+        dest, ver = self.download_cr50_gs_image(gsurl, 'cr50.bin.prod',
+                                                image_bid)
 
         # Compare the rw version and board id info to make sure the right image
         # was found
@@ -591,13 +643,10 @@ class Cr50Test(FirmwareTest):
     def _cr50_verify_update(self, expected_rw, expect_rollback):
         """Verify the expected version is running on cr50.
 
-        Args:
-            expected_rw: The RW version string we expect to be running
-            expect_rollback: True if cr50 should have rolled back during the
-                             update
-
-        Raises:
-            TestFail if there is any unexpected update state
+        @param expected_rw: The RW version string we expect to be running
+        @param expect_rollback: True if cr50 should have rolled back during the
+                                update
+        @raise TestFail: if there is any unexpected update state
         """
         errors = []
         running_rw = self.cr50.get_version()
@@ -616,11 +665,8 @@ class Cr50Test(FirmwareTest):
     def _cr50_run_update(self, path):
         """Install the image at path onto cr50.
 
-        Args:
-            path: the location of the image to update to
-
-        Returns:
-            the rw version of the image
+        @param path: the location of the image to update to
+        @return: the rw version of the image
         """
         tmp_dest = '/tmp/' + os.path.basename(path)
 
@@ -636,19 +682,16 @@ class Cr50Test(FirmwareTest):
         If rollback is True, we assume that cr50 is already running an image
         that can rollback.
 
-        Args:
-            path: the location of the update image
-            rollback: True if we need to force cr50 to rollback to update to
-                      the given image
-            erase_nvmem: True if we need to erase nvmem during rollback
-            expect_rollback: True if cr50 should rollback on its own
-            chip_bid: the integer representation of chip board id or None if the
-                      board id should be erased during rollback
-            chip_flags: the integer representation of chip board id flags or
+        @param path: the location of the update image
+        @param rollback: True if we need to force cr50 to rollback to update to
+                         the given image
+        @param erase_nvmem: True if we need to erase nvmem during rollback
+        @param expect_rollback: True if cr50 should rollback on its own
+        @param chip_bid: the integer representation of chip board id or None if
+                         the board id should be erased during rollback
+        @param chip_flags: the integer representation of chip board id flags or
                         None if the board id should be erased during rollback
-
-        Raises:
-            TestFail if the update failed
+        @raise TestFail: if the update failed
         """
         original_rw = self.cr50.get_version()
 
@@ -730,8 +773,7 @@ class Cr50Test(FirmwareTest):
     def _check_open_and_press_power_button(self):
         """Check stdout and press the power button if prompted.
 
-        Returns:
-            True if the process is still running.
+        @return: True if the process is still running.
         """
         logging.info(self._get_ccd_open_output())
         self.servo.power_short_press()
@@ -776,8 +818,7 @@ class Cr50Test(FirmwareTest):
     def fast_open(self, enable_testlab=False):
         """Try to use testlab open. If that fails, do regular ap open.
 
-        Args:
-            enable_testlab: If True, enable testlab mode after cr50 is open.
+        @param enable_testlab: If True, enable testlab mode after cr50 is open.
         """
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
@@ -809,11 +850,10 @@ class Cr50Test(FirmwareTest):
     def run_gsctool_cmd_with_password(self, password, cmd, name, expect_error):
         """Run a gsctool command and input the password
 
-        Args:
-            password: The cr50 password string
-            cmd: The gsctool command
-            name: The name to give the job
-            expect_error: True if the command should fail
+        @param password: The cr50 password string
+        @param cmd: The gsctool command
+        @param name: The name to give the job
+        @param expect_error: True if the command should fail
         """
         set_pwd_cmd = utils.sh_escape(cmd)
         full_ssh_command = '%s "%s"' % (self.host.ssh_command(options='-tt'),

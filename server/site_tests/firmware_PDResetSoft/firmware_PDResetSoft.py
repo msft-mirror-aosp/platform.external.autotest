@@ -24,7 +24,7 @@ class firmware_PDResetSoft(FirmwareTest):
 
 
     def _test_soft_reset(self, port_pair):
-        """Tests soft reset initated by both Plankton and the DUT
+        """Tests soft reset initated by both PDTester and the DUT
 
         @param port_pair: list of 2 connected PD devices
         """
@@ -42,7 +42,7 @@ class firmware_PDResetSoft(FirmwareTest):
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         # Turn off console prints, except for USBPD.
-        self.usbpd.send_command('chan 0x08000000')
+        self.usbpd.enable_console_channel('usbpd')
 
     def cleanup(self):
         self.usbpd.send_command('chan 0xffffffff')
@@ -61,7 +61,7 @@ class firmware_PDResetSoft(FirmwareTest):
 
         """
         # Create list of available UART consoles
-        consoles = [self.usbpd, self.plankton]
+        consoles = [self.usbpd, self.pdtester]
         port_partner = pd_device.PDPortPartner(consoles)
         # Identify a valid test port pair
         port_pair = port_partner.identify_pd_devices()

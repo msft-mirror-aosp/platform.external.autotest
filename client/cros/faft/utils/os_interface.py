@@ -4,6 +4,7 @@
 """A module to provide interface to OS services."""
 
 import datetime
+import errno
 import os
 import re
 import struct
@@ -53,12 +54,20 @@ class OSInterface(object):
 
     ANDROID_TESTER_FILE = '/mnt/stateful_partition/.android_faft_tester'
 
-    def __init__(self):
-        """Object construction time initialization."""
-        self.state_dir = None
-        self.log_file = None
+    def __init__(self, state_dir='/var/tmp/faft', log_file='faft_client.log'):
+        """Object construction time initialization.
+
+        @param state_dir: the name of the directory (as defined by the caller).
+                            The contents of this directory persist over system
+                            restarts and power cycles.
+        @param log_file: the name of the log file kept in the state directory.
+        """
+        # We keep the state of FAFT test in a permanent directory over reboots.
+        self.state_dir = state_dir
+        self.log_file = log_file
         self.cs = Crossystem()
         self.is_android = os.path.isfile(self.ANDROID_TESTER_FILE)
+        self.test_mode = False
         if self.is_android:
             self.shell = shell_wrapper.AdbShell()
             self.host_shell = shell_wrapper.LocalShell()
@@ -66,32 +75,23 @@ class OSInterface(object):
             self.shell = shell_wrapper.LocalShell()
             self.host_shell = None
 
-    def init(self, state_dir=None, log_file=None):
-        """Initialize the OS interface object.
-
-        Args:
-          state_dir - a string, the name of the directory (as defined by the
-                      caller). The contents of this directory persist over
-                      system restarts and power cycles.
-          log_file - a string, the name of the log file kept in the state
-                     directory.
-
-        Default argument values support unit testing.
+    def init(self):
+        """Initialize the OS interface object.  This creates the log directory,
+        and initializes the CrosSystem object and the shell.
         """
+        # TODO(dgoyette): Convert most init() methods into __init__().
+        # Affected: Crossystem, LocalShell, and many others.
         self.cs.init(self)
-        self.state_dir = state_dir
 
         if self.state_dir:
-            if not os.path.exists(self.state_dir):
-                try:
-                    os.mkdir(self.state_dir)
-                except OSError, err:
+            try:
+                os.mkdir(self.state_dir)
+            except EnvironmentError as err:
+                if err.errno != errno.EEXIST:
                     raise OSInterfaceError(err)
-            if log_file:
-                if log_file[0] == '/':
-                    self.log_file = log_file
-                else:
-                    self.log_file = os.path.join(state_dir, log_file)
+            if self.log_file:
+                if not os.path.isabs(self.log_file):
+                    self.log_file = os.path.join(self.state_dir, self.log_file)
 
         # Initialize the shell. Should be after creating the log file.
         self.shell.init(self)
@@ -102,9 +102,23 @@ class OSInterface(object):
         """Return True if a host is connected to DUT."""
         return self.is_android
 
-    def run_shell_command(self, cmd):
-        """Run a shell command."""
-        self.shell.run_command(cmd)
+    def run_shell_command(self, cmd, modifies_device=False):
+        """Run a shell command.
+
+        @param cmd: the command to run
+        @param modifies_device: If True and running in test mode, just log
+                                the command, but don't actually run it.
+                                This should be set for RPC commands that alter
+                                the OS or firmware in some persistent way.
+        """
+        if self.test_mode and modifies_device:
+            self.log('[SKIPPED] %s' % cmd)
+        else:
+            self.shell.run_command(cmd)
+
+    def run_shell_command_check_output(self, cmd, success_token):
+        """Run shell command and check its stdout for a string."""
+        return self.shell.run_command_check_output(cmd, success_token)
 
     def run_shell_command_get_status(self, cmd):
         """Run shell command and return its return code."""
@@ -200,8 +214,9 @@ class OSInterface(object):
         """Return True if running on DUT."""
         if self.is_android:
             return True
-        signature = open('/etc/lsb-release', 'r').readlines()[0]
-        return re.search(r'chrom(ium|e)os', signature, re.IGNORECASE) != None
+        with open('/etc/lsb-release', 'r') as lsb_release:
+            signature = lsb_release.readlines()[0]
+        return bool(re.search(r'chrom(ium|e)os', signature, re.IGNORECASE))
 
     def state_dir_file(self, file_name):
         """Get a full path of a file in the state directory."""
@@ -231,7 +246,7 @@ class OSInterface(object):
         with open(self.log_file, 'a') as log_f:
             log_f.write('%s %s\n' % (timestamp, text))
             log_f.flush()
-            os.fdatasync(log_f)
+            os.fdatasync(log_f.fileno())
 
     def is_removable_device(self, device):
         """Check if a certain storage device is removable.

@@ -9,11 +9,11 @@ NAME = 'bluetooth_AdapterQuickSanity'
 PURPOSE = ('Package of Bluetooth quick sanity tests')
 CRITERIA = 'Pass all sanity test'
 ATTRIBUTES = 'suite:bluetooth'
-TIME = 'MEDIUM'
+TIME = 'MEDIUM' # Takes 10 minutes on Guado
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, chameleon:ble, nRF52'
+DEPENDENCIES = 'bluetooth, chameleon:bt_ble_hid'
 
 DOC = """
     This class implements a Bluetooth quick sanity package, using

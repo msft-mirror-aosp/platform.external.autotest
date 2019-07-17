@@ -29,9 +29,15 @@ def main(args):
                         help='Keep files from previous sessions.')
     parser.add_argument('-u', '--username',
                         help='Log in as provided username.')
+    parser.add_argument('--enable_default_apps', action='store_true',
+                        help='Enable default applications.')
+    parser.add_argument('-p', '--password',
+                        help='Log in with provided password.')
     args = parser.parse_args(args)
 
-    if args.username:
+    if args.password:
+        password = args.password
+    elif args.username:
         password = getpass.getpass()
 
     # Avoid calling close() on the Chrome object; this keeps the session active.
@@ -40,6 +46,7 @@ def main(args):
         username=args.username,
         password=(password if args.username else None),
         gaia_login=(args.username is not None),
+        disable_default_apps=(not args.enable_default_apps),
         dont_override_profile=args.dont_override_profile)
 
 

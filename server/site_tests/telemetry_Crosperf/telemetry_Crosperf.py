@@ -207,7 +207,7 @@ class telemetry_Crosperf(test.test):
             ' echo "${no_t}"; cat "${no_t}";'
             'fi; '
         )
-        pid = ''
+        turbostat_pid = ''
         try:
             # If profiler_args specified, we want to add several more options
             # to the command so that run_benchmark will collect system wide
@@ -219,15 +219,16 @@ class telemetry_Crosperf(test.test):
                            % (profiler_args)
 
             # run turbostat tool in background on dut
-            if dut is not None:
+            if (args.get('turbostat', 'False') == 'True' and
+                dut is not None):
               logging.info('Running turbostat: %s', turbostat_cmd)
-              pid = dut.run_background(turbostat_cmd)
-              logging.info('turbostat started, pid %s', pid)
-              if not pid.isdigit():
+              turbostat_pid = dut.run_background(turbostat_cmd)
+              logging.info('turbostat started, pid %s', turbostat_pid)
+              if not turbostat_pid.isdigit():
                 # Not a fatal error, report and continue.
                 logging.error('Expected to receive PID, instead received %s',
-                              pid)
-                pid = ''
+                              turbostat_pid)
+                turbostat_pid = ''
 
             logging.info('CMD: %s', command)
             result = runner.run(command, stdout_tee=stdout, stderr_tee=stderr,
@@ -257,14 +258,14 @@ class telemetry_Crosperf(test.test):
               if res.exit_status:
                 logging.error('Get cpuinfo command failed with %d',
                               res.exit_status)
-              if pid:
-                logging.info("Kill turbostat pid=%s", pid)
+              if turbostat_pid:
+                logging.info("Kill turbostat pid=%s", turbostat_pid)
                 res = dut.run("if ps -p %s >/dev/null ; then kill %s ; fi"
-                             % (pid, pid))
+                             % (turbostat_pid, turbostat_pid))
                 if res.exit_status:
                   logging.error('Failed to kill turbostat process %d. '
                                 'Exit status %d',
-                                pid, res.exit_status)
+                                turbostat_pid, res.exit_status)
 
             stdout_str = stdout.getvalue()
             stderr_str = stderr.getvalue()
@@ -273,7 +274,8 @@ class telemetry_Crosperf(test.test):
             logging.info('Telemetry completed with exit code: %d.'
                          '\nstdout:%s\nstderr:%s', exit_code,
                          stdout_str, stderr_str)
-            if dut is not None:
+            if (args.get('turbostat', 'False') == 'True' and
+                dut is not None):
               scp_res = self.scp_telemetry_results(client_ip, dut,
                                          DUT_TURBOSTAT_LOG,
                                          self.resultsdir)
@@ -304,12 +306,24 @@ class telemetry_Crosperf(test.test):
         # if necessary. It always comes from DUT.
         if profiler_args:
             filepath = os.path.join(self.resultsdir, 'artifacts')
+            if not os.path.isabs(filepath):
+                raise RuntimeError('Expected absolute path of '
+                                   'arfifacts: %s' % filepath)
             perf_exist = False
-            for filename in os.listdir(filepath):
-                if filename.endswith('perf.data'):
-                    perf_exist = True
-                    shutil.copyfile(os.path.join(filepath, filename),
-                                    os.path.join(self.profdir, 'perf.data'))
+            for root, dirs, files in os.walk(filepath):
+                for f in files:
+                    if f.endswith('.perf.data'):
+                        perf_exist = True
+                        src_file = os.path.join(root, f)
+                        # results-cache.py in crosperf supports multiple
+                        # perf.data files, but only if they are named exactly
+                        # so. Therefore, create a subdir for each perf.data
+                        # file.
+                        dst_dir = os.path.join(self.profdir,
+                                               ''.join(f.split('.')[:-2]))
+                        os.makedirs(dst_dir)
+                        dst_file = os.path.join(dst_dir, 'perf.data')
+                        shutil.copyfile(src_file, dst_file)
             if not perf_exist:
                 exit_code = -1
                 raise error.TestFail('Error: No profiles collected, test may '

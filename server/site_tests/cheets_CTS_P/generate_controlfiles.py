@@ -101,13 +101,9 @@ _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
 _CTS_QUAL_RETRIES = 9
 _CTS_MAX_RETRIES = {
-    # TODO(ihf): Remove all once Nocturne stable.
-    'CtsAccessibilityServiceTestCases':  12,
-    'CtsActivityManagerDeviceTestCases': 12,
-    'CtsDeqpTestCases':   _CTS_QUAL_RETRIES,
-    'CtsGraphicsTestCases':              12,
-    'CtsIncidentHostTestCases':          12,
-    'CtsSensorTestCases':                30,  # TODO(ihf): Lower this once flakes are fixed.
+    'CtsDeqpTestCases':         15,  # TODO(b/126787654)
+    'CtsIncidentHostTestCases': 30,  # TODO(b/128695132)
+    'CtsSensorTestCases':       30,  # TODO(b/124528412)
 }
 
 # TODO(ihf): Update timeouts once P is more stable.
@@ -181,8 +177,7 @@ _QUAL_BOOKMARKS = sorted([
 ])
 
 _SMOKE = [
-    'CtsAccountManagerTestCases',
-    'CtsAdminTestCases',
+    'CtsUsbTests',
 ]
 
 _BVT_ARC = [
@@ -208,6 +203,12 @@ _BVT_PERBUILD = [
     'CtsUiAutomationTestCases',
     'CtsUsbTests',
     'CtsVoiceSettingsTestCases',
+]
+
+_HARDWARE_DEPENDENT_MODULES = [
+    'CtsSensorTestCases',
+    'CtsCameraTestCases',
+    'CtsBluetoothTestCases',
 ]
 
 # The suite is divided based on the run-time hint in the *.config file.
@@ -381,6 +382,12 @@ _PUBLIC_EXTRA_MODULES = {
         'CtsDeqpTestCases.dEQP-VK.spirv_assembly',
         'CtsDeqpTestCases.dEQP-VK.ssbo',
         'CtsDeqpTestCases.dEQP-VK.subgroups',
+        'CtsDeqpTestCases.dEQP-VK.subgroups.b',
+        'CtsDeqpTestCases.dEQP-VK.subgroups.s',
+        'CtsDeqpTestCases.dEQP-VK.subgroups.vote',
+        'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic',
+        'CtsDeqpTestCases.dEQP-VK.subgroups.clustered',
+        'CtsDeqpTestCases.dEQP-VK.subgroups.quad',
         'CtsDeqpTestCases.dEQP-VK.synchronization',
         'CtsDeqpTestCases.dEQP-VK.tessellation',
         'CtsDeqpTestCases.dEQP-VK.texture',
@@ -510,6 +517,33 @@ _EXTRA_COMMANDLINE = {
     'CtsDeqpTestCases.dEQP-VK.subgroups': [
         '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
         '--test', 'dEQP-VK.subgroups.*'
+    ],
+    # Splitting VK.subgroups to smaller pieces to workaround b/138622686.
+    # TODO(kinaba,haddowk): remove them once the root cause is fixed, or
+    # reconsider the sharding strategy.
+    'CtsDeqpTestCases.dEQP-VK.subgroups.b': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-VK.subgroups.b*'
+    ],
+    'CtsDeqpTestCases.dEQP-VK.subgroups.s': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-VK.subgroups.s*'
+    ],
+    'CtsDeqpTestCases.dEQP-VK.subgroups.vote': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-VK.subgroups.vote#*'
+    ],
+    'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-VK.subgroups.arithmetic#*'
+    ],
+    'CtsDeqpTestCases.dEQP-VK.subgroups.clustered': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-VK.subgroups.clustered#*'
+    ],
+    'CtsDeqpTestCases.dEQP-VK.subgroups.quad': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-VK.subgroups.quad#*'
     ],
     'CtsDeqpTestCases.dEQP-VK.synchronization': [
         '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
@@ -690,8 +724,9 @@ def get_suites(modules, abi, is_public):
         return ['suite:cts_P']
 
     # As this is not called for the "all" runs we can safely assume that each
-    # module runs in suite:arc-cts.
-    suites = ['suite:arc-cts']
+    # module runs in suite:arc-cts on boards, and each module runs in
+    # suite:arc-cts-unibuild on selected models.
+    suites = ['suite:arc-cts', 'suite:arc-cts-unibuild']
     for module in modules:
         if module in get_collect_modules(is_public):
             # We collect all tests both in arc-cts and arc-cts-qual as both have
@@ -700,9 +735,12 @@ def get_suites(modules, abi, is_public):
         if module in _EXTRA_ATTRIBUTES:
             # Special cases come with their own suite definitions.
             suites += _EXTRA_ATTRIBUTES[module]
-        if module in _SMOKE:
+        if module in _SMOKE and abi == 'arm':
             # Handle VMTest by adding a few jobs to suite:smoke.
             suites += ['suite:smoke']
+        if module in _HARDWARE_DEPENDENT_MODULES:
+            # CTS modules to be run on all unibuild models.
+            suites += ['suite:arc-cts-unibuild-hw']
         if module not in get_collect_modules(is_public) and abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.

@@ -275,6 +275,14 @@ class BiosServicer(object):
         """
         return self._bios_handler.get_section_sig_sha(section)
 
+    def GetSectionFwid(self, section=None):
+        """Retrieve the RO or RW fwid.
+
+        @param section: A firmware section, either 'a' or 'b'.
+        @return: A string of the fwid
+        """
+        return self._bios_handler.get_section_fwid(section)
+
     def CorruptSig(self, section):
         """Corrupt the requested firmware section signature.
 
@@ -349,10 +357,18 @@ class BiosServicer(object):
     def WriteWhole(self, bios_path):
         """Write the firmware from bios_path to the current system.
 
-        @param bios_path: The path of the source BIOS image.
+        @param bios_path: The path of the source BIOS image
         """
         self._bios_handler.new_image(bios_path)
         self._bios_handler.write_whole()
+
+    def StripModifiedFwids(self):
+        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs.
+
+        @return: a dict of any fwids that were adjusted, by section (ro, a, b)
+        @rtype: dict
+        """
+        return self._bios_handler.strip_modified_fwids()
 
 
 class CgptServicer(object):
@@ -494,6 +510,10 @@ class EcServicer(object):
     def RebootToSwitchSlot(self):
         """Reboot EC to switch the active RW slot."""
         self._os_if.run_shell_command('ectool reboot_ec cold switch-slot')
+
+    def StripModifiedFwids(self):
+        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs."""
+        return self._ec_handler.strip_modified_fwids()
 
 
 class HostServicer(object):
@@ -944,7 +964,7 @@ class UpdaterServicer(object):
         return self._updater.get_all_installed_fwids(target, filename)
 
     def ModifyFwids(self, target='bios', sections=None):
-        """Modify the AP fwid in the image, but don't flash it."""
+        """Modify the fwid in the image, but don't flash it."""
         return self._updater.modify_fwids(target, sections)
 
     def ModifyEcidAndFlashToBios(self):
@@ -981,6 +1001,10 @@ class UpdaterServicer(object):
     def ResetShellball(self):
         """Revert to the stock shellball"""
         self._updater.reset_shellball()
+
+    def ReloadImages(self):
+        """Reload handlers from the on-disk images, in case they've changed."""
+        self._updater.reload_images()
 
     def RunFirmwareupdate(self, mode, append=None, options=()):
         """Run updater with the given options

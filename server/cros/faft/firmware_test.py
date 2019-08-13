@@ -72,11 +72,9 @@ class FirmwareTest(FAFTBase):
     # UARTs that may be captured
     UARTS = ('cpu', 'cr50', 'ec', 'servo_micro', 'servo_v4', 'usbpd')
 
-    _SERVOD_LOG = '/var/log/servod.log'
-
     _ROOTFS_PARTITION_NUMBER = 3
 
-    _backup_firmware_sha = ()
+    _backup_firmware_identity = dict()
     _backup_kernel_sha = dict()
     _backup_cgpt_attr = dict()
     _backup_gbb_flags = None
@@ -413,6 +411,28 @@ class FirmwareTest(FAFTBase):
                 self.servo.system(cmd)
 
         self.mark_setup_done('usb_check')
+
+    def setup_pdtester(self, flip_cc=False):
+        """Setup the PDTester to a given state.
+
+        @param flip_cc: True to flip CC polarity; False to not flip it.
+        @raise TestError: If Servo v4 not setup properly.
+        """
+        # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
+        # the behaviors of what PD FAFT tests. So we want it disabled.
+        if 'servo_v4' in self.pdtester.servo_type:
+            self.pdtester.set('servo_v4_dts_mode', 'off')
+
+        self.pdtester.set('usbc_polarity', 'cc2' if flip_cc else 'cc1')
+        # Make it sourcing max voltage.
+        self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
+
+        # Servo v4 requires an external charger to source power. Make sure
+        # this setup is correct.
+        if ('servo_v4' in self.pdtester.servo_type and
+            self.pdtester.get('servo_v4_role') != 'src'):
+            raise error.TestError('Servo v4 failed sourcing power! Check '
+                    'the "DUT POWER" port connecting a valid charger.')
 
     def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.
@@ -848,26 +868,24 @@ class FirmwareTest(FAFTBase):
         self.faft_client.System.RunShellCommand(cmd)
         time.sleep(self.EC_SUSPEND_DELAY)
 
-    def _fetch_servo_log(self):
-        """Fetch the servo log."""
-        cmd = '[ -e %s ] && cat %s || echo NOTFOUND' % ((self._SERVOD_LOG,) * 2)
-        servo_log = self.servo.system_output(cmd)
-        return None if servo_log == 'NOTFOUND' else servo_log
-
     def _setup_servo_log(self):
-        """Setup the servo log capturing."""
-        self.servo_log_original_len = -1
+        """Set up the servo log capturing."""
+        self.servo_log_original_size = 0
+        self.servo_log_original_inode = None
         if self.servo.is_localhost():
             # No servo log recorded when servod runs locally.
             return
 
-        servo_log = self._fetch_servo_log()
-        if servo_log:
-            self.servo_log_original_len = len(servo_log)
-        else:
-            logging.warn('Servo log file not found.')
+        self.servo.fetch_servod_log(None, skip_old=False)
 
     def _record_servo_log(self):
+        """Record the new portion of the servo log to the results directory."""
+        if self.servo.is_localhost():
+            # No servo log recorded when servod runs locally.
+            return
+
+        results_servod_log = os.path.join(self.resultsdir, 'servod.log')
+        self.servo.fetch_servod_log(results_servod_log, skip_old=True)
         """Record the servo log to the results directory."""
         if hasattr(self, 'servo_log_original_len'):
             if self.servo_log_original_len != -1:
@@ -1294,42 +1312,56 @@ class FirmwareTest(FAFTBase):
         self._call_action(func, check_status=True)
         logging.info("-[FAFT]-[ end state_checker ]----------------")
 
-    def get_current_firmware_sha(self):
-        """Get current firmware sha of body and vblock.
+    def get_current_firmware_identity(self):
+        """Get current firmware sha and fwids of body and vblock.
 
-        @return: Current firmware sha follows the order (
-                 vblock_a_sha, body_a_sha, vblock_b_sha, body_b_sha)
+        @return: Current firmware checksums and fwids, as a dict
         """
-        current_firmware_sha = (self.faft_client.Bios.GetSigSha('a'),
-                                self.faft_client.Bios.GetBodySha('a'),
-                                self.faft_client.Bios.GetSigSha('b'),
-                                self.faft_client.Bios.GetBodySha('b'))
-        if not all(current_firmware_sha):
-            raise error.TestError('Failed to get firmware sha.')
-        return current_firmware_sha
+
+        # TODO(dgoyette): add a way to avoid hardcoding the keys (section names)
+        current_checksums = {
+            'VBOOTA': self.faft_client.Bios.GetSigSha('a'),
+            'FVMAINA': self.faft_client.Bios.GetBodySha('a'),
+            'VBOOTB': self.faft_client.Bios.GetSigSha('b'),
+            'FVMAINB': self.faft_client.Bios.GetBodySha('b'),
+        }
+        if not all(current_checksums.values()):
+            raise error.TestError(
+                    'Failed to get firmware sha: %s', current_checksums)
+
+        current_fwids = {
+            'RO_FRID': self.faft_client.Bios.GetSectionFwid('ro'),
+            'RW_FWID_A': self.faft_client.Bios.GetSectionFwid('a'),
+            'RW_FWID_B': self.faft_client.Bios.GetSectionFwid('b'),
+        }
+        if not all(current_fwids.values()):
+            raise error.TestError(
+                    'Failed to get firmware fwid(s): %s', current_fwids)
+
+        identifying_info = dict(current_fwids)
+        identifying_info.update(current_checksums)
+        return identifying_info
 
     def is_firmware_changed(self):
-        """Check if the current firmware changed, by comparing its SHA.
+        """Check if the current firmware changed, by comparing its SHA and fwid.
 
-        @return: True if it is changed, otherwise Flase.
+        @return: True if it is changed, otherwise False.
         """
         # Device may not be rebooted after test.
         self.faft_client.Bios.Reload()
 
-        current_sha = self.get_current_firmware_sha()
+        current_info = self.get_current_firmware_identity()
+        prev_info = self._backup_firmware_identity
 
-        if current_sha == self._backup_firmware_sha:
+        if current_info == prev_info:
             return False
         else:
-            corrupt_VBOOTA = (current_sha[0] != self._backup_firmware_sha[0])
-            corrupt_FVMAIN = (current_sha[1] != self._backup_firmware_sha[1])
-            corrupt_VBOOTB = (current_sha[2] != self._backup_firmware_sha[2])
-            corrupt_FVMAINB = (current_sha[3] != self._backup_firmware_sha[3])
-            logging.info('Firmware changed:')
-            logging.info('VBOOTA is changed: %s', corrupt_VBOOTA)
-            logging.info('VBOOTB is changed: %s', corrupt_VBOOTB)
-            logging.info('FVMAIN is changed: %s', corrupt_FVMAIN)
-            logging.info('FVMAINB is changed: %s', corrupt_FVMAINB)
+            changed = set()
+            for section in set(current_info.keys()) | set(prev_info.keys()):
+                if current_info.get(section) != prev_info.get(section):
+                    changed.add(section)
+
+            logging.info('Firmware changed: %s', ', '.join(sorted(changed)))
             return True
 
     def backup_firmware(self, suffix='.original'):
@@ -1353,27 +1385,28 @@ class FirmwareTest(FAFTBase):
         logging.info('Backup firmware stored in %s with suffix %s',
             self.resultsdir, suffix)
 
-        self._backup_firmware_sha = self.get_current_firmware_sha()
+        self._backup_firmware_identity = self.get_current_firmware_identity()
 
     def is_firmware_saved(self):
         """Check if a firmware saved (called backup_firmware before).
 
-        @return: True if the firmware is backuped; otherwise False.
+        @return: True if the firmware is backed up; otherwise False.
         """
-        return self._backup_firmware_sha != ()
+        return bool(self._backup_firmware_identity)
 
     def clear_saved_firmware(self):
         """Clear the firmware saved by the method backup_firmware."""
-        self._backup_firmware_sha = ()
+        self._backup_firmware_identity = {}
 
     def restore_firmware(self, suffix='.original', restore_ec=True):
         """Restore firmware from host in resultsdir.
 
         @param suffix: a string appended to backup file name
         @param restore_ec: True to restore the ec firmware; False not to do.
+        @return: True if firmware needed to be restored
         """
         if not self.is_firmware_changed():
-            return
+            return False
 
         # Backup current corrupted firmware.
         self.backup_firmware(suffix='.corrupt')
@@ -1394,6 +1427,7 @@ class FirmwareTest(FAFTBase):
 
         self.switcher.mode_aware_reboot()
         logging.info('Successfully restored firmware.')
+        return True
 
     def setup_firmwareupdate_shellball(self, shellball=None):
         """Setup a shellball to use in firmware update test.

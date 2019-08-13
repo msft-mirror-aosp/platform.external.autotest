@@ -17,6 +17,12 @@ EC_TYPE_ATEST_TO_SK = {
     "cros": "EC_TYPE_CHROME_OS",
 }
 
+REQUIRED_LABELS = ["board", "model", "sku", "brand"]
+
+
+class SkylabMissingLabelException(Exception):
+    pass
+
 
 class Labels(object):
     """a queryable interface to labels taken from autotest"""
@@ -79,8 +85,7 @@ class Labels(object):
             return prefix + raw.upper()
 
     def bool_keys_starting_with(self, prefix):
-        """get the boolean keys beginning with
-        a certain prefix.
+        """get the boolean keys beginning with a certain prefix.
 
         Takes time proportional to the number of boolean keys.
         """
@@ -136,6 +141,25 @@ def _platform(l):
     return l.get_string("platform") or l.get_string("Platform")
 
 
+def validate_required_fields_for_skylab(skylab_fields):
+    """Does 'skylab_fields' have all required fields to add a DUT?
+
+    Throw a SkylabMissingLabelException if any mandatory field is not present
+
+    @param skylab_fields : a DUT description to be handed to 'skylab add-dut'
+    @returns: Nothing
+    """
+    try:
+        labels = skylab_fields["common"]["labels"]
+    except (KeyError, TypeError, ValueError):
+        raise ValueError(
+            'skylab_fields["common"]["labels"] = { ... } is not present')
+    for label in REQUIRED_LABELS:
+        if label not in labels:
+            raise SkylabMissingLabelException(label)
+    return
+
+
 def process_labels(labels, platform):
     """produce a JSON object of the kind accepted by skylab add-dut
 
@@ -154,10 +178,14 @@ def process_labels(labels, platform):
         "arc": l.get_bool("arc"),
         # string keys in label
         "board": l.get_string("board", default=None),
+        "brand": l.get_string("brand-code", default=None),
         "cr50Phase": _cr50_phase(l),
         "model": l.get_string("model", default=None),
         "platform": platform,
         "referenceDesign": l.get_string("reference_design"),
+        # NOTE: the autotest label corresponding to "sku" is
+        # "device-sku", not "sku"
+        "sku": l.get_string("device-sku", default=None),
         # enum keys
         "ecType": _ec_type(l),
         "osType": l.get_enum("os", prefix="OS_TYPE_"),

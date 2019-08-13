@@ -85,6 +85,7 @@ class CrashTest(test.test):
     _PAUSE_FILE = '/var/lib/crash_sender_paused'
     _SYSTEM_CRASH_DIR = '/var/spool/crash'
     _FALLBACK_USER_CRASH_DIR = '/home/chronos/crash'
+    _EARLY_BOOT_CRASH_DIR = '/mnt/stateful_partition/unencrypted/preserve/crash'
     _USER_CRASH_DIRS = '/home/chronos/u-*/crash'
     _USER_CRASH_DIR_REGEX = re.compile('/home/chronos/u-([a-f0-9]+)/crash')
 
@@ -124,6 +125,7 @@ class CrashTest(test.test):
         This will remove all crash reports which are waiting to be sent.
         """
         utils.system('rm -rf ' + self._SYSTEM_CRASH_DIR)
+        utils.system('rm -rf ' + self._EARLY_BOOT_CRASH_DIR)
         utils.system('rm -rf %s %s' % (self._USER_CRASH_DIRS,
                                        self._FALLBACK_USER_CRASH_DIR))
 
@@ -181,7 +183,7 @@ class CrashTest(test.test):
             utils.open_write_close(temp_file, 'test-consent')
             utils.system('chown chronos:chronos "%s"' % (temp_file))
             shutil.move(temp_file, self._CONSENT_FILE)
-            logging.info('Created ' + self._CONSENT_FILE)
+            logging.info('Created %s', self._CONSENT_FILE)
         else:
             if os.path.isdir(constants.WHITELIST_DIR):
                 # Create policy file that disables metrics/consent.
@@ -198,7 +200,7 @@ class CrashTest(test.test):
     def _set_crash_test_in_progress(self, in_progress):
         if in_progress:
             utils.open_write_close(self._CRASH_TEST_IN_PROGRESS, 'in-progress')
-            logging.info('Created ' + self._CRASH_TEST_IN_PROGRESS)
+            logging.info('Created %s', self._CRASH_TEST_IN_PROGRESS)
         else:
             utils.system('rm -f "%s"' % (self._CRASH_TEST_IN_PROGRESS))
 
@@ -267,7 +269,7 @@ class CrashTest(test.test):
                                      directory of the current user session, or
                                      the fallback directory if no sessions.
         """
-        if username == 'root' and not force_user_crash_dir:
+        if username in ('root', 'crash') and not force_user_crash_dir:
             return self._SYSTEM_CRASH_DIR
         else:
             dirs = glob.glob(self._USER_CRASH_DIRS)
@@ -400,10 +402,9 @@ class CrashTest(test.test):
             'service_failure',
         )
 
-        # TODO(crbug.com/923200): clean up and make more robust.
         def crash_sender_search(regexp, output):
             """Narrow search to lines from crash_sender."""
-            return re.search(r'crash_sender.*' + regexp, output)
+            return re.search(r'crash_sender\[\d+\]:\s+' + regexp, output)
 
         before_first_crash = None
         while True:
@@ -548,10 +549,10 @@ class CrashTest(test.test):
 
         self.wait_for_sender_completion()
         output = self._log_reader.get_logs()
-        logging.debug('Crash sender message output:\n' + output)
+        logging.debug('Crash sender message output:\n %s', output)
 
         if script_output != '':
-            logging.debug('crash_sender stdout/stderr: ' + script_output)
+            logging.debug('crash_sender stdout/stderr: %s', script_output)
 
         if os.path.exists(report):
             report_exists = True

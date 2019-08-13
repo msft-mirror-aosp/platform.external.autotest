@@ -250,7 +250,9 @@ class firmware_Cr50DeviceState(Cr50Test):
         irq_list = list(self.irqs)
         irq_list.sort()
 
-        irq_diff = ['%23s' % 'step' + ''.join(self.step_names)]
+        # Pad the start of the step names, so the names align with each step
+        # count.
+        irq_diff = ['%24s|%s|' % ('', '|'.join(self.step_names))]
         step_errors = [ [] for i in range(num_steps) ]
 
         cr50_times = self.get_irq_step_counts(self.KEY_TIME)
@@ -267,7 +269,9 @@ class firmware_Cr50DeviceState(Cr50Test):
             if irq_key in self.IGNORED_KEYS:
                 continue
             name = self.INT_NAME.get(irq_key, 'Unknown')
-            irq_progress_str = ['%19s %3s:' % (name, irq_key)]
+            # Print the IRQ name on the left of the column and the irq number
+            # on the right.
+            irq_progress_str = ['%-19s %3s' % (name, irq_key)]
 
             irq_counts = self.get_irq_step_counts(irq_key)
             for step, count in enumerate(irq_counts):
@@ -291,12 +295,19 @@ class firmware_Cr50DeviceState(Cr50Test):
                     rv = self.check_increase(irq_key, name, count,
                             expected_range)
                     if rv:
-                        logging.info('Unexpected count for %s %s', state, rv)
-                        step_errors[step].append(rv)
+                        step_name = self.step_names[step].strip()
+                        logging.info('Unexpected count in %s test: %s %s',
+                                     state, step_name, rv)
+                        # Running commands can take a while and cr50 may not be
+                        # idle. Ignore irq counts while running AP commands.
+                        if 'cmd done' not in step_name:
+                            step_errors[step].append(rv)
 
                 irq_progress_str.append(' %2s %7d' % (event, count))
 
-            irq_diff.append(''.join(irq_progress_str))
+            # Separate each step count with '|'. Add '|' to the start and end of
+            # the line.
+            irq_diff.append('|%s|' % '|'.join(irq_progress_str))
 
         errors = {}
 
@@ -315,7 +326,7 @@ class firmware_Cr50DeviceState(Cr50Test):
                 step = '%s step %d %s' % (state, i, self.step_names[i].strip())
                 errors[step] = step_error
 
-        logging.info('DIFF %s IRQ Counts:\n%s', state, pprint.pformat(irq_diff))
+        logging.info('DIFF %s IRQ Counts:\n%s', state, '\n'.join(irq_diff))
         if errors:
             logging.info('ERRORS %s IRQ Counts:\n%s', state,
                     pprint.pformat(errors))
@@ -353,6 +364,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             elif state == 'G3':
                 full_command = 'poweroff'
             self.faft_client.System.RunShellCommand(full_command)
+            self.stage_irq_add(self.get_irq_counts(), 'cmd done')
 
         time.sleep(self.SHORT_WAIT);
         # check state transition
@@ -364,7 +376,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     def stage_irq_add(self, irq_dict, name=''):
         """Add the current irq counts to the stored dictionary of irq info"""
         self.steps.append(irq_dict)
-        self.step_names.append('%11s' % name)
+        self.step_names.append(name.center(11))
         self.irqs.update(irq_dict.keys())
         logging.info('%s:\n%s', name, pprint.pformat(irq_dict))
 

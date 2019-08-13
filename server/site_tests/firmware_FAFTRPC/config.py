@@ -306,6 +306,7 @@ RPC_CATEGORIES = [
                 "method_names": [
                     "GetBodySha",
                     "GetSigSha",
+                    "GetSectionFwid",
                     "GetVersion",
                     "GetDatakeyVersion",
                     "GetKernelSubkeyVersion",
@@ -350,6 +351,12 @@ RPC_CATEGORIES = [
                 ],
                 "failing_args": [NO_ARGS],
             },
+            {
+                "method_name": "StripModifiedFwids",
+                "passing_args": [NO_ARGS],
+                "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
+                "expected_return_type": dict
+            }
         ],
     },
     {

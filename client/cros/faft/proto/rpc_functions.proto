@@ -22,6 +22,9 @@ service Bios {
   rpc GetSigSha
     (BiosGetSigShaRequest)
     returns (BiosGetSigShaResponse);
+  rpc GetSectionFwid
+    (BiosGetSectionFwidRequest)
+    returns (BiosGetSectionFwidResponse);
   rpc CorruptSig
     (BiosCorruptSigRequest)
     returns (BiosCorruptSigResponse);
@@ -55,6 +58,9 @@ service Bios {
   rpc WriteWhole
     (BiosWriteWholeRequest)
     returns (BiosWriteWholeResponse);
+  rpc StripModifiedFwidsRequest
+    (BiosStripModifiedFwidsRequest)
+    returns (BiosStripModifiedFwidsResponse);
 }
 
 service Cgpt {
@@ -100,6 +106,9 @@ service Ec {
   rpc RebootToSwitchSlot
     (EcRebootToSwitchSlotRequest)
     returns (EcRebootToSwitchSlotResponse);
+  rpc StripModifiedFwidsRequest
+    (EcStripModifiedFwidsRequest)
+    returns (EcStripModifiedFwidsResponse);
 }
 
 service Host {
@@ -394,6 +403,13 @@ message BiosGetSigShaResponse {
   string hash = 1;
 }
 
+message BiosGetSectionFwidRequest {
+  string section = 1;
+}
+message BiosGetSectionFwidResponse {
+  string fwid = 1;
+}
+
 message BiosCorruptSigRequest {
   string section = 1;
 }
@@ -455,6 +471,16 @@ message BiosWriteWholeRequest {
   string bios_path = 1;
 }
 message BiosWriteWholeResponse {}
+
+message BiosStripModifiedFwidsRequest {}
+message BiosStripModifiedFwidsResponse {
+  string ro = 1;
+  string a = 2;
+  string b = 3;
+  string rec = 4;
+  string ec_a = 5;
+  string ec_b = 6;
+}
 
 // Cgpt messages
 
@@ -533,6 +559,13 @@ message EcCopyRwResponse {}
 
 message EcRebootToSwitchSlotRequest {}
 message EcRebootToSwitchSlotResponse {}
+
+message EcStripModifiedFwidsRequest {}
+message EcStripModifiedFwidsResponse {
+  string ro = 1;
+  string rw = 2;
+  string rw_b = 3;
+}
 
 // Host messages
 

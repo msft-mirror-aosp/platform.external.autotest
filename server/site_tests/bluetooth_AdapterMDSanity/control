@@ -8,12 +8,12 @@ AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterMDSanity'
 PURPOSE = ('Batch of Bluetooth MD sanity tests')
 CRITERIA = 'Pass all sanity test'
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_quicksanity'
+ATTRIBUTES = 'suite:bluetooth_flaky, suite:bluetooth_e2e'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth, chameleon:bt_hid, chameleon:bt_ble_hid'
 
 DOC = """
     A Batch of Bluetooth multi-devices sanity tests. This test is written
@@ -23,6 +23,9 @@ DOC = """
 
     This class can be called to run the entire test batch or to run a
     specific test only
+
+    Currently, the batch contains the following tests:
+    - md_two_connections_test
     """
 
 args_dict = utils.args_to_dict(args)

@@ -111,6 +111,7 @@ class FlashromHandler(object):
     FW_PRIV_DATA_KEY_FILE_NAME = 'firmware_data_key.vbprivk'
     KERNEL_SUBKEY_FILE_NAME = 'kernel_subkey.vbpubk'
     EC_EFS_KEY_FILE_NAME = 'key_ec_efs.vbprik2'
+    FWID_MOD_DELIMITER = '~'
 
     def __init__(
             self,
@@ -141,7 +142,8 @@ class FlashromHandler(object):
         self.pub_key_file = pub_key_file
         self.dev_key_path = dev_key_path
 
-        if target == 'bios':
+        self.target = target
+        if self.target == 'bios':
             self.fum = saft_flashrom_util.flashrom_util(
                     self.os_if, target_is_ec=False)
             self.fv_sections = {
@@ -152,10 +154,11 @@ class FlashromHandler(object):
                     'ec_a': FvSection(None, 'ECMAINA'),
                     'ec_b': FvSection(None, 'ECMAINB'),
             }
-        elif target == 'ec':
+        elif self.target == 'ec':
             self.fum = saft_flashrom_util.flashrom_util(
                     self.os_if, target_is_ec=True)
             self.fv_sections = {
+                    'ro': FvSection(None, None, 'RO_FRID'),
                     'rw': FvSection(None, 'EC_RW', 'RW_FWID'),
                     'rw_b': FvSection(None, 'EC_RW_B'),
             }
@@ -172,14 +175,47 @@ class FlashromHandler(object):
             self._available = self.fum.check_target()
         return self._available
 
-    def init(self, image_file=None):
+    def init(self, image_file=None, allow_fallback=False):
         """Initialize the object, by reading the image.
 
         This is separate from new_image, to isolate the implementation detail of
         self.image being non-empty.
+
+        @param image_file: the path of the image file to read.
+                If None or empty string, read the flash device instead.
+        @param allow_fallback: if True, fall back to reading the flash device
+                if the image file doesn't exist.
+        @type image_file: str
+        @type allow_fallback: bool
+
+        @raise FlashromHandlerError: if no target flash device was usable.
         """
+        # Raise an exception early if there's no usable flash.
+        if not self.is_available():
+            # Can't tell for sure whether it's broken or simply nonexistent.
+            raise FlashromHandlerError(
+                    "No usable %s flash was detected." % self.target)
+
+        if image_file and allow_fallback and not os.path.isfile(image_file):
+            self.os_if.log(
+                    "Using %s flash contents instead of missing image: %s"
+                    % (self.target.upper(), image_file))
+            image_file = None
+
         self.new_image(image_file)
         self.initialized = True
+
+    def deinit(self):
+        """Clear the in-memory image data, and mark self uninitialized."""
+        self.image = ''
+        self.initialized = False
+
+    def dump_flash(self, target_filename):
+        """Copy the flash device's data into a file, but don't parse it.
+
+        @param target_filename: the file to create
+        """
+        self.fum.dump_flash(target_filename)
 
     def new_image(self, image_file=None):
         """Parse the full flashrom image and store sections into files.
@@ -188,7 +224,7 @@ class FlashromHandler(object):
                        flashrom image. If not passed in or empty, the actual
                        flash device is read and its contents are saved into a
                        temporary file which is used instead.
-        @type image_file: str
+        @type image_file: str | None
 
         The input file is parsed and the sections of importance (as defined in
         self.fv_sections) are saved in separate files in the state directory
@@ -196,7 +232,8 @@ class FlashromHandler(object):
         """
 
         if image_file:
-            self.image = open(image_file, 'rb').read()
+            with open(image_file, 'rb') as image_f:
+                self.image = image_f.read()
             self.fum.set_firmware_layout(image_file)
         else:
             self.image = self.fum.read_whole()
@@ -207,9 +244,9 @@ class FlashromHandler(object):
                     continue
                 blob = self.fum.get_section(self.image, subsection_name)
                 if blob:
-                    f = open(self.os_if.state_dir_file(subsection_name), 'wb')
-                    f.write(blob)
-                    f.close()
+                    blob_filename = self.os_if.state_dir_file(subsection_name)
+                    with open(blob_filename, 'wb') as blob_f:
+                        blob_f.write(blob)
 
             blob = self.fum.get_section(self.image, section.get_body_name())
             if blob:
@@ -272,11 +309,10 @@ class FlashromHandler(object):
 
         # All checks passed, let's store the key in a file.
         self.pub_key_file = self.os_if.state_dir_file(self.PUB_KEY_FILE_NAME)
-        keyf = open(self.pub_key_file, 'w')
-        key = gbb_section[rootk_offs:rootk_offs + key_body_offset +
-                          key_body_size]
-        keyf.write(key)
-        keyf.close()
+        with open(self.pub_key_file, 'w') as key_f:
+            key = gbb_section[rootk_offs:rootk_offs + key_body_offset +
+                              key_body_size]
+            key_f.write(key)
 
     def verify_image(self):
         """Confirm the image's validity.
@@ -482,7 +518,9 @@ class FlashromHandler(object):
     def get_section_hash(self, section):
         """Retrieve the hash of the body of a firmware section"""
         ecrw = chip_utils.ecrw()
-        with tempfile.NamedTemporaryFile(prefix=ecrw.chip_name) as f:
+
+        # add a dot to avoid set_from_file breaking if tmpname has an underscore
+        with tempfile.NamedTemporaryFile(prefix=ecrw.chip_name + '.') as f:
             self.dump_section_body(section, f.name)
             ecrw.set_from_file(f.name)
             result = ecrw.compute_hash_bytes()
@@ -558,10 +596,25 @@ class FlashromHandler(object):
         blob = self.fum.get_section(self.image, subsection_name)
         return blob
 
-    def get_section_fwid(self, section):
-        """Retrieve fwid blob of a firmware section"""
+    def get_section_fwid(self, section, strip_null=True):
+        """
+        Retrieve fwid blob of a firmware section.
+
+        @param section: Name of the section whose fwid to return.
+        @param strip_null: If True, remove \0 from the end of the blob.
+        @return: fwid of the section
+
+        @type section: str
+        @type strip_null: bool
+        @rtype: str | None
+
+        """
         subsection_name = self.fv_sections[section].get_fwid_name()
+        if not subsection_name:
+            return None
         blob = self.fum.get_section(self.image, subsection_name)
+        if strip_null:
+            blob = blob.rstrip('\0')
         return blob
 
     def set_section_body(self, section, blob, write_through=False):
@@ -623,11 +676,119 @@ class FlashromHandler(object):
         self.os_if.run_shell_command(cmd)
 
         #  Pad the new signature.
-        new_sig = open(sig_name, 'a')
-        pad = ('%c' % 0) * (sig_size - os.path.getsize(sig_name))
-        new_sig.write(pad)
-        new_sig.close()
+        with open(sig_name, 'a') as sig_f:
+            f_size = os.fstat(sig_f.fileno()).st_size
+            pad = '\0' * (sig_size - f_size)
+            sig_f.write(pad)
 
         # Inject the new signature block into the image
-        new_sig = open(sig_name, 'r').read()
+        with open(sig_name, 'r') as sig_f:
+            new_sig = sig_f.read()
         self.write_partial(fv_section.get_sig_name(), new_sig, write_through)
+
+    def _modify_section_fwid(self, section):
+        """Modify a section's fwid on the handler, adding a tilde and the
+        section name (in caps) to the end: ~RO, ~RW, ~A, ~B.
+
+        @param section: the single section to act on
+        @return: the new fwid
+
+        @type section: str
+        @rtype: str
+        """
+
+        fwid = self.get_section_fwid(section, strip_null=False)
+
+        if fwid is None:
+            return None
+
+        fwid_size = len(fwid)
+
+        if not fwid:
+            raise FlashromHandlerError(
+                    "FWID (%s, %s) is empty: %s" %
+                    (self.target.upper(), section.upper(), repr(fwid)))
+
+        fwid = fwid.rstrip('\0')
+        suffix = self.FWID_MOD_DELIMITER + section.upper()
+
+        if suffix in fwid:
+            raise FlashromHandlerError(
+                    "FWID (%s, %s) is already modified: %s" %
+                    (self.target.upper(), section.upper(), repr(fwid)))
+
+        # Append a suffix, after possibly chopping off characters to make room.
+        if len(fwid) + len(suffix) > fwid_size:
+            fwid = fwid[:fwid_size - len(suffix)]
+        fwid += suffix
+
+        padded_fwid = fwid.ljust(fwid_size, '\0')
+        self.set_section_fwid(section, padded_fwid)
+        return fwid
+
+    def _strip_section_fwid(self, section, write_through=True):
+        """Modify a section's fwid on the handler, stripping any suffix added
+        by _modify_section_fwid: ~RO, ~RW, ~A, ~B.
+
+        @param section: the single section to act on
+        @param write_through: if True (default), write to flash immediately
+        @return: the suffix that was stripped
+
+        @type section: str
+        @type write_through: bool
+        @rtype: str | None
+        """
+
+        fwid = self.get_section_fwid(section, strip_null=False)
+        if fwid is None:
+            return None
+
+        fwid_size = len(fwid)
+
+        if not fwid:
+            raise FlashromHandlerError(
+                    "FWID (%s, %s) is empty: %s" %
+                    (self.target.upper(), section.upper(), repr(fwid)))
+
+        fwid = fwid.rstrip('\0')
+        mod_indicator = self.FWID_MOD_DELIMITER + section.upper()
+
+        # Remove any suffix, and return the suffix if found.
+        if mod_indicator in fwid:
+            (stripped_fwid, remainder) = fwid.split(mod_indicator, 1)
+
+            padded_fwid = stripped_fwid.ljust(fwid_size, '\0')
+            self.set_section_fwid(section, padded_fwid, write_through)
+
+            return fwid
+        return None
+
+    def modify_fwids(self, sections):
+        """Modify the fwid in the in-memory image.
+
+        @param sections: section(s) to modify.
+        @return: fwids for the modified sections, as {section: fwid}
+
+        @type sections: tuple | list
+        @rtype: dict
+        """
+        fwids = {}
+        for section in sections:
+            fwids[section] = self._modify_section_fwid(section)
+
+        return fwids
+
+    def strip_modified_fwids(self):
+        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs.
+
+        @return: a dict of any fwids that were adjusted, by section (ro, a, b)
+        @rtype: dict
+        """
+
+        suffixes = {}
+        for section in self.fv_sections:
+            suffix = self._strip_section_fwid(section)
+            if suffix is not None:
+                suffixes[section] = suffix
+
+        return suffixes

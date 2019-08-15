@@ -67,7 +67,14 @@ TELEMETRY_AFDO_BENCHMARKS = (
 GCC_BOARDS = ['lumpy']
 
 # Should be disjoint with GCC_BOARDS
-LLVM_BOARDS = ['chell', 'samus']
+LLVM_BOARDS = ['chell']
+
+# FIXME(tcwang): only used for testing Async AFDO generation builders.
+# Remove this after testing is done.
+# Due to crbug.com/991299 and crbug.com/992539, AFDO profiles generated
+# by samus is not suitable for production in both master and branch.
+# So it's suitable to test generation profiles but not actually use it.
+LLVM_BOARDS_ASYNC = ['samus']
 
 class telemetry_AFDOGenerate(test.test):
     """
@@ -89,7 +96,8 @@ class telemetry_AFDOGenerate(test.test):
         self._host = host
         host_board = host.get_board().split(':')[1]
 
-        if not (host_board in LLVM_BOARDS or host_board in GCC_BOARDS):
+        if not (host_board in LLVM_BOARDS or host_board in GCC_BOARDS
+                or host_board in LLVM_BOARDS_ASYNC):
             raise error.TestFail(
                     'This test cannot be run on board %s' % host_board)
 
@@ -317,6 +325,8 @@ class telemetry_AFDOGenerate(test.test):
         """
         GS_GCC_DEST = 'gs://chromeos-prebuilt/afdo-job/canonicals/%s'
         GS_LLVM_DEST = 'gs://chromeos-prebuilt/afdo-job/llvm/%s'
+        GS_LLVM_ASYNC_DEST = \
+            'gs://chromeos-prebuilt/afdo-job/llvm/benchmarks/%s'
         GS_TEST_DEST = 'gs://chromeos-throw-away-bucket/afdo-job/canonicals/%s'
         GS_ACL = 'project-private'
 
@@ -328,6 +338,8 @@ class telemetry_AFDOGenerate(test.test):
             gs_dest = GS_GCC_DEST
         elif board in LLVM_BOARDS:
             gs_dest = GS_LLVM_DEST
+        elif board in LLVM_BOARDS_ASYNC:
+            gs_dest = GS_LLVM_ASYNC_DEST
         else:
             raise error.TestFail(
                     'This test cannot be run on board %s' % board)

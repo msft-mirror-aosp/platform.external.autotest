@@ -524,6 +524,64 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
 
     @xmlrpc_server.dbus_safe(False)
+    def get_discoverable_timeout(self):
+        """Get the adapter discoverable_timeout.
+
+        @return True on success, False otherwise.
+
+        """
+        return int(self._adapter.Get(self.BLUEZ_ADAPTER_IFACE,
+                          'DiscoverableTimeout',
+                          dbus_interface=dbus.PROPERTIES_IFACE))
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def set_discoverable_timeout(self, discoverable_timeout):
+        """Set the adapter discoverable_timeout property.
+
+        @param discoverable_timeout: adapter discoverable_timeout value
+               in seconds to set (Integer).
+
+        @return True on success, False otherwise.
+
+        """
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
+                          'DiscoverableTimeout',
+                          dbus.UInt32(discoverable_timeout, variant_level=1),
+                          dbus_interface=dbus.PROPERTIES_IFACE)
+        return True
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def get_pairable_timeout(self):
+        """Get the adapter pairable_timeout.
+
+        @return True on success, False otherwise.
+
+        """
+        return int(self._adapter.Get(self.BLUEZ_ADAPTER_IFACE,
+                          'PairableTimeout',
+                          dbus_interface=dbus.PROPERTIES_IFACE))
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def set_pairable_timeout(self, pairable_timeout):
+        """Set the adapter pairable_timeout property.
+
+        @param pairable_timeout: adapter pairable_timeout value
+               in seconds to set (Integer).
+
+        @return True on success, False otherwise.
+
+        """
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
+                          'PairableTimeout',
+                          dbus.UInt32(pairable_timeout, variant_level=1),
+                          dbus_interface=dbus.PROPERTIES_IFACE)
+        return True
+
+
+    @xmlrpc_server.dbus_safe(False)
     def set_pairable(self, pairable):
         """Set the adapter pairable state.
 
@@ -570,7 +628,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( version, revision )
 
         """
-        return json.dumps(self._control.read_version())
+        #TODO(howardchung): resolve 'cannot allocate memory' error when
+        #                   BluetoothControlSocket idle too long(about 3 secs)
+        #                   (b:137603211)
+        _control = bluetooth_socket.BluetoothControlSocket()
+        return json.dumps(_control.read_version())
 
 
     def read_supported_commands(self):
@@ -580,7 +642,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( commands, events )
 
         """
-        return json.dumps(self._control.read_supported_commands())
+        #TODO(howardchung): resolve 'cannot allocate memory' error when
+        #                   BluetoothControlSocket idle too long(about 3 secs)
+        #                   (b:137603211)
+        _control = bluetooth_socket.BluetoothControlSocket()
+        return json.dumps(_control.read_supported_commands())
 
 
     def read_index_list(self):
@@ -589,7 +655,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @return the information as a JSON-encoded array of controller indexes.
 
         """
-        return json.dumps(self._control.read_index_list())
+        #TODO(howardchung): resolve 'cannot allocate memory' error when
+        #                   BluetoothControlSocket idle too long(about 3 secs)
+        #                   (b:137603211)
+        _control = bluetooth_socket.BluetoothControlSocket()
+        return json.dumps(_control.read_index_list())
 
 
     def read_info(self):
@@ -601,7 +671,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             name, short_name )
 
         """
-        return json.dumps(self._control.read_info(0))
+        #TODO(howardchung): resolve 'cannot allocate memory' error when
+        #                   BluetoothControlSocket idle too long(about 3 secs)
+        #                   (b:137603211)
+        _control = bluetooth_socket.BluetoothControlSocket()
+        return json.dumps(_control.read_info(0))
 
 
     def add_device(self, address, address_type, action):
@@ -615,7 +689,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( address, address_type ), None on failure.
 
         """
-        return json.dumps(self._control.add_device(
+        #TODO(howardchung): resolve 'cannot allocate memory' error when
+        #                   BluetoothControlSocket idle too long(about 3 secs)
+        #                   (b:137603211)
+        _control = bluetooth_socket.BluetoothControlSocket()
+        return json.dumps(_control.add_device(
                 0, address, address_type, action))
 
 
@@ -629,7 +707,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( address, address_type ), None on failure.
 
         """
-        return json.dumps(self._control.remove_device(
+        #TODO(howardchung): resolve 'cannot allocate memory' error when
+        #                   BluetoothControlSocket idle too long(about 3 secs)
+        #                   (b:137603211)
+        _control = bluetooth_socket.BluetoothControlSocket()
+        return json.dumps(_control.remove_device(
                 0, address, address_type))
 
 

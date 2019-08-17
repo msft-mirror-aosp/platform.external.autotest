@@ -938,19 +938,30 @@ class UpdaterServicer(object):
         @type os_if: os_interface.OSInterface
         """
         self._os_if = os_if
-        self._updater = firmware_updater.FirmwareUpdater(self._os_if)
+        self._real_updater = firmware_updater.FirmwareUpdater(self._os_if)
+
+    @property
+    def _updater(self):
+        """Handler for the updater
+
+        @rtype: firmware_updater.FirmwareUpdater
+        """
+        if not self._real_updater.initialized:
+            self._real_updater.init()
+        return self._real_updater
 
     def Cleanup(self):
         """Clean up the temporary directory"""
-        self._updater.cleanup_temp_dir()
+        # Use the updater directly, to avoid initializing it just to clean it up
+        self._real_updater.cleanup_temp_dir()
 
     def StopDaemon(self):
         """Stop update-engine daemon."""
-        return self._updater.stop_daemon()
+        return self._real_updater.stop_daemon()
 
     def StartDaemon(self):
         """Start update-engine daemon."""
-        return self._updater.start_daemon()
+        return self._real_updater.start_daemon()
 
     def GetSectionFwid(self, target='bios', section=None):
         """Retrieve shellball's RW or RO fwid."""
@@ -971,6 +982,14 @@ class UpdaterServicer(object):
     def ModifyEcidAndFlashToBios(self):
         """Modify ecid, put it to AP firmware, and flash it to the system."""
         self._updater.modify_ecid_and_flash_to_bios()
+
+    def CorruptDiagnosticsImage(self, local_filename):
+        """Corrupts a diagnostics image in the CBFS working directory.
+
+        @param local_filename: Filename for storing the diagnostics image in the
+            CBFS working directory
+        """
+        self._updater.corrupt_diagnostics_image(local_filename)
 
     def GetEcHash(self):
         """Return the hex string of the EC hash."""
@@ -1050,6 +1069,24 @@ class UpdaterServicer(object):
         @return: Boolean success status.
         """
         return self._updater.cbfs_extract_chip(fw_name)
+
+    def CbfsExtractDiagnostics(self, diag_name, local_filename):
+        """Runs cbfstool to extract a diagnostics image.
+
+        @param diag_name: Name of the diagnostics image in CBFS
+        @param local_filename: Filename for storing the diagnostics image in the
+            CBFS working directory
+        """
+        self._updater.cbfs_extract_diagnostics(diag_name, local_filename)
+
+    def CbfsReplaceDiagnostics(self, diag_name, local_filename):
+        """Runs cbfstool to replace a diagnostics image in the firmware image.
+
+        @param diag_name: Name of the diagnostics image in CBFS
+        @param local_filename: Filename for storing the diagnostics image in the
+            CBFS working directory
+        """
+        self._updater.cbfs_replace_diagnostics(diag_name, local_filename)
 
     def CbfsGetChipHash(self, fw_name):
         """Gets the chip firmware hash blob.

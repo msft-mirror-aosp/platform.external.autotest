@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -361,8 +361,8 @@ class TestAutoUpdater2(unittest.TestCase):
 
         updater.run_update()
         host.run.assert_any_call(
-                '/usr/local/bin/quick-provision --noreboot %s %s/static' %
-                (image, devserver))
+            '/usr/local/bin/quick-provision --noreboot %s '
+            '%s/download/chromeos-image-archive' % (image, devserver))
 
 
 if __name__ == '__main__':

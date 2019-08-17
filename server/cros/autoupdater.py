@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 import re
+import sys
 import urllib2
 import urlparse
 
@@ -880,11 +881,7 @@ class ChromiumOSUpdater(object):
                         % gs_cache_server)
 
         # Check if GS_Cache server is enabled on the server.
-        try:
-            urllib2.urlopen(gs_cache_url)
-        except urllib2.HTTPError:
-            # GsCache server is listening on this port though it cannot serve.
-            pass
+        self._run('curl -s -o /dev/null %s' % gs_cache_url)
 
         command = '%s --noreboot %s %s' % (provision_command, image_name,
                                            gs_cache_url)
@@ -901,10 +898,16 @@ class ChromiumOSUpdater(object):
         @param devserver_name: The devserver name and port (optional).
         @param image_name: The image to be installed.
         """
+        logging.info('Try quick provision with devserver.')
+        ds = dev_server.ImageServer('http://%s' % devserver_name)
+        try:
+            ds.stage_artifacts(image_name, ['quick_provision', 'stateful'])
+        except dev_server.DevServerException as e:
+            raise error.TestFail, str(e), sys.exc_info()[2]
+
         static_url = 'http://%s/static' % devserver_name
         command = '%s --noreboot %s %s' % (provision_command, image_name,
                                            static_url)
-        logging.info('Try quick provision with devserver.')
         self._run(command)
         metrics.Counter(_metric_name('quick_provision')).increment(
                 fields={'devserver': devserver_name, 'gs_cache': False})

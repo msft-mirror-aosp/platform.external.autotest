@@ -132,7 +132,7 @@ class CrashTest(test.test):
 
     def _kill_running_sender(self):
         """Kill the the crash_sender process if running."""
-        utils.system('pkill -9 -e crash_sender', ignore_status=True)
+        utils.system('pkill -9 -e --exact crash_sender', ignore_status=True)
 
 
     def _set_sending_mock(self, mock_enabled, send_success=True):
@@ -666,7 +666,7 @@ class CrashTest(test.test):
                         test_names,
                         initialize_crash_reporter=False,
                         clear_spool_first=True,
-                        must_run_all=False,
+                        must_run_all=True,
                         lock_core_pattern=False):
         """Run crash tests defined in this class.
 

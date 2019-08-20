@@ -1,5 +1,5 @@
+#!/usr/bin/python2
 # pylint: disable-msg=C0111
-#!/usr/bin/python
 #
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -248,8 +248,11 @@ class MigrationUnittest(unittest.TestCase):
 
     def test_lock_smoke_test(self):
         # just make sure Migration.lock doesn't throw an exception
-        skylab_migration.Migration.lock(
-            hostnames=[], reason='reason', retries=3)
+        with mock.patch.object(skylab_migration, 'call_with_tempfile') as call_:
+            call_.return_value = skylab_migration.CommandOutput(
+                exit_code=0, output=['a', 'b'])
+            skylab_migration.Migration.lock(
+                hostnames=[], reason='reason', retries=3)
 
     def test_lock_single_host(self):
         pass

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file
@@ -317,6 +317,9 @@ class AtestCmd(object):
         """
         assert isinstance(reason, unicode)
         cmd = AtestCmd.atest_lock_cmd(reason=reason)
+        exit_code = call_with_tempfile(cmd, hostnames).exit_code
+        if exit_code != 0:
+            raise MigrationException('failed to lock file')
 
     @staticmethod
     def atest_lock_filter(stream):

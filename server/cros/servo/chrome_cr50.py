@@ -682,7 +682,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def ccd_disable(self, raise_error=True):
         """Change the values of the CC lines to disable CCD"""
         logging.info("disable ccd")
-        self._servo.set_nocheck('servo_v4_dts_mode', 'off')
+        self._servo.set_servo_v4_dts_mode('off')
         self.wait_for_ccd_disable(raise_error=raise_error)
 
 
@@ -690,7 +690,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def ccd_enable(self, raise_error=False):
         """Reenable CCD and reset servo interfaces"""
         logging.info("reenable ccd")
-        self._servo.set_nocheck('servo_v4_dts_mode', 'on')
+        self._servo.set_servo_v4_dts_mode('on')
         # If the test is actually running with ccd, wait for USB communication
         # to come up after reset.
         if self._servo.running_through_ccd():
@@ -728,6 +728,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if self._servo.running_through_ccd():
             raise error.TestError('Cannot set testlab mode with CCD. Use flex '
                     'cable instead.')
+        if not self.faft_config.has_power_button:
+            raise error.TestError('No power button on device')
 
         request_on = self._state_to_bool(state)
         testlab_on = self.testlab_is_on()
@@ -758,7 +760,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self.run_pp(self.PP_SHORT)
 
         self.set_ccd_level(original_level)
-
         if request_on != self.testlab_is_on():
             raise error.TestFail('Failed to set ccd testlab to %s' % state)
 
@@ -789,6 +790,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 "ccd_set_level")
 
         testlab_on = self._state_to_bool(self._servo.get('cr50_testlab'))
+        batt_is_disconnected = self.get_batt_pres_state()[1]
         req_pp = self._level_change_req_pp(level)
         has_pp = not self._servo.running_through_ccd()
         dbg_en = 'DBG' in self._servo.get('cr50_version')
@@ -827,7 +829,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestFail("cr50 is too busy to run %r: %s" % (cmd, rv))
 
         # Press the power button once a second, if we need physical presence.
-        if req_pp:
+        if req_pp and batt_is_disconnected:
             # DBG images have shorter unlock processes
             self.run_pp(self.PP_SHORT if dbg_en else self.PP_LONG)
 
@@ -890,7 +892,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # This is to test that Cr50 actually recognizes the change in ccd state
         # We cant do that with tests using ccd, because the cr50 communication
         # goes down once ccd is enabled.
-        if 'servo_v4_with_servo_micro' != self._servo.get_servo_version():
+        if (self._servo.get_servo_version(active=True) !=
+            'servo_v4_with_servo_micro'):
             return False
 
         ccd_start = 'on' if self.ccd_is_enabled() else 'off'
@@ -903,7 +906,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         except Exception, e:
             logging.info(e)
             rv = False
-        self._servo.set_nocheck('servo_v4_dts_mode', dts_start)
+        self._servo.set_servo_v4_dts_mode(dts_start)
         self.wait_for_stable_ccd_state(ccd_start, 60, True)
         logging.info('Test setup does%s support servo DTS mode',
                 '' if rv else 'n\'t')

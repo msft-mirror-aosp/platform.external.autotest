@@ -907,13 +907,27 @@ class Servo(object):
                                     args=args).stdout.strip()
 
 
-    def get_servo_version(self):
+    def get_servo_version(self, active=False):
         """Get the version of the servo, e.g., servo_v2 or servo_v3.
 
+        @param active: Only return the servo type with the active device.
         @return: The version of the servo.
 
         """
-        return self._server.get_version()
+        servo_type = self._server.get_version()
+        if '_and_' not in servo_type or not active:
+            return servo_type
+
+        # If servo v4 is using ccd and servo micro, modify the servo type to
+        # reflect the active device.
+        active_device = self.get('active_v4_device')
+        if active_device in servo_type:
+            logging.info('%s is active', active_device)
+            return 'servo_v4_with_' + active_device
+
+        logging.warn("%s is active even though it's not in servo type",
+                     active_device)
+        return servo_type
 
 
     def running_through_ccd(self):
@@ -993,7 +1007,10 @@ class Servo(object):
 
         @raise: TestError if cannot extract firmware from the tarball.
         """
-        dest_dir = os.path.dirname(tarball_path)
+        dest_dir = os.path.join(os.path.dirname(tarball_path), firmware_name)
+        # Create the firmware_name subdirectory if it doesn't exist.
+        if not os.path.exists(dest_dir):
+            os.mkdir(dest_dir)
         image = _extract_image_from_tarball(tarball_path, dest_dir,
                                             image_candidates)
         if not image:
@@ -1140,6 +1157,35 @@ class Servo(object):
                 logging.debug('Already in the role: %s.', role)
         else:
             logging.debug('Not a servo v4, unable to set role to %s.', role)
+
+
+    def set_servo_v4_dts_mode(self, state):
+        """Set servo v4 dts mode to off or on.
+
+        It does nothing if not a servo v4. Disable the ccd watchdog if we're
+        disabling dts mode. CCD will disconnect. The watchdog only allows CCD
+        to disconnect for 10 seconds until it kills servod. Disable the
+        watchdog, so CCD can stay disconnected indefinitely.
+
+        @param state: Set servo v4 dts mode 'off' or 'on'.
+        """
+        servo_version = self.get_servo_version()
+        if not servo_version.startswith('servo_v4'):
+            logging.debug('Not a servo v4, unable to set dts mode %s.', state)
+            return
+
+        # TODO(mruthven): remove watchdog check once the labstation has been
+        # updated to have support for modifying the watchdog.
+        set_watchdog = self.has_control('watchdog') and 'ccd' in servo_version
+        enable_watchdog = state == 'on'
+
+        if set_watchdog and not enable_watchdog:
+            self.set_nocheck('watchdog_remove', 'ccd')
+
+        self.set_nocheck('servo_v4_dts_mode', state)
+
+        if set_watchdog and enable_watchdog:
+            self.set_nocheck('watchdog_add', 'ccd')
 
 
     @property

@@ -14,6 +14,23 @@ MANAGED_POOLS = {
 }
 
 
+VIDEO_ACCELERATION_WHITELIST = {
+    "VIDEO_ACCELERATION_H264",
+    "VIDEO_ACCELERATION_ENC_H264",
+    "VIDEO_ACCELERATION_VP8",
+    "VIDEO_ACCELERATION_ENC_VP8",
+    "VIDEO_ACCELERATION_VP9",
+    "VIDEO_ACCELERATION_ENC_VP9",
+    "VIDEO_ACCELERATION_VP9_2",
+    "VIDEO_ACCELERATION_ENC_VP9_2",
+    "VIDEO_ACCELERATION_H265",
+    "VIDEO_ACCELERATION_ENC_H265",
+    "VIDEO_ACCELERATION_MJPG",
+    "VIDEO_ACCELERATION_ENC_MJPG",
+}
+
+
+
 def _normalize_pools(l):
     """take in the list of pools and distribute them between criticalPools and
     self_serve_pools"""
@@ -164,7 +181,9 @@ def _video_acceleration(l):
         for key in l.bool_keys_starting_with(prefix=prefix):
             _, delim, suffix = key.rpartition("video_acc_")
             assert delim == "video_acc_"
-            out.append("VIDEO_ACCELERATION" + "_" + suffix.upper())
+            new_label = "VIDEO_ACCELERATION" + "_" + suffix.upper()
+            if new_label in VIDEO_ACCELERATION_WHITELIST:
+                out.append(new_label)
     return out
 
 
@@ -213,7 +232,7 @@ def process_labels(labels, platform):
         "board": l.get_string("board", default=None),
         "brand": l.get_string("brand-code", default=None),
         "cr50Phase": _cr50_phase(l),
-        "hwid-sku": l.get_string("sku", default=None),
+        "hwidSku": l.get_string("sku", default=None),
         "model": l.get_string("model", default=None),
         "platform": platform,
         "referenceDesign": l.get_string("reference_design"),

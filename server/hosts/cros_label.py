@@ -637,6 +637,34 @@ class LucidSleepLabel(base_label.BaseLabel):
         return board in self.LUCID_SLEEP_BOARDS
 
 
+def _parse_hwid_labels(hwid_info_list):
+    if len(hwid_info_list) == 0:
+        return hwid_info_list
+
+    res = []
+    # See crbug.com/997816#c7 for details of two potential formats of returns
+    # from HWID server.
+    if isinstance(hwid_info_list[0], dict):
+        # Format of hwid_info:
+        # [{u'name': u'sku', u'value': u'xxx'}, ..., ]
+        for hwid_info in hwid_info_list:
+            value = hwid_info.get('value', '')
+            name = hwid_info.get('name', '')
+            # There should always be a name but just in case there is not.
+            if name:
+                new_label = name if not value else '%s:%s' % (name, value)
+                res.append(new_label)
+    else:
+        # Format of hwid_info:
+        # [<DUTLabel name: 'sku' value: u'xxx'>, ..., ]
+        for hwid_info in hwid_info_list:
+            new_label = str(hwid_info)
+            logging.info('processing hwid label: %s', new_label)
+            res.append(new_label)
+
+    return res
+
+
 class HWIDLabel(base_label.StringLabel):
     """Return all the labels generated from the hwid."""
 
@@ -702,6 +730,7 @@ class HWIDLabel(base_label.StringLabel):
     def generate_labels(self, host):
         # use previous values as default
         old_hwid_labels = self._old_label_values(host)
+        logging.info("old_hwid_labels: %r", old_hwid_labels)
         hwid = host.run_output('crossystem hwid').strip()
         hwid_info_list = []
         try:
@@ -710,36 +739,17 @@ class HWIDLabel(base_label.StringLabel):
                 info_type=hwid_lib.HWID_INFO_LABEL,
                 key_file=self.key_file,
             )
+            logging.info("hwid_info_response: %r", hwid_info_response)
             hwid_info_list = hwid_info_response.get('labels', [])
         except hwid_lib.HwIdException as e:
             logging.info("HwIdException: %s", e)
 
-        for hwid_info in hwid_info_list:
-            # TODO(gregorynisbet): if hwid_info is not a list, something has
-            # gone horribly wrong. Here we log the offending hwid_info object
-            # and just continue with the old values.
-            if not isinstance(hwid_info, dict):
-                logging.info("hwid_info: %s", hwid_info)
-                return old_hwid_labels
-            # If it's a prefix, we'll have:
-            # {'name': prefix_label, 'value': postfix_label} and create
-            # 'prefix_label:postfix_label'; otherwise it'll just be
-            # {'name': label} which should just be 'label'.
-            value = hwid_info.get('value', '')
-            name = hwid_info.get('name', '')
-            # There should always be a name but just in case there is not.
-            if name:
-                new_label = name if not value else '%s:%s' % (name, value)
-                hwid_info_list.append(new_label)
-
-        # TODO(gregorynisbet): remove this
-        # TODO(crbug.com/999785)
-        logging.info("old_hwid_labels %s", old_hwid_labels)
-        logging.info("hwid_info_list %s", hwid_info_list)
+        new_hwid_labels = _parse_hwid_labels(hwid_info_list)
+        logging.info("new HWID labels: %r", new_hwid_labels)
 
         return HWIDLabel._merge_hwid_label_lists(
             old=old_hwid_labels,
-            new=hwid_info_list,
+            new=new_hwid_labels,
         )
 
 

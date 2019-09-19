@@ -2,10 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""FAFT configuration overrides for Sarien."""
+"""FAFT configuration overrides for Drallion."""
 
 class Values(object):
-    """FAFT config values for Sarien."""
+    """FAFT config values for Drallion."""
     firmware_screen = 15
     delay_reboot_to_ping = 40
     hold_pwr_button_poweron = 1.2

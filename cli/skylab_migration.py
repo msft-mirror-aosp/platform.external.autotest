@@ -301,13 +301,18 @@ class AtestCmd(object):
         @return : 'atest host statjson' output as parsed json.
         """
         cmd = AtestCmd.statjson_cmd(hostname=hostname)
-        (out, exit_status) = backtick_out_err(cmd)
+        (out, err, exit_status) = capture_all(cmd)
         if exit_status == 0:
-            return json.loads(out.decode('utf-8'))
+            try:
+                return json.loads(out.decode('utf-8'))
+            except ValueError:
+                sys.stderr.write(out)
+                sys.stderr.write("\n\n")
+                return None
         else:
             if exit_status:
-                if "Failed to stat:" in out:
-                    assert "Unknown host" in out
+                if "Failed to stat:" in err:
+                    assert "Unknown host" in err
                 return None
             else:
                 assert "unexpected failure"
@@ -453,8 +458,15 @@ def backtick(*args, **kwargs):
     return (output, exit_status)
 
 
-def backtick_out_err(*args, **kwargs):
-    return backtick(*args, stderr=subprocess.STDOUT, **kwargs)
+def capture_all(*args, **kwargs):
+    proc = subprocess.Popen(
+        *args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **kwargs
+    )
+    out, err = proc.communicate()
+    return (out, err, proc.returncode)
 
 
 class SkylabCmd(object):
@@ -519,45 +531,17 @@ class SkylabCmd(object):
             cmd = list(SkylabCmd.ADD_MANY_DUTS_CMD) + paths
             print("log command")
             stderr_log(cmd)
-            print("backtick_out_err")
+            print("capture_all")
             # ignore cases where the hostname doesn't exist
-            (output, err) = backtick_out_err(cmd)
-            if err:
-                if "Failed to stat:" in output:
-                    assert "Unknown host" in output
+            (out, err, exit_status) = capture_all(cmd)
+            if exit_status != 0:
+                if "Failed to stat:" in err:
+                    assert "Unknown host" in err
                     # then do nothing
 
             # shutil.rmtree(td, ignore_errors=True)
         finally:
             stderr_log('end add_many_duts', time.time(), _humantime())
-
-    @staticmethod
-    def assign_one_dut(hostname=None):
-        """Assign a DUT to a randomly chosen drone."""
-        assert isinstance(hostname, TEXT)
-        cmd = SkylabCmd.assign_one_dut_cmd(hostname=hostname)
-        # run command capturing stdout and stderr regardless of exit status
-        def run(cmd):
-            try:
-                return [0, subprocess.check_output(cmd, stderr=subprocess.STDOUT)]
-            except subprocess.CalledProcessError as e:
-                return [e.returncode, e.output]
-        # NOTE: we need to look at the output of the wrapped command
-        # in order to determine whether the failure is due to a drone
-        # already having been assigned or not.
-        # If the DUT in question is already assigned to a drone,
-        # then we report success to our caller.
-        exit_code, output = run(cmd)
-        # the skylab command does not use a dedicated error status for
-        # failure due to the DUT already being assigned to a drone.
-        # In order to determine whether this happened, we look for a string
-        # in the output. The output contains some JSON and a preamble, so
-        # we can't parse the output since it isn't pure JSON.
-        already_present = ' is already assigned to drone ' in output
-        if already_present:
-            return CommandOutput(exit_code=0, output=output)
-        else:
-            return CommandOutput(exit_code=exit_code, output=output)
 
 
 class Migration(object):
@@ -632,6 +616,7 @@ class Migration(object):
         with_drone = set()
 
         if use_quick_add:
+            stderr_log("quick add path", time.time(), _humantime()) 
             dut_contents = []
             good_hostnames = []
             for hostname in hostnames:
@@ -646,20 +631,24 @@ class Migration(object):
             # inventory or query Skylab in some way to check that the
             # transfer was successful
             SkylabCmd.add_many_duts(dut_contents=dut_contents)
-            moved.update(good_hostnames)
+            return AddToSkylabInventoryAndDroneStatus(
+                complete=hostnames,
+                without_drone=set(),
+                not_started=set(),
+            )
 
-        for hostname in hostnames:
-            if hostname not in moved:
-                skylab_dut_descr = AtestCmd.statjson(hostname=hostname)
-                status = SkylabCmd.add_one_dut(add_dut_content=skylab_dut_descr)
-                if status.exit_code != 0:
-                    continue
-                moved.add(hostname)
-            for _ in range(rename_retries):
-                status = SkylabCmd.assign_one_dut(hostname=hostname)
-                if status.exit_code == 0:
+        else:
+            stderr_log("slow add path", time.time(), _humantime()) 
+            for hostname in hostnames:
+                if hostname not in moved:
+                    skylab_dut_descr = AtestCmd.statjson(hostname=hostname)
+                    stderr_log("processing hostname", hostname)
+                    status = SkylabCmd.add_one_dut(add_dut_content=skylab_dut_descr)
+                    if status.exit_code != 0:
+                        continue
+                    moved.add(hostname)
                     with_drone.add(hostname)
-                    break
+
         out = AddToSkylabInventoryAndDroneStatus(
             complete=with_drone,
             without_drone=(moved - with_drone),
@@ -806,8 +795,6 @@ class Migration(object):
         stderr_log('minimum number of intervals', min_ready_intervals, time.time(), _humantime())
         stderr_log('immediately', immediately, time.time(), _humantime())
         stderr_log('use_quick_add', use_quick_add, time.time(), _humantime())
-
-        # import pdb; pdb.set_trace()
 
         all_hosts = tuple(hostnames)
         plan = Migration.migration_plan(ratio=ratio, hostnames=all_hosts)

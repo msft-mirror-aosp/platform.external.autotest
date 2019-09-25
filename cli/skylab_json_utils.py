@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import sys
 
 # Source of truth is DUTPool enum at
 # https://cs.chromium.org/chromium/infra/go/src/infra/libs/skylab/inventory/device.proto
@@ -45,7 +46,8 @@ def _normalize_pools(l):
             out["self_serve_pools"].append(pool)
     #TODO(gregorynisbet): reject empty pools too.
     if len(out["criticalPools"]) > 1:
-        raise ValueError("multiple critical pools %s" % pools)
+        sys.stderr.write("multiple critical pools %s\n" % pools)
+        out["criticalPools"] = ["DUT_POOL_SUITES"]
     return out
 
 

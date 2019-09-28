@@ -15,6 +15,7 @@
 # _parse_result() and _dir_size() don't access self and could be functions.
 # pylint: disable=no-self-use
 
+from collections import namedtuple
 import errno
 import glob
 import hashlib
@@ -40,6 +41,9 @@ from autotest_lib.server.cros import tradefed_utils
 # For convenience, add to our scope.
 parse_tradefed_result = tradefed_utils.parse_tradefed_result
 adb_keepalive = tradefed_utils.adb_keepalive
+
+# TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
+MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
 
 
 class TradefedTest(test.test):
@@ -689,37 +693,38 @@ class TradefedTest(test.test):
             # Keep track of PATH.
             self._install_paths.append(os.path.dirname(local))
 
-    def _prepare_media(self, cts_uri, needs_push_media):
+    def _prepare_media(self, media_asset):
         """Downloads and offers the cached media files to tradefed."""
-        if needs_push_media:
-            media = self._install_bundle(cts_uri['media'])
-            if os.path.islink(constants.TRADEFED_MEDIA_PATH):
-                os.unlink(constants.TRADEFED_MEDIA_PATH)
-            if os.path.isdir(constants.TRADEFED_MEDIA_PATH):
-                shutil.rmtree(constants.TRADEFED_MEDIA_PATH)
-            os.symlink(media, constants.TRADEFED_MEDIA_PATH)
+        if media_asset.uri:
+            media = self._install_bundle(media_asset.uri)
+            if os.path.islink(media_asset.localpath):
+                os.unlink(media_asset.localpath)
+            if os.path.isdir(media_asset.localpath):
+                shutil.rmtree(media_asset.localpath)
+            self._safe_makedirs(os.path.dirname(media_asset.localpath))
+            os.symlink(media, media_asset.localpath)
 
             logging.info('Offered %s as a media directory in %s',
-                    media, constants.TRADEFED_MEDIA_PATH)
+                    media, media_asset.localpath)
 
         # Records the number of existing media bundles, to check later.
-        if os.path.isdir(constants.TRADEFED_MEDIA_PATH):
+        if os.path.isdir(media_asset.localpath):
             self._num_media_bundles = len(
-                    os.listdir(constants.TRADEFED_MEDIA_PATH))
+                    os.listdir(media_asset.localpath))
 
-    def _cleanup_media(self):
+    def _cleanup_media(self, media_asset):
         """Clean up the local copy of cached media files."""
-        self._fail_on_unexpected_media_download()
-        if os.path.islink(constants.TRADEFED_MEDIA_PATH):
-            path = os.readlink(constants.TRADEFED_MEDIA_PATH)
-            os.unlink(constants.TRADEFED_MEDIA_PATH)
+        self._fail_on_unexpected_media_download(media_asset)
+        if os.path.islink(media_asset.localpath):
+            path = os.readlink(media_asset.localpath)
+            os.unlink(media_asset.localpath)
             if os.path.isdir(path):
                 logging.info('Cleaning up media files in %s', path)
                 shutil.rmtree(path)
 
-    def _fail_on_unexpected_media_download(self):
-        if os.path.isdir(constants.TRADEFED_MEDIA_PATH):
-            contents = os.listdir(constants.TRADEFED_MEDIA_PATH)
+    def _fail_on_unexpected_media_download(self, media_asset):
+        if os.path.isdir(media_asset.localpath):
+            contents = os.listdir(media_asset.localpath)
             if len(contents) > self._num_media_bundles:
                 raise error.TestFail(
                     'Failed: Unexpected media bundle was added %s' % contents)
@@ -1034,6 +1039,20 @@ class TradefedTest(test.test):
             return False
         return True
 
+    def _copy_extra_artifacts(self, extra_artifacts, host, output_dir):
+        """ Upload the custom artifacts """
+        self._safe_makedirs(output_dir)
+
+        for artifact in extra_artifacts:
+            logging.info('Copying extra artifacts from "%s" to "%s".',
+                         artifact, output_dir)
+            try:
+                self._run_adb_cmd(host, verbose=True, timeout=120,
+                                  args=('pull', artifact, output_dir))
+            except:
+                # Maybe ADB connection failed, or the artifacts don't exist.
+                logging.exception('Copying extra artifacts failed.')
+
     def _run_tradefed_list_results(self):
         """Run the `tradefed list results` command.
 
@@ -1066,12 +1085,13 @@ class TradefedTest(test.test):
                                    run_template,
                                    retry_template,
                                    timeout,
-                                   needs_push_media=False,
+                                   media_asset=None,
                                    enable_default_apps=False,
                                    target_module=None,
                                    target_plan=None,
                                    executable_test_count=None,
                                    bundle=None,
+                                   extra_artifacts=[],
                                    cts_uri=None,
                                    login_precondition_commands=[],
                                    precondition_commands=[],
@@ -1098,14 +1118,14 @@ class TradefedTest(test.test):
         session_id = None
 
         self._setup_result_directories()
-        self._prepare_media(cts_uri, needs_push_media)
+        self._prepare_media(media_asset)
 
         # This loop retries failures. For this reason please do not raise
         # TestFail in this loop if you suspect the failure might be fixed
         # in the next loop iteration.
         while steps < self._max_retry:
             steps += 1
-            keep_media = needs_push_media and steps >= 1
+            keep_media = media_asset and media_asset.uri and steps >= 1
             self._run_precondition_scripts(login_precondition_commands, steps)
             with login.login_chrome(
                     hosts=self._hosts,
@@ -1148,16 +1168,16 @@ class TradefedTest(test.test):
                 #              minutes).
                 # TODO(b/137917339): Only prevent screen from turning off for
                 # media tests. Remove this check once the GPU issue is fixed.
-                if needs_push_media:
+                if media_asset and media_asset.uri:
                     self._override_powerd_prefs()
                 try:
                     waived_tests, acc = self._run_and_parse_tradefed(
                         commands)
                 finally:
                     # TODO(b/137917339): ditto
-                    if needs_push_media:
+                    if media_asset and media_asset.uri:
                         self._restore_powerd_prefs()
-                self._fail_on_unexpected_media_download()
+                self._fail_on_unexpected_media_download(media_asset)
                 result = self._run_tradefed_list_results()
                 if not result:
                     logging.error('Did not find any test results. Retry.')
@@ -1168,11 +1188,19 @@ class TradefedTest(test.test):
                 waived = len(waived_tests)
                 last_session_id, passed, failed, all_done = result
 
+                if failed > waived:
+                    for host in self._hosts:
+                        dir_name = "%s-step%02d" % (host.hostname, steps)
+                        output_dir = os.path.join(
+                            self.resultsdir, 'extra_artifacts', dir_name)
+                        self._copy_extra_artifacts(
+                            extra_artifacts, host, output_dir)
+
                 if passed + failed > 0:
                     # At least one test had run, which means the media push step
                     # of tradefed didn't fail. To free up the storage earlier,
                     # delete the copy on the server side. See crbug.com/970881
-                    self._cleanup_media()
+                    self._cleanup_media(media_asset)
 
                 # If the result is |acc|urate according to the log, or the
                 # inaccuracy is recognized by tradefed (not all_done), then

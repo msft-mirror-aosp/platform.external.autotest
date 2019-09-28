@@ -30,8 +30,9 @@ _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
     'arm': _PUBLIC_CTS + 'android-cts-9.0_r9-linux_x86-arm.zip',
     'x86': _PUBLIC_CTS + 'android-cts-9.0_r9-linux_x86-x86.zip',
-    'media': _PUBLIC_CTS + 'android-cts-media-1.4.zip',
 }
+_CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
+_CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
 
 
 class cheets_CTS_P(tradefed_test.TradefedTest):
@@ -163,6 +164,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                  enable_default_apps=False,
                  executable_test_count=None,
                  bundle=None,
+                 extra_artifacts=[],
                  precondition_commands=[],
                  login_precondition_commands=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
@@ -198,10 +200,13 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             timeout=timeout,
             target_module=target_module,
             target_plan=target_plan,
-            needs_push_media=needs_push_media,
+            media_asset=tradefed_test.MediaAsset(
+                _CTS_MEDIA_URI if needs_push_media else None,
+                _CTS_MEDIA_LOCALPATH),
             enable_default_apps=enable_default_apps,
             executable_test_count=executable_test_count,
             bundle=bundle,
+            extra_artifacts=extra_artifacts,
             cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
             precondition_commands=precondition_commands)

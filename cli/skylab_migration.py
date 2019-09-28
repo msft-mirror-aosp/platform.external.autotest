@@ -16,6 +16,7 @@ import time
 import shutil
 import sys
 import types
+import itertools
 
 import common
 
@@ -51,6 +52,13 @@ def find_atest_path():
 
 
 _ATEST_EXE = find_atest_path()
+
+
+def strip_suffix(str, suffix):
+    if str.endswith(suffix):
+        return str[:-len(suffix)]
+    else:
+        return str
 
 
 def call_with_tempfile(cmd, lines):
@@ -315,11 +323,31 @@ class AtestCmd(object):
         @return : iterator of successfully renamed hosts
         """
         hostnames = hostnames or set()
+
+        to_migrate_hostnames = set()
+        already_migrated_hostnames = set()
+
+        for hostname in hostnames:
+            if hostname.endswith("-migrated-do-not-use"):
+                already_migrated_hostnames.add(hostname)
+            else:
+                to_migrate_hostnames.add(hostname)
+
         stderr_log('begin rename', time.time(), _humantime())
         items = call_with_tempfile(
             AtestCmd.rename_cmd(for_migration=for_migration),
-            lines=hostnames).output
+            lines=to_migrate_hostnames).output
+
         out = list(AtestCmd.rename_filter(items))
+        out_seen = set(out)
+
+        # out and already_migrated_hostnames should be disjoint
+        # but if they aren't we still don't want to list the same
+        # hostname twice
+        for hostname in already_migrated_hostnames:
+            if hostname not in out_seen:
+                out.append(hostname)
+
         stderr_log('end rename', time.time(), _humantime())
         return out
 
@@ -608,11 +636,11 @@ def hostname_migrated_status(hostnames):
         # S -- not migrated to skylab
         hostname_flags = set()
         if hostname in atest_out_good:
-            hostname.add("A")
+            hostname_flags.add("A")
         if hostname in atest_renamed_out_bad:
-            hostname.add("A")
+            hostname_flags.add("A")
         if hostname in skylab_out_bad:
-            hostname.add("S")
+            hostname_flags.add("S")
 
         if hostname_flags == set():
             good.append(hostname)
@@ -789,16 +817,24 @@ class Migration(object):
                     pass
                 else:
                     good_hostnames.append(out_json)
-            # TODO(gregorynisbet): Currently we assume that
-            # SkylabCmd.add_many_duts worked for all DUTs.
-            # In the future, check the
-            # inventory or query Skylab in some way to check that the
-            # transfer was successful
+            # SkylabCmd.add_many_duts does not check for whether the action was successful
+            # we use hostname_migrated_status to check whether the duts we were supposed to migrate
+            # were actually migrated
             SkylabCmd.add_many_duts(dut_contents=dut_contents)
+
+            # strip the migrated suffix when checking the status of each of the hostnames
+            truncated_hostnames = [strip_suffix(hostname, "-migrated-do-not-use") for hostname in hostnames]
+            status_out = hostname_migrated_status(truncated_hostnames)
+
+            # anything in the good state or missing rename is fine
+            complete = status_out["good"] + status_out["not_renamed"]
+            # anything where the status indicates that the entity is not in skylab yet is not fine
+            not_started = status_out["not_in_skylab"] + status_out["not_renamed_not_in_skylab"]
+
             return AddToSkylabInventoryAndDroneStatus(
-                complete=hostnames,
+                complete=complete,
                 without_drone=set(),
-                not_started=set(),
+                not_started=not_started,
             )
 
         else:
@@ -994,7 +1030,48 @@ class Migration(object):
         return out
 
 
-migrate = Migration.migrate
+
+# accepts: iterable
+# returns: item or None, ok (true if item is real, false otherwise)
+def next_safe(it):
+    it = iter(it)
+    try:
+        return next(it), True
+    except StopIteration:
+        return None, False
+
+
+# accepts: n (stride length), it (iterable)
+# returns: iterator of arrays of n items each
+def natatime(n, it):
+    it = iter(it)
+    while True:
+        out = []
+        for i in range(n):
+            item, ok = next_safe(it)
+            if ok:
+                out.append(item)
+            else:
+                break
+        if len(out):
+            yield out
+        else:
+            return
+
+
+
+
+def migrate(batch_size=None, hostnames=None, **kwargs):
+    if batch_size is None:
+        return Migration.migrate(hostnames=hostnames, **kwargs)
+    if batch_size is not None:
+        it = natatime(n=batch_size, it=hostnames)
+        out = []
+        for batch in it:
+            res = Migration.migrate(hostnames=hostnames, **kwargs)
+            json.dumps(res, sys.stderr, indent=4)
+            out.append(res)
+        return out
 
 
 def setup(atest_exe=None, skylab_exe=None):

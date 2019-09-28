@@ -694,23 +694,6 @@ class SystemServicer(object):
         """
         return True
 
-    def WaitForClient(self, timeout):
-        """Wait for the client to come back online.
-
-        @param timeout: Time in seconds to wait for the client SSH daemon to
-                        come up.
-        @return: True if succeed; otherwise False.
-        """
-        return self._os_if.wait_for_device(timeout)
-
-    def WaitForClientOffline(self, timeout):
-        """Wait for the client to come offline.
-
-        @param timeout: Time in seconds to wait the client to come offline.
-        @return: True if succeed; otherwise False.
-        """
-        return self._os_if.wait_for_no_device(timeout)
-
     def DumpLog(self, remove_log=False):
         """Dump the log file.
 
@@ -915,6 +898,11 @@ class TpmServicer(object):
     def GetKernelDatakeyVersion(self):
         """Retrieve tpm kernel data key version."""
         return self._tpm_handler.get_kernel_key_version()
+
+    def GetTpmVersion(self):
+        """Returns '1.2' or '2.0' as a string."""
+        # tpmc can return this without stopping daemons, so access real handler.
+        return self._real_tpm_handler.get_tpm_version()
 
     def StopDaemon(self):
         """Stop tpm related daemon."""

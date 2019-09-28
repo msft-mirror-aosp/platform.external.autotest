@@ -187,12 +187,6 @@ service System {
   rpc IsAvailable
     (SystemIsAvailableRequest)
     returns (SystemIsAvailableResponse);
-  rpc WaitForClient
-    (SystemWaitForClientRequest)
-    returns (SystemWaitForClientResponse);
-  rpc WaitForClientOffline
-    (SystemWaitForClientOfflineRequest)
-    returns (SystemWaitForClientOfflineResponse);
   rpc DumpLog
     (SystemDumpLogRequest)
     returns (SystemDumpLogResponse);
@@ -274,6 +268,9 @@ service Tpm {
   rpc GetKernelDatakeyVersion
     (TpmGetKernelDatakeyVersionRequest)
     returns (TpmGetKernelDatakeyVersionResponse);
+  rpc GetTpmVersion
+    (TpmGetTpmVersionRequest)
+    returns (TpmGetTpmVersionResponse);
   rpc StopDaemon
     (TpmStopDaemonRequest)
     returns (TpmStopDaemonResponse);
@@ -710,20 +707,6 @@ message SystemIsAvailableResponse {
   bool response = 1;
 }
 
-message SystemWaitForClientRequest {
-  int32 timeout = 1; // seconds
-}
-message SystemWaitForClientResponse {
-  bool success = 1;
-}
-
-message SystemWaitForClientOfflineRequest {
-  int32 timeout = 1; // seconds
-}
-message SystemWaitForClientOfflineResponse {
-  bool success = 1;
-}
-
 message SystemDumpLogRequest {
   bool remove_log = 1; // optional
 }
@@ -873,6 +856,11 @@ message TpmGetKernelVersionResponse {
 message TpmGetKernelDatakeyVersionRequest {}
 message TpmGetKernelDatakeyVersionResponse {
   int32 version = 1;
+}
+
+message TpmGetTpmVersionRequest {}
+message TpmGetTpmVersionResponse {
+  string version = 1;
 }
 
 message TpmStopDaemonRequest {}

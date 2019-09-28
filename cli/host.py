@@ -30,7 +30,7 @@ import time
 from autotest_lib.cli import action_common, rpc, topic_common, skylab_utils, skylab_migration
 from autotest_lib.cli import fair_partition
 from autotest_lib.client.bin import utils as bin_utils
-from autotest_lib.cli.skylab_json_utils import process_labels
+from autotest_lib.cli.skylab_json_utils import process_labels, print_textpb, write, writeln
 from autotest_lib.cli import skylab_rollback
 from autotest_lib.cli.skylab_json_utils import process_labels, validate_required_fields_for_skylab
 from autotest_lib.client.common_lib import error, host_protections
@@ -424,10 +424,16 @@ class host_statjson(host_stat):
                                help='Verify that required fields are provided',
                                action='store_true',
                                dest='verify')
+        self.parser.add_option('--textpb',
+                               default=False,
+                               help='Print in best effort textpb format',
+                               action='store_true',
+                               dest='textpb')
 
     def parse(self):
         (options, leftover) = super(host_statjson, self).parse()
         self.verify = options.verify
+        self.textpb = options.textpb
         return (options, leftover)
 
     def output(self, results):
@@ -473,7 +479,12 @@ class host_statjson(host_stat):
             # has all the required fields for skylab.
             if self.verify:
                 validate_required_fields_for_skylab(skylab_json)
-            print json.dumps(skylab_json, indent=4, sort_keys=True)
+            if self.textpb:
+                # need leading "duts" preamble
+                write("duts ")
+                print_textpb(skylab_json)
+            else:
+                print json.dumps(skylab_json, indent=4, sort_keys=True)
 
 
 class host_jobs(host):
@@ -1605,9 +1616,14 @@ class host_skylab_migrate(action_common.atest_list, host):
                                action='store_true')
         self.parser.add_option('-s',
                                '--slow',
-                               help='don\' use quick-add-duts',
+                               help='don\'t use quick-add-duts',
                                dest='no_use_quick_add',
                                action='store_true')
+        self.parser.add_option('-b',
+                               '--batch-size',
+                               help='process n duts at a time',
+                               dest="batch_size",
+                               default=None)
 
     def parse(self):
         (options, leftover) = super(host_skylab_migrate, self).parse()
@@ -1630,6 +1646,7 @@ class host_skylab_migrate(action_common.atest_list, host):
                 self.use_quick_add = False
             else:
                 self.invalid_syntax('must include either --quick or --slow.')
+        self.batch_size = options.batch_size
 
         return (options, leftover)
 
@@ -1685,6 +1702,7 @@ class host_skylab_migrate(action_common.atest_list, host):
             min_ready_intervals=10,
             immediately=True,
             use_quick_add=self.use_quick_add,
+            batch_size=self.batch_size,
         )
         return res
 

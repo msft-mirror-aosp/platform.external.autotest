@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
+from __future__ import print_function
 import sys
+import json
+import uuid
 
 # Source of truth is DUTPool enum at
 # https://cs.chromium.org/chromium/infra/go/src/infra/libs/skylab/inventory/device.proto
@@ -179,7 +182,7 @@ def _os_type(l):
 def _ec_type(l):
     """Get the ec type."""
     name = l.get_string("ec")
-    return EC_TYPE_ATEST_TO_SK.get(name, None)
+    return EC_TYPE_ATEST_TO_SK.get(name, "EC_TYPE_INVALID")
 
 
 def _video_acceleration(l):
@@ -319,3 +322,86 @@ def process_labels(labels, platform):
         del out["self_serve_pools"]
 
     return out
+
+
+
+# accepts: string possibly in camelCase
+# returns: string in snake_case
+def to_snake_case(str):
+    out = []
+    for i, x in enumerate(str):
+        if i == 0:
+            out.append(x.lower())
+            continue
+        if x.isupper():
+            out.append("_")
+            out.append(x.lower())
+        else:
+            out.append(x.lower())
+    return "".join(out)
+
+
+def write(*args, **kwargs):
+    print(*args, sep="", end="", **kwargs)
+
+def writeln(*args, **kwargs):
+    print(*args, sep="", end="\n", **kwargs)
+
+
+# accepts: key, value, indentation level
+# returns: nothing
+# emits: textual protobuf format, best effort
+def print_textpb_keyval(key, val, level=0):
+    # repeated field, repeat the key in every stanza
+    if isinstance(val, (list, tuple)):
+        for x in val:
+            # TODO(gregorynisbet): nested lists?
+            print_textpb_keyval(to_snake_case(key), x, level=level)
+    # if the value is a dictionary, don't print :
+    elif isinstance(val, dict):
+        write((level * " "), to_snake_case(key), " ")
+        print_textpb(val, level=level)        
+    else:
+        write((level * " "), to_snake_case(key), ":", " ")
+        print_textpb(val, level=0)
+
+
+            
+
+
+# accepts: obj, indentation level
+# returns: nothing
+# emits: textual protobuf format, best effort
+def print_textpb(obj, level=0):
+    # not sure what we want for None
+    # an empty string seems like a good choice
+    if obj is None:
+        writeln((level * " "), '""')
+    elif isinstance(obj, (bytes, unicode)) and obj.startswith("[IGNORED]"):
+        writeln((level * " "), json.dumps(str(uuid.uuid4())))
+    elif isinstance(obj, (int, long, float, bool)):
+        writeln((level * " "), json.dumps(obj))
+    elif isinstance(obj, (bytes, unicode)):
+        # guess that something is not an enum if it
+        # contains at least one lowercase letter or a space
+        # or does not contain an underscore
+        is_enum = True
+        for ch in obj:
+            if ch.islower() or ch == " ":
+                is_enum = False
+                break
+        # check for the underscore
+        is_enum = is_enum and "_" in obj
+        if is_enum:
+            writeln((level * " "), obj)
+        else:
+            writeln((level * " "), json.dumps(obj))
+    elif isinstance(obj, dict):
+        writeln("{")
+        for key in sorted(obj):
+            print_textpb_keyval(key=key, val=obj[key], level=(2 + level))
+        writeln((level * " "), "}")
+    elif isinstance(obj, (list, tuple)):
+        raise RuntimeError("No sequences on toplevel")
+    else:
+        raise RuntimeError("Unsupported type (%s)" % type(obj))

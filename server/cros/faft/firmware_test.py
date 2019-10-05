@@ -35,16 +35,11 @@ class FAFTBase(test.test):
     firmware functions and interfaces. It also provides some methods to
     handle the reboot mechanism, in order to ensure FAFTClient is still
     connected after reboot.
-    @type servo: servo.Servo
     """
     def initialize(self, host):
         """Create a FAFTClient object and install the dependency."""
-
         self.servo = host.servo
-        # Rotate old logs out of the way before test starts, to avoid noise.
-        self.servo.rotate_servod_logs(filename=None)
         self.servo.initialize_dut()
-
         self._client = host
         self.faft_client = RPCProxy(host)
         self.lockfile = '/var/tmp/faft/lock'
@@ -174,6 +169,7 @@ class FirmwareTest(FAFTBase):
         self.base_ec = chrome_base_ec.create_base_ec(self.servo)
 
         self._setup_uart_capture()
+        self._setup_servo_log()
         self._record_system_info()
         self.fw_vboot2 = self.faft_client.System.GetFwVboot2()
         logging.info('vboot version: %d', 2 if self.fw_vboot2 else 1)
@@ -188,14 +184,12 @@ class FirmwareTest(FAFTBase):
         self._setup_ec_write_protect(ec_wp)
         # See chromium:239034 regarding needing this sync.
         self.blocking_sync()
-        self._record_servod_logs(filename='servod.init')
         logging.info('FirmwareTest initialize done (id=%s)', self.run_id)
 
     def cleanup(self):
         """Autotest cleanup function."""
         # Unset state checker in case it's set by subclass
         logging.info('FirmwareTest cleaning up (id=%s)', self.run_id)
-        self._record_servod_logs(filename='servod')
         try:
             self.faft_client.System.IsAvailable()
         except:
@@ -209,14 +203,9 @@ class FirmwareTest(FAFTBase):
         self.faft_client.Updater.StartDaemon()
         self.faft_client.Updater.Cleanup()
         self._remove_faft_lockfile()
+        self._record_servo_log()
         self._record_faft_client_log()
-        self._record_servod_logs(filename='servod.cleanup')
-
-        # Discard redundant log messages containing the captured uart text:
-        # Servod - DEBUG - servo_server.py:765:get - ec_uart_stream = '...'
         self._cleanup_uart_capture()
-        self._record_servod_logs(filename=None)
-
         super(FirmwareTest, self).cleanup()
         logging.info('FirmwareTest cleanup done (id=%s)', self.run_id)
 
@@ -903,17 +892,31 @@ class FirmwareTest(FAFTBase):
         self.faft_client.System.RunShellCommand(cmd)
         time.sleep(self.EC_SUSPEND_DELAY)
 
-    def _record_servod_logs(self, filename):
-        """Record the servo logs to the results directory.
+    def _setup_servo_log(self):
+        """Set up the servo log capturing."""
+        self.servo_log_original_size = 0
+        self.servo_log_original_inode = None
+        if self.servo.is_localhost():
+            # No servo log recorded when servod runs locally.
+            return
 
-        The files will be <filename>.DEBUG, <filename>.INFO, <filename>.WARNING.
+        self.servo.fetch_servod_log(None, skip_old=False)
 
-        @param filename: local filename prefix (within results dir) to save to.
-                         If None, rotate log but don't save it.
-        """
-        if filename and not os.path.isabs(filename):
-            filename = os.path.join(self.resultsdir, filename)
-        self.servo.rotate_servod_logs(filename)
+    def _record_servo_log(self):
+        """Record the new portion of the servo log to the results directory."""
+        if self.servo.is_localhost():
+            # No servo log recorded when servod runs locally.
+            return
+
+        results_servod_log = os.path.join(self.resultsdir, 'servod.log')
+        self.servo.fetch_servod_log(results_servod_log, skip_old=True)
+        """Record the servo log to the results directory."""
+        if hasattr(self, 'servo_log_original_len'):
+            if self.servo_log_original_len != -1:
+                servo_log = self._fetch_servo_log()
+                servo_log_file = os.path.join(self.resultsdir, 'servod.log')
+                with open(servo_log_file, 'a') as f:
+                    f.write(servo_log[self.servo_log_original_len:])
 
     def _record_faft_client_log(self):
         """Record the faft client log to the results directory."""
@@ -1733,15 +1736,20 @@ class FirmwareTest(FAFTBase):
         return self.FWMP_CLEARED_ERROR_MSG in res.stdout
 
 
+    def _tpm_is_owned(self):
+        """Returns True if the tpm is owned"""
+        result = self.host.run('cryptohome --action=tpm_more_status',
+                               ignore_status=True)
+        logging.debug(result)
+        return result.exit_status == 0 and 'owned: true' in result.stdout
+
     def clear_fwmp(self):
         """Clear the FWMP"""
         if self.fwmp_is_cleared():
             return
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        status = self.host.run('cryptohome --action=tpm_status').stdout
-        logging.debug(status)
-        if 'TPM Owned: true' not in status:
-            self.host.run('cryptohome --action=tpm_take_ownership')
-            self.host.run('cryptohome --action=tpm_wait_ownership')
+        self.host.run('cryptohome --action=tpm_take_ownership')
+        if not utils.wait_for_value(self._tpm_is_owned, expected_value=True):
+            raise error.TestError('Unable to own tpm while clearing fwmp.')
         self.host.run('cryptohome '
                       '--action=remove_firmware_management_parameters')

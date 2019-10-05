@@ -57,6 +57,11 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+        # ARCVM doesn't support adb reboot as of now. Leaving reboot tests
+        # to fail is better than aborting the whole test run.
+        # TODO(kinaba): remove once b/141966414 is fixed.
+        if 'arcvm' in self._get_board_name():
+            cmd.append('--disable-reboot')
         return cmd
 
     def _get_default_bundle_url(self, bundle):
@@ -126,6 +131,9 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
 
         for dut in self.dut_fixtures:
             dut.initialize()
+
+        for host in self._hosts:
+            host.run('cras_test_client --mute 1')
 
     def initialize(self,
                    camera_facing=None,

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -119,6 +119,7 @@ class FlashromHandler(object):
             pub_key_file=None,
             dev_key_path='./',
             target='bios',
+            subdir=None
     ):
         """The flashrom handler is not fully initialized upon creation
 
@@ -128,6 +129,8 @@ class FlashromHandler(object):
         @param dev_key_path: path to directory containing *.vpubk and *.vbprivk
                              files, for use in signing
         @param target: flashrom target ('bios' or 'ec')
+        @param subdir: name of subdirectory of state dir, to use for sections
+                    Default: same as target, resulting in '/var/tmp/faft/bios'
         @type os_if: client.cros.faft.utils.os_interface.OSInterface
         @type pub_key_file: str | None
         @type dev_key_path: str
@@ -138,6 +141,10 @@ class FlashromHandler(object):
         self.os_if = os_if
         self.initialized = False
         self._available = None
+
+        if subdir is None:
+            subdir = target
+        self.subdir = subdir
 
         self.pub_key_file = pub_key_file
         self.dev_key_path = dev_key_path
@@ -153,6 +160,7 @@ class FlashromHandler(object):
                     'rec': FvSection(None, 'RECOVERY_MRC_CACHE'),
                     'ec_a': FvSection(None, 'ECMAINA'),
                     'ec_b': FvSection(None, 'ECMAINB'),
+                    'rw_legacy': FvSection(None, 'RW_LEGACY'),
             }
         elif self.target == 'ec':
             self.fum = saft_flashrom_util.flashrom_util(
@@ -174,6 +182,20 @@ class FlashromHandler(object):
             # Cache the status to avoid trying flashrom every time.
             self._available = self.fum.check_target()
         return self._available
+
+    def section_file(self, *paths):
+        """
+        Return a full path for the given basename, in this handler's subdir.
+        Example: subdir 'bios' -> '/var/tmp/faft/bios/FV_GBB'
+
+        @param paths: variable number of path pieces, same as in os.path.join
+        @return: an absolute path from this handler's subdir and the pieces.
+        """
+        if any(os.path.isabs(x) for x in paths):
+            raise FlashromHandlerError(
+                    "Absolute paths are not allowed in section_file()")
+
+        return os.path.join(self.os_if.state_dir, self.subdir, *paths)
 
     def init(self, image_file=None, allow_fallback=False):
         """Initialize the object, by reading the image.
@@ -208,6 +230,7 @@ class FlashromHandler(object):
     def deinit(self):
         """Clear the in-memory image data, and mark self uninitialized."""
         self.image = ''
+        self.os_if.remove_dir(self.section_file())
         self.initialized = False
 
     def dump_flash(self, target_filename):
@@ -238,13 +261,15 @@ class FlashromHandler(object):
         else:
             self.image = self.fum.read_whole()
 
+        self.os_if.create_dir(self.section_file())
+
         for section in self.fv_sections.itervalues():
             for subsection_name in section.names():
                 if not subsection_name:
                     continue
                 blob = self.fum.get_section(self.image, subsection_name)
                 if blob:
-                    blob_filename = self.os_if.state_dir_file(subsection_name)
+                    blob_filename = self.section_file(subsection_name)
                     with open(blob_filename, 'wb') as blob_f:
                         blob_f.write(blob)
 
@@ -328,9 +353,9 @@ class FlashromHandler(object):
         for section in self.fv_sections.itervalues():
             if section.get_sig_name():
                 cmd = 'vbutil_firmware --verify %s --signpubkey %s  --fv %s' % (
-                        self.os_if.state_dir_file(
-                                section.get_sig_name()), self.pub_key_file,
-                        self.os_if.state_dir_file(section.get_body_name()))
+                        self.section_file(section.get_sig_name()),
+                        self.pub_key_file,
+                        self.section_file(section.get_body_name()))
                 self.os_if.run_shell_command(cmd)
 
     def _modify_section(self,
@@ -489,8 +514,8 @@ class FlashromHandler(object):
                                               blob)
 
         if write_through:
-            self.dump_partial(subsection_name,
-                              self.os_if.state_dir_file(subsection_name))
+            self.dump_partial(
+                    subsection_name, self.section_file(subsection_name))
             self.fum.write_partial(self.image, (subsection_name, ))
 
     def dump_whole(self, filename):
@@ -555,6 +580,44 @@ class FlashromHandler(object):
     def disable_write_protect(self):
         """Disable write protect of the flash chip"""
         self.fum.disable_write_protect()
+
+    def set_write_protect_region(self, region, enabled=None):
+        """
+        Set write protection region by name, using current image's layout.
+
+        The name should match those seen in `futility dump_fmap <image>`, and
+        is not checked against self.firmware_layout, due to different naming.
+
+        @param region: Region to set (usually WP_RO)
+        @param enabled: If True, run --wp-enable; if False, run --wp-disable.
+                        If None (default), don't specify either one.
+        """
+        if region is None:
+            raise FlashromHandlerError("Region must not be None")
+        image_file = self.os_if.create_temp_file('wp_')
+        self.os_if.write_file(image_file, self.image)
+
+        self.fum.set_write_protect_region(image_file, region, enabled)
+        self.os_if.remove_file(image_file)
+
+    def set_write_protect_range(self, start, length, enabled=None):
+        """
+        Set write protection range by offsets, using current image's layout.
+
+        @param start: offset (bytes) from start of flash to start of range
+        @param length: offset (bytes) from start of range to end of range
+        @param enabled: If True, run --wp-enable; if False, run --wp-disable.
+                        If None (default), don't specify either one.
+        """
+        self.fum.set_write_protect_range(start, length, enabled)
+
+    def get_write_protect_status(self):
+        """Get a dict describing the status of the write protection
+
+        @return: {'enabled': True/False, 'start': '0x0', 'length': '0x0', ...}
+        @rtype: dict
+        """
+        return self.fum.get_write_protect_status()
 
     def get_section_sig_sha(self, section):
         """Retrieve SHA1 hash of a firmware vblock section"""
@@ -657,15 +720,14 @@ class FlashromHandler(object):
                     'Attempt to set version %d on section %s' % (version,
                                                                  section))
         fv_section = self.fv_sections[section]
-        sig_name = self.os_if.state_dir_file(fv_section.get_sig_name())
+        sig_name = self.section_file(fv_section.get_sig_name())
         sig_size = os.path.getsize(sig_name)
 
         # Construct the command line
         args = ['--vblock %s' % sig_name]
         args.append('--keyblock %s' % os.path.join(self.dev_key_path,
                                                    self.FW_KEYBLOCK_FILE_NAME))
-        args.append('--fv %s' % self.os_if.state_dir_file(
-                fv_section.get_body_name()))
+        args.append('--fv %s' % self.section_file(fv_section.get_body_name()))
         args.append('--version %d' % version)
         args.append('--kernelkey %s' % os.path.join(
                 self.dev_key_path, self.KERNEL_SUBKEY_FILE_NAME))

@@ -1,5 +1,5 @@
+#!/usr/bin/python2
 # pylint: disable-msg=C0111
-#!/usr/bin/python
 #
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -23,7 +23,6 @@ basic_labels._add_label("key6")
 
 
 class skylab_json_utils_unittest(unittest.TestCase):
-
     def test_label_empty(self):
         self.assertFalse(sky.Labels().bools)
         self.assertFalse(sky.Labels().strings)
@@ -98,7 +97,9 @@ class skylab_json_utils_unittest(unittest.TestCase):
         l = sky.Labels()
         l._add_label("cr50:0.3.18")
         out = sky.process_labels(l, platform=None)
-        self.assertEqual(out["cr50Phase"], "CR50_PHASE_0.3.18")
+        # TODO(gregorynisbet): note! strictly speaking this is wrong,
+        # but skylab does not support version numbers in the CR50_PHASE
+        self.assertEqual(out["cr50Phase"], "CR50_PHASE_INVALID")
 
     def test_cr50phase_absent(self):
         l = sky.Labels()
@@ -141,7 +142,7 @@ class skylab_json_utils_unittest(unittest.TestCase):
     def test_ec_absent(self):
         l = sky.Labels()
         out = sky.process_labels(l, platform=None)
-        self.assertIsNone(out["ecType"])
+        self.assertEqual(out["ecType"], "EC_TYPE_INVALID")
 
     def test_os_present(self):
         l = sky.Labels()
@@ -166,7 +167,18 @@ class skylab_json_utils_unittest(unittest.TestCase):
     def test_critical_pool_absent(self):
         l = sky.Labels()
         out = sky.process_labels(l, platform=None)
-        self.assertEqual(out["criticalPools"], [])
+        self.assertFalse("criticalPools" in out)
+    
+    def test_hwid_sku_present(self):
+        l = sky.Labels()
+        l._add_label("sku:TEST")
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["hwidSku"], "TEST")
+    
+    def test_hwid_sku_absent(self):
+        l = sky.Labels()
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["hwidSku"], None)
 
     def test_cts_abi_present(self):
         l = sky.Labels()
@@ -178,6 +190,17 @@ class skylab_json_utils_unittest(unittest.TestCase):
         l = sky.Labels()
         out = sky.process_labels(l, platform=None)
         self.assertEqual(out["ctsAbi"], [])
+
+    def test_cts_cpu_present(self):
+        l = sky.Labels()
+        l._add_label("cts_cpu_arm")
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["ctsCpu"], ["CTS_CPU_ARM"])
+
+    def test_cts_cpu_absent(self):
+        l = sky.Labels()
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["ctsCpu"], [])
 
     def test_atrus_present(self):
         l = sky.Labels()
@@ -278,6 +301,28 @@ class skylab_json_utils_unittest(unittest.TestCase):
         out = sky.process_labels(l, platform=None)
         self.assertEqual(out["capabilities"]["webcam"], False)
 
+    def test_graphics_present(self):
+        l = sky.Labels()
+        l._add_label("graphics:graphicsval")
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["capabilities"]["graphics"], "graphicsval")
+
+    def test_graphics_absent(self):
+        l = sky.Labels()
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["capabilities"]["graphics"], None)
+
+    def test_gpu_family(self):
+        l = sky.Labels()
+        l._add_label("gpu_family:gpu_family_val")
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["capabilities"]["gpuFamily"], "gpu_family_val")
+
+    def test_graphics_absent(self):
+        l = sky.Labels()
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["capabilities"]["gpuFamily"], None)
+
     def test_modem_present(self):
         l = sky.Labels()
         l._add_label("modem:gobi2k")
@@ -332,6 +377,17 @@ class skylab_json_utils_unittest(unittest.TestCase):
         l = sky.Labels()
         out = sky.process_labels(l, platform=None)
         self.assertEqual(out["capabilities"]["carrier"], "CARRIER_INVALID")
+
+    def test_video_accleration_present(self):
+        l = sky.Labels()
+        l._add_label("hw_video_acc_enc_vp9")
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["capabilities"]["videoAcceleration"], ["VIDEO_ACCELERATION_ENC_VP9"])
+
+    def test_video_accleration_absent(self):
+        l = sky.Labels()
+        out = sky.process_labels(l, platform=None)
+        self.assertEqual(out["capabilities"]["videoAcceleration"], [])
 
     def test_audio_board_present(self):
         l = sky.Labels()
@@ -449,12 +505,14 @@ class skylab_json_utils_unittest(unittest.TestCase):
 
     def test_wificell_present(self):
         l = sky.Labels()
+        l._add_label("pool:bvt")
         l._add_label("wificell")
         out = sky.process_labels(l, platform=None)
         self.assertEqual(out["peripherals"]["wificell"], True)
 
     def test_wificell_absent(self):
         l = sky.Labels()
+        l._add_label("pool:bvt")
         out = sky.process_labels(l, platform=None)
         self.assertEqual(out["peripherals"]["wificell"], False)
 
@@ -599,7 +657,7 @@ class skylab_json_utils_unittest(unittest.TestCase):
             skylab_json_utils.validate_required_fields_for_skylab(
                 {"common": {
                     "labels": {
-                        "board": None
+                        "board": True
                     }
                 }})
         e = ctx.exception
@@ -611,8 +669,8 @@ class skylab_json_utils_unittest(unittest.TestCase):
             skylab_json_utils.validate_required_fields_for_skylab(
                 {"common": {
                     "labels": {
-                        "board": None,
-                        "model": None
+                        "board": True,
+                        "model": True
                     }
                 }})
         e = ctx.exception
@@ -624,9 +682,9 @@ class skylab_json_utils_unittest(unittest.TestCase):
             skylab_json_utils.validate_required_fields_for_skylab({
                 "common": {
                     "labels": {
-                        "board": None,
-                        "model": None,
-                        "sku": None
+                        "board": True,
+                        "model": True,
+                        "sku": True
                     }
                 }
             })
@@ -637,10 +695,10 @@ class skylab_json_utils_unittest(unittest.TestCase):
         item = {
             "common": {
                 "labels": {
-                    "board": None,
-                    "model": None,
-                    "sku": None,
-                    "brand": None
+                    "board": True,
+                    "model": True,
+                    "sku": True,
+                    "brand": True
                 }
             }
         }

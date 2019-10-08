@@ -4,7 +4,6 @@
 """A module to provide interface to OS services."""
 
 import datetime
-import errno
 import os
 import re
 import struct
@@ -23,7 +22,7 @@ class Crossystem(object):
     # Code dedicated for user triggering recovery mode through crossystem.
     USER_RECOVERY_REQUEST_CODE = '193'
 
-    def init(self, os_if):
+    def __init__(self, os_if):
         """Init the instance. If running on Mario - adjust the map."""
         self.os_if = os_if
 
@@ -41,7 +40,8 @@ class Crossystem(object):
         if name in ('os_if', ):
             self.__dict__[name] = value
         else:
-            self.os_if.run_shell_command('crossystem "%s=%s"' % (name, value))
+            self.os_if.run_shell_command(
+                    'crossystem "%s=%s"' % (name, value), modifies_device=True)
 
     def request_recovery(self):
         """Request recovery mode next time the target reboots."""
@@ -52,55 +52,35 @@ class Crossystem(object):
 class OSInterface(object):
     """An object to encapsulate OS services functions."""
 
-    ANDROID_TESTER_FILE = '/mnt/stateful_partition/.android_faft_tester'
+    def __init__(self, state_dir=None, log_file=None):
+        """Object initialization (side effect: creates the state_dir)
 
-    def __init__(self, state_dir='/var/tmp/faft', log_file='faft_client.log'):
-        """Object construction time initialization.
-
-        @param state_dir: the name of the directory (as defined by the caller).
+        @param state_dir: the name of the directory to use for storing state.
                             The contents of this directory persist over system
                             restarts and power cycles.
         @param log_file: the name of the log file kept in the state directory.
         """
         # We keep the state of FAFT test in a permanent directory over reboots.
+        self.test_mode = False
+
+        if state_dir is None:
+            state_dir = '/var/tmp/faft'
+
+        if log_file is None:
+            log_file = 'faft_client.log'
+
+        if not os.path.isabs(log_file):
+            log_file = os.path.join(state_dir, log_file)
+
         self.state_dir = state_dir
         self.log_file = log_file
-        self.cs = Crossystem()
-        self.is_android = os.path.isfile(self.ANDROID_TESTER_FILE)
-        self.test_mode = False
-        if self.is_android:
-            self.shell = shell_wrapper.AdbShell()
-            self.host_shell = shell_wrapper.LocalShell()
-        else:
-            self.shell = shell_wrapper.LocalShell()
-            self.host_shell = None
 
-    def init(self):
-        """Initialize the OS interface object.  This creates the log directory,
-        and initializes the CrosSystem object and the shell.
-        """
-        # TODO(dgoyette): Convert most init() methods into __init__().
-        # Affected: Crossystem, LocalShell, and many others.
-        self.cs.init(self)
+        self.shell = shell_wrapper.LocalShell(self)
+        self.host_shell = None
 
-        if self.state_dir:
-            try:
-                os.mkdir(self.state_dir)
-            except EnvironmentError as err:
-                if err.errno != errno.EEXIST:
-                    raise OSInterfaceError(err)
-            if self.log_file:
-                if not os.path.isabs(self.log_file):
-                    self.log_file = os.path.join(self.state_dir, self.log_file)
+        self.create_dir(self.state_dir)
 
-        # Initialize the shell. Should be after creating the log file.
-        self.shell.init(self)
-        if self.host_shell:
-            self.host_shell.init(self)
-
-    def has_host(self):
-        """Return True if a host is connected to DUT."""
-        return self.is_android
+        self.cs = Crossystem(self)
 
     def run_shell_command(self, cmd, modifies_device=False):
         """Run a shell command.
@@ -127,27 +107,6 @@ class OSInterface(object):
     def run_shell_command_get_output(self, cmd, include_stderr=False):
         """Run shell command and return its console output."""
         return self.shell.run_command_get_output(cmd, include_stderr)
-
-    def run_host_shell_command(self, cmd, block=True):
-        """Run a shell command on the host."""
-        if self.host_shell:
-            self.host_shell.run_command(cmd, block)
-        else:
-            raise OSInterfaceError('There is no host for DUT.')
-
-    def run_host_shell_command_get_status(self, cmd):
-        """Run shell command and return its return code on the host."""
-        if self.host_shell:
-            return self.host_shell.run_command_get_status(cmd)
-        else:
-            raise OSInterfaceError('There is no host for DUT.')
-
-    def run_host_shell_command_get_output(self, cmd):
-        """Run shell command and return its console output."""
-        if self.host_shell:
-            return self.host_shell.run_command_get_output(cmd)
-        else:
-            raise OSInterfaceError('There is no host for DUT.')
 
     def read_file(self, path):
         """Read the content of the file."""
@@ -178,10 +137,7 @@ class OSInterface(object):
 
     def create_temp_file(self, prefix):
         """Create a temporary file with a prefix."""
-        if self.is_android:
-            tmp_path = '/data/local/tmp'
-        else:
-            tmp_path = '/tmp'
+        tmp_path = '/tmp'
         cmd = 'mktemp -p %s %sXXXXXX' % (tmp_path, prefix)
         return self.run_shell_command_get_output(cmd)[0]
 
@@ -212,8 +168,6 @@ class OSInterface(object):
 
     def target_hosted(self):
         """Return True if running on DUT."""
-        if self.is_android:
-            return True
         with open('/etc/lsb-release', 'r') as lsb_release:
             signature = lsb_release.readlines()[0]
         return bool(re.search(r'chrom(ium|e)os', signature, re.IGNORECASE))
@@ -221,14 +175,6 @@ class OSInterface(object):
     def state_dir_file(self, file_name):
         """Get a full path of a file in the state directory."""
         return os.path.join(self.state_dir, file_name)
-
-    def wait_for_device(self, timeout):
-        """Wait for an Android device to be connected."""
-        return self.shell.wait_for_device(timeout)
-
-    def wait_for_no_device(self, timeout):
-        """Wait for no Android device to be connected (offline)."""
-        return self.shell.wait_for_no_device(timeout)
 
     def log(self, text):
         """Write text to the log file and print it on the screen, if enabled.
@@ -256,9 +202,6 @@ class OSInterface(object):
 
         Returns True if the device is removable, False if not.
         """
-        if self.is_android:
-            return False
-
         if not self.target_hosted():
             return False
 
@@ -289,13 +232,7 @@ class OSInterface(object):
 
     def get_root_part(self):
         """Return a string, the name of root device with partition number"""
-        # FIXME(waihong): Android doesn't support dual kernel/root and misses
-        # the related tools. Just return something that not break the existing
-        # code.
-        if self.is_android:
-            return '/dev/mmcblk0p3'
-        else:
-            return self.run_shell_command_get_output('rootdev -s')[0]
+        return self.run_shell_command_get_output('rootdev -s')[0]
 
     def get_root_dev(self):
         """Return a string, the name of root device without partition number"""

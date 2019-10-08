@@ -45,7 +45,6 @@ class RPCRouter(object):
         self.bios = BiosServicer(os_if)
         self.cgpt = CgptServicer(os_if)
         self.ec = EcServicer(os_if)
-        self.host = HostServicer(os_if)
         self.kernel = KernelServicer(os_if)
         self.rootfs = RootfsServicer(os_if)
         self.rpc_settings = RpcSettingsServicer(os_if)
@@ -57,7 +56,6 @@ class RPCRouter(object):
                 'Bios': self.bios,
                 'Cgpt': self.cgpt,
                 'Ec': self.ec,
-                'Host': self.host,
                 'Kernel': self.kernel,
                 'RpcSettings': self.rpc_settings,
                 'Rootfs': self.rootfs,
@@ -370,6 +368,32 @@ class BiosServicer(object):
         """
         return self._bios_handler.strip_modified_fwids()
 
+    def SetWriteProtectRegion(self, region, enabled=None):
+        """Modify software write protect region and flag in one operation.
+
+        @param region: Region to set (usually WP_RO)
+        @param enabled: If True, run --wp-enable; if False, run --wp-disable.
+                        If None (default), don't specify either one.
+        """
+        self._bios_handler.set_write_protect_region(region, enabled)
+
+    def SetWriteProtectRange(self, start, length, enabled=None):
+        """Modify software write protect range and flag in one operation.
+
+        @param start: offset (bytes) from start of flash to start of range
+        @param length: offset (bytes) from start of range to end of range
+        @param enabled: If True, run --wp-enable; if False, run --wp-disable.
+                        If None (default), don't specify either one.
+        """
+        self._bios_handler.set_write_protect_range(start, length, enabled)
+
+    def GetWriteProtectStatus(self):
+        """Get a dict describing the status of the write protection
+
+        @return: {'enabled': True/False, 'start': '0x0', 'length': '0x0', ...}
+        @rtype: dict
+        """
+        return self._bios_handler.get_write_protect_status()
 
 class CgptServicer(object):
     """Class to service all CGPT RPCs"""
@@ -509,36 +533,12 @@ class EcServicer(object):
 
     def RebootToSwitchSlot(self):
         """Reboot EC to switch the active RW slot."""
-        self._os_if.run_shell_command('ectool reboot_ec cold switch-slot')
+        self._os_if.run_shell_command(
+                'ectool reboot_ec cold switch-slot', modifies_device=True)
 
     def StripModifiedFwids(self):
         """Strip any trailing suffixes (from modify_fwids) out of the FWIDs."""
         return self._ec_handler.strip_modified_fwids()
-
-
-class HostServicer(object):
-    """Class to service all Host RPCs (used only for Android DUTs) """
-
-    def __init__(self, os_if):
-        """
-        @type os_if: os_interface.OSInterface
-        """
-        self._os_if = os_if
-
-    def RunShellCommand(self, command):
-        """Run shell command on the host.
-
-        @param command: A shell command to be run.
-        """
-        self._os_if.run_host_shell_command(command)
-
-    def RunShellCommandGetOutput(self, command):
-        """Run shell command and get its console output on the host.
-
-        @param command: A shell command to be run.
-        @return: A list of strings stripped of the newline characters.
-        """
-        return self._os_if.run_host_shell_command_get_output(command)
 
 
 class KernelServicer(object):
@@ -693,27 +693,6 @@ class SystemServicer(object):
         @return: Always True.
         """
         return True
-
-    def HasHost(self):
-        """Return True if a host is connected to DUT."""
-        return self._os_if.has_host()
-
-    def WaitForClient(self, timeout):
-        """Wait for the client to come back online.
-
-        @param timeout: Time in seconds to wait for the client SSH daemon to
-                        come up.
-        @return: True if succeed; otherwise False.
-        """
-        return self._os_if.wait_for_device(timeout)
-
-    def WaitForClientOffline(self, timeout):
-        """Wait for the client to come offline.
-
-        @param timeout: Time in seconds to wait the client to come offline.
-        @return: True if succeed; otherwise False.
-        """
-        return self._os_if.wait_for_no_device(timeout)
 
     def DumpLog(self, remove_log=False):
         """Dump the log file.
@@ -920,6 +899,11 @@ class TpmServicer(object):
         """Retrieve tpm kernel data key version."""
         return self._tpm_handler.get_kernel_key_version()
 
+    def GetTpmVersion(self):
+        """Returns '1.2' or '2.0' as a string."""
+        # tpmc can return this without stopping daemons, so access real handler.
+        return self._real_tpm_handler.get_tpm_version()
+
     def StopDaemon(self):
         """Stop tpm related daemon."""
         return self._tpm_handler.stop_daemon()
@@ -937,19 +921,30 @@ class UpdaterServicer(object):
         @type os_if: os_interface.OSInterface
         """
         self._os_if = os_if
-        self._updater = firmware_updater.FirmwareUpdater(self._os_if)
+        self._real_updater = firmware_updater.FirmwareUpdater(self._os_if)
+
+    @property
+    def _updater(self):
+        """Handler for the updater
+
+        @rtype: firmware_updater.FirmwareUpdater
+        """
+        if not self._real_updater.initialized:
+            self._real_updater.init()
+        return self._real_updater
 
     def Cleanup(self):
         """Clean up the temporary directory"""
-        self._updater.cleanup_temp_dir()
+        # Use the updater directly, to avoid initializing it just to clean it up
+        self._real_updater.cleanup_temp_dir()
 
     def StopDaemon(self):
         """Stop update-engine daemon."""
-        return self._updater.stop_daemon()
+        return self._real_updater.stop_daemon()
 
     def StartDaemon(self):
         """Start update-engine daemon."""
-        return self._updater.start_daemon()
+        return self._real_updater.start_daemon()
 
     def GetSectionFwid(self, target='bios', section=None):
         """Retrieve shellball's RW or RO fwid."""
@@ -970,6 +965,14 @@ class UpdaterServicer(object):
     def ModifyEcidAndFlashToBios(self):
         """Modify ecid, put it to AP firmware, and flash it to the system."""
         self._updater.modify_ecid_and_flash_to_bios()
+
+    def CorruptDiagnosticsImage(self, local_filename):
+        """Corrupts a diagnostics image in the CBFS working directory.
+
+        @param local_filename: Filename for storing the diagnostics image in the
+            CBFS working directory
+        """
+        self._updater.corrupt_diagnostics_image(local_filename)
 
     def GetEcHash(self):
         """Return the hex string of the EC hash."""
@@ -1049,6 +1052,24 @@ class UpdaterServicer(object):
         @return: Boolean success status.
         """
         return self._updater.cbfs_extract_chip(fw_name)
+
+    def CbfsExtractDiagnostics(self, diag_name, local_filename):
+        """Runs cbfstool to extract a diagnostics image.
+
+        @param diag_name: Name of the diagnostics image in CBFS
+        @param local_filename: Filename for storing the diagnostics image in the
+            CBFS working directory
+        """
+        self._updater.cbfs_extract_diagnostics(diag_name, local_filename)
+
+    def CbfsReplaceDiagnostics(self, diag_name, local_filename):
+        """Runs cbfstool to replace a diagnostics image in the firmware image.
+
+        @param diag_name: Name of the diagnostics image in CBFS
+        @param local_filename: Filename for storing the diagnostics image in the
+            CBFS working directory
+        """
+        self._updater.cbfs_replace_diagnostics(diag_name, local_filename)
 
     def CbfsGetChipHash(self, fw_name):
         """Gets the chip firmware hash blob.

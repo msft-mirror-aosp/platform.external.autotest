@@ -28,10 +28,11 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts-9.0_r8-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts-9.0_r8-linux_x86-x86.zip',
-    'media': _PUBLIC_CTS + 'android-cts-media-1.4.zip',
+    'arm': _PUBLIC_CTS + 'android-cts-9.0_r9-linux_x86-arm.zip',
+    'x86': _PUBLIC_CTS + 'android-cts-9.0_r9-linux_x86-x86.zip',
 }
+_CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
+_CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
 
 
 class cheets_CTS_P(tradefed_test.TradefedTest):
@@ -56,6 +57,11 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+        # ARCVM doesn't support adb reboot as of now. Leaving reboot tests
+        # to fail is better than aborting the whole test run.
+        # TODO(kinaba): remove once b/141966414 is fixed.
+        if 'arcvm' in self._get_board_name():
+            cmd.append('--disable-reboot')
         return cmd
 
     def _get_default_bundle_url(self, bundle):
@@ -126,6 +132,9 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         for dut in self.dut_fixtures:
             dut.initialize()
 
+        for host in self._hosts:
+            host.run('cras_test_client --mute 1')
+
     def initialize(self,
                    camera_facing=None,
                    bundle=None,
@@ -136,7 +145,8 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                    load_waivers=True,
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
-                   cmdline_args=None):
+                   cmdline_args=None,
+                   hard_reboot_on_failure=False):
         super(cheets_CTS_P, self).initialize(
                 bundle=bundle,
                 uri=uri,
@@ -145,7 +155,8 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                 max_retry=max_retry,
                 load_waivers=load_waivers,
                 retry_manual_tests=retry_manual_tests,
-                warn_on_test_retry=warn_on_test_retry)
+                warn_on_test_retry=warn_on_test_retry,
+                hard_reboot_on_failure=hard_reboot_on_failure)
         if camera_facing:
             self.initialize_camerabox(camera_facing, cmdline_args)
 
@@ -161,6 +172,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                  enable_default_apps=False,
                  executable_test_count=None,
                  bundle=None,
+                 extra_artifacts=[],
                  precondition_commands=[],
                  login_precondition_commands=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
@@ -196,10 +208,13 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             timeout=timeout,
             target_module=target_module,
             target_plan=target_plan,
-            needs_push_media=needs_push_media,
+            media_asset=tradefed_test.MediaAsset(
+                _CTS_MEDIA_URI if needs_push_media else None,
+                _CTS_MEDIA_LOCALPATH),
             enable_default_apps=enable_default_apps,
             executable_test_count=executable_test_count,
             bundle=bundle,
+            extra_artifacts=extra_artifacts,
             cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
             precondition_commands=precondition_commands)

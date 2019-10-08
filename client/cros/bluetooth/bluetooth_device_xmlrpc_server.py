@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -88,11 +88,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     UPSTART_ERROR_ALREADYSTARTED = \
             'com.ubuntu.Upstart0_6.Error.AlreadyStarted'
 
-    BLUETOOTHD_JOB = 'bluetoothd'
+    BLUETOOTHD_JOB = 'btdispatch'
 
     DBUS_ERROR_SERVICEUNKNOWN = 'org.freedesktop.DBus.Error.ServiceUnknown'
 
-    BLUEZ_SERVICE_NAME = 'org.bluez'
+    BLUETOOTH_SERVICE_NAME = 'org.chromium.Bluetooth'
     BLUEZ_MANAGER_PATH = '/'
     BLUEZ_MANAGER_IFACE = 'org.freedesktop.DBus.ObjectManager'
     BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
@@ -116,6 +116,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
     def __init__(self):
         super(BluetoothDeviceXmlRpcDelegate, self).__init__()
+
+        # Always connect to btdispatch regardless of NewBlue enable status.
+        self._bluetooth_service_name = self.BLUETOOTH_SERVICE_NAME
 
         # Open the Bluetooth Raw socket to the kernel which provides us direct,
         # raw, access to the HCI controller.
@@ -297,7 +300,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         bluez = None
         try:
-            bluez = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
+            bluez = self._system_bus.get_object(self._bluetooth_service_name,
                                                 self.BLUEZ_MANAGER_PATH)
             logging.debug('bluetoothd is running')
         except dbus.exceptions.DBusException as e:
@@ -379,7 +382,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             if self.BLUEZ_ADAPTER_IFACE in ifaces:
                 logging.debug('using adapter %s', path)
                 adapter = self._system_bus.get_object(
-                        self.BLUEZ_SERVICE_NAME,
+                        self._bluetooth_service_name,
                         path)
                 return adapter
         else:
@@ -499,7 +502,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         logging.debug('_set_powered %r', powered)
-        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Powered', powered,
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Powered',
+                          dbus.Boolean(powered, variant_level=1),
                           dbus_interface=dbus.PROPERTIES_IFACE)
 
 
@@ -518,7 +522,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             # has happened.
             return True
         self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
-                          'Discoverable', discoverable,
+                          'Discoverable',
+                          dbus.Boolean(discoverable, variant_level=1),
                           dbus_interface=dbus.PROPERTIES_IFACE)
         return True
 
@@ -590,7 +595,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @return True on success, False otherwise.
 
         """
-        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Pairable', pairable,
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Pairable',
+                          dbus.Boolean(pairable, variant_level=1),
                           dbus_interface=dbus.PROPERTIES_IFACE)
         return True
 
@@ -837,10 +843,13 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         profile_manager = dbus.Interface(
                               self._system_bus.get_object(
-                                  self.BLUEZ_SERVICE_NAME,
+                                  self._bluetooth_service_name,
                                   self.BLUEZ_PROFILE_MANAGER_PATH),
                               self.BLUEZ_PROFILE_MANAGER_IFACE)
-        profile_manager.RegisterProfile(path, uuid, options)
+        dbus_object = self._system_bus.get_object(
+                            self._bluetooth_service_name, path)
+        profile_manager.RegisterProfile(dbus_object, uuid,
+                                    dbus.Dictionary(options, signature='sv'))
         return True
 
 
@@ -882,7 +891,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         path = self._get_device_path(address)
         if path:
             obj = self._system_bus.get_object(
-                        self.BLUEZ_SERVICE_NAME, path)
+                        self._bluetooth_service_name, path)
             return dbus.Interface(obj, self.BLUEZ_DEVICE_IFACE)
         logging.info('Device not found')
         return None
@@ -927,7 +936,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._pairing_agent= PairingAgent(pin, self._system_bus,
                                           self.AGENT_PATH)
         agent_manager = dbus.Interface(
-                self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
+                self._system_bus.get_object(self._bluetooth_service_name,
                                             self.BLUEZ_AGENT_MANAGER_PATH),
                 self.BLUEZ_AGENT_MANAGER_IFACE)
         try:
@@ -1021,7 +1030,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         try:
-            device = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
+            device = self._system_bus.get_object(self._bluetooth_service_name,
                                                  device_path)
             return self._set_trusted_by_device(device, trusted)
         except Exception as e:
@@ -1477,7 +1486,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         if not path:
             return None
         return dbus.Interface(
-            self._system_bus.get_object(self.BLUEZ_SERVICE_NAME, path),
+            self._system_bus.get_object(self._bluetooth_service_name, path),
             self.BLUEZ_GATT_IFACE)
 
 

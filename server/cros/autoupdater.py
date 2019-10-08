@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 import re
+import sys
 import urllib2
 import urlparse
 
@@ -833,21 +834,6 @@ class ChromiumOSUpdater(object):
                      self.update_version)
 
 
-    def _verify_devserver(self):
-        """Check that our chosen devserver is still working.
-
-        @raise DevServerError if the devserver fails any sanity check.
-        """
-        server = 'http://%s' % urlparse.urlparse(self.update_url)[1]
-        try:
-            if not dev_server.ImageServer.devserver_healthy(server):
-                raise DevServerError(
-                        server, 'Devserver is not healthy')
-        except Exception as e:
-            raise DevServerError(
-                    server, 'Devserver is not up and available')
-
-
     def _install_via_update_engine(self):
         """Install an updating using the production AU flow.
 
@@ -880,11 +866,7 @@ class ChromiumOSUpdater(object):
                         % gs_cache_server)
 
         # Check if GS_Cache server is enabled on the server.
-        try:
-            urllib2.urlopen(gs_cache_url)
-        except urllib2.HTTPError:
-            # GsCache server is listening on this port though it cannot serve.
-            pass
+        self._run('curl -s -o /dev/null %s' % gs_cache_url)
 
         command = '%s --noreboot %s %s' % (provision_command, image_name,
                                            gs_cache_url)
@@ -901,10 +883,16 @@ class ChromiumOSUpdater(object):
         @param devserver_name: The devserver name and port (optional).
         @param image_name: The image to be installed.
         """
+        logging.info('Try quick provision with devserver.')
+        ds = dev_server.ImageServer('http://%s' % devserver_name)
+        try:
+            ds.stage_artifacts(image_name, ['quick_provision', 'stateful'])
+        except dev_server.DevServerException as e:
+            raise error.TestFail, str(e), sys.exc_info()[2]
+
         static_url = 'http://%s/static' % devserver_name
         command = '%s --noreboot %s %s' % (provision_command, image_name,
                                            static_url)
-        logging.info('Try quick provision with devserver.')
         self._run(command)
         metrics.Counter(_metric_name('quick_provision')).increment(
                 fields={'devserver': devserver_name, 'gs_cache': False})
@@ -1040,8 +1028,6 @@ class ChromiumOSUpdater(object):
         metrics.Counter(_metric_name('install')).increment(
                 fields={'devserver': server_name})
 
-        self._verify_devserver()
-
         try:
             self._prepare_host()
         except _AttributedUpdateError:
@@ -1056,7 +1042,6 @@ class ChromiumOSUpdater(object):
             raise
         except Exception as e:
             logging.exception('Failure during download and install.')
-            server_name = dev_server.get_resolved_hostname(self.update_url)
             raise ImageInstallError(self.host.hostname, server_name, str(e))
 
         try:

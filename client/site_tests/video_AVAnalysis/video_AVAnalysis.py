@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.import json
 
-import json
 import logging
+import os
 import requests
 
 from autotest_lib.client.bin import test
@@ -26,32 +26,6 @@ class video_AVAnalysis(test.test):
     for performance and quality metrics.
     """
     version = 1
-    _CONFIG_TEMPLATE = Template("""project_id: $project_id
-            project_name: "$project_name"
-            reference_video_id: $vid_id
-            reference_video_name: "$vid_name"
-            test_video_location: "$filepath"
-            triggered_by: "$triggered_by"
-            run_information {{
-                device: "$board"
-                build: "$build"
-                profile: "profile"
-                extra_information {{
-                    key: "extra_info_key"
-                    value: "extra_info_value"
-                }}
-            }}
-            extra_results {{
-                name: "extra_result_name"
-                value: 10.0
-            }}
-            job_settings {{
-                freezing_smoothness: $check_smoothness
-                psnr_ssim: $check_psnr
-                av_sync: $check_sync
-                audio: $check_audio
-                color: $check_color
-            }}""")
     dut_info = namedtuple('dut_info', 'ip, board, build')
     srv_info = namedtuple('srv_info', 'ip, port, path')
     rec_info = namedtuple('rec_info', ('vid_name, duration, project_id, '
@@ -67,10 +41,13 @@ class video_AVAnalysis(test.test):
         point could be gathered from a config or setting file instead
         to provide more flexibility.
         """
-        self.dut_info.board = utils.get_board()
-        self.dut_info.build = utils.get_chromeos_version()
+        board = utils.get_platform()
+        if board is None:
+            board = utils.get_board()
+        self.dut_info.board = board
+        self.dut_info.build = utils.get_chromeos_version().replace('.', '_')
 
-        self.rec_info.vid_name = '{0}_{1}_{2}.mp4'.format(
+        self.rec_info.vid_name = '{}_{}_{}.mp4'.format(
             self.dut_info.build, self.dut_info.board, 'vp9')
         self.rec_info.duration = '5'
         self.rec_info.project_id = '40'
@@ -125,29 +102,36 @@ class video_AVAnalysis(test.test):
         recording and processes the response. The body of the post
         contains config file data.
         """
-        destination = 'http://{0}:{1}/{2}'.format(self.srv_info.ip,
-                                                  self.srv_info.port,
-                                                  self.srv_info.path)
+        destination = 'http://{}:{}/{}'.format(self.srv_info.ip,
+                                               self.srv_info.port,
+                                               self.srv_info.path)
         query_params = {'filename': self.rec_info.vid_name,
                         'duration': self.rec_info.duration}
         config_text = self.get_config_string()
+        headers = {'content-type': 'text/plain'}
         response = requests.post(destination, params=query_params,
-                                 data=config_text, timeout=60)
-        status_code = json.loads(response)
+                                 data=config_text, timeout=60, headers=headers)
+        logging.debug('Response received is: ({}, {})'.format(
+            response.status_code, response.content))
 
-        if status_code != 0:
-            raise error.TestFail('Recording server failed with status code: ' +
-                                 str(status_code))
+        if response.status_code != 200:
+            raise error.TestFail(
+                'Recording server failed with response: ({}, {})'.format(
+                    response.status_code, response.content))
 
     def get_config_string(self):
         """Write up config text so that AVAS can correctly process video."""
-        path_prefix = '/bigstore/cros-av-analysis/{0}'
+        path_prefix = '/bigstore/cros-av-analysis/{}'
         filepath = path_prefix.format(self.rec_info.vid_name)
         config_dict = {'filepath': filepath, 'triggered_by': 'vsuley'}
         config_dict.update(vars(self.rec_info))
         config_dict.update(vars(self.dut_info))
         config_dict.update(vars(self.tst_info))
-        config = self._CONFIG_TEMPLATE.substitute(config_dict)
+
+        config_path = os.path.join(self.bindir, 'config_template.txt')
+        with open(config_path) as file:
+            config_template = Template(file.read())
+        config = config_template.substitute(config_dict)
         return config
 
     def run_once(self, video, arc_mode=False):

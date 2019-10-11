@@ -10,8 +10,8 @@ import time
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
 
-from server.site_tests.bluetooth_AdapterPairing.bluetooth_AdapterPairing  import bluetooth_AdapterPairing
-from server.site_tests.bluetooth_AdapterHIDReports.bluetooth_AdapterHIDReports  import bluetooth_AdapterHIDReports
+from autotest_lib.server.site_tests.bluetooth_AdapterPairing.bluetooth_AdapterPairing  import bluetooth_AdapterPairing
+from autotest_lib.server.site_tests.bluetooth_AdapterHIDReports.bluetooth_AdapterHIDReports  import bluetooth_AdapterHIDReports
 
 class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         bluetooth_AdapterPairing,
@@ -28,7 +28,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    @test_wrapper('Connect Disconnect Loop', devices=['BLE_MOUSE'])
+    @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE':1})
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
            The test also checks that there are no undesired
@@ -37,14 +37,14 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                            initiated by HID device
         """
 
-        device = self.devices['BLE_MOUSE']
+        device = self.devices['BLE_MOUSE'][0]
         self.connect_disconnect_loop(device=device, loops=3)
 
-    @test_wrapper('Mouse Reports', devices=['BLE_MOUSE'])
+    @test_wrapper('Mouse Reports', devices={'BLE_MOUSE':1})
     def le_mouse_reports(self):
         """Run all bluetooth mouse reports tests"""
 
-        device = self.devices['BLE_MOUSE']
+        device = self.devices['BLE_MOUSE'][0]
         # Let the adapter pair, and connect to the target device.
         self.test_discover_device(device.address)
         # self.bluetooth_facade.is_discovering() doesn't work as expected:
@@ -58,11 +58,11 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.run_mouse_tests(device=device)
 
 
-    @test_wrapper('Auto Reconnect', devices=['BLE_MOUSE'])
+    @test_wrapper('Auto Reconnect', devices={'BLE_MOUSE':1})
     def le_auto_reconnect(self):
         """LE reconnection loop by reseting HID and check reconnection"""
 
-        device = self.devices['BLE_MOUSE']
+        device = self.devices['BLE_MOUSE'][0]
         self.auto_reconnect_loop(device=device, loops=3)
 
 

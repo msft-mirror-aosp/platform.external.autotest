@@ -38,7 +38,10 @@ ON_DUT_BLACKLIST = [
 
 # A list of telemetry tests that output histograms.
 HISTOGRAMS_WHITELIST = [
+    'loading.desktop',
     'rendering.desktop',
+    'octane',
+    'kraken',
     'speedometer2',
 ]
 
@@ -170,7 +173,7 @@ class TelemetryRunner(object):
 
 
     def _get_telemetry_cmd(self, script, test_or_benchmark, output_format,
-                           *args):
+                           *args, **kwargs):
         """Build command to execute telemetry based on script and benchmark.
 
         @param script: Telemetry script we want to run. For example:
@@ -179,6 +182,8 @@ class TelemetryRunner(object):
                                   with the page_set (if required) as part of
                                   the string.
         @param args: additional list of arguments to pass to the script.
+        @param kwargs: additional list of keyword arguments to pass to the
+                       script.
 
         @returns Full telemetry command to execute the script.
         """
@@ -187,13 +192,15 @@ class TelemetryRunner(object):
             devserver_hostname = self._devserver.hostname
             telemetry_cmd.extend(['ssh', devserver_hostname])
 
+        results_dir = kwargs.get('results_dir', '')
+        no_verbose = kwargs.get('no_verbose', False)
+
         if self._telemetry_on_dut:
             telemetry_cmd.extend(
                     [self._host.ssh_command(alive_interval=900,
                                             connection_attempts=4),
                      'python',
                      script,
-                     '--verbose',
                      '--output-format=%s' % output_format,
                      '--output-dir=%s' % DUT_CHROME_ROOT,
                      '--browser=system'])
@@ -201,11 +208,13 @@ class TelemetryRunner(object):
             telemetry_cmd.extend(
                     ['python',
                      script,
-                     '--verbose',
                      '--browser=cros-chrome',
                      '--output-format=%s' % output_format,
-                     '--output-dir=%s' % self._telemetry_path,
+                     '--output-dir=%s' %
+                        (results_dir if results_dir else self._telemetry_path),
                      '--remote=%s' % self._host.host_port])
+        if not no_verbose:
+            telemetry_cmd.append('--verbose')
         telemetry_cmd.extend(args)
         telemetry_cmd.append(test_or_benchmark)
 
@@ -273,7 +282,8 @@ class TelemetryRunner(object):
         return stdout, stderr, exit_code
 
 
-    def _run_telemetry(self, script, test_or_benchmark, output_format, *args):
+    def _run_telemetry(self, script, test_or_benchmark, output_format,
+                       *args, **kwargs):
         """Runs telemetry on a dut.
 
         @param script: Telemetry script we want to run. For example:
@@ -282,6 +292,8 @@ class TelemetryRunner(object):
                                  with the page_set (if required) as part of the
                                  string.
         @param args: additional list of arguments to pass to the script.
+        @param kwargs: additional list of keyword arguments to pass to the
+                       script.
 
         @returns A TelemetryResult Instance with the results of this telemetry
                  execution.
@@ -291,8 +303,9 @@ class TelemetryRunner(object):
         telemetry_cmd = self._get_telemetry_cmd(script,
                                                 test_or_benchmark,
                                                 output_format,
-                                                *args)
-        logging.debug('Running Telemetry: %s', telemetry_cmd)
+                                                *args,
+                                                **kwargs)
+        logging.info('Running Telemetry: %s', telemetry_cmd)
 
         stdout, stderr, exit_code = self._run_cmd(telemetry_cmd)
 
@@ -357,8 +370,11 @@ class TelemetryRunner(object):
         return self._run_test(TELEMETRY_RUN_TESTS_SCRIPT, test, *args)
 
 
-    def run_telemetry_benchmark(self, benchmark, perf_value_writer=None,
-                                *args):
+    def run_telemetry_benchmark(self,
+                                benchmark,
+                                perf_value_writer=None,
+                                *args,
+                                **kwargs):
         """Runs a telemetry benchmark on a dut.
 
         @param benchmark: Benchmark we want to run.
@@ -368,6 +384,8 @@ class TelemetryRunner(object):
                                   job object from an autotest test.
         @param args: additional list of arguments to pass to the telemetry
                      execution script.
+        @param kwargs: additional list of keyword arguments to pass to the
+                       telemetry execution script.
 
         @returns A TelemetryResult Instance with the results of this telemetry
                  execution.
@@ -377,9 +395,12 @@ class TelemetryRunner(object):
         if benchmark in ON_DUT_BLACKLIST:
             self._telemetry_on_dut = False
 
-        output_format = 'chartjson'
-        if benchmark in HISTOGRAMS_WHITELIST:
-            output_format = 'histograms'
+        output_format = kwargs.get('ex_output_format', '')
+
+        if not output_format:
+            output_format = 'chartjson'
+            if benchmark in HISTOGRAMS_WHITELIST:
+                output_format = 'histograms'
 
         if self._telemetry_on_dut:
             telemetry_script = os.path.join(DUT_CHROME_ROOT,
@@ -390,14 +411,20 @@ class TelemetryRunner(object):
                                             TELEMETRY_RUN_BENCHMARKS_SCRIPT)
 
         result = self._run_telemetry(telemetry_script, benchmark,
-                                     output_format, *args)
+                                     output_format, *args, **kwargs)
 
         if result.status is WARNING_STATUS:
             raise error.TestWarn('Telemetry Benchmark: %s'
-                                 ' exited with Warnings.' % benchmark)
-        if result.status is FAILED_STATUS:
+                                 ' exited with Warnings.\nOutput:\n%s\n' %
+                                 (benchmark, result.output))
+        elif result.status is FAILED_STATUS:
             raise error.TestFail('Telemetry Benchmark: %s'
-                                 ' failed to run.' % benchmark)
+                                 ' failed to run.\nOutput:\n%s\n' %
+                                 (benchmark, result.output))
+        elif '[  PASSED  ] 0 tests.' in result.output:
+            raise error.TestWarn('Telemetry Benchmark: %s exited successfully,'
+                                 ' but no test actually passed.\nOutput\n%s\n'
+                                 % (benchmark, result.output))
         if perf_value_writer:
             self._run_scp(perf_value_writer.resultsdir, output_format)
         return result
@@ -501,10 +528,6 @@ class TelemetryRunner(object):
             if 'type' in obj and obj['type'] == 'GenericSet':
                 value_map[obj['guid']] = obj['values']
 
-        # Mapping histogram set units to chart json units.
-        units_map = {'ms_smallerIsBetter': 'ms',
-                     'unitless_biggerIsBetter': 'score'}
-
         charts = {}
         benchmark_name = ''
         benchmark_desc = ''
@@ -517,17 +540,30 @@ class TelemetryRunner(object):
             diagnostics = obj['diagnostics']
             story_name = value_map[diagnostics['stories']][0]
             local_benchmark_name = value_map[diagnostics['benchmarks']][0]
-            if benchmark_name is '':
+            if benchmark_name == '':
                 benchmark_name = local_benchmark_name
                 benchmark_desc = value_map[
                     diagnostics['benchmarkDescriptions']][0]
-            assert(benchmark_name == local_benchmark_name,
-                   'There are more than 1 benchmark names in the result, '
-                   'could not parse.')
-            unit = units_map.get(obj['unit'], '')
+            assert benchmark_name == local_benchmark_name, ('There are more '
+                   'than 1 benchmark names in the result, could not parse.')
+
+            unit = obj['unit']
+            smaller_postfixes = ('_smallerIsBetter', '-')
+            bigger_postfixes = ('_biggerIsBetter', '+')
+            all_postfixes = smaller_postfixes + bigger_postfixes
+
             improvement = 'up'
-            if obj['unit'].endswith('smallerIsBetter'):
+            for postfix in smaller_postfixes:
+              if unit.endswith(postfix):
                 improvement = 'down'
+            for postfix in all_postfixes:
+              if unit.endswith(postfix):
+                unit = unit[:-len(postfix)]
+                break
+
+            if unit == 'unitless':
+              unit = 'score'
+
             values = [x for x in obj['sampleValues']
                       if isinstance(x, numbers.Number)]
             if metric_name not in charts:

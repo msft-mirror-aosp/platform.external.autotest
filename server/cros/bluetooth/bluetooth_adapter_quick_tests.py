@@ -55,21 +55,24 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         logging.info('Restarting peer devices...')
         self.cleanup()
 
-        for device_name, device in self.devices.items():
-            if device is not None:
-                logging.info('Restarting %s', device.name)
-                self.devices[device_name] = None
-                self.get_device(device_name)
+        for device_type, device_list in self.devices.items():
+            for device in device_list:
+                if device is not None:
+                    logging.info('Restarting %s', device_type)
+                    self.get_device(device_type)
 
 
-    def start_peers(self, devices_name):
+    def start_peers(self, devices):
         """Start peer devices"""
         # Start the link to devices
         logging.info('Starting peer devices...')
 
-        for device_name in devices_name:
-            logging.info('Getting device %s', device_name)
-            self.get_device(device_name)
+        if self.host.multi_chameleon:
+            self.get_device_rasp(devices)
+        else:
+            for device_type in devices:
+                logging.info('Getting device %s', device_type)
+                self.get_device(device_type)
 
     def _print_delimiter(self):
         logging.info('=======================================================')
@@ -77,15 +80,21 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
     def quick_test_init(self, host, use_chameleon=True):
         """Inits the test batch"""
-        self.device = None
         self.host = host
-        factory = remote_facade_factory.RemoteFacadeFactory(host)
+        factory = remote_facade_factory.RemoteFacadeFactory(host,
+                                                            disable_arc=True)
         self.bluetooth_facade = factory.create_bluetooth_hid_facade()
         self.use_chameleon = use_chameleon
-
         if self.use_chameleon:
             self.input_facade = factory.create_input_facade()
             self.check_chameleon()
+
+            # Query connected devices on our chameleon at init time
+            self.available_devices = self.list_devices_available()
+
+            if self.host.multi_chameleon:
+                self.chameleon_group = dict()
+                self.group_chameleons_type()
 
         self.test_iter = None
 
@@ -102,9 +111,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.pkg_iter = None
         self.pkg_is_running = False
 
-
     @staticmethod
-    def quick_test_test_decorator(test_name, devices=[]):
+    def quick_test_test_decorator(test_name, devices={}):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -123,6 +131,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
             @functools.wraps(test_method)
             def wrapper(self):
+                # Check that chameleon has all required devices before running
+                for device_type, number in devices.items():
+                    if self.available_devices.get(device_type, 0) < number:
+                        logging.info('SKIPPING TEST {}'.format(test_name))
+                        logging.info('{} not available'.format(device_type))
+                        self._print_delimiter()
+                        return
+
                 self.quick_test_test_start(test_name, devices)
                 test_method(self)
                 self.quick_test_test_end()
@@ -131,7 +147,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         return decorator
 
 
-    def quick_test_test_start(self, test_name=None, devices=[]):
+    def quick_test_test_start(self, test_name=None, devices={}):
         """Start a quick test. The method clears and restarts adapter on DUT
            as well as peer devices. In addition the methods prints test start
            traces.
@@ -191,15 +207,16 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         self.bluetooth_facade.stop_discovery()
         # Disconnect devices used in the test, and remove the pairing.
-        for device in self.devices.values():
-            if device is not None:
-                logging.info('Clear device %s', device.name)
-                self.bluetooth_facade.disconnect_device(device.address)
-                device_is_paired = self.bluetooth_facade.device_is_paired(
-                        device.address)
-                if device_is_paired:
-                    self.bluetooth_facade.remove_device_object(
+        for device_list in self.devices.values():
+            for device in device_list:
+                if device is not None:
+                    logging.info('Clear device %s', device.name)
+                    self.bluetooth_facade.disconnect_device(device.address)
+                    device_is_paired = self.bluetooth_facade.device_is_paired(
                             device.address)
+                    if device_is_paired:
+                        self.bluetooth_facade.remove_device_object(
+                                device.address)
         # Close the connection between peers
         self.cleanup()
 
@@ -282,6 +299,15 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.pkg_is_running = True
 
 
+    def quick_test_print_summary(self):
+        """Print results summary of a test package"""
+        logging.info('%s Test Package Summary: total pass %d, total fail %d',
+                     self.pkg_name, self.pkg_pass_count, self.pkg_fail_count)
+        for result in self.pkg_tests_results:
+            logging.info(result)
+        self._print_delimiter();
+
+
     def quick_test_package_update_iteration(self, iteration):
         """Update state and print log per package iteration.
            Must be called to have a proper package test result tracking.
@@ -295,12 +321,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     def quick_test_package_end(self):
-        """Print results summary of a test package"""
-        logging.info('%s Test Package Summary: total pass %d, total fail %d',
-                     self.pkg_name, self.pkg_pass_count, self.pkg_fail_count)
-        for result in self.pkg_tests_results:
-            logging.info(result)
-        self._print_delimiter();
+        """Print final result of a test package"""
         if self.pkg_fail_count > 0:
             logging.error('===> Test Package Failed! More than one failure')
             self._print_delimiter();
@@ -313,4 +334,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
     def quick_test_cleanup(self):
         """ Cleanup any state test server and all device"""
-        self.quick_test_test_start()
+        # Reset the adapter
+        self.test_reset_on_adapter()
+        # Initialize bluetooth_adapter_tests class (also clears self.fails)
+        self.initialize()

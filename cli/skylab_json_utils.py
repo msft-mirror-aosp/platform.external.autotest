@@ -8,7 +8,8 @@ import uuid
 # https://cs.chromium.org/chromium/infra/go/src/infra/libs/skylab/inventory/device.proto
 MANAGED_POOLS = {
     "cq": "DUT_POOL_CQ",
-    "bvt": "DUT_POOL_BVT",
+    # TODO(gregorynisbet): BVT is obsolete, send stuff to QUOTA intead
+    "bvt": "DUT_POOL_QUOTA",
     "suites": "DUT_POOL_SUITES",
     "cts": "DUT_POOL_CTS",
     "cts-perbuild": "DUT_POOL_CTS_PERBUILD",
@@ -77,6 +78,8 @@ def _get_chameleon(l):
     out = l.get_enum("chameleon", prefix="CHAMELEON_TYPE_")
     # send CHAMELEON_TYPE_['HDMI'] -> CHAMELEON_TYPE_HDMI
     out = "".join(ch for ch in out if ch not in "[']")
+    if out == "CHAMELEON_TYPE_INVALID":
+        return None
     if out == "CHAMELEON_TYPE_":
         return None
     good_val = False
@@ -175,8 +178,15 @@ def _cr50_phase(l):
         return inferred_cr50_phase
     else:
         return "CR50_PHASE_INVALID"
-   
 
+def _conductive(l):
+    out = l.get_string("conductive")
+    if out is None:
+        return False
+    if out in ("False", "false", 0, None, "0", "None", "no", "Flase"):
+        return False
+    else:
+        return True
 
 def _cts_abi(l):
     """The ABI has the structure cts_abi_x86 and cts_abi_arm
@@ -326,7 +336,7 @@ def process_labels(labels, platform):
             "audioLoopbackDongle": l.get_bool("audio_loopback_dongle"),
             "chameleon": l.get_bool("chameleon"),
             "chameleonType": _get_chameleon(l),
-            "conductive": l.get_bool("conductive"),
+            "conductive": _conductive(l),
             "huddly": l.get_bool("huddly"),
             "mimo": l.get_bool("mimo"),
             "servo": l.get_bool("servo"),

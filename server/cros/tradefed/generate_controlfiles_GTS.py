@@ -17,7 +17,6 @@ CONFIG = {}
 CONFIG['TEST_NAME'] = 'cheets_GTS'
 CONFIG['DOC_TITLE'] = 'Android Google Test Suite (GTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:gts'
-CONFIG['SKIP_EXTRA_MOBLAB_SUITES'] = False
 CONFIG['COPYRIGHT_YEAR'] = 2016
 
 CONFIG['AUTHKEY'] = 'gs://chromeos-arc-images/cts/bundle/gts-arc.json'
@@ -70,10 +69,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
     'zzzzz'  # A bookend to simplify algorithm.
 ])
 
-CONFIG['SMOKE'] = [
-    # Non-signed test with non-zero tests running
-    'GtsContactsTest',
-]
+CONFIG['SMOKE'] = []
 
 CONFIG['BVT_ARC'] = [
     'GtsContactsTest',

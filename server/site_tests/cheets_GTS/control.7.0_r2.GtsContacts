@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_GTS.7.0_r2.GtsContacts'
-ATTRIBUTES = 'suite:arc-gts, suite:bvt-arc, suite:smoke'
+ATTRIBUTES = 'suite:arc-gts, suite:bvt-arc'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
@@ -20,7 +20,7 @@ def run_TS(machine):
         'cheets_GTS',
         hosts=host_list,
         iterations=1,
-        max_retry=2,
+        max_retry=3,
         tag='7.0_r2.GtsContacts',
         test_name='cheets_GTS.7.0_r2.GtsContacts',
         authkey='gs://chromeos-arc-images/cts/bundle/gts-arc.json',

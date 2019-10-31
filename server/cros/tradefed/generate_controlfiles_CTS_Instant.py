@@ -16,7 +16,6 @@ CONFIG['TEST_NAME'] = 'cheets_CTS_Instant'
 CONFIG['DOC_TITLE'] = \
     'Android Compatibility Test Suite for Instant Apps (CTS Instant)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_P'
-CONFIG['SKIP_EXTRA_MOBLAB_SUITES'] = False
 CONFIG['COPYRIGHT_YEAR'] = 2018
 CONFIG['AUTHKEY'] = ''
 
@@ -163,7 +162,7 @@ CONFIG['EXTRA_MODULES'] = {}
 CONFIG['PUBLIC_EXTRA_MODULES'] = {}
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {}
 
-CONFIG['EXTRA_COMMANDLINE'] = []
+CONFIG['EXTRA_COMMANDLINE'] = {}
 
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'tradefed-run-collect-tests-only-internal': ['suite:arc-cts'],

@@ -11,7 +11,6 @@ CONFIG = {}
 CONFIG['TEST_NAME'] = 'cheets_CTS_P'
 CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_P'
-CONFIG['SKIP_EXTRA_MOBLAB_SUITES'] = False
 CONFIG['COPYRIGHT_YEAR'] = 2018
 CONFIG['AUTHKEY'] = ''
 
@@ -47,6 +46,9 @@ CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
 
+# Test module name for WM presubmit tests.
+_WM_PRESUBMIT = 'wm-presubmit'
+
 CONFIG['LAB_DEPENDENCY'] = {
     'x86': ['cts_abi_x86']
 }
@@ -61,6 +63,7 @@ CONFIG['CTS_MAX_RETRIES'] = {
 
 # Timeout in hours.
 CONFIG['CTS_TIMEOUT'] = {
+    'CtsAppSecurityHostTestCases':       2.0,
     'CtsAutoFillServiceTestCases':       2.5,  # TODO(b/134662826)
     'CtsDeqpTestCases':                 20.0,
     'CtsDeqpTestCases.dEQP-EGL'  :       2.0,
@@ -78,6 +81,7 @@ CONFIG['CTS_TIMEOUT'] = {
     'CtsVideoTestCases':                 1.5,
     _COLLECT:                            2.5,
     _PUBLIC_COLLECT:                     2.5,
+    _WM_PRESUBMIT:                       0.2,
 }
 
 # Any test that runs as part as blocking BVT needs to be stable and fast. For
@@ -119,7 +123,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
 ])
 
 CONFIG['SMOKE'] = [
-    'CtsUsbTests',
+    _WM_PRESUBMIT,
 ]
 
 CONFIG['BVT_ARC'] = [
@@ -297,6 +301,10 @@ CONFIG['EXTRA_MODULES'] = {
             'CtsDeqpTestCases.dEQP-VK'
         ]),
         'SUITES': ['suite:arc-cts-deqp', 'suite:graphics_per-day'],
+    },
+    _WM_PRESUBMIT: {
+        'SUBMODULES': set([_WM_PRESUBMIT]),
+        'SUITES': [],
     },
 }
 
@@ -538,7 +546,30 @@ CONFIG['EXTRA_COMMANDLINE'] = {
     'CtsDeqpTestCases.dEQP-VK.ycbcr': [
         '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
         '--test', 'dEQP-VK.ycbcr.*'
-    ]
+    ],
+    _WM_PRESUBMIT: [
+        '--include-filter', 'CtsActivityManagerDeviceSdk25TestCases',
+        '--include-filter', 'CtsActivityManagerDeviceTestCases',
+        '--include-filter',
+        'CtsAppTestCases android.app.cts.TaskDescriptionTest',
+        '--include-filter', 'CtsWindowManagerDeviceTestCases',
+        '--test-arg', (
+            'com.android.compatibility.common.tradefed.testtype.JarHostTest:'
+            'include-annotation:android.platform.test.annotations.Presubmit'
+        ),
+        '--test-arg', (
+            'com.android.tradefed.testtype.AndroidJUnitTest:'
+            'include-annotation:android.platform.test.annotations.Presubmit'
+        ),
+        '--test-arg', (
+            'com.android.tradefed.testtype.HostTest:'
+            'include-annotation:android.platform.test.annotations.Presubmit'
+        ),
+        '--test-arg', (
+            'com.android.tradefed.testtype.AndroidJUnitTest:'
+            'exclude-annotation:androidx.test.filters.FlakyTest'
+        ),
+    ],
 }
 
 CONFIG['EXTRA_ATTRIBUTES'] = {

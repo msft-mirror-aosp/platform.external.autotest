@@ -284,11 +284,6 @@ def get_suites(modules, abi, is_public):
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
 
-    if CONFIG['SKIP_EXTRA_MOBLAB_SUITES']:
-        # Not add extra suites since everything runs in the same suite on
-        # moblab.
-        return sorted(list(suites))
-
     for module in modules:
         if module in get_collect_modules(is_public):
             # We collect all tests both in arc-gts and arc-gts-qual as both have
@@ -312,7 +307,8 @@ def get_suites(modules, abi, is_public):
                     vm_suite = suite
                 if module in CONFIG['VMTEST_INFO_SUITES'][suite]:
                     vm_suite = suite
-            suites.add('suite:%s' % vm_suite)
+            if vm_suite is not None:
+                suites.add('suite:%s' % vm_suite)
         # One or two modules hould be in suite:bvt-arc to cover CQ/PFQ. A few
         # spare/fast modules can run in suite:bvt-perbuild in case we need a
         # replacement for the module in suite:bvt-arc (integration test for
@@ -393,28 +389,17 @@ def get_max_retries(modules, abi, suites, is_public):
                 retry = max(retry, CONFIG['CTS_MAX_RETRIES'][module])
 
     # Ugly overrides.
-    for module in modules:
-        # In bvt we don't want to hold the CQ/PFQ too long.
-        # TODO(yoshiki&kinaba): Simplize the condition. Initialiy, we dare to
-        # introduce this to keep the controlfile content at the timing of large
-        # refactoring.
-        if 'suite:bvt-arc' in suites:
-            if abi == '':
-                retry = 2
-            else:
-                retry = 3
-        if 'suite:bvt-perbuild' in suites:
-            if abi == 'arm':
-                retry = 3
-            else:
-                retry = 2
-        # During qualification we want at least 9 retries, possibly more.
-        # TODO(kinaba&yoshiki): do not abuse suite names
-        if set(CONFIG['QUAL_SUITE_NAMES']) & set(suites):
-            retry = max(retry, CONFIG['CTS_QUAL_RETRIES'])
-        # Collection should never have a retry. This needs to be last.
-        if module in get_collect_modules(is_public):
-            retry = 0
+    # In bvt we don't want to hold the CQ/PFQ too long.
+    if 'suite:bvt-arc' in suites or 'suite:bvt-perbuild' in suites:
+        retry = 3
+    # During qualification we want at least 9 retries, possibly more.
+    # TODO(kinaba&yoshiki): do not abuse suite names
+    if set(CONFIG['QUAL_SUITE_NAMES']) & set(suites):
+        retry = max(retry, CONFIG['CTS_QUAL_RETRIES'])
+    # Collection should never have a retry. This needs to be last.
+    if modules.intersection(get_collect_modules(is_public)):
+        retry = 0
+
     if retry >= 0:
         return retry
     # Default case omits the retries in the control file, so tradefed_test.py
@@ -558,25 +543,21 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
     else:
         # For runs create a logcat file for each individual failure.
         cmd = ['run', 'commandAndExit', CONFIG['TRADEFED_CTS_COMMAND']]
-        # TODO(yoshiki): remove this branching and consolidate them with the
-        # unified one rule.
-        if (CONFIG['TRADEFED_CTS_COMMAND'] == 'cts' or
-            CONFIG['TRADEFED_CTS_COMMAND'] == 'gts'):
-            special_cmd = _get_special_command_line(modules, is_public)
-            if special_cmd:
-                cmd.extend(special_cmd)
+
+        special_cmd = _get_special_command_line(modules, is_public)
+        if special_cmd:
+            cmd.extend(special_cmd)
+        elif _ALL in modules:
+            pass
+        elif len(modules) == 1:
+            cmd += ['--module', list(modules)[0]]
+        else:
+            assert (CONFIG['TRADEFED_CTS_COMMAND'] != 'cts-instant'), \
+                   'cts-instant cannot include multiple modules'
             # We run each module with its own --include-filter command/option.
             # https://source.android.com/compatibility/cts/run
-            elif modules:
-                for module in sorted(modules):
-                    cmd += ['--include-filter', module]
-        elif CONFIG['TRADEFED_CTS_COMMAND'] == 'cts-instant':
-            if _ALL in modules:
-                pass
-            elif len(modules) == 1:
-                cmd += ['--module', list(modules)[0]]
-            else:
-                raise Exception('cts-instant cannot include multiple modules')
+            for module in sorted(modules):
+                cmd += ['--include-filter', module]
 
         # For runs create a logcat file for each individual failure.
         # Not needed on moblab, nobody is going to look at them.

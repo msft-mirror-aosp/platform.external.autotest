@@ -6,6 +6,7 @@
 
 import errno
 import functools
+import httplib
 import inspect
 import logging
 import os
@@ -37,6 +38,7 @@ SUPPORTED_DEVICE_TYPES = {
     'MOUSE': lambda chameleon: chameleon.get_bluetooth_hid_mouse,
     'KEYBOARD': lambda chameleon: chameleon.get_bluetooth_hid_keyboard,
     'BLE_MOUSE': lambda chameleon: chameleon.get_ble_mouse,
+    'BLE_KEYBOARD': lambda chameleon: chameleon.get_ble_keyboard,
     'A2DP_SINK': lambda chameleon: chameleon.get_bluetooth_a2dp_sink,
 }
 
@@ -891,8 +893,8 @@ class BluetoothAdapterTests(test.test):
             """Check for timeout value in loop while recording failures."""
             actual_timeout = get_timeout()
             if timeout != actual_timeout:
-                logging.error('%s timeout value read %s does not '
-                              'match value set %s', property_name,
+                logging.debug('%s timeout value read %s does not '
+                              'match value set %s, yet', property_name,
                               actual_timeout, timeout)
                 return False
             else:
@@ -2640,7 +2642,7 @@ class BluetoothAdapterTests(test.test):
         raise NotImplementedError
 
 
-    def cleanup(self):
+    def cleanup(self, on_start=True):
         """Clean up bluetooth adapter tests."""
         # Close the device properly if a device is instantiated.
         # Note: do not write something like the following statements
@@ -2655,21 +2657,32 @@ class BluetoothAdapterTests(test.test):
                     device.Close()
 
                     # If module has a reset feature, use it
-                    try:
-                        device.ResetStack()
+                    if on_start:
+                        try:
+                            device.ResetStack()
 
-                    except SocketError as e:
-                        # Ignore connection reset, expected during stack reset
-                        if e.errno != errno.ECONNRESET:
-                            raise
+                        except SocketError as e:
+                            # Ignore conn reset, expected during stack reset
+                            if e.errno != errno.ECONNRESET:
+                                raise
 
-                    # Catch generic Fault exception by rpc server, ignore method
-                    # not available as it indicates platform didn't support
-                    # method and that's ok
-                    except Exception, e:
-                        if not (e.__class__.__name__ == 'Fault' and
-                            'is not supported' in str(e)):
-                            raise
+                        except httplib.BadStatusLine as e:
+                            # BadStatusLine occurs occasionally when chameleon
+                            # is restarted. We ignore it here
+                            logging.error('Ignoring badstatusline exception')
+                            pass
+
+                        # Catch generic Fault exception by rpc server, ignore
+                        # method not available as it indicates platform didn't
+                        # support method and that's ok
+                        except Exception, e:
+                            if not (e.__class__.__name__ == 'Fault' and
+                                'is not supported' in str(e)):
+                                raise
+
+                    else:
+                        # If we are doing a reset action, powercycle device
+                        device.PowerCycle()
 
         self.devices = dict()
         for device_type in SUPPORTED_DEVICE_TYPES:

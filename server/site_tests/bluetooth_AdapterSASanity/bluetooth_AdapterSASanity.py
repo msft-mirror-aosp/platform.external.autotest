@@ -156,18 +156,18 @@ class bluetooth_AdapterSASanity(BluetoothAdapterQuickTests,
         self.sa_adapter_suspend_resume_test()
         self.sa_adapter_present_test()
         self.sa_adapter_discoverable_timeout_test()
-        self.sa_adapter_pairable_timeout_test()
         self.sa_default_state_test()
         self.sa_valid_address_test()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None):
+    def run_once(self, host, num_iterations=1, test_name=None,
+                 flag='Quick Sanity'):
         """Run the batch of Bluetooth stand sanity tests
 
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         """
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_chameleon=False)
+        self.quick_test_init(host, use_chameleon=False, flag=flag)
         self.sa_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -1,6 +1,9 @@
 syntax = "proto3";
 
 service Bios {
+  rpc IsAvailable
+    (BiosIsAvailableRequest)
+    returns (BiosIsAvailableResponse);
   rpc Reload
     (BiosReloadRequest)
     returns (BiosReloadResponse);
@@ -205,6 +208,9 @@ service System {
   rpc GetPlatformName
     (SystemGetPlatformNameRequest)
     returns (SystemGetPlatformNameResponse);
+  rpc GetModelName
+    (SystemGetModelNameRequest)
+    returns (SystemGetModelNameResponse);
   rpc DevTpmPresent
     (SystemDevTpmPresentRequest)
     returns (SystemDevTpmPresentResponse);
@@ -367,9 +373,20 @@ service Updater {
   rpc CopyBios
     (UpdaterCopyBiosRequest)
     returns (UpdaterCopyBiosResponse);
+  rpc GetImageGbbFlags
+    (UpdaterGetImageGbbFlagsRequest)
+    returns (UpdaterGetImageGbbFlagsResponse);
+  rpc SetImageGbbFlags
+      (UpdaterSetImageGbbFlagsRequest)
+      returns (UpdaterSetImageGbbFlagsResponse);
 }
 
 // Bios messages
+
+message BiosIsAvailableRequest {}
+message BiosIsAvailableResponse {
+  bool available = 1;
+}
 
 message BiosReloadRequest {}
 message BiosReloadResponse {}
@@ -747,6 +764,11 @@ message SystemGetPlatformNameResponse {
   string name = 1;
 }
 
+message SystemGetModelNameRequest {}
+message SystemGetModelNameResponse {
+  string name = 1;
+}
+
 message SystemDevTpmPresentRequest {}
 message SystemDevTpmPresentResponse {
   bool response = 1;
@@ -1049,3 +1071,17 @@ message UpdaterCopyBiosRequest {
 message UpdaterCopyBiosResponse {
   string full_path = 1;
 }
+
+
+message UpdaterGetImageGbbFlagsRequest {
+  string filename = 1; // optional
+}
+message UpdaterGetImageGbbFlagsResponse {
+  int32 flags = 1;
+}
+
+message UpdaterSetImageGbbFlagsRequest {
+  int32 flags = 1;
+  string filename = 2; // optional
+}
+message UpdaterSetImageGbbFlagsResponse {}

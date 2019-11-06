@@ -4,11 +4,17 @@
 
 """Server side bluetooth adapter subtests."""
 
-import inspect
+import errno
 import functools
+import httplib
+import inspect
 import logging
+import os
 import re
+from socket import error as SocketError
 import time
+
+import bluetooth_test_utils
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
@@ -20,11 +26,19 @@ from autotest_lib.client.bin.input.linux_input import (
 
 Event = recorder.Event
 
+# Useful locations for handling HID keyboard data traces used by
+# test_keyboard_input_from_trace
+AUTO_TEST_LOCATION = 'trunk/src/third_party/autotest/files'
+TRACE_LOCATION = '/server/cros/bluetooth/input_traces/keyboard'
+INPUT_TRACE_LOCATION = AUTO_TEST_LOCATION + TRACE_LOCATION
+BASE_DIR = os.path.join(os.path.expanduser('~'))
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
     'MOUSE': lambda chameleon: chameleon.get_bluetooth_hid_mouse,
+    'KEYBOARD': lambda chameleon: chameleon.get_bluetooth_hid_keyboard,
     'BLE_MOUSE': lambda chameleon: chameleon.get_ble_mouse,
+    'BLE_KEYBOARD': lambda chameleon: chameleon.get_ble_keyboard,
     'A2DP_SINK': lambda chameleon: chameleon.get_bluetooth_a2dp_sink,
 }
 
@@ -495,8 +509,6 @@ class BluetoothAdapterTests(test.test):
     ADAPTER_DISCOVER_TIMEOUT_SECS = 60          # 30 seconds too short sometimes
     ADAPTER_DISCOVER_POLLING_SLEEP_SECS = 1
     ADAPTER_DISCOVER_NAME_TIMEOUT_SECS = 30
-    # TODO(shijinabraham@) Remove when crbug/905374 is fixed
-    ADAPTER_STOP_DISCOVERY_TIMEOUT_SECS = 180
 
     ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS = 10
     ADAPTER_POLLING_DEFAULT_SLEEP_SECS = 1
@@ -573,6 +585,19 @@ class BluetoothAdapterTests(test.test):
 
             for chameleon in self.chameleon_group[device_type][:number]:
                 device = get_bluetooth_emulated_device(chameleon, device_type)
+
+                try:
+                    # Tell generic chameleon to bind to this device type
+                    device.SpecifyDeviceType(device_type)
+
+                # Catch generic Fault exception by rpc server, ignore method not
+                # available as it indicates platform didn't support method and
+                # that's ok
+                except Exception, e:
+                    if not (e.__class__.__name__ == 'Fault' and
+                        'is not supported' in str(e)):
+                        raise
+
                 self.devices[device_type].append(device)
 
         return True
@@ -588,6 +613,19 @@ class BluetoothAdapterTests(test.test):
         """
         self.devices[device_type].append(get_bluetooth_emulated_device(\
                                     self.host.chameleon, device_type))
+
+        try:
+            # Tell generic chameleon to bind to this device type
+            self.devices[device_type][-1].SpecifyDeviceType(device_type)
+
+        # Catch generic Fault exception by rpc server, ignore method not
+        # available as it indicates platform didn't support method and that's
+        # ok
+        except Exception, e:
+            if not (e.__class__.__name__ == 'Fault' and
+                'is not supported' in str(e)):
+                raise
+
         return self.devices[device_type][-1]
 
 
@@ -810,8 +848,7 @@ class BluetoothAdapterTests(test.test):
         stop_discovery = self.bluetooth_facade.stop_discovery()
         is_not_discovering = self._wait_for_condition(
                 lambda: not self.bluetooth_facade.is_discovering(),
-                method_name(),
-                timeout=self.ADAPTER_STOP_DISCOVERY_TIMEOUT_SECS)
+                method_name())
 
         self.results = {
                 'stop_discovery': stop_discovery,
@@ -852,6 +889,17 @@ class BluetoothAdapterTests(test.test):
            Note : Value of 0 mean it never timeouts, so the test will
                  end after 30 seconds.
         """
+        def check_timeout(timeout):
+            """Check for timeout value in loop while recording failures."""
+            actual_timeout = get_timeout()
+            if timeout != actual_timeout:
+                logging.debug('%s timeout value read %s does not '
+                              'match value set %s, yet', property_name,
+                              actual_timeout, timeout)
+                return False
+            else:
+                return True
+
         def _test_timeout_property(timeout):
             # minium time after timeout before checking property
             MIN_DELTA_SECS = 3
@@ -862,11 +910,12 @@ class BluetoothAdapterTests(test.test):
             if not set_timeout(timeout):
                 logging.error('Setting the %s timeout failed',property_name)
                 return False
-            actual_timeout = get_timeout()
-            if timeout != actual_timeout:
-                logging.error('%s timeout value read %s does not '
-                              'match value set %s', property_name,
-                              actual_timeout, timeout)
+
+
+            if not self._wait_for_condition(lambda : check_timeout(timeout),
+                                            'check_'+property_name):
+                logging.error('checking %s_timeout value timed out',
+                              property_name)
                 return False
 
             #
@@ -935,6 +984,7 @@ class BluetoothAdapterTests(test.test):
                                       property_name, time_elapsed, timeout)
                         return True
 
+        default_value = check_property()
         default_timeout = get_timeout()
 
         result = []
@@ -947,8 +997,13 @@ class BluetoothAdapterTests(test.test):
             logging.error("exception in test_%s_timeout",property_name)
             raise
         finally:
-            # Set the timeout back to default value before existing the test
+            # Set the property back to default value permanently before
+            # exiting the test
+            set_timeout(0)
+            set_property(default_value)
+            # Set the timeout back to default value before exiting the test
             set_timeout(default_timeout)
+
 
     @_test_retry_and_log
     def test_discoverable_timeout(self, timeout_values = [0, 60, 180]):
@@ -1385,6 +1440,7 @@ class BluetoothAdapterTests(test.test):
 
 
         method_name = 'test_device_is_not_connected'
+        not_connected = False
         if self.bluetooth_facade.has_device(device_address):
             try:
                 utils.poll_for_condition(
@@ -1398,6 +1454,7 @@ class BluetoothAdapterTests(test.test):
                 logging.error('%s: %s', method_name, e)
             except:
                 logging.error('%s: unexpected error', method_name)
+                raise
         else:
             not_connected = True
         self.results = {'not_connected': not_connected}
@@ -2418,6 +2475,81 @@ class BluetoothAdapterTests(test.test):
         return actual_events == expected_events
 
 
+    # -------------------------------------------------------------------
+    # Bluetooth keyboard related tests
+    # -------------------------------------------------------------------
+
+    # TODO may be deprecated as stated in b:140515628
+    @_test_retry_and_log
+    def test_keyboard_input_from_string(self, device, string_to_send):
+        """Test that the keyboard's key events could be received correctly.
+
+        @param device: the meta device containing a bluetooth HID device
+        @param string_to_send: the set of keys that will be pressed one-by-one
+
+        @returns: True if the report received by the host matches the
+                  expected one. False otherwise.
+
+        """
+
+        gesture = lambda: device.KeyboardSendString(string_to_send)
+
+        actual_events = self._record_input_events(device, gesture)
+
+        resulting_string = bluetooth_test_utils.reconstruct_string(
+                           actual_events)
+
+        return string_to_send == resulting_string
+
+
+    @_test_retry_and_log
+    def test_keyboard_input_from_trace(self, device, trace_name):
+        """ Tests that keyboard events can be transmitted and received correctly
+
+        @param device: the meta device containing a bluetooth HID device
+        @param trace_name: string name for keyboard activity trace to be used
+                           in the test i.e. "simple_text"
+
+        @returns: true if the recorded output matches the expected output
+                  false otherwise
+        """
+
+        # Read data from trace I/O files
+        input_trace = bluetooth_test_utils.parse_trace_file(os.path.join(
+                      BASE_DIR, INPUT_TRACE_LOCATION,
+                      '{}_input.txt'.format(trace_name)))
+        output_trace = bluetooth_test_utils.parse_trace_file(os.path.join(
+                      BASE_DIR, INPUT_TRACE_LOCATION,
+                      '{}_output.txt'.format(trace_name)))
+
+        if not input_trace or not output_trace:
+            logging.error('Failure in using trace')
+            return False
+
+        # Disregard timing data for now
+        input_scan_codes = [tup[1] for tup in input_trace]
+        predicted_events = [Event(*tup[1]) for tup in output_trace]
+
+        # Create and run this trace as a gesture
+        gesture = lambda: device.KeyboardSendTrace(input_scan_codes)
+        rec_events = self._record_input_events(device, gesture)
+
+        # Filter out any input events that were not from the keyboard
+        rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
+
+        # Fail if we didn't record the correct number of events
+        if len(rec_key_events) != len(input_scan_codes):
+            return False
+
+        for idx, predicted in enumerate(predicted_events):
+            recorded = rec_key_events[idx]
+
+            if not predicted == recorded:
+                return False
+
+        return True
+
+
     def is_newer_kernel_version(self, version, minimum_version):
         """ Check if given kernel version is newer than unsupported version."""
 
@@ -2516,7 +2648,7 @@ class BluetoothAdapterTests(test.test):
         raise NotImplementedError
 
 
-    def cleanup(self):
+    def cleanup(self, on_start=True):
         """Clean up bluetooth adapter tests."""
         # Close the device properly if a device is instantiated.
         # Note: do not write something like the following statements
@@ -2529,6 +2661,34 @@ class BluetoothAdapterTests(test.test):
             for device in device_list:
                 if device is not None:
                     device.Close()
+
+                    # If module has a reset feature, use it
+                    if on_start:
+                        try:
+                            device.ResetStack()
+
+                        except SocketError as e:
+                            # Ignore conn reset, expected during stack reset
+                            if e.errno != errno.ECONNRESET:
+                                raise
+
+                        except httplib.BadStatusLine as e:
+                            # BadStatusLine occurs occasionally when chameleon
+                            # is restarted. We ignore it here
+                            logging.error('Ignoring badstatusline exception')
+                            pass
+
+                        # Catch generic Fault exception by rpc server, ignore
+                        # method not available as it indicates platform didn't
+                        # support method and that's ok
+                        except Exception, e:
+                            if not (e.__class__.__name__ == 'Fault' and
+                                'is not supported' in str(e)):
+                                raise
+
+                    else:
+                        # If we are doing a reset action, powercycle device
+                        device.PowerCycle()
 
         self.devices = dict()
         for device_type in SUPPORTED_DEVICE_TYPES:

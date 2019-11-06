@@ -461,14 +461,21 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         # Turn on the adapter in order to remove all remote devices.
         if not self._is_powered_on():
-            self._set_powered(True)
+            if not self._set_powered(True):
+                logging.warning('Unable to power on the adapter')
+                return False
 
         for device in devices:
             logging.debug('removing %s', device.get('Address'))
             self.remove_device_object(device.get('Address'))
 
-        if not set_power:
-            self._set_powered(False)
+        # Toggle power to the adapter.
+        if not self._set_powered(False):
+            logging.warning('Unable to power off adapter')
+            return False
+        if set_power and not self._set_powered(True):
+            logging.warning('Unable to power on adapter')
+            return False
 
         return True
 
@@ -490,8 +497,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             else:
                 logging.warning('Adapter not found!')
                 return False
-        self._set_powered(powered)
-        return True
+        return self._set_powered(powered)
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -505,6 +511,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Powered',
                           dbus.Boolean(powered, variant_level=1),
                           dbus_interface=dbus.PROPERTIES_IFACE)
+        return True
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -940,12 +947,17 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                                             self.BLUEZ_AGENT_MANAGER_PATH),
                 self.BLUEZ_AGENT_MANAGER_IFACE)
         try:
-            agent_manager.RegisterAgent(self.AGENT_PATH, self._capability)
+            agent_obj = self._system_bus.get_object(
+                            self._bluetooth_service_name,
+                            self.AGENT_PATH)
+            agent_manager.RegisterAgent(agent_obj,
+                                        dbus.String(self._capability))
         except dbus.exceptions.DBusException, e:
             if e.get_dbus_name() == self.BLUEZ_ERROR_ALREADY_EXISTS:
                 logging.info('Unregistering old agent and registering the new')
-                agent_manager.UnregisterAgent(self.AGENT_PATH)
-                agent_manager.RegisterAgent(self.AGENT_PATH, self._capability)
+                agent_manager.UnregisterAgent(agent_obj)
+                agent_manager.RegisterAgent(agent_obj,
+                                            dbus.String(self._capability))
             else:
                 logging.error('Error setting up pin agent: %s', e)
                 raise
@@ -1010,7 +1022,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         try:
             properties = dbus.Interface(device, self.DBUS_PROP_IFACE)
-            properties.Set(self.BLUEZ_DEVICE_IFACE, 'Trusted', trusted)
+            properties.Set(self.BLUEZ_DEVICE_IFACE, 'Trusted',
+                           dbus.Boolean(trusted, variant_level=1))
             return True
         except Exception as e:
             logging.error('_set_trusted_by_device: %s', e)
@@ -1122,9 +1135,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             finally:
                 mainloop.quit()
 
-
-        device.Pair(reply_handler=pair_reply, error_handler=pair_error,
-                    timeout=timeout * 1000)
+        try:
+            device.Pair(reply_handler=pair_reply, error_handler=pair_error,
+                        timeout=timeout * 1000)
+        except Exception as e:
+            logging.error('Exception %s in pair_legacy_device', e)
+            return False
         mainloop.run()
         return self._is_paired(device)
 
@@ -1296,7 +1312,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @returns: an empty string '' on success;
                   None if there is no _advertising interface manager; and
-                  an error string if the dbus method fails.
+                  an error string if the dbus method fails or exception occurs
 
         """
 
@@ -1318,7 +1334,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             return None
 
         # Call dbus_method with handlers.
-        dbus_method(*args, reply_handler=successful_cb, error_handler=error_cb)
+        try:
+            dbus_method(*args, reply_handler=successful_cb,
+                        error_handler=error_cb)
+        except Exception as e:
+            logging.error('Exception %s in advertising_async_method ', e)
+            return str(e)
 
         self._adv_mainloop.run()
 
@@ -1347,7 +1368,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 lambda error: logging.error(
                     'register_advertisement: failed: %s', str(error)),
                 # other arguments
-                adv.get_path(), {})
+                adv.get_path(), dbus.Dictionary({}, signature='sv'))
 
 
     def unregister_advertisement(self, advertisement_data):
@@ -1409,7 +1430,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 lambda error: logging.error(
                     'set_advertising_intervals: failed: %s', str(error)),
                 # other arguments
-                min_adv_interval_ms, max_adv_interval_ms)
+                dbus.UInt16(min_adv_interval_ms),
+                dbus.UInt16(max_adv_interval_ms))
 
 
     def reset_advertising(self):

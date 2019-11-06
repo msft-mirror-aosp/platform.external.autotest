@@ -73,7 +73,7 @@ def EnterpriseFakeEnrollment(browser, user_id, password, gaia_id,
     if auto_login:
         browser.oobe.NavigateFakeLogin(user_id, password, gaia_id)
         # TODO(achuith): Replace with WaitForLogin.
-        utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=30)
+        utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=45)
 
 
 def OnlineDemoMode(browser):
@@ -83,3 +83,21 @@ def OnlineDemoMode(browser):
   """
   _ExecuteOobeCmd(browser, 'Oobe.setUpOnlineDemoModeForTesting();')
   utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=90)
+
+
+def KioskEnrollment(browser, user_id, password, gaia_id):
+    """Kiosk Enrollment.
+
+    @param browser: telemetry browser object.
+    @param user_id: login credentials user_id.
+    @param password: login credentials password.
+    @param gaia_id: login credentials gaia_id.
+    """
+
+    cmd = ('Oobe.loginForTesting("{user}", "{password}", "{gaia_id}", true)'
+           .format(user=user_id,
+                   password=password,
+                   gaia_id=gaia_id))
+    _ExecuteOobeCmd(browser, cmd)
+
+    utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=60)

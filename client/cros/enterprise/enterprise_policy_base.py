@@ -21,6 +21,7 @@ from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.enterprise import enterprise_fake_dmserver
+from autotest_lib.client.cros.enterprise import enterprise_policy_utils
 from autotest_lib.client.cros.enterprise.device_policy_lookup import DEVICE_POLICY_DICT
 from autotest_lib.client.common_lib import ui_utils
 from py_utils import TimeoutException
@@ -451,6 +452,27 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         return policy_map
 
+    def update_policies(self, user_policies={}, suggested_user_policies={},
+                        device_policies={}, extension_policies={}):
+        """
+        Will update the currently existing policies set by the DM server.
+        All existing policies will be overwritten by this call. If you want to
+        change some policies, but not all, the original (ie not changing)
+        policies must also be provided.
+
+        @param user_policies: mandatory user policies -> values.
+        @param suggested user_policies: suggested user policies -> values.
+        @param device_policies: mandatory device policies -> values.
+        @param extension_policies: extension policies.
+
+        """
+        self.fake_dm_server.setup_policy(
+            self._make_json_blob(user_policies,
+                                 suggested_user_policies,
+                                 device_policies,
+                                 extension_policies))
+        self.reload_policies()
+
     def _make_json_blob(self, user_policies={}, suggested_user_policies={},
                         device_policies={}, extension_policies={}):
         """Create JSON policy blob from mandatory and suggested policies.
@@ -490,7 +512,7 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                 elif isinstance(value, dict):
                     policies_dict[Policy] = encode_json_string(value)
                 # "account" is the Kiosk Policy, which has special formatting.
-                elif isinstance(value, list) and Policy != 'account':
+                elif isinstance(value, list) and Policy != 'device_local_accounts.account':
                     if value and isinstance(value[0], dict):
                         policies_dict[Policy] = encode_json_string(value)
             for Policy in policies_to_pop:
@@ -557,16 +579,9 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         return table_index
 
-
     def reload_policies(self):
         """Force a policy fetch."""
-        policy_tab = self.navigate_to_url(self.CHROME_POLICY_PAGE)
-        reload_button = "document.querySelector('button#reload-policies')"
-        policy_tab.ExecuteJavaScript("%s.click()" % reload_button)
-        policy_tab.WaitForJavaScriptCondition("!%s.disabled" % reload_button,
-                                              timeout=1)
-        policy_tab.Close()
-
+        enterprise_policy_utils.refresh_policies(self.cr.autotest_ext)
 
     def verify_extension_stats(self, extension_policies, sensitive_fields=[]):
         """
@@ -924,18 +939,9 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                     expect_policy_fetch=True)
             if self.dms_is_fake:
                 if self._kiosk_mode:
-                    # This try is needed for kiosk; without it the test fails
-                    # in telemtry code in _WaitForEnterpriseWebview. Webview
-                    # never loads since it's kiosk.
-                    # TODO(rzakarian): Try to modify telemetry code to not
-                    # wait for Webview when in kiosk mode.
-                    # http://crbug.com/934876.
-                    try:
-                        enrollment.EnterpriseFakeEnrollment(
-                            self.cr.browser, self.username, self.password,
-                            self.gaia_id, auto_login=auto_login)
-                    except TimeoutException:
-                        pass
+                    enrollment.KioskEnrollment(
+                        self.cr.browser, self.username, self.password,
+                        self.gaia_id)
                 else:
                     enrollment.EnterpriseFakeEnrollment(
                         self.cr.browser, self.username, self.password,

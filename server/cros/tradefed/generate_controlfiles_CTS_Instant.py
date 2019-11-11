@@ -16,7 +16,6 @@ CONFIG['TEST_NAME'] = 'cheets_CTS_Instant'
 CONFIG['DOC_TITLE'] = \
     'Android Compatibility Test Suite for Instant Apps (CTS Instant)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_P'
-CONFIG['SKIP_EXTRA_MOBLAB_SUITES'] = False
 CONFIG['COPYRIGHT_YEAR'] = 2018
 CONFIG['AUTHKEY'] = ''
 
@@ -39,10 +38,10 @@ CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 # unlikely to fail alone (= regression almost always caught by the
 # corresponding CTS module.) For now we don't generate this type of control
 # files.
-CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_CTS'
+CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = True
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = False
-CONFIG['CONTROLFILE_WRITE_DEQP'] = False
+CONFIG['CONTROLFILE_WRITE_EXTRA'] = False
 
 # The dashboard suppresses upload to APFE for GS directories (based on autotest
 # tag) that contain 'tradefed-run-collect-tests'. b/119640440
@@ -163,7 +162,7 @@ CONFIG['EXTRA_MODULES'] = {}
 CONFIG['PUBLIC_EXTRA_MODULES'] = {}
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {}
 
-CONFIG['EXTRA_COMMANDLINE'] = []
+CONFIG['EXTRA_COMMANDLINE'] = {}
 
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'tradefed-run-collect-tests-only-internal': ['suite:arc-cts'],

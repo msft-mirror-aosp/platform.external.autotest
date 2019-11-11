@@ -104,6 +104,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     BLUEZ_PROFILE_MANAGER_PATH = '/org/bluez'
     BLUEZ_PROFILE_MANAGER_IFACE = 'org.bluez.ProfileManager1'
     BLUEZ_ERROR_ALREADY_EXISTS = 'org.bluez.Error.AlreadyExists'
+    BLUEZ_PLUGIN_DEVICE_IFACE = 'org.chromium.BluetoothDevice'
     DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
     AGENT_PATH = '/test/agent'
 
@@ -1135,9 +1136,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             finally:
                 mainloop.quit()
 
-
-        device.Pair(reply_handler=pair_reply, error_handler=pair_error,
-                    timeout=timeout * 1000)
+        try:
+            device.Pair(reply_handler=pair_reply, error_handler=pair_error,
+                        timeout=timeout * 1000)
+        except Exception as e:
+            logging.error('Exception %s in pair_legacy_device', e)
+            return False
         mainloop.run()
         return self._is_paired(device)
 
@@ -1309,7 +1313,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @returns: an empty string '' on success;
                   None if there is no _advertising interface manager; and
-                  an error string if the dbus method fails.
+                  an error string if the dbus method fails or exception occurs
 
         """
 
@@ -1331,7 +1335,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             return None
 
         # Call dbus_method with handlers.
-        dbus_method(*args, reply_handler=successful_cb, error_handler=error_cb)
+        try:
+            dbus_method(*args, reply_handler=successful_cb,
+                        error_handler=error_cb)
+        except Exception as e:
+            logging.error('Exception %s in advertising_async_method ', e)
+            return str(e)
 
         self._adv_mainloop.run()
 
@@ -1566,6 +1575,36 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         return bool(self.get_characteristic_map(address).get(uuid))
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def get_connection_info(self, address):
+        """Get device connection info.
+
+        @param address: The MAC address of the device.
+
+        @returns: On success, a JSON-encoded tuple of:
+                      ( RSSI, transmit_power, max_transmit_power )
+                  None otherwise.
+
+        """
+        path = self._get_device_path(address)
+        if path is None:
+            return None
+
+        try:
+            plugin_device = dbus.Interface(
+                                self._system_bus.get_object(
+                                    self._bluetooth_service_name,
+                                    path),
+                                self.BLUEZ_PLUGIN_DEVICE_IFACE)
+            connection_info = plugin_device.GetConnInfo()
+            return json.dumps(connection_info)
+        except Exception as e:
+            logging.error('get_connection_info: %s', e)
+        except:
+            logging.error('get_connection_info: unexpected error')
+        return None
 
 
 if __name__ == '__main__':

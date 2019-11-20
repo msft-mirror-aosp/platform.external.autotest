@@ -1111,6 +1111,34 @@ def process_is_alive(name_pattern):
     return utils.system("pgrep -f '^([^ /]*/)*(%s)([ ]|$)'" % name_pattern,
                         ignore_status=True) == 0
 
+def set_hwclock(time='system',
+                utc=True,
+                rtc=None,
+                noadjfile=False,
+                ignore_status=False):
+    """Uses the hwclock command to set time of an RTC.
+
+    @param time: Either 'system', meaning use the system time, or a string
+                 to be passed to the --date argument of hwclock.
+    @param utc: Boolean of whether to use UTC or localtime.
+    @param rtc: String to be passed to the --rtc arg of hwclock.
+    @param noadjfile: Boolean of whether to use --noadjfile flag with hwclock.
+    @param ignore_status: Boolean of whether to ignore exit code of hwclock.
+    """
+    cmd = '/sbin/hwclock'
+    if time == 'system':
+        cmd += ' --systohc'
+    else:
+        cmd += ' --set --date "{}"'.format(time)
+    if utc:
+        cmd += ' --utc'
+    else:
+        cmd += ' --localtime'
+    if rtc is not None:
+        cmd += ' --rtc={}'.format(rtc)
+    if noadjfile:
+        cmd += ' --noadjfile'
+    return utils.system(cmd, ignore_status=ignore_status)
 
 def get_hwclock_seconds(utc=True):
     """
@@ -1864,7 +1892,7 @@ def _get_hwmon_paths(file_pattern):
     #    /sys/devices/virtual/hwmon/hwmon*/
     #    /sys/devices/platform/coretemp.0/
     if not _hwmon_paths:
-        cmd = 'find /sys/ -name "' + file_pattern + '"'
+        cmd = 'find /sys/class /sys/devices -name "' + file_pattern + '"'
         _hwon_paths = utils.run(cmd, verbose=False).stdout.splitlines()
     return _hwon_paths
 
@@ -2372,6 +2400,23 @@ def get_root_device():
     Example: return /dev/sdb for falco booted from usb
     """
     return utils.system_output('rootdev -s -d')
+
+
+def get_other_device():
+    """
+    Return the non root devices.
+    Will return a list of other block devices, that are not the root device.
+    """
+
+    cmd = 'lsblk -dpn -o NAME | grep -v loop | grep -v zram'
+    devs = utils.system_output(cmd).splitlines()
+
+    for dev in devs[:]:
+        if not re.match(r'/dev/(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+)p?[0-9]*', dev):
+            devs.remove(dev)
+        if dev == get_root_device():
+            devs.remove(dev)
+    return devs
 
 
 def get_root_partition():

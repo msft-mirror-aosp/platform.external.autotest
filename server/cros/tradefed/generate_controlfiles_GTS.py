@@ -66,6 +66,7 @@ CONFIG['QUAL_TIMEOUT'] = 24
 
 CONFIG['QUAL_BOOKMARKS'] = sorted([
     'A',  # A bookend to simplify partition algorithm.
+    'GtsCameraTestCases',  # b/144659061 requires it separated from GtsAssistant
     'zzzzz'  # A bookend to simplify algorithm.
 ])
 
@@ -94,7 +95,10 @@ CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = ['GtsYouTubeTestCases']
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [_ALL]
-CONFIG['ENABLE_DEFAULT_APPS'] = []
+CONFIG['ENABLE_DEFAULT_APPS'] = [
+    # TODO(kinaba): See b/143740808. Can be droped after GTS7.0r3 deployed.
+    'GtsAssistantHostTestCases'
+]
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {}

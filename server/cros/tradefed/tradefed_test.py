@@ -67,7 +67,6 @@ class TradefedTest(test.test):
     _release_branch_number = None  # The 'y' of OS version Rxx-xxxxx.y.z
     _android_version = None
     _num_media_bundles = 0
-    _perf_results = []
     _abilist = []
 
     def _log_java_version(self):
@@ -174,16 +173,6 @@ class TradefedTest(test.test):
                 shutil.rmtree(self._tradefed_install)
             except IOError:
                 pass
-
-        # Create perf data for Chromeperf.
-        for perf in self._perf_results:
-            data = dict(
-                units='count',
-                higher_is_better=False,
-                replace_existing_values=True,
-            )
-            data.update(perf)
-            self.output_perf_value(**data)
 
     def _verify_hosts(self):
         """Verify all hosts' ChromeOS consistency."""
@@ -338,10 +327,10 @@ class TradefedTest(test.test):
             host, 'restorecon ' + pipes.quote(constants.ANDROID_ADB_KEYS_PATH))
 
         # This starts adbd.
-        self._android_shell(host, 'setprop sys.usb.config mtp,adb')
+        self._android_shell(host, 'setprop sys.usb.config adb')
 
         # Also let it be automatically started upon reboot.
-        self._android_shell(host, 'setprop persist.sys.usb.config mtp,adb')
+        self._android_shell(host, 'setprop persist.sys.usb.config adb')
 
         # adbd may take some time to come up. Repeatedly try to connect to adb.
         utils.poll_for_condition(
@@ -955,9 +944,9 @@ class TradefedTest(test.test):
           self._repository/logs/$datetime/
         Because other tools rely on the currently chosen Google storage paths
         we need to keep destination_results in:
-          self.resultdir/android-cts/results/$datetime/
-          self.resultdir/android-cts/results/$datetime.zip
-          self.resultdir/android-cts/results/logs/$datetime/
+          self.resultsdir/android-cts/results/$datetime/
+          self.resultsdir/android-cts/results/$datetime.zip
+          self.resultsdir/android-cts/results/logs/$datetime/
         To bridge between them, create symlinks from the former to the latter.
         """
         logging.info('Setting up tradefed results and logs directories.')
@@ -1014,7 +1003,7 @@ class TradefedTest(test.test):
             return False
         return True
 
-    def _copy_extra_artifacts(self, extra_artifacts, host, output_dir):
+    def _copy_extra_artifacts_dut(self, extra_artifacts, host, output_dir):
         """ Upload the custom artifacts """
         self._safe_makedirs(output_dir)
 
@@ -1028,15 +1017,27 @@ class TradefedTest(test.test):
                 # Maybe ADB connection failed, or the artifacts don't exist.
                 logging.exception('Copying extra artifacts failed.')
 
+    def _copy_extra_artifacts_host(self, extra_artifacts, host, output_dir):
+        """ Upload the custom artifacts """
+        self._safe_makedirs(output_dir)
+
+        for artifact in extra_artifacts:
+            logging.info('Copying extra artifacts from "%s" to "%s".',
+                         artifact, output_dir)
+            for extracted_path in glob.glob(artifact):
+                logging.info('... %s', extracted_path)
+                # Move it not to collect it again in future retries.
+                shutil.move(extracted_path, output_dir)
+
     def _run_tradefed_list_results(self):
         """Run the `tradefed list results` command.
 
         @return: tuple of the last (session_id, pass, fail, all_done?).
         """
 
-        # Fix b/143580192: We set the timeout to 20s because it should never
-        # takes more than 10s.
-        output = self._run_tradefed_with_timeout(['list', 'results'], 20)
+        # Fix b/143580192: We set the timeout to 3 min. It never takes more than
+        # 10s on light disk load.
+        output = self._run_tradefed_with_timeout(['list', 'results'], 180)
 
         # Parses the last session from the output that looks like:
         #
@@ -1100,10 +1101,10 @@ class TradefedTest(test.test):
                                    executable_test_count=None,
                                    bundle=None,
                                    extra_artifacts=[],
+                                   extra_artifacts_host=[],
                                    cts_uri=None,
                                    login_precondition_commands=[],
-                                   precondition_commands=[],
-                                   perf_description=None):
+                                   precondition_commands=[]):
         """Run CTS/GTS with retry logic.
 
         We first kick off the specified module. Then rerun just the failures
@@ -1195,13 +1196,15 @@ class TradefedTest(test.test):
                 waived = len(waived_tests)
                 last_session_id, passed, failed, all_done = result
 
-                if failed > waived:
+                if failed > waived or not utils.is_in_container():
                     for host in self._hosts:
                         dir_name = "%s-step%02d" % (host.hostname, steps)
                         output_dir = os.path.join(
                             self.resultsdir, 'extra_artifacts', dir_name)
-                        self._copy_extra_artifacts(
+                        self._copy_extra_artifacts_dut(
                             extra_artifacts, host, output_dir)
+                        self._copy_extra_artifacts_host(
+                            extra_artifacts_host, host, output_dir)
 
                 if passed + failed > 0:
                     # At least one test had run, which means the media push step
@@ -1265,22 +1268,11 @@ class TradefedTest(test.test):
                 if not all_done and '*' in ''.join(run_template):
                     break
 
-        # Tradefed finished normally. Record the failures to perf.
-        if target_module:
-            # Only record the failure by module, which exclude 'all', 'collects-tests-only', etc.
-            self._perf_results.append(dict(
-                description=perf_description if perf_description else target_module,
-                value=failed - waived,
-                graph=bundle
-            ))
-
         if session_id == None:
             raise error.TestFail('Error: Could not find any tests in module.')
 
         if failed <= waived and all_done:
             if not all(accurate):
-                # Tests count inaccurate, remove perf to avoid false alarm.
-                self._perf_results.pop()
                 raise error.TestFail(
                     'Failed: Not all tests were executed. After %d '
                     'retries passing %d tests, waived=%d. %s' % (

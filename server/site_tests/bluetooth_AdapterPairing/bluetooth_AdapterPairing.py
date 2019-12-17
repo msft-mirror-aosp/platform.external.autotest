@@ -53,7 +53,9 @@ class bluetooth_AdapterPairing(
 
             # Get the device object and query some important properties.
             device = self.get_device(device_type)
-            self.pairing_test(device, pairing_twice, suspend_resume, reboot)
+            self.pairing_test(device, self.test_mouse_left_click,
+                              pairing_twice, suspend_resume, reboot)
+
 
             if bool(self.fails):
                 self.total_fails['Round %d' % iteration] = self.fails

@@ -26,6 +26,7 @@ from autotest_lib.client.cros.chameleon import usb_controller
 
 CHAMELEON_PORT = 9992
 CHAMELEOND_LOG_REMOTE_PATH = '/var/log/chameleond'
+DAEMON_LOG_REMOTE_PATH = '/var/log/daemon.log'
 CHAMELEON_READY_TEST = 'GetSupportedPorts'
 
 
@@ -138,7 +139,7 @@ class ChameleonConnection(object):
         self._proxy_generator = proxy_generator or self._create_server_proxy
 
         self._ready_test_name = ready_test_name
-        self.chameleond_proxy = None
+        self._chameleond_proxy = None
 
 
     def _create_server_proxy(self):
@@ -167,7 +168,7 @@ class ChameleonConnection(object):
 
     def _reconnect(self):
         """Reconnect to chameleond."""
-        self.chameleond_proxy = self._proxy_generator()
+        self._chameleond_proxy = self._proxy_generator()
 
 
     def __call_server(self, name, *args, **kwargs):
@@ -180,15 +181,22 @@ class ChameleonConnection(object):
 
         @return: the result returned by the remote method.
 
+        @raise ChameleonConnectionError if the call failed after a reconnection.
+
         """
         try:
-            return getattr(self.chameleond_proxy, name)(*args, **kwargs)
+            return getattr(self._chameleond_proxy, name)(*args, **kwargs)
         except (AttributeError, socket.error):
             # Reconnect and invoke the method again.
             logging.info('Reconnecting chameleond proxy: %s', name)
             self._reconnect()
-            return getattr(self.chameleond_proxy, name)(*args, **kwargs)
-
+            try:
+                return getattr(self._chameleond_proxy, name)(*args, **kwargs)
+            except (socket.error) as e:
+                raise ChameleonConnectionError(
+                        ("The RPC call %s still failed with %s"
+                         " after a reconnection.") % (name, e))
+        return None
 
     def __getattr__(self, name):
         """Get the callable _Method object.
@@ -260,6 +268,56 @@ class ChameleonBoard(object):
                 self._output_log_file = os.path.join(log_dir, 'log')
                 atexit.register(self._get_log)
         self.reset()
+
+
+    def register_raspPi_log(self, output_dir):
+        """Register log for raspberry Pi
+
+        This method log bluetooth related files on Raspberry Pi.
+        If the host is not running on Raspberry Pi, some files may be ignored.
+        """
+        log_dir = os.path.join(output_dir, 'chameleond', self.host.hostname)
+
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        def log_new_gen(source_path):
+            """Generate function to save logs logging during the test
+
+            @param source_path: The log file path that want to be saved
+
+            @return: Function to save the logs if file in source_path exists,
+                     None otherwise.
+            """
+
+            # Check if the file exists
+            file_exist = self.host.run('[ -f %s ] || echo "not found"' %
+                                        source_path).stdout.strip()
+            if file_exist == 'not found':
+                return None
+
+            byte_to_skip = self.host.run('stat --printf="%%s" %s' %
+                                         source_path).stdout.strip()
+            file_name = os.path.basename(source_path)
+            target_path = os.path.join(log_dir, file_name)
+
+            def log_new():
+                """Save the newly added logs"""
+                tmp_file_path = source_path+'.new'
+
+                # Store a temporary file with newly added content
+                # Set the start point as byte_to_skip + 1
+                self.host.run('tail -c +%s %s > %s' % (int(byte_to_skip)+1,
+                                                       source_path,
+                                                       tmp_file_path))
+                self.host.get_file(tmp_file_path, target_path)
+                self.host.run('rm %s' % tmp_file_path)
+            return log_new
+
+        for source_path in [CHAMELEOND_LOG_REMOTE_PATH, DAEMON_LOG_REMOTE_PATH]:
+            log_new_func = log_new_gen(source_path)
+            if log_new_func:
+                atexit.register(log_new_func)
 
 
     def reboot(self):
@@ -557,12 +615,12 @@ class ChameleonVideoInput(ChameleonPort):
         @param edid: An Edid object or NO_EDID.
         """
         if edid is edid_lib.NO_EDID:
-          self.chameleond_proxy.ApplyEdid(self.port_id, self._EDID_ID_DISABLE)
+            self.chameleond_proxy.ApplyEdid(self.port_id, self._EDID_ID_DISABLE)
         else:
-          edid_binary = xmlrpclib.Binary(edid.data)
-          edid_id = self.chameleond_proxy.CreateEdid(edid_binary)
-          self.chameleond_proxy.ApplyEdid(self.port_id, edid_id)
-          self.chameleond_proxy.DestroyEdid(edid_id)
+            edid_binary = xmlrpclib.Binary(edid.data)
+            edid_id = self.chameleond_proxy.CreateEdid(edid_binary)
+            self.chameleond_proxy.ApplyEdid(self.port_id, edid_id)
+            self.chameleond_proxy.DestroyEdid(edid_id)
 
     def set_edid_from_file(self, filename, check_video_input=True):
         """Sets EDID from a file.

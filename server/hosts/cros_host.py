@@ -144,10 +144,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                 POWER_CONTROL_SERVO,
                                 POWER_CONTROL_MANUAL)
 
-    # CCD_SERVO: The string of servo type to compare with the return value of
-    #            self.servo.get_servo_version() to decide default power method.
-    CCD_SERVO = 'servo_v4_with_ccd_cr50'
-
     _RPM_OUTLET_CHANGED = 'outlet_changed'
 
     # URL pattern to download firmware image.
@@ -307,7 +303,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             servo_host.create_servo_host(
                 dut=self, servo_args=servo_args,
                 try_lab_servo=try_lab_servo,
-                try_servo_repair=try_servo_repair))
+                try_servo_repair=try_servo_repair,
+                dut_host_info=self.host_info_store.get()))
         self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
@@ -362,7 +359,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.error('Also failed to get the board name from the DUT '
                               'itself. %s.', str(e))
                 raise error.AutoservError('Cannot obtain repair image name.')
-        return afe_utils.get_stable_cros_image_name(board)
+        return afe_utils.get_stable_cros_image_name_v2(self.host_info_store.get())
 
 
     def host_version_prefix(self, image):
@@ -441,9 +438,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             monarch_fields = {
                 'board': board,
                 'build_type': build_type,
-                # TODO(akeshet): To be consistent with most other metrics,
-                # consider changing the following field to be named
-                # 'milestone'.
                 'branch': branch,
                 'dev_server': devserver,
             }
@@ -646,7 +640,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         # If build is not set, try to install firmware from stable CrOS.
         if not build:
-            build = afe_utils.get_stable_faft_version(board)
+            build = afe_utils.get_stable_faft_version_v2(info)
             if not build:
                 raise error.TestError(
                         'Failed to find stable firmware build for %s.',
@@ -2035,13 +2029,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         if not self._default_power_method:
             self._default_power_method = self.POWER_CONTROL_RPM
-            info = self.host_info_store.get()
-            if info.attributes.get('servo_type') == self.CCD_SERVO:
-                if self.servo:
-                    self._default_power_method = self.POWER_CONTROL_CCD
-                else:
-                    logging.warn('CCD servo detected but failed to apply CCD'
-                                 ' servo RPM method due to servo instance'
-                                 ' was not initialized, fall back to normal'
-                                 ' RPM method.')
+            if self.servo and self.servo.supports_built_in_pd_control():
+                self._default_power_method = self.POWER_CONTROL_CCD
+            else:
+                logging.debug('Either servo is unitialized or the servo '
+                              'setup does not support pd controls. Falling '
+                              'back to default RPM method.')
         return self._default_power_method

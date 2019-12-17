@@ -108,6 +108,9 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- if extra_artifacts %}
             extra_artifacts={{extra_artifacts}},
     {%- endif %}
+    {%- if extra_artifacts_host %}
+            extra_artifacts_host={{extra_artifacts_host}},
+    {%- endif %}
     {%- if uri %}
             uri='{{uri}}',
     {%- endif %}
@@ -490,18 +493,21 @@ def get_test_priority(modules, is_public):
 
     @param module: CTS module which will be tested in the control file.
 
-    @return int: None if priorty not to be overridden or 50
+    @return int: 0 if priority not to be overridden, or priority number otherwise.
     """
+    if not is_public:
+        return 0
+
     priority = 0
-    if is_public:
-        for module in modules:
-            if (module in CONFIG['OVERRIDE_TEST_LENGTH'] or
-                    module in CONFIG['PUBLIC_DEPENDENCIES'] or
-                    module in CONFIG['PUBLIC_PRECONDITION'] or
-                    module.split('.')[0] in CONFIG['OVERRIDE_TEST_LENGTH']):
-                priority = max(priority, 50)
-            if module == _PUBLIC_COLLECT:
-                priority = max(priority, 70)
+    overide_test_priority_dict = CONFIG.get('PUBLIC_OVERRIDE_TEST_PRIORITY', {})
+    for module in modules:
+        if module in overide_test_priority_dict:
+            priority = max(priority, overide_test_priority_dict[module])
+        elif (module in CONFIG['OVERRIDE_TEST_LENGTH'] or
+                module in CONFIG['PUBLIC_DEPENDENCIES'] or
+                module in CONFIG['PUBLIC_PRECONDITION'] or
+                module.split('.')[0] in CONFIG['OVERRIDE_TEST_LENGTH']):
+            priority = max(priority, 50)
     return priority
 
 
@@ -615,17 +621,22 @@ def get_extra_modules_dict(is_public, abi):
     }
 
 
-def get_modules_to_remove(is_public, abi):
-    if is_public:
-        return get_extra_modules_dict(is_public, abi).keys()
-    return []
-
-
 def get_extra_artifacts(modules):
     artifacts = []
     for module in modules:
         if module in CONFIG['EXTRA_ARTIFACTS']:
             artifacts += CONFIG['EXTRA_ARTIFACTS'][module]
+    return artifacts
+
+
+def get_extra_artifacts_host(modules):
+    if not 'EXTRA_ARTIFACTS_HOST' in CONFIG:
+        return
+
+    artifacts = []
+    for module in modules:
+        if module in CONFIG['EXTRA_ARTIFACTS_HOST']:
+            artifacts += CONFIG['EXTRA_ARTIFACTS_HOST'][module]
     return artifacts
 
 
@@ -721,6 +732,7 @@ def get_controlfile_content(combined,
             is_public,
             is_camerabox_test=(camera_facing is not None)),
         extra_artifacts=get_extra_artifacts(modules),
+        extra_artifacts_host=get_extra_artifacts_host(modules),
         job_retries=get_job_retries(modules, is_public),
         max_result_size_kb=get_max_result_size_kb(modules, is_public),
         revision=revision,
@@ -814,7 +826,6 @@ def get_tradefed_data(path, is_public, abi):
       p.kill()
     p.wait()
 
-    modules -= set(get_modules_to_remove(is_public, abi))
     if not modules:
       raise Exception("no modules found.")
     return list(modules), build, revision

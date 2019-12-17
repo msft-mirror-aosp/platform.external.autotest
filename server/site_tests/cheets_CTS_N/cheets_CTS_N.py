@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _DL_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-    'arm': _DL_CTS + 'android-cts-7.1_r28-linux_x86-arm.zip',
-    'x86': _DL_CTS + 'android-cts-7.1_r28-linux_x86-x86.zip',
+    'arm': _DL_CTS + 'android-cts-7.1_r29-linux_x86-arm.zip',
+    'x86': _DL_CTS + 'android-cts-7.1_r29-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _DL_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -156,6 +156,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                  enable_default_apps=False,
                  bundle=None,
                  extra_artifacts=[],
+                 extra_artifacts_host=[],
                  precondition_commands=[],
                  login_precondition_commands=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
@@ -196,6 +197,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
             enable_default_apps=enable_default_apps,
             bundle=bundle,
             extra_artifacts=extra_artifacts,
+            extra_artifacts_host=extra_artifacts_host,
             cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
             precondition_commands=precondition_commands)

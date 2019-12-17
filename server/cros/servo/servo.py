@@ -8,8 +8,10 @@
 import ast
 import logging
 import os
+import random
 import re
 import socket
+import string
 import time
 import xmlrpclib
 
@@ -25,6 +27,12 @@ _USB_PROBE_TIMEOUT = 40
 
 # Regex to match XMLRPC errors due to a servod control not existing.
 NO_CONTROL_RE = re.compile(r'No control named (\w*\.?\w*)')
+
+
+# The minimum voltage on the charger port on servo v4 that is expected. This is
+# to query whether a charger is plugged into servo v4 and thus pd control
+# capabilities can be used.
+V4_CHG_ATTACHED_MIN_VOLTAGE_MV = 4400
 
 class ControlUnavailableError(error.TestFail):
     """Custom error class to indicate a control is unavailable on servod."""
@@ -969,14 +977,19 @@ class Servo(object):
         When programming a firmware image on the DUT, the image must be
         located on the host to which the servo device is connected. Sometimes
         servo is controlled by a remote host, in this case the image needs to
-        be transferred to the remote host.
+        be transferred to the remote host. This adds a random extension to
+        prevent multiple tests from copying a image to the same location on
+        the remote host.
 
         @param image_path: a string, name of the firmware image file to be
                transferred.
         @return: a string, full path name of the copied file on the remote.
         """
-
-        dest_path = os.path.join('/tmp', os.path.basename(image_path))
+        name = os.path.basename(image_path)
+        ext = ''.join([random.choice(string.ascii_letters) for i in xrange(10)])
+        remote_name = name + '.' + ext
+        dest_path = os.path.join('/tmp', remote_name)
+        logging.info('Copying %s to %s', name, dest_path)
         self._servo_host.send_file(image_path, dest_path)
         return dest_path
 
@@ -1053,11 +1066,15 @@ class Servo(object):
         self.set('active_v4_device', self.get_main_servo_device())
 
 
-    def running_through_ccd(self):
-        """Returns True if the setup is using ccd to run."""
+    def main_device_is_ccd(self):
+        """Whether the main servo device (no prefixes) is a ccd device."""
         servo = self._server.get_version()
         return 'ccd_cr50' in servo and 'servo_micro' not in servo
 
+
+    def main_device_is_flex(self):
+        """Whether the main servo device (no prefixes) is a legacy device."""
+        return not self.main_device_is_ccd()
 
     def _initialize_programmer(self, rw_only=False):
         """Initialize the firmware programmer.
@@ -1171,8 +1188,20 @@ class Servo(object):
         """
         ap_image_candidates = ('image.bin', 'image-%s.bin' % model,
                                'image-%s.bin' % board)
-        ec_image_candidates = ('ec.bin', '%s/ec.bin' % model,
-                               '%s/ec.bin' % board)
+
+        # Best effort; try to retrieve the EC board from the version as
+        # reported by the EC.
+        ec_board = None
+        try:
+          ec_board = self.get('ec_board')
+        except Exception as err:
+          logging.info('Failed to get ec_board value; ignoring')
+          pass
+
+        ec_image_candidates = ['ec.bin', '%s/ec.bin' % model,
+                               '%s/ec.bin' % board]
+        if ec_board:
+          ec_image_candidates.append('%s/ec.bin' % ec_board)
 
         self._reprogram(tarball_path, 'EC', ec_image_candidates, rw_only)
         self._reprogram(tarball_path, 'BIOS', ap_image_candidates, rw_only)
@@ -1288,6 +1317,26 @@ class Servo(object):
         else:
             logging.debug('Not a servo v4, unable to set role to %s.', role)
 
+
+    def supports_built_in_pd_control(self):
+        """Return whether the servo type supports pd charging and control."""
+        servo_type = self.get('servo_type')
+        if 'servo_v4' not in servo_type:
+            # Only servo v4 supports this feature.
+            logging.info('%r type does not support pd control.', servo_type)
+            return False
+        # On servo v4, it still needs ot be the type-c version.
+        if not self.get('servo_v4_type') == 'type-c':
+            logging.info('PD controls require a type-c servo v4.')
+            return False
+        # Lastly, one cannot really do anything without a plugged in charger.
+        chg_port_mv = self.get('ppchg5_mv')
+        if chg_port_mv < V4_CHG_ATTACHED_MIN_VOLTAGE_MV:
+            logging.warn('It appears that no charger is plugged into servo v4. '
+                         'Charger port voltage: %dmV', chg_port_mv)
+            return False
+        logging.info('Charger port voltage: %dmV', chg_port_mv)
+        return True
 
     def set_servo_v4_dts_mode(self, state):
         """Set servo v4 dts mode to off or on.

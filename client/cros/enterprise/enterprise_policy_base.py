@@ -22,8 +22,6 @@ from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.enterprise import enterprise_policy_utils
 from autotest_lib.client.cros.enterprise import policy_manager
 from autotest_lib.client.cros.enterprise import enterprise_fake_dmserver
-from autotest_lib.client.cros.enterprise import enterprise_policy_utils
-from autotest_lib.client.cros.enterprise.device_policy_lookup import DEVICE_POLICY_DICT
 from autotest_lib.client.common_lib import ui_utils
 
 from telemetry.core import exceptions
@@ -259,8 +257,9 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
             self.username = 'tester50@managedchrome.com'
             self.password = 'Test0000'
 
-        self.pol_manager = policy_manager.Policy_Manager(self.username,
-                                                         self.fake_dm_server)
+        self.pol_manager = policy_manager.Policy_Manager(
+            self.username,
+            self.fake_dm_server if hasattr(self, "fake_dm_server") else None)
 
         self._auto_logout = auto_logout
         self._kiosk_mode = kiosk_mode
@@ -321,7 +320,7 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         """
         self.pol_manager.remove_policy(name, policy_type, extID)
-        self.reload_policies()
+        self.reload_policies(verify_policies)
         if verify_policies:
             self.pol_manager.verify_policies()
 
@@ -416,14 +415,15 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                      user={},
                      suggested_user={},
                      device={},
-                     extension={}):
+                     extension={},
+                     new=False):
         """Add policies to the policy rules."""
         self.pol_manager.configure_policies(user=user,
                                             suggested_user=suggested_user,
                                             device=device,
                                             extension=extension,
-                                            new=False)
-        self.reload_policies()
+                                            new=new)
+        self.reload_policies(True)
 
     def update_policies(self, user_policies={}, suggested_user_policies={},
                         device_policies={}, extension_policies={}):
@@ -440,11 +440,17 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
         """
         self.add_policies(user_policies, suggested_user_policies,
                           device_policies, extension_policies, True)
-        self.reload_policies()
 
-    def reload_policies(self):
-        """Force a policy fetch."""
-        enterprise_policy_utils.refresh_policies(self.cr.autotest_ext)
+    def reload_policies(self, wait_for_new=False):
+        """
+        Force a policy fetch.
+
+        @param wait_for_new: bool, wait up to 1 second for the policy values
+            from the API to update
+
+        """
+        enterprise_policy_utils.refresh_policies(self.cr.autotest_ext,
+                                                 wait_for_new)
 
     def verify_extension_stats(self, extension_policies, sensitive_fields=[]):
         """

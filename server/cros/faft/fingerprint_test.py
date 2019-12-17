@@ -45,6 +45,10 @@ class FingerprintTest(test.test):
     # Name of key in "futility show" output corresponds to the signing key ID
     _FUTILITY_KEY_ID_KEY_NAME = 'ID'
 
+    # Types of firmware
+    _FIRMWARE_TYPE_RO = 'RO'
+    _FIRMWARE_TYPE_RW = 'RW'
+
     # Types of signing keys
     _KEY_TYPE_DEV = 'dev'
     _KEY_TYPE_PRE_MP = 'premp'
@@ -89,7 +93,13 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
                 _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.2.110-b936c0a3c',
                 _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
-            }
+            },
+            'nocturne_fp_v2.2.191-1d529566e.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'e21223d6a3dbb7a6c6f2905f602f972b8a2b6d0fb52e262931745dae808e7c4d',
+                _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
+                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.2.191-1d529566e',
+                _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
+            },
         },
         _FP_BOARD_NAME_NAMI: {
             'nami_fp_v2.2.144-7a08e07eb.bin': {
@@ -97,7 +107,13 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
                 _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
                 _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
-            }
+            },
+            'nami_fp_v2.2.191-1d529566e.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '684b63b1a2c929cf2be2fd564e9ae6032fdbbcfe0991d860c540420c40405776',
+                _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
+                _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.2.191-1d529566e',
+                _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
+            },
         },
     }
 
@@ -111,6 +127,7 @@ class FingerprintTest(test.test):
     _CROS_FP_ARG = '--name=cros_fp'
     _ECTOOL_RO_VERSION = 'RO version'
     _ECTOOL_RW_VERSION = 'RW version'
+    _ECTOOL_FIRMWARE_COPY = 'Firmware copy'
     _ECTOOL_ROLLBACK_BLOCK_ID = 'Rollback block id'
     _ECTOOL_ROLLBACK_MIN_VERSION = 'Rollback min version'
     _ECTOOL_ROLLBACK_RW_VERSION = 'RW rollback version'
@@ -296,10 +313,13 @@ class FingerprintTest(test.test):
         logging.info('Golden RO firmware version: %s',
                      golden_ro_firmware_version)
 
+        running_rw_firmware = self.ensure_running_rw_firmware()
+
         fw_versions_match = self.running_fw_version_matches_given_version(
             build_rw_firmware_version, golden_ro_firmware_version)
 
-        if not fw_versions_match or not self.is_rollback_set_to_initial_val() \
+        if not running_rw_firmware or not fw_versions_match \
+            or not self.is_rollback_set_to_initial_val() \
             or force_firmware_flashing:
             fw_file = self._build_fw_file
             if use_dev_signed_fw:
@@ -388,7 +408,7 @@ class FingerprintTest(test.test):
             self._get_expected_firmware_rw_version(build_fw_file)
         self.check_equal(actual_rw_version, expected_rw_version)
 
-        logging.info("Validated build firmware metadata.");
+        logging.info("Validated build firmware metadata.")
 
     def _get_key_type(self, key_id):
         """Returns the key "type" for a given "key id"."""
@@ -465,24 +485,32 @@ class FingerprintTest(test.test):
         result = self._run_sha256sum_cmd(file_name)
         return result.stdout.split()[0]
 
-    def _get_running_firmware_version(self, fw_type):
-        """Returns requested firmware version (RW or RO)."""
+    def _get_running_firmware_info(self, key):
+        """
+        Returns requested firmware info (RW version, RO version, or firmware
+        type).
+        """
         result = self._run_ectool_cmd('version')
         parsed = self._parse_colon_delimited_output(result.stdout)
         if result.exit_status != 0:
-            raise error.TestFail('Failed to get firmware version')
-        version = parsed.get(fw_type)
-        if version is None:
-            raise error.TestFail('Failed to get firmware version: %s' % fw_type)
-        return version
+            raise error.TestFail('Failed to get running firmware info')
+        info = parsed.get(key)
+        if info is None:
+            raise error.TestFail(
+                'Failed to get running firmware info: %s' % key)
+        return info
 
     def get_running_rw_firmware_version(self):
         """Returns running RW firmware version."""
-        return self._get_running_firmware_version(self._ECTOOL_RW_VERSION)
+        return self._get_running_firmware_info(self._ECTOOL_RW_VERSION)
 
     def get_running_ro_firmware_version(self):
         """Returns running RO firmware version."""
-        return self._get_running_firmware_version(self._ECTOOL_RO_VERSION)
+        return self._get_running_firmware_info(self._ECTOOL_RO_VERSION)
+
+    def get_running_firmware_type(self):
+        """Returns type of firmware we are running (RW or RO)."""
+        return self._get_running_firmware_info(self._ECTOOL_FIRMWARE_COPY)
 
     def _get_rollback_info(self, info_type):
         """Returns requested type of rollback info."""
@@ -533,12 +561,33 @@ class FingerprintTest(test.test):
         """Returns RW firmware version from build (based on filename)."""
         fw_file = os.path.basename(self._build_fw_file)
         if not fw_file.endswith('.bin'):
-            raise error.TestFail('Unexpected filename for RW firmware: '
+            raise error.TestFail('Unexpected filename for RW firmware: %s'
                                  % fw_file)
         fw_version = fw_file[:-4]
         if use_dev_signed_fw:
             fw_version = self._construct_dev_version(fw_version)
         return fw_version
+
+    def ensure_running_rw_firmware(self):
+        """
+        Check whether the device is running RW firmware. If not, try rebooting
+        to RW.
+
+        @return true if successfully verified running RW firmware, false
+        otherwise.
+        """
+        try:
+            if self.get_running_firmware_type() != self._FIRMWARE_TYPE_RW:
+                self._reboot_ec()
+                if self.get_running_firmware_type() != self._FIRMWARE_TYPE_RW:
+                    # RW may be corrupted.
+                    return False
+        except:
+            # We may not always be able to read the firmware version.
+            # For example, if the firmware is erased due to RDP1, running any
+            # commands (such as getting the version) won't work.
+            return False
+        return True
 
     def running_fw_version_matches_given_version(self, rw_version, ro_version):
         """

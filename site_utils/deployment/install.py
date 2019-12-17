@@ -416,9 +416,9 @@ def _create_host_for_installation(host, arguments):
     info = host.host_info_store.get()
     s_host, s_port, s_serial = _extract_servo_attributes(host.hostname,
                                                          info.attributes)
-    return preparedut.create_host(host.hostname, arguments.board,
-                                  arguments.model, s_host, s_port, s_serial,
-                                  arguments.logdir)
+    return preparedut.create_cros_host(host.hostname, arguments.board,
+                                       arguments.model, s_host, s_port,
+                                       s_serial, arguments.logdir)
 
 
 def _install_test_image(host, arguments):
@@ -789,7 +789,7 @@ def _get_cros_repair_image_name(host):
     info = host.host_info_store.get()
     if not info.board:
         raise InstallFailedError('Unknown board for given host')
-    return afe_utils.get_stable_cros_image_name(info.board)
+    return afe_utils.get_stable_cros_image_name_v2(info)
 
 
 def install_duts(arguments):

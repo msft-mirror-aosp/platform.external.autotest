@@ -11,6 +11,7 @@
 
 import logging
 import os
+import traceback
 import xmlrpclib
 
 from autotest_lib.client.bin import utils
@@ -91,6 +92,8 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_model = servo_model
         self.servo_serial = servo_serial
         self._servo = None
+        self._servod_server_proxy = None
+
         # Path of the servo host lock file.
         self._lock_file = (self.TEMP_FILE_DIR + str(self.servo_port)
                            + self.LOCK_FILE_POSTFIX)
@@ -145,8 +148,8 @@ class ServoHost(base_servohost.BaseServoHost):
             self.rpc_server_tracker.disconnect(self.servo_port)
             self._servo = None
 
-    def get_servod_server_proxy(self):
-        """Return a proxy that can be used to communicate with servod server.
+    def _create_servod_server_proxy(self):
+        """Create a proxy that can be used to communicate with servod server.
 
         @returns: An xmlrpclib.ServerProxy that is connected to the servod
                   server on the host.
@@ -160,6 +163,18 @@ class ServoHost(base_servohost.BaseServoHost):
         else:
             remote = 'http://%s:%s' % (self.hostname, self.servo_port)
             return xmlrpclib.ServerProxy(remote)
+
+
+    def get_servod_server_proxy(self):
+        """Return a cached proxy if exists; otherwise, create a new one.
+
+        @returns: An xmlrpclib.ServerProxy that is connected to the servod
+                  server on the host.
+        """
+        # Single-threaded execution, no race
+        if self._servod_server_proxy is None:
+            self._servod_server_proxy = self._create_servod_server_proxy()
+        return self._servod_server_proxy
 
 
     def verify(self, silent=False):
@@ -352,7 +367,7 @@ def _tweak_args_for_ssp_moblab(servo_args):
 
 
 def create_servo_host(dut, servo_args, try_lab_servo=False,
-                      try_servo_repair=False):
+                      try_servo_repair=False, dut_host_info=None):
     """Create a ServoHost object for a given DUT, if appropriate.
 
     This function attempts to create and verify or repair a `ServoHost`
@@ -433,6 +448,20 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         return None
 
     newhost = ServoHost(**servo_args)
+
+    # TODO(gregorynisbet): Clean all of this up.
+    logging.debug('create_servo_host: attempt to set info store on '
+                  'servo host')
+    try:
+        if dut_host_info is None:
+            logging.debug('create_servo_host: dut_host_info is '
+                          'None, skipping')
+        else:
+            newhost.set_dut_host_info(dut_host_info)
+            logging.debug('create_servo_host: successfully set info '
+                          'store')
+    except Exception:
+        logging.error("create_servo_host: (%s)", traceback.format_exc())
 
     # Note that the logic of repair() includes everything done
     # by verify().  It's sufficient to call one or the other;

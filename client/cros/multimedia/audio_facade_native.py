@@ -441,7 +441,7 @@ class AudioFacadeNative(object):
         @param file_path: The path to dump results.
 
         """
-        audio_helper.dump_diagnostics(file_path)
+        audio_helper.dump_audio_diagnostics(file_path)
 
 
     def start_counting_signal(self, signal_name):

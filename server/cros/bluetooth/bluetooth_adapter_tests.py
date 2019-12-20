@@ -19,6 +19,7 @@ import bluetooth_test_utils
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server import test
 from autotest_lib.client.bin.input.linux_input import (
         BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL)
@@ -593,6 +594,11 @@ class BluetoothAdapterTests(test.test):
             if e.errno != errno.ECONNRESET:
                 raise
 
+        except chameleon.ChameleonConnectionError as e:
+            # Ignore chameleon conn reset, expected during stack reset
+            if str(errno.ECONNRESET) not in str(e):
+                raise
+
         except httplib.BadStatusLine as e:
             # BadStatusLine occurs occasionally when chameleon
             # is restarted. We ignore it here
@@ -1143,7 +1149,7 @@ class BluetoothAdapterTests(test.test):
     # -------------------------------------------------------------------
 
 
-    @_test_retry_and_log
+    @_test_retry_and_log(False)
     def test_discover_device(self, device_address):
         """Test that the adapter could discover the specified device address.
 

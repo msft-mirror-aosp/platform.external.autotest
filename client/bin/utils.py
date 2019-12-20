@@ -31,6 +31,7 @@ import uuid
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import magic
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import cros_config
 
 from autotest_lib.client.common_lib.utils import *
 
@@ -325,6 +326,8 @@ INTEL_UARCH_TABLE = {
     '06_47': 'Broadwell',
     '06_4F': 'Broadwell',
     '06_56': 'Broadwell',
+    '06_A5': 'Comet Lake',
+    '06_A6': 'Comet Lake',
     '06_0D': 'Dothan',
     '06_5C': 'Goldmont',
     '06_7A': 'Goldmont',
@@ -332,6 +335,8 @@ INTEL_UARCH_TABLE = {
     '06_45': 'Haswell',
     '06_46': 'Haswell',
     '06_3F': 'Haswell-E',
+    '06_7D': 'Ice Lake',
+    '06_7E': 'Ice Lake',
     '06_3A': 'Ivy Bridge',
     '06_3E': 'Ivy Bridge-E',
     '06_8E': 'Kaby Lake',
@@ -357,6 +362,8 @@ INTEL_UARCH_TABLE = {
     '06_4E': 'Skylake',
     '06_5E': 'Skylake',
     '06_55': 'Skylake',
+    '06_8C': 'Tiger Lake',
+    '06_8D': 'Tiger Lake',
     '06_25': 'Westmere',
     '06_2C': 'Westmere',
     '06_2F': 'Westmere',
@@ -2102,12 +2109,7 @@ def get_platform():
 
     @returns platform name
     """
-    platform = ''
-    command = 'mosys platform model'
-    result = utils.run(command, ignore_status=True)
-    if result.exit_status == 0:
-        platform = result.stdout.strip()
-
+    platform = cros_config.call_cros_config_get_output('/ name', utils.run)
     if platform == '':
         platform = get_board()
     return platform
@@ -2119,11 +2121,8 @@ def get_sku():
 
     @returns SKU number
     """
-    command = 'mosys platform sku'
-    result = utils.run(command, ignore_status=True)
-    if result.exit_status != 0:
-        return ''
-    return result.stdout.strip()
+    return cros_config.call_cros_config_get_output('/identity sku-id',
+                                                   utils.run)
 
 
 def get_ec_version():

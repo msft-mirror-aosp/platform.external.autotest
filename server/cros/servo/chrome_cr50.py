@@ -32,6 +32,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     provides many interfaces to set and get its behavior via console commands.
     This class is to abstract these interfaces.
     """
+    PROD_RW_KEYIDS = ['0x87b73b67', '0xde88588d']
+    PROD_RO_KEYIDS = ['0xaa66150f']
     OPEN = 'open'
     UNLOCK = 'unlock'
     LOCK = 'lock'
@@ -581,9 +583,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def using_prod_rw_keys(self):
         """Returns True if the RW keyid is prod"""
         rv = self.send_command_retry_get_output('sysinfo',
-                ['RW keyid:.*\(([a-z]+)\)'], safe=True)
-        logging.info(rv)
-        return rv[0][1] == 'prod'
+                ['RW keyid:\s+(0x[0-9a-f]{8})'], safe=True)[0][1]
+        logging.info('RW Keyid: 0x%s', rv)
+        return rv in self.PROD_RW_KEYIDS
 
 
     def get_active_board_id_str(self):
@@ -955,16 +957,24 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return result.lower() == 'enabled'
 
 
-    def keyladder_is_enabled(self):
+    def get_keyladder_state(self):
         """Get the status of H1 Key Ladder.
 
-        @return: True if H1 Key Ladder is enabled. False otherwise.
+        @return: The keyladder state string. prod or dev both mean enabled.
         """
         result = self.send_command_retry_get_output('sysinfo',
-                ['(?i)Key\s+Ladder:\s+(enabled|disabled)'], safe=True)[0][1]
+                ['(?i)Key\s+Ladder:\s+(enabled|prod|dev|disabled)'],
+                safe=True)[0][1]
         logging.debug(result)
+        return result
 
-        return result.lower() == 'enabled'
+
+    def keyladder_is_disabled(self):
+        """Get the status of H1 Key Ladder.
+
+        @return: True if H1 Key Ladder is disabled. False otherwise.
+        """
+        return self.get_keyladder_state() == 'disabled'
 
 
     def get_sleepmask(self):

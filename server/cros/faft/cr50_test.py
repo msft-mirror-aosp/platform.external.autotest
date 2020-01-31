@@ -111,21 +111,27 @@ class Cr50Test(FirmwareTest):
 
         # We successfully saved the device state
         self._saved_state |= self.INITIAL_IMAGE_STATE
+        # Try and download all images necessary to restore cr50 state.
         try:
             self._save_dbg_image(full_args.get('cr50_dbg_image_path', ''))
             self._saved_state |= self.DBG_IMAGE
+        except Exception as e:
+            logging.warning('Error saving DBG image: %s', str(e))
+            if restore_cr50_image:
+                raise error.TestNAError('Need DBG image: %s' % str(e))
+        try:
             self._save_original_images(full_args.get('release_path', ''))
             self._saved_state |= self.DEVICE_IMAGES
+        except Exception as e:
+            logging.warning('Error saving ChromeOS image cr50 firmware: %s',
+                            str(e))
+        try:
             self._save_eraseflashinfo_image(
                     full_args.get('cr50_eraseflashinfo_image_path', ''))
             self._saved_state |= self.ERASEFLASHINFO_IMAGE
         except Exception as e:
-            logging.warning('Error saving images: %s', str(e))
-            if (restore_cr50_image and
-                not self._saved_cr50_state(self.DBG_IMAGE)):
-                raise error.TestNAError('Need DBG image: %s' % str(e))
-            elif (restore_cr50_board_id and
-                  self._saved_cr50_state(self.ERASEFLASHINFO_IMAGE)):
+            logging.warning('Error saving eraseflashinfo image: %s', str(e))
+            if restore_cr50_board_id:
                 raise error.TestNAError('Need eraseflashinfo image: %s' %
                                         str(e))
 
@@ -425,11 +431,12 @@ class Cr50Test(FirmwareTest):
         return state
 
 
-    def _check_original_image_state(self):
-        """Compare the current cr50 state to the original state.
+    def _check_running_image_and_board_id(self, expected_state):
+        """Compare the current image and board id to the given state.
 
+        @param expected_state: A dictionary of the state to compare to.
         @return: A dictionary with the state that is wrong as the key and the
-                 new and old state as the value
+                 expected and current state as the value.
         """
         if not (self._saved_state & self.INITIAL_IMAGE_STATE):
             logging.warning('Did not save the original state. Cannot verify it '
@@ -439,16 +446,27 @@ class Cr50Test(FirmwareTest):
         cr50_utils.ClearUpdateStateAndReboot(self.host)
 
         mismatch = {}
-        new_state = self.get_image_and_bid_state()
+        state = self.get_image_and_bid_state()
 
-        for k, new_val in new_state.iteritems():
-            original_val = self._original_image_state[k]
-            if new_val != original_val:
-                mismatch[k] = 'old: %s, new: %s' % (original_val, new_val)
+        for k, expected_val in expected_state.iteritems():
+            val = state[k]
+            if val != expected_val:
+                mismatch[k] = 'expected: %s, current: %s' % (expected_val, val)
 
         if mismatch:
             logging.warning('State Mismatch:\n%s', pprint.pformat(mismatch))
-        else:
+        return mismatch
+
+
+    def _check_original_image_state(self):
+        """Compare the current cr50 state to the original state.
+
+        @return: A dictionary with the state that is wrong as the key and the
+                 new and old state as the value
+        """
+        mismatch = self._check_running_image_and_board_id(
+                self._original_image_state)
+        if not mismatch:
             logging.info('The device is in the original state')
         return mismatch
 

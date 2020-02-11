@@ -5,10 +5,10 @@
 
 import subprocess
 
+import time
 
-class ShellError(Exception):
-    """Shell specific exception."""
-    pass
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 
 
 class UnsupportedSuccessToken(Exception):
@@ -30,7 +30,7 @@ class LocalShell(object):
         output in case command succeeded.  If block=False, will not wait for
         process to return before returning.
         """
-        self._os_if.log('Executing %s' % cmd)
+        self._os_if.log('Executing: %s' % cmd)
         process = subprocess.Popen(
                 cmd,
                 shell=True,
@@ -47,19 +47,45 @@ class LocalShell(object):
         outputs on the console and dump them into the log. Otherwise suppress
         all output.
 
-        In case of command error raise an ShellError exception.
+        @param block: if True (default), wait for command to finish
+        @raise error.CmdError: if block is True and command fails (rc!=0)
         """
+        start_time = time.time()
         process = self._run_command(cmd, block)
-        if process.returncode:
-            err = ['Failed running: %s' % cmd]
-            err.append('stdout:')
-            err.append(process.stdout.read())
-            err.append('stderr:')
-            err.append(process.stderr.read())
-            text = '\n'.join(err)
-            self._os_if.log(text)
-            raise ShellError(
-                    'command %s failed (code: %d)' % (cmd, process.returncode))
+        if block and process.returncode:
+            # Grab output only if an error occurred
+            returncode = process.returncode
+            stdout = process.stdout.read()
+            stderr = process.stderr.read()
+            duration = time.time() - start_time
+            result = utils.CmdResult(cmd, stdout, stderr, returncode, duration)
+            self._os_if.log('Command failed.\n%s' % result)
+            raise error.CmdError(cmd, result)
+
+    def run_command_get_result(self, cmd, ignore_status=False):
+        """Run a shell command, and get the result (output and returncode).
+
+        @param ignore_status: if True, do not raise CmdError, even if rc != 0.
+        @raise error.CmdError: if command fails (rc!=0) and not ignore_result
+        @return the result of the command
+        @rtype: utils.CmdResult
+        """
+        start_time = time.time()
+
+        process = self._run_command(cmd, block=True)
+
+        returncode = process.returncode
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+        duration = time.time() - start_time
+        result = utils.CmdResult(cmd, stdout, stderr, returncode, duration)
+
+        if returncode and not ignore_status:
+            self._os_if.log('Command failed:\n%s' % result)
+            raise error.CmdError(cmd, result)
+
+        self._os_if.log('Command result:\n%s' % result)
+        return result
 
     def run_command_check_output(self, cmd, success_token):
         """Run a command and check whether standard output contains some string.

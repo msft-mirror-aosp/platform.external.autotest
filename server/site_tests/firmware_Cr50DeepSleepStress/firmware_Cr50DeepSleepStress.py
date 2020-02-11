@@ -39,7 +39,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
 
-        if self.servo.running_through_ccd():
+        if self.servo.main_device_is_ccd():
             raise error.TestNAError('deep sleep tests can only be run with a '
                                     'servo flex')
 
@@ -95,8 +95,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
         @param suspend_count: the number of times to reboot the device.
         """
-        original_mainfw_type = 'developer' if self.checkers.crossystem_checker(
-                {'mainfw_type': 'developer'}) else 'normal'
+        cr50_dev_mode = self.cr50.in_dev_mode()
         # Disable CCD so Cr50 can enter deep sleep
         self.cr50.ccd_disable()
         self.cr50.clear_deep_sleep_count()
@@ -117,13 +116,12 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             rv = self.check_cr50_deep_sleep(i + 1)
             if rv:
                 errors.append(rv)
-
-            # Make sure it didn't boot into a different mode
-            if not self.checkers.crossystem_checker({'mainfw_type':
-                                                     original_mainfw_type}):
-                errors.append('Switched out of %s mode' % original_mainfw_type)
+            # Make sure the device didn't boot into a different mode.
+            if self.cr50.in_dev_mode() != cr50_dev_mode:
+                errors.append('Switched out of %s mode' %
+                              ('dev' if cr50_dev_mode else 'normal'))
             if errors:
-                msg = 'Reboots failed (%s)' % ' and '.join(errors)
+                msg = 'Reboot %d failed (%s)' % (i, ' and '.join(errors))
                 raise error.TestFail(msg)
 
 
@@ -202,10 +200,10 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         logging.info('suspend %d: deep sleep count %d', act_count, exp_count)
         self.cr50.get_sleepmask()
         self.cr50.get_ccdstate()
-        reset_cause = self.cr50.get_reset_cause()
+        hibernate = self.cr50.was_reset('RESET_FLAG_HIBERNATE')
 
         errors = []
-        if exp_count and 'hibernate' not in reset_cause:
+        if exp_count and not hibernate:
                 errors.append('reset during suspend')
 
         if exp_count != act_count:

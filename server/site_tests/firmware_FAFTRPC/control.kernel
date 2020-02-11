@@ -8,7 +8,7 @@ AUTHOR = "gredelston, kmshelton, dgoyette, waihong"
 NAME = "firmware_FAFTRPC.kernel"
 PURPOSE = "Verify that the RPC system, and all kernel RPCs, work as expected."
 CRITERIA = "This test will fail if the kernel system is not set up correctly."
-ATTRIBUTES = "suite:faft_infra"
+ATTRIBUTES = "suite:faft_framework"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
@@ -30,7 +30,7 @@ def run_faftrpc(machine):
                  host=host,
                  cmdline_args=args,
                  disable_sysinfo=True,
-                 category_under_test="Kernel"
+                 category_under_test="kernel"
                  )
 
 parallel_simple(run_faftrpc, machines)

@@ -44,7 +44,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     # the property.
     BOARD_PROPERTIES = [
         ['BOARD_SLAVE_CONFIG_SPI', 'sps', 'i2cs'],
-        ['BOARD_SLAVE_CONFIG_I2C', 'i2cs', 'sps'],
+        ['BOARD_SLAVE_CONFIG_I2C', 'i2cs', 'sps,sps_ds_resume'],
         ['BOARD_USE_PLT_RESET', 'plt_rst', 'sys_rst'],
         ['BOARD_CLOSED_SOURCE_SET1', 'closed_source_set1', 'open_source_set'],
     ]
@@ -160,22 +160,31 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         self.exclude = []
         for prop, include, exclude in self.BOARD_PROPERTIES:
             if self.cr50.uses_board_property(prop):
-                self.include.append(include)
+                self.include.extend(include.split(','))
                 if exclude:
-                    self.exclude.append(exclude)
+                    self.exclude.extend(exclude.split(','))
             else:
                 self.exclude.append(include)
-        # use the major version to determine prePVT or MP. prePVT have even
-        # major versions. prod have odd
-        version = self.cr50.get_version().split('.')[1]
-        if 'mp' in self.servo.get('cr50_version'):
+        version = self.cr50.get_version().split('.')
+        # Factory images end with 22. Expect guc attributes if the version
+        # ends in 22.
+        if version[2] == '22':
+            self.include.append('guc')
+        else:
+            self.exclude.append('guc')
+
+        # Use the major version to determine prePVT or MP. prePVT have even
+        # major versions. prod have odd.
+        if int(version[1]) % 2:
             self.include.append('mp')
             self.exclude.append('prepvt')
         else:
             self.exclude.append('mp')
             self.include.append('prepvt')
         brdprop = self.cr50.get_board_properties()
-        logging.info('brdprop 0x%x: %s', brdprop, ', '.join(self.include))
+        logging.info('brdprop: 0x%x', brdprop)
+        logging.info('include: %s', ', '.join(self.include))
+        logging.info('exclude: %s', ', '.join(self.exclude))
 
 
     def run_once(self, host):

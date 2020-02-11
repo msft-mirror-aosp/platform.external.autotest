@@ -53,13 +53,16 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         """Restart and clear peer devices"""
         # Restart the link to device
         logging.info('Restarting peer devices...')
-        self.cleanup()
 
-        for device_type, device_list in self.devices.items():
+        # Grab currect device list for initialization
+        connected_devices = self.devices
+        self.cleanup(on_start=False)
+
+        for device_type, device_list in connected_devices.items():
             for device in device_list:
                 if device is not None:
                     logging.info('Restarting %s', device_type)
-                    self.get_device(device_type)
+                    self.get_device(device_type, on_start=False)
 
 
     def start_peers(self, devices):
@@ -74,28 +77,58 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 logging.info('Getting device %s', device_type)
                 self.get_device(device_type)
 
+
     def _print_delimiter(self):
         logging.info('=======================================================')
 
 
-    def quick_test_init(self, host, use_chameleon=True):
+    def quick_test_init(self, host, use_chameleon=True, flag='Quick Sanity'):
         """Inits the test batch"""
         self.host = host
-        factory = remote_facade_factory.RemoteFacadeFactory(host,
-                                                            disable_arc=True)
-        self.bluetooth_facade = factory.create_bluetooth_hid_facade()
+        #factory can not be declared as local variable, otherwise
+        #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
+        # server, which log out the user.
+
+        try:
+            self.factory = remote_facade_factory.RemoteFacadeFactory(host,
+                           disable_arc=True)
+            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+
+        # For b:142276989, catch 'object_path' fault and reboot to prevent
+        # failures from continuing into future tests
+        except Exception, e:
+            if (e.__class__.__name__ == 'Fault' and
+                """object has no attribute 'object_path'""" in str(e)):
+
+                logging.error('Caught b/142276989, rebooting DUT')
+                self.host.reboot()
+
+            # Raise the original exception
+            raise
+
         self.use_chameleon = use_chameleon
         if self.use_chameleon:
-            self.input_facade = factory.create_input_facade()
+            self.input_facade = self.factory.create_input_facade()
             self.check_chameleon()
 
             # Query connected devices on our chameleon at init time
             self.available_devices = self.list_devices_available()
 
+            for chameleon in self.host.chameleon_list:
+                chameleon.register_raspPi_log(self.outputdir)
+
             if self.host.multi_chameleon:
                 self.chameleon_group = dict()
+                # Create copy of chameleon_group
+                self.chameleon_group_copy = dict()
                 self.group_chameleons_type()
 
+        # Clear the active devices for this test
+        self.active_test_devices = {}
+
+        self.enable_disable_debug_log(enable=True)
+
+        self.flag = flag
         self.test_iter = None
 
         self.bat_tests_results = []
@@ -111,16 +144,20 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.pkg_iter = None
         self.pkg_is_running = False
 
+
     @staticmethod
-    def quick_test_test_decorator(test_name, devices={}):
+    def quick_test_test_decorator(test_name, devices={}, flags=['All']):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
            (test_start and test_end).
 
-           @param test_name: the name of the test to log
+           @param test_name: the name of the test to log.
            @param devices:   list of device names which are going to be used
-                             in the following test
+                             in the following test.
+           @param flags: list of string to describe who should run the
+                         test. The string could be one of the following:
+                         ['AVL', 'Quick Sanity', 'All'].
         """
 
         def decorator(test_method):
@@ -129,16 +166,31 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                @returns the wrapper of the test method.
             """
 
-            @functools.wraps(test_method)
-            def wrapper(self):
+            def _check_runnable(self):
+                """Check if the test could be run"""
+
+                # Check that the test is runnable in current setting
+                if not(self.flag in flags or 'All' in flags):
+                    logging.info('SKIPPING TEST %s', test_name)
+                    logging.info('flag %s not in %s', self.flag, flags)
+                    self._print_delimiter()
+                    return False
+
                 # Check that chameleon has all required devices before running
                 for device_type, number in devices.items():
                     if self.available_devices.get(device_type, 0) < number:
-                        logging.info('SKIPPING TEST {}'.format(test_name))
-                        logging.info('{} not available'.format(device_type))
+                        logging.info('SKIPPING TEST %s', test_name)
+                        logging.info('%s not available', device_type)
                         self._print_delimiter()
-                        return
+                        return False
 
+                return True
+
+            @functools.wraps(test_method)
+            def wrapper(self):
+                """A wrapper of the decorated method."""
+                if not _check_runnable(self):
+                    return
                 self.quick_test_test_start(test_name, devices)
                 test_method(self)
                 self.quick_test_test_end()
@@ -166,6 +218,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             time.sleep(self.TEST_SLEEP_SECS)
             self._print_delimiter()
             logging.info('Starting test: %s', test_name)
+            self.log_message('Starting test: %s'% test_name)
 
     def quick_test_test_end(self):
         """Log and track the test results"""
@@ -198,6 +251,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.pkg_fail_count += 1
 
         logging.info(result_msg)
+        self.log_message(result_msg)
         self._print_delimiter()
         self.bat_tests_results.append(result_msg)
         self.pkg_tests_results.append(result_msg)
@@ -206,6 +260,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Cleanning up and restarting towards next test...')
 
         self.bluetooth_facade.stop_discovery()
+
+        # Store a copy of active devices for raspi reset in the final step
+        self.active_test_devices = self.devices
+
         # Disconnect devices used in the test, and remove the pairing.
         for device_list in self.devices.values():
             for device in device_list:
@@ -217,9 +275,20 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     if device_is_paired:
                         self.bluetooth_facade.remove_device_object(
                                 device.address)
+
+        # Repopulate chameleon_group for next tests
+        if self.host.multi_chameleon:
+            # Clear previous tets's leftover entries. Don't delete the
+            # chameleon_group dictionary though, it'll be used as it is.
+            for device_type in self.chameleon_group:
+                if len(self.chameleon_group[device_type]) > 0:
+                    del self.chameleon_group[device_type][:]
+
+            # Repopulate
+            self.group_chameleons_type()
+
         # Close the connection between peers
         self.cleanup()
-
 
 
     @staticmethod
@@ -334,6 +403,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
     def quick_test_cleanup(self):
         """ Cleanup any state test server and all device"""
+
+        # Clear any raspi devices at very end of test
+        for device_list in self.active_test_devices.values():
+            for device in device_list:
+                if device is not None:
+                    self.clear_raspi_device(device)
+
         # Reset the adapter
         self.test_reset_on_adapter()
         # Initialize bluetooth_adapter_tests class (also clears self.fails)

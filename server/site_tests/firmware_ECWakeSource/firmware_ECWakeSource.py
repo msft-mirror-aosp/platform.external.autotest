@@ -28,7 +28,7 @@ class firmware_ECWakeSource(FirmwareTest):
 
     def hibernate_and_wake_by_power_button(self):
         """Shutdown to G2/S5, then hibernate EC. Finally, wake by power button."""
-        self.faft_client.System.RunShellCommand("shutdown -H now")
+        self.faft_client.system.run_shell_command("shutdown -H now")
         self.switcher.wait_for_client_offline()
         self.ec.send_command("hibernate 1000")
         time.sleep(self.WAKE_DELAY)
@@ -74,7 +74,7 @@ class firmware_ECWakeSource(FirmwareTest):
         if boot_id != original_boot_id:
             raise error.TestFail('Different boot_id. Unexpected reboot.')
 
-        if self.servo.running_through_ccd():
+        if self.servo.main_device_is_ccd():
             logging.info("Using CCD, ignore waking by power button.")
         else:
             logging.info("EC hibernate and wake by power button.")

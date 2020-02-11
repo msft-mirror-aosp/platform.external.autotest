@@ -25,8 +25,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts_instant-9.0_r9-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts_instant-9.0_r9-linux_x86-x86.zip',
+    'arm': _PUBLIC_CTS + 'android-cts_instant-9.0_r10-linux_x86-arm.zip',
+    'x86': _PUBLIC_CTS + 'android-cts_instant-9.0_r10-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -60,32 +60,8 @@ class cheets_CTS_Instant(tradefed_test.TradefedTest):
     def _get_tradefed_base_dir(self):
         return 'android-cts_instant'
 
-    def _run_tradefed(self, commands):
-        """Kick off CTS.
-
-        @param commands: the command(s) to pass to CTS.
-        @param datetime_id: For 'continue' datetime of previous run is known.
-        @return: The result object from utils.run.
-        """
-        cts_tradefed = os.path.join(self._repository, 'tools', 'cts-instant-tradefed')
-        with tradefed_test.adb_keepalive(self._get_adb_targets(),
-                                         self._install_paths):
-            for command in commands:
-                timeout = self._timeout * self._timeout_factor
-                logging.info('RUN(timeout=%d): ./cts-instant-tradefed %s', timeout,
-                             ' '.join(command))
-                output = self._run(
-                    cts_tradefed,
-                    args=tuple(command),
-                    timeout=timeout,
-                    verbose=True,
-                    ignore_status=False,
-                    # Make sure to tee tradefed stdout/stderr to autotest logs
-                    # continuously during the test run.
-                    stdout_tee=utils.TEE_TO_LOGS,
-                    stderr_tee=utils.TEE_TO_LOGS)
-                logging.info('END: ./cts-instant-tradefed %s\n', ' '.join(command))
-        return output
+    def _tradefed_cmd_path(self):
+        return os.path.join(self._repository, 'tools', 'cts-instant-tradefed')
 
     def _should_skip_test(self, bundle):
         """Some tests are expected to fail and are skipped."""

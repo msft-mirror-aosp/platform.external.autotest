@@ -9,9 +9,10 @@ import collections
 CONFIG = {}
 
 CONFIG['TEST_NAME'] = 'cheets_CTS_N'
+CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_N'
-CONFIG['SKIP_EXTRA_MOBLAB_SUITES'] = False
 CONFIG['COPYRIGHT_YEAR'] = 2016
+CONFIG['AUTHKEY'] = ''
 
 # Both arm, x86 tests results normally is below 100MB.
 # 500MB should be sufficient for CTS tests and dump logs for android-cts.
@@ -19,8 +20,9 @@ CONFIG['LARGE_MAX_RESULT_SIZE'] = 500 * 1024
 
 # Individual module normal produces less results than all modules, which is
 # ranging from 4MB to 50MB. 500MB should be sufficient to handle all the cases.
-CONFIG['NORMAL_MAX_RESULT_SIZE'] = 500 * 1024
+CONFIG['NORMAL_MAX_RESULT_SIZE'] = 300 * 1024
 
+CONFIG['TRADEFED_CTS_COMMAND'] = 'cts'
 CONFIG['TRADEFED_RETRY_COMMAND'] = 'cts'
 
 # TODO(yoshiki, kinaba): Flip this to false (and remove the flag itself). On N,
@@ -33,16 +35,29 @@ CONFIG['TRADEFED_DISABLE_REBOOT_ON_COLLECTION'] = False
 # TODO(yoshiki, kinaba): Flip this to False (and remove the flag itself).
 CONFIG['TRADEFED_MAY_SKIP_DEVICE_INFO'] = True
 
+CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-cts/tools/cts-tradefed'
+CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
+
 # As this is not called for the "all" runs we can safely assume that each module
 # runs in suite:arc-cts.
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
+
+CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
+CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
+CONFIG['CONTROLFILE_WRITE_CAMERA'] = True
+CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 
 # The dashboard suppresses upload to APFE for GS directories (based on autotest
 # tag) that contain 'tradefed-run-collect-tests'. b/119640440
 # Do not change the name/tag without adjusting the dashboard.
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
+
+CONFIG['LAB_DEPENDENCY'] = {
+    'x86': ['cts_abi_x86']
+}
+
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 2
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {}
@@ -51,9 +66,10 @@ CONFIG['CTS_MAX_RETRIES'] = {}
 # Times guessed by looking for times > 20m in
 # grep runtime-hint android-cts/testcases/*.config
 # Timeout in hours.
+CONFIG['CTS_TIMEOUT_DEFAULT'] = 1.0
 CONFIG['CTS_TIMEOUT'] = {
     'CtsAppSecurityHostTestCases':      1.5,
-    'CtsDeqpTestCases':                 24.0,
+    'CtsDeqpTestCases':                 12.0,
     'CtsDeqpTestCases.dEQP-EGL'  :       2.0,
     'CtsDeqpTestCases.dEQP-GLES2':       2.0,
     'CtsDeqpTestCases.dEQP-GLES3':       6.0,
@@ -162,6 +178,7 @@ CONFIG['NEEDS_PUSH_MEDIA'] = [
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
     'CtsAppSecurityHostTestCases',
+    'CtsContentTestCases',
 ]
 
 # TODO(kinaba, b/110869932): remove this.
@@ -205,11 +222,9 @@ CONFIG['LOGIN_PRECONDITION'] = {
 }
 
 _WIFI_CONNECT_COMMANDS = [
-    # These need to stay in order. And the escaping is crazy, I know.
-    """
-    \'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass),
-    '/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi\'
-"""
+    # These needs to be in order.
+    "'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass)",
+    "'/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi'"
 ]
 
 # Preconditions applicable to public tests.
@@ -235,6 +250,10 @@ CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
     'CtsUsageStatsTestCases': 10,
     'CtsFileSystemTestCases': 10,
     'CtsBluetoothTestCases': 10,
+}
+
+CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {
+    _PUBLIC_COLLECT: 70,
 }
 
 # This information is changed based on regular analysis of the job run time on
@@ -264,13 +283,16 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 ])
 
 CONFIG['EXTRA_MODULES'] = {
-    'CtsDeqpTestCases' : [
-        'CtsDeqpTestCases.dEQP-EGL',
-        'CtsDeqpTestCases.dEQP-GLES2',
-        'CtsDeqpTestCases.dEQP-GLES3',
-        'CtsDeqpTestCases.dEQP-GLES31',
-        'CtsDeqpTestCases.dEQP-VK'
-    ]
+    'CtsDeqpTestCases': {
+        'SUBMODULES': set([
+            'CtsDeqpTestCases.dEQP-EGL',
+            'CtsDeqpTestCases.dEQP-GLES2',
+            'CtsDeqpTestCases.dEQP-GLES3',
+            'CtsDeqpTestCases.dEQP-GLES31',
+            'CtsDeqpTestCases.dEQP-VK'
+        ]),
+        'SUITES': ['suite:arc-cts-deqp', 'suite:graphics_per-week'],
+    },
 }
 
 CONFIG['PUBLIC_EXTRA_MODULES'] = {}
@@ -303,19 +325,19 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'CtsDeqpTestCases': ['suite:arc-cts', 'suite:arc-cts-deqp'],
     'CtsDeqpTestCases.dEQP-EGL': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES2': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES3': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES31': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-VK': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     _COLLECT: ['suite:arc-cts-qual', 'suite:arc-cts'],
 }
@@ -323,6 +345,8 @@ CONFIG['EXTRA_ATTRIBUTES'] = {
 CONFIG['EXTRA_ARTIFACTS'] = {
 }
 
+CONFIG['PREREQUISITES'] = {
+}
 
 from generate_controlfiles_common import main
 

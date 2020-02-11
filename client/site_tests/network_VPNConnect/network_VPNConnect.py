@@ -177,7 +177,8 @@ class network_VPNConnect(test.test):
         """Connects the client to the VPN server."""
         proxy = self._shill_proxy
         with tpm_store.TPMStore() as tpm:
-            service = proxy.get_service(self.get_vpn_client_properties(tpm))
+            service = proxy.configure_service(
+                self.get_vpn_client_properties(tpm))
             service.Connect()
             result = proxy.wait_for_property_in(service,
                                                 proxy.SERVICE_PROPERTY_STATE,
@@ -225,11 +226,15 @@ class network_VPNConnect(test.test):
                     raise error.TestFail('Virtual ethernet pair failed.')
 
                 with self.get_vpn_server() as server:
+                    # We have to poll and wait the service to be ready in shill
+                    # because the shill update of "CLIENT_INTERFACE_NAME" is
+                    # async.
+                    service = utils.poll_for_condition(
+                        lambda: self.find_ethernet_service(
+                            self.CLIENT_INTERFACE_NAME))
                     # When shill finds this ethernet interface, it will reset
                     # its IP address and start a DHCP client.  We must configure
                     # the static IP address through shill.
-                    service = self.find_ethernet_service(
-                            self.CLIENT_INTERFACE_NAME)
                     static_ip_config = {'Address' : self.CLIENT_ADDRESS,
                                         'Prefixlen' : self.NETWORK_PREFIX}
                     with shill_context.StaticIPContext(service,

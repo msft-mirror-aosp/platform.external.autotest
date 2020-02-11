@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts-9.0_r9-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts-9.0_r9-linux_x86-x86.zip',
+    'arm': _PUBLIC_CTS + 'android-cts-9.0_r10-linux_x86-arm.zip',
+    'x86': _PUBLIC_CTS + 'android-cts-9.0_r10-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -65,32 +65,8 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
     def _get_tradefed_base_dir(self):
         return 'android-cts'
 
-    def _run_tradefed(self, commands):
-        """Kick off CTS.
-
-        @param commands: the command(s) to pass to CTS.
-        @param datetime_id: For 'continue' datetime of previous run is known.
-        @return: The result object from utils.run.
-        """
-        cts_tradefed = os.path.join(self._repository, 'tools', 'cts-tradefed')
-        with tradefed_test.adb_keepalive(self._get_adb_targets(),
-                                         self._install_paths):
-            for command in commands:
-                timeout = self._timeout * self._timeout_factor
-                logging.info('RUN(timeout=%d): ./cts-tradefed %s', timeout,
-                             ' '.join(command))
-                output = self._run(
-                    cts_tradefed,
-                    args=tuple(command),
-                    timeout=timeout,
-                    verbose=True,
-                    ignore_status=False,
-                    # Make sure to tee tradefed stdout/stderr to autotest logs
-                    # continuously during the test run.
-                    stdout_tee=utils.TEE_TO_LOGS,
-                    stderr_tee=utils.TEE_TO_LOGS)
-                logging.info('END: ./cts-tradefed %s\n', ' '.join(command))
-        return output
+    def _tradefed_cmd_path(self):
+        return os.path.join(self._repository, 'tools', 'cts-tradefed')
 
     def _should_skip_test(self, bundle):
         """Some tests are expected to fail and are skipped."""
@@ -102,23 +78,24 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
 
     def initialize_camerabox(self, camera_facing, cmdline_args):
         """Configure DUT and chart running in camerabox environment.
+
         @param camera_facing: the facing of the DUT used in testing
                               (e.g. 'front', 'back').
         """
         chart_address = camerabox_utils.get_chart_address(
-                [h.hostname for h in self._hosts], cmdline_args)
+            [h.hostname for h in self._hosts], cmdline_args)
         if chart_address is None:
             raise error.TestFail(
-                    'Error: missing option --args="chart=<CHART IP>"')
+                'Error: missing option --args="chart=<CHART IP>"')
         chart_hosts = [hosts.create_host(ip) for ip in chart_address]
 
         self.chart_fixtures = [
-                camerabox_utils.ChartFixture(h, self._SCENE_URI)
-                for h in chart_hosts
+            camerabox_utils.ChartFixture(h, self._SCENE_URI)
+            for h in chart_hosts
         ]
         self.dut_fixtures = [
-                camerabox_utils.DUTFixture(self, h, camera_facing)
-                for h in self._hosts
+            camerabox_utils.DUTFixture(self, h, camera_facing)
+            for h in self._hosts
         ]
 
         for chart in self.chart_fixtures:
@@ -143,15 +120,15 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                    cmdline_args=None,
                    hard_reboot_on_failure=False):
         super(cheets_CTS_P, self).initialize(
-                bundle=bundle,
-                uri=uri,
-                host=host,
-                hosts=hosts,
-                max_retry=max_retry,
-                load_waivers=load_waivers,
-                retry_manual_tests=retry_manual_tests,
-                warn_on_test_retry=warn_on_test_retry,
-                hard_reboot_on_failure=hard_reboot_on_failure)
+            bundle=bundle,
+            uri=uri,
+            host=host,
+            hosts=hosts,
+            max_retry=max_retry,
+            load_waivers=load_waivers,
+            retry_manual_tests=retry_manual_tests,
+            warn_on_test_retry=warn_on_test_retry,
+            hard_reboot_on_failure=hard_reboot_on_failure)
         if camera_facing:
             self.initialize_camerabox(camera_facing, cmdline_args)
 
@@ -168,8 +145,10 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                  executable_test_count=None,
                  bundle=None,
                  extra_artifacts=[],
+                 extra_artifacts_host=[],
                  precondition_commands=[],
                  login_precondition_commands=[],
+                 prerequisites=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
         """Runs the specified CTS once, but with several retries.
 
@@ -194,6 +173,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         dut before the test is run, the scripts must already be installed.
         @param login_precondition_commands: a list of scripts to be run on the
         dut before the log-in for the test is performed.
+        @param prerequisites: a list of prerequisites that identify rogue DUTs.
         @param timeout: time after which tradefed can be interrupted.
         """
         self._run_tradefed_with_retries(
@@ -210,12 +190,15 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             executable_test_count=executable_test_count,
             bundle=bundle,
             extra_artifacts=extra_artifacts,
+            extra_artifacts_host=extra_artifacts_host,
             cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
-            precondition_commands=precondition_commands)
+            precondition_commands=precondition_commands,
+            prerequisites=prerequisites)
 
     def cleanup_camerabox(self):
         """Cleanup configuration on DUT and chart tablet for running in
+
         camerabox environment.
         """
         for dut in self.dut_fixtures:

@@ -4,12 +4,15 @@
 
 """This class implements a Bluetooth quick sanity package"""
 
+from autotest_lib.server.site_tests.bluetooth_AdapterCLSanity import\
+     bluetooth_AdapterCLSanity
 from autotest_lib.server.site_tests.bluetooth_AdapterLESanity import\
      bluetooth_AdapterLESanity
 from autotest_lib.server.site_tests.bluetooth_AdapterSASanity import\
      bluetooth_AdapterSASanity
 
 class bluetooth_AdapterQuickSanity(
+        bluetooth_AdapterCLSanity.bluetooth_AdapterCLSanity,
         bluetooth_AdapterLESanity.bluetooth_AdapterLESanity,
         bluetooth_AdapterSASanity.bluetooth_AdapterSASanity):
     """This class implements a Bluetooth quick sanity package, using methods
@@ -22,7 +25,7 @@ class bluetooth_AdapterQuickSanity(
     time of about 90-120 second per test.
     """
 
-    def run_once(self, host, num_iterations=1):
+    def run_once(self, host, num_iterations=1, flag='Quick Sanity'):
         """Run the package of Bluetooth LE sanity tests
 
         @param host: the DUT, usually a chromebook
@@ -30,13 +33,14 @@ class bluetooth_AdapterQuickSanity(
         """
 
         # Init the quick test and start the package
-        self.quick_test_init(host, use_chameleon=True)
+        self.quick_test_init(host, use_chameleon=True, flag=flag)
         self.quick_test_package_start('BT Quick Sanity')
 
         # Run sanity package
         for iter in xrange(1, num_iterations+1):
             self.quick_test_package_update_iteration(iter)
             self.sa_sanity_batch_run()
+            self.cl_sanity_batch_run()
             self.le_sanity_batch_run()
             self.quick_test_print_summary()
 

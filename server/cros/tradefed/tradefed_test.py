@@ -37,10 +37,7 @@ from autotest_lib.server.cros.tradefed import cts_expected_failure_parser
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 from autotest_lib.server.cros.tradefed import tradefed_utils
-
-# For convenience, add to our scope.
-parse_tradefed_result = tradefed_utils.parse_tradefed_result
-adb_keepalive = tradefed_utils.adb_keepalive
+from autotest_lib.server.cros.tradefed import tradefed_prerequisite
 
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
@@ -68,7 +65,6 @@ class TradefedTest(test.test):
     _release_branch_number = None  # The 'y' of OS version Rxx-xxxxx.y.z
     _android_version = None
     _num_media_bundles = 0
-    _perf_results = []
     _abilist = []
 
     def _log_java_version(self):
@@ -160,6 +156,16 @@ class TradefedTest(test.test):
                 bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
+    def postprocess(self):
+        """Postprocess: output performance values."""
+        path = tradefed_utils.get_test_result_xml_path(
+            os.path.join(self.resultsdir,
+                         self._get_tradefed_base_dir()))
+        if path:
+            for metric in tradefed_utils.get_perf_metrics_from_test_result_xml(
+                path, self.resultsdir):
+                self.output_perf_value(**metric)
+
     def cleanup(self):
         """Cleans up any dirtied state."""
         # Kill any lingering adb servers.
@@ -175,16 +181,6 @@ class TradefedTest(test.test):
                 shutil.rmtree(self._tradefed_install)
             except IOError:
                 pass
-
-        # Create perf data for Chromeperf.
-        for perf in self._perf_results:
-            data = dict(
-                units='count',
-                higher_is_better=False,
-                replace_existing_values=True,
-            )
-            data.update(perf)
-            self.output_perf_value(**data)
 
     def _verify_hosts(self):
         """Verify all hosts' ChromeOS consistency."""
@@ -272,19 +268,22 @@ class TradefedTest(test.test):
         @param host: DUT that need to be connected.
         @return boolean indicating if adb connected successfully.
         """
+        # Add ADB_TRACE=all for debugging adb connection failures.
+        env = os.environ.copy()
+        env['ADB_TRACE'] = 'all'
         try:
             # This may fail return failure due to a race condition in adb
             # connect (b/29370989). If adb is already connected, this command
             # will immediately return success.
             host_port = self._get_adb_target(host)
             result = self._run_adb_cmd(
-                host, args=('connect', host_port), verbose=True,
+                host, args=('connect', host_port), verbose=True, env=env,
                 ignore_status=True,
                 timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             if result.exit_status != 0:
                 return False
 
-            result = self._run_adb_cmd(host, args=('devices',),
+            result = self._run_adb_cmd(host, args=('devices',), env=env,
                 timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             if not re.search(r'{}\s+(device|unauthorized)'.format(
                     re.escape(host_port)), result.stdout):
@@ -297,7 +296,7 @@ class TradefedTest(test.test):
             # a race between detecting the connected device and actually being
             # able to run a commmand with authenticated adb.
             result = self._run_adb_cmd(
-                host, args=('shell', 'exit'), ignore_status=True,
+                host, args=('shell', 'exit'), env=env, ignore_status=True,
                 timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             return result.exit_status == 0
         except error.CmdTimeoutError as e:
@@ -322,27 +321,23 @@ class TradefedTest(test.test):
                                         pipes.quote(filename))
         self._android_shell(host, android_cmd)
 
-    def _connect_adb(self, host, pubkey_path):
+    def _connect_adb(self, host, pubkey):
         """Sets up ADB connection to the ARC container.
 
         @param host: DUT that should be connected to.
-        @param pubkey_path: public key that adb keygen generated.
+        @param pubkey: public key that adb keygen && adb pubkey generated.
         """
         logging.info('Setting up adb connection.')
-        # Generate and push keys for adb.
-        # TODO(elijahtaylor): Extract this code to arc_common and de-duplicate
-        # code in arc.py on the client side tests.
-        with open(pubkey_path, 'r') as f:
-            self._write_android_file(host, constants.ANDROID_ADB_KEYS_PATH,
-                                     f.read())
+        # Push keys for adb.
+        self._write_android_file(host, constants.ANDROID_ADB_KEYS_PATH, pubkey)
         self._android_shell(
             host, 'restorecon ' + pipes.quote(constants.ANDROID_ADB_KEYS_PATH))
 
         # This starts adbd.
-        self._android_shell(host, 'setprop sys.usb.config mtp,adb')
+        self._android_shell(host, 'setprop sys.usb.config adb')
 
         # Also let it be automatically started upon reboot.
-        self._android_shell(host, 'setprop persist.sys.usb.config mtp,adb')
+        self._android_shell(host, 'setprop persist.sys.usb.config adb')
 
         # adbd may take some time to come up. Repeatedly try to connect to adb.
         utils.poll_for_condition(
@@ -398,9 +393,10 @@ class TradefedTest(test.test):
         """Ready ARC and adb in parallel for running tests via tradefed."""
         # Generate the adb keys on server.
         key_path = os.path.join(self.tmpdir, 'test_key')
-        pubkey_path = key_path + '.pub'
         self._run_adb_cmd(verbose=True, args=('keygen', pipes.quote(key_path)))
         os.environ['ADB_VENDOR_KEYS'] = key_path
+        pubkey = self._run_adb_cmd(verbose=True,
+                args=('pubkey', pipes.quote(key_path))).stdout
 
         for _ in range(2):
             try:
@@ -411,7 +407,7 @@ class TradefedTest(test.test):
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.
                 for host in self._hosts:
-                    self._connect_adb(host, pubkey_path)
+                    self._connect_adb(host, pubkey)
                     self._disable_adb_install_dialog(host)
                     self._wait_for_arc_boot(host)
                 self._verify_arc_hosts()
@@ -757,17 +753,6 @@ class TradefedTest(test.test):
         self._safe_makedirs(dest)
         shutil.copy(os.path.join('/tmp', name), os.path.join(dest, name))
 
-    def _parse_result(self, result, waivers=None):
-        """Check the result from the tradefed output.
-
-        This extracts the test pass/fail/executed list from the output of
-        tradefed. It is up to the caller to handle inconsistencies.
-
-        @param result: The result object from utils.run.
-        @param waivers: a set[] of tests which are permitted to fail.
-        """
-        return parse_tradefed_result(result.stdout, waivers)
-
     def _get_expected_failures(self, directory, bundle_abi):
         """Return a list of expected failures or no test module.
 
@@ -919,14 +904,10 @@ class TradefedTest(test.test):
             logging.warning('Failed to restore powerd policy, overrided policy '
                             'will persist until device reboot.')
 
-    def _run_and_parse_tradefed(self, commands):
+    def _run_and_parse_tradefed(self, command):
         """Kick off the tradefed command.
 
-        Assumes that only last entry of |commands| actually runs tests and has
-        interesting output (results, logs) for collection. Ignores all other
-        commands for this purpose.
-
-        @param commands: List of lists of command tokens.
+        @param command: Lists of command tokens.
         @raise TestFail: when a test failure is detected.
         @return: tuple of (tests, pass, fail, notexecuted) counts.
         """
@@ -940,11 +921,10 @@ class TradefedTest(test.test):
             else:
                 logging.warning('cts-tradefed shard command isn\'t defined, '
                                 'falling back to use single device.')
-        commands = [command + target_argument + shard_argument
-                    for command in commands]
+        command = command + target_argument + shard_argument
 
         try:
-            output = self._run_tradefed(commands)
+            output = self._run_tradefed(command)
         except Exception as e:
             self._log_java_version()
             if not isinstance(e, error.CmdTimeoutError):
@@ -961,7 +941,8 @@ class TradefedTest(test.test):
         self._collect_tradefed_global_log(output, result_destination)
         # Result parsing must come after all other essential operations as test
         # warnings, errors and failures can be raised here.
-        return self._parse_result(output, waivers=self._waivers)
+        return tradefed_utils.parse_tradefed_result(output.stdout,
+                                                    self._waivers)
 
     def _setup_result_directories(self):
         """Sets up the results and logs directories for tradefed.
@@ -972,9 +953,9 @@ class TradefedTest(test.test):
           self._repository/logs/$datetime/
         Because other tools rely on the currently chosen Google storage paths
         we need to keep destination_results in:
-          self.resultdir/android-cts/results/$datetime/
-          self.resultdir/android-cts/results/$datetime.zip
-          self.resultdir/android-cts/results/logs/$datetime/
+          self.resultsdir/android-cts/results/$datetime/
+          self.resultsdir/android-cts/results/$datetime.zip
+          self.resultsdir/android-cts/results/logs/$datetime/
         To bridge between them, create symlinks from the former to the latter.
         """
         logging.info('Setting up tradefed results and logs directories.')
@@ -1031,7 +1012,7 @@ class TradefedTest(test.test):
             return False
         return True
 
-    def _copy_extra_artifacts(self, extra_artifacts, host, output_dir):
+    def _copy_extra_artifacts_dut(self, extra_artifacts, host, output_dir):
         """ Upload the custom artifacts """
         self._safe_makedirs(output_dir)
 
@@ -1045,12 +1026,27 @@ class TradefedTest(test.test):
                 # Maybe ADB connection failed, or the artifacts don't exist.
                 logging.exception('Copying extra artifacts failed.')
 
+    def _copy_extra_artifacts_host(self, extra_artifacts, host, output_dir):
+        """ Upload the custom artifacts """
+        self._safe_makedirs(output_dir)
+
+        for artifact in extra_artifacts:
+            logging.info('Copying extra artifacts from "%s" to "%s".',
+                         artifact, output_dir)
+            for extracted_path in glob.glob(artifact):
+                logging.info('... %s', extracted_path)
+                # Move it not to collect it again in future retries.
+                shutil.move(extracted_path, output_dir)
+
     def _run_tradefed_list_results(self):
         """Run the `tradefed list results` command.
 
         @return: tuple of the last (session_id, pass, fail, all_done?).
         """
-        output = self._run_tradefed([['list', 'results']])
+
+        # Fix b/143580192: We set the timeout to 3 min. It never takes more than
+        # 10s on light disk load.
+        output = self._run_tradefed_with_timeout(['list', 'results'], 180)
 
         # Parses the last session from the output that looks like:
         #
@@ -1072,6 +1068,36 @@ class TradefedTest(test.test):
     def _tradefed_run_command(self, template):
         raise NotImplementedError('Subclass should override this function')
 
+    def _tradefed_cmd_path(self):
+        raise NotImplementedError('Subclass should override this function')
+
+    def _tradefed_env(self):
+        return None
+
+    def _run_tradefed_with_timeout(self, command, timeout):
+        tradefed = self._tradefed_cmd_path()
+        with tradefed_utils.adb_keepalive(self._get_adb_targets(),
+                                          self._install_paths):
+            logging.info('RUN(timeout=%d): %s', timeout,
+                         ' '.join([tradefed] + command))
+            output = self._run(
+                tradefed,
+                args=tuple(command),
+                env=self._tradefed_env(),
+                timeout=timeout,
+                verbose=True,
+                ignore_status=False,
+                # Make sure to tee tradefed stdout/stderr to autotest logs
+                # continuously during the test run.
+                stdout_tee=utils.TEE_TO_LOGS,
+                stderr_tee=utils.TEE_TO_LOGS)
+            logging.info('END: %s\n', ' '.join([tradefed] + command))
+        return output
+
+    def _run_tradefed(self, command):
+        timeout = self._timeout * self._timeout_factor
+        return self._run_tradefed_with_timeout(command, timeout)
+
     def _run_tradefed_with_retries(self,
                                    test_name,
                                    run_template,
@@ -1084,15 +1110,21 @@ class TradefedTest(test.test):
                                    executable_test_count=None,
                                    bundle=None,
                                    extra_artifacts=[],
+                                   extra_artifacts_host=[],
                                    cts_uri=None,
                                    login_precondition_commands=[],
                                    precondition_commands=[],
-                                   perf_description=None):
+                                   prerequisites=[]):
         """Run CTS/GTS with retry logic.
 
         We first kick off the specified module. Then rerun just the failures
         on the next MAX_RETRY iterations.
         """
+        for prereq in prerequisites:
+            result = tradefed_prerequisite.check(prereq, self._hosts)
+            if not result[0]:
+                raise error.TestError(result[1])
+
         # On dev and beta channels timeouts are sharp, lenient on stable.
         self._timeout = timeout
         if (self._get_release_branch_number() >=
@@ -1147,12 +1179,12 @@ class TradefedTest(test.test):
                         self._install_plan(target_plan)
 
                     logging.info('Running %s:', test_name)
-                    commands = [self._tradefed_run_command(run_template)]
+                    command = self._tradefed_run_command(run_template)
                 else:
                     logging.info('Retrying failures of %s with session_id %d:',
                                  test_name, session_id)
-                    commands = [self._tradefed_retry_command(retry_template,
-                                                             session_id)]
+                    command = self._tradefed_retry_command(retry_template,
+                                                           session_id)
 
                 # TODO(pwang): Evaluate if it is worth it to get the number of
                 #              not-excecuted, for instance, by collecting all
@@ -1163,8 +1195,7 @@ class TradefedTest(test.test):
                 if media_asset and media_asset.uri:
                     self._override_powerd_prefs()
                 try:
-                    waived_tests, acc = self._run_and_parse_tradefed(
-                        commands)
+                    waived_tests, acc = self._run_and_parse_tradefed(command)
                 finally:
                     # TODO(b/137917339): ditto
                     if media_asset and media_asset.uri:
@@ -1180,13 +1211,15 @@ class TradefedTest(test.test):
                 waived = len(waived_tests)
                 last_session_id, passed, failed, all_done = result
 
-                if failed > waived:
+                if failed > waived or not utils.is_in_container():
                     for host in self._hosts:
                         dir_name = "%s-step%02d" % (host.hostname, steps)
                         output_dir = os.path.join(
                             self.resultsdir, 'extra_artifacts', dir_name)
-                        self._copy_extra_artifacts(
+                        self._copy_extra_artifacts_dut(
                             extra_artifacts, host, output_dir)
+                        self._copy_extra_artifacts_host(
+                            extra_artifacts_host, host, output_dir)
 
                 if passed + failed > 0:
                     # At least one test had run, which means the media push step
@@ -1250,22 +1283,11 @@ class TradefedTest(test.test):
                 if not all_done and '*' in ''.join(run_template):
                     break
 
-        # Tradefed finished normally. Record the failures to perf.
-        if target_module:
-            # Only record the failure by module, which exclude 'all', 'collects-tests-only', etc.
-            self._perf_results.append(dict(
-                description=perf_description if perf_description else target_module,
-                value=failed - waived,
-                graph=bundle
-            ))
-
         if session_id == None:
             raise error.TestFail('Error: Could not find any tests in module.')
 
         if failed <= waived and all_done:
             if not all(accurate):
-                # Tests count inaccurate, remove perf to avoid false alarm.
-                self._perf_results.pop()
                 raise error.TestFail(
                     'Failed: Not all tests were executed. After %d '
                     'retries passing %d tests, waived=%d. %s' % (

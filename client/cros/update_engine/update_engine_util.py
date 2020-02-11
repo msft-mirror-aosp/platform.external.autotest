@@ -3,9 +3,11 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 import logging
 import os
 import re
+import requests
 import shutil
 import time
 
@@ -106,10 +108,12 @@ class UpdateEngineUtil(object):
                 err_str = self._get_last_error_string()
                 raise error.TestFail('Update status reported error: %s' %
                                      err_str)
-            if self._UPDATE_STATUS_UPDATED_NEED_REBOOT == status[
-                self._CURRENT_OP]:
-                raise error.TestFail('Update status was NEEDS_REBOOT while '
-                                     'trying to get download status.')
+            # When the update has moved to the final stages, update engine
+            # displays progress as 0.0  but for our needs we will return 1.0
+            if status[self._CURRENT_OP] in [
+                self._UPDATE_STATUS_UPDATED_NEED_REBOOT,
+                self._UPDATE_ENGINE_FINALIZING]:
+                return 1.0
             # If we call this right after reboot it may not be downloading yet.
             if self._UPDATE_ENGINE_DOWNLOADING != status[self._CURRENT_OP]:
                 time.sleep(1)
@@ -164,13 +168,23 @@ class UpdateEngineUtil(object):
             time.sleep(1)
 
 
-    def _get_update_engine_status(self, timeout=3600, ignore_status=True):
-        """Returns a dictionary version of update_engine_client --status"""
+    def _get_update_engine_status(self, timeout=3600, ignore_timeout=True):
+        """
+        Gets a dictionary version of update_engine_client --status.
+
+        @param timeout: How long to wait for the status to return.
+        @param ignore_timeout: True to throw an exception if timeout occurs.
+
+        @return Dictionary of values within update_engine_client --status.
+        @raise: error.AutoservError if command times out
+
+        """
         status = self._run('update_engine_client --status', timeout=timeout,
-                           ignore_timeout=True, ignore_status=ignore_status)
+                           ignore_status=True, ignore_timeout=ignore_timeout)
+
         if status is None:
             return None
-        logging.debug(status)
+        logging.info(status)
         if status.exit_status != 0:
             return None
         status_dict = {}
@@ -196,23 +210,24 @@ class UpdateEngineUtil(object):
         @return Boolean if the update engine log contains the entry.
 
         """
-        if update_engine_log:
-            result = self._run('echo "%s" | grep "%s"' % (update_engine_log,
-                                                          entry),
-                               ignore_status=True)
-        else:
-            result = self._run('cat %s | grep "%s"' % (
-                self._UPDATE_ENGINE_LOG, entry), ignore_status=True)
+        if isinstance(entry, str):
+            # Create a tuple of strings so we can itarete over it.
+            entry = (entry,)
 
-        if result.exit_status != 0:
-            if raise_error:
-                error_str = 'Did not find expected string in update_engine ' \
-                            'log: %s' % entry
-                logging.debug(error_str)
-                raise error.TestFail(err_str if err_str else error_str)
-            else:
-                return False
-        return True
+        if not update_engine_log:
+            update_engine_log = self._run(
+                'cat %s' % self._UPDATE_ENGINE_LOG).stdout
+
+        if all(msg in update_engine_log for msg in entry):
+            return True
+
+        if not raise_error:
+            return False
+
+        error_str = ('Did not find expected string(s) in update_engine log: '
+                     '%s' % entry)
+        logging.debug(error_str)
+        raise error.TestFail(err_str if err_str else error_str)
 
 
     def _is_update_finished_downloading(self):
@@ -242,23 +257,66 @@ class UpdateEngineUtil(object):
         return completed >= progress
 
 
+    def _get_payload_properties_file(self, payload_url, target_dir, **kwargs):
+        """
+        Downloads the payload properties file into a directory.
+
+        @param payload_url: The URL to the update payload file.
+        @param target_dir: The directory to download the file into.
+        @param kwargs: A dictionary of key/values that needs to be overridden on
+                the payload properties file.
+
+        """
+        payload_props_url = payload_url + '.json'
+        _, _, file_name = payload_props_url.rpartition('/')
+        try:
+            response = json.loads(requests.get(payload_props_url).text)
+
+            # Override existing keys if any.
+            for k, v in kwargs.iteritems():
+                # Don't set default None values. We don't want to override good
+                # values to None.
+                if v is not None:
+                    response[k] = v
+
+            with open(os.path.join(target_dir, file_name), 'w') as fp:
+                json.dump(response, fp)
+
+        except (requests.exceptions.RequestException,
+                IOError,
+                ValueError) as err:
+            raise error.TestError(
+                'Failed to get update payload properties: %s with error: %s' %
+                (payload_props_url, err))
+
+
     def _check_for_update(self, server='http://127.0.0.1', port=8082,
-                          interactive=True, ignore_status=False,
-                          wait_for_completion=False):
+                          update_path='update', interactive=True,
+                          ignore_status=False, wait_for_completion=False,
+                          **kwargs):
         """
         Starts a background update check.
 
         @param server: The omaha server to call in the update url.
         @param port: The omaha port to call in the update url.
+        @param update_path: The /update part of the URL. When using a lab
+                            devserver, pass update/<board>-release/RXX-X.X.X.
         @param interactive: True if we are doing an interactive update.
         @param ignore_status: True if we should ignore exceptions thrown.
         @param wait_for_completion: True for --update, False for
-                                    --check_for_update.
+                --check_for_update.
+        @param kwargs: The dictionary to be converted to a query string
+                and appended to the end of the update URL. e.g:
+                {'critical_update': True, 'foo': 'bar'} ->
+                'http:/127.0.0.1:8080/update?critical_update=True&foo=bar'
+                Look at nebraska.py or devserver.py for the list of accepted
+                values.
         """
         update = 'update' if wait_for_completion else 'check_for_update'
-        cmd = 'update_engine_client --%s --omaha_url=%s:%d/update ' % (update,
-                                                                       server,
-                                                                       port)
+        update_path = update_path.lstrip('/')
+        query = '&'.join('%s=%s' % (k, v) for k, v in kwargs.items())
+        cmd = 'update_engine_client --%s --omaha_url="%s:%d/%s?%s"' % (
+            update, server, port, update_path, query)
 
         if not interactive:
           cmd += ' --interactive=false'
@@ -401,4 +459,3 @@ class UpdateEngineUtil(object):
           return None
         else:
           return targets[-1].rpartition(err_str)[2]
-

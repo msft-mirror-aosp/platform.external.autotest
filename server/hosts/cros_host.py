@@ -144,15 +144,20 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                 POWER_CONTROL_SERVO,
                                 POWER_CONTROL_MANUAL)
 
-    # CCD_SERVO: The string of servo type to compare with the return value of
-    #            self.servo.get_servo_version() to decide default power method.
-    CCD_SERVO = 'servo_v4_with_ccd_cr50'
-
     _RPM_OUTLET_CHANGED = 'outlet_changed'
 
     # URL pattern to download firmware image.
     _FW_IMAGE_URL_PATTERN = CONFIG.get_config_value(
             'CROS', 'firmware_url_pattern', type=str)
+
+    # Regular expression for extracting EC version string
+    _EC_REGEX = '(%s_\w*[-\.]\w*[-\.]\w*[-\.]\w*)'
+
+    # Regular expression for extracting BIOS version string
+    _BIOS_REGEX = '(%s\.\w*\.\w*\.\w*)'
+
+    # Command to update firmware located on DUT
+    _FW_UPDATE_CMD = 'chromeos-firmwareupdate --mode=recovery -e %s -i %s %s'
 
     @staticmethod
     def check_host(host, timeout=10):
@@ -168,7 +173,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         try:
             result = host.run(
                     'grep -q CHROMEOS /etc/lsb-release && '
-                    '! test -f /mnt/stateful_partition/.android_tester && '
                     '! grep -q moblab /etc/lsb-release && '
                     '! grep -q labstation /etc/lsb-release',
                     ignore_status=True, timeout=timeout)
@@ -308,7 +312,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             servo_host.create_servo_host(
                 dut=self, servo_args=servo_args,
                 try_lab_servo=try_lab_servo,
-                try_servo_repair=try_servo_repair))
+                try_servo_repair=try_servo_repair,
+                dut_host_info=self.host_info_store.get()))
         self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
@@ -333,7 +338,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         # Add pdtester host if pdtester args were added on command line
         self._pdtester_host = pdtester_host.create_pdtester_host(
-                pdtester_args, servo_args)
+                pdtester_args, self._servo_host)
 
         if self._pdtester_host:
             self.pdtester_servo = self._pdtester_host.get_servo()
@@ -363,7 +368,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.error('Also failed to get the board name from the DUT '
                               'itself. %s.', str(e))
                 raise error.AutoservError('Cannot obtain repair image name.')
-        return afe_utils.get_stable_cros_image_name(board)
+        return afe_utils.get_stable_cros_image_name_v2(self.host_info_store.get())
 
 
     def host_version_prefix(self, image):
@@ -442,9 +447,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             monarch_fields = {
                 'board': board,
                 'build_type': build_type,
-                # TODO(akeshet): To be consistent with most other metrics,
-                # consider changing the following field to be named
-                # 'milestone'.
                 'branch': branch,
                 'dev_server': devserver,
             }
@@ -584,15 +586,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param rw_only: True to only clear fwrw_version; otherewise, clear
                         both fwro_version and fwrw_version.
         """
-        labels = self._AFE.get_labels(
-                name__startswith=provision.FW_RW_VERSION_PREFIX,
-                host__hostname=self.hostname)
+        info = self.host_info_store.get()
+        info.clear_version_labels(provision.FW_RW_VERSION_PREFIX)
         if not rw_only:
-            labels = labels + self._AFE.get_labels(
-                    name__startswith=provision.FW_RO_VERSION_PREFIX,
-                    host__hostname=self.hostname)
-        for label in labels:
-            label.remove_hosts(hosts=[self.hostname])
+            info.clear_version_labels(provision.FW_RO_VERSION_PREFIX)
+        self.host_info_store.commit(info)
 
 
     def _add_fw_version_label(self, build, rw_only):
@@ -603,14 +601,79 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         fwro_version and fwrw_version.
 
         """
-        fw_label = provision.fwrw_version_to_label(build)
-        self._AFE.run('label_add_hosts', id=fw_label, hosts=[self.hostname])
+        info = self.host_info_store.get()
+        info.set_version_label(provision.FW_RW_VERSION_PREFIX, build)
         if not rw_only:
-            fw_label = provision.fwro_version_to_label(build)
-            self._AFE.run('label_add_hosts', id=fw_label, hosts=[self.hostname])
+            info.set_version_label(provision.FW_RO_VERSION_PREFIX, build)
+        self.host_info_store.commit(info)
 
 
-    def firmware_install(self, build=None, rw_only=False, dest=None):
+    def get_latest_release_version(self, board):
+        """Search for the latest package release version from the image archive,
+            and return it.
+
+        @param board: board name
+
+        @return 'firmware-{board}-{branch}-firmwarebranch/{release-version}'
+                or None if LATEST release file does not exist.
+        """
+
+        # This might be in the format of 'baseboard_model',
+        # e.g. octopus_fleex. In that case, board should be just
+        # 'baseboard' to use in search for image package, e.g. octopus.
+        board = board.split('_')[0]
+
+        # Read 'LATEST-1.0.0' file
+        branch_dir = provision.FW_BRANCH_GLOB % board
+        latest_file = os.path.join(provision.CROS_IMAGE_ARCHIVE, branch_dir,
+                                'LATEST-1.0.0')
+
+        try:
+            # The result could be one or more.
+            result = utils.system_output('gsutil ls -d ' +  latest_file)
+
+            candidates = re.findall('gs://.*', result)
+        except error.CmdError:
+            logging.error('No LATEST release info is available.')
+            return None
+
+        for cand_dir in candidates:
+            result = utils.system_output('gsutil cat ' + cand_dir)
+
+            release_path = cand_dir.replace('LATEST-1.0.0', result)
+            release_path = os.path.join(release_path, board)
+            try:
+                # Check if release_path does exist.
+                release = utils.system_output('gsutil ls -d ' + release_path)
+                # Now 'release' has a full directory path: e.g.
+                #  gs://chromeos-image-archive/firmware-octopus-11297.B-
+                #  firmwarebranch/RNone-1.0.0-b4395530/octopus/
+
+                # Remove "gs://chromeos-image-archive".
+                release = release.replace(provision.CROS_IMAGE_ARCHIVE, '')
+
+                # Remove CROS_IMAGE_ARCHIVE and any surrounding '/'s.
+                return release.strip('/')
+            except error.CmdError:
+                # The directory might not exist. Let's try next candidate.
+                pass
+        else:
+            raise error.AutoservError('Cannot find the latest firmware')
+
+    @staticmethod
+    def get_version_from_image(image, version_regex):
+        with open(image, 'rb') as f:
+            image_data = f.read()
+        match = re.findall(version_regex, image_data)
+        if match:
+            return match[0]
+        else:
+            raise error.TestFail('Failed to read version from %s.' % image)
+
+
+    def firmware_install(self, build=None, rw_only=False, dest=None,
+                         local_tarball=None, verify_version=False,
+                         try_scp=False):
         """Install firmware to the DUT.
 
         Use stateful update if the DUT is already running the same build.
@@ -629,6 +692,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param rw_only: True to only install firmware to its RW portions. Keep
                         the RO portions unchanged.
         @param dest: Directory to store the firmware in.
+        @param local_tarball: Path to local firmware image for installing
+                              without devserver.
+        @param verify_version: True to verify EC and BIOS versions after
+                               programming firmware, default is False.
+        @param try_scp: False to always program using servo, true to try copying
+                        the firmware and programming from the DUT.
 
         TODO(dshi): After bug 381718 is fixed, update here with corresponding
                     exceptions that could be raised.
@@ -649,31 +718,105 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if model is None or model == '':
             model = self.get_platform_from_fwid()
 
-        # If build is not set, try to install firmware from stable CrOS.
-        if not build:
-            build = afe_utils.get_stable_faft_version(board)
-            if not build:
-                raise error.TestError(
-                        'Failed to find stable firmware build for %s.',
-                        self.hostname)
-            logging.info('Will install firmware from build %s.', build)
-
-        ds = dev_server.ImageServer.resolve(build, self.hostname)
-        ds.stage_artifacts(build, ['firmware'])
-
+        # If local firmware path not provided fetch it from the dev server
         tmpd = None
-        if not dest:
-            tmpd = autotemp.tempdir(unique_id='fwimage')
-            dest = tmpd.name
-        try:
+        if not local_tarball:
+            # If build is not set, try to install firmware from stable CrOS.
+            if not build:
+                build = afe_utils.get_stable_faft_version_v2(info)
+                if not build:
+                    raise error.TestError(
+                            'Failed to find stable firmware build for %s.',
+                            self.hostname)
+                logging.info('Will install firmware from build %s.', build)
+
+            ds = dev_server.ImageServer.resolve(build, self.hostname)
+            ds.stage_artifacts(build, ['firmware'])
+
+            if not dest:
+                tmpd = autotemp.tempdir(unique_id='fwimage')
+                dest = tmpd.name
+
+            # Download firmware image
             fwurl = self._FW_IMAGE_URL_PATTERN % (ds.url(), build)
             local_tarball = os.path.join(dest, os.path.basename(fwurl))
             ds.download_file(fwurl, local_tarball)
 
-            self._clear_fw_version_labels(rw_only)
-            self.servo.program_firmware(board, model, local_tarball, rw_only)
-            if utils.host_is_in_lab_zone(self.hostname):
-                self._add_fw_version_label(build, rw_only)
+        # Extract EC image from tarball
+        logging.info('Extracting EC image.')
+        ec_image = self.servo.extract_ec_image(board, model, local_tarball)
+
+        # Extract BIOS image from tarball
+        logging.info('Extracting BIOS image.')
+        bios_image = self.servo.extract_bios_image(board, model, local_tarball)
+
+        # Clear firmware version labels
+        self._clear_fw_version_labels(rw_only)
+
+        # Install firmware from local tarball
+        try:
+            # Check if DUT is available and copying to DUT is enabled
+            if self.is_up() and try_scp:
+                # DUT is available, make temp firmware directory to store images
+                logging.info('Making temp folder.')
+                dest_folder = '/tmp/firmware'
+                self.run('mkdir -p ' + dest_folder)
+
+                # Send EC firmware image to DUT
+                logging.info('Sending EC firmware.')
+                dest_ec_path = os.path.join(dest_folder,
+                                            os.path.basename(ec_image))
+                self.send_file(ec_image, dest_ec_path)
+
+                # Send BIOS firmware image to DUT
+                logging.info('Sending BIOS firmware.')
+                dest_bios_path = os.path.join(dest_folder,
+                                              os.path.basename(bios_image))
+                self.send_file(bios_image, dest_bios_path)
+
+                # Update EC and BIOS firmware on DUT
+                logging.info('Updating EC and BIOS firmware.')
+                fw_cmd = self._FW_UPDATE_CMD % (dest_ec_path,
+                                                dest_bios_path,
+                                                '--wp=1' if rw_only else '')
+                self.run(fw_cmd)
+            else:
+                # Host is not available, program firmware using servo
+                self.servo.program_ec(ec_image, rw_only)
+                self.servo.program_bios(bios_image, rw_only)
+                if utils.host_is_in_lab_zone(self.hostname):
+                    self._add_fw_version_label(build, rw_only)
+
+            # Reboot and wait for DUT after installing firmware
+            logging.info('Rebooting DUT.')
+            self.servo.get_power_state_controller().reset()
+            time.sleep(self.servo.BOOT_DELAY)
+            self.test_wait_for_boot()
+
+            # When enabled verify EC and BIOS firmware version after programming
+            if verify_version:
+                # Check programmed EC firmware against expected version
+                logging.info('Checking EC firmware version.')
+                dest_ec_version = self.get_ec_version()
+                ec_regex = self._EC_REGEX % model
+                image_ec_version = self.get_version_from_image(ec_image,
+                                                               ec_regex)
+                if dest_ec_version != image_ec_version:
+                    raise error.TestFail(
+                        'Failed to update EC RO, version %s (expected %s)' %
+                        (dest_ec_version, image_ec_version))
+
+                # Check programmed BIOS firmware against expected version
+                logging.info('Checking BIOS firmware version.')
+                dest_bios_version = self.get_firmware_version()
+                bios_version_prefix = dest_bios_version.split('.', 1)[0]
+                bios_regex = self._BIOS_REGEX % bios_version_prefix
+                image_bios_version = self.get_version_from_image(bios_image,
+                                                                 bios_regex)
+                if dest_bios_version != image_bios_version:
+                    raise error.TestFail(
+                        'Failed to update BIOS RO, version %s (expected %s)' %
+                        (dest_bios_version, image_bios_version))
         finally:
             if tmpd:
                 tmpd.clean()
@@ -859,6 +1002,20 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             info = self.get_power_supply_info()
             logging.info(info)
             return float(info['Battery']['percentage'])
+        except (KeyError, ValueError, error.AutoservRunError):
+            return None
+
+
+    def get_battery_display_percentage(self):
+        """Get the battery display percentage.
+
+        @return: The display percentage of battery level, value range from
+                 0-100. Return None if the battery info cannot be retrieved.
+        """
+        try:
+            info = self.get_power_supply_info()
+            logging.info(info)
+            return float(info['Battery']['display percentage'])
         except (KeyError, ValueError, error.AutoservRunError):
             return None
 
@@ -1614,6 +1771,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # Newer platforms start with 'Google_' while the older ones do not.
         return platform.replace('google_', '')
 
+
     def get_platform(self):
         """Determine the correct platform label for this host.
 
@@ -1621,14 +1779,20 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         release_info = utils.parse_cmd_output('cat /etc/lsb-release',
                                               run_method=self.run)
-        unibuild = release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1'
         platform = ''
-        if unibuild:
-            cmd = 'mosys platform model'
-            result = self.run(command=cmd, ignore_status=True)
-            if result.exit_status == 0:
-                platform = result.stdout.strip()
+        if release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1':
+            platform = self.get_platform_from_mosys()
         return platform if platform else self.get_platform_from_fwid()
+
+
+    def get_platform_from_mosys(self):
+        """Get the host platform from mosys command.
+
+        @returns a string representing this host's platform.
+        """
+        cmd = 'mosys platform model'
+        result = self.run(command=cmd, ignore_status=True)
+        return result.stdout.strip() if result.exit_status == 0 else ''
 
 
     def get_architecture(self):
@@ -2040,13 +2204,87 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         if not self._default_power_method:
             self._default_power_method = self.POWER_CONTROL_RPM
-            info = self.host_info_store.get()
-            if info.attributes.get('servo_type') == self.CCD_SERVO:
-                if self.servo:
-                    self._default_power_method = self.POWER_CONTROL_CCD
-                else:
-                    logging.warn('CCD servo detected but failed to apply CCD'
-                                 ' servo RPM method due to servo instance'
-                                 ' was not initialized, fall back to normal'
-                                 ' RPM method.')
+            if self.servo and self.servo.supports_built_in_pd_control():
+                self._default_power_method = self.POWER_CONTROL_CCD
+            else:
+                logging.debug('Either servo is unitialized or the servo '
+                              'setup does not support pd controls. Falling '
+                              'back to default RPM method.')
         return self._default_power_method
+
+
+    def find_usb_devices(self, idVendor, idProduct):
+        """
+        Get usb device sysfs name for specific device.
+
+        @param idVendor  Vendor ID to search in sysfs directory.
+        @param idProduct Product ID to search in sysfs directory.
+
+        @return Usb node names in /sys/bus/usb/drivers/usb/ that match.
+        """
+        # Look for matching file and cut at position 7 to get dir name.
+        grep_cmd = 'grep {} /sys/bus/usb/drivers/usb/*/{} | cut -f 7 -d /'
+
+        vendor_cmd = grep_cmd.format(idVendor, 'idVendor')
+        product_cmd = grep_cmd.format(idProduct, 'idProduct')
+
+        # Use uniq -d to print duplicate line from both command
+        cmd = 'sort <({}) <({}) | uniq -d'.format(vendor_cmd, product_cmd)
+
+        return self.run(cmd, ignore_status=True).stdout.strip().split('\n')
+
+
+    def bind_usb_device(self, usb_node):
+        """
+        Bind usb device
+
+        @param usb_node Node name in /sys/bus/usb/drivers/usb/
+        """
+        cmd = 'echo {} > /sys/bus/usb/drivers/usb/bind'.format(usb_node)
+        self.run(cmd, ignore_status=True)
+
+
+    def unbind_usb_device(self, usb_node):
+        """
+        Unbind usb device
+
+        @param usb_node Node name in /sys/bus/usb/drivers/usb/
+        """
+        cmd = 'echo {} > /sys/bus/usb/drivers/usb/unbind'.format(usb_node)
+        self.run(cmd, ignore_status=True)
+
+
+    def get_wlan_ip(self):
+        """
+        Get ip address of wlan interface.
+
+        @return ip address of wlan or empty string if wlan is not connected.
+        """
+        cmds = [
+            'iw dev',                   # List wlan physical device
+            'grep Interface',           # Grep only interface name
+            'cut -f 2 -d" "',           # Cut the name part
+            'xargs ifconfig',           # Feed it to ifconfig to get ip
+            'grep -oE "inet [0-9.]+"',  # Grep only ipv4
+            'cut -f 2 -d " "'           # Cut the ip part
+        ]
+        return self.run(' | '.join(cmds), ignore_status=True).stdout.strip()
+
+    def connect_to_wifi(self, ssid, passphrase=None, security=None):
+        """
+        Connect to wifi network
+
+        @param ssid       SSID of the wifi network.
+        @param passphrase Passphrase of the wifi network. None if not existed.
+        @param security   Security of the wifi network. Default to "psk" if
+                          passphase is given without security. Possible values
+                          are "none", "psk", "802_1x".
+
+        @return True if succeed, False if not.
+        """
+        cmd = '/usr/local/autotest/cros/scripts/wifi connect ' + ssid
+        if passphrase:
+            cmd += ' ' + passphrase
+            if security:
+                cmd += ' ' + security
+        return self.run(cmd, ignore_status=True).exit_status == 0

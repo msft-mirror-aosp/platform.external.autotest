@@ -6,6 +6,7 @@ import logging
 import operator
 import re
 import sys
+import xmlrpclib
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
@@ -64,12 +65,12 @@ class firmware_FAFTRPC(FirmwareTest):
         """Runs before test begins."""
         super(firmware_FAFTRPC, self).initialize(host, cmdline_args)
         self.backup_firmware()
-        self.faft_client.RpcSettings.EnableTestMode()
+        self.faft_client.rpc_settings.enable_test_mode()
 
 
     def cleanup(self):
         """Runs after test completion."""
-        self.faft_client.RpcSettings.DisableTestMode()
+        self.faft_client.rpc_settings.disable_test_mode()
         try:
             if self.is_firmware_saved():
                 self.restore_firmware()
@@ -147,7 +148,7 @@ class firmware_FAFTRPC(FirmwareTest):
         rpc_name = ".".join([category, method])
         try:
             result = rpc_function(*params)
-        except config.RPC_ERRORS as e:
+        except xmlrpclib.Fault as e:
             if allow_error_msg is not None and \
                     re.search(allow_error_msg, str(e)):
                 success_msg = "raised an acceptable error during RPC handling"
@@ -192,7 +193,7 @@ class firmware_FAFTRPC(FirmwareTest):
         @param params: A tuple containing params to pass into the RPC function
 
         @raise error.TestFail: If the RPC raises no error, or if it raises any
-                               error other than xmlrpclib.Fault or grpc.RpcError
+                               error other than xmlrpclib.Fault
 
         @return: Not meaningful.
 
@@ -201,7 +202,7 @@ class firmware_FAFTRPC(FirmwareTest):
         rpc_name = ".".join([category, method])
         try:
             result = rpc_function(*params)
-        except config.RPC_ERRORS as e:
+        except xmlrpclib.Fault as e:
             self._log_success(rpc_name, params, "raised RPC error")
         except:
             error_msg = "Unexpected misc error: %s" % sys.exc_info()[0]

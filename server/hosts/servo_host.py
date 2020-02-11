@@ -11,7 +11,8 @@
 
 import logging
 import os
-import shutil
+import time
+import traceback
 import xmlrpclib
 
 from autotest_lib.client.bin import utils
@@ -40,6 +41,11 @@ SERVO_ATTR_KEYS = (
         SERVO_SERIAL_ATTR,
 )
 
+# Timeout value for stop/start servod process.
+SERVOD_TEARDOWN_TIMEOUT = 3
+SERVOD_QUICK_STARTUP_TIMEOUT = 20
+SERVOD_STARTUP_TIMEOUT = 60
+
 _CONFIG = global_config.global_config
 ENABLE_SSH_TUNNEL_FOR_SERVO = _CONFIG.get_config_value(
         'CROS', 'enable_ssh_tunnel_for_servo', type=bool, default=False)
@@ -51,7 +57,10 @@ AUTOTEST_BASE = _CONFIG.get_config_value(
 
 class ServoHost(base_servohost.BaseServoHost):
     """Host class for a servo host(e.g. beaglebone, labstation)
-     that with a servo instance for a specific port."""
+     that with a servo instance for a specific port.
+
+     @type _servo: servo.Servo | None
+     """
 
     DEFAULT_PORT = int(os.getenv('SERVOD_PORT', '9999'))
 
@@ -89,6 +98,8 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_model = servo_model
         self.servo_serial = servo_serial
         self._servo = None
+        self._servod_server_proxy = None
+
         # Path of the servo host lock file.
         self._lock_file = (self.TEMP_FILE_DIR + str(self.servo_port)
                            + self.LOCK_FILE_POSTFIX)
@@ -107,9 +118,6 @@ class ServoHost(base_servohost.BaseServoHost):
 
         self._repair_strategy = (
                 servo_repair.create_servo_repair_strategy())
-
-        self._prev_log_size = 0
-        self._prev_log_inode = 0
 
     def connect_servo(self):
         """Establish a connection to the servod server on this host.
@@ -146,72 +154,9 @@ class ServoHost(base_servohost.BaseServoHost):
             self.rpc_server_tracker.disconnect(self.servo_port)
             self._servo = None
 
-    def fetch_servod_log(self, filename, skip_old=False):
-        """Save the servod log into the given local file.
 
-        The inode number is used for checking whether the log was rotated:
-        it skips old data only if the log is actually the same file.
-
-        If filename is not set, this just refreshes the stored info about the
-        log file's size and inode, for use in future calls.
-
-        @param filename: save the contents into a file with the given name.
-        @param skip_old: if True, skip past the old data in the log file.
-        @type filename: str
-        @type skip_old: bool
-        @rtype: None
-        """
-        if self.is_localhost():
-            return
-
-        log_name = 'servod_%s' % self.servo_port
-        log_path = '/var/log/%s.log' % log_name
-
-        # %n = name, %i = inode, %s = size.
-        cmd = "/usr/bin/stat --format '%n|%i|%s' {}".format(log_path)
-        result = self.run(cmd, ignore_status=True)
-        if result.exit_status != 0:
-            if 'No such file or directory' not in result.stderr:
-                # Warn only if log file is broken/unreadable, not just missing.
-                logging.warn("Couldn't stat servod log: %s", result.stderr)
-
-            self._prev_log_size = 0
-            self._prev_log_inode = 0
-            return
-
-        (path, inode, size) = result.stdout.split('|')
-        inode = int(inode)
-        size = int(size)
-
-        prev_inode = self._prev_log_inode
-        prev_size = self._prev_log_size
-        if not prev_inode or not prev_size or inode != prev_inode:
-            # Don't skip if it's actually a different file, or it somehow shrunk
-            skip_old = False
-
-        if filename:
-            try:
-                if skip_old:
-                    # Fetch whole log to .log.tmp, then save only the new bytes.
-                    temp_filename = filename + '.tmp'
-                    self.get_file(log_path, temp_filename)
-
-                    with open(temp_filename, 'rb') as temp_log_file:
-                        temp_log_file.seek(prev_size)
-                        with open(filename, 'wb') as real_log_file:
-                            # read in pieces, in case the log file is big
-                            shutil.copyfileobj(temp_log_file, real_log_file)
-                    os.unlink(temp_filename)
-                else:
-                    self.get_file(log_path, filename)
-            except EnvironmentError:
-                logging.warn("Couldn't save copy of servod log:", exc_info=True)
-
-        self._prev_log_size = size
-        self._prev_log_inode = inode
-
-    def get_servod_server_proxy(self):
-        """Return a proxy that can be used to communicate with servod server.
+    def _create_servod_server_proxy(self):
+        """Create a proxy that can be used to communicate with servod server.
 
         @returns: An xmlrpclib.ServerProxy that is connected to the servod
                   server on the host.
@@ -227,6 +172,18 @@ class ServoHost(base_servohost.BaseServoHost):
             return xmlrpclib.ServerProxy(remote)
 
 
+    def get_servod_server_proxy(self):
+        """Return a cached proxy if exists; otherwise, create a new one.
+
+        @returns: An xmlrpclib.ServerProxy that is connected to the servod
+                  server on the host.
+        """
+        # Single-threaded execution, no race
+        if self._servod_server_proxy is None:
+            self._servod_server_proxy = self._create_servod_server_proxy()
+        return self._servod_server_proxy
+
+
     def verify(self, silent=False):
         """Update the servo host and verify it's in a good state.
 
@@ -239,6 +196,7 @@ class ServoHost(base_servohost.BaseServoHost):
             self._repair_strategy.verify(self, silent)
         except:
             self.disconnect_servo()
+            self.stop_servod()
             raise
 
 
@@ -258,6 +216,7 @@ class ServoHost(base_servohost.BaseServoHost):
                 self.withdraw_reboot_request()
         except:
             self.disconnect_servo()
+            self.stop_servod()
             raise
 
 
@@ -286,6 +245,69 @@ class ServoHost(base_servohost.BaseServoHost):
                       ' by servo with port # %s if exists.',
                       self.hostname, self.servo_port)
         self.run('rm -f %s' % self._reboot_file, ignore_status=True)
+
+
+    def start_servod(self, quick_startup=False):
+        """Start the servod process on servohost.
+        """
+        # Skip if running on the localhost.(crbug.com/1038168)
+        if self.is_localhost():
+            logging.debug("Servohost is a localhost, skipping start servod.")
+            return
+
+        cmd = 'start servod'
+        if self.servo_board:
+            cmd += ' BOARD=%s' % self.servo_board
+            if self.servo_model:
+                cmd += ' MODEL=%s' % self.servo_model
+        else:
+            logging.warning('Board for DUT is unknown; starting servod'
+                            ' assuming a pre-configured board.')
+
+        cmd += ' PORT=%d' % self.servo_port
+        if self.servo_serial:
+            cmd += ' SERIAL=%s' % self.servo_serial
+        self.run(cmd, timeout=60)
+
+        # There's a lag between when `start servod` completes and when
+        # the _ServodConnectionVerifier trigger can actually succeed.
+        # The call to time.sleep() below gives time to make sure that
+        # the trigger won't fail after we return.
+
+        # Normally servod on servo_v3 and labstation take ~10 seconds to ready,
+        # But in the rare case all servo on a labstation are in heavy use they
+        # may take ~30 seconds. So the timeout value will double these value,
+        # and we'll try quick start up when first time initialize servohost,
+        # and use standard start up timeout in repair.
+        if quick_startup:
+            timeout = SERVOD_QUICK_STARTUP_TIMEOUT
+        else:
+            timeout = SERVOD_STARTUP_TIMEOUT
+        logging.debug('Wait %s seconds for servod process fully up.', timeout)
+        time.sleep(timeout)
+
+
+    def stop_servod(self):
+        """Stop the servod process on servohost.
+        """
+        # Skip if running on the localhost.(crbug.com/1038168)
+        if self.is_localhost():
+            logging.debug("Servohost is a localhost, skipping stop servod.")
+            return
+
+        logging.debug('Stopping servod on port %s', self.servo_port)
+        self.run('stop servod PORT=%d' % self.servo_port,
+                 timeout=60, ignore_status=True)
+        logging.debug('Wait %s seconds for servod process fully teardown.',
+                      SERVOD_TEARDOWN_TIMEOUT)
+        time.sleep(SERVOD_TEARDOWN_TIMEOUT)
+
+
+    def restart_servod(self, quick_startup=False):
+        """Restart the servod process on servohost.
+        """
+        self.stop_servod()
+        self.start_servod(quick_startup)
 
 
     def _lock(self):
@@ -322,6 +344,14 @@ class ServoHost(base_servohost.BaseServoHost):
                 logging.error('Unlock servohost failed due to ssh timeout.'
                               ' It may caused by servohost went down during'
                               ' the task.')
+
+        # We want always stop servod after task to minimum the impact of bad
+        # servod process interfere other servods.(see crbug.com/1028665)
+        try:
+            self.stop_servod()
+        except error.AutoservRunError as e:
+            logging.info("Failed to stop servod due to:\n%s\n"
+                         "This error is forgived.", str(e))
 
         super(ServoHost, self).close()
 
@@ -417,7 +447,7 @@ def _tweak_args_for_ssp_moblab(servo_args):
 
 
 def create_servo_host(dut, servo_args, try_lab_servo=False,
-                      try_servo_repair=False):
+                      try_servo_repair=False, dut_host_info=None):
     """Create a ServoHost object for a given DUT, if appropriate.
 
     This function attempts to create and verify or repair a `ServoHost`
@@ -498,6 +528,30 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         return None
 
     newhost = ServoHost(**servo_args)
+    try:
+        newhost.restart_servod(quick_startup=True)
+    except error.AutoservSSHTimeout:
+        logging.warning("Restart servod failed due ssh connection "
+                        "to servohost timed out. This error is forgiven"
+                        " here, we will retry in servo repair process.")
+    except error.AutoservRunError as e:
+        logging.warning("Restart servod failed due to:\n%s\n"
+                        "This error is forgiven here, we will retry"
+                        " in servo repair process.", str(e))
+
+    # TODO(gregorynisbet): Clean all of this up.
+    logging.debug('create_servo_host: attempt to set info store on '
+                  'servo host')
+    try:
+        if dut_host_info is None:
+            logging.debug('create_servo_host: dut_host_info is '
+                          'None, skipping')
+        else:
+            newhost.set_dut_host_info(dut_host_info)
+            logging.debug('create_servo_host: successfully set info '
+                          'store')
+    except Exception:
+        logging.error("create_servo_host: (%s)", traceback.format_exc())
 
     # Note that the logic of repair() includes everything done
     # by verify().  It's sufficient to call one or the other;

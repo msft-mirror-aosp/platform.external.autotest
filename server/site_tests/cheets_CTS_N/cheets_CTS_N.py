@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _DL_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-    'arm': _DL_CTS + 'android-cts-7.1_r28-linux_x86-arm.zip',
-    'x86': _DL_CTS + 'android-cts-7.1_r28-linux_x86-x86.zip',
+    'arm': _DL_CTS + 'android-cts-7.1_r29-linux_x86-arm.zip',
+    'x86': _DL_CTS + 'android-cts-7.1_r29-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _DL_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -81,30 +81,8 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
     def _get_tradefed_base_dir(self):
         return 'android-cts'
 
-    def _run_tradefed(self, commands):
-        """Kick off CTS.
-
-        @param commands: the command(s) to pass to CTS.
-        @param datetime_id: For 'continue' datetime of previous run is known.
-        @return: The result object from utils.run.
-        """
-        cts_tradefed = os.path.join(self._repository, 'tools', 'cts-tradefed')
-        with tradefed_test.adb_keepalive(self._get_adb_targets(),
-                                         self._install_paths):
-            for command in commands:
-                logging.info('RUN: ./cts-tradefed %s', ' '.join(command))
-                output = self._run(
-                    cts_tradefed,
-                    args=tuple(command),
-                    timeout=self._timeout * self._timeout_factor,
-                    verbose=True,
-                    ignore_status=False,
-                    # Make sure to tee tradefed stdout/stderr to autotest logs
-                    # continuously during the test run.
-                    stdout_tee=utils.TEE_TO_LOGS,
-                    stderr_tee=utils.TEE_TO_LOGS)
-                logging.info('END: ./cts-tradefed %s\n', ' '.join(command))
-        return output
+    def _tradefed_cmd_path(self):
+        return os.path.join(self._repository, 'tools', 'cts-tradefed')
 
     def _should_skip_test(self, bundle):
         """Some tests are expected to fail and are skipped."""
@@ -178,6 +156,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
                  enable_default_apps=False,
                  bundle=None,
                  extra_artifacts=[],
+                 extra_artifacts_host=[],
                  precondition_commands=[],
                  login_precondition_commands=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
@@ -218,6 +197,7 @@ class cheets_CTS_N(tradefed_test.TradefedTest):
             enable_default_apps=enable_default_apps,
             bundle=bundle,
             extra_artifacts=extra_artifacts,
+            extra_artifacts_host=extra_artifacts_host,
             cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
             precondition_commands=precondition_commands)

@@ -14,14 +14,15 @@ from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.servo import chrome_ec
 
 
-def servo_v4_command(func):
-    """Decorator for methods only relevant to tests running with servo v4."""
+def dts_control_command(func):
+    """For methods that should only run when dts mode control is supported."""
     @functools.wraps(func)
     def wrapper(instance, *args, **kwargs):
-        """Ignore servo v4 functions it's not being used."""
-        if instance.using_servo_v4():
+        """Ignore those functions if dts mode control is not supported."""
+        if instance._servo.dts_mode_is_valid():
             return func(instance, *args, **kwargs)
-        logging.info("not using servo v4. ignoring %s", func.func_name)
+        logging.info('Servo setup does not support DTS mode. ignoring %s',
+                     func.func_name)
     return wrapper
 
 
@@ -32,6 +33,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     provides many interfaces to set and get its behavior via console commands.
     This class is to abstract these interfaces.
     """
+    PROD_RW_KEYIDS = ['0x87b73b67', '0xde88588d']
+    PROD_RO_KEYIDS = ['0xaa66150f']
     OPEN = 'open'
     UNLOCK = 'unlock'
     LOCK = 'lock'
@@ -120,7 +123,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
            'BOARD_NEEDS_SYS_RST_PULL_UP' : 1 << 5,
            'BOARD_USE_PLT_RESET'         : 1 << 6,
            'BOARD_WP_ASSERTED'           : 1 << 8,
-           'BOARD_FORCING_WP '           : 1 << 9,
+           'BOARD_FORCING_WP'            : 1 << 9,
            'BOARD_NO_RO_UART'            : 1 << 10,
            'BOARD_CCD_STATE_MASK'        : 3 << 11,
            'BOARD_DEEP_SLEEP_DISABLED'   : 1 << 13,
@@ -133,6 +136,22 @@ class ChromeCr50(chrome_ec.ChromeConsole):
            'BOARD_ALLOW_CHANGE_TPM_MODE' : 1 << 20,
     }
 
+    # CR50 reset flags as defined in platform ec_commands.h. These are only the
+    # flags used by cr50.
+    RESET_FLAGS = {
+           'RESET_FLAG_OTHER'            : 1 << 0,
+           'RESET_FLAG_BROWNOUT'         : 1 << 2,
+           'RESET_FLAG_POWER_ON'         : 1 << 3,
+           'RESET_FLAG_SOFT'             : 1 << 5,
+           'RESET_FLAG_HIBERNATE'        : 1 << 6,
+           'RESET_FLAG_RTC_ALARM'        : 3 << 7,
+           'RESET_FLAG_WAKE_PIN'         : 1 << 8,
+           'RESET_FLAG_HARD'             : 1 << 11,
+           'RESET_FLAG_USB_RESUME'       : 1 << 14,
+           'RESET_FLAG_RDD'              : 1 << 15,
+           'RESET_FLAG_RBOX'             : 1 << 16,
+           'RESET_FLAG_SECURITY'         : 1 << 17,
+    }
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
@@ -159,7 +178,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         @param commands: the command string to send to cr50
         """
-        if not self._servo.running_through_ccd():
+        if self._servo.main_device_is_flex():
             self.wake_cr50()
         super(ChromeCr50, self).send_command(commands)
 
@@ -349,7 +368,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                             command output
         @return: A list of matched output
         """
-        if not self._servo.running_through_ccd():
+        if self._servo.main_device_is_flex():
             self.wake_cr50()
 
         # We have started prepending '\n' to separate cr50 console junk from
@@ -419,7 +438,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if compare_output:
             logging.info('No consistent output for %r %s', command,
                          pprint.pformat(past_rv))
-        raise error.TestError('Issue sending %r command: %s', command, err)
+        raise error.TestError('Issue sending %r command: %s' % (command, err))
 
 
     def get_deep_sleep_count(self):
@@ -463,15 +482,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return 1
 
 
-    def erase_nvmem(self):
-        """Use flasherase to erase both nvmem sections"""
-        if not self.has_command('flasherase'):
-            raise error.TestError("need image with 'flasherase'")
-
-        self.send_command('flasherase 0x7d000 0x3000')
-        self.send_command('flasherase 0x3d000 0x3000')
-
-
     def reboot(self):
         """Reboot Cr50 and wait for cr50 to reset"""
         self.wait_for_reboot(cmd='reboot')
@@ -509,7 +519,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @param cmd: the command to run to reset cr50.
         @param timeout: seconds to wait to detect the reboot.
         """
-        if self._servo.running_through_ccd():
+        if self._servo.main_device_is_ccd():
             self.send_command(cmd)
             # Cr50 USB is reset when it reboots. Wait for the CCD connection to
             # go down to detect the reboot.
@@ -525,34 +535,58 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             self._servo.get_power_state_controller().reset()
 
 
-    def rollback(self, eraseflashinfo=True, chip_bid=None, chip_flags=None):
-        """Set the reset counter high enough to force a rollback then reboot
+    def set_board_id(self, chip_bid, chip_flags):
+        """Set the chip board id type and flags."""
+        self.send_command('bid 0x%x 0x%x' % (chip_bid, chip_flags))
 
-        Set the new board id before rolling back if one is given.
 
-        @param eraseflashinfo: True if eraseflashinfo should be run before
-                               rollback
-        @param chip_bid: the integer representation of chip board id or None if
-                         the board id should be erased during rollback
-        @param chip_flags: the integer representation of chip board id flags or
-                        None if the board id should be erased during rollback
+    def get_board_id(self):
+        """Get the chip board id type and flags.
+
+        bid_type_inv will be '' if the bid output doesn't show it. If no board
+        id type inv is shown, then board id is erased will just check the type
+        and flags.
+
+        @returns a tuple (A string of bid_type:bid_type_inv:bid_flags,
+                          True if board id is erased)
         """
-        if (not self.has_command('rollback') or not
-            self.has_command('eraseflashinfo')):
-            raise error.TestError("need image with 'rollback' and "
-                "'eraseflashinfo'")
+        bid = self.send_command_retry_get_output('bid',
+                    ['Board ID: (\S{8}):?(|\S{8}), flags (\S{8})\s'],
+                    safe=True)[0][1:]
+        bid_str = ':'.join(bid)
+        bid_is_erased =  set(bid).issubset({'', 'ffffffff'})
+        logging.info('chip board id: %s', bid_str)
+        logging.info('chip board id is erased: %s',
+                     'yes' if bid_is_erased else 'no')
+        return bid_str, bid_is_erased
+
+
+    def eraseflashinfo(self, retries=10):
+        """Run eraseflashinfo.
+
+        @returns True if the board id is erased
+        """
+        for i in range(retries):
+            # The console could drop characters while matching 'eraseflashinfo'.
+            # Retry if the command times out. It's ok to run eraseflashinfo
+            # multiple times.
+            rv = self.send_command_retry_get_output(
+                    'eraseflashinfo', ['eraseflashinfo(.*)>'])[0][1].strip()
+            logging.info('eraseflashinfo output: %r', rv)
+            bid_erased = self.get_board_id()[1]
+            eraseflashinfo_issue = 'Busy' in rv or 'do_flash_op' in rv
+            if not eraseflashinfo_issue and bid_erased:
+                break
+            logging.info('Retrying eraseflashinfo')
+        return bid_erased
+
+
+    def rollback(self):
+        """Set the reset counter high enough to force a rollback and reboot."""
+        if not self.has_command('rollback'):
+            raise error.TestError("need image with 'rollback'")
 
         inactive_partition = self.get_inactive_version_info()[0]
-        # Set the board id if both the board id and flags have been given.
-        set_bid = chip_bid and chip_flags
-
-        # Erase the infomap
-        if eraseflashinfo or set_bid:
-            self.send_command('eraseflashinfo')
-
-        # Update the board id after it has been erased
-        if set_bid:
-            self.send_command('bid 0x%x 0x%x' % (chip_bid, chip_flags))
 
         self.wait_for_reboot(cmd='rollback')
 
@@ -586,9 +620,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def using_prod_rw_keys(self):
         """Returns True if the RW keyid is prod"""
         rv = self.send_command_retry_get_output('sysinfo',
-                ['RW keyid:.*\(([a-z]+)\)'], safe=True)
-        logging.info(rv)
-        return rv[0][1] == 'prod'
+                ['RW keyid:\s+(0x[0-9a-f]{8})'], safe=True)[0][1]
+        logging.info('RW Keyid: 0x%s', rv)
+        return rv in self.PROD_RW_KEYIDS
 
 
     def get_active_board_id_str(self):
@@ -621,11 +655,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return self.get_active_version_info()[1].strip()
 
 
-    def using_servo_v4(self):
-        """Returns true if the console is being served using servo v4"""
-        return 'servo_v4' in self._servo.get_servo_version()
-
-
     def ccd_is_enabled(self):
         """Return True if ccd is enabled.
 
@@ -633,16 +662,15 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         a flex cable is being used, use the CCD_MODE_L gpio setting to determine
         if Cr50 has ccd enabled.
 
-        Returns:
         @return: 'off' or 'on' based on whether the cr50 console is working.
         """
-        if self._servo.running_through_ccd():
+        if self._servo.main_device_is_ccd():
             return self._servo.get('ccd_state') == 'on'
         else:
             return not bool(self.gpioget('CCD_MODE_L'))
 
 
-    @servo_v4_command
+    @dts_control_command
     def wait_for_stable_ccd_state(self, state, timeout, raise_error):
         """Wait up to timeout seconds for CCD to be 'on' or 'off'
 
@@ -676,34 +704,34 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         logging.info("ccd is %r", 'on' if enabled else 'off')
 
 
-    @servo_v4_command
+    @dts_control_command
     def wait_for_ccd_disable(self, timeout=60, raise_error=True):
         """Wait for the cr50 console to stop working"""
         self.wait_for_stable_ccd_state('off', timeout, raise_error)
 
 
-    @servo_v4_command
+    @dts_control_command
     def wait_for_ccd_enable(self, timeout=60, raise_error=False):
         """Wait for the cr50 console to start working"""
         self.wait_for_stable_ccd_state('on', timeout, raise_error)
 
 
-    @servo_v4_command
+    @dts_control_command
     def ccd_disable(self, raise_error=True):
         """Change the values of the CC lines to disable CCD"""
         logging.info("disable ccd")
-        self._servo.set_servo_v4_dts_mode('off')
+        self._servo.set_dts_mode('off')
         self.wait_for_ccd_disable(raise_error=raise_error)
 
 
-    @servo_v4_command
+    @dts_control_command
     def ccd_enable(self, raise_error=False):
         """Reenable CCD and reset servo interfaces"""
         logging.info("reenable ccd")
-        self._servo.set_servo_v4_dts_mode('on')
+        self._servo.set_dts_mode('on')
         # If the test is actually running with ccd, wait for USB communication
         # to come up after reset.
-        if self._servo.running_through_ccd():
+        if self._servo.main_device_is_ccd():
             time.sleep(self._servo.USB_DETECTION_DELAY)
         self.wait_for_ccd_enable(raise_error=raise_error)
 
@@ -735,7 +763,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @param state: the desired testlab mode string: 'on' or 'off'
         @raise TestFail: if testlab mode was not changed
         """
-        if self._servo.running_through_ccd():
+        if self._servo.main_device_is_ccd():
             raise error.TestError('Cannot set testlab mode with CCD. Use flex '
                     'cable instead.')
         if not self.faft_config.has_powerbutton:
@@ -802,7 +830,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         testlab_on = self._state_to_bool(self._servo.get('cr50_testlab'))
         batt_is_disconnected = self.get_batt_pres_state()[1]
         req_pp = self._level_change_req_pp(level)
-        has_pp = not self._servo.running_through_ccd()
+        has_pp = not self._servo.main_device_is_ccd()
         dbg_en = 'DBG' in self._servo.get('cr50_version')
 
         if req_pp and not has_pp:
@@ -904,17 +932,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return float(result[0][1])
 
 
-    def servo_v4_supports_dts_mode(self):
-        """Returns True if cr50 registers changes in servo v4 dts mode."""
+    def servo_dts_mode_is_valid(self):
+        """Returns True if cr50 registers change in servo dts mode."""
         # This is to test that Cr50 actually recognizes the change in ccd state
         # We cant do that with tests using ccd, because the cr50 communication
         # goes down once ccd is enabled.
-        if (self._servo.get_servo_version(active=True) !=
-            'servo_v4_with_servo_micro'):
+        if not self._servo.dts_mode_is_safe():
             return False
 
         ccd_start = 'on' if self.ccd_is_enabled() else 'off'
-        dts_start = self._servo.get('servo_v4_dts_mode')
+        dts_start = self._servo.get_dts_mode()
         try:
             # Verify both ccd enable and disable
             self.ccd_disable(raise_error=True)
@@ -923,7 +950,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         except Exception, e:
             logging.info(e)
             rv = False
-        self._servo.set_servo_v4_dts_mode(dts_start)
+        self._servo.set_dts_mode(dts_start)
         self.wait_for_stable_ccd_state(ccd_start, 60, True)
         logging.info('Test setup does%s support servo DTS mode',
                 '' if rv else 'n\'t')
@@ -960,16 +987,24 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return result.lower() == 'enabled'
 
 
-    def keyladder_is_enabled(self):
+    def get_keyladder_state(self):
         """Get the status of H1 Key Ladder.
 
-        @return: True if H1 Key Ladder is enabled. False otherwise.
+        @return: The keyladder state string. prod or dev both mean enabled.
         """
         result = self.send_command_retry_get_output('sysinfo',
-                ['(?i)Key\s+Ladder:\s+(enabled|disabled)'], safe=True)[0][1]
+                ['(?i)Key\s+Ladder:\s+(enabled|prod|dev|disabled)'],
+                safe=True)[0][1]
         logging.debug(result)
+        return result
 
-        return result.lower() == 'enabled'
+
+    def keyladder_is_disabled(self):
+        """Get the status of H1 Key Ladder.
+
+        @return: True if H1 Key Ladder is disabled. False otherwise.
+        """
+        return self.get_keyladder_state() == 'disabled'
 
 
     def get_sleepmask(self):
@@ -1088,8 +1123,18 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
 
     def get_reset_cause(self):
-        """Returns a string with the sources for the last cr50 reset."""
+        """Returns the reset flags for the last reset."""
         rv = self.send_command_retry_get_output('sysinfo',
-                ['Reset flags:.*\((.*)\)'], compare_output=True)[0][1]
+                ['Reset flags:\s+0x([0-9a-f]{8})\s'], compare_output=True)[0][1]
         logging.info('reset cause: %s', rv)
-        return rv
+        return int(rv, 16)
+
+
+    def was_reset(self, reset_type):
+        """Returns 1 if the reset type is found in the reset_cause.
+
+        @param reset_type: reset name in string type.
+        """
+        reset_cause = self.get_reset_cause()
+        reset_flag = self.RESET_FLAGS[reset_type]
+        return bool(reset_cause & reset_flag)

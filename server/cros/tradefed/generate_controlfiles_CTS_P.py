@@ -9,9 +9,10 @@ import collections
 CONFIG = {}
 
 CONFIG['TEST_NAME'] = 'cheets_CTS_P'
+CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_P'
-CONFIG['SKIP_EXTRA_MOBLAB_SUITES'] = False
 CONFIG['COPYRIGHT_YEAR'] = 2018
+CONFIG['AUTHKEY'] = ''
 
 # Both arm, x86 tests results normally is below 200MB.
 # 1000MB should be sufficient for CTS tests and dump logs for android-cts.
@@ -21,21 +22,37 @@ CONFIG['LARGE_MAX_RESULT_SIZE'] = 1000 * 1024
 # ranging from 4MB to 50MB. 500MB should be sufficient to handle all the cases.
 CONFIG['NORMAL_MAX_RESULT_SIZE'] = 500 * 1024
 
+CONFIG['TRADEFED_CTS_COMMAND'] = 'cts'
 CONFIG['TRADEFED_RETRY_COMMAND'] = 'retry'
 CONFIG['TRADEFED_DISABLE_REBOOT'] = False
 CONFIG['TRADEFED_DISABLE_REBOOT_ON_COLLECTION'] = True
 CONFIG['TRADEFED_MAY_SKIP_DEVICE_INFO'] = False
+CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-cts/tools/cts-tradefed'
+CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # module runs in suite:arc-cts on boards, and each module runs in
 # suite:arc-cts-unibuild on selected models.
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts', 'suite:arc-cts-unibuild']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 
+CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
+CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
+CONFIG['CONTROLFILE_WRITE_CAMERA'] = True
+CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
+
 # The dashboard suppresses upload to APFE for GS directories (based on autotest
 # tag) that contain 'tradefed-run-collect-tests'. b/119640440
 # Do not change the name/tag without adjusting the dashboard.
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
+
+# Test module name for WM presubmit tests.
+_WM_PRESUBMIT = 'wm-presubmit'
+
+CONFIG['LAB_DEPENDENCY'] = {
+    'x86': ['cts_abi_x86']
+}
+
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 1
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {
@@ -45,7 +62,10 @@ CONFIG['CTS_MAX_RETRIES'] = {
 }
 
 # Timeout in hours.
+CONFIG['CTS_TIMEOUT_DEFAULT'] = 1.0
 CONFIG['CTS_TIMEOUT'] = {
+    'CtsActivityManagerDeviceTestCases': 2.0,
+    'CtsAppSecurityHostTestCases':       2.0,
     'CtsAutoFillServiceTestCases':       2.5,  # TODO(b/134662826)
     'CtsDeqpTestCases':                 20.0,
     'CtsDeqpTestCases.dEQP-EGL'  :       2.0,
@@ -63,12 +83,19 @@ CONFIG['CTS_TIMEOUT'] = {
     'CtsVideoTestCases':                 1.5,
     _COLLECT:                            2.5,
     _PUBLIC_COLLECT:                     2.5,
+    _WM_PRESUBMIT:                       0.2,
 }
 
 # Any test that runs as part as blocking BVT needs to be stable and fast. For
 # this reason we enforce a tight timeout on these modules/jobs.
-# Timeout in hours. (0.1h = 6 minutes)
-CONFIG['BVT_TIMEOUT'] = 0.1
+# Timeout in hours. (0.2h = 12 minutes)
+#
+# For the test content 5 minutes are more than enough, but when some component
+# (typically camera) is stuck, the CTS precondition step hits 5 minute abort.
+# Since this abort doesn't affect too much for the main CTS runs (with longer
+# timeouts), it's ok to let them go in. Bad state of camre should be caught by
+# camera tests, not by this general CTS sanity test.
+CONFIG['BVT_TIMEOUT'] = 0.2
 # We allow a very long runtime for qualification (2 days).
 CONFIG['QUAL_TIMEOUT'] = 48
 
@@ -98,12 +125,11 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
 ])
 
 CONFIG['SMOKE'] = [
-    'CtsUsbTests',
+    _WM_PRESUBMIT,
 ]
 
 CONFIG['BVT_ARC'] = [
     'CtsAccelerationTestCases',
-    'CtsAdminTestCases',
 ]
 
 CONFIG['BVT_PERBUILD'] = [
@@ -159,6 +185,7 @@ CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES']
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
     'CtsAppSecurityHostTestCases',
+    'CtsContentTestCases',
 ]
 
 # Run `eject` for (and only for) each device with RM=1 in lsblk output.
@@ -178,14 +205,8 @@ _CONFIG_MODULE_COMMAND = "\'modprobe configs\'"
 # TODO(b/126741318): Fix performance regression and remove this.
 _SLEEP_60_COMMAND = "\'sleep 60\'"
 
-# TODO(b/138431480): Fix CTS and remove this.
-_DROP_DISCONNECTED_IF_COMMAND = ("\'ip -o link show | grep \"state DOWN\" | " +
-    "grep -o \"\\<\\(eth\\|mlan\\|wlan\\)[[:digit:]]\" | " +
-    "xargs -L1 -I{} ip link delete veth_{}\'")
-
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
-    'CtsLibcoreTestCases': [_DROP_DISCONNECTED_IF_COMMAND],
     'CtsSecurityHostTestCases': [
         _SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND
     ],
@@ -202,11 +223,9 @@ CONFIG['LOGIN_PRECONDITION'] = {
 }
 
 _WIFI_CONNECT_COMMANDS = [
-    # These need to stay in order. And the escaping is crazy, I know.
-    """
-    \'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass),
-    '/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi\'
-"""
+    # These needs to be in order.
+    "'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass)",
+    "'/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi'"
 ]
 
 # Preconditions applicable to public tests.
@@ -230,6 +249,7 @@ CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
     'CtsAccessibilityServiceTestCases':  12,
     'CtsActivityManagerDeviceTestCases': 12,
     'CtsBluetoothTestCases':             10,
+    'CtsDeqpTestCases':                  15,
     'CtsFileSystemTestCases':            10,
     'CtsGraphicsTestCases':              12,
     'CtsIncidentHostTestCases':          12,
@@ -238,6 +258,11 @@ CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
     'CtsSensorTestCases':                12,
     'CtsUsageStatsTestCases':            10,
     _PUBLIC_COLLECT: 0,
+}
+
+CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {
+    _PUBLIC_COLLECT: 70,
+    'CtsDeqpTestCases': 70,
 }
 
 # This information is changed based on regular analysis of the job run time on
@@ -269,13 +294,20 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 ])
 
 CONFIG['EXTRA_MODULES'] = {
-    'CtsDeqpTestCases' : set([
-        'CtsDeqpTestCases.dEQP-EGL',
-        'CtsDeqpTestCases.dEQP-GLES2',
-        'CtsDeqpTestCases.dEQP-GLES3',
-        'CtsDeqpTestCases.dEQP-GLES31',
-        'CtsDeqpTestCases.dEQP-VK'
-    ])
+    'CtsDeqpTestCases': {
+        'SUBMODULES': set([
+            'CtsDeqpTestCases.dEQP-EGL',
+            'CtsDeqpTestCases.dEQP-GLES2',
+            'CtsDeqpTestCases.dEQP-GLES3',
+            'CtsDeqpTestCases.dEQP-GLES31',
+            'CtsDeqpTestCases.dEQP-VK'
+        ]),
+        'SUITES': ['suite:arc-cts-deqp', 'suite:graphics_per-week'],
+    },
+    _WM_PRESUBMIT: {
+        'SUBMODULES': set([_WM_PRESUBMIT]),
+        'SUITES': [],
+    },
 }
 
 # Moblab wants to shard dEQP really finely. This isn't needed anymore as it got
@@ -516,25 +548,48 @@ CONFIG['EXTRA_COMMANDLINE'] = {
     'CtsDeqpTestCases.dEQP-VK.ycbcr': [
         '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
         '--test', 'dEQP-VK.ycbcr.*'
-    ]
+    ],
+    _WM_PRESUBMIT: [
+        '--include-filter', 'CtsActivityManagerDeviceSdk25TestCases',
+        '--include-filter', 'CtsActivityManagerDeviceTestCases',
+        '--include-filter',
+        'CtsAppTestCases android.app.cts.TaskDescriptionTest',
+        '--include-filter', 'CtsWindowManagerDeviceTestCases',
+        '--test-arg', (
+            'com.android.compatibility.common.tradefed.testtype.JarHostTest:'
+            'include-annotation:android.platform.test.annotations.Presubmit'
+        ),
+        '--test-arg', (
+            'com.android.tradefed.testtype.AndroidJUnitTest:'
+            'include-annotation:android.platform.test.annotations.Presubmit'
+        ),
+        '--test-arg', (
+            'com.android.tradefed.testtype.HostTest:'
+            'include-annotation:android.platform.test.annotations.Presubmit'
+        ),
+        '--test-arg', (
+            'com.android.tradefed.testtype.AndroidJUnitTest:'
+            'exclude-annotation:androidx.test.filters.FlakyTest'
+        ),
+    ],
 }
 
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'CtsDeqpTestCases': ['suite:arc-cts', 'suite:arc-cts-deqp'],
     'CtsDeqpTestCases.dEQP-EGL': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES2': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES3': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES31': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-VK': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     _COLLECT: ['suite:arc-cts-qual', 'suite:arc-cts'],
 }
@@ -543,6 +598,22 @@ CONFIG['EXTRA_ARTIFACTS'] = {
     'CtsViewTestCases': ["/storage/emulated/0/SurfaceViewSyncTest/"],
 }
 
+CONFIG['EXTRA_ARTIFACTS_HOST'] = {
+    # For fixing flakiness b/143049967.
+    'CtsThemeHostTestCases': ["/tmp/diff_*.png"],
+}
+
+_PREREQUISITE_BLUETOOTH = 'bluetooth'
+_PREREQUISITE_REGION_US = 'region_us'
+
+CONFIG['PREREQUISITES'] = {
+    'CtsBluetoothTestCases': [_PREREQUISITE_BLUETOOTH],
+    'CtsStatsdHostTestCases': [_PREREQUISITE_BLUETOOTH],
+    'CtsWebkitTestCases': [_PREREQUISITE_REGION_US],
+    'CtsContentTestCases': [_PREREQUISITE_REGION_US],
+    'CtsAppSecurityTestCases': [_PREREQUISITE_REGION_US],
+    'CtsThemeHostTestCases': [_PREREQUISITE_REGION_US],
+}
 
 from generate_controlfiles_common import main
 

@@ -25,6 +25,8 @@ def main(args):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-a', '--arc', action='store_true',
                         help='Enable ARC and wait for it to start.')
+    parser.add_argument('--arc_timeout', type=int, default=None,
+                        help='Enable ARC and wait for it to start.')
     parser.add_argument('-d', '--dont_override_profile', action='store_true',
                         help='Keep files from previous sessions.')
     parser.add_argument('-u', '--username',
@@ -37,6 +39,7 @@ def main(args):
                         help='Prevent startup window from opening (no doodle).')
     parser.add_argument('--no-arc-syncs', action='store_true',
                         help='Prevent ARC sync behavior as much as possible.')
+    parser.add_argument('--url', help='Navigate to URL.')
     args = parser.parse_args(args)
 
     if args.password:
@@ -49,9 +52,10 @@ def main(args):
         browser_args.append('--no-startup-window')
 
     # Avoid calling close() on the Chrome object; this keeps the session active.
-    chrome.Chrome(
+    cr = chrome.Chrome(
         extra_browser_args=browser_args,
         arc_mode=('enabled' if args.arc else None),
+        arc_timeout=args.arc_timeout,
         disable_app_sync=args.no_arc_syncs,
         disable_play_auto_install=args.no_arc_syncs,
         username=args.username,
@@ -59,6 +63,9 @@ def main(args):
         gaia_login=(args.username is not None),
         disable_default_apps=(not args.enable_default_apps),
         dont_override_profile=args.dont_override_profile)
+    if args.url:
+      tab = cr.browser.tabs[0]
+      tab.Navigate(args.url)
 
 
 if __name__ == '__main__':

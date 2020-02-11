@@ -4,18 +4,19 @@
 
 """A Batch of of Bluetooth LE sanity tests"""
 
-import logging
 import time
 
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import \
+     BluetoothAdapterPairingTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
+     import BluetoothAdapterHIDReportTests
 
-from autotest_lib.server.site_tests.bluetooth_AdapterPairing.bluetooth_AdapterPairing  import bluetooth_AdapterPairing
-from autotest_lib.server.site_tests.bluetooth_AdapterHIDReports.bluetooth_AdapterHIDReports  import bluetooth_AdapterHIDReports
 
 class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
-        bluetooth_AdapterPairing,
-        bluetooth_AdapterHIDReports):
+        BluetoothAdapterPairingTests,
+        BluetoothAdapterHIDReportTests):
     """A Batch of Bluetooth LE sanity tests. This test is written as a batch
        of tests in order to reduce test time, since auto-test ramp up time is
        costly. The batch is using BluetoothAdapterQuickTests wrapper methods to
@@ -28,6 +29,18 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
+    @test_wrapper('Discovery Test', devices={"BLE_MOUSE":1})
+    def le_discovery_test(self):
+        """Performs discovery test with mouse peripheral"""
+        device = self.devices['BLE_MOUSE'][0]
+
+        self.test_discover_device(device.address)
+
+        # Removed due to b:149093897 - the raspi peer can't instantly update
+        # the advertised name, causing this test to fail
+        # self.test_device_name(device.address, device.name)
+
+
     @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE':1})
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
@@ -39,6 +52,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         device = self.devices['BLE_MOUSE'][0]
         self.connect_disconnect_loop(device=device, loops=3)
+
 
     @test_wrapper('Mouse Reports', devices={'BLE_MOUSE':1})
     def le_mouse_reports(self):
@@ -55,7 +69,35 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_connection_by_adapter(device.address)
+
+        # With raspberry pi peer, it takes a moment before the device is
+        # registered as an input device. Without delay, the input recorder
+        # doesn't find the device
+        time.sleep(1)
         self.run_mouse_tests(device=device)
+
+
+    @test_wrapper('Keyboard Reports', devices={'BLE_KEYBOARD':1})
+    def le_keyboard_reports(self):
+        """Run all bluetooth keyboard reports tests"""
+
+        device = self.devices['BLE_KEYBOARD'][0]
+        # Let the adapter pair, and connect to the target device.
+        self.test_discover_device(device.address)
+        # self.bluetooth_facade.is_discovering() doesn't work as expected:
+        # crbug:905374
+        # self.test_stop_discovery()
+        self.bluetooth_facade.stop_discovery()
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_connection_by_adapter(device.address)
+
+        # With raspberry pi peer, it takes a moment before the device is
+        # registered as an input device. Without delay, the input recorder
+        # doesn't find the device
+        time.sleep(1)
+        self.run_keyboard_tests(device=device)
 
 
     @test_wrapper('Auto Reconnect', devices={'BLE_MOUSE':1})
@@ -63,7 +105,25 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         """LE reconnection loop by reseting HID and check reconnection"""
 
         device = self.devices['BLE_MOUSE'][0]
-        self.auto_reconnect_loop(device=device, loops=3)
+        self.auto_reconnect_loop(device=device,
+                                 loops=3,
+                                 check_connected_method=\
+                                 self.test_mouse_left_click)
+
+
+    @test_wrapper('GATT Client', devices={'BLE_KEYBOARD':1})
+    def le_gatt_client_attribute_browse_test(self):
+        """Browse the whole tree-structured GATT attributes"""
+
+        device = self.devices['BLE_KEYBOARD'][0]
+        self.test_discover_device(device.address)
+        self.bluetooth_facade.stop_discovery()
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_connection_by_adapter(device.address)
+        self.test_service_resolved(device.address)
+        self.test_gatt_browse(device.address)
 
 
     @batch_wrapper('LE Sanity')
@@ -81,10 +141,13 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         """
         self.le_connect_disconnect_loop()
         self.le_mouse_reports()
+        self.le_keyboard_reports()
         self.le_auto_reconnect()
+        self.le_discovery_test()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None):
+    def run_once(self, host, num_iterations=1, test_name=None,
+                 flag='Quick Sanity'):
         """Run the batch of Bluetooth LE sanity tests
 
         @param host: the DUT, usually a chromebook
@@ -93,6 +156,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_chameleon=True)
+        self.quick_test_init(host, use_chameleon=True, flag=flag)
         self.le_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

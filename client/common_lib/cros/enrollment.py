@@ -21,10 +21,16 @@ def SwitchToRemora(browser):
 
     @param browser: telemetry browser object.
     """
-    chrome.Chrome.wait_for_browser_restart(
-            lambda: _ExecuteOobeCmd(browser,
-                                    'Oobe.remoraRequisitionForTesting();'),
-            browser)
+    logging.info('Attempting to switch to Meet enrollment')
+    try:
+        chrome.Chrome.wait_for_browser_restart(
+                lambda: _ExecuteOobeCmd(browser,
+                                        'Oobe.remoraRequisitionForTesting();'),
+                browser)
+    except utils.TimeoutError:
+        logging.warning('Timeout waiting for browser to restart after switching enrollment modes')
+        logging.warning('DUT may have started in Meet enrollment -- attempting to continue')
+
     utils.poll_for_condition(lambda: browser.oobe_exists, timeout=30)
 
 
@@ -35,7 +41,6 @@ def RemoraEnrollment(browser, user_id, password):
     @param user_id: login credentials user_id.
     @param password: login credentials password.
     """
-    SwitchToRemora(browser)
     browser.oobe.NavigateGaiaLogin(
             user_id, password, enterprise_enroll=True,
             for_user_triggered_enrollment=False)
@@ -73,7 +78,7 @@ def EnterpriseFakeEnrollment(browser, user_id, password, gaia_id,
     if auto_login:
         browser.oobe.NavigateFakeLogin(user_id, password, gaia_id)
         # TODO(achuith): Replace with WaitForLogin.
-        utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=30)
+        utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=45)
 
 
 def OnlineDemoMode(browser):
@@ -83,3 +88,21 @@ def OnlineDemoMode(browser):
   """
   _ExecuteOobeCmd(browser, 'Oobe.setUpOnlineDemoModeForTesting();')
   utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=90)
+
+
+def KioskEnrollment(browser, user_id, password, gaia_id):
+    """Kiosk Enrollment.
+
+    @param browser: telemetry browser object.
+    @param user_id: login credentials user_id.
+    @param password: login credentials password.
+    @param gaia_id: login credentials gaia_id.
+    """
+
+    cmd = ('Oobe.loginForTesting("{user}", "{password}", "{gaia_id}", true)'
+           .format(user=user_id,
+                   password=password,
+                   gaia_id=gaia_id))
+    _ExecuteOobeCmd(browser, cmd)
+
+    utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=60)

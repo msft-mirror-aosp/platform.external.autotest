@@ -40,17 +40,18 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         boot_id = self._host.get_boot_id()
 
         while True:
-            status = self._get_update_engine_status(timeout=10)
+            try:
+                self._get_update_engine_status(timeout=10,
+                                               ignore_timeout=False)
+            except error.AutoservRunError as e:
+                # Check if command timed out because update-engine was taking
+                # a while or if the command didn't even start.
+                query = 'Querying Update Engine status...'
+                if query not in e.result_obj.stderr:
+                    # Command did not start. DUT rebooted at end of update.
+                    self._host.test_wait_for_boot(boot_id)
+                    break
 
-            # During reboot, status will be None
-            if status is None:
-                # Checking only for the status to change to IDLE can hide
-                # errors that occurred between status checks. When the forced
-                # update is complete, it will automatically reboot the device.
-                # So we wait for an explict reboot. We will verify that the
-                # update completed successfully later in verify_update_events()
-                self._host.test_wait_for_boot(boot_id)
-                break
             time.sleep(1)
             if time.time() > timeout:
                 raise error.TestFail('OOBE update did not finish in %d '
@@ -92,19 +93,11 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         payload_info = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
-            # Get the payload's information (size, SHA256 etc) since we will be
-            # setting up our own omaha instance on the DUT. We pass this to
-            # the client test.
-            payload = self._get_payload_url(full_payload=full_payload)
-            staged_url, _ = self._stage_payload_by_uri(payload)
-            payload_info = self._get_staged_file_info(staged_url)
 
         # Call client test to start the forced OOBE update.
         self._run_client_test_and_check_result('autoupdate_StartOOBEUpdate',
                                                image_url=update_url,
-                                               cellular=cellular,
-                                               payload_info=payload_info,
-                                               full_payload=full_payload)
+                                               cellular=cellular)
 
         if interrupt is not None:
             # Choose a random downloaded progress to interrupt the update.

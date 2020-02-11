@@ -5,13 +5,13 @@
 import json
 import logging
 import os
-import update_engine_event as uee
 import urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros.update_engine import update_engine_event as uee
 from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
@@ -19,7 +19,6 @@ from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.update_engine import omaha_devserver
 from chromite.lib import retry_util
 from datetime import datetime, timedelta
-from update_engine_event import UpdateEngineEvent
 
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
@@ -102,20 +101,20 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         in the correct order with the correct data, timeout, and error
         condition function.
         """
-        initial_check = UpdateEngineEvent(
+        initial_check = uee.UpdateEngineEvent(
             version=source_release,
             on_error=self._error_initial_check)
-        download_started = UpdateEngineEvent(
+        download_started = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_DOWNLOAD_STARTED,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=source_release,
             on_error=self._error_incorrect_event)
-        download_finished = UpdateEngineEvent(
+        download_finished = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_DOWNLOAD_FINISHED,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=source_release,
             on_error=self._error_incorrect_event)
-        update_complete = UpdateEngineEvent(
+        update_complete = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_UPDATE_COMPLETE,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=source_release,
@@ -150,7 +149,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     def _get_expected_event_for_post_reboot_check(self, source_release,
                                                   target_release):
         """Creates the expected event fired during post-reboot update check."""
-        post_reboot_check = UpdateEngineEvent(
+        post_reboot_check = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_REBOOTED_AFTER_UPDATE,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=target_release,
@@ -382,18 +381,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param test_conf: a dictionary of test settings.
         """
-        hostname = self._host.hostname if self._host else None
-        least_loaded_devserver = dev_server.get_least_loaded_devserver(
-            hostname=hostname)
-        if least_loaded_devserver:
-            logging.debug('Choosing the least loaded devserver: %s',
-                          least_loaded_devserver)
-            autotest_devserver = dev_server.ImageServer(least_loaded_devserver)
-        else:
-            logging.warning('No devserver meets the maximum load requirement. '
-                            'Picking a random devserver to use.')
-            autotest_devserver = dev_server.ImageServer.resolve(
-                test_conf['target_payload_uri'], self._host.hostname)
+        # TODO(dhaddock): Change back to using least loaded when
+        # crbug.com/1010226 is resolved.
+        autotest_devserver = dev_server.ImageServer.resolve(
+            test_conf['target_payload_uri'], self._host.hostname)
         devserver_hostname = urlparse.urlparse(
             autotest_devserver.url()).hostname
 
@@ -447,31 +438,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         gs = dev_server._get_image_storage_server()
         staged_path = url.partition(gs)
         return staged_path[2]
-
-
-    def _get_staged_file_info(self, staged_url, retries=5):
-        """
-        Gets the staged files info that includes SHA256 and size.
-
-        @param staged_url: the staged file url.
-        @param retries: Number of times to try get the file info.
-
-        @returns file info (SHA256 and size).
-
-        """
-        split_url = staged_url.rpartition('/static/')
-        file_info_url = os.path.join(split_url[0], 'api/fileinfo', split_url[2])
-        logging.info('file info url: %s', file_info_url)
-        devserver_hostname = urlparse.urlparse(file_info_url).hostname
-        cmd = 'ssh %s \'curl "%s"\'' % (devserver_hostname,
-                                        utils.sh_escape(file_info_url))
-        for i in range(retries):
-            try:
-                result = utils.run(cmd).stdout
-                return json.loads(result)
-            except error.CmdError as e:
-                logging.error('Failed to read file info: %s', e)
-        raise error.TestError('Could not reach fileinfo API on devserver.')
 
 
     @staticmethod
@@ -529,9 +495,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         payload_filename = payload_url.rpartition('/')[2]
-        utils.run('gsutil cp %s %s' % (payload_url, self._CELLULAR_BUCKET))
+        utils.run('gsutil cp %s* %s' % (payload_url, self._CELLULAR_BUCKET))
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
-        utils.run('gsutil acl ch -u AllUsers:R %s' % new_gs_url)
+        utils.run('gsutil acl ch -u AllUsers:R %s*' % new_gs_url)
         return new_gs_url.replace('gs://', 'https://storage.googleapis.com/')
 
 
@@ -637,19 +603,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         self._create_update_engine_variables(host.run, host.get_file)
-
-
-    def _run_client_test_and_check_result(self, test_name, **kwargs):
-        """
-        Kicks of a client autotest and checks that it didn't fail.
-
-        @param test_name: client test name
-        @param **kwargs: key-value arguments to pass to the test.
-
-        """
-        client_at = autotest.Autotest(self._host)
-        client_at.run_test(test_name, **kwargs)
-        client_at._check_client_test_result(self._host, test_name)
 
 
     def _change_cellular_setting_in_update_engine(self,

@@ -17,17 +17,18 @@ class CrasUtilsError(Exception):
     pass
 
 
-def playback(blocking=True, *args, **kargs):
+def playback(blocking=True, stdin=None, *args, **kargs):
     """A helper function to execute the playback_cmd.
 
     @param blocking: Blocks this call until playback finishes.
+    @param stdin: the standard input of playback process
     @param args: args passed to playback_cmd.
     @param kargs: kargs passed to playback_cmd.
 
     @returns: The process running the playback command. Note that if the
               blocking parameter is true, this will return a finished process.
     """
-    process = cmd_utils.popen(playback_cmd(*args, **kargs))
+    process = cmd_utils.popen(playback_cmd(*args, **kargs), stdin=stdin)
     if blocking:
         cmd_utils.wait_and_check_returncode(process)
     return process
@@ -320,7 +321,8 @@ CRAS_OUTPUT_NODE_TYPES = ['HEADPHONE', 'INTERNAL_SPEAKER', 'HDMI', 'USB',
                           'BLUETOOTH', 'LINEOUT', 'UNKNOWN']
 CRAS_INPUT_NODE_TYPES = ['MIC', 'INTERNAL_MIC', 'USB', 'BLUETOOTH',
                          'POST_DSP_LOOPBACK', 'POST_MIX_LOOPBACK', 'UNKNOWN',
-                         'KEYBOARD_MIC', 'HOTWORD', 'FRONT_MIC', 'REAR_MIC']
+                         'KEYBOARD_MIC', 'HOTWORD', 'FRONT_MIC', 'REAR_MIC',
+                         'ECHO_REFERENCE']
 CRAS_NODE_TYPES = CRAS_OUTPUT_NODE_TYPES + CRAS_INPUT_NODE_TYPES
 
 
@@ -342,8 +344,8 @@ def get_filtered_node_types(callback):
         if callback(node):
             node_type = str(node['Type'])
             if node_type not in CRAS_NODE_TYPES:
-                raise RuntimeError(
-                        'node type %s is not valid' % node_type)
+                logging.warning('node type %s is not in known CRAS_NODE_TYPES',
+                                node_type)
             if node['IsInput']:
                 input_node_types.append(node_type)
             else:

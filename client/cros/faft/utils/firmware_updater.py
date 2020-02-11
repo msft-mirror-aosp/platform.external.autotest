@@ -9,9 +9,10 @@ import array
 import json
 import os
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chip_utils
-from autotest_lib.client.cros.faft.utils import (flashrom_handler,
-                                                 shell_wrapper)
+from autotest_lib.client.common_lib.cros import cros_config
+from autotest_lib.client.cros.faft.utils import flashrom_handler
 
 
 class FirmwareUpdaterError(Exception):
@@ -21,10 +22,10 @@ class FirmwareUpdaterError(Exception):
 class FirmwareUpdater(object):
     """An object to support firmware update.
 
-    This object will create a temporary directory in /var/tmp/faft/autest with
-    two subdirectory keys/ and work/. You can modify the keys in keys/
-    directory. If you want to provide a given shellball to do firmware update,
-    put shellball under /var/tmp/faft/autest with name chromeos-firmwareupdate.
+    This object will create a temporary directory in /usr/local/tmp/faft/autest
+    with two subdirs, keys/ and work/. You can modify the keys in keys/ dir. If
+    you want to provide a given shellball to do firmware update, put shellball
+    under /usr/local/tmp/faft/autest with name chromeos-firmwareupdate.
 
     @type os_if: autotest_lib.client.cros.faft.utils.os_interface.OSInterface
     """
@@ -34,7 +35,7 @@ class FirmwareUpdater(object):
     HEXDUMP = 'hexdump -v -e \'1/1 "0x%02x\\n"\''
 
     DEFAULT_SHELLBALL = '/usr/sbin/chromeos-firmwareupdate'
-    DEFAULT_SUBDIR = 'autest'  # subdirectory of /var/tmp/faft/
+    DEFAULT_SUBDIR = 'autest'  # subdirectory of os_interface.state_dir
     DEFAULT_SECTION_FOR_TARGET = {'bios': 'a', 'ec': 'rw'}
 
     def __init__(self, os_if):
@@ -403,13 +404,8 @@ class FirmwareUpdater(object):
                           If None (default), read from extracted manifest.json.
         @type shellball: str | None
         """
-        model_result = self.os_if.run_shell_command_get_output(
-                'mosys platform model')
-
-        if not model_result:
-            return
-
-        model_name = model_result[0]
+        model_name = cros_config.call_cros_config_get_output(
+                '/ name', self.os_if.run_shell_command_get_result)
 
         if not model_name:
             return
@@ -446,7 +442,7 @@ class FirmwareUpdater(object):
             working_shellball = working_shellball + '-%s' % append
 
         self.os_if.run_shell_command(
-                'sh %s --sb_extract %s' % (working_shellball, self._work_path))
+                'sh %s --unpack %s' % (working_shellball, self._work_path))
 
         # use the json file that was extracted, to catch extraction problems.
         self._detect_image_paths()
@@ -473,7 +469,7 @@ class FirmwareUpdater(object):
             working_shellball = new_shellball
 
         self.os_if.run_shell_command(
-                'sh %s --sb_repack %s' % (working_shellball, self._work_path))
+                'sh %s --repack %s' % (working_shellball, self._work_path))
 
         # use the shellball that was repacked, to catch repacking problems.
         self._detect_image_paths(working_shellball)
@@ -611,16 +607,9 @@ class FirmwareUpdater(object):
         extracted from cbfs using cbfs_extract_chip().
         The hash data is returned as hexadecimal string.
 
-        Args:
-            fw_name:
-                Chip firmware name whose hash blob to get.
-
-        Returns:
-            Boolean success status.
-
-        Raises:
-            shell_wrapper.ShellError: Underlying remote shell
-                operations failed.
+        @param fw_name: Chip firmware name whose hash blob to get.
+        @return: Boolean success status.
+        @raise error.CmdError: Underlying remote shell operations failed.
         """
 
         hexdump_cmd = '%s %s.hash' % (
@@ -635,16 +624,10 @@ class FirmwareUpdater(object):
         bios.bin.  All files referenced are expected to be in the
         directory set up using cbfs_setup_work_dir().
 
-        Args:
-            fw_name: Chip firmware name to be replaced.
-            extension: Extension of the name of the cbfs component.
-
-        Returns:
-            Boolean success status.
-
-        Raises:
-            shell_wrapper.ShellError: Underlying remote shell
-                operations failed.
+        @param fw_name: Chip firmware name to be replaced.
+        @param extension: Extension of the name of the cbfs component.
+        @return: Boolean success status.
+        @raise error.CmdError: Underlying remote shell operations failed.
         """
 
         bios = os.path.join(self._cbfs_work_path, self._bios_path)
@@ -671,7 +654,7 @@ class FirmwareUpdater(object):
         self.os_if.run_shell_command(rm_bin_cmd)
         try:
             self.os_if.run_shell_command(expand_cmd)
-        except shell_wrapper.ShellError:
+        except error.CmdError:
             self.os_if.log(
                     ('%s may be too old, '
                      'continuing without "expand" support') % self.CBFSTOOL)
@@ -680,7 +663,7 @@ class FirmwareUpdater(object):
         self.os_if.run_shell_command(add_bin_cmd)
         try:
             self.os_if.run_shell_command(truncate_cmd)
-        except shell_wrapper.ShellError:
+        except error.CmdError:
             self.os_if.log(
                     ('%s may be too old, '
                      'continuing without "truncate" support') % self.CBFSTOOL)
@@ -708,7 +691,7 @@ class FirmwareUpdater(object):
 
         try:
             self.os_if.run_shell_command(expand_cmd)
-        except shell_wrapper.ShellError:
+        except error.CmdError:
             self.os_if.log(
                     '%s may be too old, continuing without "expand" support'
                     % self.CBFSTOOL)
@@ -717,7 +700,7 @@ class FirmwareUpdater(object):
 
         try:
             self.os_if.run_shell_command(truncate_cmd)
-        except shell_wrapper.ShellError:
+        except error.CmdError:
             self.os_if.log(
                     '%s may be too old, continuing without "truncate" support'
                     % self.CBFSTOOL)
@@ -766,3 +749,36 @@ class FirmwareUpdater(object):
     def get_ec_relative_path(self):
         """Gets the relative path of the ec image in the shellball."""
         return self._ec_path
+
+    def get_image_gbb_flags(self, filename=None):
+        """Get the GBB flags in the given image (shellball image if unspecified)
+
+        @param filename: the image path to act on (None to use shellball image)
+        @return: An integer of the GBB flags.
+        """
+        if filename:
+            filename = os.path.join(self._temp_path, filename)
+            handler = self._create_handler('bios', 'image')
+            handler.new_image(filename)
+        else:
+            handler = self._get_handler('bios')
+        return handler.get_gbb_flags()
+
+    def set_image_gbb_flags(self, flags, filename=None):
+        """Set the GBB flags in the given image (shellball image if unspecified)
+
+        @param flags: the flags to set
+        @param filename: the image path to act on (None to use shellball image)
+
+        @type flags: int
+        @type filename: str | None
+        """
+        if filename:
+            filename = os.path.join(self._temp_path, filename)
+            handler = self._create_handler('bios', 'image')
+            handler.new_image(filename)
+        else:
+            filename = self._get_image_path('bios')
+            handler = self._get_handler('bios')
+        handler.set_gbb_flags(flags)
+        handler.dump_whole(filename)

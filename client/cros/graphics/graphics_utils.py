@@ -1062,6 +1062,10 @@ class GraphicsKernelMemory(object):
         'gem_objects': ['/sys/kernel/debug/dri/0/i915_gem_objects'],
         'memory': ['/sys/kernel/debug/dri/0/i915_gem_gtt'],
     }
+    # In Linux Kernel 5, i915_gem_gtt merged into i915_gem_objects
+    i915_fields_kernel_5 = {
+        'gem_objects': ['/sys/kernel/debug/dri/0/i915_gem_objects'],
+    }
     cirrus_fields = {}
     virtio_fields = {}
 
@@ -1071,6 +1075,7 @@ class GraphicsKernelMemory(object):
         'cirrus': cirrus_fields,
         'exynos5': exynos_fields,
         'i915': i915_fields,
+        'i915_kernel_5': i915_fields_kernel_5,
         'mediatek': mediatek_fields,
         'qualcomm': qualcomm_fields,
         'rockchip': rockchip_fields,
@@ -1103,12 +1108,15 @@ class GraphicsKernelMemory(object):
         soc = utils.get_cpu_soc_family()
 
         arch = utils.get_cpu_arch()
+        kernel_version = utils.get_kernel_version()[0:4].rstrip(".")
         if arch == 'x86_64' or arch == 'i386':
             pci_vga_device = utils.run("lspci | grep VGA").stdout.rstrip('\n')
             if "Advanced Micro Devices" in pci_vga_device:
                 soc = 'amdgpu'
             elif "Intel Corporation" in pci_vga_device:
                 soc = 'i915'
+                if utils.compare_versions(kernel_version, "4.19") > 0:
+                    soc = 'i915_kernel_5'
             elif "Cirrus Logic" in pci_vga_device:
                 # Used on qemu with kernels 3.18 and lower. Limited to 800x600
                 # resolution.
@@ -1128,7 +1136,7 @@ class GraphicsKernelMemory(object):
             possible_field_paths = fields[field_name]
             field_value = None
             for path in possible_field_paths:
-                if utils.system('ls %s' % path):
+                if utils.system('ls %s' % path, ignore_status=True):
                     continue
                 field_value = utils.system_output('cat %s' % path)
                 break
@@ -1169,6 +1177,19 @@ class GraphicsKernelMemory(object):
         """
         results = {}
         labels = ['bytes', 'objects']
+
+        # First handle i915_gem_objects in 5.x kernels. Example:
+        #     296 shrinkable [0 free] objects, 274833408 bytes
+        #     frecon: 3 objects, 72192000 bytes (0 active, 0 inactive, 0 unbound, 0 closed)
+        #     chrome: 6 objects, 74629120 bytes (0 active, 0 inactive, 376832 unbound, 0 closed)
+        #     <snip>
+        i915_gem_objects_pattern = re.compile(
+            r'(?P<objects>\d*) shrinkable.*objects, (?P<bytes>\d*) bytes')
+        i915_gem_objects_match = i915_gem_objects_pattern.match(output)
+        if i915_gem_objects_match is not None:
+            results['bytes'] = int(i915_gem_objects_match.group('bytes'))
+            results['objects'] = int(i915_gem_objects_match.group('objects'))
+            return results
 
         for line in output.split('\n'):
             # Strip any commas to make parsing easier.

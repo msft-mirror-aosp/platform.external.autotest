@@ -9,7 +9,7 @@ AUTHOR = 'chromeos-chameleon'
 NAME = 'bluetooth_AdapterLESanity'
 PURPOSE = ('Batch of Bluetooth LE sanity tests')
 CRITERIA = 'Pass all sanity test'
-ATTRIBUTES = 'suite:bluetooth'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
@@ -29,12 +29,9 @@ DOC = """
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
-newblue_enable = args_dict['newblue'] == 'enable'\
-  if 'newblue' in args_dict else False
 
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
-    bluetooth_test.enable_newblue(host=host, enable=newblue_enable)
     job.run_test('bluetooth_AdapterLESanity', host=host,
                   num_iterations=1)
 

@@ -116,15 +116,26 @@ class power_LoadTest(arc.ArcTest):
         self._force_discharge = force_discharge
         self._pdash_note = pdash_note
 
-        if not power_utils.has_battery():
+        self._power_status = power_status.get_status()
+
+        if force_discharge:
+            if not self._power_status.battery:
+                raise error.TestNAError('DUT does not have battery. '
+                                        'Could not force discharge.')
+            if not power_utils.charge_control_by_ectool(False):
+                raise error.TestError('Could not run battery force discharge.')
+            self._ac_ok = True
+
+        if not self._power_status.battery:
             if ac_ok and (power_utils.has_powercap_support() or
                           power_utils.has_rapl_support()):
                 logging.info("Device has no battery but has powercap data.")
             else:
                 rsp = "Skipping test for device without battery and powercap."
                 raise error.TestNAError(rsp)
-        self._power_status = power_status.get_status()
-        self._tmp_keyvals['b_on_ac'] = self._power_status.on_ac()
+
+        self._tmp_keyvals['b_on_ac'] = (not force_discharge and
+                                        self._power_status.on_ac())
 
         self._gaia_login = gaia_login
         if gaia_login is None:
@@ -133,12 +144,8 @@ class power_LoadTest(arc.ArcTest):
         self._username = power_load_util.get_username()
         self._password = power_load_util.get_password()
 
-        if not ac_ok:
+        if not self._ac_ok:
             self._power_status.assert_battery_state(percent_initial_charge_min)
-
-        if force_discharge:
-            if not power_utils.charge_control_by_ectool(False):
-                raise error.TestError('Could not run battery force discharge.')
 
         # If force wifi enabled, convert eth0 to backchannel and connect to the
         # specified WiFi AP.
@@ -238,8 +245,11 @@ class power_LoadTest(arc.ArcTest):
             self._test_low_batt_p = min_low_batt_p
 
         if self._power_status.battery:
-            self._ah_charge_start = self._power_status.battery[0].charge_now
-            self._wh_energy_start = self._power_status.battery[0].energy
+            self._ah_charge_start = self._power_status.battery.charge_now
+            self._wh_energy_start = self._power_status.battery.energy
+
+        self.task_monitor_file = open(os.path.join(self.resultsdir,
+                                      'task-monitor.json'), 'wt')
 
 
     def run_once(self):
@@ -353,6 +363,12 @@ class power_LoadTest(arc.ArcTest):
                     _extension_key_values_handler(handler, forms,
                                                   loop_counter,
                                                   test_instance)))
+            self._testServer.add_url(url='/task-monitor')
+            self._testServer.add_url_handler(
+                url='/task-monitor',
+                handler_func=lambda handler, forms:
+                    self._extension_task_monitor_handler(handler, forms)
+            )
 
             # setup a handler to simulate waking up the base of a detachable
             # on user interaction. On scrolling, wake for 1s, on page
@@ -396,6 +412,7 @@ class power_LoadTest(arc.ArcTest):
         psr.refresh()
         self._tmp_keyvals['minutes_battery_life_tested'] = (t1 - t0) / 60
         self._tmp_keyvals.update(psr.get_keyvals())
+
 
     def postprocess_iteration(self):
         """Postprocess: write keyvals / log and send data to power dashboard."""
@@ -445,24 +462,24 @@ class power_LoadTest(arc.ArcTest):
 
         # record battery stats
         if self._power_status.battery:
-            keyvals['a_current_now'] = self._power_status.battery[0].current_now
+            keyvals['a_current_now'] = self._power_status.battery.current_now
             keyvals['ah_charge_full'] = \
-                    self._power_status.battery[0].charge_full
+                    self._power_status.battery.charge_full
             keyvals['ah_charge_full_design'] = \
-                    self._power_status.battery[0].charge_full_design
+                    self._power_status.battery.charge_full_design
             keyvals['ah_charge_start'] = self._ah_charge_start
-            keyvals['ah_charge_now'] = self._power_status.battery[0].charge_now
+            keyvals['ah_charge_now'] = self._power_status.battery.charge_now
             keyvals['ah_charge_used'] = keyvals['ah_charge_start'] - \
                                         keyvals['ah_charge_now']
             keyvals['wh_energy_start'] = self._wh_energy_start
-            keyvals['wh_energy_now'] = self._power_status.battery[0].energy
+            keyvals['wh_energy_now'] = self._power_status.battery.energy
             keyvals['wh_energy_used'] = keyvals['wh_energy_start'] - \
                                         keyvals['wh_energy_now']
             keyvals['v_voltage_min_design'] = \
-                    self._power_status.battery[0].voltage_min_design
+                    self._power_status.battery.voltage_min_design
             keyvals['wh_energy_full_design'] = \
-                    self._power_status.battery[0].energy_full_design
-            keyvals['v_voltage_now'] = self._power_status.battery[0].voltage_now
+                    self._power_status.battery.energy_full_design
+            keyvals['v_voltage_now'] = self._power_status.battery.voltage_now
 
         keyvals.update(self._tmp_keyvals)
 
@@ -520,8 +537,7 @@ class power_LoadTest(arc.ArcTest):
                             core_keyvals.iteritems()}
         else:
             for key, value in core_keyvals.iteritems():
-                if key.startswith('percent_cpuidle') and \
-                   key.endswith('C0_time'):
+                if re.match(r'percent_[cg]pu(idle|pkg).*_R?C0(_C1)?_time', key):
                     self.output_perf_value(description=key,
                                            value=value,
                                            units='percent',
@@ -558,6 +574,9 @@ class power_LoadTest(arc.ArcTest):
             self._services.restore_services()
         self._detachable_handler.restore()
 
+        if self.task_monitor_file:
+            self.task_monitor_file.close()
+
         # cleanup backchannel interface
         # Prevent wifi congestion in test lab by forcing machines to forget the
         # wifi AP we connected to at the start of the test.
@@ -587,9 +606,9 @@ class power_LoadTest(arc.ArcTest):
                 raise error.TestError('Running on AC power now.')
 
             if self._power_status.battery:
-                charge_now = self._power_status.battery[0].charge_now
-                energy_rate = self._power_status.battery[0].energy_rate
-                voltage_now = self._power_status.battery[0].voltage_now
+                charge_now = self._power_status.battery.charge_now
+                energy_rate = self._power_status.battery.energy_rate
+                voltage_now = self._power_status.battery.voltage_now
                 self._stats['w_energy_rate'].append(energy_rate)
                 self._stats['v_voltage_now'].append(voltage_now)
                 if verbose:
@@ -619,6 +638,7 @@ class power_LoadTest(arc.ArcTest):
             logging.debug("Didn't get status back from power extension")
 
         return low_battery
+
 
     def _set_backlight_level(self, loop=None):
         self._backlight.set_default()
@@ -743,6 +763,7 @@ class power_LoadTest(arc.ArcTest):
         keyname = _loop_keyname(loop, 'percent_kbd_backlight')
         self._tmp_keyvals[keyname] = self._keyboard_backlight.get_percent()
 
+
     def _log_loop_checkpoint(self, loop, start, end):
         loop_str = _loop_prefix(loop)
         self._checkpoint_logger.checkpoint(loop_str, start, end)
@@ -783,6 +804,23 @@ class power_LoadTest(arc.ArcTest):
             loop_section = '_' + loop_str + '_' + section
             self._checkpoint_logger.checkpoint(loop_section, s_start, s_end)
 
+
+    def _extension_task_monitor_handler(self, handler, form):
+        """
+        We use the httpd library to allow us to log chrome processes usage.
+        """
+        if form:
+            logging.debug("[task-monitor] got %d samples", len(form))
+            for idx in sorted(form.keys()):
+                json = form[idx].value
+                self.task_monitor_file.write(json)
+                self.task_monitor_file.write(",\n")
+                # we don't want to add url information to our keyvals.
+                # httpd adds them automatically so we remove them again
+                del handler.server._form_entries[idx]
+        handler.send_response(200)
+
+
 def alphanum_key(s):
     """ Turn a string into a list of string and numeric chunks. This enables a
         sort function to use this list as a key to sort alphanumeric strings
@@ -796,6 +834,7 @@ def alphanum_key(s):
         except ValueError:
             pass
     return chunks
+
 
 def _extension_log_handler(handler, form, loop_number):
     """
@@ -816,6 +855,7 @@ def _extension_log_handler(handler, form, loop_number):
             # we don't want to add url information to our keyvals.
             # httpd adds them automatically so we remove them again
             del handler.server._form_entries[field]
+
 
 def _extension_page_time_info_handler(handler, form, loop_number,
                                       test_instance):
@@ -897,6 +937,7 @@ def _extension_page_time_info_handler(handler, form, loop_number,
 
     logging.debug("%s\n", message)
 
+
 def _extension_key_values_handler(handler, form, loop_number,
                                       test_instance):
     if not form:
@@ -917,8 +958,10 @@ def _extension_key_values_handler(handler, form, loop_number,
         # httpd adds them automatically so we remove them again
         del handler.server._form_entries[field]
 
+
 def _loop_prefix(loop):
     return "loop%02d" % loop
+
 
 def _loop_keyname(loop, keyname):
     if loop != None:

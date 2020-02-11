@@ -757,13 +757,8 @@ class DevServer(object):
         if not restricted_subnets:
             return cls.servers()
 
-        devservers = []
-        for server in cls.servers():
-            server_name = get_hostname(server)
-            if not utils.get_restricted_subnet(server_name, restricted_subnets):
-                devservers.append(server)
-        return devservers
-
+        metrics.Counter('chromeos/autotest/devserver/unrestricted_hotfix')
+        return cls.servers()
 
     @classmethod
     def get_healthy_devserver(cls, build, devservers, ban_list=None):
@@ -1260,9 +1255,6 @@ class ImageServerBase(DevServer):
                          'files': files_arg}
             if kwargs:
                 arguments.update(kwargs)
-            # TODO(akeshet): canonicalize artifacts_arg before using it as a
-            # metric field (as it stands it is a not-very-well-controlled
-            # string).
             f = {'artifacts': artifacts_arg,
                  'dev_server': self.resolved_hostname}
             with metrics.SecondsTimer(

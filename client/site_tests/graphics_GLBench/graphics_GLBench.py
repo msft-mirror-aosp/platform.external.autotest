@@ -118,7 +118,6 @@ class graphics_GLBench(graphics_utils.GraphicsTest):
                             stdout_tee=utils.TEE_TO_LOGS,
                             stderr_tee=utils.TEE_TO_LOGS).stdout
       else:
-        utils.report_temperature_critical(self, 'temperature_critical')
         utils.report_temperature(self, 'temperature_1_start')
         # Wrap the test run inside of a PerfControl instance to make machine
         # behavior more consistent.
@@ -195,15 +194,6 @@ class graphics_GLBench(graphics_utils.GraphicsTest):
         perf_value_name = '%s_%s' % (unit, testname)
         self.output_perf_value(
             description=perf_value_name,
-            value=testrating,
-            units=unit,
-            higher_is_better=higher,
-            graph=perf_value_name)
-        # Add extra value to the graph distinguishing different boards.
-        variant = utils.get_board_with_frequency_and_memory()
-        desc = '%s-%s' % (perf_value_name, variant)
-        self.output_perf_value(
-            description=desc,
             value=testrating,
             units=unit,
             higher_is_better=higher,

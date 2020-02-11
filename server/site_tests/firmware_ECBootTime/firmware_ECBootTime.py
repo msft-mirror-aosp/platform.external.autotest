@@ -56,8 +56,13 @@ class firmware_ECBootTime(FirmwareTest):
         else:
             ec_ready = ["([0-9.]+) Inits done"]
 
-        power_cmd = "powerbtn" if self.faft_config.ec_has_powerbtn_cmd else \
-                    "power on"
+        if self.faft_config.ec_has_powerbtn_cmd:
+            # powerbtn takes ms while hold_pwr_button_powero is seconds.
+            hold_ms = int(1000 * self.faft_config.hold_pwr_button_poweron)
+            power_cmd = 'powerbtn %s' % hold_ms
+        else:
+            power_cmd = 'power on'
+
         # Try the EC reboot command several times in case the console
         # output is not clean enough for the full string to be found.
         retry = 10
@@ -111,7 +116,7 @@ class firmware_ECBootTime(FirmwareTest):
         """
 
         arm_legacy = ('Snow', 'Spring', 'Pit', 'Pi', 'Big', 'Blaze', 'Kitty')
-        output = self.faft_client.System.GetPlatformName()
+        output = self.faft_client.system.get_platform_name()
         return output in arm_legacy
 
     def run_once(self):
@@ -121,7 +126,6 @@ class firmware_ECBootTime(FirmwareTest):
         self._x86 = ('x86' in self.faft_config.ec_capability)
         self._doubleboot = ('doubleboot' in self.faft_config.ec_capability)
         self._arm_legacy = self.is_arm_legacy_board()
-        dev_mode = self.checkers.crossystem_checker({'devsw_boot': '1'})
         logging.info("Reboot and check EC cold boot time and host boot time.")
         self.switcher.mode_aware_reboot('custom', self.check_boot_time)
 

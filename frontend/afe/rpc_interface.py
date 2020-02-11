@@ -2190,8 +2190,6 @@ def add_board_to_shard(hostname, labels):
 # Remove board RPCs are rare, so we can afford to make them a bit more
 # expensive (by performing in a transaction) in order to guarantee
 # atomicity.
-# TODO(akeshet): If we ever update to newer version of django, we need to
-# migrate to transaction.atomic instead of commit_on_success
 @transaction.commit_on_success
 def remove_board_from_shard(hostname, label):
     """Remove board from the given shard.
@@ -2309,7 +2307,8 @@ def set_stable_version(version, board=stable_version_utils.DEFAULT):
     @param version: The new value of stable version for given board.
     @param board: Name of the board, default to value `DEFAULT`.
     """
-    stable_version_utils.set(version=version, board=board)
+    logging.warning("rpc_interface::set_stable_version: attempted to set stable version. setting the stable version is not permitted")
+    return None
 
 
 @rpc_utils.route_rpc_to_master

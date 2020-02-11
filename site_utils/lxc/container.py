@@ -22,7 +22,7 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
-from chromite.lib import constants as chromite_constants
+ISOLATESERVER = 'https://isolateserver.appspot.com'
 
 # Naming convention of test container, e.g., test_300_1422862512_2424, where:
 # 300:        The test job ID.
@@ -402,11 +402,7 @@ class Container(object):
         logging.debug('Destroying container %s/%s',
                       self.container_path,
                       self.name)
-        cmd = 'sudo lxc-destroy -P %s -n %s' % (self.container_path,
-                                                self.name)
-        if force:
-            cmd += ' -f'
-        utils.run(cmd)
+        lxc_utils.destroy(self.container_path, self.name, force=force)
 
 
     def mount_dir(self, source, destination, readonly=False):
@@ -549,7 +545,7 @@ class Container(object):
 
         return utils.run(_command.format(
             sha=isolate_hash, dest_dir=dest_path,
-            log_file=log_file, server=chromite_constants.ISOLATESERVER))
+            log_file=log_file, server=ISOLATESERVER))
 
 
     def install_control_file(self, control_file):

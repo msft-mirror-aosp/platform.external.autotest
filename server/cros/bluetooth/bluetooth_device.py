@@ -5,6 +5,7 @@
 import base64
 import json
 import logging
+from datetime import datetime
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import constants
@@ -50,6 +51,44 @@ class BluetoothDevice(object):
         self.address = properties.get('Address')
         self.bluetooth_class = properties.get('Class')
         self.UUIDs = properties.get('UUIDs')
+
+
+    def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
+                             kernel_vb):
+        """Enable or disable the debug logs of bluetooth
+
+        @param dispatcher_vb: verbosity of btdispatcher debug log, either 0 or 1
+        @param newblue_vb: verbosity of newblued debug log, either 0 or 1
+        @param bluez_vb: verbosity of bluez debug log, either 0 or 1
+        @param kernel_vb: verbosity of kernel debug log, either 0 or 1
+
+        """
+        return self._proxy.set_debug_log_levels(dispatcher_vb, newblue_vb,
+                                                bluez_vb, kernel_vb)
+
+    def log_message(self, msg, dut=True, peer=True):
+        """ Log a message in DUT log and peer logs with timestamp.
+
+        @param msg: message to be logged.
+        @param dut: log message on DUT
+        @param peer: log message on peer devices
+        """
+        try:
+            # TODO(b/146671469) Implement logging to tester
+
+            date =  datetime.strftime(datetime.now(),"%Y:%m:%d %H:%M:%S:%f")
+            msg = "bluetooth autotest --- %s : %s ---" % (date, msg)
+            logging.debug("Broadcasting '%s'",msg)
+
+            if dut:
+                self._proxy.log_message(msg)
+
+            if peer:
+                for chameleon in self.host.chameleon_list:
+                    chameleon.log_message(msg)
+        except Exception as e:
+            logging.error("Exception '%s' in log_message '%s'", str(e), msg)
+
 
 
     def start_bluetoothd(self):
@@ -430,7 +469,7 @@ class BluetoothDevice(object):
         Obtain the discovered device information using get_devices(), called
         stop_discovery() when done.
 
-        @return True on success, False otherwise.
+        @return (True, None) on success, (False, <error>) otherwise.
 
         """
         return self._proxy.start_discovery()
@@ -439,10 +478,58 @@ class BluetoothDevice(object):
     def stop_discovery(self):
         """Stop discovery of remote devices.
 
-        @return True on success, False otherwise.
+        @return (True, None) on success, (False, <error>) otherwise.
 
         """
         return self._proxy.stop_discovery()
+
+    def pause_discovery(self, system_suspend_resume=False):
+        """ Pause discovery of remote devices
+
+        @params: boolean system_suspend_resume Is this request related to
+                 system suspend resume.
+
+        @return (True, None) on success (False, <error>) otherwise
+        """
+        return self._proxy.pause_discovery(system_suspend_resume)
+
+    def unpause_discovery(self, system_suspend_resume=False):
+        """ Unpause discovery of remote devices
+
+        @params: boolean system_suspend_resume Is this request related to
+                 system suspend resume.
+
+        @return (True, None) on success (False, <error>) otherwise
+        """
+        return self._proxy.unpause_discovery(system_suspend_resume)
+
+
+    def pause_discovery(self, system_suspend_resume=False):
+        """Pause discovery of remote devices.
+
+        This pauses all device discovery sessions.
+
+        @param system_suspend_resume: whether the
+               request is related to system suspend/resume.
+
+        @return True on success, False otherwise.
+
+        """
+        return self._proxy.pause_discovery(system_suspend_resume)
+
+
+    def unpause_discovery(self, system_suspend_resume=False):
+        """Unpause discovery of remote devices.
+
+        This unpauses all device discovery sessions.
+
+        @param system_suspend_resume: whether the
+               request is related to system suspend/resume.
+
+        @return True on success, False otherwise.
+
+        """
+        return self._proxy.unpause_discovery(system_suspend_resume)
 
 
     def is_discovering(self):
@@ -471,6 +558,11 @@ class BluetoothDevice(object):
         """
         return json.loads(self._proxy.get_dev_info())
 
+    def get_supported_capabilities(self):
+        """ Get the supported_capabilities of the adapter
+        @returns (capabilities,None) on success (None, <error>) on failure
+        """
+        return self._proxy.get_supported_capabilities()
 
     def register_profile(self, path, uuid, options):
         """Register new profile (service).
@@ -725,6 +817,50 @@ class BluetoothDevice(object):
             uuid, address, base64.standard_b64encode(bytes_to_write))
 
 
+    def start_notify(self, address, uuid, cccd_value):
+        """Starts the notification session on the gatt characteristic.
+
+        @param address: The MAC address of the remote device.
+        @param uuid: The uuid of the characteristic.
+        @param cccd_value: Possible CCCD values include
+               0x00 - inferred from the remote characteristic's properties
+               0x01 - notification
+               0x02 - indication
+
+        @returns: True if the operation succeeds.
+                  False if the characteristic is not found, or
+                      if a DBus exception was raised by the operation.
+
+        """
+        return self._proxy.start_notify(address, uuid, cccd_value)
+
+
+    def stop_notify(self, address, uuid):
+        """Stops the notification session on the gatt characteristic.
+
+        @param address: The MAC address of the remote device.
+        @param uuid: The uuid of the characteristic.
+
+        @returns: True if the operation succeeds.
+                  False if the characteristic is not found, or
+                      if a DBus exception was raised by the operation.
+
+        """
+        return self._proxy.stop_notify(address, uuid)
+
+
+    def is_notifying(self, address, uuid):
+        """Is the GATT characteristic in a notifying session?
+
+        @param address: The MAC address of the remote device.
+        @param uuid: The uuid of the characteristic.
+
+        @return True if it is in a notification session. False otherwise.
+
+        """
+        return self._proxy.is_notifying(address, uuid)
+
+
     def is_characteristic_path_resolved(self, uuid, address):
         """Checks whether a characteristic is in the object tree.
 
@@ -740,6 +876,73 @@ class BluetoothDevice(object):
         return self._proxy.is_characteristic_path_resolved(uuid, address)
 
 
+    def get_gatt_attributes_map(self, address):
+        """Return a JSON formated string of the GATT attributes of a device,
+        keyed by UUID
+        @param address: a string of the MAC address of the device
+
+        @return: JSON formated string, stored the nested structure of the
+        attributes. Each attribute has 'path' and ['chrcs' | 'descs'], which
+        store their object path and children respectively.
+        """
+        return self._proxy.get_gatt_attributes_map(address)
+
+
+    def get_gatt_service_property(self, object_path, property_name):
+        """Get property from a service attribute
+        @param object_path: a string of the object path of the service
+        @param property_name: a string of a property, ex: 'Value', 'UUID'
+
+        @return: the property if success,
+                 None otherwise
+        """
+        return self._proxy.get_gatt_service_property(object_path, property_name)
+
+
+    def get_gatt_characteristic_property(self, object_path, property_name):
+        """Get property from a characteristic attribute
+        @param object_path: a string of the object path of the characteristic
+        @param property_name: a string of a property, ex: 'Value', 'UUID'
+
+        @return: the property if success,
+                 None otherwise
+        """
+        return self._proxy.get_gatt_characteristic_property(object_path,
+                                                            property_name)
+
+
+    def get_gatt_descriptor_property(self, object_path, property_name):
+        """Get property from a descriptor attribute
+        @param object_path: a string of the object path of the descriptor
+        @param property_name: a string of a property, ex: 'Value', 'UUID'
+
+        @return: the property if success,
+                 None otherwise
+        """
+        return self._proxy.get_gatt_descriptor_property(object_path,
+                                                        property_name)
+
+
+    def gatt_characteristic_read_value(self, uuid, object_path):
+        """Perform method ReadValue on a characteristic attribute
+        @param uuid: a string of uuid
+        @param object_path: a string of the object path of the characteristic
+
+        @return: base64 string of dbus bytearray
+        """
+        return self._proxy.gatt_characteristic_read_value(uuid, object_path)
+
+
+    def gatt_descriptor_read_value(self, uuid, object_path):
+        """Perform method ReadValue on a descriptor attribute
+        @param uuid: a string of uuid
+        @param object_path: a string of the object path of the descriptor
+
+        @return: base64 string of dbus bytearray
+        """
+        return self._proxy.gatt_descriptor_read_value(uuid, object_path)
+
+
     def copy_logs(self, destination):
         """Copy the logs generated by this device to a given location.
 
@@ -747,6 +950,42 @@ class BluetoothDevice(object):
 
         """
         self.host.collect_logs(self.XMLRPC_LOG_PATH, destination)
+
+
+    def get_connection_info(self, address):
+        """Get device connection info.
+
+        @param address: The MAC address of the device.
+
+        @returns: On success, a tuple of:
+                      ( RSSI, transmit_power, max_transmit_power )
+                  None otherwise.
+
+        """
+        return self._proxy.get_connection_info(address)
+
+
+    def set_discovery_filter(self, filter):
+        """Set the discovery filter.
+
+        @param filter: The discovery filter to set.
+
+        @return True on success, False otherwise.
+
+        """
+        return self._proxy.set_discovery_filter(filter)
+
+
+    def set_le_connection_parameters(self, address, parameters):
+        """Set the LE connection parameters.
+
+        @param address: The MAC address of the device.
+        @param parameters: The LE connection parameters to set.
+
+        @return: True on success. False otherwise.
+
+        """
+        return self._proxy.set_le_connection_parameters(address, parameters)
 
 
     def close(self, close_host=True):
@@ -760,8 +999,8 @@ class BluetoothDevice(object):
         """
         # Turn off the discoverable flag since it may affect future tests.
         self._proxy.set_discoverable(False)
-        # Leave the adapter powered off, but don't do a full reset.
-        self._proxy.set_powered(False)
+        # Reset the adapter and leave it on.
+        self._proxy.reset_on()
         # This kills the RPC server.
         if close_host:
           self.host.close()

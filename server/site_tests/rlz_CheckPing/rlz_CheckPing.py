@@ -20,7 +20,7 @@ class rlz_CheckPing(test.test):
     def _check_rlz_brand_code(self):
         """Checks that we have an rlz brand code."""
         try:
-            self._host.run('mosys -k platform brand | grep brand')
+            self._host.run('cros_config / brand-code')
         except error.AutoservRunError as e:
             raise error.TestFail('DUT is missing brand_code: %s.' %
                                  e.result_obj.stderr)
@@ -54,18 +54,10 @@ class rlz_CheckPing(test.test):
                                          '%s' % e.result_obj.stderr)
 
 
-    def _make_rootfs_writable(self):
-        """ Remove rootfs verification on DUT."""
-        logging.info('Disabling rootfs on the DUT.')
-        cmd = ('/usr/share/vboot/bin/make_dev_ssd.sh '
-               '--remove_rootfs_verification --force')
-        self._host.run(cmd)
-        self._host.reboot()
-
-
     def _check_rlz_vpd_settings_post_ping(self):
         """Checks that rlz related vpd settings are correct after the test."""
         def should_send_rlz_ping():
+            """Ask vpd (on the DUT) whether we are ready to send rlz ping"""
             return int(self._host.run('vpd -i RW_VPD -g '
                                       'should_send_rlz_ping').stdout)
 
@@ -78,16 +70,8 @@ class rlz_CheckPing(test.test):
             raise error.TestFail('rlz_embargo_end_date still present in vpd.')
 
 
-    def _reduce_rlz_ping_delay(self, ping_timeout):
-        """Changes the rlz ping delay so we can test it quickly."""
-
-        # Removes any old rlz ping delays in the file.
-        self._host.run('sed -i /--rlz-ping-delay/d /etc/chrome_dev.conf')
-        self._host.run('echo --rlz-ping-delay=%d >> /etc/chrome_dev.conf' %
-                       ping_timeout)
-
-
     def run_once(self, host, ping_timeout=30, logged_in=True):
+        """Main test logic"""
         self._host = host
         if 'veyron_rialto' in self._host.get_board():
             raise error.TestNAError('Skipping test on rialto device.')
@@ -99,8 +83,6 @@ class rlz_CheckPing(test.test):
 
         # Setup DUT to send rlz ping after a short timeout.
         self._set_vpd_values()
-        self._make_rootfs_writable()
-        self._reduce_rlz_ping_delay(ping_timeout)
         self._host.reboot()
 
         # Login, do a Google search, check for CAF event in RLZ Data file.

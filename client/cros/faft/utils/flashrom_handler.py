@@ -15,6 +15,7 @@ import os
 import struct
 import tempfile
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chip_utils
 from autotest_lib.client.cros.faft.utils import saft_flashrom_util
 
@@ -130,7 +131,8 @@ class FlashromHandler(object):
                              files, for use in signing
         @param target: flashrom target ('bios' or 'ec')
         @param subdir: name of subdirectory of state dir, to use for sections
-                    Default: same as target, resulting in '/var/tmp/faft/bios'
+                    Default: same as target, resulting in
+                    '/usr/local/tmp/faft/bios'
         @type os_if: client.cros.faft.utils.os_interface.OSInterface
         @type pub_key_file: str | None
         @type dev_key_path: str
@@ -141,6 +143,7 @@ class FlashromHandler(object):
         self.os_if = os_if
         self.initialized = False
         self._available = None
+        self._unavailable_err = None
 
         if subdir is None:
             subdir = target
@@ -180,13 +183,19 @@ class FlashromHandler(object):
         """
         if self._available is None:
             # Cache the status to avoid trying flashrom every time.
-            self._available = self.fum.check_target()
+            try:
+                self.fum.check_target()
+                self._available = True
+            except error.CmdError as e:
+                # First line: "Command <flashrom -p host> failed, rc=2"
+                self._unavailable_err = str(e).split('\n', 1)[0]
+                self._available = False
         return self._available
 
     def section_file(self, *paths):
         """
         Return a full path for the given basename, in this handler's subdir.
-        Example: subdir 'bios' -> '/var/tmp/faft/bios/FV_GBB'
+        Example: subdir 'bios' -> '/usr/local/tmp/faft/bios/FV_GBB'
 
         @param paths: variable number of path pieces, same as in os.path.join
         @return: an absolute path from this handler's subdir and the pieces.
@@ -216,7 +225,8 @@ class FlashromHandler(object):
         if not self.is_available():
             # Can't tell for sure whether it's broken or simply nonexistent.
             raise FlashromHandlerError(
-                    "No usable %s flash was detected." % self.target)
+                    "Could not detect a usable %s flash device: %s."
+                    % (self.target, self._unavailable_err))
 
         if image_file and allow_fallback and not os.path.isfile(image_file):
             self.os_if.log(

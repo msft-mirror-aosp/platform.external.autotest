@@ -184,7 +184,8 @@ class bluetooth_Sanity_DefaultStateTest(
         if not flags & bluetooth_socket.HCI_RUNNING:
             raise error.TestFail('HCI RUNNING flag does not match kernel while '
                                  'powered on')
-        if flags & bluetooth_socket.HCI_ISCAN:
+        if bool(flags & bluetooth_socket.HCI_ISCAN) != \
+            bool(bluez_properties['Discoverable']):
             raise error.TestFail('HCI ISCAN flag does not match kernel while '
                                  'powered on')
         if flags & bluetooth_socket.HCI_INQUIRY:
@@ -226,6 +227,8 @@ class bluetooth_Sanity_DefaultStateTest(
 
             self.add_device(DEVICE_ADDRESS, ADDRESS_TYPE, 1)
 
+            # Wait for a few seconds before reading the settings
+            time.sleep(3)
             current_settings = self.read_info()[4]
             self._log_settings("After add device", current_settings)
 

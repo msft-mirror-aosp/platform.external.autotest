@@ -47,6 +47,12 @@ def _extract_image_from_tarball(tarball, dest_dir, image_candidates):
     @return: The first path from the image candidates, which succeeds, or None
              if all the image candidates fail.
     """
+
+    # Create the firmware_name subdirectory if it doesn't exist
+    if not os.path.exists(dest_dir):
+        os.mkdir(dest_dir)
+
+    # Try to extract image candidates from tarball
     for image in image_candidates:
         status = server_utils.system(
                 ('tar xf %s -C %s %s' % (tarball, dest_dir, image)),
@@ -308,6 +314,7 @@ class Servo(object):
         self._servo_host = servo_host
         self._servo_serial = servo_serial
         self._server = servo_host.get_servod_server_proxy()
+        self._servo_type = self.get_servo_version()
         self._power_state = _PowerStateController(self)
         self._uart = _Uart(self)
         self._usb_state = None
@@ -751,40 +758,55 @@ class Servo(object):
         """
         return re.sub('^.*>:', '', xmlexc.faultString)
 
-    def has_control(self, control):
-        """Query servod server to determine if |control| is a valid control.
+    def has_control(self, ctrl_name, prefix=''):
+        """Query servod server to determine if |ctrl_name| is a valid control.
 
-        @param control: str, control name to query
+        @param ctrl_name Name of the control.
+        @param prefix: prefix to route control to correct servo device.
 
-        @returns: true if |control| is a known control, false otherwise.
+        @returns: true if |ctrl_name| is a known control, false otherwise.
         """
-        assert control
+        cltr_name = self._build_ctrl_name(ctrl_name, prefix)
         try:
             # If the control exists, doc() will work.
-            self._server.doc(control)
+            self._server.doc(ctrl_name)
             return True
         except xmlrpclib.Fault as e:
-            if re.search('No control %s' % control,
+            if re.search('No control %s' % ctrl_name,
                          self._get_xmlrpclib_exception(e)):
                 return False
             raise e
 
-    def get(self, gpio_name):
+    def _build_ctrl_name(self, ctrl_name, prefix):
+        """Helper to build the control name if a prefix is used.
+
+        @param ctrl_name Name of the control.
+        @param prefix: prefix to route control to correct servo device.
+
+        @returns: [|prefix|.]ctrl_name depending on whether prefix is non-empty.
+        """
+        assert ctrl_name
+        if prefix:
+            return '%s.%s' % (prefix, ctrl_name)
+        return ctrl_name
+
+    def get(self, ctrl_name, prefix=''):
         """Get the value of a gpio from Servod.
 
-        @param gpio_name Name of the gpio.
+        @param ctrl_name Name of the control.
+        @param prefix: prefix to route control to correct servo device.
 
-        @returns: server response to |gpio_name| request.
+        @returns: server response to |ctrl_name| request.
 
-        @raise ControlUnavailableError: if |gpio_name| not a known control.
+        @raise ControlUnavailableError: if |ctrl_name| not a known control.
         @raise error.TestFail: for all other failures doing get().
         """
-        assert gpio_name
+        cltr_name = self._build_ctrl_name(ctrl_name, prefix)
         try:
-            return self._server.get(gpio_name)
+            return self._server.get(ctrl_name)
         except  xmlrpclib.Fault as e:
             err_str = self._get_xmlrpclib_exception(e)
-            err_msg = "Getting '%s' :: %s" % (gpio_name, err_str)
+            err_msg = "Getting '%s' :: %s" % (ctrl_name, err_str)
             unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
             if unknown_ctrl:
                 raise ControlUnavailableError('No control named %r' %
@@ -794,46 +816,50 @@ class Servo(object):
                 raise error.TestFail(err_msg)
 
 
-    def set(self, gpio_name, gpio_value):
+    def set(self, ctrl_name, ctrl_value, prefix=''):
         """Set and check the value of a gpio using Servod.
 
-        @param gpio_name Name of the gpio.
-        @param gpio_value New setting for the gpio.
+        @param ctrl_name: Name of the control.
+        @param ctrl_value: New setting for the control.
+        @param prefix: prefix to route control to correct servo device.
         @raise error.TestFail: if the control value fails to change.
         """
-        self.set_nocheck(gpio_name, gpio_value)
+        cltr_name = self._build_ctrl_name(ctrl_name, prefix)
+        self.set_nocheck(ctrl_name, ctrl_value)
         retry_count = Servo.GET_RETRY_MAX
-        actual_value = self.get(gpio_name)
-        while gpio_value != actual_value and retry_count:
-            logging.warning("%s != %s, retry %d", gpio_name, gpio_value,
+        actual_value = self.get(ctrl_name)
+        while ctrl_value != actual_value and retry_count:
+            logging.warning("%s != %s, retry %d", ctrl_name, ctrl_value,
                             retry_count)
             retry_count -= 1
             time.sleep(Servo.SHORT_DELAY)
-            actual_value = self.get(gpio_name)
+            actual_value = self.get(ctrl_name)
 
-        if gpio_value != actual_value:
+        if ctrl_value != actual_value:
             raise error.TestFail(
                     'Servo failed to set %s to %s. Got %s.'
-                    % (gpio_name, gpio_value, actual_value))
+                    % (ctrl_name, ctrl_value, actual_value))
 
 
-    def set_nocheck(self, gpio_name, gpio_value):
+    def set_nocheck(self, ctrl_name, ctrl_value, prefix=''):
         """Set the value of a gpio using Servod.
 
-        @param gpio_name Name of the gpio.
-        @param gpio_value New setting for the gpio.
+        @param ctrl_name Name of the control.
+        @param ctrl_value New setting for the control.
+        @param prefix: prefix to route control to correct servo device.
 
-        @raise ControlUnavailableError: if |gpio_name| not a known control.
+        @raise ControlUnavailableError: if |ctrl_name| not a known control.
         @raise error.TestFail: for all other failures doing set().
         """
+        cltr_name = self._build_ctrl_name(ctrl_name, prefix)
         # The real danger here is to pass a None value through the xmlrpc.
-        assert gpio_name and gpio_value is not None
-        logging.debug('Setting %s to %r', gpio_name, gpio_value)
+        assert ctrl_value is not None
+        logging.debug('Setting %s to %r', ctrl_name, ctrl_value)
         try:
-            self._server.set(gpio_name, gpio_value)
+            self._server.set(ctrl_name, ctrl_value)
         except  xmlrpclib.Fault as e:
             err_str = self._get_xmlrpclib_exception(e)
-            err_msg = "Setting '%s' :: %s" % (gpio_name, err_str)
+            err_msg = "Setting '%s' :: %s" % (ctrl_name, err_str)
             unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
             if unknown_ctrl:
                 raise ControlUnavailableError('No control named %r' %
@@ -1044,8 +1070,7 @@ class Servo(object):
 
     def get_main_servo_device(self):
         """Return the main servo device"""
-        servo_type = self.get_servo_version()
-        return servo_type.split('_with_')[-1].split('_and_')[0]
+        return self._servo_type.split('_with_')[-1].split('_and_')[0]
 
 
     def enable_main_servo_device(self):
@@ -1072,6 +1097,25 @@ class Servo(object):
         """Whether the main servo device (no prefixes) is a legacy device."""
         return not self.main_device_is_ccd()
 
+
+    def main_device_is_active(self):
+        """Return whether the main device is the active device.
+
+        This is only relevant for a dual setup with ccd and legacy on the same
+        DUT. The main device is the servo that has no prefix on its controls.
+        This helper answers the question whether that device is also the
+        active device or not.
+        """
+        # TODO(coconutruben): The current implementation of the dual setup only
+        # ever has legacy as the main device. Therefore, it suffices to ask
+        # whether the active device is ccd.
+        if not self.dts_mode_is_valid():
+            # Use dts support as a proxy to whether the servo setup could
+            # support a dual role. Only those setups now support legacy and ccd.
+            return True
+        active_device = self.get('active_v4_device')
+        return 'ccd_cr50' not in active_device
+
     def _initialize_programmer(self, rw_only=False):
         """Initialize the firmware programmer.
 
@@ -1081,20 +1125,19 @@ class Servo(object):
         if self._programmer:
             return
         # Initialize firmware programmer
-        servo_version = self.get_servo_version()
-        if servo_version.startswith('servo_v2'):
+        if self._servo_type.startswith('servo_v2'):
             self._programmer = firmware_programmer.ProgrammerV2(self)
             self._programmer_rw = firmware_programmer.ProgrammerV2RwOnly(self)
         # Both servo v3 and v4 use the same programming methods so just leverage
         # ProgrammerV3 for servo v4 as well.
-        elif (servo_version.startswith('servo_v3') or
-              servo_version.startswith('servo_v4')):
+        elif (self._servo_type.startswith('servo_v3') or
+              self._servo_type.startswith('servo_v4')):
             self._programmer = firmware_programmer.ProgrammerV3(self)
             self._programmer_rw = firmware_programmer.ProgrammerV3RwOnly(self)
         else:
             raise error.TestError(
                     'No firmware programmer for servo version: %s' %
-                    servo_version)
+                    self._servo_type)
 
 
     def program_bios(self, image, rw_only=False):
@@ -1131,60 +1174,15 @@ class Servo(object):
             self._programmer.program_ec(image)
 
 
-    def _reprogram(self, tarball_path, firmware_name, image_candidates,
-                   rw_only):
-        """Helper function to reprogram firmware for EC or BIOS.
-
-        @param tarball_path: The path of the downloaded build tarball.
-        @param: firmware_name: either 'EC' or 'BIOS'.
-        @param image_candidates: A tuple of the paths of image candidates.
-        @param rw_only: True to only install firmware to its RW portions. Keep
-                the RO portions unchanged.
-
-        @raise: TestError if cannot extract firmware from the tarball.
-        """
-        dest_dir = os.path.join(os.path.dirname(tarball_path), firmware_name)
-        # Create the firmware_name subdirectory if it doesn't exist.
-        if not os.path.exists(dest_dir):
-            os.mkdir(dest_dir)
-        image = _extract_image_from_tarball(tarball_path, dest_dir,
-                                            image_candidates)
-        if not image:
-            if firmware_name == 'EC':
-                logging.info('Not a Chrome EC, ignore re-programming it')
-                return
-            else:
-                raise error.TestError('Failed to extract the %s image from '
-                                      'tarball' % firmware_name)
-
-        # Extract subsidiary binaries for EC
-        if firmware_name == 'EC':
-            # Find a monitor binary for NPCX_UUT chip type, if any.
-            mon_candidates = [ w.replace('ec.bin', 'npcx_monitor.bin')
-                                   for w in image_candidates ]
-            _extract_image_from_tarball(tarball_path, dest_dir, mon_candidates)
-
-        logging.info('Will re-program %s %snow', firmware_name,
-                     'RW ' if rw_only else '')
-
-        if firmware_name == 'EC':
-            self.program_ec(os.path.join(dest_dir, image), rw_only)
-        else:
-            self.program_bios(os.path.join(dest_dir, image), rw_only)
-
-
-    def program_firmware(self, board, model, tarball_path, rw_only=False):
-        """Program firmware (EC, if applied, and BIOS) of the DUT.
+    def extract_ec_image(self, board, model, tarball_path):
+        """Helper function to extract EC image from downloaded tarball.
 
         @param board: The DUT board name.
         @param model: The DUT model name.
         @param tarball_path: The path of the downloaded build tarball.
-        @param rw_only: True to only install firmware to its RW portions. Keep
-                the RO portions unchanged.
-        """
-        ap_image_candidates = ('image.bin', 'image-%s.bin' % model,
-                               'image-%s.bin' % board)
 
+        @return: Path to extracted EC image.
+        """
         # Best effort; try to retrieve the EC board from the version as
         # reported by the EC.
         ec_board = None
@@ -1194,16 +1192,44 @@ class Servo(object):
           logging.info('Failed to get ec_board value; ignoring')
           pass
 
-        ec_image_candidates = ['ec.bin', '%s/ec.bin' % model,
+        # Array of candidates for EC image
+        ec_image_candidates = ['ec.bin',
+                               '%s/ec.bin' % model,
                                '%s/ec.bin' % board]
         if ec_board:
           ec_image_candidates.append('%s/ec.bin' % ec_board)
 
-        self._reprogram(tarball_path, 'EC', ec_image_candidates, rw_only)
-        self._reprogram(tarball_path, 'BIOS', ap_image_candidates, rw_only)
+        # Extract EC image from tarball
+        dest_dir = os.path.join(os.path.dirname(tarball_path), 'EC')
+        ec_image = _extract_image_from_tarball(tarball_path, dest_dir,
+                                               ec_image_candidates)
 
-        self.get_power_state_controller().reset()
-        time.sleep(Servo.BOOT_DELAY)
+        # Return path to EC image
+        return os.path.join(dest_dir, ec_image)
+
+
+    def extract_bios_image(self, board, model, tarball_path):
+        """Helper function to extract BIOS image from downloaded tarball.
+
+        @param board: The DUT board name.
+        @param model: The DUT model name.
+        @param tarball_path: The path of the downloaded build tarball.
+
+        @return: Path to extracted BIOS image.
+        """
+
+        # Array of candidates for BIOS image
+        bios_image_candidates = ['image.bin',
+                                 'image-%s.bin' % model,
+                                 'image-%s.bin' % board]
+
+        # Extract BIOS image from tarball
+        dest_dir = os.path.join(os.path.dirname(tarball_path), 'BIOS')
+        bios_image = _extract_image_from_tarball(tarball_path, dest_dir,
+                                                 bios_image_candidates)
+
+        # Return path to BIOS image
+        return os.path.join(dest_dir, bios_image)
 
 
     def _switch_usbkey_power(self, power_state, detection_delay=False):
@@ -1303,8 +1329,7 @@ class Servo(object):
 
         @param role: Power role for DUT port on servo v4, either 'src' or 'snk'.
         """
-        servo_version = self.get_servo_version()
-        if servo_version.startswith('servo_v4'):
+        if self._servo_type.startswith('servo_v4'):
             value = self.get('servo_v4_role')
             if value != role:
                 self.set_nocheck('servo_v4_role', role)
@@ -1316,12 +1341,12 @@ class Servo(object):
 
     def supports_built_in_pd_control(self):
         """Return whether the servo type supports pd charging and control."""
-        servo_type = self.get('servo_type')
-        if 'servo_v4' not in servo_type:
+        if 'servo_v4' not in self._servo_type:
             # Only servo v4 supports this feature.
-            logging.info('%r type does not support pd control.', servo_type)
+            logging.info('%r type does not support pd control.',
+                         self._servo_type)
             return False
-        # On servo v4, it still needs ot be the type-c version.
+        # On servo v4, it still needs to be the type-c version.
         if not self.get('servo_v4_type') == 'type-c':
             logging.info('PD controls require a type-c servo v4.')
             return False
@@ -1334,8 +1359,40 @@ class Servo(object):
         logging.info('Charger port voltage: %dmV', chg_port_mv)
         return True
 
-    def set_servo_v4_dts_mode(self, state):
-        """Set servo v4 dts mode to off or on.
+    def dts_mode_is_valid(self):
+        """Return whether servo setup supports dts mode control for cr50."""
+        if 'servo_v4' not in self._servo_type:
+            # Only servo v4 supports this feature.
+            logging.debug('%r type does not support dts mode control.',
+                          self._servo_type)
+            return False
+        # On servo v4, it still needs ot be the type-c version.
+        if not 'type-c' == self.get('servo_v4_type'):
+            logging.info('DTS controls require a type-c servo v4.')
+            return False
+        return True
+
+    def dts_mode_is_safe(self):
+        """Return whether servo setup supports dts mode without losing access.
+
+        DTS mode control exists but the main device might go through ccd.
+        In that case, it's only safe to control dts mode if the main device
+        is legacy as otherwise the connection to the main device cuts out.
+        """
+        return self.dts_mode_is_valid() and self.main_device_is_flex()
+
+    def get_dts_mode(self):
+        """Return servo dts mode.
+
+        @returns: on/off whether dts is on or off
+        """
+        if not self.dts_mode_is_valid():
+            logging.info('Not a valid servo setup. Unable to get dts mode.')
+            return
+        return self.get('servo_v4_dts_mode')
+
+    def set_dts_mode(self, state):
+        """Set servo dts mode to off or on.
 
         It does nothing if not a servo v4. Disable the ccd watchdog if we're
         disabling dts mode. CCD will disconnect. The watchdog only allows CCD
@@ -1344,14 +1401,15 @@ class Servo(object):
 
         @param state: Set servo v4 dts mode 'off' or 'on'.
         """
-        servo_version = self.get_servo_version()
-        if not servo_version.startswith('servo_v4'):
-            logging.debug('Not a servo v4, unable to set dts mode %s.', state)
+        if not self.dts_mode_is_valid():
+            logging.info('Not a valid servo setup. Unable to set dts mode %s.',
+                         state)
             return
 
         # TODO(mruthven): remove watchdog check once the labstation has been
         # updated to have support for modifying the watchdog.
-        set_watchdog = self.has_control('watchdog') and 'ccd' in servo_version
+        set_watchdog = (self.has_control('watchdog') and
+                        'ccd' in self._servo_type)
         enable_watchdog = state == 'on'
 
         if set_watchdog and not enable_watchdog:

@@ -19,8 +19,10 @@ import bluetooth_test_utils
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server import test
+
 from autotest_lib.client.bin.input.linux_input import (
         BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
@@ -520,6 +522,12 @@ class BluetoothAdapterTests(test.test):
 
     HID_REPORT_SLEEP_SECS = 1
 
+
+    DEFAULT_START_DELAY_SECS = 0
+    DEFAULT_HOLD_INTERVAL_SECS = 10
+    DEFAULT_HOLD_TIMEOUT_SECS = 60
+    DEFAULT_HOLD_SLEEP_SECS = 1
+
     # Default suspend time in seconds for suspend resume.
     SUSPEND_TIME_SECS=10
 
@@ -793,9 +801,54 @@ class BluetoothAdapterTests(test.test):
         logging.info('The DUT is waken up.')
 
 
+    def _wait_till_condition_holds(self, func, method_name,
+                                   timeout=DEFAULT_HOLD_TIMEOUT_SECS,
+                                   sleep_interval=DEFAULT_HOLD_SLEEP_SECS,
+                                   hold_interval=DEFAULT_HOLD_INTERVAL_SECS,
+                                   start_delay=DEFAULT_START_DELAY_SECS):
+        """ Wait for the func() to hold true for a period of time
+
+
+        @param func: the function to wait for.
+        @param method_name: the invoking class method.
+        @param timeout: number of seconds to wait before giving up.
+        @param sleep_interval: the interval in seconds to sleep between
+                invoking func().
+        @param hold_interval: the interval in seconds for the condition to
+                             remain true
+        @param start_delay: interval in seconds to wait before starting
+
+        @returns: True if the condition is met,
+                  False otherwise
+
+        """
+        if start_delay > 0:
+            logging.debug('waiting for %s secs before checking %s',start_delay,
+                          method_name)
+            time.sleep(start_delay)
+
+        try:
+            utils.poll_till_condition_holds(condition=func,
+                                            timeout=timeout,
+                                            sleep_interval=sleep_interval,
+                                            hold_interval = hold_interval,
+                                            desc=('Waiting %s' % method_name))
+            return True
+        except utils.TimeoutError as e:
+            logging.error('%s: %s', method_name, e)
+        except Exception as e:
+            logging.error('%s: %s', method_name, e)
+            err = 'bluetoothd possibly crashed. Check out /var/log/messages.'
+            logging.error(err)
+        except:
+            logging.error('%s: unexpected error', method_name)
+        return False
+
+
     def _wait_for_condition(self, func, method_name,
                             timeout=ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS,
-                            sleep_interval=ADAPTER_POLLING_DEFAULT_SLEEP_SECS):
+                            sleep_interval=ADAPTER_POLLING_DEFAULT_SLEEP_SECS,
+                            start_delay=DEFAULT_START_DELAY_SECS):
         """Wait for the func() to become True.
 
         @param func: the function to wait for.
@@ -803,11 +856,17 @@ class BluetoothAdapterTests(test.test):
         @param timeout: number of seconds to wait before giving up.
         @param sleep_interval: the interval in seconds to sleep between
                 invoking func().
+        @param start_delay: interval in seconds to wait before starting
 
         @returns: True if the condition is met,
                   False otherwise
 
         """
+
+        if start_delay > 0:
+            logging.debug('waiting for %s secs before checking %s',start_delay,
+                          method_name)
+            time.sleep(start_delay)
 
         try:
             utils.poll_for_condition(condition=func,
@@ -1416,9 +1475,8 @@ class BluetoothAdapterTests(test.test):
         set_trusted = self.bluetooth_facade.set_trusted(
                 device_address, trusted)
 
-        properties = self.bluetooth_facade.get_device_properties(
-                device_address)
-        actual_trusted = properties.get('Trusted')
+        actual_trusted = self.bluetooth_facade.get_device_property(
+                                device_address, 'Trusted')
 
         self.results = {
                 'set_trusted': set_trusted,
@@ -1724,9 +1782,10 @@ class BluetoothAdapterTests(test.test):
         @returns: True if the device name is derived. None otherwise.
 
         """
-        properties = self.bluetooth_facade.get_device_properties(
-                device_address)
-        self.discovered_device_name = properties.get('Name')
+
+        self.discovered_device_name = self.bluetooth_facade.get_device_property(
+                                device_address, 'Name')
+
         return bool(self.discovered_device_name)
 
 
@@ -1770,9 +1829,9 @@ class BluetoothAdapterTests(test.test):
                   expected class of service. False otherwise.
 
         """
-        properties = self.bluetooth_facade.get_device_properties(
-                device_address)
-        device_class = properties.get('Class')
+
+        device_class = self.bluetooth_facade.get_device_property(device_address,
+                                                                 'Class')
         discovered_class_of_service = (device_class & self.CLASS_OF_SERVICE_MASK
                                        if device_class else None)
 
@@ -1795,9 +1854,9 @@ class BluetoothAdapterTests(test.test):
                   expected class of device. False otherwise.
 
         """
-        properties = self.bluetooth_facade.get_device_properties(
-                device_address)
-        device_class = properties.get('Class')
+
+        device_class = self.bluetooth_facade.get_device_property(device_address,
+                                                                 'Class')
         discovered_class_of_device = (device_class & self.CLASS_OF_DEVICE_MASK
                                       if device_class else None)
 
@@ -2444,6 +2503,68 @@ class BluetoothAdapterTests(test.test):
         """Read raw HCI device information."""
         return self.bluetooth_facade.get_dev_info()
 
+    def log_settings(self, msg, settings):
+        """function convert MGMT_OP_READ_INFO settings to string
+
+        @param msg: string to include in output
+        @param settings: bitstring returned by MGMT_OP_READ_INFO
+        @return : List of strings indicating different settings
+        """
+        strs = []
+        if settings & bluetooth_socket.MGMT_SETTING_POWERED:
+            strs.append("POWERED")
+        if settings & bluetooth_socket.MGMT_SETTING_CONNECTABLE:
+            strs.append("CONNECTABLE")
+        if settings & bluetooth_socket.MGMT_SETTING_FAST_CONNECTABLE:
+            strs.append("FAST-CONNECTABLE")
+        if settings & bluetooth_socket.MGMT_SETTING_DISCOVERABLE:
+            strs.append("DISCOVERABLE")
+        if settings & bluetooth_socket.MGMT_SETTING_PAIRABLE:
+            strs.append("PAIRABLE")
+        if settings & bluetooth_socket.MGMT_SETTING_LINK_SECURITY:
+            strs.append("LINK-SECURITY")
+        if settings & bluetooth_socket.MGMT_SETTING_SSP:
+            strs.append("SSP")
+        if settings & bluetooth_socket.MGMT_SETTING_BREDR:
+            strs.append("BR/EDR")
+        if settings & bluetooth_socket.MGMT_SETTING_HS:
+            strs.append("HS")
+        if settings & bluetooth_socket.MGMT_SETTING_LE:
+            strs.append("LE")
+        logging.debug('%s : %s', msg, " ".join(strs))
+        return strs
+
+    def log_flags(self, msg, flags):
+        """Function to convert HCI state configuration to a string
+
+        @param msg: string to include in output
+        @param settings: bitstring returned by get_dev_info
+        @return : List of strings indicating different flags
+        """
+        strs = []
+        if flags & bluetooth_socket.HCI_UP:
+            strs.append("UP")
+        else:
+            strs.append("DOWN")
+        if flags & bluetooth_socket.HCI_INIT:
+            strs.append("INIT")
+        if flags & bluetooth_socket.HCI_RUNNING:
+            strs.append("RUNNING")
+        if flags & bluetooth_socket.HCI_PSCAN:
+            strs.append("PSCAN")
+        if flags & bluetooth_socket.HCI_ISCAN:
+            strs.append("ISCAN")
+        if flags & bluetooth_socket.HCI_AUTH:
+            strs.append("AUTH")
+        if flags & bluetooth_socket.HCI_ENCRYPT:
+            strs.append("ENCRYPT")
+        if flags & bluetooth_socket.HCI_INQUIRY:
+            strs.append("INQUIRY")
+        if flags & bluetooth_socket.HCI_RAW:
+            strs.append("RAW")
+        logging.debug('%s [HCI]: %s', msg, " ".join(strs))
+        return strs
+
 
     @_test_retry_and_log(False)
     def test_service_resolved(self, address):
@@ -2879,6 +3000,55 @@ class BluetoothAdapterTests(test.test):
                      power_mw, max_power_mw)
 
         return power_mw <= max_power_mw
+
+
+    @_test_retry_and_log
+    def test_start_notify(self, address, uuid, cccd_value):
+        """Test that a notification can be started on a characteristic
+
+        @param address: The MAC address of the remote device.
+        @param uuid: The uuid of the characteristic.
+        @param cccd_value: Possible CCCD values include
+               0x00 - inferred from the remote characteristic's properties
+               0x01 - notification
+               0x02 - indication
+
+        @returns: The test results.
+
+        """
+        start_notify = self.bluetooth_facade.start_notify(
+            address, uuid, cccd_value)
+        is_notifying = self._wait_for_condition(
+            lambda: self.bluetooth_facade.is_notifying(
+                address, uuid), method_name())
+
+        self.results = {
+            'start_notify': start_notify,
+            'is_notifying': is_notifying}
+
+        return all(self.results.values())
+
+
+    @_test_retry_and_log
+    def test_stop_notify(self, address, uuid):
+        """Test that a notification can be stopped on a characteristic
+
+        @param address: The MAC address of the remote device.
+        @param uuid: The uuid of the characteristic.
+
+        @returns: The test results.
+
+        """
+        stop_notify = self.bluetooth_facade.stop_notify(address, uuid)
+        is_not_notifying = self._wait_for_condition(
+            lambda: not self.bluetooth_facade.is_notifying(
+                address, uuid), method_name())
+
+        self.results = {
+            'stop_notify': stop_notify,
+            'is_not_notifying': is_not_notifying}
+
+        return all(self.results.values())
 
 
     # -------------------------------------------------------------------

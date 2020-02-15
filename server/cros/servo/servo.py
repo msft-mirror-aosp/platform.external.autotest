@@ -73,7 +73,6 @@ class _PowerStateController(object):
     board types.
 
     """
-
     # Constants acceptable to be passed for the `rec_mode` parameter
     # to power_on().
     #
@@ -89,6 +88,7 @@ class _PowerStateController(object):
     # warm reset.
     _RESET_HOLD_TIME = 0.5
 
+
     def __init__(self, servo):
         """Initialize the power state control.
 
@@ -97,6 +97,15 @@ class _PowerStateController(object):
 
         """
         self._servo = servo
+        self.supported = self._servo.has_control('power_state')
+        if not self.supported:
+            logging.info('Servo setup does not support power-state operations. '
+                         'All power-state calls will lead to error.TestFail')
+
+    def _check_supported(self):
+        """Throw an error if dts mode control is not supported."""
+        if not self.supported:
+            raise error.TestFail('power_state controls not supported')
 
     def reset(self):
         """Force the DUT to reset.
@@ -107,6 +116,7 @@ class _PowerStateController(object):
         been restarted.
 
         """
+        self._check_supported()
         self._servo.set_nocheck('power_state', 'reset')
 
     def warm_reset(self):
@@ -118,6 +128,7 @@ class _PowerStateController(object):
         """
         # TODO: warm_reset support has added to power_state.py. Once it
         # available to labstation remove fallback method.
+        self._check_supported()
         try:
             self._servo.set_nocheck('power_state', 'warm_reset')
         except error.TestFail as err:
@@ -125,7 +136,6 @@ class _PowerStateController(object):
             self._servo.set_get_all(['warm_reset:on',
                                  'sleep:%.4f' % self._RESET_HOLD_TIME,
                                  'warm_reset:off'])
-
     def power_off(self):
         """Force the DUT to power off.
 
@@ -135,6 +145,7 @@ class _PowerStateController(object):
         working OS software.
 
         """
+        self._check_supported()
         self._servo.set_nocheck('power_state', 'off')
 
     def power_on(self, rec_mode=REC_OFF):
@@ -157,6 +168,7 @@ class _PowerStateController(object):
                         power on. default: REC_OFF aka 'off'
 
         """
+        self._check_supported()
         self._servo.set_nocheck('power_state', rec_mode)
 
 
@@ -444,12 +456,20 @@ class Servo(object):
             e.filename = '%s:%s' % (self._servo_host.hostname,
                                     self._servo_host.servo_port)
             raise
-        self.set('usb_mux_oe1', 'on')
         self._usb_state = None
-        self.switch_usbkey('off')
+        if self.has_control('usb_mux_oe1'):
+            self.set('usb_mux_oe1', 'on')
+            self.switch_usbkey('off')
+        else:
+            logging.warning('Servod command \'usb_mux_oe1\' is not available. '
+                            'Any USB drive related servo routines will fail.')
         self._uart.start_capture()
         if cold_reset:
-            self._power_state.reset()
+            if not self._power_state.supported:
+                logging.info('Cold-reset for DUT requested, but servo '
+                             'setup does not support power_state. Skipping.')
+            else:
+                self._power_state.reset()
         logging.debug('Servo initialized, version is %s',
                       self._server.get_version())
         if self.has_control('init_keyboard'):
@@ -1187,10 +1207,10 @@ class Servo(object):
         # reported by the EC.
         ec_board = None
         try:
-          ec_board = self.get('ec_board')
+            ec_board = self.get('ec_board')
         except Exception as err:
-          logging.info('Failed to get ec_board value; ignoring')
-          pass
+            logging.info('Failed to get ec_board value; ignoring')
+            pass
 
         # Array of candidates for EC image
         ec_image_candidates = ['ec.bin',
@@ -1204,8 +1224,12 @@ class Servo(object):
         ec_image = _extract_image_from_tarball(tarball_path, dest_dir,
                                                ec_image_candidates)
 
-        # Return path to EC image
-        return os.path.join(dest_dir, ec_image)
+        # Check if EC image was found and return path or None
+        if ec_image:
+            return os.path.join(dest_dir, ec_image)
+        else:
+            logging.info('Not a Chrome EC, ignore re-programming it')
+            return None
 
 
     def extract_bios_image(self, board, model, tarball_path):
@@ -1228,8 +1252,12 @@ class Servo(object):
         bios_image = _extract_image_from_tarball(tarball_path, dest_dir,
                                                  bios_image_candidates)
 
-        # Return path to BIOS image
-        return os.path.join(dest_dir, bios_image)
+        # Check if BIOS image was found and return path or raise error
+        if bios_image:
+            return os.path.join(dest_dir, bios_image)
+        else:
+            raise error.TestError('Failed to extract BIOS image from %s',
+                                  tarball_path)
 
 
     def _switch_usbkey_power(self, power_state, detection_delay=False):
@@ -1420,6 +1448,60 @@ class Servo(object):
         if set_watchdog and enable_watchdog:
             self.set_nocheck('watchdog_add', 'ccd')
 
+
+    def _get_servo_type_fw_version(self, servo_type, prefix=''):
+        """Helper to handle fw retrieval for micro/v4 vs ccd.
+
+        @param servo_type: one of 'servo_v4', 'servo_micro', 'ccd_cr50'
+        @param prefix: whether the control has a prefix
+
+        @returns: fw version for non-ccd devices, cr50 version for ccd device
+        """
+        if servo_type == 'ccd_cr50':
+            # ccd_cr50 runs on cr50, so need to query the cr50 fw.
+            servo_type = 'cr50'
+        cmd = '%s_version' % servo_type
+        try:
+            return self.get(cmd, prefix=prefix)
+        except error.TestFail:
+            # Do not fail here, simply report the version as unknown.
+            logging.warn('Unable to query %r to get servo fw version.', cmd)
+            return 'unknown'
+
+
+    def get_servo_fw_versions(self):
+        """Retrieve a summary of attached servos and their firmware.
+
+        Note: that only the Google firmware owned servos supports this e.g.
+        micro, v4, etc. For anything else, the dictionary will have no entry.
+        If no device is has Google owned firmware (e.g. v3) then the result
+        is an empty dictionary.
+
+        @returns: dict, a collection of each attached servo & their firmware.
+        """
+        def get_fw_version_tag(tag, dev):
+            return '%s_version.%s' % (dev, tag)
+
+        fw_versions = {}
+        if 'servo_v4' not in self._servo_type:
+            return {}
+        v4_tag = get_fw_version_tag('support', 'servo_v4')
+        fw_versions[v4_tag] = self._get_servo_type_fw_version('servo_v4')
+        if 'with' in self._servo_type:
+            dut_devs = self._servo_type.split('_with_')[1].split('_and_')
+            main_tag = get_fw_version_tag('main', dut_devs[0])
+            fw_versions[main_tag] = self._get_servo_type_fw_version(dut_devs[0])
+            if len(dut_devs) == 2:
+                # Right now, the only way for this to happen is for a dual setup
+                # to exist where ccd is attached on top of servo micro. Thus, we
+                # know that the prefix is ccd_cr50 and the type is ccd_cr50.
+                # TODO(coconutruben): If the new servod is not deployed by
+                # the time that there are more cases of '_and_' devices,
+                # this needs to be reworked.
+                dual_tag = get_fw_version_tag('ccd_flex_secondary', dut_devs[1])
+                fw = self._get_servo_type_fw_version(dut_devs[1], 'ccd_cr50')
+                fw_versions[dual_tag] = fw
+        return fw_versions
 
     @property
     def uart_logs_dir(self):

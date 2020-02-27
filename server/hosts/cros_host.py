@@ -157,7 +157,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     _BIOS_REGEX = '(%s\.\w*\.\w*\.\w*)'
 
     # Command to update firmware located on DUT
-    _FW_UPDATE_CMD = 'chromeos-firmwareupdate --mode=recovery -e %s -i %s %s'
+    _FW_UPDATE_CMD = 'chromeos-firmwareupdate --mode=recovery -i %s %s'
 
     @staticmethod
     def check_host(host, timeout=10):
@@ -662,6 +662,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     @staticmethod
     def get_version_from_image(image, version_regex):
+        """Get version string from binary image using regular expression.
+
+        @param image: Binary image to search
+        @param version_regex: Regular expression to search for
+
+        @return Version string
+
+        @raises TestFail if no version string is found in image
+        """
         with open(image, 'rb') as f:
             image_data = f.read()
         match = re.findall(version_regex, image_data)
@@ -762,27 +771,33 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 dest_folder = '/tmp/firmware'
                 self.run('mkdir -p ' + dest_folder)
 
-                # Send EC firmware image to DUT
-                logging.info('Sending EC firmware.')
-                dest_ec_path = os.path.join(dest_folder,
-                                            os.path.basename(ec_image))
-                self.send_file(ec_image, dest_ec_path)
-
                 # Send BIOS firmware image to DUT
                 logging.info('Sending BIOS firmware.')
                 dest_bios_path = os.path.join(dest_folder,
                                               os.path.basename(bios_image))
                 self.send_file(bios_image, dest_bios_path)
 
-                # Update EC and BIOS firmware on DUT
-                logging.info('Updating EC and BIOS firmware.')
-                fw_cmd = self._FW_UPDATE_CMD % (dest_ec_path,
-                                                dest_bios_path,
+                # Initialize firmware update command for BIOS image
+                fw_cmd = self._FW_UPDATE_CMD % (dest_bios_path,
                                                 '--wp=1' if rw_only else '')
+
+                # Send EC firmware image to DUT when EC image was found
+                if ec_image:
+                    logging.info('Sending EC firmware.')
+                    dest_ec_path = os.path.join(dest_folder,
+                                                os.path.basename(ec_image))
+                    self.send_file(ec_image, dest_ec_path)
+
+                    # Add EC image to firmware update command
+                    fw_cmd += ' -e %s' % dest_ec_path
+
+                # Update firmware on DUT
+                logging.info('Updating firmware.')
                 self.run(fw_cmd)
             else:
                 # Host is not available, program firmware using servo
-                self.servo.program_ec(ec_image, rw_only)
+                if ec_image:
+                    self.servo.program_ec(ec_image, rw_only)
                 self.servo.program_bios(bios_image, rw_only)
                 if utils.host_is_in_lab_zone(self.hostname):
                     self._add_fw_version_label(build, rw_only)
@@ -795,16 +810,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
             # When enabled verify EC and BIOS firmware version after programming
             if verify_version:
-                # Check programmed EC firmware against expected version
-                logging.info('Checking EC firmware version.')
-                dest_ec_version = self.get_ec_version()
-                ec_regex = self._EC_REGEX % model
-                image_ec_version = self.get_version_from_image(ec_image,
-                                                               ec_regex)
-                if dest_ec_version != image_ec_version:
-                    raise error.TestFail(
-                        'Failed to update EC RO, version %s (expected %s)' %
-                        (dest_ec_version, image_ec_version))
+                # Check programmed EC firmware when EC image was found
+                if ec_image:
+                    logging.info('Checking EC firmware version.')
+                    dest_ec_version = self.get_ec_version()
+                    ec_version_prefix = dest_ec_version.split('_', 1)[0]
+                    ec_regex = self._EC_REGEX % ec_version_prefix
+                    image_ec_version = self.get_version_from_image(ec_image,
+                                                                   ec_regex)
+                    if dest_ec_version != image_ec_version:
+                        raise error.TestFail(
+                            'Failed to update EC RO, version %s (expected %s)' %
+                            (dest_ec_version, image_ec_version))
 
                 # Check programmed BIOS firmware against expected version
                 logging.info('Checking BIOS firmware version.')
@@ -896,6 +913,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self._servo_host = host
         if self._servo_host is not None:
             self.servo = self._servo_host.get_servo()
+            self._update_servo_labels()
         else:
             self.servo = None
 
@@ -915,8 +933,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if not self._servo_host:
             raise error.AutoservError('No servo host for %s.' %
                                       self.hostname)
-        self._servo_host.repair()
-        self.servo = self._servo_host.get_servo()
+        try:
+            self._servo_host.repair()
+        except:
+            raise
+        finally:
+            self.set_servo_host(self._servo_host)
+
+
+    def _update_servo_labels(self):
+        """Set servo info labels to dut host_info"""
+        if self._servo_host:
+            host_info = self.host_info_store.get()
+
+            servo_state = self._servo_host.get_servo_state()
+            host_info.set_version_label(servo_host.SERVO_STATE_LABEL_PREFIX, servo_state)
+
+            self.host_info_store.commit(host_info)
 
 
     def repair(self):
@@ -1246,7 +1279,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     duration, fields=metric_fields)
 
 
-    def suspend(self, suspend_time=60,
+    def suspend(self, suspend_time=60, delay_seconds=0,
                 suspend_cmd=None, allow_early_resume=False):
         """
         This function suspends the site host.
@@ -1264,7 +1297,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             suspend_cmd = ' && '.join([
                 'echo 0 > /sys/class/rtc/rtc0/wakealarm',
                 'echo +%d > /sys/class/rtc/rtc0/wakealarm' % suspend_time,
-                'powerd_dbus_suspend --delay=0'])
+                'powerd_dbus_suspend --delay=%d' % delay_seconds])
         super(CrosHost, self).suspend(suspend_time, suspend_cmd,
                                       allow_early_resume);
 

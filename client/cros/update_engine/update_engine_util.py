@@ -3,15 +3,17 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 import logging
 import os
 import re
+import requests
 import shutil
 import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
-
+from autotest_lib.client.cros.update_engine import update_engine_event
 
 _DEFAULT_RUN = utils.run
 _DEFAULT_COPY = shutil.copy
@@ -208,23 +210,24 @@ class UpdateEngineUtil(object):
         @return Boolean if the update engine log contains the entry.
 
         """
-        if update_engine_log:
-            result = self._run('echo "%s" | grep "%s"' % (update_engine_log,
-                                                          entry),
-                               ignore_status=True)
-        else:
-            result = self._run('cat %s | grep "%s"' % (
-                self._UPDATE_ENGINE_LOG, entry), ignore_status=True)
+        if isinstance(entry, str):
+            # Create a tuple of strings so we can itarete over it.
+            entry = (entry,)
 
-        if result.exit_status != 0:
-            if raise_error:
-                error_str = 'Did not find expected string in update_engine ' \
-                            'log: %s' % entry
-                logging.debug(error_str)
-                raise error.TestFail(err_str if err_str else error_str)
-            else:
-                return False
-        return True
+        if not update_engine_log:
+            update_engine_log = self._run(
+                'cat %s' % self._UPDATE_ENGINE_LOG).stdout
+
+        if all(msg in update_engine_log for msg in entry):
+            return True
+
+        if not raise_error:
+            return False
+
+        error_str = ('Did not find expected string(s) in update_engine log: '
+                     '%s' % entry)
+        logging.debug(error_str)
+        raise error.TestFail(err_str if err_str else error_str)
 
 
     def _is_update_finished_downloading(self):
@@ -252,6 +255,39 @@ class UpdateEngineUtil(object):
         completed = self._get_update_progress()
         logging.info('New value: %f, old value: %f', completed, progress)
         return completed >= progress
+
+
+    def _get_payload_properties_file(self, payload_url, target_dir, **kwargs):
+        """
+        Downloads the payload properties file into a directory.
+
+        @param payload_url: The URL to the update payload file.
+        @param target_dir: The directory to download the file into.
+        @param kwargs: A dictionary of key/values that needs to be overridden on
+                the payload properties file.
+
+        """
+        payload_props_url = payload_url + '.json'
+        _, _, file_name = payload_props_url.rpartition('/')
+        try:
+            response = json.loads(requests.get(payload_props_url).text)
+
+            # Override existing keys if any.
+            for k, v in kwargs.iteritems():
+                # Don't set default None values. We don't want to override good
+                # values to None.
+                if v is not None:
+                    response[k] = v
+
+            with open(os.path.join(target_dir, file_name), 'w') as fp:
+                json.dump(response, fp)
+
+        except (requests.exceptions.RequestException,
+                IOError,
+                ValueError) as err:
+            raise error.TestError(
+                'Failed to get update payload properties: %s with error: %s' %
+                (payload_props_url, err))
 
 
     def _check_for_update(self, server='http://127.0.0.1', port=8082,
@@ -316,7 +352,7 @@ class UpdateEngineUtil(object):
                                        files[1])).stdout
 
 
-    def _create_custom_lsb_release(self, update_url, build='0.0.0.0'):
+    def _create_custom_lsb_release(self, update_url, build='0.0.0.0', **kwargs):
         """
         Create a custom lsb-release file.
 
@@ -327,8 +363,15 @@ class UpdateEngineUtil(object):
         @param update_url: String of url to use for update check.
         @param build: String of the build number to use. Represents the
                       Chrome OS build this device thinks it is on.
+        @param kwargs: A dictionary of key/values to be made into a query string
+                       and appended to the update_url
 
         """
+        # TODO(ahassani): This is quite fragile as the given URL can already
+        # have a search query. We need to unpack the URL and update the search
+        # query portion of it with kwargs.
+        update_url = (update_url + '?' + '&'.join('%s=%s' % (k, v)
+                                                  for k, v in kwargs.items()))
         self._run('mkdir %s' % os.path.dirname(self._CUSTOM_LSB_RELEASE),
                   ignore_status=True)
         self._run('touch %s' % self._CUSTOM_LSB_RELEASE)
@@ -423,3 +466,34 @@ class UpdateEngineUtil(object):
           return None
         else:
           return targets[-1].rpartition(err_str)[2]
+
+
+    def _get_latest_initial_request(self):
+        """
+        Return the most recent initial update request.
+
+        AU requests occur in a chain of messages back and forth, e.g. the
+        initial request for an update -> the reply with the update -> the
+        report that install has started -> report that install has finished,
+        etc.  This function finds the first request in the latest such chain.
+
+        This message has no eventtype listed, or is rebooted_after_update
+        type (as an artifact from a previous update since this one).
+        Subsequent messages in the chain have different eventtype values.
+
+        @returns: string of the entire update request or None.
+
+        """
+        requests = self._get_update_requests()
+        if not requests:
+            return None
+
+        MATCH_STR = r'eventtype="(.*?)"'
+        for i in xrange(len(requests) - 1, -1, -1):
+            search = re.search(MATCH_STR, requests[i])
+            if (not search or
+                (search.group(1) ==
+                 update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE)):
+                return requests[i]
+
+        return None

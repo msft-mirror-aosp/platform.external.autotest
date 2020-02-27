@@ -27,6 +27,10 @@ LsbOutput = collections.namedtuple('LsbOutput', ['unibuild', 'board'])
 # fallback values if we can't contact the HWID server
 HWID_LABELS_FALLBACK = ['sku', 'phase', 'touchscreen', 'touchpad', 'variant', 'stylus']
 
+# Repair and Deploy taskName
+REPAIR_TASK_NAME = 'repair'
+DEPLOY_TASK_NAME = 'deploy'
+
 
 def _parse_lsb_output(host):
     """Parses the LSB output and returns key data points for labeling.
@@ -115,6 +119,11 @@ class DeviceSkuLabel(base_label.StringPrefixLabel):
             return [result.stdout.strip()]
 
         return []
+
+    def update_for_task(self, task_name):
+        # This label is stored in the lab config, so only deploy tasks update it
+        # or when no task name is mentioned.
+        return task_name in (DEPLOY_TASK_NAME, '')
 
 
 class BrandCodeLabel(base_label.StringPrefixLabel):
@@ -305,6 +314,10 @@ class ChameleonLabel(base_label.BaseLabel):
             pass
         return has_chameleon
 
+    def update_for_task(self, task_name):
+        # This label is stored in the state config, so only repair tasks update
+        # it or when no task name is mentioned.
+        return task_name in (REPAIR_TASK_NAME, '')
 
 
 class ChameleonConnectionLabel(base_label.StringPrefixLabel):
@@ -318,6 +331,11 @@ class ChameleonConnectionLabel(base_label.StringPrefixLabel):
 
     def generate_labels(self, host):
         return [chameleon.get_label() for chameleon in host.chameleon_list]
+
+    def update_for_task(self, task_name):
+        # This label is stored in the lab config, so only deploy tasks update it
+        # or when no task name is mentioned.
+        return task_name in (DEPLOY_TASK_NAME, '')
 
 
 class ChameleonPeripheralsLabel(base_label.StringPrefixLabel):
@@ -386,7 +404,10 @@ class ChameleonPeripheralsLabel(base_label.StringPrefixLabel):
         logging.info('Bluetooth labels are %s', labels_list)
         return labels_list
 
-
+    def update_for_task(self, task_name):
+        # This label is stored in the lab config, so only deploy tasks update it
+        # or when no task name is mentioned.
+        return task_name in (DEPLOY_TASK_NAME, '')
 
 
 class AudioLoopbackDongleLabel(base_label.BaseLabel):
@@ -422,8 +443,13 @@ class AudioLoopbackDongleLabel(base_label.BaseLabel):
                               ignore_status=True).stdout
         if (cras_utils.node_type_is_plugged('HEADPHONE', nodes_info) and
             cras_utils.node_type_is_plugged('MIC', nodes_info)):
-                return True
+            return True
         return False
+
+    def update_for_task(self, task_name):
+        # This label is stored in the state config, so only repair tasks update
+        # it or when no task name is mentioned.
+        return task_name in (REPAIR_TASK_NAME, '')
 
 
 class PowerSupplyLabel(base_label.StringPrefixLabel):
@@ -551,15 +577,28 @@ class StorageLabel(base_label.StringPrefixLabel):
         # All other internal device / error case will always fall here
         return False
 
-
     def generate_labels(self, host):
         return [self.type_str]
 
 
 class ServoLabel(base_label.BaseLabel):
-    """Label to apply if a servo is present."""
+    """
+    Label servo is applying if a servo is present.
+    Label servo_state present always.
+    """
 
-    _NAME = 'servo'
+    _NAME_OLD = 'servo'
+    _NAME = 'servo_state'
+    _NAME_WORKING = 'servo_state:WORKING'
+    _NAME_BROKEN = 'servo_state:BROKEN'
+
+    def get(self, host):
+        if self.exists(host):
+            return [self._NAME_OLD, self._NAME_WORKING]
+        return [self._NAME_BROKEN]
+
+    def get_all_labels(self):
+        return set([self._NAME]), set([self._NAME_OLD])
 
     def exists(self, host):
         # Based on crbug.com/995900, Servo sometimes flips.
@@ -579,6 +618,9 @@ class ServoLabel(base_label.BaseLabel):
         info = host.host_info_store.get()
         for label in info.labels:
             if label.startswith(self._NAME):
+                if label.startswith(self._NAME_WORKING):
+                    return True
+            elif label.startswith(self._NAME_OLD):
                 return True
         return False
 
@@ -594,6 +636,11 @@ class ServoLabel(base_label.BaseLabel):
             servo_host_hostname = servo_args.get(servo_host.SERVO_HOST_ATTR)
         return (servo_host_hostname is not None
                 and servo_host.servo_host_is_up(servo_host_hostname))
+
+    def update_for_task(self, task_name):
+        # This label is stored in the state config, so only repair tasks update
+        # it or when no task name is mentioned.
+        return task_name in (REPAIR_TASK_NAME, '')
 
 
 class ArcLabel(base_label.BaseLabel):
@@ -862,40 +909,16 @@ class ReferenceDesignLabel(base_label.StringPrefixLabel):
 
 
 CROS_LABELS = [
-    AccelsLabel(),
-    ArcLabel(),
-    AudioLoopbackDongleLabel(),
-    BluetoothLabel(),
-    BoardLabel(),
-    ModelLabel(),
-    ChameleonConnectionLabel(),
-    ChameleonLabel(),
-    ChameleonPeripheralsLabel(),
+    AudioLoopbackDongleLabel(), #STATECONFIG
+    ChameleonConnectionLabel(), #LABCONFIG
+    ChameleonLabel(), #STATECONFIG
+    ChameleonPeripheralsLabel(), #LABCONFIG
     common_label.OSLabel(),
-    Cr50Label(),
-    Cr50ROKeyidLabel(),
-    Cr50RWKeyidLabel(),
-    Cr50ROVersionLabel(),
-    Cr50RWVersionLabel(),
-    CtsArchLabel(),
-    DetachableBaseLabel(),
-    DeviceSkuLabel(),
-    BrandCodeLabel(),
-    ECLabel(),
-    FingerprintLabel(),
+    DeviceSkuLabel(), #LABCONFIG
     HWIDLabel(),
-    InternalDisplayLabel(),
-    LucidSleepLabel(),
-    PowerSupplyLabel(),
-    ReferenceDesignLabel(),
-    ServoLabel(),
-    StorageLabel(),
-    VideoGlitchLabel(),
+    ServoLabel(), #STATECONFIG
 ]
 
 LABSTATION_LABELS = [
-    BoardLabel(),
-    ModelLabel(),
     common_label.OSLabel(),
-    PowerSupplyLabel(),
 ]

@@ -54,9 +54,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Restart the link to device
         logging.info('Restarting peer devices...')
 
-        # Grab currect device list for initialization
+        # Grab current device list for initialization
         connected_devices = self.devices
-        self.cleanup(on_start=False)
+        self.cleanup(test_state='MID')
 
         for device_type, device_list in connected_devices.items():
             for device in device_list:
@@ -86,11 +86,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         """Inits the test batch"""
         self.host = host
         #factory can not be declared as local variable, otherwise
-        #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc server,
-        #which log out the user.
-        self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                                                                 disable_arc=True)
-        self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+        #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
+        # server, which log out the user.
+
+        try:
+            self.factory = remote_facade_factory.RemoteFacadeFactory(host,
+                           disable_arc=True)
+            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+
+        # For b:142276989, catch 'object_path' fault and reboot to prevent
+        # failures from continuing into future tests
+        except Exception, e:
+            if (e.__class__.__name__ == 'Fault' and
+                """object has no attribute 'object_path'""" in str(e)):
+
+                logging.error('Caught b/142276989, rebooting DUT')
+                self.reboot()
+            # Raise the original exception
+            raise
+
         self.use_chameleon = use_chameleon
         if self.use_chameleon:
             self.input_facade = self.factory.create_input_facade()
@@ -112,6 +126,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.active_test_devices = {}
 
         self.enable_disable_debug_log(enable=True)
+
+        # Delete files created in previous run
+        self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
+                                                    self.BTMON_DIR_LOG_PATH))
+        self.start_new_btmon()
 
         self.flag = flag
         self.test_iter = None
@@ -273,7 +292,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.group_chameleons_type()
 
         # Close the connection between peers
-        self.cleanup()
+        self.cleanup(test_state='NEW')
 
 
     @staticmethod

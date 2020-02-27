@@ -73,9 +73,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
 
 CONFIG['SMOKE'] = []
 
-CONFIG['BVT_ARC'] = [
-    'GtsContactsTest',
-]
+CONFIG['BVT_ARC'] = []
 
 CONFIG['BVT_PERBUILD'] = [
     'GtsAdminTestCases',
@@ -96,10 +94,7 @@ CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = ['GtsYouTubeTestCases']
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [_ALL]
-CONFIG['ENABLE_DEFAULT_APPS'] = [
-    # TODO(kinaba): See b/143740808. Can be droped after GTS7.0r3 deployed.
-    'GtsAssistantHostTestCases'
-]
+CONFIG['ENABLE_DEFAULT_APPS'] = []
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {}
@@ -115,7 +110,8 @@ CONFIG['PUBLIC_DEPENDENCIES'] = {}
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
   _ALL: 2,
-  'GtsMediaTestCases': 5   # TODO(b/140841434)
+  'GtsMediaTestCases': 5,  # TODO(b/140841434)
+  'GtsYouTubeTestCases': 5,  # TODO(b/149376356)
 }
 
 CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {

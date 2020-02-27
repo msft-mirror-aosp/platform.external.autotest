@@ -17,6 +17,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.servo import firmware_programmer
+from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 
 # Time to wait when probing for a usb device, it takes on avg 17 seconds
 # to do a full probe.
@@ -52,13 +53,19 @@ def _extract_image_from_tarball(tarball, dest_dir, image_candidates):
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
 
-    # Try to extract image candidates from tarball
+    # Generate a list of all tarball files
+    tarball_files = server_utils.system_output(
+        ('tar tf %s' % tarball), timeout=120, ignore_status=True).splitlines()
+
+    # Check if image candidates are in the list of tarball files
     for image in image_candidates:
-        status = server_utils.system(
+        if image in tarball_files:
+            # Extract and return the first image candidate found
+            status = server_utils.system(
                 ('tar xf %s -C %s %s' % (tarball, dest_dir, image)),
-                timeout=60, ignore_status=True)
-        if status == 0:
-            return image
+                timeout=120, ignore_status=True)
+            if status == 0:
+                return image
     return None
 
 
@@ -73,7 +80,6 @@ class _PowerStateController(object):
     board types.
 
     """
-
     # Constants acceptable to be passed for the `rec_mode` parameter
     # to power_on().
     #
@@ -89,6 +95,7 @@ class _PowerStateController(object):
     # warm reset.
     _RESET_HOLD_TIME = 0.5
 
+
     def __init__(self, servo):
         """Initialize the power state control.
 
@@ -97,6 +104,15 @@ class _PowerStateController(object):
 
         """
         self._servo = servo
+        self.supported = self._servo.has_control('power_state')
+        if not self.supported:
+            logging.info('Servo setup does not support power-state operations. '
+                         'All power-state calls will lead to error.TestFail')
+
+    def _check_supported(self):
+        """Throw an error if dts mode control is not supported."""
+        if not self.supported:
+            raise error.TestFail('power_state controls not supported')
 
     def reset(self):
         """Force the DUT to reset.
@@ -107,6 +123,7 @@ class _PowerStateController(object):
         been restarted.
 
         """
+        self._check_supported()
         self._servo.set_nocheck('power_state', 'reset')
 
     def warm_reset(self):
@@ -118,6 +135,7 @@ class _PowerStateController(object):
         """
         # TODO: warm_reset support has added to power_state.py. Once it
         # available to labstation remove fallback method.
+        self._check_supported()
         try:
             self._servo.set_nocheck('power_state', 'warm_reset')
         except error.TestFail as err:
@@ -125,7 +143,6 @@ class _PowerStateController(object):
             self._servo.set_get_all(['warm_reset:on',
                                  'sleep:%.4f' % self._RESET_HOLD_TIME,
                                  'warm_reset:off'])
-
     def power_off(self):
         """Force the DUT to power off.
 
@@ -135,6 +152,7 @@ class _PowerStateController(object):
         working OS software.
 
         """
+        self._check_supported()
         self._servo.set_nocheck('power_state', 'off')
 
     def power_on(self, rec_mode=REC_OFF):
@@ -157,6 +175,7 @@ class _PowerStateController(object):
                         power on. default: REC_OFF aka 'off'
 
         """
+        self._check_supported()
         self._servo.set_nocheck('power_state', rec_mode)
 
 
@@ -295,10 +314,10 @@ class Servo(object):
     USB_DETECTION_DELAY = 10
     # Time to keep USB power off before and after USB mux direction is changed
     USB_POWEROFF_DELAY = 2
+    USB_POWERON_DELAY = 5
 
     # Time to wait before timing out on servo initialization.
     INIT_TIMEOUT_SECS = 10
-
 
     def __init__(self, servo_host, servo_serial=None):
         """Sets up the servo communication infrastructure.
@@ -326,81 +345,6 @@ class Servo(object):
     def servo_serial(self):
         """Returns the serial number of the servo board."""
         return self._servo_serial
-
-    def rotate_servod_logs(self, filename=None, directory=None):
-        """Save the latest servod log into a local directory, then rotate logs.
-
-        The files will be <filename>.DEBUG, <filename>.INFO, <filename>.WARNING,
-        or just <filename>.log if not using split level logging.
-
-        @param filename: local filename prefix (no file extension) to use.
-                         If None, rotate log but don't save it.
-        @param directory: local directory to save logs into (if unset, use cwd)
-        """
-        if self.is_localhost():
-            # Local servod usually runs without log-dir, so can't be collected.
-            # TODO(crbug.com/1011516): allow localhost when rotation is enabled
-            return
-
-        log_dir = '/var/log/servod_%s' % self._servo_host.servo_port
-
-        if filename:
-            logging.info("Saving servod logs: %s/%s.*", directory or '.',
-                         filename)
-            # TODO(crrev.com/c/1793030): remove no-level case once CL is pushed
-            for level_name in ('', 'DEBUG', 'INFO', 'WARNING'):
-
-                remote_path = os.path.join(log_dir, 'latest')
-                if level_name:
-                    remote_path += '.%s' % level_name
-
-                local_path = '%s.%s' % (filename, level_name or 'log')
-                if directory:
-                    local_path = os.path.join(directory, local_path)
-
-                try:
-                    self._servo_host.get_file(
-                            remote_path, local_path, try_rsync=False)
-
-                except error.AutoservRunError as e:
-                    result = e.result_obj
-                    if result.exit_status != 0:
-                        stderr = result.stderr.strip()
-
-                        # File not existing is okay, but warn for anything else.
-                        if 'no such' not in stderr.lower():
-                            logging.warn(
-                                    "Couldn't retrieve servod log: %s",
-                                    stderr or '\n%s' % result)
-
-                try:
-                    if os.stat(local_path).st_size == 0:
-                        os.unlink(local_path)
-                except EnvironmentError:
-                    pass
-
-        else:
-            # No filename given, so caller wants to discard the log lines.
-            # Remove the symlinks to prevent old log-dir links from being
-            # picked up multiple times when using servod without log-dir.
-            remote_path = os.path.join(log_dir, 'latest*')
-            self._servo_host.run(
-                    "rm %s" % remote_path,
-                    stderr_tee=None, ignore_status=True)
-
-        # Servod log rotation renames current log, then creates a new file with
-        # the old name: log.<date> -> log.<date>.1.tbz2 -> log.<date>.2.tbz2
-
-        # Must rotate after copying, or the copy would be the new, empty file.
-        try:
-            self.set_nocheck('rotate_servod_logs', 'yes')
-        except ControlUnavailableError as e:
-            # Missing control (possibly old servod)
-            logging.warn("Couldn't rotate servod logs: %s", str(e))
-        except error.TestFail:
-            # Control exists but gave an error; don't let it fail the test.
-            # The error is already logged in set_nocheck().
-            pass
 
     def get_power_state_controller(self):
         """Return the power state controller for this Servo.
@@ -444,12 +388,20 @@ class Servo(object):
             e.filename = '%s:%s' % (self._servo_host.hostname,
                                     self._servo_host.servo_port)
             raise
-        self.set('usb_mux_oe1', 'on')
         self._usb_state = None
-        self.switch_usbkey('off')
+        if self.has_control('usb_mux_oe1'):
+            self.set('usb_mux_oe1', 'on')
+            self.switch_usbkey('off')
+        else:
+            logging.warning('Servod command \'usb_mux_oe1\' is not available. '
+                            'Any USB drive related servo routines will fail.')
         self._uart.start_capture()
         if cold_reset:
-            self._power_state.reset()
+            if not self._power_state.supported:
+                logging.info('Cold-reset for DUT requested, but servo '
+                             'setup does not support power_state. Skipping.')
+            else:
+                self._power_state.reset()
         logging.debug('Servo initialized, version is %s',
                       self._server.get_version())
         if self.has_control('init_keyboard'):
@@ -790,6 +742,32 @@ class Servo(object):
             return '%s.%s' % (prefix, ctrl_name)
         return ctrl_name
 
+    def _inspect_control_failure(self, e, ctrl_name, get=True):
+        """Inspect the |e| for special failures.
+
+        @param e: exception object
+        @param ctrl_name: control name
+        @param get: bool, whether this was a get() or a set() call
+
+        @raises ControlUnavailableError: if error message matches NO_CONTROL_RE
+        @raises error.TestFail: otherwise
+        """
+        err_str = self._get_xmlrpclib_exception(e)
+        # Prefix for error parsing
+        prefix = 'Getting' if get else 'Setting'
+        err_msg = "%s '%s' :: %s" % (prefix, ctrl_name, err_str)
+        unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
+        if unknown_ctrl:
+            logging.error('%s %r :: No control named %r', prefix, ctrl_name,
+                          unknown_ctrl[0])
+            raise ControlUnavailableError('No control named %r' %
+                                          unknown_ctrl[0])
+        # The error message for unavailble controls is huge as it prints
+        # all available controls. Do not log it explicitly.
+        logging.error(err_msg)
+        raise error.TestFail(err_msg)
+
+
     def get(self, ctrl_name, prefix=''):
         """Get the value of a gpio from Servod.
 
@@ -805,16 +783,7 @@ class Servo(object):
         try:
             return self._server.get(ctrl_name)
         except  xmlrpclib.Fault as e:
-            err_str = self._get_xmlrpclib_exception(e)
-            err_msg = "Getting '%s' :: %s" % (ctrl_name, err_str)
-            unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
-            if unknown_ctrl:
-                raise ControlUnavailableError('No control named %r' %
-                                              unknown_ctrl[0])
-            else:
-                logging.error(err_msg)
-                raise error.TestFail(err_msg)
-
+            self._inspect_control_failure(e, ctrl_name, get=True)
 
     def set(self, ctrl_name, ctrl_value, prefix=''):
         """Set and check the value of a gpio using Servod.
@@ -840,7 +809,6 @@ class Servo(object):
                     'Servo failed to set %s to %s. Got %s.'
                     % (ctrl_name, ctrl_value, actual_value))
 
-
     def set_nocheck(self, ctrl_name, ctrl_value, prefix=''):
         """Set the value of a gpio using Servod.
 
@@ -858,16 +826,7 @@ class Servo(object):
         try:
             self._server.set(ctrl_name, ctrl_value)
         except  xmlrpclib.Fault as e:
-            err_str = self._get_xmlrpclib_exception(e)
-            err_msg = "Setting '%s' :: %s" % (ctrl_name, err_str)
-            unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
-            if unknown_ctrl:
-                raise ControlUnavailableError('No control named %r' %
-                                              unknown_ctrl[0])
-            else:
-                logging.error(err_msg)
-                raise error.TestFail(err_msg)
-
+            self._inspect_control_failure(e, ctrl_name, get=False)
 
     def set_get_all(self, controls):
         """Set &| get one or more control values.
@@ -955,6 +914,12 @@ class Servo(object):
         if image_path:
             # Set up Servo's usb mux.
             self.switch_usbkey('host')
+            # TODO(crbug.com/1017308: remove this power-cycling once
+            # the bug has been fixed on the hdctools side of things.
+            logging.info('Power cycling the usb stick port before download '
+                         'one more time')
+            self.set('image_usbkey_pwr', 'off')
+            self.set('image_usbkey_pwr', 'on')
             logging.info('Searching for usb device and copying image to it. '
                          'Please wait a few minutes...')
             if not self._server.download_image_to_usb(image_path):
@@ -969,9 +934,16 @@ class Servo(object):
 
     def boot_in_recovery_mode(self):
         """Boot host DUT in recovery mode."""
-        self._power_state.power_on(rec_mode=self._power_state.REC_ON)
         self.switch_usbkey('dut')
 
+        # TODO(crbug.com/1017308: remove this power-cycling once
+        # the bug has been fixed on the hdctools side of things.
+        self.set('image_usbkey_pwr', 'off')
+        time.sleep(self.USB_POWEROFF_DELAY)
+        self.set('image_usbkey_pwr', 'on')
+        time.sleep(self.USB_POWERON_DELAY)
+
+        self._power_state.power_on(rec_mode=self._power_state.REC_ON)
 
     def install_recovery_image(self, image_path=None,
                                make_image_noninteractive=False):
@@ -1183,14 +1155,21 @@ class Servo(object):
 
         @return: Path to extracted EC image.
         """
+
+        # Ignore extracting EC image and re-programming if not a Chrome EC
+        chrome_ec = FAFTConfig(board).chrome_ec
+        if not chrome_ec:
+            logging.info('Not a Chrome EC, ignore re-programming it')
+            return None
+
         # Best effort; try to retrieve the EC board from the version as
         # reported by the EC.
         ec_board = None
         try:
-          ec_board = self.get('ec_board')
+            ec_board = self.get('ec_board')
         except Exception as err:
-          logging.info('Failed to get ec_board value; ignoring')
-          pass
+            logging.info('Failed to get ec_board value; ignoring')
+            pass
 
         # Array of candidates for EC image
         ec_image_candidates = ['ec.bin',
@@ -1204,8 +1183,12 @@ class Servo(object):
         ec_image = _extract_image_from_tarball(tarball_path, dest_dir,
                                                ec_image_candidates)
 
-        # Return path to EC image
-        return os.path.join(dest_dir, ec_image)
+        # Check if EC image was found and return path or raise error
+        if ec_image:
+            return os.path.join(dest_dir, ec_image)
+        else:
+            raise error.TestError('Failed to extract EC image from %s',
+                                  tarball_path)
 
 
     def extract_bios_image(self, board, model, tarball_path):
@@ -1228,8 +1211,12 @@ class Servo(object):
         bios_image = _extract_image_from_tarball(tarball_path, dest_dir,
                                                  bios_image_candidates)
 
-        # Return path to BIOS image
-        return os.path.join(dest_dir, bios_image)
+        # Check if BIOS image was found and return path or raise error
+        if bios_image:
+            return os.path.join(dest_dir, bios_image)
+        else:
+            raise error.TestError('Failed to extract BIOS image from %s',
+                                  tarball_path)
 
 
     def _switch_usbkey_power(self, power_state, detection_delay=False):
@@ -1421,6 +1408,60 @@ class Servo(object):
             self.set_nocheck('watchdog_add', 'ccd')
 
 
+    def _get_servo_type_fw_version(self, servo_type, prefix=''):
+        """Helper to handle fw retrieval for micro/v4 vs ccd.
+
+        @param servo_type: one of 'servo_v4', 'servo_micro', 'ccd_cr50'
+        @param prefix: whether the control has a prefix
+
+        @returns: fw version for non-ccd devices, cr50 version for ccd device
+        """
+        if servo_type == 'ccd_cr50':
+            # ccd_cr50 runs on cr50, so need to query the cr50 fw.
+            servo_type = 'cr50'
+        cmd = '%s_version' % servo_type
+        try:
+            return self.get(cmd, prefix=prefix)
+        except error.TestFail:
+            # Do not fail here, simply report the version as unknown.
+            logging.warn('Unable to query %r to get servo fw version.', cmd)
+            return 'unknown'
+
+
+    def get_servo_fw_versions(self):
+        """Retrieve a summary of attached servos and their firmware.
+
+        Note: that only the Google firmware owned servos supports this e.g.
+        micro, v4, etc. For anything else, the dictionary will have no entry.
+        If no device is has Google owned firmware (e.g. v3) then the result
+        is an empty dictionary.
+
+        @returns: dict, a collection of each attached servo & their firmware.
+        """
+        def get_fw_version_tag(tag, dev):
+            return '%s_version.%s' % (dev, tag)
+
+        fw_versions = {}
+        if 'servo_v4' not in self._servo_type:
+            return {}
+        v4_tag = get_fw_version_tag('support', 'servo_v4')
+        fw_versions[v4_tag] = self._get_servo_type_fw_version('servo_v4')
+        if 'with' in self._servo_type:
+            dut_devs = self._servo_type.split('_with_')[1].split('_and_')
+            main_tag = get_fw_version_tag('main', dut_devs[0])
+            fw_versions[main_tag] = self._get_servo_type_fw_version(dut_devs[0])
+            if len(dut_devs) == 2:
+                # Right now, the only way for this to happen is for a dual setup
+                # to exist where ccd is attached on top of servo micro. Thus, we
+                # know that the prefix is ccd_cr50 and the type is ccd_cr50.
+                # TODO(coconutruben): If the new servod is not deployed by
+                # the time that there are more cases of '_and_' devices,
+                # this needs to be reworked.
+                dual_tag = get_fw_version_tag('ccd_flex_secondary', dut_devs[1])
+                fw = self._get_servo_type_fw_version(dut_devs[1], 'ccd_cr50')
+                fw_versions[dual_tag] = fw
+        return fw_versions
+
     @property
     def uart_logs_dir(self):
         """Return the directory to save UART logs."""
@@ -1436,8 +1477,10 @@ class Servo(object):
             self._uart.logs_dir = logs_dir
 
 
-    def close(self):
+    def close(self, outdir=None):
         """Close the servo object."""
+        if outdir and not self.uart_logs_dir:
+            self.uart_logs_dir = outdir
         if self._uart:
             self._uart.stop_capture()
             self._uart.dump()

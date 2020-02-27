@@ -440,31 +440,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return staged_path[2]
 
 
-    def _get_staged_file_info(self, staged_url, retries=5):
-        """
-        Gets the staged files info that includes SHA256 and size.
-
-        @param staged_url: the staged file url.
-        @param retries: Number of times to try get the file info.
-
-        @returns file info (SHA256 and size).
-
-        """
-        split_url = staged_url.rpartition('/static/')
-        file_info_url = os.path.join(split_url[0], 'api/fileinfo', split_url[2])
-        logging.info('file info url: %s', file_info_url)
-        devserver_hostname = urlparse.urlparse(file_info_url).hostname
-        cmd = 'ssh %s \'curl "%s"\'' % (devserver_hostname,
-                                        utils.sh_escape(file_info_url))
-        for i in range(retries):
-            try:
-                result = utils.run(cmd).stdout
-                return json.loads(result)
-            except error.CmdError as e:
-                logging.error('Failed to read file info: %s', e)
-        raise error.TestError('Could not reach fileinfo API on devserver.')
-
-
     @staticmethod
     def _get_stateful_uri(build_uri):
         """Returns a complete GS URI of a stateful update given a build path."""
@@ -520,9 +495,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         payload_filename = payload_url.rpartition('/')[2]
-        utils.run('gsutil cp %s %s' % (payload_url, self._CELLULAR_BUCKET))
+        utils.run('gsutil cp %s* %s' % (payload_url, self._CELLULAR_BUCKET))
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
-        utils.run('gsutil acl ch -u AllUsers:R %s' % new_gs_url)
+        utils.run('gsutil acl ch -u AllUsers:R %s*' % new_gs_url)
         return new_gs_url.replace('gs://', 'https://storage.googleapis.com/')
 
 
@@ -630,19 +605,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._create_update_engine_variables(host.run, host.get_file)
 
 
-    def _run_client_test_and_check_result(self, test_name, **kwargs):
-        """
-        Kicks of a client autotest and checks that it didn't fail.
-
-        @param test_name: client test name
-        @param **kwargs: key-value arguments to pass to the test.
-
-        """
-        client_at = autotest.Autotest(self._host)
-        client_at.run_test(test_name, **kwargs)
-        client_at._check_client_test_result(self._host, test_name)
-
-
     def _change_cellular_setting_in_update_engine(self,
                                                   update_over_cellular=True):
         """
@@ -689,8 +651,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
 
     def get_update_url_for_test(self, job_repo_url, full_payload=True,
-                                critical_update=False, max_updates=1,
-                                public=False, moblab=False):
+                                critical_update=False, public=False,
+                                moblab=False):
         """
         Get the correct update URL for autoupdate tests to use.
 
@@ -710,9 +672,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
         @param critical_update: bool whether we need a critical update.
-        @param max_updates: int number of updates the test will perform. This
-                            is passed to src/platform/dev/devserver.py if we
-                            create our own deverver.
         @param public: url needs to be publicly accessible.
         @param moblab: True if we are running on moblab.
 
@@ -764,7 +723,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # We need to start our own devserver instance on the lab devserver
         # for the rest of the test scenarios.
         self._omaha_devserver = omaha_devserver.OmahaDevserver(
-            lab_devserver.hostname, payload_location, max_updates=max_updates,
+            lab_devserver.hostname, payload_location,
             critical_update=critical_update, moblab=moblab)
         self._omaha_devserver.start_devserver()
 

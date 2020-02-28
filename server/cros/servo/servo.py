@@ -28,13 +28,39 @@ _USB_PROBE_TIMEOUT = 40
 NO_CONTROL_RE = re.compile(r'No control named (\w*\.?\w*)')
 
 
+# Regex to match XMLRPC errors due to a console being unresponsive.
+NO_CONSOLE_OUTPUT_RE = re.compile(r'No data was sent from the pty\.')
+
+
+# Regex to match XMLRPC errors due to a console control failing, but the
+# underlying Console being responsive.
+CONSOLE_MISMATCH_RE = re.compile(r'Timeout waiting for response. '
+                                 r'There was output')
+
+
 # The minimum voltage on the charger port on servo v4 that is expected. This is
 # to query whether a charger is plugged into servo v4 and thus pd control
 # capabilities can be used.
 V4_CHG_ATTACHED_MIN_VOLTAGE_MV = 4400
 
+
 class ControlUnavailableError(error.TestFail):
     """Custom error class to indicate a control is unavailable on servod."""
+    pass
+
+
+class ConsoleError(error.TestFail):
+    """Common error class for servod console-back control failures."""
+    pass
+
+
+class UnresponsiveConsoleError(ConsoleError):
+    """Error for: A console control fails for lack of console output."""
+    pass
+
+
+class ResponsiveConsoleError(ConsoleError):
+    """Error for: A console control fails but console is responsive."""
     pass
 
 
@@ -750,6 +776,10 @@ class Servo(object):
         @param get: bool, whether this was a get() or a set() call
 
         @raises ControlUnavailableError: if error message matches NO_CONTROL_RE
+        @raises UnresponsiveConsoleError: if error message matches
+                                          NO_CONSOLE_OUTPUT_RE
+        @raises ResponsiveConsoleError: if error message matches
+                                        CONSOLE_MISMATCH_RE
         @raises error.TestFail: otherwise
         """
         err_str = self._get_xmlrpclib_exception(e)
@@ -765,8 +795,11 @@ class Servo(object):
         # The error message for unavailble controls is huge as it prints
         # all available controls. Do not log it explicitly.
         logging.error(err_msg)
+        if re.findall(NO_CONSOLE_OUTPUT_RE, err_str):
+            raise UnresponsiveConsoleError('Console not printing output.')
+        elif re.findall(CONSOLE_MISMATCH_RE, err_str):
+            raise ResponsiveConsoleError('Control failed but console alive.')
         raise error.TestFail(err_msg)
-
 
     def get(self, ctrl_name, prefix=''):
         """Get the value of a gpio from Servod.
@@ -1176,7 +1209,7 @@ class Servo(object):
                                '%s/ec.bin' % model,
                                '%s/ec.bin' % board]
         if ec_board:
-          ec_image_candidates.append('%s/ec.bin' % ec_board)
+            ec_image_candidates.append('%s/ec.bin' % ec_board)
 
         # Extract EC image from tarball
         dest_dir = os.path.join(os.path.dirname(tarball_path), 'EC')
@@ -1201,10 +1234,21 @@ class Servo(object):
         @return: Path to extracted BIOS image.
         """
 
+        # Best effort; try to retrieve the EC board from the version as
+        # reported by the EC.
+        ec_board = None
+        try:
+            ec_board = self.get('ec_board')
+        except Exception as err:
+            logging.info('Failed to get ec_board value; ignoring')
+            pass
+
         # Array of candidates for BIOS image
         bios_image_candidates = ['image.bin',
                                  'image-%s.bin' % model,
                                  'image-%s.bin' % board]
+        if ec_board:
+            bios_image_candidates.append('image-%s.bin' % ec_board)
 
         # Extract BIOS image from tarball
         dest_dir = os.path.join(os.path.dirname(tarball_path), 'BIOS')

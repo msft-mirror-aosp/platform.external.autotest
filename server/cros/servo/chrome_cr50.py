@@ -835,7 +835,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         batt_is_disconnected = self.get_batt_pres_state()[1]
         req_pp = self._level_change_req_pp(level)
         has_pp = not self._servo.main_device_is_ccd()
-        dbg_en = 'DBG' in self._servo.get('cr50_version')
+        dbg_en = self.get_active_version_info()[2]
 
         if req_pp and not has_pp:
             raise error.TestError("Can't change privilege level to '%s' "
@@ -1142,3 +1142,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         reset_cause = self.get_reset_cause()
         reset_flag = self.RESET_FLAGS[reset_type]
         return bool(reset_cause & reset_flag)
+
+
+    def get_devid(self):
+        """Returns the cr50 serial number."""
+        return self.send_command_retry_get_output('sysinfo',
+                ['DEV_ID:\s+(0x[0-9a-f]{8} 0x[0-9a-f]{8})'])[0][1]
+
+
+    def get_serial(self):
+        """Returns the cr50 serial number."""
+        serial = self.get_devid().replace('0x', '').replace(' ', '-').upper()
+        logging.info('CCD serial: %s', serial)
+        return serial

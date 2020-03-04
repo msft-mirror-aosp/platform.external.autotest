@@ -402,6 +402,10 @@ class Autotest(installable_object.InstallableObject):
         if self.installed and self.source_material:
             self._send_shadow_config()
 
+        # sync the disk, to avoid getting 0-byte files if a test resets the DUT
+        host.run(os.path.join(autodir, 'bin', 'fs_sync.py'),
+                 ignore_status=True)
+
     def _send_shadow_config(self):
         logging.info('Installing updated global_config.ini.')
         destination = os.path.join(self.host.get_autodir(),

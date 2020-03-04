@@ -25,8 +25,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts_instant-9.0_r10-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts_instant-9.0_r10-linux_x86-x86.zip',
+    'arm': _PUBLIC_CTS + 'android-cts_instant-9.0_r11-linux_x86-arm.zip',
+    'x86': _PUBLIC_CTS + 'android-cts_instant-9.0_r11-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -43,11 +43,17 @@ class cheets_CTS_Instant(tradefed_test.TradefedTest):
         cmd = []
         for arg in template:
             cmd.append(arg.format(session_id=session_id))
+        # See b/149681932. Pass empty url to force using local config, instead
+        # of doing a network access (which anyway returns an empty config.)
+        cmd.append('--dynamic-config-url=')
         return cmd
 
     def _tradefed_run_command(self, template):
         """Build tradefed 'run' command from template."""
         cmd = template[:]
+        # See b/149681932. Pass empty url to force using local config, instead
+        # of doing a network access (which anyway returns an empty config.)
+        cmd.append('--dynamic-config-url=')
         # If we are running outside of the lab we can collect more data.
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')

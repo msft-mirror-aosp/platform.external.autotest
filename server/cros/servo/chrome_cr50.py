@@ -134,6 +134,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
            'BOARD_CLOSED_LOOP_RESET'     : 1 << 18,
            'BOARD_NO_INA_SUPPORT'        : 1 << 19,
            'BOARD_ALLOW_CHANGE_TPM_MODE' : 1 << 20,
+           'BOARD_EC_CR50_COMM_SUPPORT'  : 1 << 21,
+           'BOARD_CCD_REC_LID_PIN_DIOA1' : 0x01 << 22,
+           'BOARD_CCD_REC_LID_PIN_DIOA9' : 0x02 << 22,
+           'BOARD_CCD_REC_LID_PIN_DIOA12': 0x03 << 22,
     }
 
     # CR50 reset flags as defined in platform ec_commands.h. These are only the
@@ -469,7 +473,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """
         brdprop = self.get_board_properties()
         prop = self.BOARD_PROP[prop_name]
-        return bool(brdprop & prop)
+        return (brdprop & prop) == prop
 
 
     def has_command(self, cmd):
@@ -831,7 +835,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         batt_is_disconnected = self.get_batt_pres_state()[1]
         req_pp = self._level_change_req_pp(level)
         has_pp = not self._servo.main_device_is_ccd()
-        dbg_en = 'DBG' in self._servo.get('cr50_version')
+        dbg_en = self.get_active_version_info()[2]
 
         if req_pp and not has_pp:
             raise error.TestError("Can't change privilege level to '%s' "
@@ -1138,3 +1142,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         reset_cause = self.get_reset_cause()
         reset_flag = self.RESET_FLAGS[reset_type]
         return bool(reset_cause & reset_flag)
+
+
+    def get_devid(self):
+        """Returns the cr50 serial number."""
+        return self.send_command_retry_get_output('sysinfo',
+                ['DEV_ID:\s+(0x[0-9a-f]{8} 0x[0-9a-f]{8})'])[0][1]
+
+
+    def get_serial(self):
+        """Returns the cr50 serial number."""
+        serial = self.get_devid().replace('0x', '').replace(' ', '-').upper()
+        logging.info('CCD serial: %s', serial)
+        return serial

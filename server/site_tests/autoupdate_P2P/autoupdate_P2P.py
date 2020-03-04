@@ -5,7 +5,6 @@
 import logging
 import os
 import re
-import urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -119,12 +118,8 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
                                  desc='Waiting for update engine idle')
 
         logging.info('Updating first DUT with a regular update.')
-        # Split the URL into server and port.
-        url_split = urlparse.urlsplit(update_url)
-        server, port = url_split.netloc.split(':')
         try:
-            self._check_for_update(server=server, port=int(port),
-                                   wait_for_completion=True)
+            self._check_for_update(update_url, wait_for_completion=True)
         except error.AutoservRunError:
             logging.exception('Failed to update the first DUT.')
             raise error.TestFail('Updating the first DUT failed. Error: %s.' %
@@ -177,13 +172,9 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
                                  desc='Waiting for update engine idle')
 
         logging.info('Updating second host via p2p.')
-        # Split the URL into server and port.
-        url_split = urlparse.urlsplit(update_url)
-        server, port = url_split.netloc.split(':')
-
         try:
-            self._check_for_update(server=server, port=int(port),
-                                   wait_for_completion=True, interactive=False)
+            self._check_for_update(update_url, wait_for_completion=True,
+                                   interactive=False)
         except error.AutoservRunError:
             logging.exception('Failed to update the second DUT via P2P.')
             raise error.TestFail('Failed to update the second DUT. Error: %s' %
@@ -310,8 +301,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         # P2P updates are very slow so we will only update with a delta payload.
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=False,
-                                                  critical_update=False,
-                                                  max_updates=2)
+                                                  critical_update=False)
 
         # The first device just updates normally.
         self._update_dut(self._hosts[0], update_url)

@@ -59,6 +59,7 @@ CONFIG['CTS_MAX_RETRIES'] = {
     'CtsDeqpTestCases':         15,  # TODO(b/126787654)
     'CtsIncidentHostTestCases': 30,  # TODO(b/128695132)
     'CtsSensorTestCases':       30,  # TODO(b/124528412)
+    'CtsUiAutomationTestCases':  9,  # TODO(b/145270500)
 }
 
 # Timeout in hours.
@@ -96,8 +97,6 @@ CONFIG['CTS_TIMEOUT'] = {
 # timeouts), it's ok to let them go in. Bad state of camre should be caught by
 # camera tests, not by this general CTS sanity test.
 CONFIG['BVT_TIMEOUT'] = 0.2
-# We allow a very long runtime for qualification (2 days).
-CONFIG['QUAL_TIMEOUT'] = 48
 
 CONFIG['QUAL_BOOKMARKS'] = sorted([
     'A',  # A bookend to simplify partition algorithm.
@@ -146,7 +145,6 @@ CONFIG['BVT_PERBUILD'] = [
     'CtsThemeDeviceTestCases',
     'CtsTransitionTestCases',
     'CtsTvTestCases',
-    'CtsUiAutomationTestCases',
     'CtsUsbTests',
     'CtsVoiceSettingsTestCases',
 ]
@@ -181,6 +179,13 @@ CONFIG['MEDIA_MODULES'] = [
 ]
 
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES']
+
+# See b/149889853. Non-media test basically does not require dynamic
+# config. To reduce the flakiness, let us suppress the config.
+CONFIG['NEEDS_DYNAMIC_CONFIG_ON_COLLECTION'] = False
+CONFIG['NEEDS_DYNAMIC_CONFIG'] = CONFIG['MEDIA_MODULES'] + [
+    'CtsIntentSignatureTestCases'
+]
 
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [

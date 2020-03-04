@@ -4,7 +4,6 @@
 
 import logging
 import random
-import urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -19,8 +18,7 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         super(autoupdate_Interruptions, self).cleanup()
 
 
-    def run_once(self, full_payload=True, interrupt=None, job_repo_url=None,
-                 max_updates=2):
+    def run_once(self, full_payload=True, interrupt=None, job_repo_url=None):
         """
         Runs an update with interruptions from the user.
 
@@ -30,27 +28,22 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
                              out the current build and the devserver to use.
                              The test will read this from a host argument
                              when run in the lab.
-        @param max_updates: The number of update attempts the devserver should
-                            accept.
 
         """
 
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=full_payload,
-                                                  critical_update=True,
-                                                  max_updates=max_updates)
+                                                  critical_update=True)
         chromeos_version = self._get_chromeos_version()
 
         # Choose a random downloaded progress to interrupt the update.
         progress = random.uniform(0.1, 0.6)
         logging.info('Progress when we will begin interruptions: %f', progress)
 
-        parsed_url = urlparse.urlparse(update_url)
-        server = 'http://%s' % parsed_url.hostname
         # Login, start the update, logout
         self._run_client_test_and_check_result(
-            'autoupdate_LoginStartUpdateLogout', server=server,
-            port=parsed_url.port, progress_to_complete=progress)
+            'autoupdate_LoginStartUpdateLogout', update_url=update_url,
+            progress_to_complete=progress)
 
         if interrupt is not None:
             if self._is_update_finished_downloading():
@@ -61,7 +54,7 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
                 self._host.reboot()
                 utils.poll_for_condition(self._get_update_engine_status,
                                          desc='update engine to start')
-                self._check_for_update(server=server, port=parsed_url.port)
+                self._check_for_update(update_url)
             elif interrupt is 'network':
                 self._disconnect_then_reconnect_network(update_url)
             elif interrupt is 'suspend':
@@ -82,7 +75,9 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         self._host.reboot()
         utils.poll_for_condition(self._get_update_engine_status,
                                  desc='update engine to start')
-        self._check_for_update(server=server, port=parsed_url.port)
+        # We do check update with no_update=True so it doesn't start the update
+        # again.
+        self._check_for_update(update_url, no_update=True)
 
         # Verify that the update completed successfully by checking hostlog.
         rootfs_hostlog, reboot_hostlog = self._create_hostlog_files()

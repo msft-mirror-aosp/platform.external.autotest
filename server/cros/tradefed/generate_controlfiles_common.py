@@ -349,16 +349,21 @@ def get_dependencies(modules, abi, is_public, is_camerabox_test):
     return ', '.join(dependencies)
 
 
-def get_job_retries(modules, is_public):
+def get_job_retries(modules, is_public, suites):
     """Define the number of job retries associated with a module.
 
     @param module: CTS module which will be tested in the control file. If a
                    special module is specified, the control file will runs all
                    the tests without retry.
+    @param is_public: true if the control file is for moblab (public) use.
+    @param suites: the list of suites that the control file belongs to.
     """
     # TODO(haddowk): remove this when cts p has stabalized.
     if is_public:
         return CONFIG['CTS_JOB_RETRIES_IN_PUBLIC']
+    # Presubmit check forces to set 2 or more retries for CQ tests.
+    if 'suite:bvt-arc' in suites:
+        return 2
     retries = 1  # 0 is NO job retries, 1 is one retry etc.
     for module in modules:
         # We don't want job retries for module collection or special cases.
@@ -534,6 +539,8 @@ def _format_collect_cmd(retry):
     for m in CONFIG['MEDIA_MODULES']:
         cmd.append('--module-arg')
         cmd.append('%s:skip-media-download:true' % m)
+    if not CONFIG.get('NEEDS_DYNAMIC_CONFIG_ON_COLLECTION', True):
+        cmd.append('--dynamic-config-url=')
     return cmd
 
 
@@ -588,6 +595,11 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
         not (modules.intersection(CONFIG['BVT_ARC'] + CONFIG['SMOKE'] +
              CONFIG['NEEDS_DEVICE_INFO']))):
         cmd.append('--skip-device-info')
+    # If NEEDS_DYNAMIC_CONFIG is set, disable the feature except on the modules
+    # that explicitly set as needed.
+    if (CONFIG.get('NEEDS_DYNAMIC_CONFIG') and
+            not modules.intersection(CONFIG['NEEDS_DYNAMIC_CONFIG'])):
+        cmd.append('--dynamic-config-url=')
 
     return cmd
 
@@ -656,6 +668,7 @@ def calculate_timeout(modules, suites):
     if 'suite:bvt-arc' in suites:
         return int(3600 * CONFIG['BVT_TIMEOUT'])
     if CONFIG.get('QUAL_SUITE_NAMES') and \
+            CONFIG.get('QUAL_TIMEOUT') and \
             ((set(CONFIG['QUAL_SUITE_NAMES']) & set(suites)) and \
             not (_COLLECT in modules or _PUBLIC_COLLECT in modules)):
         return int(3600 * CONFIG['QUAL_TIMEOUT'])
@@ -742,7 +755,7 @@ def get_controlfile_content(combined,
             is_camerabox_test=(camera_facing is not None)),
         extra_artifacts=get_extra_artifacts(modules),
         extra_artifacts_host=get_extra_artifacts_host(modules),
-        job_retries=get_job_retries(modules, is_public),
+        job_retries=get_job_retries(modules, is_public, suites),
         max_result_size_kb=get_max_result_size_kb(modules, is_public),
         revision=revision,
         build=build,

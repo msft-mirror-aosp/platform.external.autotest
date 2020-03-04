@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts-9.0_r10-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts-9.0_r10-linux_x86-x86.zip',
+    'arm': _PUBLIC_CTS + 'android-cts-9.0_r11-linux_x86-arm.zip',
+    'x86': _PUBLIC_CTS + 'android-cts-9.0_r11-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -57,6 +57,11 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+        elif self._timeout <= 3600:
+            # TODO(kinaba): remove once crbug.com/1041833 is resolved.
+            logging.info('Add more debug log for small modules')
+            cmd.append('--log-level-display=VERBOSE')
+
         return cmd
 
     def _get_default_bundle_url(self, bundle):
@@ -129,6 +134,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             retry_manual_tests=retry_manual_tests,
             warn_on_test_retry=warn_on_test_retry,
             hard_reboot_on_failure=hard_reboot_on_failure)
+        self.extra_command_flags = []
         if camera_facing:
             self.initialize_camerabox(camera_facing, cmdline_args)
 

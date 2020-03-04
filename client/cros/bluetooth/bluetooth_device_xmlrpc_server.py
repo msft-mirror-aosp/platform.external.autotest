@@ -855,24 +855,31 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return self._encode_base64_json(devices)
 
 
-    @xmlrpc_server.dbus_safe(False)
-    def get_device_by_address(self, address):
-        """Read information about the remote device with the specified address.
+    @xmlrpc_server.dbus_safe(None)
+    def get_device_property(self, address, prop_name):
+        """Read a property of BT device by directly querying device dbus object
 
-        @param address: Address of the device to get.
+        @param address: Address of the device to query
+        @param prop_name: Property to be queried
 
-        @return the properties of the device as a JSON-encoded dictionary
-            on success, the value False otherwise.
-
+        @return Base 64 JSON repr of property if device is found and has
+                property, otherwise None on failure. JSON is a recursive
+                converter, automatically converting dbus types to python natives
+                and base64 allows us to pass special characters over xmlrpc.
+                Decode is done in bluetooth_device.py
         """
-        objects = self._bluez.GetManagedObjects(
-                dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=True)
-        devices = []
-        devices = self._get_devices()
-        for device in devices:
-            if device.get('Address') == address:
-                return self._encode_base64_json(device)
-        return json.dumps(dict())
+
+        prop_val = None
+
+        # Grab dbus object, _find_device will catch any thrown dbus error
+        device_obj = self._find_device(address)
+
+        if device_obj:
+            # Query dbus object for property
+            prop_val = device_obj.Get(self.BLUEZ_DEVICE_IFACE, prop_name,
+                                      dbus_interface=dbus.PROPERTIES_IFACE)
+
+        return self._encode_base64_json(prop_val)
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -1497,21 +1504,22 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @param error_handler: the error handler for the dbus method.
         @param *args: additional arguments for the dbus method.
 
-        @returns: True on success.
-                  False if the dbus method fails or exception occurs.
+        @returns: an empty string '' on success;
+                  None if there is no _advertising interface manager; and
+                  an error string if the dbus method fails or exception occurs
 
         """
         def successful_cb():
             """Called when the dbus_method completed successfully."""
             reply_handler()
-            self.dbus_async_method_ret = True
+            self.dbus_cb_msg = ''
             self._dbus_mainloop.quit()
 
 
         def error_cb(error):
             """Called when the dbus_method failed."""
             error_handler(error)
-            self.dbus_async_method_ret = False
+            self.dbus_cb_msg = str(error)
             self._dbus_mainloop.quit()
 
 
@@ -1521,11 +1529,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                         error_handler=error_cb)
         except Exception as e:
             logging.error('Exception %s in dbus_async_method ', e)
-            return False
+            return str(e)
 
         self._dbus_mainloop.run()
 
-        return self.dbus_async_method_ret
+        return self.dbus_cb_msg
 
 
     def register_advertisement(self, advertisement_data):
@@ -2093,7 +2101,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         if plugin_device is None:
             return False
 
-        return self.dbus_async_method(
+        return not self.dbus_async_method(
                 plugin_device.SetLEConnectionParameters,
                 # reply handler
                 lambda: logging.info(

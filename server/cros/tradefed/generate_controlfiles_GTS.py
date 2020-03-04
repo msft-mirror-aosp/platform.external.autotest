@@ -73,9 +73,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
 
 CONFIG['SMOKE'] = []
 
-CONFIG['BVT_ARC'] = [
-    'GtsContactsTest',
-]
+CONFIG['BVT_ARC'] = []
 
 CONFIG['BVT_PERBUILD'] = [
     'GtsAdminTestCases',
@@ -112,7 +110,8 @@ CONFIG['PUBLIC_DEPENDENCIES'] = {}
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
   _ALL: 2,
-  'GtsMediaTestCases': 5   # TODO(b/140841434)
+  'GtsMediaTestCases': 5,  # TODO(b/140841434)
+  'GtsYouTubeTestCases': 5,  # TODO(b/149376356)
 }
 
 CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {

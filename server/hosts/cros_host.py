@@ -206,18 +206,36 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param args_dict Dictionary from which to extract the chameleon
           arguments.
         """
-        if 'chameleon_host_list' in args_dict:
-            result = []
-            for chameleon in args_dict['chameleon_host_list'].split(','):
-                result.append({key: value for key,value in
-                    zip(('chameleon_host','chameleon_port'),
-                    chameleon.split(':'))})
+        return {key: args_dict[key]
+                for key in ('chameleon_host', 'chameleon_port')
+                if key in args_dict}
 
-            logging.info(result)
+    @staticmethod
+    def get_btpeer_arguments(args_dict):
+        """Extract btpeer options from `args_dict` and return the result.
+
+        This is used to parse details of Bluetooth peer.
+        Recommended usage:
+        ~~~~~~~~
+            args_dict = utils.args_to_dict(args)
+            btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)
+            host = hosts.create_host(machine)
+            host.initialize_btpeer(btpeer_args)
+        ~~~~~~~~
+
+        @param args_dict: Dictionary from which to extract the btpeer
+          arguments.
+        """
+        if 'btpeer_host_list' in args_dict:
+            result = []
+            for btpeer in args_dict['btpeer_host_list'].split(','):
+                result.append({key: value for key,value in
+                    zip(('btpeer_host','btpeer_port'),
+                    btpeer.split(':'))})
             return result
         else:
            return {key: args_dict[key]
-                for key in ('chameleon_host', 'chameleon_port')
+                for key in ('btpeer_host', 'btpeer_port')
                 if key in args_dict}
 
 
@@ -317,24 +335,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
-        if type(chameleon_args) is list:
-            self.multi_chameleon = True
-            chameleon_args_list = chameleon_args
-        else:
-            self.multi_chameleon = False
-            chameleon_args_list = [chameleon_args]
-
-        self._chameleon_host_list = [
-            chameleon_host.create_chameleon_host(
-            dut=self.hostname, chameleon_args=_args)
-            for _args in chameleon_args_list]
-
-        self.chameleon_list = [_host.create_chameleon_board() for _host in
-                               self._chameleon_host_list if _host is not None]
-        if len(self.chameleon_list) > 0:
-            self.chameleon = self.chameleon_list[0]
+        self._chameleon_host = chameleon_host.create_chameleon_host(
+            dut=self.hostname, chameleon_args=chameleon_args)
+        if self._chameleon_host:
+            self.chameleon = self._chameleon_host.create_chameleon_board()
         else:
             self.chameleon = None
+
+        # Bluetooth peers. These will be initialized by test if required.
+        self._btpeer_host_list = []
+        self.btpeer_list = []
+        self.btpeer = None
 
         # Add pdtester host if pdtester args were added on command line
         self._pdtester_host = pdtester_host.create_pdtester_host(
@@ -348,6 +359,37 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     self._pdtester_host.get_servod_server_proxy())
         else:
             self.pdtester = None
+
+
+    def initialize_btpeer(self, btpeer_args):
+        """ Initialize the Bluetooth peers
+
+        Initialize Bluetooth peer devices given in the arguments. Bluetooth peer
+        is chameleon host on Raspberry Pi.
+        @param btpeer_args: A dictionary that contains args for creating
+                            a ChameleonHost. See chameleon_host for details.
+
+        """
+
+        if type(btpeer_args) is list:
+            btpeer_args_list = btpeer_args
+        else:
+            btpeer_args_list = [btpeer_args]
+
+        self._btpeer_host_list = chameleon_host.create_btpeer_host(
+                dut=self.hostname, btpeer_args_list=btpeer_args_list)
+        logging.debug('Bluetooth peer hosts are  %s', self._btpeer_host_list)
+        self.btpeer_list = [_host.create_chameleon_board() for _host in
+                               self._btpeer_host_list if _host is not None]
+
+        if len(self.btpeer_list) > 0:
+            self.btpeer = self.btpeer_list[0]
+        else:
+            self.btpeer = None
+
+        logging.debug('After initialize_btpeer btpeer_list %s btpeer_host_list'
+                      'is %s and btpeer is %s',self.btpeer_list,
+                      self._btpeer_host_list, self.btpeer)
 
 
     def get_cros_repair_image_name(self):
@@ -971,9 +1013,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Close connection."""
         super(CrosHost, self).close()
 
-        for chameleon_host in self._chameleon_host_list:
-            if chameleon_host:
-                chameleon_host.close()
+        if self._chameleon_host:
+            self._chameleon_host.close()
 
         if self._servo_host:
             self._servo_host.close()

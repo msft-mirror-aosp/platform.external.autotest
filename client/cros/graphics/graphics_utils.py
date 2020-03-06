@@ -709,7 +709,7 @@ def is_nv12_supported_by_drm_planes():
     This is a crude way to figure out if the device will not be able to promote
     video frames to overlays at all, which happens for example on Broadwell.
     """
-    modetest_output = utils.system_output('modetest -p')
+    modetest_output = utils.system_output('modetest -p', retain_output=True)
     return "nv12" in modetest_output.lower()
 
 def get_modetest_output_state():

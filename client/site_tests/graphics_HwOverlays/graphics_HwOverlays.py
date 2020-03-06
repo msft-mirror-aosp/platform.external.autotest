@@ -46,7 +46,7 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest,
         logging.info("Internal display ID is %s", internal_display_id)
         display_facade.set_display_rotation(internal_display_id, rotation=0)
 
-    def run_once(self, html_file, data_file_url = None, is_video = False,
+    def run_once(self, html_file, data_file_url = None,
                  use_skia_renderer = False):
         """Normalizes the environment, starts a Chrome environment, and
         executes the test in `html_file`.
@@ -59,6 +59,7 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest,
             logging.info('Skipping test: platform supports 2 or less planes')
             return
 
+        is_video = "video" in html_file
         if is_video and not graphics_utils.is_nv12_supported_by_drm_planes():
             logging.info('Skipping test: platform does not support NV12 planes')
             return

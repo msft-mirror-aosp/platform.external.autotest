@@ -68,7 +68,8 @@ AUTOTEST_BASE = _CONFIG.get_config_value(
 SERVO_STATE_LABEL_PREFIX = 'servo_state'
 SERVO_STATE_WORKING = 'WORKING'
 SERVO_STATE_BROKEN = 'BROKEN'
-
+SERVO_STATE_NOT_CONNECTED = 'NOT_CONNECTED'
+SERVO_STATE_UNKNOWN = 'UNKNOWN'
 
 class ServoHost(base_servohost.BaseServoHost):
     """Host class for a servo host(e.g. beaglebone, labstation)
@@ -525,7 +526,13 @@ class ServoHost(base_servohost.BaseServoHost):
             return
         fname = os.path.basename(res.stdout.strip())
         # From the fname, ought to extract the timestamp using the TS_EXTRACTOR
-        instance_ts = self.TS_EXTRACTOR.match(fname).group(self.TS_GROUP)
+        ts_match = self.TS_EXTRACTOR.match(fname)
+        if not ts_match:
+            logging.warning('Failed to extract timestamp from servod log file '
+                            '%r. Skipping. The servo host is using outdated '
+                            'servod logging and needs to be updated.', fname)
+            return
+        instance_ts = ts_match.group(self.TS_GROUP)
         # Create the local results log dir.
         log_dir = os.path.join(outdir, '%s_%s.%s' % (self.LOG_DIR,
                                                      str(self.servo_port),
@@ -872,3 +879,23 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         except Exception:
             logging.exception('servo verify failed for %s', newhost.hostname)
     return newhost
+
+
+def _is_servo_host_information_exist(hostname, port_int):
+    if hostname is None or len(hostname.strip()) == 0:
+        return False
+    if port_int is None or not type(port_int) is int:
+        return False
+    return True
+
+
+def is_servo_host_information_valid(hostname, port_int):
+    if not _is_servo_host_information_exist(hostname, port_int):
+        return False
+    # checking range and correct of the port
+    if port_int < 1 or port_int > 65000:
+        return False
+    # we expecting host contain only latters, digits and '-' or '_'
+    if not re.match('[a-zA-Z0-9-_]*$', hostname) or len(hostname) < 5:
+        return False
+    return True

@@ -11,7 +11,7 @@ import os
 import re
 
 from autotest_lib.client.common_lib.cros import cr50_utils, dev_server
-from autotest_lib.server.cros import gsutil_wrapper
+from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
 from autotest_lib.server import test
 
 
@@ -21,7 +21,6 @@ GS_URL = 'gs://chromeos-releases/dev-channel/' + BUILDER
 # Firmware artifacts are stored in files like this.
 #   ChromeOS-firmware-R79-12519.0.0-reef.tar.bz2
 FIRMWARE_NAME = 'ChromeOS-firmware-%s-%s.tar.bz2'
-LATEST_IMAGE = '%s-release/LATEST' % BUILDER
 REMOTE_TMPDIR = '/tmp/cr50_tot_update'
 CR50_IMAGE_PATH = 'cr50/ec.bin'
 
@@ -34,22 +33,14 @@ class provision_Cr50TOT(test.test):
     """
     version = 1
 
-    def get_latest_reef_build(self):
-        """Find the latest reef image."""
-        image = 'reef-release/LATEST'
-        ds = dev_server.ImageServer.resolve(image, self.host.hostname)
-        return ds.translate(LATEST_IMAGE).split('/')[-1].strip()
-
-
     def get_latest_cr50_build(self):
         """Download the TOT cr50 image from the reef artifacts."""
         self.host.run('mkdir -p %s' % (REMOTE_TMPDIR))
 
-        latest_version_with_milestone = self.get_latest_reef_build()
-        latest_version = latest_version_with_milestone.split('-')[-1]
-
-        bucket = os.path.join(GS_URL, latest_version)
-        filename = FIRMWARE_NAME % (latest_version_with_milestone, BUILDER)
+        latest_ver = dev_server.ImageServer.get_latest_build('reef-release')
+        bucket = os.path.join(GS_URL, latest_ver.split('-')[-1])
+        filename = FIRMWARE_NAME % (latest_ver, BUILDER)
+        logging.info('Using cr50 image from %s', latest_ver)
 
         # Download the firmware artifacts from google storage.
         gsutil_wrapper.copy_private_bucket(host=self.host,
@@ -81,6 +72,8 @@ class provision_Cr50TOT(test.test):
         self.host = host
         cr50_path = self.get_latest_cr50_build()
         logging.info('cr50 image is at %s', cr50_path)
+        local_path = os.path.join(self.resultsdir, 'cr50.bin.tot')
+        self.host.get_file(cr50_path, local_path)
         expected_version = self.get_bin_version(cr50_path)
 
         cr50_utils.GSCTool(self.host, ['-a', cr50_path])
@@ -93,3 +86,5 @@ class provision_Cr50TOT(test.test):
         # how often it fails and why.
         if cr50_version.split('/')[-1] != expected_version:
             logging.info('Unable to udpate Cr50.')
+        filesystem_util.make_rootfs_writable(self.host)
+        cr50_utils.InstallImage(self.host, local_path, cr50_utils.CR50_PREPVT)

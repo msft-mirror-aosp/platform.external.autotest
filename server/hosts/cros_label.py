@@ -198,9 +198,9 @@ class BluetoothPeerLabel(base_label.StringPrefixLabel):
         return labels_list
 
     def update_for_task(self, task_name):
-        # This label is stored in the lab config, so only deploy tasks update it
-        # or when no task name is mentioned.
-        return task_name in (DEPLOY_TASK_NAME, '')
+        # This label is stored in the state config, so only repair tasks update
+        # it or when no task name is mentioned.
+        return task_name in (REPAIR_TASK_NAME, '')
 
 
 class ECLabel(base_label.BaseLabel):
@@ -259,6 +259,11 @@ class Cr50Label(base_label.StringPrefixLabel):
         major_version = int(version.split('.')[1])
         # PVT images have a odd major version prePVT have even
         return ['pvt' if (major_version % 2) else 'prepvt']
+
+    def update_for_task(self, task_name):
+        # This label is stored in the state config, so only repair tasks update
+        # it or when no task name is mentioned.
+        return task_name in (REPAIR_TASK_NAME, '')
 
 
 class Cr50RWKeyidLabel(Cr50Label):
@@ -931,7 +936,7 @@ class ReferenceDesignLabel(base_label.StringPrefixLabel):
 
 CROS_LABELS = [
     AudioLoopbackDongleLabel(), #STATECONFIG
-    BluetoothPeerLabel(), #LABCONFIG
+    BluetoothPeerLabel(), #STATECONFIG
     ChameleonConnectionLabel(), #LABCONFIG
     ChameleonLabel(), #STATECONFIG
     ChameleonPeripheralsLabel(), #LABCONFIG

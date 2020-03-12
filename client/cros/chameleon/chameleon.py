@@ -447,6 +447,22 @@ class ChameleonBoard(object):
         return self._chameleond_proxy.bluetooth_base
 
 
+    def get_bluetooth_tester(self):
+        """Gets the Bluetooth tester object on Chameleon.
+
+        @return: A BluetoothTester object.
+        """
+        return self._chameleond_proxy.bluetooth_tester
+
+
+    def get_bluetooth_audio(self):
+        """Gets the Bluetooth audio object on Chameleon.
+
+        @return: A RaspiBluetoothAudioFlow object.
+        """
+        return self._chameleond_proxy.bluetooth_audio
+
+
     def get_bluetooth_hid_mouse(self):
         """Gets the emulated Bluetooth (BR/EDR) HID mouse on Chameleon.
 

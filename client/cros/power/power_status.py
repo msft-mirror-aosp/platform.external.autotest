@@ -19,7 +19,9 @@ import threading
 import time
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import error, enum
+from autotest_lib.client.common_lib import enum
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.utils import poll_for_condition_ex
 from autotest_lib.client.cros import kernel_trace
 from autotest_lib.client.cros.power import power_utils
@@ -2185,10 +2187,13 @@ class VideoFpsLogger(MeasurementLogger):
         self.refresh()
 
     def refresh(self):
-        current = self._tab.EvaluateJavaScript(
-            'Array.from(document.getElementsByTagName("video")).map('
-            'v => v.webkitDecodedFrameCount)')
-        fps = [(b - a) / self.seconds_period
+        @retry.retry(Exception, timeout_min=0.5, delay_sec=0.1)
+        def get_fps():
+            return self._tab.EvaluateJavaScript(
+                'Array.from(document.getElementsByTagName("video")).map('
+                'v => v.webkitDecodedFrameCount)')
+        current = get_fps()
+        fps = [(b - a if b >= a else b) / self.seconds_period
                for a, b in zip(self._last , current)]
         self._last = current
         return fps
@@ -2200,6 +2205,51 @@ class VideoFpsLogger(MeasurementLogger):
 
     def calc(self, mtype='fps'):
         return super(VideoFpsLogger, self).calc(mtype)
+
+
+def get_num_fans():
+    """Count how many fan DUT has.
+
+    Returns:
+        Integer, number of fans that DUT has.
+    """
+    res = utils.run('ectool pwmgetnumfans | grep -o [0-9]', ignore_status=True)
+    if not res or res.exit_status != 0:
+        return 0
+    return int(res.stdout)
+
+
+def has_fan():
+    """Determine if DUT has fan.
+
+    Returns:
+        Boolean, True if dut has fan.  False otherwise.
+    """
+    return get_num_fans() > 0
+
+
+class FanRpmLogger(MeasurementLogger):
+    """Class to measure Fan RPM."""
+
+    def __init__(self, seconds_period=1.0, checkpoint_logger=None):
+        """Initialize a FanRpmLogger."""
+        super(FanRpmLogger, self).__init__([], seconds_period,
+                                             checkpoint_logger)
+        self.domains =  ['fan_' + str(i) for i in range(get_num_fans())]
+        self.refresh()
+
+    def refresh(self):
+        cmd = 'ectool pwmgetfanrpm all | cut -f 2 -d: | xargs'
+        res = utils.run(cmd, ignore_status=True)
+        return [int(rpm) for rpm in res.stdout.split(' ')]
+
+    def save_results(self, resultsdir, fname_prefix=None):
+        if not fname_prefix:
+            fname_prefix = 'fan_rpm_results_%.0f' % time.time()
+        super(FanRpmLogger, self).save_results(resultsdir, fname_prefix)
+
+    def calc(self, mtype='rpm'):
+        return super(FanRpmLogger, self).calc(mtype)
 
 
 class DiskStateLogger(threading.Thread):

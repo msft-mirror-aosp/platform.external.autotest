@@ -85,6 +85,12 @@ class power_Test(test.test):
 
         self._meas_logs = [self._plog, self._tlog, self._clog]
 
+        if power_status.has_fan():
+            self._flog = power_status.FanRpmLogger(
+                seconds_period=seconds_period,
+                checkpoint_logger=self._checkpoint_logger)
+            self._meas_logs.append(self._flog)
+
         self._pdash_note = pdash_note
 
     def warmup(self, warmup_time=30):
@@ -183,18 +189,11 @@ class power_Test(test.test):
                                    higher_is_better=False, graph='temperature')
 
         # publish to power dashboard
-        pdash = power_dashboard.PowerLoggerDashboard(
-            self._plog, self.tagged_testname, self.resultsdir,
-            note=self._pdash_note)
-        pdash.upload()
-        cdash = power_dashboard.CPUStatsLoggerDashboard(
-            self._clog, self.tagged_testname, self.resultsdir,
-            note=self._pdash_note)
-        cdash.upload()
-        tdash = power_dashboard.TempLoggerDashboard(
-            self._tlog, self.tagged_testname, self.resultsdir,
-            note=self._pdash_note)
-        tdash.upload()
+        dashboard_factory = power_dashboard.get_dashboard_factory()
+        for log in self._meas_logs:
+            dashboard = dashboard_factory.createDashboard(log,
+                self.tagged_testname, self.resultsdir, note=self._pdash_note)
+            dashboard.upload()
 
     def _save_results(self):
         """Save results of each logger in resultsdir."""

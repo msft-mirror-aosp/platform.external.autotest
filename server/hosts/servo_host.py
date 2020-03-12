@@ -68,6 +68,9 @@ AUTOTEST_BASE = _CONFIG.get_config_value(
 SERVO_STATE_LABEL_PREFIX = 'servo_state'
 SERVO_STATE_WORKING = 'WORKING'
 SERVO_STATE_BROKEN = 'BROKEN'
+SERVO_STATE_NOT_CONNECTED = 'NOT_CONNECTED'
+SERVO_STATE_WRONG_CONFIG = 'WRONG_CONFIG'
+SERVO_STATE_UNKNOWN = 'UNKNOWN'
 
 
 class ServoHost(base_servohost.BaseServoHost):
@@ -525,7 +528,13 @@ class ServoHost(base_servohost.BaseServoHost):
             return
         fname = os.path.basename(res.stdout.strip())
         # From the fname, ought to extract the timestamp using the TS_EXTRACTOR
-        instance_ts = self.TS_EXTRACTOR.match(fname).group(self.TS_GROUP)
+        ts_match = self.TS_EXTRACTOR.match(fname)
+        if not ts_match:
+            logging.warning('Failed to extract timestamp from servod log file '
+                            '%r. Skipping. The servo host is using outdated '
+                            'servod logging and needs to be updated.', fname)
+            return
+        instance_ts = ts_match.group(self.TS_GROUP)
         # Create the local results log dir.
         log_dir = os.path.join(outdir, '%s_%s.%s' % (self.LOG_DIR,
                                                      str(self.servo_port),
@@ -654,7 +663,9 @@ class ServoHost(base_servohost.BaseServoHost):
 
 
     def get_servo_state(self):
-        return SERVO_STATE_BROKEN if self._servo_state is None else self._servo_state
+        if self._servo_state is None:
+            return SERVO_STATE_UNKNOWN
+        return self._servo_state
 
 
 def make_servo_hostname(dut_hostname):
@@ -818,15 +829,28 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
 
     if servo_args is None:
         logging.debug('No servo_args provided, and failed to find overrides.')
-        return None
-    if SERVO_HOST_ATTR not in servo_args:
-        logging.debug('%s attribute missing from servo_args: %s',
-                      SERVO_HOST_ATTR, servo_args)
-        return None
+        if try_lab_servo or servo_dependency:
+            return None, SERVO_STATE_NOT_CONNECTED
+        else:
+            # For regular test case which not required the servo
+            return None, None
+
+    servo_hostname = servo_args.get(SERVO_HOST_ATTR)
+    servo_port = servo_args.get(SERVO_PORT_ATTR)
+    if not _is_servo_host_information_exist(servo_hostname, servo_port):
+        logging.debug(
+            'Servo connection info missed hostname: %s , port: %s',
+            servo_hostname, servo_port)
+        return None, SERVO_STATE_NOT_CONNECTED
+    if not is_servo_host_information_valid(servo_hostname, servo_port):
+        logging.debug(
+            'Servo connection info is incorrect hostname: %s , port: %s',
+            servo_hostname, servo_port)
+        return None, SERVO_STATE_WRONG_CONFIG
     if (not servo_dependency and not try_servo_repair and
-            not servo_host_is_up(servo_args[SERVO_HOST_ATTR])):
+            not servo_host_is_up(servo_hostname)):
         logging.debug('ServoHost is not up.')
-        return None
+        return None, SERVO_STATE_BROKEN
 
     newhost = ServoHost(**servo_args)
     try:
@@ -859,7 +883,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
     # we don't need both.
     if servo_dependency:
         newhost.repair(silent=True)
-        return newhost
+        return newhost, newhost.get_servo_state()
 
     if try_servo_repair:
         try:
@@ -871,4 +895,31 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
             newhost.verify()
         except Exception:
             logging.exception('servo verify failed for %s', newhost.hostname)
-    return newhost
+    return newhost, newhost.get_servo_state()
+
+
+def _is_servo_host_information_exist(hostname, port):
+    if hostname is None or len(hostname.strip()) == 0:
+        return False
+    if port is None:
+        return False
+    if not type(port) is int:
+        try:
+            int(port)
+        except ValueError:
+            return False
+
+    return True
+
+
+def is_servo_host_information_valid(hostname, port):
+    if not _is_servo_host_information_exist(hostname, port):
+        return False
+    # checking range and correct of the port
+    port_int = int(port)
+    if port_int < 1 or port_int > 65000:
+        return False
+    # we expecting host contain only latters, digits and '-' or '_'
+    if not re.match('[a-zA-Z0-9-_\.]*$', hostname) or len(hostname) < 5:
+        return False
+    return True

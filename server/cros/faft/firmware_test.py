@@ -236,6 +236,7 @@ class FirmwareTest(FAFTBase):
         self._remove_faft_lockfile()
         self._remove_old_faft_lockfile()
         self._record_faft_client_log()
+        self.faft_client.quit()
 
         # Capture any new uart output, then discard log messages again.
         self._cleanup_uart_capture()
@@ -284,7 +285,7 @@ class FirmwareTest(FAFTBase):
         """
         recovery_reason = 0
         logging.info('Try to retrieve recovery reason...')
-        if self.servo.get_usbkey_direction() == 'dut':
+        if self.servo.get_usbkey_state() == 'dut':
             self.switcher.bypass_rec_mode()
         else:
             self.servo.switch_usbkey('dut')
@@ -415,7 +416,7 @@ class FirmwareTest(FAFTBase):
         if self.check_setup_done('usb_check'):
             return
         if usb_dev:
-            assert self.servo.get_usbkey_direction() == 'host'
+            assert self.servo.get_usbkey_state() == 'host'
         else:
             self.servo.switch_usbkey('host')
             usb_dev = self.servo.probe_host_usb_dev()
@@ -468,10 +469,13 @@ class FirmwareTest(FAFTBase):
 
         # Servo v4 requires an external charger to source power. Make sure
         # this setup is correct.
-        if ('servo_v4' in self.pdtester.servo_type and
-            self.pdtester.get('servo_v4_role') != 'src'):
-            raise error.TestError('Servo v4 failed sourcing power! Check '
-                    'the "DUT POWER" port connecting a valid charger.')
+        if 'servo_v4' in self.pdtester.servo_type:
+            role = self.pdtester.get('servo_v4_role')
+            if role != 'src':
+                raise error.TestError(
+                        'Servo v4 is not sourcing power! Make sure the servo '
+                        '"DUT POWER" port is connected to a working charger. '
+                        'servo_v4_role:%s' % role)
 
     def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.
@@ -543,7 +547,7 @@ class FirmwareTest(FAFTBase):
           no USB disk is found.
         """
         cmd = 'ls -d /dev/s*[a-z]'
-        original_value = self.servo.get_usbkey_direction()
+        original_value = self.servo.get_usbkey_state()
 
         # Make the dut unable to see the USB disk.
         self.servo.switch_usbkey('off')
@@ -557,7 +561,7 @@ class FirmwareTest(FAFTBase):
             self.faft_client.system.run_shell_command_get_output(cmd))
 
         # Back to its original value.
-        if original_value != self.servo.get_usbkey_direction():
+        if original_value != self.servo.get_usbkey_state():
             self.servo.switch_usbkey(original_value)
 
         diff_set = has_usb_set - no_usb_set
@@ -919,12 +923,15 @@ class FirmwareTest(FAFTBase):
             if uart_file:
                 self.servo.set('%s_uart_capture' % uart, 'off')
 
-    def _get_power_state(self):
+    def get_power_state(self):
         """
         Return the current power state of the AP (via EC 'powerinfo' command)
 
         @return the name of the power state, or None if a problem occurred
         """
+        if not self.faft_config.chrome_ec:
+            return None
+
         pattern = r'power state (\w+) = (\w+)'
 
         try:
@@ -1181,6 +1188,8 @@ class FirmwareTest(FAFTBase):
     def full_power_off_and_on(self):
         """Shutdown the device by pressing power button and power on again."""
         boot_id = self.get_bootid()
+        self.faft_client.disconnect()
+
         # Press power button to trigger Chrome OS normal shutdown process.
         # We use a customized delay since the normal-press 1.2s is not enough.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweroff)
@@ -1207,7 +1216,7 @@ class FirmwareTest(FAFTBase):
         @raise TestFail: If device failed to enter into requested power state.
         """
         if not self.wait_power_state(power_state, pwr_retries):
-            current_state = self._get_power_state()
+            current_state = self.get_power_state()
             if current_state == 'S0' and self._client.wait_up():
                 # DUT is unexpectedly up, so check whether it rebooted instead.
                 new_boot_id = self.get_bootid()

@@ -39,7 +39,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
 
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
-test_retry_and_log = bluetooth_adapter_tests._test_retry_and_log
+test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
 
 SHORT_SUSPEND = 10
 MED_SUSPEND = 20
@@ -117,14 +117,14 @@ class bluetooth_AdapterSRSanity(
         return True
 
     @test_retry_and_log(False)
-    def wait_for_resume(self, boot_id, suspend, resume_timeout=SHORT_SUSPEND):
+    def wait_for_resume(self, boot_id, suspend, resume_timeout=SHORT_SUSPEND,
+                        fail_on_timeout=False):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id
         @param suspend: Sub-process that does actual suspend call.
         @param resume_timeout: Expect device to resume in given timeout.
-
-        @raises if timeout triggers during resume
+        @param fail_on_timeout: Fails if timeout is reached
 
         @return True if suspend sub-process completed without error.
         """
@@ -137,12 +137,11 @@ class bluetooth_AdapterSRSanity(
             self.host.test_wait_for_resume(
                 boot_id, resume_timeout=resume_timeout)
 
+            # As of now, a timeout in test_wait_for_resume doesn't raise. Force
+            # a failure here instead by checking against the start time.
             delta = datetime.now() - start
-
-            # TODO(abhishekpandit) - Figure out why test_wait_for_resume isn't
-            #                        timing out
             if delta > timedelta(seconds=resume_timeout):
-                success = False
+                success = False if fail_on_timeout else True
         except Exception as e:
             success = False
             logging.error("wait_for_resume: %s", e)
@@ -290,10 +289,13 @@ class bluetooth_AdapterSRSanity(
 
             adapter_address = self.bluetooth_facade.address
 
-            # TODO(abhishekpandit) - Wait for powerd event that marks the
+            # Confirm connection completed
+            self.test_device_is_connected(device.address)
+
+            # TODO(b/150899248) - Wait for powerd event that marks the
             # power/wakeup of hci0's parent to "enabled"; otherwise, we won't be
             # able to wake
-            time.sleep(3)
+            time.sleep(10)
 
             # Trigger suspend, asynchronously trigger wake and wait for resume
             self.suspend_and_wait_for_sleep(suspend)
@@ -303,8 +305,9 @@ class bluetooth_AdapterSRSanity(
                                                    adapter_address)
             peer_wake.start()
 
-            # Expect a quick resume
-            self.wait_for_resume(boot_id, suspend, resume_timeout=SHORT_SUSPEND)
+            # Expect a quick resume. If a timeout occurs, test fails.
+            self.wait_for_resume(boot_id, suspend, resume_timeout=SHORT_SUSPEND,
+                                 fail_on_timeout=True)
 
             # Finish peer wake process
             peer_wake.join()
@@ -421,6 +424,9 @@ class bluetooth_AdapterSRSanity(
         self.sr_peer_wake_le_hid()
         self.sr_while_discovering()
         self.sr_while_advertising()
+        self.sr_reconnect_multiple_classic_hid()
+        self.sr_reconnect_multiple_le_hid()
+        self.sr_reconnect_multiple_classic_le_hid()
 
     def run_once(self,
                  host,

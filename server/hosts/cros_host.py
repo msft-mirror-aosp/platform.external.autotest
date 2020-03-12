@@ -206,18 +206,36 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param args_dict Dictionary from which to extract the chameleon
           arguments.
         """
-        if 'chameleon_host_list' in args_dict:
-            result = []
-            for chameleon in args_dict['chameleon_host_list'].split(','):
-                result.append({key: value for key,value in
-                    zip(('chameleon_host','chameleon_port'),
-                    chameleon.split(':'))})
+        return {key: args_dict[key]
+                for key in ('chameleon_host', 'chameleon_port')
+                if key in args_dict}
 
-            logging.info(result)
+    @staticmethod
+    def get_btpeer_arguments(args_dict):
+        """Extract btpeer options from `args_dict` and return the result.
+
+        This is used to parse details of Bluetooth peer.
+        Recommended usage:
+        ~~~~~~~~
+            args_dict = utils.args_to_dict(args)
+            btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)
+            host = hosts.create_host(machine)
+            host.initialize_btpeer(btpeer_args)
+        ~~~~~~~~
+
+        @param args_dict: Dictionary from which to extract the btpeer
+          arguments.
+        """
+        if 'btpeer_host_list' in args_dict:
+            result = []
+            for btpeer in args_dict['btpeer_host_list'].split(','):
+                result.append({key: value for key,value in
+                    zip(('btpeer_host','btpeer_port'),
+                    btpeer.split(':'))})
             return result
         else:
            return {key: args_dict[key]
-                for key in ('chameleon_host', 'chameleon_port')
+                for key in ('btpeer_host', 'btpeer_port')
                 if key in args_dict}
 
 
@@ -308,33 +326,28 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.env['LIBC_FATAL_STDERR_'] = '1'
         self._ssh_verbosity_flag = ssh_verbosity_flag
         self._ssh_options = ssh_options
-        self.set_servo_host(
-            servo_host.create_servo_host(
-                dut=self, servo_args=servo_args,
-                try_lab_servo=try_lab_servo,
-                try_servo_repair=try_servo_repair,
-                dut_host_info=self.host_info_store.get()))
+        _servo_host, servo_state = servo_host.create_servo_host(
+            dut=self,
+            servo_args=servo_args,
+            try_lab_servo=try_lab_servo,
+            try_servo_repair=try_servo_repair,
+            dut_host_info=self.host_info_store.get())
+        self.set_servo_host(_servo_host, servo_state)
         self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
-        if type(chameleon_args) is list:
-            self.multi_chameleon = True
-            chameleon_args_list = chameleon_args
-        else:
-            self.multi_chameleon = False
-            chameleon_args_list = [chameleon_args]
-
-        self._chameleon_host_list = [
-            chameleon_host.create_chameleon_host(
-            dut=self.hostname, chameleon_args=_args)
-            for _args in chameleon_args_list]
-
-        self.chameleon_list = [_host.create_chameleon_board() for _host in
-                               self._chameleon_host_list if _host is not None]
-        if len(self.chameleon_list) > 0:
-            self.chameleon = self.chameleon_list[0]
+        self._chameleon_host = chameleon_host.create_chameleon_host(
+            dut=self.hostname,
+            chameleon_args=chameleon_args)
+        if self._chameleon_host:
+            self.chameleon = self._chameleon_host.create_chameleon_board()
         else:
             self.chameleon = None
+
+        # Bluetooth peers. These will be initialized by test if required.
+        self._btpeer_host_list = []
+        self.btpeer_list = []
+        self.btpeer = None
 
         # Add pdtester host if pdtester args were added on command line
         self._pdtester_host = pdtester_host.create_pdtester_host(
@@ -348,6 +361,37 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     self._pdtester_host.get_servod_server_proxy())
         else:
             self.pdtester = None
+
+
+    def initialize_btpeer(self, btpeer_args):
+        """ Initialize the Bluetooth peers
+
+        Initialize Bluetooth peer devices given in the arguments. Bluetooth peer
+        is chameleon host on Raspberry Pi.
+        @param btpeer_args: A dictionary that contains args for creating
+                            a ChameleonHost. See chameleon_host for details.
+
+        """
+
+        if type(btpeer_args) is list:
+            btpeer_args_list = btpeer_args
+        else:
+            btpeer_args_list = [btpeer_args]
+
+        self._btpeer_host_list = chameleon_host.create_btpeer_host(
+                dut=self.hostname, btpeer_args_list=btpeer_args_list)
+        logging.debug('Bluetooth peer hosts are  %s', self._btpeer_host_list)
+        self.btpeer_list = [_host.create_chameleon_board() for _host in
+                               self._btpeer_host_list if _host is not None]
+
+        if len(self.btpeer_list) > 0:
+            self.btpeer = self.btpeer_list[0]
+        else:
+            self.btpeer = None
+
+        logging.debug('After initialize_btpeer btpeer_list %s btpeer_host_list'
+                      'is %s and btpeer is %s',self.btpeer_list,
+                      self._btpeer_host_list, self.btpeer)
 
 
     def get_cros_repair_image_name(self):
@@ -905,7 +949,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                       self.BOOT_TIMEOUT)
 
 
-    def set_servo_host(self, host):
+    def set_servo_host(self, host, servo_state = None):
         """Set our servo host member, and associated servo.
 
         @param host  Our new `ServoHost`.
@@ -913,9 +957,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self._servo_host = host
         if self._servo_host is not None:
             self.servo = self._servo_host.get_servo()
-            self._update_servo_labels()
+            servo_state = self._servo_host.get_servo_state()
         else:
             self.servo = None
+
+        self.set_servo_state(servo_state)
 
 
     def repair_servo(self):
@@ -941,16 +987,25 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.set_servo_host(self._servo_host)
 
 
-    def _update_servo_labels(self):
+    def set_servo_state(self, servo_state):
         """Set servo info labels to dut host_info"""
-        if self._servo_host:
+        if servo_state is not None:
             host_info = self.host_info_store.get()
-
-            servo_state = self._servo_host.get_servo_state()
-            host_info.set_version_label(servo_host.SERVO_STATE_LABEL_PREFIX, servo_state)
-
+            servo_state_prefix = servo_host.SERVO_STATE_LABEL_PREFIX
+            old_state = host_info.get_label_value(servo_state_prefix)
+            if old_state == servo_state:
+                # do not need update
+                return
+            host_info.set_version_label(servo_state_prefix, servo_state)
             self.host_info_store.commit(host_info)
+            logging.info('ServoHost: servo_state updated to %s (previous: %s)',
+                         servo_state, old_state)
 
+
+    def get_servo_state(self):
+        host_info = self.host_info_store.get()
+        servo_state_prefix = servo_host.SERVO_STATE_LABEL_PREFIX
+        return host_info.get_label_value(servo_state_prefix)
 
     def repair(self):
         """Attempt to get the DUT to pass `self.verify()`.
@@ -971,9 +1026,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Close connection."""
         super(CrosHost, self).close()
 
-        for chameleon_host in self._chameleon_host_list:
-            if chameleon_host:
-                chameleon_host.close()
+        if self._chameleon_host:
+            self._chameleon_host.close()
 
         if self._servo_host:
             self._servo_host.close()

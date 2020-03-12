@@ -21,8 +21,8 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 # Maximum default time allowed for each individual CTS module.
 _CTS_TIMEOUT_SECONDS = 3600
 
-# Internal download locations for android vtas bundles.
-_INTERNAL_VTS = 'gs://chromeos-arc-images/vts'
+# Internal download locations for android vts bundles.
+_INTERNAL_VTS = 'gs://chromeos-arc-images/vts/'
 _VTS_URI = {
     'arm': _INTERNAL_VTS + 'VTS-9_r11_arm.zip',
     'x86': _INTERNAL_VTS + 'VTS-9_r11_x86.zip',
@@ -74,8 +74,6 @@ class cheets_VTS(tradefed_test.TradefedTest):
                  retry_template=None,
                  target_module=None,
                  target_plan=None,
-                 target_class=None,
-                 target_method=None,
                  needs_push_media=False,
                  bundle=None,
                  precondition_commands=[],
@@ -95,8 +93,6 @@ class cheets_VTS(tradefed_test.TradefedTest):
                                          '{session_id}']
         @param target_module: the name of test module to run.
         @param target_plan: the name of the test plan to run.
-        @param target_class: the name of the class to be tested.
-        @param target_method: the name of the method to be tested.
         @param needs_push_media: need to push test media streams.
         @param bundle: the type of the CTS bundle: 'arm' or 'x86'
         @param precondition_commands: a list of scripts to be run on the

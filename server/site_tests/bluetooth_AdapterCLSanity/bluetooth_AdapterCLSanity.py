@@ -11,11 +11,14 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import \
      BluetoothAdapterPairingTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
      import BluetoothAdapterHIDReportTests
+from autotest_lib.server.cros.bluetooth.bluetooth_sdp_tests import \
+     BluetoothSDPTests
 
 
 class bluetooth_AdapterCLSanity(BluetoothAdapterQuickTests,
         BluetoothAdapterPairingTests,
-        BluetoothAdapterHIDReportTests):
+        BluetoothAdapterHIDReportTests,
+        BluetoothSDPTests):
     """A Batch of Bluetooth Classic sanity tests. This test is written as a batch
        of tests in order to reduce test time, since auto-test ramp up time is
        costly. The batch is using BluetoothAdapterQuickTests wrapper methods to
@@ -119,6 +122,37 @@ class bluetooth_AdapterCLSanity(BluetoothAdapterQuickTests,
         self.connect_disconnect_loop(device=device, loops=3)
 
 
+    @test_wrapper('SDP Service Browse Test', devices={"BLUETOOTH_TESTER":1})
+    def cl_sdp_service_browse_test(self):
+        """Performs sdp browse with tester peripheral"""
+        device = self.devices['BLUETOOTH_TESTER'][0]
+        self.sdp_service_browse_test(device=device)
+
+
+    @test_wrapper('SDP Service Attribute Request Test', \
+                  devices={"BLUETOOTH_TESTER":1})
+    def cl_sdp_service_attribute_request_test(self):
+        """Performs sdp browse with tester peripheral"""
+        device = self.devices['BLUETOOTH_TESTER'][0]
+        self.sdp_service_attribute_request_test(device=device)
+
+
+    @test_wrapper('SDP Service Search Attribute Request Test', \
+                  devices={"BLUETOOTH_TESTER":1})
+    def cl_sdp_service_search_attribute_request_test(self):
+        """Performs sdp browse with tester peripheral"""
+        device = self.devices['BLUETOOTH_TESTER'][0]
+        self.sdp_service_search_attribute_request_test(device=device)
+
+
+    @test_wrapper('SDP Service Search Request Basic Test', \
+                  devices={"BLUETOOTH_TESTER":1})
+    def cl_sdp_service_search_request_basic_test(self):
+        """Performs sdp browse with tester peripheral"""
+        device = self.devices['BLUETOOTH_TESTER'][0]
+        self.sdp_service_search_request_basic_test(device=device)
+
+
     @batch_wrapper('Classic Sanity')
     def cl_sanity_batch_run(self, num_iterations=1, test_name=None):
         """Run the Classic sanity test batch or a specific given test.
@@ -154,6 +188,6 @@ class bluetooth_AdapterCLSanity(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_chameleon=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.cl_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

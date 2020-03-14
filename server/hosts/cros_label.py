@@ -16,7 +16,7 @@ from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import common_label
-from autotest_lib.server.hosts import servo_host
+from autotest_lib.server.hosts import servo_constants
 from autotest_lib.site_utils import hwid_lib
 
 # pylint: disable=missing-docstring
@@ -334,12 +334,12 @@ class ServoLabel(base_label.BaseLabel):
     """
 
     _NAME_OLD = 'servo'
-    _NAME = servo_host.SERVO_STATE_LABEL_PREFIX
+    _NAME = servo_constants.SERVO_STATE_LABEL_PREFIX
 
     def get(self, host):
         state = self._get_state(host)
         servo_state = self._NAME + ':' + state
-        if state == servo_host.SERVO_STATE_NOT_CONNECTED:
+        if state == servo_constants.SERVO_STATE_NOT_CONNECTED:
             return [servo_state]
         return [self._NAME_OLD, servo_state]
 
@@ -362,8 +362,8 @@ class ServoLabel(base_label.BaseLabel):
         # only till not all DUTs have servo_state label
         servo_label = self._cached_servo_label(host)
         if servo_label:
-            return servo_host.SERVO_STATE_WORKING
-        return servo_host.SERVO_STATE_NOT_CONNECTED
+            return servo_constants.SERVO_STATE_WORKING
+        return servo_constants.SERVO_STATE_NOT_CONNECTED
 
     def _cached_servo_state_status(self, host):
         """Get the state of Servo in the data store"""
@@ -388,6 +388,43 @@ class ServoLabel(base_label.BaseLabel):
         # This label is stored in the state config, so only repair tasks update
         # it or when no task name is mentioned.
         return task_name in (REPAIR_TASK_NAME, '')
+
+
+class ServoTypeLabel(base_label.StringPrefixLabel):
+    _NAME = 'servo_type'
+
+    def generate_labels(self, host):
+        info = host.host_info_store.get()
+
+        servo_type = self._get_from_labels(info)
+        if servo_type != '':
+            return [servo_type]
+
+        if host.servo is not None:
+            try:
+                servo_type = host.servo.get_servo_version()
+                if servo_type != '':
+                    return [servo_type]
+            except Exception as e:
+                # We don't want fail the label and break DUTs here just
+                # because of servo issue.
+                logging.error("Failed to update servo_type, %s", str(e))
+        return []
+
+    def _get_from_labels(self, info):
+        prefix = self._NAME + ':'
+        for label in info.labels:
+            if  label.startswith(prefix):
+                suffix_length = len(prefix)
+                return label[suffix_length:]
+        return ''
+
+    def update_for_task(self, task_name):
+        # This label is stored in the lab config,
+        # only deploy and repair tasks update it
+        # or when no task name is mentioned.
+        # use REPAIR_TASK_NAME till restore value for all DUTs
+        return task_name in (REPAIR_TASK_NAME, DEPLOY_TASK_NAME, '')
 
 
 def _parse_hwid_labels(hwid_info_list):
@@ -533,6 +570,7 @@ CROS_LABELS = [
     DeviceSkuLabel(), #LABCONFIG
     HWIDLabel(),
     ServoLabel(), #STATECONFIG
+    ServoTypeLabel(), #LABCONFIG
     # Temporarily add back as there's no way to reference cr50 configs.
     # See crbug.com/1057145 for the root cause.
     # See crbug.com/1057719 for future tracking.

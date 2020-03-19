@@ -28,7 +28,6 @@ suite:arc-cts-instant
 suite:arc-cts-instant-perbuild
 suite:arc-cts-instant-qual
 suite:arc-cts-perbuild
-suite:arc-cts-q
 suite:arc-cts-qual
 suite:arc-cts-r
 suite:arc-cts-stable
@@ -71,6 +70,10 @@ suite:bvt-faft
 suite:bvt-inline
 suite:bvt-installer
 suite:bvt-perbuild
+suite:bvt-tast-android-pfq
+suite:bvt-tast-chrome-pfq
+suite:bvt-tast-cq
+suite:bvt-tast-informational
 suite:cell_emulator
 suite:cellular_au
 suite:cellular_au_nightly

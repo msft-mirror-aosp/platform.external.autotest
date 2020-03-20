@@ -1,12 +1,14 @@
 #!/usr/bin/python2
 # pylint: disable=missing-docstring
 
+import mock
 import unittest
 
 import common
 
 from autotest_lib.server.hosts import cros_host
-from autotest_lib.server.hosts import servo_host
+from autotest_lib.server.hosts import servo_constants
+from autotest_lib.server.hosts import host_info
 
 CROSSYSTEM_RESULT = '''
 fwb_tries              = 0                              # Fake comment
@@ -25,6 +27,9 @@ UNI_LSB_RELEASE_OUTPUT = '''
 CHROMEOS_RELEASE_BOARD=coral
 CHROMEOS_RELEASE_UNIBUILD=1
 '''
+
+SERVO_STATE_PREFIX = servo_constants.SERVO_STATE_LABEL_PREFIX
+
 
 class MockCmd(object):
     """Simple mock command with base command and results"""
@@ -98,11 +103,93 @@ class DictFilteringTestCase(unittest.TestCase):
 
     def test_get_servo_arguments(self):
         got = cros_host.CrosHost.get_servo_arguments({
-            servo_host.SERVO_HOST_ATTR: 'host',
+            servo_constants.SERVO_HOST_ATTR: 'host',
             'spam': 'eggs',
         })
-        self.assertEqual(got, {servo_host.SERVO_HOST_ATTR: 'host'})
+        self.assertEqual(got, {servo_constants.SERVO_HOST_ATTR: 'host'})
 
+
+class DictFilteringTestCase(unittest.TestCase):
+    """Test to verify servo_state was set-up as label in host_info_store"""
+
+    def create_host(self):
+        host = MockHost()
+        host.servo = None
+        host._servo_host = mock.Mock()
+        host._servo_host.get_servo.return_value = 'Not Empty'
+        host._servo_host.get_servo_state.return_value = 'SOME_STATE'
+        host.host_info_store = host_info.InMemoryHostInfoStore()
+        return host
+
+    def test_do_not_update_label_when_servo_host_is_not_inited(self):
+        host = self.create_host()
+        host._servo_host = None
+
+        host.set_servo_state('some_status')
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'some_status')
+
+    def test_do_not_update_label_when_servo_state_is_None(self):
+        host = self.create_host()
+
+        host.set_servo_state(None)
+        host._servo_host.get_servo_state.assert_not_called()
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), '')
+
+    def test_repair_servo_set_servo_state_after_repair_when_repair_is_fail(self):
+        host = self.create_host()
+        host._servo_host.repair.side_effect = Exception('Something bad')
+
+        try:
+            host.repair_servo()
+            self.assertEqual("Exception is", 'expecting to raise')
+        except:
+            pass
+        host._servo_host.get_servo_state.assert_called()
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'SOME_STATE')
+
+    def test_repair_servo_set_servo_state_after_repair_when_repair_is_not_fail(self):
+        host = self.create_host()
+        try:
+            host.repair_servo()
+        except:
+            self.assertEqual("Exception is not", 'expected')
+            pass
+        host._servo_host.get_servo_state.assert_called()
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'SOME_STATE')
+
+    def test_set_servo_host_update_servo_state_when_host_exist(self):
+        host = self.create_host()
+        host._servo_host = mock.Mock()
+        host._servo_host.get_servo.return_value = 'Not Empty'
+        host._servo_host.get_servo_state.return_value = 'SOME_STATE'
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), '')
+
+        try:
+            host.repair_servo()
+        except:
+            self.assertEqual("Exception is not", 'expected')
+            pass
+        host._servo_host.get_servo_state.assert_called()
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'SOME_STATE')
+
+    def test_set_servo_host_use_passed_servo_state_when_host_is_None(self):
+        host = self.create_host()
+
+        host.set_servo_host(None, 'passed_State')
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'passed_State')
+
+    def test_set_servo_host_use_servo_state_from_host_when_host_is_passed(self):
+        host = self.create_host()
+        servo_host = mock.Mock()
+        servo_host.get_servo.return_value = 'Not Empty'
+        servo_host.get_servo_state.return_value = 'state_of_host'
+
+        host.set_servo_host(servo_host)
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'state_of_host')
+
+        servo_host.get_servo_state.return_value = 'state_of_host2'
+        host.set_servo_host(servo_host, 'passed_State')
+        self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'state_of_host2')
 
 if __name__ == "__main__":
     unittest.main()

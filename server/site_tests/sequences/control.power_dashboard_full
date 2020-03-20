@@ -13,11 +13,10 @@ DOC = """
 Sequence for upload common power test data to dashboard.
 """
 
+import datetime
 from autotest_lib.client.common_lib import utils
 
 CLIENT_TESTS = [
-    ('power_Standby', {
-        'tag' : 'fast', 'sample_hours' : 0.334, 'test_hours' : 0.334}),
     ('power_LoadTest', {
         'tag' : '1hour', 'loop_time' : 3600, 'loop_count' : 1,
         'test_low_batt_p' : 6}),
@@ -27,6 +26,8 @@ CLIENT_TESTS = [
         'tag' : 'sw_decoder', 'use_hw_decode' : False}),
     ('power_Display', {}),
     ('power_WebGL', {}),
+    ('power_Standby', {
+        'tag' : 'fast', 'sample_hours' : 0.334, 'test_hours' : 0.334}),
 ]
 
 # Tagged test name and sweetberry interval
@@ -49,7 +50,9 @@ try:
 except NameError:
     args_dict = utils.args_to_dict(args)
 
-pdash_note = args_dict.get('pdash_note', '')
+# Use time as pdash_note if not supplied to track all tests in same suite.
+pdash_note = args_dict.get('pdash_note',
+                           NAME + '_' + datetime.datetime.utcnow().isoformat())
 sweetberry_serial = args_dict.get('sweetberry_serial', None)
 
 

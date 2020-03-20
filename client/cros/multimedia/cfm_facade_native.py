@@ -59,6 +59,7 @@ class CFMFacadeNative(object):
             "auto_login": False,
             "disable_gaia_services": False,
             "extra_browser_args": extra_browser_args})
+
         enrollment.RemoraEnrollment(self._resource._browser, self._USER_ID,
                 self._PWD)
         # Timeout to allow for the device to stablize and go back to the

@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
+from autotest_lib.server.cros.servo import servo
 
 
 class firmware_Cr50ECReset(Cr50Test):
@@ -49,11 +50,9 @@ class firmware_Cr50ECReset(Cr50Test):
         time.sleep(self.EC_SETTLE_TIME)
         try:
             self.ec.send_command_get_output('time', ['.*>'])
-        except error.TestFail, e:
-            logging.info(e)
-            if 'Timeout waiting for response' in str(e):
-                return False
-            raise
+        except servo.UnresponsiveConsoleError as e:
+            logging.info(str(e))
+            return False
         else:
             return True
 

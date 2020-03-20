@@ -45,13 +45,14 @@ CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 2
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {}
 
-# TODO(ihf): Update timeouts once P is more stable.
 # Timeout in hours.
 # Modules that run very long are encoded here.
+CONFIG['CTS_TIMEOUT_DEFAULT'] = 0.2
 CONFIG['CTS_TIMEOUT'] = {
     'GtsExoPlayerTestCases': 1.5,
-    'GtsMediaTestCases': 8,
-    'GtsOsTestCases': 0.25,
+    'GtsGmscoreHostTestCases': 1.0,
+    'GtsMediaTestCases': 4,
+    'GtsYouTubeTestCases': 1.0,
     _ALL: 24,
     _COLLECT: 0.5,
     _PUBLIC_COLLECT: 0.5,
@@ -72,9 +73,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
 
 CONFIG['SMOKE'] = []
 
-CONFIG['BVT_ARC'] = [
-    'GtsContactsTest',
-]
+CONFIG['BVT_ARC'] = []
 
 CONFIG['BVT_PERBUILD'] = [
     'GtsAdminTestCases',
@@ -95,10 +94,7 @@ CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = ['GtsYouTubeTestCases']
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [_ALL]
-CONFIG['ENABLE_DEFAULT_APPS'] = [
-    # TODO(kinaba): See b/143740808. Can be droped after GTS7.0r3 deployed.
-    'GtsAssistantHostTestCases'
-]
+CONFIG['ENABLE_DEFAULT_APPS'] = []
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {}
@@ -114,7 +110,8 @@ CONFIG['PUBLIC_DEPENDENCIES'] = {}
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
   _ALL: 2,
-  'GtsMediaTestCases': 5   # TODO(b/140841434)
+  'GtsMediaTestCases': 5,  # TODO(b/140841434)
+  'GtsYouTubeTestCases': 5,  # TODO(b/149376356)
 }
 
 CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {
@@ -145,6 +142,9 @@ CONFIG['EXTRA_ATTRIBUTES'] = {
 }
 CONFIG['EXTRA_ARTIFACTS'] = {}
 
+CONFIG['PREREQUISITES'] = {
+    'GtsGmscoreHostTestCases': ['bluetooth'],
+}
 
 from generate_controlfiles_common import main
 

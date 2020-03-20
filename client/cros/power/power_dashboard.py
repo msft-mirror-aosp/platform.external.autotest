@@ -33,6 +33,7 @@ _HTML_CHART_STR = '''
         var data = google.visualization.arrayToDataTable([
 {data}
         ]);
+        var numDataCols = data.getNumberOfColumns() - 1;
         var unit = '{unit}';
         var options = {{
             width: 1600,
@@ -46,6 +47,14 @@ _HTML_CHART_STR = '''
         var chart;
         if (unit == 'percent') {{
             options['isStacked'] = true;
+            if (numDataCols == 2) {{
+                options['colors'] = ['#d32f2f', '#43a047']
+            }} else if (numDataCols <= 4) {{
+                options['colors'] = ['#d32f2f', '#f4c7c3', '#cddc39','#43a047'];
+            }} else if (numDataCols <= 9) {{
+                options['colors'] = ['#d32f2f', '#e57373', '#f4c7c3', '#ffccbc',
+                        '#f0f4c3', '#c8e6c9', '#cddc39', '#81c784', '#43a047'];
+            }}
             chart = new google.visualization.SteppedAreaChart(element);
         }} else {{
             chart = new google.visualization.LineChart(element);
@@ -287,8 +296,7 @@ class ClientTestDashboard(BaseDashboard):
     """Dashboard class for autotests that run on client side.
     """
 
-    def __init__(self, logger, testname, start_ts=None, resultsdir=None,
-                 uploadurl=None, note=''):
+    def __init__(self, logger, testname, start_ts, resultsdir, uploadurl, note):
         """Create BaseDashboard objects.
 
         Args:
@@ -363,8 +371,7 @@ class MeasurementLoggerDashboard(ClientTestDashboard):
     """Dashboard class for power_status.MeasurementLogger.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
-                 note=''):
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
         super(MeasurementLoggerDashboard, self).__init__(logger, testname, None,
                                                          resultsdir, uploadurl,
                                                          note)
@@ -446,10 +453,7 @@ class PowerLoggerDashboard(MeasurementLoggerDashboard):
     """Dashboard class for power_status.PowerLogger.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
-                 note=''):
-        if uploadurl is None:
-            uploadurl = 'http://chrome-power.appspot.com/rapl'
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
         super(PowerLoggerDashboard, self).__init__(logger, testname, resultsdir,
                                                    uploadurl, note)
         self._unit = 'watt'
@@ -457,13 +461,10 @@ class PowerLoggerDashboard(MeasurementLoggerDashboard):
 
 
 class TempLoggerDashboard(MeasurementLoggerDashboard):
-    """Dashboard class for power_status.PowerLogger.
+    """Dashboard class for power_status.TempLogger.
     """
 
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
-                 note=''):
-        if uploadurl is None:
-            uploadurl = 'http://chrome-power.appspot.com/rapl'
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
         super(TempLoggerDashboard, self).__init__(logger, testname, resultsdir,
                                                   uploadurl, note)
         self._unit = 'celsius'
@@ -510,14 +511,6 @@ class SimplePowerLoggerDashboard(ClientTestDashboard):
 class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
     """Dashboard class for power_status.CPUStatsLogger.
     """
-
-    def __init__(self, logger, testname, resultsdir=None, uploadurl=None,
-                 note=''):
-        if uploadurl is None:
-            uploadurl = 'http://chrome-power.appspot.com/rapl'
-        super(CPUStatsLoggerDashboard, self).__init__(
-                logger, testname, resultsdir, uploadurl, note)
-
     @staticmethod
     def _split_domain(domain):
         """Return domain_type and domain_name for given domain.
@@ -601,3 +594,57 @@ class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
 
             # Run "cpuidle_C{:_>2s}E-SKL".format("1") to get "cpuidle_C.1E-SKL"
             self._padded_domains.append(formatter_str.format(number_strs[i]))
+
+
+class VideoFpsLoggerDashboard(MeasurementLoggerDashboard):
+    """Dashboard class for power_status.VideoFpsLogger."""
+
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
+        super(VideoFpsLoggerDashboard, self).__init__(
+            logger, testname, resultsdir, uploadurl, note)
+        self._unit = 'fps'
+        self._type = 'fps'
+
+
+class FanRpmLoggerDashboard(MeasurementLoggerDashboard):
+    """Dashboard class for power_status.FanRpmLogger."""
+
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
+        super(FanRpmLoggerDashboard, self).__init__(
+            logger, testname, resultsdir, uploadurl, note)
+        self._unit = 'rpm'
+        self._type = 'fan'
+
+dashboard_factory = None
+def get_dashboard_factory():
+    global dashboard_factory
+    if not dashboard_factory:
+        dashboard_factory = LoggerDashboardFactory()
+    return dashboard_factory
+
+class LoggerDashboardFactory(object):
+    """Class to generate client test dashboard object from logger."""
+
+    loggerToDashboardDict = {
+        power_status.CPUStatsLogger: CPUStatsLoggerDashboard,
+        power_status.PowerLogger:    PowerLoggerDashboard,
+        power_status.TempLogger:     TempLoggerDashboard,
+        power_status.VideoFpsLogger: VideoFpsLoggerDashboard,
+        power_status.FanRpmLogger:   FanRpmLoggerDashboard,
+    }
+
+    def registerDataType(self, logger_type, dashboard_type):
+        """Register new type of dashboard to the factory
+
+        @param logger_type: Type of logger to register
+        @param dashboard_type: Type of dashboard to register
+        """
+        self.loggerToDashboardDict[logger_type] = dashboard_type
+
+    def createDashboard(self, logger, testname, resultsdir=None,
+                        uploadurl=None, note=''):
+        """Create dashboard object"""
+        if uploadurl is None:
+            uploadurl = 'http://chrome-power.appspot.com/rapl'
+        dashboard = self.loggerToDashboardDict[type(logger)]
+        return dashboard(logger, testname, resultsdir, uploadurl, note)

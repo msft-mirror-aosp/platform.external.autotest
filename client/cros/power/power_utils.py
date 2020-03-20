@@ -44,6 +44,8 @@ def get_x86_cpu_arch():
 
     if re.search(r'AMD.*[AE][269]-9[0-9][0-9][0-9].*RADEON.*R[245]', cpuinfo):
         return 'Stoney'
+    if re.search(r'AMD.*Ryzen.*Radeon.*', cpuinfo):
+        return 'Ryzen'
     if re.search(r'Intel.*Atom.*[NZ][2-6]', cpuinfo):
         return 'Atom'
     if re.search(r'Intel.*Celeron.*N2[89][0-9][0-9]', cpuinfo):
@@ -76,7 +78,7 @@ def has_rapl_support():
         Boolean, True if RAPL supported, False otherwise.
     """
     rapl_set = set(["Haswell", "Haswell-E", "Broadwell", "Skylake", "Goldmont",
-                    "Kaby Lake"])
+                    "Kaby Lake", "Comet Lake", "Ice Lake", "Tiger Lake"])
     cpu_uarch = utils.get_intel_cpu_uarch()
     if (cpu_uarch in rapl_set):
         return True

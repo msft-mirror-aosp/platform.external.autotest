@@ -36,6 +36,10 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         self.test_discover_device(device.address)
 
+        # Removed due to b:149093897 - the raspi peer can't instantly update
+        # the advertised name, causing this test to fail
+        # self.test_device_name(device.address, device.name)
+
 
     @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE':1})
     def le_connect_disconnect_loop(self):
@@ -139,6 +143,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.le_mouse_reports()
         self.le_keyboard_reports()
         self.le_auto_reconnect()
+        self.le_discovery_test()
 
 
     def run_once(self, host, num_iterations=1, test_name=None,
@@ -151,6 +156,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_chameleon=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.le_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

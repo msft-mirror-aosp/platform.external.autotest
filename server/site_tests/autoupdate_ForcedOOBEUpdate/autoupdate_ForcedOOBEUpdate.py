@@ -59,8 +59,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
 
     def run_once(self, full_payload=True, cellular=False,
-                 interrupt=None, max_updates=1, job_repo_url=None,
-                 moblab=False):
+                 interrupt=None, job_repo_url=None, moblab=False):
         """
         Runs a forced autoupdate during ChromeOS OOBE.
 
@@ -68,8 +67,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param cellular: True to do the update over a cellualar connection.
                          Requires that the DUT have a sim card slot.
         @param interrupt: Type of interrupt to try: [reboot, network, suspend]
-        @param max_updates: Used to tell the test how many times it is
-                            expected to ping its omaha server.
         @param job_repo_url: Used for debugging locally. This is used to figure
                              out the current build and the devserver to use.
                              The test will read this from a host argument
@@ -85,27 +82,19 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         tpm_utils.ClearTPMOwnerRequest(self._host)
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=full_payload,
-                                                  critical_update=True,
                                                   public=cellular,
-                                                  max_updates=max_updates,
                                                   moblab=moblab)
         before = self._get_chromeos_version()
         payload_info = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
-            # Get the payload's information (size, SHA256 etc) since we will be
-            # setting up our own omaha instance on the DUT. We pass this to
-            # the client test.
-            payload = self._get_payload_url(full_payload=full_payload)
-            staged_url, _ = self._stage_payload_by_uri(payload)
-            payload_info = self._get_staged_file_info(staged_url)
 
         # Call client test to start the forced OOBE update.
         self._run_client_test_and_check_result('autoupdate_StartOOBEUpdate',
                                                image_url=update_url,
+                                               full_payload=full_payload,
                                                cellular=cellular,
-                                               payload_info=payload_info,
-                                               full_payload=full_payload)
+                                               critical_update=True)
 
         if interrupt is not None:
             # Choose a random downloaded progress to interrupt the update.
@@ -133,6 +122,10 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
 
+        # We create a new lsb-release file with no_update=True so there won't be
+        # any more actual updates happen.
+        self._create_custom_lsb_release(update_url, no_update=True)
+
         self._wait_for_oobe_update_to_complete()
 
         if cellular:
@@ -151,7 +144,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             return
 
         # Verify that the update completed successfully by checking hostlog.
-        rootfs_hostlog, reboot_hostlog = self._create_hostlog_files()
+        rootfs_hostlog, reboot_hostlog = self._create_hostlog_files(update_url)
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
         self.verify_update_events(self._CUSTOM_LSB_VERSION, reboot_hostlog,
                                   self._CUSTOM_LSB_VERSION)

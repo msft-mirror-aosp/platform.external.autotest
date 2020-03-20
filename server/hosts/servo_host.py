@@ -11,42 +11,24 @@
 
 import logging
 import os
+import re
+import tarfile
+import time
 import traceback
 import xmlrpclib
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import base_servohost
-
-
-# Names of the host attributes in the database that represent the values for
-# the servo_host and servo_port for a servo connected to the DUT.
-SERVO_HOST_ATTR = 'servo_host'
-SERVO_PORT_ATTR = 'servo_port'
-SERVO_BOARD_ATTR = 'servo_board'
-# Model is inferred from host labels.
-SERVO_MODEL_ATTR = 'servo_model'
-SERVO_SERIAL_ATTR = 'servo_serial'
-SERVO_ATTR_KEYS = (
-        SERVO_BOARD_ATTR,
-        SERVO_HOST_ATTR,
-        SERVO_PORT_ATTR,
-        SERVO_SERIAL_ATTR,
-)
+from autotest_lib.server.hosts import servo_constants
+from autotest_lib.client.common_lib import global_config
 
 _CONFIG = global_config.global_config
-ENABLE_SSH_TUNNEL_FOR_SERVO = _CONFIG.get_config_value(
-        'CROS', 'enable_ssh_tunnel_for_servo', type=bool, default=False)
-
-AUTOTEST_BASE = _CONFIG.get_config_value(
-        'SCHEDULER', 'drone_installation_directory',
-        default='/usr/local/autotest')
 
 
 class ServoHost(base_servohost.BaseServoHost):
@@ -64,6 +46,76 @@ class ServoHost(base_servohost.BaseServoHost):
     # Ready test function
     SERVO_READY_METHOD = 'get_version'
 
+    # Directory prefix on the servo host where the servod logs are stored.
+    SERVOD_LOG_PREFIX = '/var/log/servod'
+
+    # Exit code to use when symlinks for servod logs are not found.
+    NO_SYMLINKS_CODE = 9
+
+    # Directory in the job's results directory to dump the logs into.
+    LOG_DIR = 'servod'
+
+    # Prefix for joint loglevel files in the logs.
+    JOINT_LOG_PREFIX = 'log'
+
+    # Regex group to extract timestamp from logfile name.
+    TS_GROUP = 'ts'
+
+    # This regex is used to extract the timestamp from servod logs.
+             # files always start with log.
+    TS_RE = (r'log.'
+             # The timestamp is of format %Y-%m-%d--%H-%M-%S.MS
+             r'(?P<%s>\d{4}(\-\d{2}){2}\-(-\d{2}){3}.\d{3})'
+             # The loglevel is optional depending on labstation version.
+             r'(.(INFO|DEBUG|WARNING))?' % TS_GROUP)
+    TS_EXTRACTOR = re.compile(TS_RE)
+
+    # Regex group to extract MCU name from logline in servod logs.
+    MCU_GROUP = 'mcu'
+
+    # Regex group to extract logline from MCU logline in servod logs.
+    LINE_GROUP = 'line'
+
+    # This regex is used to extract the mcu and the line content from an
+    # MCU logline in servod logs. e.g. EC or servo_v4 console logs.
+    # Here is an example log-line:
+    #
+    # 2020-01-23 13:15:12,223 - servo_v4 - EC3PO.Console - DEBUG -
+    # console.py:219:LogConsoleOutput - /dev/pts/9 - cc polarity: cc1
+    #
+    # Here is conceptually how they are formatted:
+    #
+    #  <time> - <MCU> - EC3PO.Console - <LVL> - <file:line:func> - <pts> -
+    #  <output>
+    #
+              # The log format starts with a timestamp
+    MCU_RE = (r'[\d\-]+ [\d:,]+ '
+              # The mcu that is logging this is next.
+              r'- (?P<%s>\w+) - '
+              # Next, we have more log outputs before the actual line.
+              # Information about the file line, logging function etc.
+              # Anchor on EC3PO Console, LogConsoleOutput and dev/pts.
+              # NOTE: if the log format changes, this regex needs to be
+              # adjusted.
+              r'EC3PO\.Console[\s\-\w\d:.]+LogConsoleOutput - /dev/pts/\d+ - '
+              # Lastly, we get the MCU's console line.
+              r'(?P<%s>.+$)' % (MCU_GROUP, LINE_GROUP))
+    MCU_EXTRACTOR = re.compile(MCU_RE)
+
+    # Suffix to identify compressed logfiles.
+    COMPRESSION_SUFFIX = '.tbz2'
+
+    def _init_attributes(self):
+        self._servo_state = None
+        self.servo_port = None
+        self.servo_board = None
+        self.servo_model = None
+        self.servo_serial = None
+        self._servo = None
+        self._servod_server_proxy = None
+        # Flag to make sure that multiple calls to close do not result in the
+        # logic executing multiple times.
+        self._closed = False
 
     def _initialize(self, servo_host='localhost',
                     servo_port=DEFAULT_PORT, servo_board=None,
@@ -87,13 +139,15 @@ class ServoHost(base_servohost.BaseServoHost):
         """
         super(ServoHost, self)._initialize(hostname=servo_host,
                                            is_in_lab=is_in_lab, *args, **dargs)
+        self._init_attributes()
         self.servo_port = int(servo_port)
         self.servo_board = servo_board
         self.servo_model = servo_model
         self.servo_serial = servo_serial
-        self._servo = None
-        self._servod_server_proxy = None
 
+        # The location of the log files on the servo host for this instance.
+        self.remote_log_dir = '%s_%s' % (self.SERVOD_LOG_PREFIX,
+                                         self.servo_port)
         # Path of the servo host lock file.
         self._lock_file = (self.TEMP_FILE_DIR + str(self.servo_port)
                            + self.LOCK_FILE_POSTFIX)
@@ -112,6 +166,10 @@ class ServoHost(base_servohost.BaseServoHost):
 
         self._repair_strategy = (
                 servo_repair.create_servo_repair_strategy())
+
+    def __str__(self):
+        return "<%s '%s:%s'>" % (
+                type(self).__name__, self.hostname, self.servo_port)
 
     def connect_servo(self):
         """Establish a connection to the servod server on this host.
@@ -148,18 +206,21 @@ class ServoHost(base_servohost.BaseServoHost):
             self.rpc_server_tracker.disconnect(self.servo_port)
             self._servo = None
 
+
     def _create_servod_server_proxy(self):
         """Create a proxy that can be used to communicate with servod server.
 
         @returns: An xmlrpclib.ServerProxy that is connected to the servod
                   server on the host.
         """
-        if ENABLE_SSH_TUNNEL_FOR_SERVO and not self.is_localhost():
+        if (servo_constants.ENABLE_SSH_TUNNEL_FOR_SERVO
+                and not self.is_localhost()):
             return self.rpc_server_tracker.xmlrpc_connect(
                     None, self.servo_port,
                     ready_test_name=self.SERVO_READY_METHOD,
                     timeout_seconds=60,
-                    request_timeout_seconds=3600)
+                    request_timeout_seconds=3600,
+                    server_desc=str(self))
         else:
             remote = 'http://%s:%s' % (self.hostname, self.servo_port)
             return xmlrpclib.ServerProxy(remote)
@@ -187,9 +248,15 @@ class ServoHost(base_servohost.BaseServoHost):
         self.record('INFO', None, None, message)
         try:
             self._repair_strategy.verify(self, silent)
-        except:
-            self.disconnect_servo()
-            raise
+            self._servo_state = servo_constants.SERVO_STATE_WORKING
+            self.record('INFO', None, None,
+                        'ServoHost verify set servo_state as WORKING')
+        except Exception as e:
+            self._servo_state = servo_constants.SERVO_STATE_BROKEN
+            self.record('INFO', None, None,
+                        'ServoHost verify set servo_state as BROKEN')
+            if self._is_critical_error(e):
+                raise
 
 
     def repair(self, silent=False):
@@ -202,13 +269,36 @@ class ServoHost(base_servohost.BaseServoHost):
         self.record('INFO', None, None, message)
         try:
             self._repair_strategy.repair(self, silent)
+            self._servo_state = servo_constants.SERVO_STATE_WORKING
+            self.record('INFO', None, None,
+                        'ServoHost repair set servo_state as WORKING')
             # If target is a labstation then try to withdraw any existing
             # reboot request created by this servo because it passed repair.
             if self.is_labstation():
                 self.withdraw_reboot_request()
-        except:
-            self.disconnect_servo()
-            raise
+        except Exception as e:
+            self._servo_state = servo_constants.SERVO_STATE_BROKEN
+            self.record('INFO', None, None,
+                        'ServoHost repair set servo_state as BROKEN')
+            if self._is_critical_error(e):
+                self.disconnect_servo()
+                self.stop_servod()
+                raise
+
+
+    def _is_critical_error(self, error):
+        if (isinstance(error, hosts.AutoservVerifyDependencyError)
+            and not error.is_critical()):
+            logging.warning('Non-critical verify failure(s) detected during'
+                            ' verify/repair servo, servo connection will'
+                            ' still up but may not fully functional.'
+                            ' Some repair actions and servo depended'
+                            ' tests may not run.')
+            return False
+        logging.info('Critical verify failure(s) detected during repair/verify'
+                     ' servo. Disconnecting servo and stop servod, all repair '
+                     'action and tests that depends on servo will not run.')
+        return True
 
 
     def get_servo(self):
@@ -238,6 +328,266 @@ class ServoHost(base_servohost.BaseServoHost):
         self.run('rm -f %s' % self._reboot_file, ignore_status=True)
 
 
+    def start_servod(self, quick_startup=False):
+        """Start the servod process on servohost.
+        """
+        # Skip if running on the localhost.(crbug.com/1038168)
+        if self.is_localhost():
+            logging.debug("Servohost is a localhost, skipping start servod.")
+            return
+
+        cmd = 'start servod'
+        if self.servo_board:
+            cmd += ' BOARD=%s' % self.servo_board
+            if self.servo_model:
+                cmd += ' MODEL=%s' % self.servo_model
+        else:
+            logging.warning('Board for DUT is unknown; starting servod'
+                            ' assuming a pre-configured board.')
+
+        cmd += ' PORT=%d' % self.servo_port
+        if self.servo_serial:
+            cmd += ' SERIAL=%s' % self.servo_serial
+
+        # Start servod with dual_v4 if the DUT/servo from designated pools.
+        dut_host_info = self.get_dut_host_info()
+        if dut_host_info:
+            if bool(dut_host_info.pools &
+                    servo_constants.POOLS_SUPPORT_DUAL_V4):
+                logging.debug('The DUT is detected in following designated'
+                              ' pools %s,starting servod with DUAL_V4 option.',
+                              servo_constants.POOLS_SUPPORT_DUAL_V4)
+                cmd += ' DUAL_V4=1'
+
+        # Remove the symbolic links from the logs. This helps ensure that
+        # a failed servod instantiation does not cause us to grab old logs
+        # by mistake.
+        self.remove_latest_log_symlinks()
+        self.run(cmd, timeout=60)
+
+        # There's a lag between when `start servod` completes and when
+        # the _ServodConnectionVerifier trigger can actually succeed.
+        # The call to time.sleep() below gives time to make sure that
+        # the trigger won't fail after we return.
+
+        # Normally servod on servo_v3 and labstation take ~10 seconds to ready,
+        # But in the rare case all servo on a labstation are in heavy use they
+        # may take ~30 seconds. So the timeout value will double these value,
+        # and we'll try quick start up when first time initialize servohost,
+        # and use standard start up timeout in repair.
+        if quick_startup:
+            timeout = servo_constants.SERVOD_QUICK_STARTUP_TIMEOUT
+        else:
+            timeout = servo_constants.SERVOD_STARTUP_TIMEOUT
+        logging.debug('Wait %s seconds for servod process fully up.', timeout)
+        time.sleep(timeout)
+
+
+    def stop_servod(self):
+        """Stop the servod process on servohost.
+        """
+        # Skip if running on the localhost.(crbug.com/1038168)
+        if self.is_localhost():
+            logging.debug("Servohost is a localhost, skipping stop servod.")
+            return
+
+        logging.debug('Stopping servod on port %s', self.servo_port)
+        self.run('stop servod PORT=%d' % self.servo_port,
+                 timeout=60, ignore_status=True)
+        logging.debug('Wait %s seconds for servod process fully teardown.',
+                      servo_constants.SERVOD_TEARDOWN_TIMEOUT)
+        time.sleep(servo_constants.SERVOD_TEARDOWN_TIMEOUT)
+
+
+    def restart_servod(self, quick_startup=False):
+        """Restart the servod process on servohost.
+        """
+        self.stop_servod()
+        self.start_servod(quick_startup)
+
+
+    def _extract_compressed_logs(self, logdir, relevant_files):
+        """Decompress servod logs in |logdir|.
+
+        @param logdir: directory containing compressed servod logs.
+        @param relevant_files: list of files in |logdir| to consider.
+
+        @returns: tuple, (tarfiles, files) where
+                  tarfiles: list of the compressed filenames that have been
+                            extracted and deleted
+                  files:  list of the uncompressed files that were generated
+        """
+        # For all tar-files, first extract them to the directory, and
+        # then let the common flow handle them.
+        tarfiles = [cf for cf in relevant_files if
+                    cf.endswith(self.COMPRESSION_SUFFIX)]
+        files = []
+        for f in tarfiles:
+            norm_name = os.path.basename(f)[:-len(self.COMPRESSION_SUFFIX)]
+            with tarfile.open(f) as tf:
+                # Each tarfile has only one member, as
+                # that's the compressed log.
+                member = tf.members[0]
+                # Manipulate so that it only extracts the basename, and not
+                # the directories etc.
+                member.name = norm_name
+                files.append(os.path.join(logdir, member.name))
+                tf.extract(member, logdir)
+            # File has been extracted: remove the compressed file.
+            os.remove(f)
+        return tarfiles, files
+
+    def _extract_mcu_logs(self, log_subdir):
+        """Extract MCU (EC, Cr50, etc) console output from servod debug logs.
+
+        Using the MCU_EXTRACTOR regex (above) extract and split out MCU console
+        lines from the logs to generate invidiual console logs e.g. after
+        this method, you can find an ec.txt and servo_v4.txt in |log_dir| if
+        those MCUs had any console input/output.
+
+        @param log_subdir: directory with log.DEBUG.txt main servod debug logs.
+        """
+        # Extract the MCU for each one. The MCU logs are only in the .DEBUG
+        # files
+        mcu_lines_file = os.path.join(log_subdir, 'log.DEBUG.txt')
+        if not os.path.exists(mcu_lines_file):
+            logging.info('No DEBUG logs found to extract MCU logs from.')
+            return
+        mcu_files = {}
+        mcu_file_template = '%s.txt'
+        with open(mcu_lines_file, 'r') as f:
+            for line in f:
+                match = self.MCU_EXTRACTOR.match(line)
+                if match:
+                    mcu = match.group(self.MCU_GROUP).lower()
+                    line = match.group(self.LINE_GROUP)
+                    if mcu not in mcu_files:
+                        mcu_file = os.path.join(log_subdir,
+                                                mcu_file_template % mcu)
+                        mcu_files[mcu] = open(mcu_file, 'a')
+                    fd = mcu_files[mcu]
+                    fd.write(line + '\n')
+        for f in mcu_files:
+            mcu_files[f].close()
+
+
+    def remove_latest_log_symlinks(self):
+        """Remove the conveninence symlinks 'latest' servod logs."""
+        symlink_wildcard = '%s/latest*' % self.remote_log_dir
+        cmd = 'rm ' + symlink_wildcard
+        self.run(cmd, stderr_tee=None, ignore_status=True)
+
+    def grab_logs(self, outdir):
+        """Retrieve logs from servo_host to |outdir|/servod_{port}.{ts}/.
+
+        This method first collects all logs on the servo_host side pertaining
+        to this servod instance (port, instatiation). It glues them together
+        into combined log.[level].txt files and extracts all available MCU
+        console I/O from the logs into individual files e.g. servo_v4.txt
+
+        All the output can be found in a directory inside |outdir| that
+        this generates based on |LOG_DIR|, the servod port, and the instance
+        timestamp on the servo_host side.
+
+        @param outdir: directory to create a subdirectory into to place the
+                       servod logs into.
+        """
+        # First, extract the timestamp. This cmd gives the real filename of
+        # the latest aka current log file.
+        cmd = ('if [ -f %(dir)s/latest.DEBUG ];'
+               'then realpath %(dir)s/latest.DEBUG;'
+               'elif [ -f %(dir)s/latest ];'
+               'then realpath %(dir)s/latest;'
+               'else exit %(code)d;'
+               'fi' % {'dir': self.remote_log_dir,
+                       'code': self.NO_SYMLINKS_CODE})
+        res = self.run(cmd, stderr_tee=None, ignore_status=True)
+        if res.exit_status != 0:
+            if res.exit_status == self.NO_SYMLINKS_CODE:
+                logging.warning('servod log latest symlinks not found. '
+                                'This is likely due to an error starting up '
+                                'servod. Ignoring..')
+            else:
+                logging.warning('Failed to find servod logs on servo host.')
+                logging.warning(res.stderr.strip())
+            return
+        fname = os.path.basename(res.stdout.strip())
+        # From the fname, ought to extract the timestamp using the TS_EXTRACTOR
+        ts_match = self.TS_EXTRACTOR.match(fname)
+        if not ts_match:
+            logging.warning('Failed to extract timestamp from servod log file '
+                            '%r. Skipping. The servo host is using outdated '
+                            'servod logging and needs to be updated.', fname)
+            return
+        instance_ts = ts_match.group(self.TS_GROUP)
+        # Create the local results log dir.
+        log_dir = os.path.join(outdir, '%s_%s.%s' % (self.LOG_DIR,
+                                                     str(self.servo_port),
+                                                     instance_ts))
+        logging.info('Saving servod logs to %s.', log_dir)
+        os.mkdir(log_dir)
+        # Now, get all files with that timestamp.
+        cmd = 'find %s -maxdepth 1 -name "log.%s*"' % (self.remote_log_dir,
+                                                       instance_ts)
+        res = self.run(cmd, stderr_tee=None, ignore_status=True)
+        files = res.stdout.strip().split()
+        try:
+            self.get_file(files, log_dir, try_rsync=False)
+
+        except error.AutoservRunError as e:
+            result = e.result_obj
+            if result.exit_status != 0:
+                stderr = result.stderr.strip()
+                logging.warning("Couldn't retrieve servod logs. Ignoring: %s",
+                                stderr or '\n%s' % result)
+            return
+        local_files = [os.path.join(log_dir, f) for f in os.listdir(log_dir)]
+        # TODO(crrev.com/c/1793030): remove no-level case once CL is pushed
+        for level_name in ('DEBUG', 'INFO', 'WARNING', ''):
+            # Create the joint files for each loglevel. i.e log.DEBUG
+            joint_file = self.JOINT_LOG_PREFIX
+            if level_name:
+                joint_file = '%s.%s' % (self.JOINT_LOG_PREFIX, level_name)
+            # This helps with some online tools to avoid complaints about an
+            # unknown filetype.
+            joint_file = joint_file + '.txt'
+            joint_path = os.path.join(log_dir, joint_file)
+            files = [f for f in local_files if level_name in f]
+            if not files:
+                # TODO(crrev.com/c/1793030): remove no-level case once CL
+                # is pushed
+                continue
+            # Extract compressed logs if any.
+            compressed, extracted = self._extract_compressed_logs(log_dir,
+                                                                  files)
+            files = list(set(files) - set(compressed))
+            files.extend(extracted)
+            # Need to sort. As they all share the same timestamp, and
+            # loglevel, the index itself is sufficient. The highest index
+            # is the oldest file, therefore we need a descending sort.
+            def sortkey(f, level=level_name):
+                """Custom sortkey to sort based on rotation number int."""
+                if f.endswith(level_name): return 0
+                return int(f.split('.')[-1])
+
+            files.sort(reverse=True, key=sortkey)
+            # Just rename the first file rather than building from scratch.
+            os.rename(files[0], joint_path)
+            with open(joint_path, 'a') as joint_f:
+                for logfile in files[1:]:
+                    # Transfer the file to the joint file line by line.
+                    with open(logfile, 'r') as log_f:
+                        for line in log_f:
+                            joint_f.write(line)
+                    # File has been written over. Delete safely.
+                    os.remove(logfile)
+            # Need to remove all files form |local_files| so we don't
+            # analyze them again.
+            local_files = list(set(local_files) - set(files) - set(compressed))
+        # Lastly, extract MCU logs from the joint logs.
+        self._extract_mcu_logs(log_dir)
+
+
     def _lock(self):
         """lock servohost by touching a file.
         """
@@ -258,11 +608,23 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def close(self):
         """Close the associated servo and the host object."""
+        if self._closed:
+            logging.debug('ServoHost is already closed.')
+            return
         if self._servo:
+            outdir = None if not self.job else self.job.resultdir
             # In some cases when we run as lab-tools, the job object is None.
-            if self.job and not self._servo.uart_logs_dir:
-                self._servo.uart_logs_dir = self.job.resultdir
-            self._servo.close()
+            self._servo.close(outdir)
+
+        if self.job and not self.is_localhost():
+            # Grab all logs from this servod instance before stopping servod.
+            # TODO(crbug.com/1011516): once enabled, remove the check against
+            # localhost and instead check against log-rotiation enablement.
+            try:
+                self.grab_logs(self.job.resultdir)
+            except error.AutoservRunError as e:
+                logging.info('Failed to grab servo logs due to: %s. '
+                             'This error is forgiven.', str(e))
 
         if self._is_locked:
             # Remove the lock if the servohost has been locked.
@@ -272,8 +634,23 @@ class ServoHost(base_servohost.BaseServoHost):
                 logging.error('Unlock servohost failed due to ssh timeout.'
                               ' It may caused by servohost went down during'
                               ' the task.')
+        # We want always stop servod after task to minimum the impact of bad
+        # servod process interfere other servods.(see crbug.com/1028665)
+        try:
+            self.stop_servod()
+        except error.AutoservRunError as e:
+            logging.info("Failed to stop servod due to:\n%s\n"
+                         "This error is forgiven.", str(e))
 
         super(ServoHost, self).close()
+        # Mark closed.
+        self._closed = True
+
+
+    def get_servo_state(self):
+        if self._servo_state is None:
+            return servo_constants.SERVO_STATE_UNKNOWN
+        return self._servo_state
 
 
 def make_servo_hostname(dut_hostname):
@@ -342,27 +719,30 @@ def get_servo_args_for_host(dut_host):
     """
     info = dut_host.host_info_store.get()
     servo_args = {k: v for k, v in info.attributes.iteritems()
-                  if k in SERVO_ATTR_KEYS}
+                  if k in servo_constants.SERVO_ATTR_KEYS}
 
-    if SERVO_PORT_ATTR in servo_args:
+    if servo_constants.SERVO_PORT_ATTR in servo_args:
         try:
-            servo_args[SERVO_PORT_ATTR] = int(servo_args[SERVO_PORT_ATTR])
+            servo_args[servo_constants.SERVO_PORT_ATTR] = int(
+                servo_args[servo_constants.SERVO_PORT_ATTR])
         except ValueError:
             logging.error('servo port is not an int: %s',
-                          servo_args[SERVO_PORT_ATTR])
+                          servo_args[servo_constants.SERVO_PORT_ATTR])
             # Reset servo_args because we don't want to use an invalid port.
-            servo_args.pop(SERVO_HOST_ATTR, None)
+            servo_args.pop(servo_constants.SERVO_HOST_ATTR, None)
 
     if info.board:
-        servo_args[SERVO_BOARD_ATTR] = _map_afe_board_to_servo_board(info.board)
+        servo_board = _map_afe_board_to_servo_board(info.board)
+        servo_args[servo_constants.SERVO_BOARD_ATTR] = servo_board
     if info.model:
-        servo_args[SERVO_MODEL_ATTR] = info.model
-    return servo_args if SERVO_HOST_ATTR in servo_args else None
+        servo_args[servo_constants.SERVO_MODEL_ATTR] = info.model
+    return servo_args if servo_constants.SERVO_HOST_ATTR in servo_args else None
 
 
 def _tweak_args_for_ssp_moblab(servo_args):
-    if servo_args[SERVO_HOST_ATTR] in ['localhost', '127.0.0.1']:
-        servo_args[SERVO_HOST_ATTR] = _CONFIG.get_config_value(
+    if (servo_args[servo_constants.SERVO_HOST_ATTR]
+            in ['localhost', '127.0.0.1']):
+        servo_args[servo_constants.SERVO_HOST_ATTR] = _CONFIG.get_config_value(
                 'SSP', 'host_container_ip', type=str, default=None)
 
 
@@ -437,17 +817,40 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
 
     if servo_args is None:
         logging.debug('No servo_args provided, and failed to find overrides.')
-        return None
-    if SERVO_HOST_ATTR not in servo_args:
-        logging.debug('%s attribute missing from servo_args: %s',
-                      SERVO_HOST_ATTR, servo_args)
-        return None
+        if try_lab_servo or servo_dependency:
+            return None, servo_constants.SERVO_STATE_NOT_CONNECTED
+        else:
+            # For regular test case which not required the servo
+            return None, None
+
+    servo_hostname = servo_args.get(servo_constants.SERVO_HOST_ATTR)
+    servo_port = servo_args.get(servo_constants.SERVO_PORT_ATTR)
+    if not _is_servo_host_information_exist(servo_hostname, servo_port):
+        logging.debug(
+            'Servo connection info missed hostname: %s , port: %s',
+            servo_hostname, servo_port)
+        return None, servo_constants.SERVO_STATE_NOT_CONNECTED
+    if not is_servo_host_information_valid(servo_hostname, servo_port):
+        logging.debug(
+            'Servo connection info is incorrect hostname: %s , port: %s',
+            servo_hostname, servo_port)
+        return None, servo_constants.SERVO_STATE_WRONG_CONFIG
     if (not servo_dependency and not try_servo_repair and
-            not servo_host_is_up(servo_args[SERVO_HOST_ATTR])):
+            not servo_host_is_up(servo_hostname)):
         logging.debug('ServoHost is not up.')
-        return None
+        return None, servo_constants.SERVO_STATE_BROKEN
 
     newhost = ServoHost(**servo_args)
+    try:
+        newhost.restart_servod(quick_startup=True)
+    except error.AutoservSSHTimeout:
+        logging.warning("Restart servod failed due ssh connection "
+                        "to servohost timed out. This error is forgiven"
+                        " here, we will retry in servo repair process.")
+    except error.AutoservRunError as e:
+        logging.warning("Restart servod failed due to:\n%s\n"
+                        "This error is forgiven here, we will retry"
+                        " in servo repair process.", str(e))
 
     # TODO(gregorynisbet): Clean all of this up.
     logging.debug('create_servo_host: attempt to set info store on '
@@ -468,7 +871,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
     # we don't need both.
     if servo_dependency:
         newhost.repair(silent=True)
-        return newhost
+        return newhost, newhost.get_servo_state()
 
     if try_servo_repair:
         try:
@@ -480,4 +883,31 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
             newhost.verify()
         except Exception:
             logging.exception('servo verify failed for %s', newhost.hostname)
-    return newhost
+    return newhost, newhost.get_servo_state()
+
+
+def _is_servo_host_information_exist(hostname, port):
+    if hostname is None or len(hostname.strip()) == 0:
+        return False
+    if port is None:
+        return False
+    if not type(port) is int:
+        try:
+            int(port)
+        except ValueError:
+            return False
+
+    return True
+
+
+def is_servo_host_information_valid(hostname, port):
+    if not _is_servo_host_information_exist(hostname, port):
+        return False
+    # checking range and correct of the port
+    port_int = int(port)
+    if port_int < 1 or port_int > 65000:
+        return False
+    # we expecting host contain only latters, digits and '-' or '_'
+    if not re.match('[a-zA-Z0-9-_\.]*$', hostname) or len(hostname) < 5:
+        return False
+    return True

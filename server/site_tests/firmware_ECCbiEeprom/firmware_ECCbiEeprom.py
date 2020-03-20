@@ -7,6 +7,7 @@ import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.servo import servo
 
 class firmware_ECCbiEeprom(FirmwareTest):
     """Servo-based EC test for Cros Board Info EEPROM"""
@@ -33,7 +34,8 @@ class firmware_ECCbiEeprom(FirmwareTest):
             raise error.TestNAError("Nothing needs to be tested on this device")
         cmd = 'ectool locatechip %d %d' % (self.EEPROM_LOCATE_TYPE,
                                            self.EEPROM_LOCATE_INDEX)
-        cmd_out = self.faft_client.System.RunShellCommandGetOutput(cmd, True)
+        cmd_out = self.faft_client.system.run_shell_command_get_output(
+                cmd, True)
         logging.debug('Ran %s on DUT, output was: %s', cmd, cmd_out)
 
         if len(cmd_out) > 0 and cmd_out[0].startswith('Usage'):
@@ -52,18 +54,20 @@ class firmware_ECCbiEeprom(FirmwareTest):
         self.i2c_addr = int(match.group(2), 0)
 
         # Ensure that the i2c mux is disabled on the servo as the CBI EEPROM
-        # i2c lines are shared with the servo lines on some HW designs. We do
-        # not want the servo to artificially drive the i2c lines during this
-        # test. This only applies to non CCD servo connections
-        if not self.servo.get_servo_version().endswith('ccd_cr50'):
+        # i2c lines are shared with the servo lines on some HW designs. If the
+        # control does not exist, ignore error
+        try:
             self.servo.set('i2c_mux_en', 'off')
+            logging.info("i2c_mux_en present and reset.")
+        except servo.ControlUnavailableError:
+            logging.info("i2c_mux_en does not exist. Ignoring.")
 
     def _gen_write_command(self, offset, data):
         return ('ectool i2cxfer %d %d %d %d %s' %
                (self.i2c_port, self.i2c_addr, self.NO_READ, offset, data))
 
     def _read_eeprom(self, offset):
-        cmd_out = self.faft_client.System.RunShellCommandGetOutput(
+        cmd_out = self.faft_client.system.run_shell_command_get_output(
                   'ectool i2cxfer %d %d %d %d' %
                   (self.i2c_port, self.i2c_addr, self.PAGE_SIZE, offset))
         if len(cmd_out) < 1:
@@ -78,7 +82,7 @@ class firmware_ECCbiEeprom(FirmwareTest):
     def _write_eeprom(self, offset, data):
         # Note we expect this call to fail in certain scenarios, so ignore
         # results
-        self.faft_client.System.RunShellCommandGetOutput(
+        self.faft_client.system.run_shell_command_get_output(
              self._gen_write_command(offset, data))
 
     def _read_write_data(self, offset):

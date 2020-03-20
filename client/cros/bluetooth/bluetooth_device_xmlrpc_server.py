@@ -5,6 +5,7 @@
 # found in the LICENSE file.
 
 import base64
+import collections
 import dbus
 import dbus.mainloop.glib
 import dbus.service
@@ -12,15 +13,21 @@ import gobject
 import json
 import logging
 import logging.handlers
-import os
+import subprocess
+import functools
 
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros import xmlrpc_server
+from autotest_lib.client.cros.audio import check_quality
+from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import output_recorder
+
+
+CheckQualityArgsClass = collections.namedtuple('args_type', ['filename'])
 
 
 def _dbus_byte_array_to_b64_string(dbus_byte_array):
@@ -35,6 +42,49 @@ def _b64_string_to_dbus_byte_array(b64_string):
   for byte in bytes:
     dbus_array.append(dbus.Byte(byte))
   return dbus_array
+
+
+def dbus_print_error(default_return_value=False):
+    """Catch all DBus exceptions and return the error.
+
+    Wrap a function with a try block that catches DBus exceptions and
+    returns the error with the specified return status. The exception is logged
+    to aid in debugging.
+
+    @param wrapped_function function to wrap.
+
+    """
+    def decorator(wrapped_function):
+        """Call a function and catch DBus errors.
+
+        @param wrapped_function function to call in dbus safe context.
+        @return function return value or default_return_value on failure.
+
+        """
+        @functools.wraps(wrapped_function)
+        def wrapper(*args, **kwargs):
+            """Pass args and kwargs to a dbus safe function.
+
+            @param args formal python arguments.
+            @param kwargs keyword python arguments.
+            @return function return value or default_return_value on failure.
+
+            """
+            logging.debug('%s()', wrapped_function.__name__)
+            try:
+                return wrapped_function(*args, **kwargs)
+
+            except dbus.exceptions.DBusException as e:
+                logging.debug('Exception while performing operation %s: %s: %s',
+                              wrapped_function.__name__,
+                              e.get_dbus_name(),
+                              e.get_dbus_message())
+                return (default_return_value, str(e))
+
+        return wrapper
+
+    return decorator
+
 
 
 class PairingAgent(dbus.service.Object):
@@ -89,10 +139,6 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     UPSTART_ERROR_ALREADYSTARTED = \
             'com.ubuntu.Upstart0_6.Error.AlreadyStarted'
 
-    # The file stores newblue enable/disable setting. The file can be updated in
-    # the run time by calling newblue enable/disable in crosh shell.
-    NEWBLUE_CONFIG_FILE = "/var/lib/bluetooth/newblue"
-
     BLUETOOTHD_JOB = 'bluetoothd'
 
     DBUS_ERROR_SERVICEUNKNOWN = 'org.freedesktop.DBus.Error.ServiceUnknown'
@@ -125,20 +171,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     # after reset.
     ADAPTER_TIMEOUT = 30
 
+    # How long we should wait for property update signal before we cancel it
+    PROPERTY_UPDATE_TIMEOUT_MILLI_SECS = 5000
+
     def __init__(self):
         super(BluetoothDeviceXmlRpcDelegate, self).__init__()
-
-        # Init bluetooth service name based on newblue config file.
-        self._bluetooth_service_name = self.BLUEZ_SERVICE_NAME
-        if os.path.exists(self.NEWBLUE_CONFIG_FILE):
-            with open(self.NEWBLUE_CONFIG_FILE) as _newblue_config_file:
-                _newblue_enable = int(_newblue_config_file.read().strip())
-                if _newblue_enable:
-                    self._bluetooth_service_name = self.BLUETOOTH_SERVICE_NAME
-        else:
-            logging.debug('Newblue config file does not exist')
-        logging.debug('Bluetooth Service Name: %s',
-                      self._bluetooth_service_name)
 
         # Open the Bluetooth Raw socket to the kernel which provides us direct,
         # raw, access to the HCI controller.
@@ -186,8 +223,13 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self.btmon = output_recorder.OutputRecorder(
                 'btmon', stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
 
+        self._cras_test_client = cras_utils.CrasTestClient()
+
         self.advertisements = []
-        self._adv_mainloop = gobject.MainLoop()
+        self._chrc_property = None
+        self._timeout_id = 0
+        self._signal_watch = None
+        self._dbus_mainloop = gobject.MainLoop()
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -213,6 +255,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                                dbus.Byte(kernel_vb),
                                dbus_interface=self.BLUEZ_DEBUG_LOG_IFACE)
         return
+
+    def log_message(self, msg):
+        """ log a message to /var/log/messages."""
+        try:
+            cmd = ['logger', msg]
+            subprocess.call(cmd)
+        except Exception as e:
+            logging.error("log_message %s failed with %s", cmd, str(e))
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -345,7 +395,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         bluez = None
         try:
-            bluez = self._system_bus.get_object(self._bluetooth_service_name,
+            bluez = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                                 self.BLUEZ_MANAGER_PATH)
             logging.debug('bluetoothd is running')
         except dbus.exceptions.DBusException as e:
@@ -427,7 +477,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             if self.BLUEZ_ADAPTER_IFACE in ifaces:
                 logging.debug('using adapter %s', path)
                 adapter = self._system_bus.get_object(
-                        self._bluetooth_service_name,
+                        self.BLUEZ_SERVICE_NAME,
                         path)
                 return adapter
         else:
@@ -667,7 +717,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             props = objects[self._adapter.object_path][self.BLUEZ_ADAPTER_IFACE]
         else:
             props = {}
-        logging.debug('get_adapter_properties: %s', props)
+        logging.debug('get_adapter_properties')
+        for i in props.items():
+            logging.debug(i)
         return props
 
 
@@ -817,27 +869,51 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return self._encode_base64_json(devices)
 
 
+    @xmlrpc_server.dbus_safe(None)
+    def get_device_property(self, address, prop_name):
+        """Read a property of BT device by directly querying device dbus object
+
+        @param address: Address of the device to query
+        @param prop_name: Property to be queried
+
+        @return Base 64 JSON repr of property if device is found and has
+                property, otherwise None on failure. JSON is a recursive
+                converter, automatically converting dbus types to python natives
+                and base64 allows us to pass special characters over xmlrpc.
+                Decode is done in bluetooth_device.py
+        """
+
+        prop_val = None
+
+        # Grab dbus object, _find_device will catch any thrown dbus error
+        device_obj = self._find_device(address)
+
+        if device_obj:
+            # Query dbus object for property
+            prop_val = device_obj.Get(self.BLUEZ_DEVICE_IFACE, prop_name,
+                                      dbus_interface=dbus.PROPERTIES_IFACE)
+
+        return self._encode_base64_json(prop_val)
+
+
     @xmlrpc_server.dbus_safe(False)
-    def get_device_by_address(self, address):
-        """Read information about the remote device with the specified address.
+    def set_discovery_filter(self, filter):
+        """Set the discovery filter.
 
-        @param address: Address of the device to get.
+        @param filter: The discovery filter to set.
 
-        @return the properties of the device as a JSON-encoded dictionary
-            on success, the value False otherwise.
+        @return True on success, False otherwise.
 
         """
-        objects = self._bluez.GetManagedObjects(
-                dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=True)
-        devices = []
-        devices = self._get_devices()
-        for device in devices:
-            if device.get('Address') == address:
-                return self._encode_base64_json(device)
-        return json.dumps(dict())
+        if not self._adapter:
+            return False
+        self._adapter.SetDiscoveryFilter(
+                filter, dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+        return True
 
 
     @xmlrpc_server.dbus_safe(False)
+    @dbus_print_error()
     def start_discovery(self):
         """Start discovery of remote devices.
 
@@ -848,12 +924,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         if not self._adapter:
-            return False
+            return (False, "Adapter Not Found")
         self._adapter.StartDiscovery(dbus_interface=self.BLUEZ_ADAPTER_IFACE)
-        return True
+        return (True, None)
 
 
-    @xmlrpc_server.dbus_safe(False)
+    @dbus_print_error()
     def stop_discovery(self):
         """Stop discovery of remote devices.
 
@@ -861,9 +937,73 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         if not self._adapter:
-            return False
+            return (False, "Adapter Not Found")
         self._adapter.StopDiscovery(dbus_interface=self.BLUEZ_ADAPTER_IFACE)
-        return True
+        return (True, None)
+
+    @dbus_print_error()
+    def pause_discovery(self, system_suspend_resume):
+        """Pause discovery of remote devices.
+
+        @return (True, None) on success, (False,<error>) otherwise.
+
+        """
+        self._adapter.PauseDiscovery(dbus.Boolean(system_suspend_resume,
+                                                  variant_level=1),
+                                     dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+        return (True, None)
+
+    @dbus_print_error()
+    def unpause_discovery(self, system_suspend_resume):
+        """Unpause discovery of remote devices.
+
+        @return (True, None) on success, (False,<error>) otherwise.
+
+        """
+        self._adapter.UnpauseDiscovery(dbus.Boolean(system_suspend_resume,
+                                                    variant_level=1),
+                                       dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+        return (True, None)
+
+
+    @xmlrpc_server.dbus_safe(False)
+    @dbus_print_error()
+    def pause_discovery(self, system_suspend_resume=False):
+        """Pause discovery of remote devices.
+
+        This pauses all device discovery sessions.
+
+        @param system_suspend_resume: whether the
+               request is related to system suspend/resume.
+
+        @return True on success, False otherwise.
+
+        """
+        if not self._adapter:
+            return (False, "Adapter Not Found")
+        self._adapter.PauseDiscovery(
+                system_suspend_resume, dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+        return (True, None)
+
+
+    @xmlrpc_server.dbus_safe(False)
+    @dbus_print_error()
+    def unpause_discovery(self, system_suspend_resume=False):
+        """Unpause discovery of remote devices.
+
+        This unpauses all device discovery sessions.
+
+        @param system_suspend_resume: whether the
+               request is related to system suspend/resume.
+
+        @return True on success, False otherwise.
+
+        """
+        if not self._adapter:
+            return (False, "Adapter Not Found")
+        self._adapter.UnpauseDiscovery(
+                system_suspend_resume, dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+        return (True, None)
 
 
     def get_dev_info(self):
@@ -881,6 +1021,16 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return json.dumps(self._raw.get_dev_info(0))
 
 
+    @dbus_print_error(None)
+    def get_supported_capabilities(self):
+        """ Get supported capabilities of the adapter
+
+        @returns (capabilities, None) on Success. (None, <error>) on failure
+        """
+        value = self._adapter.GetSupportedCapabilities(
+            dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+        return (json.dumps(value), None)
+
     @xmlrpc_server.dbus_safe(False)
     def register_profile(self, path, uuid, options):
         """Register new profile (service).
@@ -895,11 +1045,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         profile_manager = dbus.Interface(
                               self._system_bus.get_object(
-                                  self._bluetooth_service_name,
+                                  self.BLUEZ_SERVICE_NAME,
                                   self.BLUEZ_PROFILE_MANAGER_PATH),
                               self.BLUEZ_PROFILE_MANAGER_IFACE)
         dbus_object = self._system_bus.get_object(
-                            self._bluetooth_service_name, path)
+                            self.BLUEZ_SERVICE_NAME, path)
         profile_manager.RegisterProfile(dbus_object, uuid,
                                     dbus.Dictionary(options, signature='sv'))
         return True
@@ -943,7 +1093,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         path = self._get_device_path(address)
         if path:
             obj = self._system_bus.get_object(
-                        self._bluetooth_service_name, path)
+                        self.BLUEZ_SERVICE_NAME, path)
             return dbus.Interface(obj, self.BLUEZ_DEVICE_IFACE)
         logging.info('Device not found')
         return None
@@ -962,16 +1112,29 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             not found in the object tree.
 
         """
-        objects = self._bluez.GetManagedObjects(
-                dbus_interface=self.BLUEZ_MANAGER_IFACE)
-        for path, ifaces in objects.iteritems():
-            device = ifaces.get(self.BLUEZ_DEVICE_IFACE)
-            if device is None:
-                continue
-            if (device['Address'] == address and
-                path.startswith(self._adapter.object_path)):
-                return path
-        logging.info('Device path not found')
+
+        # Create device path, i.e. '/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF' based
+        # on path assignment scheme used in bluez
+        address_up = address.replace(':', '_')
+        device_path = '{}/dev_{}'.format(self._adapter.object_path, address_up)
+
+        # Verify the Address property agrees to confirm we have the device
+        try:
+            device = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
+                                                 device_path)
+            found_addr = device.Get(self.BLUEZ_DEVICE_IFACE, 'Address',
+                                    dbus_interface=dbus.PROPERTIES_IFACE)
+
+            if found_addr == address:
+                logging.info('Device found at {}'.format(device_path))
+                return device_path
+
+        except dbus.exceptions.DBusException, e:
+            log_msg = 'Couldn\'t reach device: {}'.format(str(e))
+            logging.debug(log_msg)
+
+        logging.debug('No device found at {}'.format(device_path))
+        return None
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -988,12 +1151,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._pairing_agent= PairingAgent(pin, self._system_bus,
                                           self.AGENT_PATH)
         agent_manager = dbus.Interface(
-                self._system_bus.get_object(self._bluetooth_service_name,
+                self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                             self.BLUEZ_AGENT_MANAGER_PATH),
                 self.BLUEZ_AGENT_MANAGER_IFACE)
         try:
             agent_obj = self._system_bus.get_object(
-                            self._bluetooth_service_name,
+                            self.BLUEZ_SERVICE_NAME,
                             self.AGENT_PATH)
             agent_manager.RegisterAgent(agent_obj,
                                         dbus.String(self._capability))
@@ -1088,7 +1251,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         try:
-            device = self._system_bus.get_object(self._bluetooth_service_name,
+            device = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                                  device_path)
             return self._set_trusted_by_device(device, trusted)
         except Exception as e:
@@ -1346,7 +1509,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
 
     @xmlrpc_server.dbus_safe(False)
-    def advertising_async_method(self, dbus_method,
+    def dbus_async_method(self, dbus_method,
                                  reply_handler, error_handler, *args):
         """Run an async dbus method.
 
@@ -1360,35 +1523,31 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                   an error string if the dbus method fails or exception occurs
 
         """
-
         def successful_cb():
             """Called when the dbus_method completed successfully."""
             reply_handler()
-            self.advertising_cb_msg = ''
-            self._adv_mainloop.quit()
+            self.dbus_cb_msg = ''
+            self._dbus_mainloop.quit()
 
 
         def error_cb(error):
             """Called when the dbus_method failed."""
             error_handler(error)
-            self.advertising_cb_msg = str(error)
-            self._adv_mainloop.quit()
+            self.dbus_cb_msg = str(error)
+            self._dbus_mainloop.quit()
 
-
-        if not self._advertising:
-            return None
 
         # Call dbus_method with handlers.
         try:
             dbus_method(*args, reply_handler=successful_cb,
                         error_handler=error_cb)
         except Exception as e:
-            logging.error('Exception %s in advertising_async_method ', e)
+            logging.error('Exception %s in dbus_async_method ', e)
             return str(e)
 
-        self._adv_mainloop.run()
+        self._dbus_mainloop.run()
 
-        return self.advertising_cb_msg
+        return self.dbus_cb_msg
 
 
     def register_advertisement(self, advertisement_data):
@@ -1405,7 +1564,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         adv = advertisement.Advertisement(self._system_bus, advertisement_data)
         self.advertisements.append(adv)
-        return self.advertising_async_method(
+        return self.dbus_async_method(
                 self._advertising.RegisterAdvertisement,
                 # reply handler
                 lambda: logging.info('register_advertisement: succeeded.'),
@@ -1440,7 +1599,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                           path)
             return False
 
-        result = self.advertising_async_method(
+        result = self.dbus_async_method(
                 self._advertising.UnregisterAdvertisement,
                 # reply handler
                 lambda: logging.info('unregister_advertisement: succeeded.'),
@@ -1467,7 +1626,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @returns: True on success. False otherwise.
 
         """
-        return self.advertising_async_method(
+        return self.dbus_async_method(
                 self._advertising.SetAdvertisingIntervals,
                 # reply handler
                 lambda: logging.info('set_advertising_intervals: succeeded.'),
@@ -1495,7 +1654,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             adv.remove_from_connection()
         del self.advertisements[:]
 
-        return self.advertising_async_method(
+        return self.dbus_async_method(
                 self._advertising.ResetAdvertising,
                 # reply handler
                 lambda: logging.info('reset_advertising: succeeded.'),
@@ -1504,9 +1663,71 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                     'reset_advertising: failed: %s', str(error)))
 
 
+    def start_capturing_audio_subprocess(self, audio_data):
+        """Start capturing audio in a subprocess.
+
+        @param audio_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        return self._cras_test_client.start_capturing_subprocess(
+                audio_data.file,
+                sample_format=audio_data.format,
+                channels=audio_data.channels,
+                rate=audio_data.rate,
+                duration=audio_data.duration)
+
+
+    def stop_capturing_audio_subprocess(self):
+        """Stop capturing audio.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._cras_test_client.stop_capturing_subprocess()
+
+
+    def play_audio(self, audio_data):
+        """Play audio.
+
+        It blocks until it has completed playing back the audio.
+
+        @param audio_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        audio_data = json.loads(audio_data)
+        return self._cras_test_client.play(audio_data['file'],
+                                           channels=audio_data['channels'],
+                                           rate=audio_data['rate'],
+                                           duration=audio_data['duration'])
+
+
+    def get_primary_frequencies(self, audio_file):
+        """Get primary frequencies of the audio test file.
+
+        @param audio_file: the audio test file
+
+        @returns: a list of primary frequencies of channels in the audio file
+        """
+        args = CheckQualityArgsClass(filename = audio_file)
+        raw_data, rate = check_quality.read_audio_file(args)
+        checker = check_quality.QualityChecker(raw_data, rate)
+        # The highest frequency recorded would be near 24 Khz
+        # as the max sample rate is 48000 in our tests.
+        # So let's set ignore_high_freq to be 48000.
+        checker.do_spectral_analysis(ignore_high_freq=48000,
+                                     check_quality=False,
+                                     quality_params=None)
+        spectra = checker._spectrals
+        primary_freq = [float(spectra[i][0][0]) if spectra[i] else 0
+                        for i in range(len(spectra))]
+        primary_freq.sort()
+        return primary_freq
+
+
     @xmlrpc_server.dbus_safe(None)
     def get_gatt_attributes_map(self, address):
-        """Return a JSON formated string of the GATT attributes of a device,
+        """Return a JSON formatted string of the GATT attributes of a device,
         keyed by UUID
         @param address: a string of the MAC address of the device
 
@@ -1519,7 +1740,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         attribute_map = dict()
 
         device_object_path = self._get_device_path(address)
-        service_map = self._get_service_map(device_object_path)
+        objects = self._bluez.GetManagedObjects(
+            dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=False)
+        service_map = self._get_service_map(device_object_path, objects)
 
         servs = dict()
         attribute_map['services'] = servs
@@ -1533,7 +1756,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             serv['characteristics'] = dict()
             chrcs = serv['characteristics']
 
-            chrcs_map = self._get_characteristic_map(path)
+            chrcs_map = self._get_characteristic_map(path, objects)
             for uuid, path in chrcs_map.items():
                 chrcs[uuid] = dict()
                 chrc = chrcs[uuid]
@@ -1542,7 +1765,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 chrc['descriptors'] = dict()
                 descs = chrc['descriptors']
 
-                descs_map = self._get_descriptor_map(path)
+                descs_map = self._get_descriptor_map(path, objects)
 
                 for uuid, path in descs_map.items():
                     descs[uuid] = dict()
@@ -1563,7 +1786,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         return dbus.Interface(
             self._system_bus.get_object(
-            self._bluetooth_service_name, object_path), interface)
+            self.BLUEZ_SERVICE_NAME, object_path), interface)
 
 
     def get_gatt_service_property(self, object_path, property_name):
@@ -1617,7 +1840,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         gatt_object = self._system_bus.get_object(
-                            self._bluetooth_service_name, object_path)
+                            self.BLUEZ_SERVICE_NAME, object_path)
         prop = self._get_dbus_object_property(gatt_object, interface,
                                               property_name)
         logging.info(prop)
@@ -1665,7 +1888,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
 
     @xmlrpc_server.dbus_safe(False)
-    def _get_attribute_map(self, object_path, dbus_interface):
+    def _get_attribute_map(self, object_path, dbus_interface, objects):
         """Gets a map of object paths under an object path.
 
         Walks the object tree, and returns a map of UUIDs to object paths for
@@ -1673,6 +1896,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @param object_path: The object path of the attribute to retrieve
             gatt  UUIDs and paths from.
+        @param objects: The managed objects.
 
         @returns: A dictionary of object paths, keyed by UUID.
 
@@ -1680,9 +1904,6 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         attr_map = {}
 
         if object_path:
-            objects = self._bluez.GetManagedObjects(
-              dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=False)
-
             for path, ifaces in objects.iteritems():
                 if (dbus_interface in ifaces and
                   path.startswith(object_path)):
@@ -1695,19 +1916,34 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return attr_map
 
 
-    def _get_service_map(self, device_path):
-        """Gets a map of service paths for a device."""
-        return self._get_attribute_map(device_path, self.BLUEZ_GATT_SERV_IFACE)
+    def _get_service_map(self, device_path, objects):
+        """Gets a map of service paths for a device.
+
+        @param device_path: the object path of the device.
+        @param objects: The managed objects.
+        """
+        return self._get_attribute_map(
+            device_path, self.BLUEZ_GATT_SERV_IFACE, objects)
 
 
-    def _get_characteristic_map(self, serv_path):
-        """Gets a map of characteristic paths for a service."""
-        return self._get_attribute_map(serv_path, self.BLUEZ_GATT_CHAR_IFACE)
+    def _get_characteristic_map(self, serv_path, objects):
+        """Gets a map of characteristic paths for a service.
+
+        @param serv_path: the object path of the service.
+        @param objects: The managed objects.
+        """
+        return self._get_attribute_map(
+            serv_path, self.BLUEZ_GATT_CHAR_IFACE, objects)
 
 
-    def _get_descriptor_map(self, chrc_path):
-        """Gets a map of descriptor paths for a characteristic."""
-        return self._get_attribute_map(chrc_path, self.BLUEZ_GATT_DESC_IFACE)
+    def _get_descriptor_map(self, chrc_path, objects):
+        """Gets a map of descriptor paths for a characteristic.
+
+        @param chrc_path: the object path of the characteristic.
+        @param objects: The managed objects.
+        """
+        return self._get_attribute_map(
+            chrc_path, self.BLUEZ_GATT_DESC_IFACE, objects)
 
 
     @xmlrpc_server.dbus_safe(None)
@@ -1774,9 +2010,10 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         path = self.get_characteristic_map(address).get(uuid)
         if not path:
+            logging.error("path not found: %s %s", uuid, address)
             return None
         return dbus.Interface(
-            self._system_bus.get_object(self._bluetooth_service_name, path),
+            self._system_bus.get_object(self.BLUEZ_SERVICE_NAME, path),
             self.BLUEZ_GATT_CHAR_IFACE)
 
 
@@ -1827,6 +2064,143 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return True
 
 
+    @xmlrpc_server.dbus_safe(None)
+    def exchange_messages(self, tx_object_path, rx_object_path, value):
+        """Performs a write operation on a gatt characteristic and wait for
+        the response on another characteristic.
+
+        @param tx_object_path: the object path of the characteristic to write.
+        @param rx_object_path: the object path of the characteristic ti read.
+        @param value: A byte array containing the data to write.
+
+        @returns: The value of the characteristic to read from.
+                  None if the uuid/address was not found in the object tree, or
+                      if a DBus exception was raised by the write operation.
+
+        """
+        tx_obj = self._get_gatt_characteristic_object(tx_object_path)
+
+        if tx_obj is None:
+            return None
+
+        self._chrc_property = None
+
+        self._signal_watch = self._system_bus.add_signal_receiver(
+            self._property_changed,
+            signal_name='PropertiesChanged',
+            path=rx_object_path)
+
+        self._timeout_id = gobject.timeout_add(
+            self.PROPERTY_UPDATE_TIMEOUT_MILLI_SECS,
+            self._property_wait_timeout)
+
+        write_value = _b64_string_to_dbus_byte_array(value)
+        tx_obj.WriteValue(write_value, dbus.Dictionary({}, signature='sv'))
+
+        self._dbus_mainloop.run()
+
+        return _dbus_byte_array_to_b64_string(self._chrc_property)
+
+
+    def _property_changed(self, *args, **kwargs):
+        """Handler for properties changed signal."""
+        gobject.source_remove(self._timeout_id)
+        self._signal_watch.remove();
+        changed_prop = args
+
+        logging.info(changed_prop)
+        prop_dict = changed_prop[1]
+        self._chrc_property = prop_dict['Value']
+        if self._dbus_mainloop.is_running():
+            self._dbus_mainloop.quit()
+
+
+    def _property_wait_timeout(self):
+        """Timeout handler when waiting for properties update signal."""
+        self._signal_watch.remove();
+        if self._dbus_mainloop.is_running():
+            logging.warn("quit main loop due to timeout")
+            self._dbus_mainloop.quit()
+        # Return false so that this method will not be called again.
+        return False
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def _get_gatt_characteristic_object(self, object_path):
+        return dbus.Interface(
+            self._system_bus.get_object(self.BLUEZ_SERVICE_NAME, object_path),
+            self.BLUEZ_GATT_CHAR_IFACE)
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def start_notify(self, object_path, cccd_value):
+        """Starts the notification session on the gatt characteristic.
+
+        @param object_path: the object path of the characteristic.
+        @param cccd_value: Possible CCCD values include
+               0x00 - inferred from the remote characteristic's properties
+               0x01 - notification
+               0x02 - indication
+
+        @returns: True if the operation succeeds.
+                  False if the characteristic is not found, or
+                      if a DBus exception was raised by the operation.
+
+        """
+        char_obj = self._get_gatt_characteristic_object(object_path)
+        if char_obj is None:
+            logging.error("characteristic not found: %s %s", object_path)
+            return False
+
+        try:
+            char_obj.StartNotify(dbus.Byte(cccd_value))
+            return True
+        except Exception as e:
+            logging.error('start_notify: %s', e)
+        except:
+            logging.error('start_notify: unexpected error')
+        return False
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def stop_notify(self, object_path):
+        """Stops the notification session on the gatt characteristic.
+
+        @param object_path: the object path of the characteristic.
+
+        @returns: True if the operation succeeds.
+                  False if the characteristic is not found, or
+                      if a DBus exception was raised by the operation.
+
+        """
+        char_obj = self._get_gatt_characteristic_object(object_path)
+        if char_obj is None:
+            logging.error("characteristic not found: %s %s", object_path)
+            return False
+
+        try:
+            char_obj.StopNotify()
+            return True
+        except Exception as e:
+            logging.error('stop_notify: %s', e)
+        except:
+            logging.error('stop_notify: unexpected error')
+        return False
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def is_notifying(self, object_path):
+        """Is the GATT characteristic in a notifying session?
+
+        @param object_path: the object path of the characteristic.
+
+        @return True if it is in a notification session. False otherwise.
+
+        """
+
+        return self.get_gatt_characteristic_property(object_path, 'Notifying')
+
+
     @xmlrpc_server.dbus_safe(False)
     def is_characteristic_path_resolved(self, uuid, address):
         """Checks whether a characteristic is in the object tree.
@@ -1855,16 +2229,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                   None otherwise.
 
         """
-        path = self._get_device_path(address)
-        if path is None:
+        plugin_device = self._get_plugin_device_interface(address)
+        if plugin_device is None:
             return None
 
         try:
-            plugin_device = dbus.Interface(
-                                self._system_bus.get_object(
-                                    self._bluetooth_service_name,
-                                    path),
-                                self.BLUEZ_PLUGIN_DEVICE_IFACE)
             connection_info = plugin_device.GetConnInfo()
             return json.dumps(connection_info)
         except Exception as e:
@@ -1872,6 +2241,56 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         except:
             logging.error('get_connection_info: unexpected error')
         return None
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def set_le_connection_parameters(self, address, parameters):
+        """Set the LE connection parameters.
+
+        @param address: The MAC address of the device.
+        @param parameters: The LE connection parameters to set.
+
+        @return: True on success. False otherwise.
+
+        """
+        plugin_device = self._get_plugin_device_interface(address)
+        if plugin_device is None:
+            return False
+
+        return not self.dbus_async_method(
+                plugin_device.SetLEConnectionParameters,
+                # reply handler
+                lambda: logging.info(
+                    'set_le_connection_parameters: succeeded.'),
+                # error handler
+                lambda error: logging.error(
+                    'set_le_connection_parameters: failed: %s', str(error)),
+                # other arguments
+                parameters)
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def _get_plugin_device_interface(self, address):
+        """Get the BlueZ Chromium device plugin interface.
+
+        This interface can be used to issue dbus requests such as
+        GetConnInfo and SetLEConnectionParameters.
+
+        @param address: The MAC address of the device.
+
+        @return: On success, the BlueZ Chromium device plugin interface
+                 None otherwise.
+
+        """
+        path = self._get_device_path(address)
+        if path is None:
+            return None
+
+        return dbus.Interface(
+                self._system_bus.get_object(
+                    self.BLUEZ_SERVICE_NAME,
+                    path),
+                self.BLUEZ_PLUGIN_DEVICE_IFACE)
 
 
 if __name__ == '__main__':

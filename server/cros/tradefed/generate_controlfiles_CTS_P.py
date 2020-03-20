@@ -59,13 +59,16 @@ CONFIG['CTS_MAX_RETRIES'] = {
     'CtsDeqpTestCases':         15,  # TODO(b/126787654)
     'CtsIncidentHostTestCases': 30,  # TODO(b/128695132)
     'CtsSensorTestCases':       30,  # TODO(b/124528412)
+    'CtsUiAutomationTestCases':  9,  # TODO(b/145270500)
 }
 
 # Timeout in hours.
+CONFIG['CTS_TIMEOUT_DEFAULT'] = 1.0
 CONFIG['CTS_TIMEOUT'] = {
-    'CtsActivityManagerDeviceTestCases': 1.5,
+    'CtsActivityManagerDeviceTestCases': 2.0,
     'CtsAppSecurityHostTestCases':       2.0,
-    'CtsAutoFillServiceTestCases':       2.5,  # TODO(b/134662826)
+    'CtsAutoFillServiceTestCases':       6.0,  # TODO(b/145092442)
+    'CtsCameraTestCases':                2.0,  # TODO(b/150657700)
     'CtsDeqpTestCases':                 20.0,
     'CtsDeqpTestCases.dEQP-EGL'  :       2.0,
     'CtsDeqpTestCases.dEQP-GLES2':       2.0,
@@ -95,8 +98,6 @@ CONFIG['CTS_TIMEOUT'] = {
 # timeouts), it's ok to let them go in. Bad state of camre should be caught by
 # camera tests, not by this general CTS sanity test.
 CONFIG['BVT_TIMEOUT'] = 0.2
-# We allow a very long runtime for qualification (2 days).
-CONFIG['QUAL_TIMEOUT'] = 48
 
 CONFIG['QUAL_BOOKMARKS'] = sorted([
     'A',  # A bookend to simplify partition algorithm.
@@ -145,7 +146,6 @@ CONFIG['BVT_PERBUILD'] = [
     'CtsThemeDeviceTestCases',
     'CtsTransitionTestCases',
     'CtsTvTestCases',
-    'CtsUiAutomationTestCases',
     'CtsUsbTests',
     'CtsVoiceSettingsTestCases',
 ]
@@ -181,6 +181,13 @@ CONFIG['MEDIA_MODULES'] = [
 
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES']
 
+# See b/149889853. Non-media test basically does not require dynamic
+# config. To reduce the flakiness, let us suppress the config.
+CONFIG['NEEDS_DYNAMIC_CONFIG_ON_COLLECTION'] = False
+CONFIG['NEEDS_DYNAMIC_CONFIG'] = CONFIG['MEDIA_MODULES'] + [
+    'CtsIntentSignatureTestCases'
+]
+
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
     'CtsAppSecurityHostTestCases',
@@ -204,14 +211,8 @@ _CONFIG_MODULE_COMMAND = "\'modprobe configs\'"
 # TODO(b/126741318): Fix performance regression and remove this.
 _SLEEP_60_COMMAND = "\'sleep 60\'"
 
-# TODO(b/138431480): Fix CTS and remove this.
-_DROP_DISCONNECTED_IF_COMMAND = ("\'ip -o link show | grep \"state DOWN\" | " +
-    "grep -o \"\\<\\(eth\\|mlan\\|wlan\\|wwan\\)[[:digit:]]\" | " +
-    "xargs -L1 -I{} ip link delete veth_{}\'")
-
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
-    'CtsLibcoreTestCases': [_DROP_DISCONNECTED_IF_COMMAND],
     'CtsSecurityHostTestCases': [
         _SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND
     ],
@@ -240,8 +241,7 @@ CONFIG['PUBLIC_PRECONDITION'] = {
     ],
     'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
     'CtsNetTestCases': _WIFI_CONNECT_COMMANDS,
-    'CtsLibcoreTestCases':
-        _WIFI_CONNECT_COMMANDS + [_DROP_DISCONNECTED_IF_COMMAND],
+    'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
 }
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
@@ -308,7 +308,7 @@ CONFIG['EXTRA_MODULES'] = {
             'CtsDeqpTestCases.dEQP-GLES31',
             'CtsDeqpTestCases.dEQP-VK'
         ]),
-        'SUITES': ['suite:arc-cts-deqp', 'suite:graphics_per-day'],
+        'SUITES': ['suite:arc-cts-deqp', 'suite:graphics_per-week'],
     },
     _WM_PRESUBMIT: {
         'SUBMODULES': set([_WM_PRESUBMIT]),
@@ -583,19 +583,19 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'CtsDeqpTestCases': ['suite:arc-cts', 'suite:arc-cts-deqp'],
     'CtsDeqpTestCases.dEQP-EGL': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES2': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES3': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-GLES31': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     'CtsDeqpTestCases.dEQP-VK': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-day'
+        'suite:arc-cts-deqp', 'suite:graphics_per-week'
     ],
     _COLLECT: ['suite:arc-cts-qual', 'suite:arc-cts'],
 }
@@ -607,6 +607,18 @@ CONFIG['EXTRA_ARTIFACTS'] = {
 CONFIG['EXTRA_ARTIFACTS_HOST'] = {
     # For fixing flakiness b/143049967.
     'CtsThemeHostTestCases': ["/tmp/diff_*.png"],
+}
+
+_PREREQUISITE_BLUETOOTH = 'bluetooth'
+_PREREQUISITE_REGION_US = 'region_us'
+
+CONFIG['PREREQUISITES'] = {
+    'CtsBluetoothTestCases': [_PREREQUISITE_BLUETOOTH],
+    'CtsStatsdHostTestCases': [_PREREQUISITE_BLUETOOTH],
+    'CtsWebkitTestCases': [_PREREQUISITE_REGION_US],
+    'CtsContentTestCases': [_PREREQUISITE_REGION_US],
+    'CtsAppSecurityTestCases': [_PREREQUISITE_REGION_US],
+    'CtsThemeHostTestCases': [_PREREQUISITE_REGION_US],
 }
 
 from generate_controlfiles_common import main

@@ -13,6 +13,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.hosts import servo_host
+from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.hosts import factory
 
 class servo_LabstationVerification(test.test):
@@ -244,7 +245,7 @@ class servo_LabstationVerification(test.test):
         # Then, restart servod ourselves.
         host.run_background('start servod BOARD=nami PORT=9999')
         # Give servod plenty of time to come up.
-        time.sleep(20)
+        time.sleep(40)
         try:
             host.run_grep('servodutil show -p 9999',
                           stdout_err_regexp='No servod scratch entry found.')
@@ -262,6 +263,7 @@ class servo_LabstationVerification(test.test):
         -// ServoLabControlVerification where |host| is treated as a DUT.
         Subsequently, all tests use |host| as a servo host to a generated
         DUT host that's hanging on the servo device.
+        - servo_LogGrab
         - platform_ServoPowerStateController without usb
         - servo_USBMuxVerification
         - platform_InstallTestImage
@@ -276,12 +278,15 @@ class servo_LabstationVerification(test.test):
                                    disable_sysinfo=True)
         # Servod came up successfully - build a servo host and use it to verify
         # basic functionality.
-        servo_args = {servo_host.SERVO_HOST_ATTR: self.labstation_host.hostname,
-                      servo_host.SERVO_PORT_ATTR: 9999}
+        servo_args = {
+            servo_constants.SERVO_HOST_ATTR: self.labstation_host.hostname,
+            servo_constants.SERVO_PORT_ATTR: 9999,
+            'is_in_lab': False,
+        }
         # Close out this host as the test will restart it as a servo host.
         self.labstation_host.close()
-        self.labstation_host = servo_host.ServoHost(is_in_lab=False,
-                                                    **servo_args)
+        self.labstation_host, servo_state = servo_host.create_servo_host(
+            None, servo_args)
         self.labstation_host.connect_servo()
         servo_proxy = self.labstation_host.get_servo()
         if not self.dut_ip:
@@ -289,6 +294,8 @@ class servo_LabstationVerification(test.test):
         logging.info('Running the DUT side on DUT %r', self.dut_ip)
         dut_host = factory.create_host(self.dut_ip)
         dut_host.set_servo_host(self.labstation_host)
+        success &= self.runsubtest('servo_LogGrab',
+                                   host=dut_host, disable_sysinfo=True)
         success &= self.runsubtest('platform_ServoPowerStateController',
                                    host=dut_host, usb_available=False,
                                    subdir_tag='no_usb', disable_sysinfo=True)

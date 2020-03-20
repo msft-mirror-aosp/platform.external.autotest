@@ -61,6 +61,7 @@ CONFIG['CTS_MAX_RETRIES'] = {}
 
 # TODO(ihf): Update timeouts once P is more stable.
 # Timeout in hours.
+CONFIG['CTS_TIMEOUT_DEFAULT'] = 1.0
 CONFIG['CTS_TIMEOUT'] = {
     _ALL: 5.0,
     _COLLECT: 2.0,
@@ -174,6 +175,7 @@ CONFIG['EXTRA_ATTRIBUTES'] = {
 
 CONFIG['EXTRA_ARTIFACTS'] = {}
 
+CONFIG['PREREQUISITES'] = {}
 
 if __name__ == '__main__':
         main(CONFIG)

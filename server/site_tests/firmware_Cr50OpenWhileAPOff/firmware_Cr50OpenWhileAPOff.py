@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
+from autotest_lib.server.cros.servo import servo
 
 
 class firmware_Cr50OpenWhileAPOff(Cr50Test):
@@ -41,7 +42,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
             'servo_v4_with_servo_micro'):
             raise error.TestNAError('Run using servo v4 with servo micro')
 
-        if not self.cr50.servo_v4_supports_dts_mode():
+        if not self.cr50.servo_dts_mode_is_valid():
             raise error.TestNAError('Plug in servo v4 type c cable into ccd '
                     'port')
 
@@ -114,10 +115,12 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # Verify the cr50 console responds to commands.
         try:
             logging.info(self.cr50.get_ccdstate())
-        except error.TestFail, e:
-            if 'Timeout waiting for response' in e.message:
-                raise error.TestFail('Could not restore Cr50 console')
-            raise
+        except servo.ResponsiveConsoleError as e:
+            logging.info('Console is responsive. Unable to match output: %s',
+                         str(e))
+        except servo.UnresponsiveConsoleError as e:
+            raise error.TestFail('Could not restore Cr50 console')
+        logging.info('Cr50 console ok.')
 
 
     def turn_device(self, state):
@@ -163,7 +166,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
 
     def set_dts(self, state):
         """Set servo v4 dts mode"""
-        self.servo.set_servo_v4_dts_mode(state)
+        self.servo.set_dts_mode(state)
         # Some boards can't detect DTS mode when the EC is off. After 0.X.18,
         # we can set CCD_MODE_L manually using gpioset. If detection is working,
         # this won't do anything. If it isn't working, it'll force cr50 to

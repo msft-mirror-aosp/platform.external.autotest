@@ -4,21 +4,23 @@
 # found in the LICENSE file.
 
 import unittest
+import mock
 
 import common
 
 from autotest_lib.server import utils
 from autotest_lib.server.hosts import cros_label
-from autotest_lib.server.hosts.cros_label import BoardLabel
-from autotest_lib.server.hosts.cros_label import BluetoothLabel
 from autotest_lib.server.hosts.cros_label import BrandCodeLabel
 from autotest_lib.server.hosts.cros_label import Cr50Label
 from autotest_lib.server.hosts.cros_label import Cr50ROKeyidLabel
 from autotest_lib.server.hosts.cros_label import Cr50RWKeyidLabel
-from autotest_lib.server.hosts.cros_label import Cr50ROVersionLabel
-from autotest_lib.server.hosts.cros_label import Cr50RWVersionLabel
 from autotest_lib.server.hosts.cros_label import DeviceSkuLabel
-from autotest_lib.server.hosts.cros_label import ModelLabel
+from autotest_lib.server.hosts.cros_label import AudioLoopbackDongleLabel
+from autotest_lib.server.hosts.cros_label import ChameleonConnectionLabel
+from autotest_lib.server.hosts.cros_label import ChameleonLabel
+from autotest_lib.server.hosts.cros_label import ChameleonPeripheralsLabel
+from autotest_lib.server.hosts.cros_label import ServoLabel
+from autotest_lib.server.hosts.cros_label import ServoTypeLabel
 from autotest_lib.server.hosts import host_info
 
 # pylint: disable=missing-docstring
@@ -109,6 +111,7 @@ RO 0.0.10
 RW 0.4.15
 """
 
+
 class MockCmd(object):
     """Simple mock command with base command and results"""
 
@@ -146,79 +149,6 @@ class MockHostWithoutAFE(MockHost):
         self._afe_host = utils.EmptyAFEHost()
 
 
-class ModelLabelTests(unittest.TestCase):
-    """Unit tests for ModelLabel"""
-
-    def test_cros_config_succeeds(self):
-        cat_lsb_release_output = """
-CHROMEOS_RELEASE_BOARD=pyro
-CHROMEOS_RELEASE_UNIBUILD=1
-"""
-        host = MockHost([],
-                        MockCmd('cros_config / test-label', 0, 'coral\n'),
-                        MockCmd('cat /etc/lsb-release', 0,
-                                cat_lsb_release_output))
-        self.assertEqual(ModelLabel().generate_labels(host), ['coral'])
-
-    def test_cros_config_fails_mosys_succeeds(self):
-        cat_lsb_release_output = """
-CHROMEOS_RELEASE_BOARD=pyro
-CHROMEOS_RELEASE_UNIBUILD=1
-"""
-        host = MockHost([],
-                        MockCmd('cros_config / test-label', 1, ''),
-                        MockCmd('mosys platform model', 0, 'coral\n'),
-                        MockCmd('cat /etc/lsb-release', 0,
-                                cat_lsb_release_output))
-        self.assertEqual(ModelLabel().generate_labels(host), ['coral'])
-
-    def test_cros_config_fails_mosys_fails(self):
-        cat_lsb_release_output = """
-CHROMEOS_RELEASE_BOARD=pyro
-CHROMEOS_RELEASE_UNIBUILD=1
-"""
-        host = MockHost([],
-                        MockCmd('cros_config / test-label', 1, ''),
-                        MockCmd('mosys platform model', 1, ''),
-                        MockCmd('cat /etc/lsb-release', 0,
-                                cat_lsb_release_output))
-        self.assertEqual(ModelLabel().generate_labels(host), ['pyro'])
-
-    def test_cros_config_only_used_for_unibuilds(self):
-        cat_lsb_release_output = """
-CHROMEOS_RELEASE_BOARD=pyro
-"""
-        host = MockHost([],
-                        MockCmd('cat /etc/lsb-release', 0,
-                                cat_lsb_release_output))
-        self.assertEqual(ModelLabel().generate_labels(host), ['pyro'])
-
-    def test_existing_label(self):
-        host = MockHost(['model:existing'])
-        self.assertEqual(ModelLabel().generate_labels(host), ['existing'])
-
-    def test_existing_label_in_host_info_store(self):
-        host = MockHostWithoutAFE(['model:existing'])
-        self.assertEqual(ModelLabel().generate_labels(host), ['existing'])
-
-
-class BoardLabelTests(unittest.TestCase):
-    """Unit tests for BoardLabel"""
-
-    def test_new_label(self):
-        cat_cmd = 'cat /etc/lsb-release'
-        host = MockHost([], MockCmd(cat_cmd, 0, NON_UNI_LSB_RELEASE_OUTPUT))
-        self.assertEqual(BoardLabel().generate_labels(host), ['pyro'])
-
-    def test_existing_label(self):
-        host = MockHost(['board:existing'])
-        self.assertEqual(BoardLabel().generate_labels(host), ['existing'])
-
-    def test_existing_label_in_host_info_store(self):
-        host = MockHostWithoutAFE(['board:existing'])
-        self.assertEqual(BoardLabel().generate_labels(host), ['existing'])
-
-
 class DeviceSkuLabelTests(unittest.TestCase):
     """Unit tests for DeviceSkuLabel"""
 
@@ -235,6 +165,11 @@ class DeviceSkuLabelTests(unittest.TestCase):
     def test_existing_label(self):
         host = MockHost(['device-sku:48'])
         self.assertEqual(DeviceSkuLabel().generate_labels(host), ['48'])
+
+    def test_update_for_task(self):
+        self.assertTrue(DeviceSkuLabel().update_for_task(''))
+        self.assertFalse(DeviceSkuLabel().update_for_task('repair'))
+        self.assertTrue(DeviceSkuLabel().update_for_task('deploy'))
 
 
 class BrandCodeLabelTests(unittest.TestCase):
@@ -255,35 +190,19 @@ class BrandCodeLabelTests(unittest.TestCase):
         self.assertEqual(BrandCodeLabel().generate_labels(host), ['ABCD'])
 
 
-class BluetoothLabelTests(unittest.TestCase):
-    """Unit tests for BluetoothLabel"""
-
-    def test_new_label(self):
-        test_cmd = 'test -d /sys/class/bluetooth/hci0'
-        host = MockHost([], MockCmd(test_cmd, 0, ''))
-        self.assertEqual(BluetoothLabel().exists(host), True)
-
-    def test_existing_label(self):
-        host = MockHostWithoutAFE(['bluetooth'])
-        self.assertEqual(BoardLabel().exists(host), True)
-
-
 class Cr50Tests(unittest.TestCase):
     """Unit tests for Cr50Label"""
 
     def test_cr50_pvt(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PVT))
+        host = MockHost([], MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PVT))
         self.assertEqual(Cr50Label().get(host), ['cr50:pvt'])
 
     def test_cr50_prepvt(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PREPVT))
+        host = MockHost([], MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PREPVT))
         self.assertEqual(Cr50Label().get(host), ['cr50:prepvt'])
 
     def test_gsctool_fails(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 1, ''))
+        host = MockHost([], MockCmd('gsctool -a -f', 1, ''))
         self.assertEqual(Cr50Label().get(host), [])
 
 
@@ -291,20 +210,17 @@ class Cr50RWKeyidTests(unittest.TestCase):
     """Unit tests for Cr50RWKeyidLabel"""
 
     def test_cr50_prod_rw(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PVT))
+        host = MockHost([], MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PVT))
         self.assertEqual(Cr50RWKeyidLabel().get(host),
-                ['cr50-rw-keyid:0xde88588d','cr50-rw-keyid:prod'])
+                         ['cr50-rw-keyid:0xde88588d', 'cr50-rw-keyid:prod'])
 
     def test_cr50_dev_rw(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_DEV_RW))
+        host = MockHost([], MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_DEV_RW))
         self.assertEqual(Cr50RWKeyidLabel().get(host),
-                ['cr50-rw-keyid:0xb93d6539', 'cr50-rw-keyid:dev'])
+                         ['cr50-rw-keyid:0xb93d6539', 'cr50-rw-keyid:dev'])
 
     def test_gsctool_fails(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 1, ''))
+        host = MockHost([], MockCmd('gsctool -a -f', 1, ''))
         self.assertEqual(Cr50RWKeyidLabel().get(host), [])
 
 
@@ -312,57 +228,18 @@ class Cr50ROKeyidTests(unittest.TestCase):
     """Unit tests for Cr50ROKeyidLabel"""
 
     def test_cr50_prod_ro(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PREPVT))
+        host = MockHost([], MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PREPVT))
         self.assertEqual(Cr50ROKeyidLabel().get(host),
-                ['cr50-ro-keyid:0xaa66150f', 'cr50-ro-keyid:prod'])
+                         ['cr50-ro-keyid:0xaa66150f', 'cr50-ro-keyid:prod'])
 
     def test_cr50_dev_ro(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_DEV_RO))
+        host = MockHost([], MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_DEV_RO))
         self.assertEqual(Cr50ROKeyidLabel().get(host),
-                ['cr50-ro-keyid:0x3716ee6b', 'cr50-ro-keyid:dev'])
+                         ['cr50-ro-keyid:0x3716ee6b', 'cr50-ro-keyid:dev'])
 
     def test_gsctool_fails(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 1, ''))
+        host = MockHost([], MockCmd('gsctool -a -f', 1, ''))
         self.assertEqual(Cr50ROKeyidLabel().get(host), [])
-
-
-class Cr50RWVersionTests(unittest.TestCase):
-    """Unit tests for Cr50RWVersionLabel"""
-
-    def test_cr50_prod_rw(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PVT))
-        self.assertEqual(Cr50RWVersionLabel().get(host),
-                ['cr50-rw-version:0.3.14'])
-
-    def test_cr50_dev_rw(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PREPVT))
-        self.assertEqual(Cr50RWVersionLabel().get(host),
-                ['cr50-rw-version:0.4.15'])
-
-    def test_gsctool_fails(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 1, ''))
-        self.assertEqual(Cr50RWVersionLabel().get(host), [])
-
-
-class Cr50ROVersionTests(unittest.TestCase):
-    """Unit tests for Cr50ROVersionLabel"""
-
-    def test_cr50_prod_ro(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 0, GSCTOOL_OUTPUT_PREPVT))
-        self.assertEqual(Cr50ROVersionLabel().get(host),
-                         ['cr50-ro-version:0.0.10'])
-
-    def test_gsctool_fails(self):
-        host = MockHost([],
-                        MockCmd('gsctool -a -f', 1, ''))
-        self.assertEqual(Cr50ROVersionLabel().get(host), [])
 
 
 class HWIDLabelTests(unittest.TestCase):
@@ -370,21 +247,138 @@ class HWIDLabelTests(unittest.TestCase):
         self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists([], []), [])
 
     def test_merge_hwid_label_lists_singleton(self):
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists([], ["4"]), ["4"])
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists(["7"], []), ["7"])
+        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists([], ["4"]),
+                         ["4"])
+        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists(["7"], []),
+                         ["7"])
 
     def test_merge_hwid_label_lists_override(self):
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists(old=["7:a"], new=["7:b"]), ["7:b"])
+        self.assertEqual(
+            cros_label.HWIDLabel._merge_hwid_label_lists(old=["7:a"], new=["7:b"]),
+            ["7:b"])
 
     def test_merge_hwid_label_lists_no_override(self):
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists(old=["7a"], new=["7b"]), ["7a", "7b"])
+        self.assertEqual(
+            cros_label.HWIDLabel._merge_hwid_label_lists(old=["7a"], new=["7b"]),
+            ["7a", "7b"])
 
     def test_hwid_label_names(self):
         class HWIDLabelTester(cros_label.HWIDLabel):
             def get_all_labels(self):
                 return [], []
+
         item = HWIDLabelTester()
         self.assertEqual(item._hwid_label_names(), cros_label.HWID_LABELS_FALLBACK)
+
+
+class ServoLabelTests(unittest.TestCase):
+    """Unit tests for ServoLabel"""
+
+    def test_servo_working_and_in_cache(self):
+        host = MockHost(['servo_state:WORKING'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo', 'servo_state:WORKING'])
+
+    def test_servo_working_and_in_cache_but_not_connected(self):
+        host = MockHost(['servo_state:NOT_CONNECTED'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
+
+    def test_servo_working_and_in_cache_but_broken(self):
+        host = MockHost(['servo_state:BROKEN'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo', 'servo_state:BROKEN'])
+
+    def test_servo_not_in_cache_and_not_working(self):
+        host = MockHostWithoutAFE(['not_servo_state:WORKING'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
+
+    def test_old_servo_in_cache_and_not_working(self):
+        host = MockHostWithoutAFE(['servo'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo', 'servo_state:WORKING'])
+
+    def test_old_servo_not_in_cache_and_not_working(self):
+        host = MockHostWithoutAFE(['not_servo'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
+
+    def test_old_servo_not_in_cache_and_not_working_2(self):
+        host = MockHostWithoutAFE(['servo1'])
+        servo = ServoLabel()
+        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
+
+    def test_get_all_labels_lists_of_generating_labels(self):
+          servo = ServoLabel()
+          prefix_labels, full_labels = servo.get_all_labels()
+          self.assertEqual(prefix_labels, set(['servo_state']))
+          self.assertEqual(full_labels, set(['servo']))
+
+    def test_update_for_task(self):
+        self.assertTrue(ServoLabel().update_for_task(''))
+        self.assertTrue(ServoLabel().update_for_task('repair'))
+        self.assertFalse(ServoLabel().update_for_task('deploy'))
+
+
+class AudioLoopbackDongleLabelTests(unittest.TestCase):
+    def test_update_for_task(self):
+        self.assertTrue(AudioLoopbackDongleLabel().update_for_task(''))
+        self.assertTrue(AudioLoopbackDongleLabel().update_for_task('repair'))
+        self.assertFalse(AudioLoopbackDongleLabel().update_for_task('deploy'))
+
+
+class ChameleonConnectionLabelTests(unittest.TestCase):
+    def test_update_for_task(self):
+        self.assertTrue(ChameleonConnectionLabel().update_for_task(''))
+        self.assertFalse(ChameleonConnectionLabel().update_for_task('repair'))
+        self.assertTrue(ChameleonConnectionLabel().update_for_task('deploy'))
+
+
+class ChameleonLabelTests(unittest.TestCase):
+    def test_update_for_task(self):
+        self.assertTrue(ChameleonLabel().update_for_task(''))
+        self.assertTrue(ChameleonLabel().update_for_task('repair'))
+        self.assertFalse(ChameleonLabel().update_for_task('deploy'))
+
+
+class ChameleonPeripheralsLabelTests(unittest.TestCase):
+    def test_update_for_task(self):
+        self.assertTrue(ChameleonPeripheralsLabel().update_for_task(''))
+        self.assertFalse(ChameleonPeripheralsLabel().update_for_task('repair'))
+        self.assertTrue(ChameleonPeripheralsLabel().update_for_task('deploy'))
+
+
+class ServoTypeLabelTests(unittest.TestCase):
+    """Unit tests for ServoTypeLabel"""
+    def test_update_for_task(self):
+        self.assertTrue(ServoTypeLabel().update_for_task(''))
+        # make false when all DUT has servo_type
+        self.assertTrue(ServoTypeLabel().update_for_task('repair'))
+        self.assertTrue(ServoTypeLabel().update_for_task('deploy'))
+
+    def test_generate_labels_return_value_from_labels(self):
+        host = MockHost(['servo_type:Some_interesting'])
+        servo = ServoTypeLabel()
+        self.assertEqual(servo.get(host), ['servo_type:Some_interesting'])
+        self.assertEqual(servo.generate_labels(host), ['Some_interesting'])
+
+    def test_generate_labels_from_cache_when_servo_is_none(self):
+        host = MockHost(['servo_state:Some_interesting'])
+        host.servo = None
+        servo = ServoTypeLabel()
+        self.assertEqual(servo.get(host), [])
+        self.assertEqual(servo.generate_labels(host), [])
+
+    def test_generate_labels_not_from_cache_when_servo_exist(self):
+        host = MockHost(['servo_type'])
+        host.servo = mock.Mock()
+        host.servo.get_servo_version.return_value = 'servo_v3'
+        servo = ServoTypeLabel()
+        self.assertEqual(servo.get(host), ['servo_type:servo_v3'])
+        self.assertEqual(servo.generate_labels(host), ['servo_v3'])
+        host.servo.get_servo_version.assert_called()
+
 
 if __name__ == '__main__':
     unittest.main()

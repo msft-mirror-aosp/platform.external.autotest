@@ -8,7 +8,6 @@ import logging
 import time
 
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
-from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 
 class BluetoothAdapterHIDReportTests(
@@ -49,7 +48,9 @@ class BluetoothAdapterHIDReportTests(
         self.test_keyboard_input_from_trace(device, "simple_text")
 
 
-    def run_hid_reports_test(self, device, suspend_resume=False, reboot=False):
+    def run_hid_reports_test(self, device,
+                             check_connected_method=lambda device: True,
+                             suspend_resume=False, reboot=False):
         """Running Bluetooth HID reports tests."""
         logging.info("run hid reports test")
         # Reset the adapter and set it pairable.
@@ -70,24 +71,23 @@ class BluetoothAdapterHIDReportTests(
             time.sleep(self.HID_TEST_SLEEP_SECS)
             self.test_device_is_paired(device.address)
 
-            # After a suspend/resume, we should check if the device is
-            # connected.
-            # NOTE: After a suspend/resume, the RN42 kit remains connected.
-            #       However, this is not expected behavior for all bluetooth
-            #       peripherals.
+
+            # check if peripheral is connected after suspend resume, reconnect
+            # if it isn't
+            if not self.ignore_failure(check_connected_method, device):
+                logging.info("device not connected after suspend_resume")
+                self.test_connection_by_device(device)
+            else:
+                logging.info("device remains connected after suspend_resume")
+
             time.sleep(self.HID_TEST_SLEEP_SECS)
-            self.test_device_is_connected(device.address)
+            check_connected_method(device)
 
             time.sleep(self.HID_TEST_SLEEP_SECS)
             self.test_device_name(device.address, device.name)
 
         if reboot:
-            self.host.reboot()
-
-            # NOTE: We need to recreate the bluetooth_facade after a reboot.
-            factory = remote_facade_factory.RemoteFacadeFactory(self.host)
-            self.bluetooth_facade = factory.create_bluetooth_hid_facade()
-            self.input_facade = factory.create_input_facade()
+            self.reboot()
 
             time.sleep(self.HID_TEST_SLEEP_SECS)
             self.test_device_is_paired(device.address)
@@ -98,12 +98,8 @@ class BluetoothAdapterHIDReportTests(
             time.sleep(self.HID_TEST_SLEEP_SECS)
             self.test_device_name(device.address, device.name)
 
-        # Run tests about mouse reports.
-        if device.device_type.endswith('MOUSE'):
-            self.run_mouse_tests(device)
-
-        if device.device_type.endswith('KEYBOARD'):
-            self.run_keyboard_tests(device)
+        # Run HID test
+        check_connected_method(device)
 
         # Disconnect the device, and remove the pairing.
         self.test_disconnection_by_adapter(device.address)

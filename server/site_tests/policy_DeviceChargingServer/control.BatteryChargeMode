@@ -6,13 +6,13 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.hosts import cros_host
 
 AUTHOR = 'ncrews'
-DEPENDENCIES = "servo"
+DEPENDENCIES = "servo_state:WORKING"
 NAME = 'policy_DeviceChargingServer.BatteryChargeMode'
 TIME = 'LONG'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'
 TEST_TYPE = 'server'
-ATTRIBUTES = 'suite:ent-nightly, suite:policy'
+ATTRIBUTES = "suite:wilco_bve"
 
 DOC = """
 Ensures the DUT's battery level is in a testable range, clears the TPM if

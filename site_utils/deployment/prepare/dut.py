@@ -23,6 +23,7 @@ from autotest_lib.server import hosts
 from autotest_lib.server import site_utils as server_utils
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import servo_host
+from autotest_lib.server.hosts import servo_constants
 
 
 _FIRMWARE_UPDATE_TIMEOUT = 600
@@ -54,11 +55,11 @@ def create_cros_host(hostname, board, model, servo_hostname, servo_port,
             'model:%s' % model,
     ]
     attributes = {
-            servo_host.SERVO_HOST_ATTR: servo_hostname,
-            servo_host.SERVO_PORT_ATTR: servo_port,
+            servo_constants.SERVO_HOST_ATTR: servo_hostname,
+            servo_constants.SERVO_PORT_ATTR: servo_port,
     }
     if servo_serial is not None:
-        attributes[servo_host.SERVO_SERIAL_ATTR] = servo_serial
+        attributes[servo_constants.SERVO_SERIAL_ATTR] = servo_serial
 
     store = host_info.InMemoryHostInfoStore(info=host_info.HostInfo(
             labels=labels,
@@ -363,10 +364,7 @@ def _prepare_servo(servohost):
                   ignore_status=True)
     servohost.repair()
 
-    # Don't timeout probing for the host usb device, there could be a bunch
-    # of servos probing at the same time on the same servo host.  And
-    # since we can't pass None through the xml rpcs, use 0 to indicate None.
-    if not servohost.get_servo().probe_host_usb_dev(timeout=0):
+    if not servohost.get_servo().probe_host_usb_dev():
         raise Exception('No USB stick detected on Servo host')
 
 

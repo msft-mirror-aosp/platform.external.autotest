@@ -2,12 +2,36 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import sys
+import functools
 import logging
-import time
 
 import common
 from autotest_lib.client.common_lib import hosts
+from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import repair_utils
+
+
+def ignore_exception_for_non_cros_host(func):
+    """
+    Decorator to ignore ControlUnavailableError if servo host is not cros host.
+    When using test_that command on a workstation, this enables usage of
+    additional servo devices such as servo micro and Sweetberry. This shall not
+    change any lab behavior.
+    """
+    @functools.wraps(func)
+    def wrapper(self, host):
+        """
+        Wrapper around func.
+        """
+        try:
+            func(self, host)
+        except servo.ControlUnavailableError as e:
+            if host.is_cros_host():
+                raise
+            logging.warning("Servo host is not cros host, ignore %s: %s",
+                            type(e).__name__, e)
+    return wrapper
 
 
 class _UpdateVerifier(hosts.Verifier):
@@ -24,12 +48,22 @@ class _UpdateVerifier(hosts.Verifier):
         # Secondly, skip if the test is being run by test_that, because subnet
         # restrictions can cause the update to fail.
         try:
+            if host.is_labstation():
+                logging.info("Skip update check because the host is a"
+                             " labstation and labstation update is handled"
+                             " by labstation AdminRepair task.")
+                return
             if host.is_in_lab() and host.job and host.job.in_lab:
+                # We have seen cases that invalid GPT headers/entries block
+                # v3s from been update, so always try to repair here.
+                # See crbug.com/994396, crbug.com/1057302.
+                host.run('cgpt repair /dev/mmcblk0', ignore_status=True)
+
                 host.update_image(wait_for_update=False)
         # We don't want failure from update block DUT repair action.
         # See crbug.com/1029950.
         except Exception as e:
-            logging.error('Failed to update servohost image: %s', e)
+            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
 
     @property
     def description(self):
@@ -194,20 +228,18 @@ class _ServodJobVerifier(hosts.Verifier):
         return 'servod upstart job is running'
 
 
-class _ServodLogsVerifier(hosts.Verifier):
+class _DiskSpaceVerifier(hosts.Verifier):
     """
-    Clean up old servod logs
+    Verifier to make sure there is enough disk space left on servohost.
     """
-    KEEP_LOGS_MAX_DAYS = 5
 
     def verify(self, host):
-        host.run(
-                '/usr/bin/find /var/log/servod_* -mtime +%d -print -delete'
-                % self.KEEP_LOGS_MAX_DAYS, ignore_status=True)
+        # Check available space of stateful is greater than threshold, in Gib.
+        host.check_diskspace('/mnt/stateful_partition', 0.5)
 
     @property
     def description(self):
-        return 'old servod logs removed'
+        return 'servohost has enough disk space.'
 
 
 class _ServodConnectionVerifier(hosts.Verifier):
@@ -243,13 +275,19 @@ class _PowerButtonVerifier(hosts.Verifier):
     # with a dummy pwr_button signal.
     _BOARDS_WO_PWR_BUTTON = ['arkham', 'gale', 'mistral', 'storm', 'whirlwind']
 
+    @ignore_exception_for_non_cros_host
     def verify(self, host):
         if host.servo_board in self._BOARDS_WO_PWR_BUTTON:
             return
-        button = host.get_servo().get('pwr_button')
+        try:
+            button = host.get_servo().get('pwr_button')
+        except Exception as e:
+            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
+
         if button != 'release':
-            raise hosts.AutoservVerifyError(
-                    'Check ribbon cable: \'pwr_button\' is stuck')
+            raise hosts.AutoservNonCriticalVerifyError(
+                'Check ribbon cable: \'pwr_button\' is stuck')
+
 
     @property
     def description(self):
@@ -261,11 +299,16 @@ class _LidVerifier(hosts.Verifier):
     Verifier to check sanity of the `lid_open` signal.
     """
 
+    @ignore_exception_for_non_cros_host
     def verify(self, host):
-        lid_open = host.get_servo().get('lid_open')
+        try:
+            lid_open = host.get_servo().get('lid_open')
+        except Exception as e:
+            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
+
         if lid_open != 'yes' and lid_open != 'not_applicable':
-            raise hosts.AutoservVerifyError(
-                    'Check lid switch: lid_open is %s' % lid_open)
+            raise hosts.AutoservNonCriticalVerifyError(
+                'Check lid switch: lid_open is %s' % lid_open)
 
     @property
     def description(self):
@@ -281,35 +324,7 @@ class _RestartServod(hosts.RepairAction):
                     'Can\'t restart servod: not running '
                     'embedded Chrome OS.',
                     'servo_not_applicable_to_non_cros_host')
-        host.run('stop servod PORT=%d || true' % host.servo_port)
-        # Wait for existing servod process turned down.
-        time.sleep(3)
-
-        serial = 'SERIAL=%s' % host.servo_serial if host.servo_serial else ''
-        model = 'MODEL=%s' % host.servo_model if host.servo_model else ''
-        if host.servo_board:
-            host.run('start servod BOARD=%s %s PORT=%d %s' %
-                     (host.servo_board, model, host.servo_port, serial))
-        else:
-            # TODO(jrbarnette):  It remains to be seen whether
-            # this action is the right thing to do...
-            logging.warning('Board for DUT is unknown; starting '
-                            'servod assuming a pre-configured '
-                            'board.')
-            host.run('start servod PORT=%d %s' % (host.servo_port, serial))
-        # There's a lag between when `start servod` completes and when
-        # the _ServodConnectionVerifier trigger can actually succeed.
-        # The call to time.sleep() below gives time to make sure that
-        # the trigger won't fail after we return.
-        #
-        # The delay selection was based on empirical testing against
-        # servo V3 on a desktop:
-        #   + 10 seconds was usually too slow; 11 seconds was
-        #     usually fast enough.
-        #   + So, the 20 second delay is about double what we
-        #     expect to need.
-        time.sleep(20)
-
+        host.restart_servod()
 
     @property
     def description(self):
@@ -335,7 +350,7 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
         if host.is_labstation():
             host.request_reboot()
             logging.warning('Reboot labstation requested, it will be '
-                            'handled by labstation administrative task.')
+                            'handled by labstation AdminRepair task.')
         else:
             try:
                 host.update_image(wait_for_update=True)
@@ -372,6 +387,33 @@ class _DutRebootRepair(hosts.RepairAction):
         return 'Reset the DUT via servo'
 
 
+class _DiskCleanupRepair(hosts.RepairAction):
+    """
+    Remove old logs/metrics/crash_dumps on servohost to free up disk space.
+    """
+    KEEP_LOGS_MAX_DAYS = 5
+
+    FILE_TO_REMOVE = ['/var/lib/metrics/uma-events',
+                      '/var/spool/crash/*']
+
+    def repair(self, host):
+        if host.is_localhost():
+            # we don't want to remove anything from local testing.
+            return
+
+        # Remove old servod logs.
+        host.run('/usr/bin/find /var/log/servod_* -mtime +%d -print -delete'
+                 % self.KEEP_LOGS_MAX_DAYS, ignore_status=True)
+
+        # Remove pre-defined metrics and crash dumps.
+        for path in self.FILE_TO_REMOVE:
+            host.run('rm %s' % path, ignore_status=True)
+
+    @property
+    def description(self):
+        return 'Clean up old logs/metrics on servohost to free up disk space.'
+
+
 def create_servo_repair_strategy():
     """
     Return a `RepairStrategy` for a `ServoHost`.
@@ -379,11 +421,11 @@ def create_servo_repair_strategy():
     config = ['brd_config', 'ser_config']
     verify_dag = [
         (repair_utils.SshVerifier,   'servo_ssh',   []),
-        (_ServodLogsVerifier,        'servod_logs', ['servo_ssh']),
+        (_DiskSpaceVerifier,         'disk_space',  ['servo_ssh']),
         (_UpdateVerifier,            'update',      ['servo_ssh']),
         (_BoardConfigVerifier,       'brd_config',  ['servo_ssh']),
         (_SerialConfigVerifier,      'ser_config',  ['servo_ssh']),
-        (_ServodJobVerifier,         'job',         config),
+        (_ServodJobVerifier,         'job',         config + ['disk_space']),
         (_ServodConnectionVerifier,  'servod',      ['job']),
         (_PowerButtonVerifier,       'pwr_button',  ['servod']),
         (_LidVerifier,               'lid_open',    ['servod']),
@@ -399,7 +441,7 @@ def create_servo_repair_strategy():
 
     servod_deps = ['job', 'servod', 'pwr_button']
     repair_actions = [
-        (repair_utils.RPMCycleRepair, 'rpm', [], ['servo_ssh']),
+        (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space']),
         (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
         (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open']),

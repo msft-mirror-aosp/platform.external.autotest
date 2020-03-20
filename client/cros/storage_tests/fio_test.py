@@ -22,6 +22,7 @@ class FioTest(test.test):
 
     # Initialize fail counter used to determine test pass/fail.
     _fail_count = 0
+    _error_code = 0
 
     # 0x1277 is ioctl BLKDISCARD command
     IOCTL_TRIM_CMD = 0x1277
@@ -120,7 +121,7 @@ class FioTest(test.test):
         logging.info('filesize: %d', self.__filesize)
 
     def run_once(self, dev='', quicktest=False, requirements=None,
-                 integrity=False, wait=60 * 60 * 72):
+                 integrity=False, wait=60 * 60 * 72, blkdiscard=True):
         """
         Runs several fio jobs and reports results.
 
@@ -129,6 +130,7 @@ class FioTest(test.test):
         @param requirements: list of jobs for fio to run
         @param integrity: test to check data integrity
         @param wait: seconds to wait between a write and subsequent verify
+        @param blkdiscard: do a blkdiscard before running fio
 
         """
 
@@ -149,19 +151,21 @@ class FioTest(test.test):
                 ('surfing', []),
                 ('boot', []),
                 ('login', []),
-                ('seq_read', []),
                 ('seq_write', []),
-                ('16k_read', []),
+                ('seq_read', []),
                 ('16k_write', []),
+                ('16k_read', []),
                 ('1m_stress', []),
             ]
         else:
             # TODO(waihong@): Add more test cases for external storage
             requirements = [
-                ('seq_read', []),
                 ('seq_write', []),
-                ('16k_read', []),
+                ('seq_read', []),
                 ('16k_write', []),
+                ('16k_read', []),
+                ('4k_write', []),
+                ('4k_read', []),
                 ('1m_stress', []),
             ]
 
@@ -169,7 +173,7 @@ class FioTest(test.test):
 
         if os.path.exists(self.__filename) and  \
            stat.S_ISBLK(os.stat(self.__filename).st_mode) and \
-           self.__filesize != 0:
+           self.__filesize != 0 and blkdiscard:
             try:
                 fd = os.open(self.__filename, os.O_RDWR)
                 fcntl.ioctl(fd, self.IOCTL_TRIM_CMD,
@@ -208,7 +212,12 @@ class FioTest(test.test):
         self.write_perf_keyval(results)
         for k, v in results.iteritems():
             if k.endswith('_error'):
-                self._fail_count += int(v)
+                self._error_code = int(v)
+                if self._error_code != 0 and self._fail_count == 0:
+                    self._fail_count = 1
+            elif k.endswith('_total_err'):
+                self._fail_count = int(v)
         if self._fail_count > 0:
-            raise error.TestFail('%s failed verifications' %
-                                 str(self._fail_count))
+            raise error.TestFail('%s failed verifications, '
+                                 'first error code is %s' %
+                                 (str(self._fail_count), str(self._error_code)))

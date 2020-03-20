@@ -5,21 +5,21 @@
 import json
 import logging
 import os
-import update_engine_event as uee
+import requests
+import time
 import urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros.update_engine import update_engine_event as uee
 from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
-from autotest_lib.server.cros.update_engine import omaha_devserver
 from chromite.lib import retry_util
 from datetime import datetime, timedelta
-from update_engine_event import UpdateEngineEvent
 
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
@@ -77,7 +77,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._num_consumed_events = 0
         self._current_timestamp = None
         self._expected_events = []
-        self._omaha_devserver = None
         self._host = host
         # Some AU tests use multiple DUTs
         self._hosts = hosts
@@ -89,8 +88,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def cleanup(self):
         """Clean up update_engine autotests."""
-        if self._omaha_devserver is not None:
-            self._omaha_devserver.stop_devserver()
         if self._host:
             self._host.get_file(self._UPDATE_ENGINE_LOG, self.resultsdir)
 
@@ -102,20 +99,20 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         in the correct order with the correct data, timeout, and error
         condition function.
         """
-        initial_check = UpdateEngineEvent(
+        initial_check = uee.UpdateEngineEvent(
             version=source_release,
             on_error=self._error_initial_check)
-        download_started = UpdateEngineEvent(
+        download_started = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_DOWNLOAD_STARTED,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=source_release,
             on_error=self._error_incorrect_event)
-        download_finished = UpdateEngineEvent(
+        download_finished = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_DOWNLOAD_FINISHED,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=source_release,
             on_error=self._error_incorrect_event)
-        update_complete = UpdateEngineEvent(
+        update_complete = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_UPDATE_COMPLETE,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=source_release,
@@ -150,7 +147,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     def _get_expected_event_for_post_reboot_check(self, source_release,
                                                   target_release):
         """Creates the expected event fired during post-reboot update check."""
-        post_reboot_check = UpdateEngineEvent(
+        post_reboot_check = uee.UpdateEngineEvent(
             event_type=uee.EVENT_TYPE_REBOOTED_AFTER_UPDATE,
             event_result=uee.EVENT_RESULT_SUCCESS,
             version=target_release,
@@ -441,31 +438,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return staged_path[2]
 
 
-    def _get_staged_file_info(self, staged_url, retries=5):
-        """
-        Gets the staged files info that includes SHA256 and size.
-
-        @param staged_url: the staged file url.
-        @param retries: Number of times to try get the file info.
-
-        @returns file info (SHA256 and size).
-
-        """
-        split_url = staged_url.rpartition('/static/')
-        file_info_url = os.path.join(split_url[0], 'api/fileinfo', split_url[2])
-        logging.info('file info url: %s', file_info_url)
-        devserver_hostname = urlparse.urlparse(file_info_url).hostname
-        cmd = 'ssh %s \'curl "%s"\'' % (devserver_hostname,
-                                        utils.sh_escape(file_info_url))
-        for i in range(retries):
-            try:
-                result = utils.run(cmd).stdout
-                return json.loads(result)
-            except error.CmdError as e:
-                logging.error('Failed to read file info: %s', e)
-        raise error.TestError('Could not reach fileinfo API on devserver.')
-
-
     @staticmethod
     def _get_stateful_uri(build_uri):
         """Returns a complete GS URI of a stateful update given a build path."""
@@ -521,9 +493,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         payload_filename = payload_url.rpartition('/')[2]
-        utils.run('gsutil cp %s %s' % (payload_url, self._CELLULAR_BUCKET))
+        utils.run('gsutil cp %s* %s' % (payload_url, self._CELLULAR_BUCKET))
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
-        utils.run('gsutil acl ch -u AllUsers:R %s' % new_gs_url)
+        utils.run('gsutil acl ch -u AllUsers:R %s*' % new_gs_url)
         return new_gs_url.replace('gs://', 'https://storage.googleapis.com/')
 
 
@@ -583,15 +555,48 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         client_at._check_client_test_result(self._host, test_name)
 
 
-    def _create_hostlog_files(self):
+    def _get_hostlog(self, update_url, ip, wait_for_reboot_events=False):
+        """Get the update events json (aka hostlog).
+
+        @param update_url: The Devserver URL which we performed the update from.
+        @param ip: The IP address of the device under test.
+        @param wait_for_reboot_events: True if we expect the reboot events.
+
+        @return the json dump of the update events for the given IP.
+        """
+        devserver_hostlog_url = urlparse.urlunsplit(
+            list(urlparse.urlsplit(update_url)[0:2]) + \
+            ['/api/hostlog', 'ip=%s' % ip, ''])
+
+        # Wait for a few minutes for the post-reboot update check.
+        timeout = time.time() + 60 * 3
+        while True:
+            try:
+                hostlog = requests.get(devserver_hostlog_url).json()
+            except requests.exceptions.RequestException as e:
+                logging.warning('Failed to read host log URL with error: %s', e)
+                return None
+
+            if not wait_for_reboot_events:
+                return hostlog
+
+            if 'event_type' in hostlog[-1] and hostlog[-1]['event_type'] == 54:
+                return hostlog
+
+            if time.time() > timeout:
+                return None
+            time.sleep(5)
+
+
+    def _create_hostlog_files(self, update_url):
         """Create the two hostlog files for the update.
 
         To ensure the update was successful we need to compare the update
         events against expected update events. There is a hostlog for the
         rootfs update and for the post reboot update check.
         """
-        hostlog = self._omaha_devserver.get_hostlog(self._host.ip,
-                                                    wait_for_reboot_events=True)
+        hostlog = self._get_hostlog(update_url, self._host.ip,
+                                    wait_for_reboot_events=True)
         if hostlog is None:
             err_str = 'Timed out getting the hostlog from the devserver.'
             err_code = self._get_last_error_string()
@@ -629,19 +634,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         self._create_update_engine_variables(host.run, host.get_file)
-
-
-    def _run_client_test_and_check_result(self, test_name, **kwargs):
-        """
-        Kicks of a client autotest and checks that it didn't fail.
-
-        @param test_name: client test name
-        @param **kwargs: key-value arguments to pass to the test.
-
-        """
-        client_at = autotest.Autotest(self._host)
-        client_at.run_test(test_name, **kwargs)
-        client_at._check_client_test_result(self._host, test_name)
 
 
     def _change_cellular_setting_in_update_engine(self,
@@ -690,7 +682,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
 
     def get_update_url_for_test(self, job_repo_url, full_payload=True,
-                                critical_update=False, max_updates=1,
                                 public=False, moblab=False):
         """
         Get the correct update URL for autoupdate tests to use.
@@ -701,19 +692,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         multiple DUTs etc. This function returns the correct update URL to the
         test based on the inputs parameters.
 
-        Ideally all updates would use an existing lab devserver to handle the
-        updates. However the lab devservers default setup does not work for
-        all test needs. So we also kick off our own omaha_devserver for the
-        test run some times.
-
         This tests expects the test to set self._host or self._hosts.
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
-        @param critical_update: bool whether we need a critical update.
-        @param max_updates: int number of updates the test will perform. This
-                            is passed to src/platform/dev/devserver.py if we
-                            create our own deverver.
         @param public: url needs to be publicly accessible.
         @param moblab: True if we are running on moblab.
 
@@ -743,37 +725,19 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             logging.info('Public update URL: %s', url)
             return url
 
-        if full_payload:
-            if not critical_update:
-                # Stage payloads on the lab devserver.
-                self._autotest_devserver = lab_devserver
-                self._autotest_devserver.stage_artifacts(build,
-                                                         ['full_payload'])
-                # Use the same lab devserver to also handle the update.
-                url = self._autotest_devserver.get_update_url(build)
-                logging.info('Full payload, non-critical update URL: %s', url)
-                return url
-            else:
-                url_to_stage = self._get_payload_url(build, full_payload=True)
-        else:
-            # We need to stage delta ourselves due to crbug.com/793434.
-            url_to_stage = self._get_payload_url(build, full_payload=False)
+        # Stage payloads on the lab devserver.
+        self._autotest_devserver = lab_devserver
+        artifact = 'full_payload' if full_payload else 'delta_payload'
+        self._autotest_devserver.stage_artifacts(build, [artifact])
 
-        # Get partial path to payload eg samus-release/R77-113.0,0/blah.bin
-        payload_location = self._get_partial_path_from_url(url_to_stage)
+        # Use the same lab devserver to also handle the update.
+        url = self._autotest_devserver.get_update_url(build)
 
-        # We need to start our own devserver instance on the lab devserver
-        # for the rest of the test scenarios.
-        self._omaha_devserver = omaha_devserver.OmahaDevserver(
-            lab_devserver.hostname, payload_location, max_updates=max_updates,
-            critical_update=critical_update, moblab=moblab)
-        self._omaha_devserver.start_devserver()
-
-        # Stage the payloads on our new devserver.
-        ds_url = 'http://%s' % self._omaha_devserver.get_netloc()
-        self._autotest_devserver = dev_server.ImageServer(ds_url)
-        self._stage_payload_by_uri(url_to_stage)
-        url = self._omaha_devserver.get_update_url()
+        # Delta payloads get staged into the 'au_nton' directory of the
+        # build itself. So we need to append this at the end of the update
+        # URL to get the delta payload.
+        if not full_payload:
+            url += '/au_nton'
         logging.info('Update URL: %s', url)
         return url
 

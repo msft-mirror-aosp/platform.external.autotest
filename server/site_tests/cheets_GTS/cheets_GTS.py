@@ -23,10 +23,10 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 # Maximum default time allowed for each individual GTS module.
 _GTS_TIMEOUT_SECONDS = 3600
 _PARTNER_GTS_BUCKET = 'gs://chromeos-partner-gts/'
-_PARTNER_GTS_LOCATION = _PARTNER_GTS_BUCKET + 'gts-7_r3-6045416.zip'
+_PARTNER_GTS_LOCATION = _PARTNER_GTS_BUCKET + 'gts-7_r4-6219464.zip'
 _PARTNER_GTS_AUTHKEY = _PARTNER_GTS_BUCKET + 'gts-arc.json'
 _GTS_MEDIA_URI = ('https://storage.googleapis.com/youtube-test-media/gts/' +
-    'GtsYouTubeTestCases-media-1.2.zip')
+                  'GtsYouTubeTestCases-media-1.2.zip')
 _GTS_MEDIA_LOCALPATH = '/tmp/android-gts-media/GtsYouTubeTestCases'
 
 
@@ -50,6 +50,8 @@ class cheets_GTS(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+        # See b/150418360. This is needed to get the output our parser expects.
+        cmd.append('--quiet-output=false')
         return cmd
 
     def _get_default_bundle_url(self, bundle):
@@ -75,13 +77,12 @@ class cheets_GTS(tradefed_test.TradefedTest):
                  retry_template=None,
                  target_module=None,
                  target_plan=None,
-                 target_class=None,
-                 target_method=None,
                  needs_push_media=False,
                  enable_default_apps=False,
                  precondition_commands=[],
                  login_precondition_commands=[],
                  authkey=None,
+                 prerequisites=[],
                  timeout=_GTS_TIMEOUT_SECONDS):
         """Runs the specified GTS once, but with several retries.
 
@@ -97,14 +98,13 @@ class cheets_GTS(tradefed_test.TradefedTest):
                                          '{session_id}']
         @param target_module: the name of test module to run.
         @param target_plan: the name of the test plan to run.
-        @param target_class: the name of the class to be tested.
-        @param target_method: the name of the method to be tested.
         @param needs_push_media: need to push test media streams.
         @param timeout: time after which tradefed can be interrupted.
         @param precondition_commands: a list of scripts to be run on the
         dut before the test is run, the scripts must already be installed.
         @param login_precondition_commands: a list of scripts to be run on the
         dut before the log-in for the test is performed.
+        @param prerequisites: a list of prerequisites that identify rogue DUTs.
         """
         # Download the GTS auth key to the local temp directory.
         tmpdir = tempfile.mkdtemp()
@@ -124,6 +124,7 @@ class cheets_GTS(tradefed_test.TradefedTest):
                     _GTS_MEDIA_LOCALPATH),
                 enable_default_apps=enable_default_apps,
                 login_precondition_commands=login_precondition_commands,
-                precondition_commands=precondition_commands)
+                precondition_commands=precondition_commands,
+                prerequisites=prerequisites)
         finally:
             shutil.rmtree(tmpdir)

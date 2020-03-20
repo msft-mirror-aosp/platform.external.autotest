@@ -116,15 +116,26 @@ class power_LoadTest(arc.ArcTest):
         self._force_discharge = force_discharge
         self._pdash_note = pdash_note
 
-        if not power_utils.has_battery():
+        self._power_status = power_status.get_status()
+
+        if force_discharge:
+            if not self._power_status.battery:
+                raise error.TestNAError('DUT does not have battery. '
+                                        'Could not force discharge.')
+            if not power_utils.charge_control_by_ectool(False):
+                raise error.TestError('Could not run battery force discharge.')
+            self._ac_ok = True
+
+        if not self._power_status.battery:
             if ac_ok and (power_utils.has_powercap_support() or
                           power_utils.has_rapl_support()):
                 logging.info("Device has no battery but has powercap data.")
             else:
                 rsp = "Skipping test for device without battery and powercap."
                 raise error.TestNAError(rsp)
-        self._power_status = power_status.get_status()
-        self._tmp_keyvals['b_on_ac'] = self._power_status.on_ac()
+
+        self._tmp_keyvals['b_on_ac'] = (not force_discharge and
+                                        self._power_status.on_ac())
 
         self._gaia_login = gaia_login
         if gaia_login is None:
@@ -133,12 +144,8 @@ class power_LoadTest(arc.ArcTest):
         self._username = power_load_util.get_username()
         self._password = power_load_util.get_password()
 
-        if not ac_ok:
+        if not self._ac_ok:
             self._power_status.assert_battery_state(percent_initial_charge_min)
-
-        if force_discharge:
-            if not power_utils.charge_control_by_ectool(False):
-                raise error.TestError('Could not run battery force discharge.')
 
         # If force wifi enabled, convert eth0 to backchannel and connect to the
         # specified WiFi AP.
@@ -278,6 +285,11 @@ class power_LoadTest(arc.ArcTest):
                 seconds_period=20,
                 checkpoint_logger=self._checkpoint_logger)
         self._meas_logs = [self._plog, self._tlog, self._clog]
+        if power_status.has_fan():
+            self._flog = power_status.FanRpmLogger(
+                seconds_period=20,
+                checkpoint_logger=self._checkpoint_logger)
+            self._meas_logs.append(self._flog)
         for log in self._meas_logs:
             log.start()
         if self._log_mem_bandwidth:
@@ -530,8 +542,7 @@ class power_LoadTest(arc.ArcTest):
                             core_keyvals.iteritems()}
         else:
             for key, value in core_keyvals.iteritems():
-                if key.startswith('percent_cpuidle') and \
-                   key.endswith('C0_time'):
+                if re.match(r'percent_[cg]pu(idle|pkg).*_R?C0(_C1)?_time', key):
                     self.output_perf_value(description=key,
                                            value=value,
                                            units='percent',
@@ -545,18 +556,12 @@ class power_LoadTest(arc.ArcTest):
         if minutes_battery_life_tested * 60 < self._loop_time :
             logging.info('Data is less than 1 loop, skip sending to dashboard.')
             return
-        pdash = power_dashboard.PowerLoggerDashboard( \
-                self._plog, self.tagged_testname, self.resultsdir,
-                note=self._pdash_note)
-        pdash.upload()
-        cdash = power_dashboard.CPUStatsLoggerDashboard( \
-                self._clog, self.tagged_testname, self.resultsdir,
-                note=self._pdash_note)
-        cdash.upload()
-        tdash = power_dashboard.TempLoggerDashboard( \
-                self._tlog, self.tagged_testname, self.resultsdir,
-                note=self._pdash_note)
-        tdash.upload()
+
+        dashboard_factory = power_dashboard.get_dashboard_factory()
+        for log in self._meas_logs:
+            dashboard = dashboard_factory.createDashboard(log,
+                self.tagged_testname, self.resultsdir, note=self._pdash_note)
+            dashboard.upload()
 
 
     def cleanup(self):

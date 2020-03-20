@@ -54,9 +54,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Restart the link to device
         logging.info('Restarting peer devices...')
 
-        # Grab currect device list for initialization
+        # Grab current device list for initialization
         connected_devices = self.devices
-        self.cleanup(on_start=False)
+        self.cleanup(test_state='MID')
 
         for device_type, device_list in connected_devices.items():
             for device in device_list:
@@ -68,47 +68,104 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def start_peers(self, devices):
         """Start peer devices"""
         # Start the link to devices
-        logging.info('Starting peer devices...')
-
-        if self.host.multi_chameleon:
+        if self.use_btpeer:
+            logging.info('Starting peer devices...')
             self.get_device_rasp(devices)
-        else:
-            for device_type in devices:
-                logging.info('Getting device %s', device_type)
-                self.get_device(device_type)
-
 
     def _print_delimiter(self):
         logging.info('=======================================================')
 
 
-    def quick_test_init(self, host, use_chameleon=True, flag='Quick Sanity'):
+    def quick_test_init(self, host, use_btpeer=True, use_chameleon=False,
+                        flag='Quick Sanity'):
         """Inits the test batch"""
         self.host = host
         #factory can not be declared as local variable, otherwise
-        #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc server,
-        #which log out the user.
-        self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                                                                 disable_arc=True)
-        self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
-        self.use_chameleon = use_chameleon
-        if self.use_chameleon:
-            self.input_facade = self.factory.create_input_facade()
-            self.check_chameleon()
+        #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
+        # server, which log out the user.
 
-            # Query connected devices on our chameleon at init time
+        try:
+            browser_args = ['--enable-features=BluetoothKernelSuspendNotifier']
+            self.factory = remote_facade_factory.RemoteFacadeFactory(host,
+                           extra_browser_args = browser_args,
+                           disable_arc=True)
+            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+
+        # For b:142276989, catch 'object_path' fault and reboot to prevent
+        # failures from continuing into future tests
+        except Exception, e:
+            if (e.__class__.__name__ == 'Fault' and
+                """object has no attribute 'object_path'""" in str(e)):
+
+                logging.error('Caught b/142276989, rebooting DUT')
+                self.reboot()
+            # Raise the original exception
+            raise
+
+        # Common list to track old/new Bluetooth peers
+        # Adding chameleon to btpeer_list causes issue in cros_labels
+        self.host.peer_list = []
+
+        # Keep use_chameleon for any unmodified tests
+        # TODO(b:149637050) Remove use_chameleon
+        self.use_btpeer = use_btpeer or use_chameleon
+        if self.use_btpeer:
+            self.input_facade = self.factory.create_input_facade()
+            self.check_btpeer()
+
+            #
+            # During the transition period in the lab, Bluetooth peer can be
+            # name <hostname>-btpeer[1-4] or <hostname>-chameleon OR can be
+            # specified on cmd line using btpeer_host or chameleon_host.
+            #
+            # TODO(b:149637050) Cleanup this code after M83 is in stable
+            #
+            logging.info('%s Bluetooth peers found',
+                         len(self.host.btpeer_list))
+
+            self.host.peer_list = self.host.btpeer_list[:]
+
+            if (self.host._chameleon_host is not None and
+                self.host.chameleon is not None):
+                logging.info('Chameleon Bluetooth peer found')
+                # If there is a peer named <hostname>-chameleon, append to the
+                # peer list
+                self.host.peer_list.append(self.host.chameleon)
+                self.host.btpeer = self.host.peer_list[0]
+            else:
+                logging.info('chameleon Btpeer not found')
+
+            logging.info('Total of %d peers. Peer list %s',
+                         len(self.host.peer_list),
+                         self.host.peer_list)
+            logging.info('labels: %s', self.host.get_labels())
+
+            if len(self.host.peer_list) == 0:
+                raise error.TestFail('Unable to find a Bluetooth peer')
+
+            # Query connected devices on our btpeer at init time
             self.available_devices = self.list_devices_available()
 
-            for chameleon in self.host.chameleon_list:
-                chameleon.register_raspPi_log(self.outputdir)
 
-            if self.host.multi_chameleon:
-                self.chameleon_group = dict()
-                # Create copy of chameleon_group
-                self.chameleon_group_copy = dict()
-                self.group_chameleons_type()
+            for btpeer in self.host.peer_list:
+                btpeer.register_raspPi_log(self.outputdir)
+
+            self.btpeer_group = dict()
+            # Create copy of btpeer_group
+            self.btpeer_group_copy = dict()
+            self.group_btpeers_type()
+
+
+        # Clear the active devices for this test
+        self.active_test_devices = {}
 
         self.enable_disable_debug_log(enable=True)
+
+        # Delete files created in previous run
+        self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
+                                                    self.BTMON_DIR_LOG_PATH))
+        self.start_new_btmon()
+        self.start_new_usbmon()
 
         self.flag = flag
         self.test_iter = None
@@ -157,8 +214,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     logging.info('flag %s not in %s', self.flag, flags)
                     self._print_delimiter()
                     return False
+                return True
 
-                # Check that chameleon has all required devices before running
+            def _is_enough_peers_present(self):
+                """Check if enough peer devices are available."""
+
+                # Check that btpeer has all required devices before running
                 for device_type, number in devices.items():
                     if self.available_devices.get(device_type, 0) < number:
                         logging.info('SKIPPING TEST %s', test_name)
@@ -166,6 +227,16 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         self._print_delimiter()
                         return False
 
+                # Check if there are enough peers
+                total_num_devices = sum(devices.values())
+                if total_num_devices > len(self.host.peer_list):
+                    logging.info('SKIPPING TEST %s', test_name)
+                    logging.info('Number of devices required %s is greater'
+                                 'than number of peers available %d',
+                                 total_num_devices,
+                                 len(self.host.peer_list))
+                    self._print_delimiter()
+                    return False
                 return True
 
             @functools.wraps(test_method)
@@ -173,6 +244,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 """A wrapper of the decorated method."""
                 if not _check_runnable(self):
                     return
+                if not _is_enough_peers_present(self):
+                    raise error.TestNAError('Not enough peer available')
                 self.quick_test_test_start(test_name, devices)
                 test_method(self)
                 self.quick_test_test_end()
@@ -200,6 +273,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             time.sleep(self.TEST_SLEEP_SECS)
             self._print_delimiter()
             logging.info('Starting test: %s', test_name)
+            self.log_message('Starting test: %s'% test_name)
 
     def quick_test_test_end(self):
         """Log and track the test results"""
@@ -232,6 +306,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.pkg_fail_count += 1
 
         logging.info(result_msg)
+        self.log_message(result_msg)
         self._print_delimiter()
         self.bat_tests_results.append(result_msg)
         self.pkg_tests_results.append(result_msg)
@@ -256,19 +331,19 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         self.bluetooth_facade.remove_device_object(
                                 device.address)
 
-        # Repopulate chameleon_group for next tests
-        if self.host.multi_chameleon:
-            # Clear previous tets's leftover entries. Don't delete the
-            # chameleon_group dictionary though, it'll be used as it is.
-            for device_type in self.chameleon_group:
-                if len(self.chameleon_group[device_type]) > 0:
-                    del self.chameleon_group[device_type][:]
+        # Repopulate btpeer_group for next tests
+        # Clear previous tets's leftover entries. Don't delete the
+        # btpeer_group dictionary though, it'll be used as it is.
+        if self.use_btpeer:
+            for device_type in self.btpeer_group:
+                if len(self.btpeer_group[device_type]) > 0:
+                    del self.btpeer_group[device_type][:]
 
             # Repopulate
-            self.group_chameleons_type()
+            self.group_btpeers_type()
 
         # Close the connection between peers
-        self.cleanup()
+        self.cleanup(test_state='NEW')
 
 
     @staticmethod

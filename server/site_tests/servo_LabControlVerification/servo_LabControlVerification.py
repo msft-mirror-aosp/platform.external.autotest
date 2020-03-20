@@ -11,6 +11,7 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server.hosts import servo_host
+from autotest_lib.server.hosts import servo_constants
 
 class servo_LabControlVerification(test.test):
     """Ensure control list works, ensure all consoles are talkable."""
@@ -49,10 +50,10 @@ class servo_LabControlVerification(test.test):
             # Note: the attributes are named after the arguments expected in
             # servo.py to be able to use the dictionary as a kwargs. Be mindful
             # of changing them &| keep them in sync.
-            ctrl = {'gpio_name': ctrl_elems[0]}
+            ctrl = {'ctrl_name': ctrl_elems[0]}
             if len(ctrl_elems) == 2:
                 # This a set servod control.
-                ctrl['gpio_value'] = ctrl_elems[1]
+                ctrl['ctrl_value'] = ctrl_elems[1]
             elif len(ctrl_elems) > 2:
                 logging.warn('The line containing %r in the control sequence '
                              'file has an unkown format. Ignoring for now.',
@@ -103,8 +104,8 @@ class servo_LabControlVerification(test.test):
             self.assert_servod_running(host=host)
         # Servod came up successfully - build a servo host and use it to verify
         # basic functionality.
-        servo_args = {servo_host.SERVO_HOST_ATTR: host.hostname,
-                      servo_host.SERVO_PORT_ATTR: 9999}
+        servo_args = {servo_constants.SERVO_HOST_ATTR: host.hostname,
+                      servo_constants.SERVO_PORT_ATTR: 9999}
         self.servo_host_proxy = servo_host.ServoHost(is_in_lab=False,
                                                      **servo_args)
         self.servo_host_proxy.connect_servo()
@@ -123,16 +124,16 @@ class servo_LabControlVerification(test.test):
             if len(ctrl) == 2:
                 ctrl_type = 'set'
                 ctrl_func = self.servo_proxy.set_nocheck
-            logstr = 'About to %s control %r' % (ctrl_type, ctrl['gpio_name'])
+            logstr = 'About to %s control %r' % (ctrl_type, ctrl['ctrl_name'])
             if ctrl_type == 'set':
-                logstr = '%s to %s' % (logstr, ctrl['gpio_value'])
+                logstr = '%s to %s' % (logstr, ctrl['ctrl_value'])
             logging.info(logstr)
             try:
                 ctrl_func(**ctrl)
-                logging.info('Success running %r', ctrl['gpio_name'])
+                logging.info('Success running %r', ctrl['ctrl_name'])
             except error.TestFail as e:
                 failed = True
-                logging.error('Error running %r. %s', ctrl['gpio_name'], str(e))
+                logging.error('Error running %r. %s', ctrl['ctrl_name'], str(e))
         if self.servo_version != 'servo_v3':
             # Servo V3 does not support Cr50 console. Skip this verification.
             try:

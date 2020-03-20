@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
+from autotest_lib.server.cros.servo import servo
 
 
 class firmware_Cr50DeferredECReset(Cr50Test):
@@ -71,9 +72,9 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         if not hasattr(self, 'cr50'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
-        if not self.cr50.servo_v4_supports_dts_mode():
+        if not self.cr50.servo_dts_mode_is_valid():
             raise error.TestNAError('Need working servo v4 DTS control')
-        self.dts_restore = self.servo.get('servo_v4_dts_mode')
+        self.dts_restore = self.servo.get_dts_mode()
 
         # Fast open cr50 and check if testlab is enabled.
         self.fast_open(enable_testlab=True)
@@ -119,7 +120,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         # Check if the dut has any RDD recognition issue.
         # First, cut off power source and hold the power button.
         #        disable RDD connection.
-        self.servo.set_servo_v4_dts_mode('off')
+        self.servo.set_dts_mode('off')
         self.servo.set('pwr_button', 'press')
         self.cr50_power_on_reset()
         try:
@@ -131,7 +132,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
                 raise error.TestError('RDD leakage does not match capability'
                                       ' configuration.')
         finally:
-            self.servo.set_servo_v4_dts_mode(self.dts_restore)
+            self.servo.set_dts_mode(self.dts_restore)
             self.servo.set_nocheck('pwr_button', 'release')
             time.sleep(self.PD_SETTLE_TIME)
 
@@ -177,12 +178,9 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             logging.info('Checking if ec is %sresponsive',
                          '' if expect_response else 'not ')
             rv = self.ec.send_command_get_output('help', ['.*>'])[0].strip()
-        except error.TestFail as e:
+        except servo.UnresponsiveConsoleError as e:
             logging.info(str(e))
-            if 'Timeout waiting for response' in str(e):
-                if not expect_response:
-                    return
-            raise e
+            return
         else:
             if not expect_response:
                 logging.error('EC should not respond')
@@ -211,7 +209,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
 
         try:
             # enable RDD Connection (or disable) before power-on-reset
-            self.servo.set_servo_v4_dts_mode('on' if rdd_enable else 'off')
+            self.servo.set_dts_mode('on' if rdd_enable else 'off')
 
             # Set power button before the dut loses power,
             # because the power button value cannot be changed during power-off.
@@ -246,7 +244,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             else:
                 self.servo.set_nocheck('servo_v4_role', 'src')
 
-            self.servo.set_servo_v4_dts_mode(self.dts_restore)
+            self.servo.set_dts_mode(self.dts_restore)
             time.sleep(1)
 
             # Press power button to wake up AP, and releases it soon

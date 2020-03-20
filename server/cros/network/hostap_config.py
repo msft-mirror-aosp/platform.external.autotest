@@ -128,35 +128,35 @@ class HostapConfig(object):
     AC_CAPABILITY_TX_ANTENNA_PATTERN = object()
     AC_CAPABILITIES_MAPPING = {
             AC_CAPABILITY_VHT160: '[VHT160]',
-            AC_CAPABILITY_VHT160_80PLUS80: '[VHT160_80PLUS80]',
+            AC_CAPABILITY_VHT160_80PLUS80: '[VHT160-80PLUS80]',
             AC_CAPABILITY_RXLDPC: '[RXLDPC]',
-            AC_CAPABILITY_SHORT_GI_80: '[SHORT_GI_80]',
-            AC_CAPABILITY_SHORT_GI_160: '[SHORT_GI_160]',
-            AC_CAPABILITY_TX_STBC_2BY1: '[TX_STBC_2BY1]',
-            AC_CAPABILITY_RX_STBC_1: '[RX_STBC_1]',
-            AC_CAPABILITY_RX_STBC_12: '[RX_STBC_12]',
-            AC_CAPABILITY_RX_STBC_123: '[RX_STBC_123]',
-            AC_CAPABILITY_RX_STBC_1234: '[RX_STBC_1234]',
-            AC_CAPABILITY_SU_BEAMFORMER: '[SU_BEAMFORMER]',
-            AC_CAPABILITY_SU_BEAMFORMEE: '[SU_BEAMFORMEE]',
-            AC_CAPABILITY_BF_ANTENNA_2: '[BF_ANTENNA_2]',
-            AC_CAPABILITY_SOUNDING_DIMENSION_2: '[SOUNDING_DIMENSION_2]',
-            AC_CAPABILITY_MU_BEAMFORMER: '[MU_BEAMFORMER]',
-            AC_CAPABILITY_MU_BEAMFORMEE: '[MU_BEAMFORMEE]',
-            AC_CAPABILITY_VHT_TXOP_PS: '[VHT_TXOP_PS]',
-            AC_CAPABILITY_HTC_VHT: '[HTC_VHT]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP0: '[MAX_A_MPDU_LEN_EXP0]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP1: '[MAX_A_MPDU_LEN_EXP1]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP2: '[MAX_A_MPDU_LEN_EXP2]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP3: '[MAX_A_MPDU_LEN_EXP3]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP4: '[MAX_A_MPDU_LEN_EXP4]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP5: '[MAX_A_MPDU_LEN_EXP5]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP6: '[MAX_A_MPDU_LEN_EXP6]',
-            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7: '[MAX_A_MPDU_LEN_EXP7]',
-            AC_CAPABILITY_VHT_LINK_ADAPT2: '[VHT_LINK_ADAPT2]',
-            AC_CAPABILITY_VHT_LINK_ADAPT3: '[VHT_LINK_ADAPT3]',
-            AC_CAPABILITY_RX_ANTENNA_PATTERN: '[RX_ANTENNA_PATTERN]',
-            AC_CAPABILITY_TX_ANTENNA_PATTERN: '[TX_ANTENNA_PATTERN]'}
+            AC_CAPABILITY_SHORT_GI_80: '[SHORT-GI-80]',
+            AC_CAPABILITY_SHORT_GI_160: '[SHORT-GI-160]',
+            AC_CAPABILITY_TX_STBC_2BY1: '[TX-STBC-2BY1]',
+            AC_CAPABILITY_RX_STBC_1: '[RX-STBC-1]',
+            AC_CAPABILITY_RX_STBC_12: '[RX-STBC-12]',
+            AC_CAPABILITY_RX_STBC_123: '[RX-STBC-123]',
+            AC_CAPABILITY_RX_STBC_1234: '[RX-STBC-1234]',
+            AC_CAPABILITY_SU_BEAMFORMER: '[SU-BEAMFORMER]',
+            AC_CAPABILITY_SU_BEAMFORMEE: '[SU-BEAMFORMEE]',
+            AC_CAPABILITY_BF_ANTENNA_2: '[BF-ANTENNA-2]',
+            AC_CAPABILITY_SOUNDING_DIMENSION_2: '[SOUNDING-DIMENSION-2]',
+            AC_CAPABILITY_MU_BEAMFORMER: '[MU-BEAMFORMER]',
+            AC_CAPABILITY_MU_BEAMFORMEE: '[MU-BEAMFORMEE]',
+            AC_CAPABILITY_VHT_TXOP_PS: '[VHT-TXOP-PS]',
+            AC_CAPABILITY_HTC_VHT: '[HTC-VHT]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP0: '[MAX-A-MPDU-LEN-EXP0]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP1: '[MAX-A-MPDU-LEN-EXP1]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP2: '[MAX-A-MPDU-LEN-EXP2]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP3: '[MAX-A-MPDU-LEN-EXP3]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP4: '[MAX-A-MPDU-LEN-EXP4]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP5: '[MAX-A-MPDU-LEN-EXP5]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP6: '[MAX-A-MPDU-LEN-EXP6]',
+            AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7: '[MAX-A-MPDU-LEN-EXP7]',
+            AC_CAPABILITY_VHT_LINK_ADAPT2: '[VHT-LINK-ADAPT2]',
+            AC_CAPABILITY_VHT_LINK_ADAPT3: '[VHT-LINK-ADAPT3]',
+            AC_CAPABILITY_RX_ANTENNA_PATTERN: '[RX-ANTENNA-PATTERN]',
+            AC_CAPABILITY_TX_ANTENNA_PATTERN: '[TX-ANTENNA-PATTERN]'}
 
     HT_CHANNEL_WIDTH_20 = object()
     HT_CHANNEL_WIDTH_40_PLUS = object()
@@ -391,14 +391,19 @@ class HostapConfig(object):
 
     @property
     def _ht_mode(self):
-        """@return string one of (None, HT20, HT40+, HT40-)"""
-        if not self._is_11n:
-            return None
-        if self._ht40_plus_allowed:
-            return self.HT_NAMES[self.HT_CHANNEL_WIDTH_40_PLUS]
-        if self._ht40_minus_allowed:
-            return self.HT_NAMES[self.HT_CHANNEL_WIDTH_40_MINUS]
-        return self.HT_NAMES[self.HT_CHANNEL_WIDTH_20]
+        """
+        @return object one of ( None,
+                                HT_CHANNEL_WIDTH_40_PLUS,
+                                HT_CHANNEL_WIDTH_40_MINUS,
+                                HT_CHANNEL_WIDTH_20)
+        """
+        if self._is_11n or self.is_11ac:
+            if self._ht40_plus_allowed:
+                return self.HT_CHANNEL_WIDTH_40_PLUS
+            if self._ht40_minus_allowed:
+                return self.HT_CHANNEL_WIDTH_40_MINUS
+            return self.HT_CHANNEL_WIDTH_20
+        return None
 
 
     @property
@@ -425,6 +430,8 @@ class HostapConfig(object):
                 return packet_capturer.WIDTH_HT40_PLUS
             if ht_mode == self.HT_CHANNEL_WIDTH_40_MINUS:
                 return packet_capturer.WIDTH_HT40_MINUS
+            if ht_mode == self.HT_CHANNEL_WIDTH_20:
+                return packet_capturer.WIDTH_HT20
 
         if self.vht_channel_width == self.VHT_CHANNEL_WIDTH_80:
             return packet_capturer.WIDTH_VHT80
@@ -453,7 +460,7 @@ class HostapConfig(object):
 
         ht_mode = self._ht_mode
         if ht_mode:
-            return ht_mode
+            return self.HT_NAMES[ht_mode]
 
         return '11' + self._hw_mode.upper()
 
@@ -474,12 +481,6 @@ class HostapConfig(object):
     def hide_ssid(self):
         """@return bool _hide_ssid flag."""
         return self._hide_ssid
-
-
-    @property
-    def beacon_footer(self):
-        """@return bool _beacon_footer value."""
-        return self._beacon_footer
 
 
     @property
@@ -530,7 +531,6 @@ class HostapConfig(object):
                  vht_channel_width=None,
                  vht_center_channel=None,
                  ac_capabilities=None,
-                 beacon_footer='',
                  spectrum_mgmt_required=None,
                  scenario_name=None,
                  supported_rates=None,
@@ -569,8 +569,6 @@ class HostapConfig(object):
         @param vht_channel_width object channel width
         @param vht_center_channel int center channel of segment 0.
         @param ac_capabilities list of AC_CAPABILITY_x defined above.
-        @param beacon_footer string containing (unvalidated) IE data to be
-            placed at the end of the beacon.
         @param spectrum_mgmt_required True if we require the DUT to support
             spectrum management.
         @param scenario_name string to be included in file names, instead
@@ -657,7 +655,6 @@ class HostapConfig(object):
         # and operating channel.
         self._vht_oper_centr_freq_seg0_idx = vht_center_channel
         self._ac_capabilities = set(ac_capabilities)
-        self._beacon_footer = beacon_footer
         self._spectrum_mgmt_required = spectrum_mgmt_required
         self._scenario_name = scenario_name
         self._supported_rates = supported_rates
@@ -785,8 +782,9 @@ class HostapConfig(object):
         if self.is_11ac:
             conf['ieee80211ac'] = 1
             conf['vht_oper_chwidth'] = self._vht_oper_chwidth
-            conf['vht_oper_centr_freq_seg0_idx'] = \
-                    self._vht_oper_centr_freq_seg0_idx
+            if self._vht_oper_centr_freq_seg0_idx is not None:
+                conf['vht_oper_centr_freq_seg0_idx'] = \
+                        self._vht_oper_centr_freq_seg0_idx
             conf['vht_capab'] = self._hostapd_vht_capabilities
         if self._wmm_enabled:
             conf['wmm_enabled'] = 1

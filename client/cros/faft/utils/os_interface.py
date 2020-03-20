@@ -65,7 +65,7 @@ class OSInterface(object):
 
         # We keep the state of FAFT test in a permanent directory over reboots.
         if state_dir is None:
-            state_dir = '/var/tmp/faft'
+            state_dir = '/usr/local/tmp/faft'
 
         if log_file is None:
             log_file = 'faft_client.log'
@@ -84,23 +84,36 @@ class OSInterface(object):
 
         self.cs = Crossystem(self)
 
-    def run_shell_command(self, cmd, modifies_device=False):
+    def run_shell_command(self, cmd, block=True, modifies_device=False):
         """Run a shell command.
 
         @param cmd: the command to run
+        @param block: if True (default), wait for command to finish
         @param modifies_device: If True and running in test mode, just log
                                 the command, but don't actually run it.
                                 This should be set for RPC commands that alter
                                 the OS or firmware in some persistent way.
+
+        @raise autotest_lib.client.common_lib.error.CmdError: if command fails
         """
         if self.test_mode and modifies_device:
             self.log('[SKIPPED] %s' % cmd)
         else:
-            self.shell.run_command(cmd)
+            self.shell.run_command(cmd, block=block)
 
     def run_shell_command_check_output(self, cmd, success_token):
         """Run shell command and check its stdout for a string."""
         return self.shell.run_command_check_output(cmd, success_token)
+
+    def run_shell_command_get_result(self, cmd, ignore_status=False):
+        """Run shell command and get a CmdResult object as a result.
+
+        @param cmd: the command to run
+        @param ignore_status: if True, do not raise CmdError, even if rc != 0.
+        @rtype: autotest_lib.client.common_lib.utils.CmdResult
+        @raise autotest_lib.client.common_lib.error.CmdError: if command fails
+        """
+        return self.shell.run_command_get_result(cmd, ignore_status)
 
     def run_shell_command_get_status(self, cmd):
         """Run shell command and return its return code."""

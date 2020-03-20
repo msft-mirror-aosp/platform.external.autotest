@@ -27,6 +27,7 @@ from autotest_lib.client.cros.chameleon import usb_controller
 CHAMELEON_PORT = 9992
 CHAMELEOND_LOG_REMOTE_PATH = '/var/log/chameleond'
 DAEMON_LOG_REMOTE_PATH = '/var/log/daemon.log'
+BTMON_LOG_REMOTE_PATH = '/var/log/btsnoop.log'
 CHAMELEON_READY_TEST = 'GetSupportedPorts'
 
 
@@ -320,9 +321,50 @@ class ChameleonBoard(object):
                 atexit.register(log_new_func)
 
 
+        def btmon_atexit_gen(btmon_pid):
+            """Generate a function to kill the btmon process and save the log
+
+            @param btmon_pid: PID of the btmon process
+            """
+
+            def btmon_atexit():
+                """Kill the btmon with specified PID and save the log"""
+
+                file_name = os.path.basename(BTMON_LOG_REMOTE_PATH)
+                target_path = os.path.join(log_dir, file_name)
+
+                self.host.run('kill %d' % btmon_pid)
+                self.host.get_file(BTMON_LOG_REMOTE_PATH, target_path)
+            return btmon_atexit
+
+
+        # Kill all btmon process before creating a new one
+        self.host.run('pkill btmon || true')
+
+        # Get available btmon options in the chameleon host
+        btmon_options = ''
+        btmon_help = self.host.run('btmon --help').stdout
+
+        for option in 'SA':
+            if '-%s' % option in btmon_help:
+                btmon_options += option
+
+        # Store btmon log
+        btmon_pid = int(self.host.run_background('btmon -%sw %s'
+                                                % (btmon_options,
+                                                BTMON_LOG_REMOTE_PATH)))
+        if btmon_pid > 0:
+            atexit.register(btmon_atexit_gen(btmon_pid))
+
+
     def reboot(self):
         """Reboots Chameleon board."""
         self._chameleond_proxy.Reboot()
+
+
+    def get_bt_pkg_version(self):
+        """ Read the current version of chameleond."""
+        return self._chameleond_proxy.get_bt_pkg_version()
 
 
     def _get_log(self):
@@ -333,6 +375,9 @@ class ChameleonBoard(object):
         """
         self.host.get_file(CHAMELEOND_LOG_REMOTE_PATH, self._output_log_file)
 
+    def log_message(self, msg):
+        """Log a message in chameleond log and system log."""
+        self._chameleond_proxy.log_message(msg)
 
     def get_all_ports(self):
         """Gets all the ports on Chameleon board which are connected.
@@ -390,6 +435,32 @@ class ChameleonBoard(object):
         @return: A USBController object.
         """
         return self._usb_ctrl
+
+
+    def get_bluetooth_base(self):
+        """Gets the Bluetooth base object on Chameleon.
+
+        This is a base object that does not emulate any Bluetooth device.
+
+        @return: A BluetoothBaseFlow object.
+        """
+        return self._chameleond_proxy.bluetooth_base
+
+
+    def get_bluetooth_tester(self):
+        """Gets the Bluetooth tester object on Chameleon.
+
+        @return: A BluetoothTester object.
+        """
+        return self._chameleond_proxy.bluetooth_tester
+
+
+    def get_bluetooth_audio(self):
+        """Gets the Bluetooth audio object on Chameleon.
+
+        @return: A RaspiBluetoothAudioFlow object.
+        """
+        return self._chameleond_proxy.bluetooth_audio
 
 
     def get_bluetooth_hid_mouse(self):
@@ -468,6 +539,13 @@ class ChameleonBoard(object):
         @return: A BluetoothHIDFlow object.
         """
         return self._chameleond_proxy.ble_keyboard
+
+    def get_ble_phone(self):
+        """Gets the emulated Bluetooth phone on Chameleon.
+
+        @return: A RaspiPhone object.
+        """
+        return self._chameleond_proxy.ble_phone
 
     def get_platform(self):
         """ Get the Hardware Platform of the chameleon host
@@ -1034,8 +1112,25 @@ def make_chameleon_hostname(dut_hostname):
     return '.'.join(host_parts)
 
 
+def make_btpeer_hostnames(dut_hostname):
+    """Given a DUT's hostname, returns the hostname of its bluetooth peers.
+
+    A DUT can have up to 4 Bluetooth peers named  hostname-btpeer[1-4]
+    @param dut_hostname: Hostname of a DUT.
+
+    @return List of hostname of the DUT's Bluetooth peer devices
+    """
+    hostnames = []
+    host_parts = dut_hostname.split('.')
+    for i in range(1,5):
+        hostname_prefix = host_parts[0] + '-btpeer' +str(i)
+        hostname = [hostname_prefix]
+        hostname.extend(host_parts[1:])
+        hostnames.append('.'.join(hostname))
+    return hostnames
+
 def create_chameleon_board(dut_hostname, args):
-    """Given either DUT's hostname or argments, creates a ChameleonBoard object.
+    """Creates a ChameleonBoard object with either DUT's hostname or arguments.
 
     If the DUT's hostname is in the lab zone, it connects to the Chameleon by
     append the hostname with '-chameleon' suffix. If not, checks if the args

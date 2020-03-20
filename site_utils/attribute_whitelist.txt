@@ -4,7 +4,7 @@ subsystem:wifi
 suite:AFDO_page_replay
 suite:AFDO_record
 suite:another_suite
-suite:app-compat
+suite:appcompat
 suite:arc-cts
 suite:arc-cts-beta
 suite:arc-cts-beta-fri
@@ -28,8 +28,8 @@ suite:arc-cts-instant
 suite:arc-cts-instant-perbuild
 suite:arc-cts-instant-qual
 suite:arc-cts-perbuild
-suite:arc-cts-q
 suite:arc-cts-qual
+suite:arc-cts-r
 suite:arc-cts-stable
 suite:arc-cts-terra
 suite:arc-cts-test
@@ -41,11 +41,13 @@ suite:arc-gts-qual
 suite:arc-gts-tot
 suite:arc-gts-test
 suite:arc-unit-test
+suite:arc-vts
 suite:audio
 suite:audio_advanced
 suite:audio_basic
 suite:audio_essential
 suite:au_fsi
+suite:au-oobe
 suite:au-perbuild
 suite:av_webcam
 suite:bluestreak-partners
@@ -68,6 +70,10 @@ suite:bvt-faft
 suite:bvt-inline
 suite:bvt-installer
 suite:bvt-perbuild
+suite:bvt-tast-android-pfq
+suite:bvt-tast-chrome-pfq
+suite:bvt-tast-cq
+suite:bvt-tast-informational
 suite:cell_emulator
 suite:cellular_au
 suite:cellular_au_nightly
@@ -103,6 +109,7 @@ suite:dummy_server
 suite:dummy_server_nossp
 suite:dummyclientretries
 suite:enroll_retainment
+suite:enrollment_per-build
 suite:ent-nightly
 suite:ent-perbuild
 suite:ent-wificell
@@ -110,14 +117,13 @@ suite:experimental
 suite:factory
 suite:faft
 suite:faft_bios
-suite:faft_bios_au_1
-suite:faft_bios_au_2
-suite:faft_bios_au_3
 suite:faft_bios_ec3po
 suite:faft_bios_tot
 suite:faft_cr50_experimental
 suite:faft_cr50_prepvt
+suite:faft_cr50_prepvt_tast
 suite:faft_cr50_pvt
+suite:faft_cr50_pvt_tast
 suite:faft_cr50_tot
 suite:faft_dev
 suite:faft_ec
@@ -161,6 +167,7 @@ suite:kernel_usb
 suite:kernel_usb_set1
 suite:kernel_weekly_regression
 suite:kiosk_longevity
+suite:labstation_verification
 suite:link_perf
 suite:longevity
 suite:longevity_two
@@ -182,6 +189,7 @@ suite:perfalerts
 suite:policy
 suite:power_build
 suite:power_daily
+suite:power_dashboard
 suite:power_idle
 suite:power_loadtest
 suite:power_loadtest_1hour
@@ -193,6 +201,8 @@ suite:power_sanity
 suite:powerplay
 suite:push_to_prod
 suite:regression
+suite:rlz
+suite:runtime_probe_perbuild
 suite:sanity
 suite:sb65-presubmit
 suite:security
@@ -221,6 +231,7 @@ suite:vmtest-informational4
 suite:wifi_atten_perf
 suite:wifi_endtoend
 suite:wifi_flaky
+suite:wifi_func_tast
 suite:wifi_interop
 suite:wifi_interop_static
 suite:wifi_interop_wpa2
@@ -234,5 +245,6 @@ suite:wifi_update_router
 suite:wificell-pre-cq
 suite:wifichaos
 suite:wilco_bve
+suite:wilco_bve_dock
 suite:youtube_mse_eme
 suite:youtube_page

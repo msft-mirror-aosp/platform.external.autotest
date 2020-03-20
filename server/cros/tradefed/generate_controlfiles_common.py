@@ -190,9 +190,9 @@ def get_bundle_abi(filename):
     In this case we chose to guess by filename, but we could also parse the
     xml files in the module. (Maybe this needs to be done in the future.)
     """
-    if filename.endswith('_x86-arm.zip'):
+    if filename.endswith('arm.zip'):
         return 'arm'
-    if filename.endswith('_x86-x86.zip'):
+    if filename.endswith('x86.zip'):
         return 'x86'
 
     assert(CONFIG['TRADEFED_CTS_COMMAND'] =='gts'), 'Only GTS has empty ABI'
@@ -349,16 +349,21 @@ def get_dependencies(modules, abi, is_public, is_camerabox_test):
     return ', '.join(dependencies)
 
 
-def get_job_retries(modules, is_public):
+def get_job_retries(modules, is_public, suites):
     """Define the number of job retries associated with a module.
 
     @param module: CTS module which will be tested in the control file. If a
                    special module is specified, the control file will runs all
                    the tests without retry.
+    @param is_public: true if the control file is for moblab (public) use.
+    @param suites: the list of suites that the control file belongs to.
     """
     # TODO(haddowk): remove this when cts p has stabalized.
     if is_public:
         return CONFIG['CTS_JOB_RETRIES_IN_PUBLIC']
+    # Presubmit check forces to set 2 or more retries for CQ tests.
+    if 'suite:bvt-arc' in suites:
+        return 2
     retries = 1  # 0 is NO job retries, 1 is one retry etc.
     for module in modules:
         # We don't want job retries for module collection or special cases.
@@ -397,7 +402,8 @@ def get_max_retries(modules, abi, suites, is_public):
         retry = 3
     # During qualification we want at least 9 retries, possibly more.
     # TODO(kinaba&yoshiki): do not abuse suite names
-    if set(CONFIG['QUAL_SUITE_NAMES']) & set(suites):
+    if CONFIG.get('QUAL_SUITE_NAMES') and \
+            set(CONFIG['QUAL_SUITE_NAMES']) & set(suites):
         retry = max(retry, CONFIG['CTS_QUAL_RETRIES'])
     # Collection should never have a retry. This needs to be last.
     if modules.intersection(get_collect_modules(is_public)):
@@ -435,7 +441,11 @@ def get_extra_args(modules, is_public):
     extra_args = set()
     preconditions = []
     login_preconditions = []
+    prerequisites = []
     for module in modules:
+        # Remove this once JDK9 is the base JDK for lab.
+        if CONFIG.get('USE_JDK9', False):
+            extra_args.add('use_jdk9=True')
         if is_public:
             extra_args.add('warn_on_test_retry=False')
             extra_args.add('retry_manual_tests=True')
@@ -444,6 +454,8 @@ def get_extra_args(modules, is_public):
             preconditions.extend(CONFIG['PRECONDITION'].get(module, []))
             login_preconditions.extend(
                 CONFIG['LOGIN_PRECONDITION'].get(module, []))
+            prerequisites.extend(CONFIG['PREREQUISITES'].get(module,[]))
+
     # Notice: we are just squishing the preconditions for all modules together
     # with duplicated command removed. This may not always be correct.
     # In such a case one should split the bookmarks in a way that the modules
@@ -459,6 +471,9 @@ def get_extra_args(modules, is_public):
     if login_preconditions:
         extra_args.add('login_precondition_commands=[%s]' % ', '.join(
             deduped(login_preconditions)))
+    if prerequisites:
+        extra_args.add("prerequisites=['%s']" % "', '".join(
+            deduped(prerequisites)))
     return sorted(list(extra_args))
 
 
@@ -517,7 +532,7 @@ def get_authkey(is_public):
     return CONFIG['AUTHKEY']
 
 
-def _format_collect_cmd(retry):
+def _format_collect_cmd(is_public, retry):
     """Returns a list specifying tokens for tradefed to list all tests."""
     if retry:
         return None
@@ -527,6 +542,9 @@ def _format_collect_cmd(retry):
     for m in CONFIG['MEDIA_MODULES']:
         cmd.append('--module-arg')
         cmd.append('%s:skip-media-download:true' % m)
+    if (not is_public and
+            not CONFIG.get('NEEDS_DYNAMIC_CONFIG_ON_COLLECTION', True)):
+        cmd.append('--dynamic-config-url=')
     return cmd
 
 
@@ -581,6 +599,11 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
         not (modules.intersection(CONFIG['BVT_ARC'] + CONFIG['SMOKE'] +
              CONFIG['NEEDS_DEVICE_INFO']))):
         cmd.append('--skip-device-info')
+    # If NEEDS_DYNAMIC_CONFIG is set, disable the feature except on the modules
+    # that explicitly set as needed.
+    if (not is_public and CONFIG.get('NEEDS_DYNAMIC_CONFIG') and
+            not modules.intersection(CONFIG['NEEDS_DYNAMIC_CONFIG'])):
+        cmd.append('--dynamic-config-url=')
 
     return cmd
 
@@ -590,7 +613,7 @@ def get_run_template(modules, is_public, retry=False):
     cmd = None
     if modules.intersection(get_collect_modules(is_public)):
         if _COLLECT in modules or _PUBLIC_COLLECT in modules:
-            cmd = _format_collect_cmd(retry=retry)
+            cmd = _format_collect_cmd(is_public, retry=retry)
         elif _ALL in modules:
             cmd = _format_modules_cmd(is_public, modules, retry=retry)
     else:
@@ -648,13 +671,16 @@ def calculate_timeout(modules, suites):
     """
     if 'suite:bvt-arc' in suites:
         return int(3600 * CONFIG['BVT_TIMEOUT'])
-    if ((set(CONFIG['QUAL_SUITE_NAMES']) & set(suites)) and
+    if CONFIG.get('QUAL_SUITE_NAMES') and \
+            CONFIG.get('QUAL_TIMEOUT') and \
+            ((set(CONFIG['QUAL_SUITE_NAMES']) & set(suites)) and \
             not (_COLLECT in modules or _PUBLIC_COLLECT in modules)):
         return int(3600 * CONFIG['QUAL_TIMEOUT'])
 
     timeout = 0
     # First module gets 1h (standard), all other half hour extra (heuristic).
-    delta = 3600
+    default_timeout = int(3600 * CONFIG['CTS_TIMEOUT_DEFAULT'])
+    delta = default_timeout
     for module in modules:
         if module in CONFIG['CTS_TIMEOUT']:
             # Modules that run very long are encoded here.
@@ -668,7 +694,7 @@ def calculate_timeout(modules, suites):
             timeout += 300
         else:
             timeout += delta
-            delta = 1800
+            delta = default_timeout // 2
     return timeout
 
 
@@ -733,7 +759,7 @@ def get_controlfile_content(combined,
             is_camerabox_test=(camera_facing is not None)),
         extra_artifacts=get_extra_artifacts(modules),
         extra_artifacts_host=get_extra_artifacts_host(modules),
-        job_retries=get_job_retries(modules, is_public),
+        job_retries=get_job_retries(modules, is_public, suites),
         max_result_size_kb=get_max_result_size_kb(modules, is_public),
         revision=revision,
         build=build,
@@ -797,6 +823,8 @@ def get_tradefed_data(path, is_public, abi):
             modules.add(line)
         elif line.startswith('Gts'):
             # Older GTS plainly lists the module names
+            modules.add(line)
+        elif line.startswith('Vts'):
             modules.add(line)
         elif line.startswith('cts-'):
             modules.add(line)
@@ -1019,7 +1047,7 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
     combined = combine_modules_by_bookmark(set(modules))
     for key in combined:
         write_controlfile('all.' + key, combined[key], abi, revision, build,
-                          uri, CONFIG['QUAL_SUITE_NAMES'], is_public)
+                          uri, CONFIG.get('QUAL_SUITE_NAMES'), is_public)
 
 
 def write_qualification_and_regression_controlfile(abi, revision, build, uri,
@@ -1041,7 +1069,8 @@ def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public):
     if is_public:
         suites = [CONFIG['MOBLAB_SUITE_NAME']]
     else:
-        suites = CONFIG['INTERNAL_SUITE_NAMES'] + CONFIG['QUAL_SUITE_NAMES']
+        suites = CONFIG['INTERNAL_SUITE_NAMES'] \
+               + CONFIG.get('QUAL_SUITE_NAMES', [])
     for module in get_collect_modules(is_public):
         write_controlfile(module, set([module]), abi, revision, build, uri,
                           suites, is_public)

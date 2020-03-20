@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts-9.0_r10-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts-9.0_r10-linux_x86-x86.zip',
+    'arm': _PUBLIC_CTS + 'android-cts-9.0_r11-linux_x86-arm.zip',
+    'x86': _PUBLIC_CTS + 'android-cts-9.0_r11-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.4.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -57,6 +57,11 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+        elif self._timeout <= 3600:
+            # TODO(kinaba): remove once crbug.com/1041833 is resolved.
+            logging.info('Add more debug log for small modules')
+            cmd.append('--log-level-display=VERBOSE')
+
         return cmd
 
     def _get_default_bundle_url(self, bundle):
@@ -78,23 +83,24 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
 
     def initialize_camerabox(self, camera_facing, cmdline_args):
         """Configure DUT and chart running in camerabox environment.
+
         @param camera_facing: the facing of the DUT used in testing
                               (e.g. 'front', 'back').
         """
         chart_address = camerabox_utils.get_chart_address(
-                [h.hostname for h in self._hosts], cmdline_args)
+            [h.hostname for h in self._hosts], cmdline_args)
         if chart_address is None:
             raise error.TestFail(
-                    'Error: missing option --args="chart=<CHART IP>"')
+                'Error: missing option --args="chart=<CHART IP>"')
         chart_hosts = [hosts.create_host(ip) for ip in chart_address]
 
         self.chart_fixtures = [
-                camerabox_utils.ChartFixture(h, self._SCENE_URI)
-                for h in chart_hosts
+            camerabox_utils.ChartFixture(h, self._SCENE_URI)
+            for h in chart_hosts
         ]
         self.dut_fixtures = [
-                camerabox_utils.DUTFixture(self, h, camera_facing)
-                for h in self._hosts
+            camerabox_utils.DUTFixture(self, h, camera_facing)
+            for h in self._hosts
         ]
 
         for chart in self.chart_fixtures:
@@ -119,15 +125,15 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                    cmdline_args=None,
                    hard_reboot_on_failure=False):
         super(cheets_CTS_P, self).initialize(
-                bundle=bundle,
-                uri=uri,
-                host=host,
-                hosts=hosts,
-                max_retry=max_retry,
-                load_waivers=load_waivers,
-                retry_manual_tests=retry_manual_tests,
-                warn_on_test_retry=warn_on_test_retry,
-                hard_reboot_on_failure=hard_reboot_on_failure)
+            bundle=bundle,
+            uri=uri,
+            host=host,
+            hosts=hosts,
+            max_retry=max_retry,
+            load_waivers=load_waivers,
+            retry_manual_tests=retry_manual_tests,
+            warn_on_test_retry=warn_on_test_retry,
+            hard_reboot_on_failure=hard_reboot_on_failure)
         if camera_facing:
             self.initialize_camerabox(camera_facing, cmdline_args)
 
@@ -137,8 +143,6 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                  retry_template=None,
                  target_module=None,
                  target_plan=None,
-                 target_class=None,
-                 target_method=None,
                  needs_push_media=False,
                  enable_default_apps=False,
                  executable_test_count=None,
@@ -147,6 +151,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                  extra_artifacts_host=[],
                  precondition_commands=[],
                  login_precondition_commands=[],
+                 prerequisites=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
         """Runs the specified CTS once, but with several retries.
 
@@ -162,8 +167,6 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                                          '{session_id}']
         @param target_module: the name of test module to run.
         @param target_plan: the name of the test plan to run.
-        @param target_class: the name of the class to be tested.
-        @param target_method: the name of the method to be tested.
         @param needs_push_media: need to push test media streams.
         @param executable_test_count: the known number of tests in the run
         @param bundle: the type of the CTS bundle: 'arm' or 'x86'
@@ -171,6 +174,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         dut before the test is run, the scripts must already be installed.
         @param login_precondition_commands: a list of scripts to be run on the
         dut before the log-in for the test is performed.
+        @param prerequisites: a list of prerequisites that identify rogue DUTs.
         @param timeout: time after which tradefed can be interrupted.
         """
         self._run_tradefed_with_retries(
@@ -190,10 +194,12 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             extra_artifacts_host=extra_artifacts_host,
             cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
-            precondition_commands=precondition_commands)
+            precondition_commands=precondition_commands,
+            prerequisites=prerequisites)
 
     def cleanup_camerabox(self):
         """Cleanup configuration on DUT and chart tablet for running in
+
         camerabox environment.
         """
         for dut in self.dut_fixtures:

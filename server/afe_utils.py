@@ -12,15 +12,24 @@ NOTE: This module should only be used in the context of a running test. Any
 import common
 import logging
 import traceback
+import urlparse
+
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.site_utils import stable_version_classify as sv
 from autotest_lib.server import site_utils as server_utils
+from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
+from autotest_lib.server.cros.dynamic_suite import tools
+
+from chromite.lib import auto_updater
+from chromite.lib import remote_access
 
 
-AFE = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10)
+# TODO(crbug.com/1058095) -- the autotest frontend has been turned down
+# reduce the timeouts so that we spend less time failing to contact it.
+AFE = frontend_wrappers.RetryingAFE(timeout_min=(1.0/60), delay_sec=1)
 _CROS_VERSION_MAP = AFE.get_stable_version_map(AFE.CROS_IMAGE_TYPE)
 _FIRMWARE_VERSION_MAP = AFE.get_stable_version_map(AFE.FIRMWARE_IMAGE_TYPE)
 _FAFT_VERSION_MAP = AFE.get_stable_version_map(AFE.FAFT_IMAGE_TYPE)
@@ -68,33 +77,6 @@ def get_stable_cros_image_name_v2(info, _config_override=None):
         return out
     logging.debug("get_stable_cros_image_name_v2: board %s from autotest frontend" % info.board)
     return get_stable_cros_image_name(info.board)
-
-
-def get_stable_servo_cros_image_name_v2(servo_version_from_hi, board, _config_override=None):
-    """
-    @param servo_version_from_hi (string or None) : the stable version image name taken from the host info store.
-                                                    A value of None means that that the host_info_store does not exist or
-                                                    ultimately not contain a servo_stable_version field.
-    @param board (string) : the board of the labstation or servo v3 that we're getting the stable version of
-    """
-    logging.debug("get_stable_servo_cros_image_name_v2: servo_version_from_hi (%s) board (%s)" % (servo_version_from_hi, board))
-    if sv.classify_board(board, _config_override=_config_override) != sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_servo_cros_image_name_v2: servo version for board (%s) from afe" % board)
-        return get_stable_cros_image_name(board)
-    if servo_version_from_hi is not None:
-        logging.debug("get_stable_servo_cros_image_name_v2: servo version (%s) from host_info_store" % servo_version_from_hi)
-        out = _format_image_name(board=board, version=servo_version_from_hi)
-        _log_image_name(out)
-        return out
-    logging.debug("get_stable_servo_cros_image_name_v2: no servo version provided. board is (%s)" % board)
-    logging.debug("get_stable_servo_cros_image_name_v2: falling back to afe if possible")
-    out = None
-    # get_stable_cros_image_name uses the AFE as the source of truth.
-    try:
-        out = get_stable_cros_image_name(board)
-    except Exception:
-        logging.error("get_stable_servo_cros_image_name_v2: error falling back to AFE (%s)" % traceback.format_exc())
-    return out
 
 
 def get_stable_cros_image_name(board):
@@ -178,7 +160,7 @@ def add_provision_labels(host, version_prefix, image_name,
 
 def machine_install_and_update_labels(host, update_url,
                                       use_quick_provision=False,
-                                      with_cheets=False):
+                                      with_cheets=False, staging_server=None):
     """Install a build and update the version labels on a host.
 
     @param host: Host object where the build is to be installed.
@@ -187,13 +169,36 @@ def machine_install_and_update_labels(host, update_url,
         quick-provision for the update.
     @param with_cheets: If true, installation is for a specific, custom
         version of Android for a target running ARC.
+    @param staging_server: Sever where images have been staged. Typically,
+        an instance of dev_server.ImageServer.
     """
     clean_provision_labels(host)
-    updater = autoupdater.ChromiumOSUpdater(
+    # TODO(crbug.com/1049346): The try-except block exists to catch failures in
+    # chromite auto_updater that may occur due to autotest/chromite version
+    # mismatch. This should be removed once that bug is resolved.
+    try:
+        # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
+        # update_url.
+        image_name = '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
+        with remote_access.ChromiumOSDeviceHandler(host.ip) as device:
+            updater = auto_updater.ChromiumOSUpdater(
+                device, build_name=None, payload_dir=image_name,
+                staging_server=staging_server.url(), reboot=False)
+            updater.CheckPayloads()
+            updater.PreparePayloadPropsFile()
+            updater.RunUpdate()
+            updater.SetClearTpmOwnerRequest()
+            updater.RebootAndVerify()
+        repo_url = tools.get_package_url(staging_server.url(), image_name)
+        host_attributes = {ds_constants.JOB_REPO_URL: repo_url}
+    except Exception as e:
+        logging.warning(
+            "Chromite auto_updater has failed with the exception: %s", e)
+        logging.debug("Attempting to provision with quick provision.")
+        updater = autoupdater.ChromiumOSUpdater(
             update_url, host=host, use_quick_provision=use_quick_provision)
-    image_name, host_attributes = updater.run_update()
+        image_name, host_attributes = updater.run_update()
     if with_cheets:
         image_name += provision.CHEETS_SUFFIX
-
-    add_provision_labels(
-            host, host.VERSION_PREFIX, image_name, host_attributes)
+    add_provision_labels(host, host.VERSION_PREFIX, image_name,
+                         host_attributes)

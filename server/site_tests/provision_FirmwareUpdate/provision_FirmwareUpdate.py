@@ -18,7 +18,6 @@ class provision_FirmwareUpdate(test.test):
 
     version = 1
 
-
     def stage_image_to_usb(self, host):
         """Stage the current ChromeOS image on the USB stick connected to the
         servo.
@@ -35,28 +34,8 @@ class provision_FirmwareUpdate(test.test):
             logging.debug('ChromeOS image %s is staged on the USB stick.',
                           info.build)
 
-    def get_ro_firmware_ver(self, host):
-        """Get the RO firmware version from the host."""
-        result = host.run('crossystem ro_fwid', ignore_status=True)
-        if result.exit_status == 0:
-            # The firmware ID is something like "Google_Board.1234.56.0".
-            # Remove the prefix "Google_Board".
-            return result.stdout.split('.', 1)[1]
-        else:
-            return None
-
-    def get_rw_firmware_ver(self, host):
-        """Get the RW firmware version from the host."""
-        result = host.run('crossystem fwid', ignore_status=True)
-        if result.exit_status == 0:
-            # The firmware ID is something like "Google_Board.1234.56.0".
-            # Remove the prefix "Google_Board".
-            return result.stdout.split('.', 1)[1]
-        else:
-            return None
-
     def run_once(self, host, value, rw_only=False, stage_image_to_usb=False,
-                flash_device=None):
+                 fw_path=None):
         """The method called by the control file to start the test.
 
         @param host:  a CrosHost object of the machine to update.
@@ -66,12 +45,12 @@ class provision_FirmwareUpdate(test.test):
         @param rw_only: True to only update the RW firmware.
         @param stage_image_to_usb: True to stage the current ChromeOS image on
                 the USB stick connected to the servo. Default is False.
-        @param flash_device: Servo V4 Flash Device name.
-                             Use this to choose one other than the default
-                             device when  servod has run in dual V4 device mode.
-                             e.g. flash_device='ccd_cr50'
+        @param fw_path: Path to local firmware image for installing without
+                        devserver.
+
+        @raise TestFail: if the firmware version remains unchanged.
         """
-        orig_act_dev = None
+
         try:
             host.repair_servo()
 
@@ -79,30 +58,12 @@ class provision_FirmwareUpdate(test.test):
             if stage_image_to_usb:
                 self.stage_image_to_usb(host)
 
-            if flash_device == 'ccd_cr50':
-                orig_act_dev = host.servo.get('active_v4_device').strip()
-                host.servo.set('active_v4_device', 'ccd_cr50')
-
-            host.firmware_install(build=value, rw_only=rw_only,
-                                  dest=self.resultsdir)
+            host.firmware_install(build=value,
+                                  rw_only=rw_only,
+                                  dest=self.resultsdir,
+                                  local_tarball=fw_path,
+                                  verify_version=True,
+                                  try_scp=True)
         except Exception as e:
             logging.error(e)
             raise error.TestFail, str(e), sys.exc_info()[2]
-        finally:
-            if orig_act_dev != None:
-                host.servo.set_nocheck('active_v4_device', orig_act_dev)
-
-        # DUT reboots after the above firmware_install(). Wait it to boot.
-        host.test_wait_for_boot()
-
-        # Only care about the version number.
-        firmware_ver = value.rsplit('-', 1)[1]
-        if not rw_only:
-            current_ro_ver = self.get_ro_firmware_ver(host)
-            if current_ro_ver != firmware_ver:
-                raise error.TestFail('Failed to update RO, still version %s' %
-                                     current_ro_ver)
-        current_rw_ver = self.get_rw_firmware_ver(host)
-        if current_rw_ver != firmware_ver:
-            raise error.TestFail('Failed to update RW, still version %s' %
-                                 current_rw_ver)

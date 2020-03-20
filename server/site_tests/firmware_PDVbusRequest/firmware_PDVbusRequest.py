@@ -38,7 +38,8 @@ class firmware_PDVbusRequest(FirmwareTest):
     USBC_SINK_VOLTAGE = 5
     VBUS_TOLERANCE = 0.12
 
-    VOLTAGE_SEQUENCE = [5, 12, 20, 12, 5, 20, 5, 5, 12, 12, 20]
+    VOLTAGE_SEQUENCE = [5, 9, 10, 12, 15, 20, 15, 12, 9, 5, 20,
+                        5, 5, 9, 9, 10, 10, 12, 12, 15, 15, 20]
 
     def _compare_vbus(self, expected_vbus_voltage, ok_to_fail):
         """Check VBUS using pdtester
@@ -63,9 +64,9 @@ class firmware_PDVbusRequest(FirmwareTest):
             result = 'PASS'
         return result, result_str
 
-    def initialize(self, host, cmdline_args, flip_cc=False):
+    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False):
         super(firmware_PDVbusRequest, self).initialize(host, cmdline_args)
-        self.setup_pdtester(flip_cc)
+        self.setup_pdtester(flip_cc, dts_mode)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         self.usbpd.send_command('chan 0')
@@ -106,7 +107,14 @@ class firmware_PDVbusRequest(FirmwareTest):
 
         pdtester_failures = []
         logging.info('Start PDTester initiated tests')
-        for voltage in self.pdtester.get_charging_voltages():
+        charging_voltages = self.pdtester.get_charging_voltages()
+
+        if dut_voltage_limit not in charging_voltages:
+            raise error.TestError('Plugged a wrong charger to servo v4? '
+                                  '%dV not in supported voltages %s.' %
+                                  dut_voltage_limit, str(charging_voltages))
+
+        for voltage in charging_voltages:
             logging.info('********* %r *********', voltage)
             # Set charging voltage
             self.pdtester.charge(voltage)
@@ -156,6 +164,10 @@ class firmware_PDVbusRequest(FirmwareTest):
             if v > dut_voltage_limit:
                 logging.info('Target = %02dV: skipped, over the limit %0dV',
                              v, dut_voltage_limit)
+                continue
+            if v not in charging_voltages:
+                logging.info('Target = %02dV: skipped, voltage unsupported, '
+                             'update hdctools and servo_v4 firmware', v)
                 continue
             # Build 'pd <port> dev <voltage> command
             cmd = 'pd %d dev %d' % (dut_state['port'], v)

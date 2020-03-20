@@ -108,7 +108,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         stack = self._get_server_stack_state(lowest_frames=3, highest_frames=6)
         # If logger executable exists on the DUT, use it to report the command.
         # Then regardless of logger, run the command as usual.
-        command = ('test -x /usr/bin/logger && /usr/bin/logger --id=$$ '
+        command = ('test -x /usr/bin/logger && /usr/bin/logger --id '
                    '--tag=autotest "from [%s] ssh_run: %s"; %s'
                    % (stack, utils.sh_escape(command), command))
         return command
@@ -306,6 +306,11 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         @raises AutoservRunError: if the command failed
         @raises AutoservSSHTimeout: ssh connection has timed out
         """
+        # For example if the command is a list, we need to convert it to a
+        # string first.
+        if not isinstance(command, basestring):
+            command = ' '.join(command)
+
         if timeout is None:
             timeout = 3600
         start_time = time.time()

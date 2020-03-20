@@ -16,18 +16,6 @@ def _ExecuteOobeCmd(browser, cmd):
     oobe.ExecuteJavaScript(cmd)
 
 
-def SwitchToRemora(browser):
-    """Switch to Remora enrollment.
-
-    @param browser: telemetry browser object.
-    """
-    chrome.Chrome.wait_for_browser_restart(
-            lambda: _ExecuteOobeCmd(browser,
-                                    'Oobe.remoraRequisitionForTesting();'),
-            browser)
-    utils.poll_for_condition(lambda: browser.oobe_exists, timeout=30)
-
-
 def RemoraEnrollment(browser, user_id, password):
     """Enterprise login for a Remora device.
 
@@ -35,7 +23,6 @@ def RemoraEnrollment(browser, user_id, password):
     @param user_id: login credentials user_id.
     @param password: login credentials password.
     """
-    SwitchToRemora(browser)
     browser.oobe.NavigateGaiaLogin(
             user_id, password, enterprise_enroll=True,
             for_user_triggered_enrollment=False)

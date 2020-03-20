@@ -10,36 +10,45 @@ import os
 import StringIO
 
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 
 
 class ChartFixture:
     """Sets up chart tablet to display dummy scene image."""
     DISPLAY_SCRIPT = '/usr/local/autotest/bin/display_chart.py'
+    OUTPUT_LOG = '/tmp/chart_service.log'
 
     def __init__(self, chart_host, scene_uri):
         self.host = chart_host
         self.scene_uri = scene_uri
         self.display_pid = None
+        self.host.run(['rm', '-f', self.OUTPUT_LOG])
 
     def initialize(self):
         """Prepare scene file and display it on chart host."""
         logging.info('Prepare scene file')
-        chart_dir = self.host.get_tmp_dir()
+        tmpdir = self.host.get_tmp_dir()
         scene_path = os.path.join(
-                chart_dir, self.scene_uri[self.scene_uri.rfind('/') + 1:])
+                tmpdir, self.scene_uri[self.scene_uri.rfind('/') + 1:])
         self.host.run('wget', args=('-O', scene_path, self.scene_uri))
-        self.host.run('chmod', args=('-R', '755', chart_dir))
 
         logging.info('Display scene file')
         self.display_pid = self.host.run_background(
-                'python %s %s' % (self.DISPLAY_SCRIPT, scene_path))
+                'python2 {script} {scene} >{log} 2>&1'.format(
+                        script=self.DISPLAY_SCRIPT,
+                        scene=scene_path,
+                        log=self.OUTPUT_LOG))
         # TODO(inker): Suppose chart should be displayed very soon. Or require
         # of waiting until chart actually displayed.
 
     def cleanup(self):
         """Cleanup display script."""
         if self.display_pid is not None:
-            self.host.run('kill', args=('-2', str(self.display_pid)))
+            self.host.run(
+                    'kill',
+                    args=('-2', str(self.display_pid)),
+                    ignore_status=True)
+            self.host.get_file(self.OUTPUT_LOG, '.')
 
 
 def get_chart_address(host_address, args):
@@ -55,10 +64,7 @@ def get_chart_address(host_address, args):
     if address is not None:
         return address.split(',')
     elif utils.is_in_container():
-        return [
-                utils.get_lab_chart_address(host)
-                for host in host_address
-        ]
+        return [utils.get_lab_chart_address(host) for host in host_address]
     else:
         return None
 
@@ -105,9 +111,10 @@ class DUTFixture:
                 else:
                     root.remove(p)
         else:
-            with self.test._login_chrome(
+            with login.login_chrome(
+                    hosts=[self.host],
                     board=self.test._get_board_name(),
-                    reboot=False), self._set_selinux_permissive():
+            ), self._set_selinux_permissive():
                 has_front_camera = (
                         'feature:android.hardware.camera.front' in self.host.
                         run_output('android-sh -c "pm list features"'))

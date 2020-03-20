@@ -49,8 +49,20 @@ class AutoservVerifyError(error.AutoservError):
     pass
 
 
+class AutoservNonCriticalVerifyError(error.AutoservError):
+    """
+    Exception for failures from `Verifier` objects that not critical enough to
+    conclude the target host is in a bad state.
+    """
+    pass
+
+
 _DependencyFailure = collections.namedtuple(
         '_DependencyFailure', ('dependency', 'error', 'tag'))
+
+
+_NonCriticalDependencyFailure = collections.namedtuple(
+    '_NonCriticalDependencyFailure', ('dependency', 'error', 'tag'))
 
 
 class AutoservVerifyDependencyError(error.AutoservError):
@@ -116,6 +128,17 @@ class AutoservVerifyDependencyError(error.AutoservError):
         logging.debug('%s:', deps)
         for failure in self.failures:
             logging.debug('    %s', failure.dependency)
+
+    def is_critical(self, silent=False):
+        for error in self.failures:
+            if isinstance(error, _NonCriticalDependencyFailure):
+                if not silent:
+                    logging.warning("%s is still failing but forgiven because"
+                                    " it raised a non-critical error.",
+                                    error.tag)
+            else:
+                return True
+        return False
 
 
 class AutoservRepairError(error.AutoservError):
@@ -219,6 +242,9 @@ class _DependencyNode(object):
         for v in verifiers:
             try:
                 v._verify_host(host, silent)
+            except AutoservNonCriticalVerifyError as e:
+                failures.add(_NonCriticalDependencyFailure(v.description,
+                                                           str(e), v.tag))
             except AutoservVerifyDependencyError as e:
                 failures.update(e.failures)
             except Exception as e:
@@ -359,13 +385,20 @@ class Verifier(_DependencyNode):
         self._verify_dependencies(host, silent)
         logging.info('Verifying this condition: %s', self.description)
         try:
+            logging.debug('Start verify task: %s.', type(self).__name__)
             self.verify(host)
             self._record_good(host, silent)
         except Exception as e:
-            logging.exception('Failed: %s', self.description)
+            message = 'Failed: %s'
+            if isinstance(e, AutoservNonCriticalVerifyError):
+                message = '(Non-critical)Failed: %s'
+            logging.exception(message, self.description)
             self._result = e
             self._record_fail(host, silent, e)
             raise
+        finally:
+            logging.debug('Finished verify task: %s.', type(self).__name__)
+
         self._result = True
 
     def verify(self, host):
@@ -860,6 +893,7 @@ class RepairStrategy(object):
         attempted = False
         for ra in self._repair_actions:
             try:
+                logging.debug('Start repair task: %s.', type(ra).__name__)
                 ra._repair_host(host, silent)
             except Exception as e:
                 # all logging and exception handling was done at
@@ -867,6 +901,7 @@ class RepairStrategy(object):
                 pass
             finally:
                 self._send_action_metrics(host, ra)
+                logging.debug('Finished repair task: %s.', type(ra).__name__)
                 if ra.status not in ('skipped', 'blocked'):
                     attempted = True
 
@@ -892,4 +927,3 @@ def _filter_metrics_hostname(host):
         return host.hostname
     else:
         return _DISALLOWED_HOSTNAME
-

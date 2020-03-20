@@ -37,6 +37,7 @@ from autotest_lib.server.cros.tradefed import cts_expected_failure_parser
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 from autotest_lib.server.cros.tradefed import tradefed_utils
+from autotest_lib.server.cros.tradefed import tradefed_prerequisite
 
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
@@ -85,7 +86,8 @@ class TradefedTest(test.test):
                    load_waivers=True,
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
-                   hard_reboot_on_failure=False):
+                   hard_reboot_on_failure=False,
+                   use_jdk9=False):
         """Sets up the tools and binary bundles for the test."""
         self._install_paths = []
         # TODO(pwang): Remove host if we enable multiple hosts everywhere.
@@ -135,6 +137,15 @@ class TradefedTest(test.test):
         self._install_files(constants.SDK_TOOLS_DIR,
                             constants.SDK_TOOLS_FILES, permission)
 
+        # If use_jdk9 is set true, use jdk9 than default jdk8.
+        if use_jdk9:
+            try:
+                os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
+                os.environ['PATH'] = os.environ['JAVA_HOME']\
+                                  + '/bin:' + os.environ['PATH']
+            except OSError:
+                logging.error('Can\'t change current PATH directory')
+
         # Install the tradefed bundle.
         bundle_install_path = self._install_bundle(
             uri or self._get_default_bundle_url(bundle))
@@ -154,6 +165,16 @@ class TradefedTest(test.test):
         self._notest_modules = self._get_expected_failures('notest_modules',
                 bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
+
+    def postprocess(self):
+        """Postprocess: output performance values."""
+        path = tradefed_utils.get_test_result_xml_path(
+            os.path.join(self.resultsdir,
+                         self._get_tradefed_base_dir()))
+        if path:
+            for metric in tradefed_utils.get_perf_metrics_from_test_result_xml(
+                path, self.resultsdir):
+                self.output_perf_value(**metric)
 
     def cleanup(self):
         """Cleans up any dirtied state."""
@@ -257,19 +278,22 @@ class TradefedTest(test.test):
         @param host: DUT that need to be connected.
         @return boolean indicating if adb connected successfully.
         """
+        # Add ADB_TRACE=all for debugging adb connection failures.
+        env = os.environ.copy()
+        env['ADB_TRACE'] = 'all'
         try:
             # This may fail return failure due to a race condition in adb
             # connect (b/29370989). If adb is already connected, this command
             # will immediately return success.
             host_port = self._get_adb_target(host)
             result = self._run_adb_cmd(
-                host, args=('connect', host_port), verbose=True,
+                host, args=('connect', host_port), verbose=True, env=env,
                 ignore_status=True,
                 timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             if result.exit_status != 0:
                 return False
 
-            result = self._run_adb_cmd(host, args=('devices',),
+            result = self._run_adb_cmd(host, args=('devices',), env=env,
                 timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             if not re.search(r'{}\s+(device|unauthorized)'.format(
                     re.escape(host_port)), result.stdout):
@@ -282,7 +306,7 @@ class TradefedTest(test.test):
             # a race between detecting the connected device and actually being
             # able to run a commmand with authenticated adb.
             result = self._run_adb_cmd(
-                host, args=('shell', 'exit'), ignore_status=True,
+                host, args=('shell', 'exit'), env=env, ignore_status=True,
                 timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             return result.exit_status == 0
         except error.CmdTimeoutError as e:
@@ -307,19 +331,15 @@ class TradefedTest(test.test):
                                         pipes.quote(filename))
         self._android_shell(host, android_cmd)
 
-    def _connect_adb(self, host, pubkey_path):
+    def _connect_adb(self, host, pubkey):
         """Sets up ADB connection to the ARC container.
 
         @param host: DUT that should be connected to.
-        @param pubkey_path: public key that adb keygen generated.
+        @param pubkey: public key that adb keygen && adb pubkey generated.
         """
         logging.info('Setting up adb connection.')
-        # Generate and push keys for adb.
-        # TODO(elijahtaylor): Extract this code to arc_common and de-duplicate
-        # code in arc.py on the client side tests.
-        with open(pubkey_path, 'r') as f:
-            self._write_android_file(host, constants.ANDROID_ADB_KEYS_PATH,
-                                     f.read())
+        # Push keys for adb.
+        self._write_android_file(host, constants.ANDROID_ADB_KEYS_PATH, pubkey)
         self._android_shell(
             host, 'restorecon ' + pipes.quote(constants.ANDROID_ADB_KEYS_PATH))
 
@@ -383,9 +403,10 @@ class TradefedTest(test.test):
         """Ready ARC and adb in parallel for running tests via tradefed."""
         # Generate the adb keys on server.
         key_path = os.path.join(self.tmpdir, 'test_key')
-        pubkey_path = key_path + '.pub'
         self._run_adb_cmd(verbose=True, args=('keygen', pipes.quote(key_path)))
         os.environ['ADB_VENDOR_KEYS'] = key_path
+        pubkey = self._run_adb_cmd(verbose=True,
+                args=('pubkey', pipes.quote(key_path))).stdout
 
         for _ in range(2):
             try:
@@ -396,7 +417,7 @@ class TradefedTest(test.test):
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.
                 for host in self._hosts:
-                    self._connect_adb(host, pubkey_path)
+                    self._connect_adb(host, pubkey)
                     self._disable_adb_install_dialog(host)
                     self._wait_for_arc_boot(host)
                 self._verify_arc_hosts()
@@ -513,7 +534,7 @@ class TradefedTest(test.test):
 
         The caller of this function is responsible for holding the cache lock.
 
-        @param uri: The Google Storage or dl.google.com uri.
+        @param uri: The Google Storage, dl.google.com or local uri.
         @return Path to the downloaded object, name.
         """
         # We are hashing the uri instead of the binary. This is acceptable, as
@@ -538,9 +559,9 @@ class TradefedTest(test.test):
         return self._download_to_dir(uri, output_dir)
 
     def _download_to_dir(self, uri, output_dir):
-        """Downloads the gs|http|https uri from the storage server.
+        """Downloads the gs|http|https|file uri from the storage server.
 
-        @param uri: The Google Storage or dl.google.com uri.
+        @param uri: The Google Storage, dl.google.com or local uri.
         @output_dir: The directory where the downloaded file should be placed.
         @return Path to the downloaded object, name.
         """
@@ -550,7 +571,7 @@ class TradefedTest(test.test):
         output = os.path.join(output_dir, filename)
 
         self._safe_makedirs(output_dir)
-        if parsed.scheme not in ['gs', 'http', 'https']:
+        if parsed.scheme not in ['gs', 'http', 'https', 'file']:
             raise error.TestFail(
                 'Error: Unknown download scheme %s' % parsed.scheme)
         if parsed.scheme in ['http', 'https']:
@@ -559,6 +580,15 @@ class TradefedTest(test.test):
             utils.run(
                 'wget',
                 args=('--report-speed=bits', '-O', output, uri),
+                verbose=True)
+            return output
+
+        if parsed.scheme in ['file']:
+            logging.info('Copy the local file from %s to %s.', parsed.path,
+                         output_dir)
+            utils.run(
+                'cp',
+                args=('-f', parsed.path, output),
                 verbose=True)
             return output
 
@@ -1102,12 +1132,18 @@ class TradefedTest(test.test):
                                    extra_artifacts_host=[],
                                    cts_uri=None,
                                    login_precondition_commands=[],
-                                   precondition_commands=[]):
+                                   precondition_commands=[],
+                                   prerequisites=[]):
         """Run CTS/GTS with retry logic.
 
         We first kick off the specified module. Then rerun just the failures
         on the next MAX_RETRY iterations.
         """
+        for prereq in prerequisites:
+            result = tradefed_prerequisite.check(prereq, self._hosts)
+            if not result[0]:
+                raise error.TestError(result[1])
+
         # On dev and beta channels timeouts are sharp, lenient on stable.
         self._timeout = timeout
         if (self._get_release_branch_number() >=

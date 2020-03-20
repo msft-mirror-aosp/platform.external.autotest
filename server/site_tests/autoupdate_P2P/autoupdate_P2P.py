@@ -8,7 +8,6 @@ import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
-from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.update_engine import update_engine_test
 from chromite.lib import retry_util
@@ -22,10 +21,6 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
     _CURRENT_URL_INDEX_PREF = 'current-url-index'
     _P2P_FIRST_ATTEMPT_TIMESTAMP_PREF = 'p2p-first-attempt-timestamp'
     _P2P_NUM_ATTEMPTS_PREF = 'p2p-num-attempts'
-
-
-    def setup(self):
-        self._omaha_devserver = None
 
 
     def cleanup(self):
@@ -110,18 +105,17 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         @param update_url: the url to call for updating the DUT.
 
         """
-        logging.info('Updating first DUT with a regular update.')
         host.reboot()
-
         # Sometimes update request is lost if checking right after reboot so
         # make sure update_engine is ready.
         self._set_active_p2p_host(self._hosts[0])
         utils.poll_for_condition(condition=self._is_update_engine_idle,
                                  desc='Waiting for update engine idle')
+
+        logging.info('Updating first DUT with a regular update.')
         try:
-            updater = autoupdater.ChromiumOSUpdater(update_url, host)
-            updater.update_image()
-        except autoupdater.RootFSUpdateError:
+            self._check_for_update(update_url, wait_for_completion=True)
+        except error.AutoservRunError:
             logging.exception('Failed to update the first DUT.')
             raise error.TestFail('Updating the first DUT failed. Error: %s.' %
                                  self._get_last_error_string())
@@ -167,17 +161,16 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         @param update_url: the url to call for updating the DUT.
 
         """
-        logging.info('Updating second host via p2p.')
         host.reboot()
         self._set_active_p2p_host(self._hosts[1])
         utils.poll_for_condition(condition=self._is_update_engine_idle,
                                  desc='Waiting for update engine idle')
+
+        logging.info('Updating second host via p2p.')
         try:
-            # Start a non-interactive update which is required for p2p.
-            updater = autoupdater.ChromiumOSUpdater(update_url, host,
-                                                    interactive=False)
-            updater.update_image()
-        except autoupdater.RootFSUpdateError:
+            self._check_for_update(update_url, wait_for_completion=True,
+                                   interactive=False)
+        except error.AutoservRunError:
             logging.exception('Failed to update the second DUT via P2P.')
             raise error.TestFail('Failed to update the second DUT. Error: %s' %
                                  self._get_last_error_string())
@@ -281,6 +274,16 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
 
     def run_once(self, job_repo_url=None, too_many_attempts=False,
                  deadline_expired=False):
+        """
+        Testing autoupdate via P2P.
+
+        @param job_repo_url: A url linking to autotest packages.
+        @param too_many_attempts: True to test what happens with too many
+                                  failed update attempts.
+        @param deadline_expired: True to test what happens when the deadline
+                                 between peers has expired
+
+        """
         logging.info('Hosts for this test: %s', self._hosts)
 
         self._too_many_attempts = too_many_attempts
@@ -292,9 +295,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         # Get an N-to-N delta payload update url to use for the test.
         # P2P updates are very slow so we will only update with a delta payload.
         update_url = self.get_update_url_for_test(job_repo_url,
-                                                  full_payload=False,
-                                                  critical_update=False,
-                                                  max_updates=2)
+                                                  full_payload=False)
 
         # The first device just updates normally.
         self._update_dut(self._hosts[0], update_url)

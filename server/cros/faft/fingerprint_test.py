@@ -19,7 +19,7 @@ class FingerprintTest(test.test):
     _FINGERPRINT_BOARD_NAME_SUFFIX = '_fp'
 
     # Location of firmware from the build on the DUT
-    _FINGERPRINT_BUILD_FW_GLOB = '/opt/google/biod/fw/*_fp*.bin'
+    _FINGERPRINT_BUILD_FW_DIR = '/opt/google/biod/fw'
 
     _GENIMAGES_SCRIPT_NAME = 'gen_test_images.sh'
     _GENIMAGES_OUTPUT_DIR_NAME = 'images'
@@ -55,22 +55,35 @@ class FingerprintTest(test.test):
     _KEY_TYPE_MP = 'mp'
 
     # EC board names for FPMCUs
+    _FP_BOARD_NAME_BLOONCHIPPER = 'bloonchipper'
+    _FP_BOARD_NAME_DARTMONKEY = 'dartmonkey'
     _FP_BOARD_NAME_NOCTURNE = 'nocturne_fp'
     _FP_BOARD_NAME_NAMI = 'nami_fp'
 
     # Map from signing key ID to type of signing key
     _KEY_ID_MAP_ = {
+        # bloonchipper
+        '61382804da86b4156d666cc9a976088f8b647d44': _KEY_TYPE_DEV,
+        '07b1af57220c196e363e68d73a5966047c77011e': _KEY_TYPE_PRE_MP,
+
+        # dartmonkey
+        '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799': _KEY_TYPE_MP,
+
         # nocturne
         '6f38c866182bd9bf7a4462c06ac04fa6a0074351': _KEY_TYPE_MP,
+        'f6f7d96c48bd154dbae7e3fe3a3b4c6268a10934': _KEY_TYPE_PRE_MP,
 
         # nami
         '754aea623d69975a22998f7b97315dd53115d723': _KEY_TYPE_PRE_MP,
         '35486c0090ca390408f1fbbf2a182966084fe2f8': _KEY_TYPE_MP
+
     }
 
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
+        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.3455-bc55b4ae',  # not yet finalized
+        _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
         _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
         _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
     }
@@ -87,6 +100,14 @@ class FingerprintTest(test.test):
     #   2) Used to verify that files that end up in the build (and therefore
     #      what we release) is exactly what we expect.
     _FIRMWARE_VERSION_MAP = {
+        _FP_BOARD_NAME_BLOONCHIPPER: {
+            'bloonchipper_v2.0.3455-bc55b4ae.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '821bb12c74920396f5ef8829ec283cdb73ef47b00dc0fdd417c1dc7fd87b4f18',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.3455-bc55b4ae',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.3455-bc55b4ae',
+                _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+        },
         _FP_BOARD_NAME_NOCTURNE: {
             'nocturne_fp_v2.2.110-b936c0a3c.bin': {
                 _FIRMWARE_VERSION_SHA256SUM: '9da32787d68e2ac408be55a4d8c7de13e0f8c0a4a9912d69108b91794e90ee4b',
@@ -98,6 +119,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_SHA256SUM: 'e21223d6a3dbb7a6c6f2905f602f972b8a2b6d0fb52e262931745dae808e7c4d',
                 _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
                 _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.2.191-1d529566e',
+                _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
+            },
+            'nocturne_fp_v2.0.3266-99b5e2c98.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '73d822071518cf1b6e705d9c5903c2bcf37bae536784b275b96d916c44d3b6b7',
+                _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
+                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.3266-99b5e2c98',
                 _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
             },
         },
@@ -114,7 +141,27 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.2.191-1d529566e',
                 _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
             },
+            'nami_fp_v2.0.3266-99b5e2c98.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '115bca7045428ce6639b41cc0fdc13d1ca414f6e76842e805a9fbb798a9cd7ad',
+                _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
+                _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.3266-99b5e2c98',
+                _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
+            },
         },
+        _FP_BOARD_NAME_DARTMONKEY: {
+            'dartmonkey_v2.0.2887-311310808.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '90716b73d1db5a1b6108530be1d11addf3b13e643bc6f96d417cbce383f3cb18',
+                _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
+                _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.2887-311310808',
+                _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
+            },
+            'dartmonkey_v2.0.3266-99b5e2c98.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'ac1c74b5d2676923f041ee1a27bf5b9892fab1d4f82fe924550a9b55917606ae',
+                _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
+                _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.3266-99b5e2c98',
+                _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
+            }
+        }
     }
 
     _BIOD_UPSTART_JOB_NAME = 'biod'
@@ -125,6 +172,7 @@ class FingerprintTest(test.test):
     _INIT_ENTROPY_CMD = 'bio_wash --factory_init'
 
     _CROS_FP_ARG = '--name=cros_fp'
+    _CROS_CONFIG_FINGERPRINT_PATH = '/fingerprint'
     _ECTOOL_RO_VERSION = 'RO version'
     _ECTOOL_RW_VERSION = 'RW version'
     _ECTOOL_FIRMWARE_COPY = 'Firmware copy'
@@ -275,7 +323,10 @@ class FingerprintTest(test.test):
         cmd = ' '.join([gen_script,
                         self.get_fp_board(),
                         os.path.basename(build_fw_file)])
-        self.run_server_cmd(cmd)
+        result = self.run_server_cmd(cmd)
+        if result.exit_status != 0:
+            raise error.TestFail('Failed to run test image generation script')
+
         os.chdir(pushd)
 
         # Copy resulting files to DUT tmp dir
@@ -353,13 +404,36 @@ class FingerprintTest(test.test):
         self.set_hardware_write_protect(enable_hardware_write_protect)
 
     def get_fp_board(self):
-        """Returns name of fingerprint EC."""
+        """Returns name of fingerprint EC.
+
+        nocturne and nami are special cases and have "_fp" appended. Newer
+        FPMCUs have unique names.
+        See go/cros-fingerprint-firmware-branching-and-signing.
+        """
+
+        # For devices that don't have unibuild support (which is required to
+        # use cros_config).
+        # TODO(https://crrev.com/i/2313151): nami has unibuild support, but
+        # needs its model.yaml updated.
+        # TODO(https://crbug.com/1030862): remove when nocturne has cros_config
+        #  support.
         board = self.host.get_board().replace(ds_constants.BOARD_PREFIX, '')
-        return board + self._FINGERPRINT_BOARD_NAME_SUFFIX
+        if board == 'nami' or board == 'nocturne':
+            return board + self._FINGERPRINT_BOARD_NAME_SUFFIX
+
+        # Use cros_config to get fingerprint board.
+        result = self._run_cros_config_cmd('board')
+        if result.exit_status != 0:
+            raise error.TestFail(
+                'Unable to get fingerprint board with cros_config')
+        return result.stdout.rstrip()
 
     def get_build_fw_file(self):
         """Returns full path to build FW file on DUT."""
-        ls_cmd = 'ls ' + self._FINGERPRINT_BUILD_FW_GLOB
+
+        fp_board = self.get_fp_board()
+        ls_cmd = 'ls ' + self._FINGERPRINT_BUILD_FW_DIR + '/' + fp_board \
+                 + '*.bin'
         result = self.run_cmd(ls_cmd)
         if result.exit_status != 0:
             raise error.TestFail('Unable to find firmware from build on device')
@@ -719,6 +793,13 @@ class FingerprintTest(test.test):
     def _run_ectool_cmd(self, command):
         """Runs ectool on DUT; return result with output and exit code."""
         cmd = 'ectool ' + self._CROS_FP_ARG + ' ' + command
+        result = self.run_cmd(cmd)
+        return result
+
+    def _run_cros_config_cmd(self, command):
+        """Runs cros_config on DUT; return result with output and exit code."""
+        cmd = 'cros_config ' + self._CROS_CONFIG_FINGERPRINT_PATH + ' ' \
+              + command
         result = self.run_cmd(cmd)
         return result
 

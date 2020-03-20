@@ -12,7 +12,6 @@ import tempfile
 
 from autotest_lib.client.cros.audio import audio_data
 from autotest_lib.client.cros.audio import audio_test_data
-from autotest_lib.client.cros.audio import cras_configs
 from autotest_lib.client.cros.audio import sox_utils
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids as ids
@@ -655,95 +654,24 @@ class CrosWidgetHandler(WidgetHandler):
     Properties:
         _audio_facade: An AudioFacadeRemoteAdapter to access Cros device
                        audio functionality.
-        _plug_handler: A PlugHandler for performing plug and unplug.
 
     """
-    def __init__(self, audio_facade, plug_handler):
+    def __init__(self, audio_facade):
         """Initializes a CrosWidgetHandler.
 
         @param audio_facade: An AudioFacadeRemoteAdapter to access Cros device
                              audio functionality.
-        @param plug_handler: A PlugHandler object for plug and unplug.
 
         """
         self._audio_facade = audio_facade
-        self._plug_handler = plug_handler
-
 
     def plug(self):
         """Plugs this widget."""
         logging.info('CrosWidgetHandler: plug')
-        self._plug_handler.plug()
-
 
     def unplug(self):
         """Unplugs this widget."""
         logging.info('CrosWidgetHandler: unplug')
-        self._plug_handler.unplug()
-
-
-class PlugHandler(object):
-    """This class abstracts plug/unplug action for widgets on Cros device.
-
-    This class will be used by CrosWidgetHandler when performinng plug/unplug.
-
-    """
-    def __init__(self):
-        """Initializes a PlugHandler."""
-
-
-    def plug(self):
-        """Plugs in the widget/device."""
-        raise NotImplementedError('plug() not implemented.')
-
-
-    def unplug(self):
-        """Unplugs the widget/device."""
-        raise NotImplementedError('unplug() not implemented.')
-
-
-class DummyPlugHandler(PlugHandler):
-    """A dummy class that does not do anything for plug() or unplug().
-
-    This class can be used by Cros widgets that have alternative ways of
-    performing plug and unplug.
-
-    """
-
-    def plug(self):
-        """Does nothing for plug."""
-        logging.info('DummyPlugHandler: plug')
-
-
-    def unplug(self):
-        """Does nothing for unplug."""
-        logging.info('DummyPlugHandler: unplug')
-
-
-class JackPluggerPlugHandler(PlugHandler):
-    """This class abstracts plug/unplug action with motor on Cros device.
-
-    Properties:
-        _jack_plugger: A JackPlugger object to access the jack plugger robot
-
-    """
-
-    def __init__(self, jack_plugger):
-        """Initializes a JackPluggerPlugHandler.
-
-        @param jack_plugger: A JackPlugger object
-        """
-        self._jack_plugger = jack_plugger
-
-
-    def plug(self):
-        """plugs in the jack to the cros device."""
-        self._jack_plugger.plug()
-
-
-    def unplug(self):
-        """Unplugs the jack from the cros device."""
-        self._jack_plugger.unplug()
 
 
 class CrosInputWidgetHandlerError(Exception):
@@ -852,54 +780,6 @@ class CrosUSBInputWidgetHandler(CrosInputWidgetHandler):
                                 rate=48000)
 
 
-class CrosIntMicInputWidgetHandler(CrosInputWidgetHandler):
-    """
-    This class abstracts a Cros device audio input widget handler on int mic.
-
-    """
-    def __init__(self, audio_facade, plug_handler, system_facade):
-        """Initializes a CrosWidgetHandler.
-
-        @param audio_facade: An AudioFacadeRemoteAdapter to access Cros device
-                             audio functionality.
-        @param plug_handler: A PlugHandler object for plug and unplug.
-        @param system_facade: A SystemFacadeRemoteAdapter to access Cros device
-                             audio functionality.
-
-        """
-        super(CrosIntMicInputWidgetHandler, self).__init__(
-                audio_facade, plug_handler)
-        self._system_facade = system_facade
-
-
-    def set_proper_gain(self):
-        """Sets a proper gain.
-
-        On some boards, the default gain is too high. It relies on automatic
-        gain control in application level to adjust the gain. Since there is no
-        automatic gain control in the test, we set a proper gain before
-        recording.
-
-        """
-        board = self._system_facade.get_current_board()
-        proper_gain = cras_configs.get_proper_internal_mic_gain(board)
-
-        if proper_gain is None:
-            logging.debug('No proper gain for %s', board)
-            return
-
-        logging.debug('Set gain to %f dB on internal mic for %s ',
-                      proper_gain / 100, board)
-        self._audio_facade.set_input_gain(proper_gain)
-
-
-    def start_recording(self, node_type=None, block_size=None):
-        """Starts recording audio with proper gain."""
-        self.set_proper_gain()
-        super(CrosIntMicInputWidgetHandler, self).start_recording(
-                node_type, block_size)
-
-
 class CrosHotwordingWidgetHandler(CrosInputWidgetHandler):
     """
     This class abstracts a Cros device audio input widget handler on hotwording.
@@ -910,18 +790,17 @@ class CrosHotwordingWidgetHandler(CrosInputWidgetHandler):
                                 channel=1,
                                 rate=16000)
 
-    def __init__(self, audio_facade, plug_handler, system_facade):
+    def __init__(self, audio_facade, system_facade):
         """Initializes a CrosWidgetHandler.
 
         @param audio_facade: An AudioFacadeRemoteAdapter to access Cros device
                              audio functionality.
-        @param plug_handler: A PlugHandler object for plug and unplug.
         @param system_facade: A SystemFacadeRemoteAdapter to access Cros device
                              system functionality.
 
         """
         super(CrosHotwordingWidgetHandler, self).__init__(
-                audio_facade, plug_handler)
+                audio_facade)
         self._system_facade = system_facade
 
 

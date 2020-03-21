@@ -15,7 +15,7 @@ def get_network_stats(machine):
 
         # The information is not critical, so ping the DUT first
         # and if it doesn't reply quickly, give up.
-        if utils.ping(dut.hostname, tries=1, timeout=3) != 0:
+        if dut.use_icmp and utils.ping(dut.hostname, tries=1, timeout=3) != 0:
             logging.info('ping failed: not collecting network stats')
             return
 

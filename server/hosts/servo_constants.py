@@ -9,6 +9,7 @@ _CONFIG = global_config.global_config
 # Names of the host attributes in the database that represent the values for
 # the servo_host and servo_port for a servo connected to the DUT.
 SERVO_HOST_ATTR = 'servo_host'
+SERVO_HOST_SSH_PORT_ATTR = 'servo_host_ssh_port'
 SERVO_PORT_ATTR = 'servo_port'
 SERVO_BOARD_ATTR = 'servo_board'
 # Model is inferred from host labels.
@@ -21,6 +22,7 @@ SERVO_RECOVERY_MODE = 'servo_recovery'
 SERVO_ATTR_KEYS = (
         SERVO_BOARD_ATTR,
         SERVO_HOST_ATTR,
+        SERVO_HOST_SSH_PORT_ATTR,
         SERVO_PORT_ATTR,
         SERVO_SERIAL_ATTR,
         SERVO_SETUP_ATTR,

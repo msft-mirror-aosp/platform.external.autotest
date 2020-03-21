@@ -53,7 +53,12 @@ class BaseServoHost(ssh_host.SSHHost):
     UPDATE_STATE = autotest_enum.AutotestEnum('IDLE', 'RUNNING',
                                               'PENDING_REBOOT')
 
-    def _initialize(self, hostname, is_in_lab=None, *args, **dargs):
+    def _initialize(self,
+                    hostname,
+                    is_in_lab=None,
+                    servo_host_ssh_port=None,
+                    *args,
+                    **dargs):
         """Construct a BaseServoHost object.
 
         @param is_in_lab: True if the servo host is in Cros Lab. Default is set
@@ -61,9 +66,13 @@ class BaseServoHost(ssh_host.SSHHost):
                           called to check if the servo host is in Cros lab.
 
         """
+        if servo_host_ssh_port is not None:
+            dargs['port'] = int(servo_host_ssh_port)
+
         super(BaseServoHost, self)._initialize(hostname=hostname,
                                                *args, **dargs)
-        self._is_localhost = (self.hostname == 'localhost')
+        self._is_localhost = (self.hostname == 'localhost'
+                              and servo_host_ssh_port is not None)
         if self._is_localhost:
             self._is_in_lab = False
         elif is_in_lab is None:

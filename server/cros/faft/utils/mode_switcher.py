@@ -884,7 +884,8 @@ class _BaseModeSwitcher(object):
             raise ConnectionError(msg)
 
         # Wait for the system to respond to ping before attempting ssh
-        if not self.client_host.ping_wait_up(timeout):
+        if self.client_host.use_icmp and not self.client_host.ping_wait_up(
+                timeout):
             logging.warning("-[FAFT]-[ system did not respond to ping ]")
         if self.client_host.wait_up(timeout):
             # Check the FAFT client is avaiable.

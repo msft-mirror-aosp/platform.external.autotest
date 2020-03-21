@@ -30,7 +30,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import retry
-from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import base_servohost
@@ -1554,6 +1553,16 @@ def get_servo_args_for_host(dut_host):
     servo_args = {k: v for k, v in six.iteritems(info.attributes)
                   if k in servo_constants.SERVO_ATTR_KEYS}
 
+    if servo_constants.SERVO_HOST_SSH_PORT_ATTR in servo_args:
+        try:
+            servo_args[servo_constants.SERVO_HOST_SSH_PORT_ATTR] = int(
+                    servo_args[servo_constants.SERVO_HOST_SSH_PORT_ATTR])
+        except ValueError:
+            logging.error('servo host port is not an int: %s',
+                          servo_args[servo_constants.SERVO_HOST_SSH_PORT_ATTR])
+            # Reset servo_args because we don't want to use an invalid port.
+            servo_args.pop(servo_constants.SERVO_HOST_SSH_PORT_ATTR, None)
+
     if servo_constants.SERVO_PORT_ATTR in servo_args:
         try:
             servo_args[servo_constants.SERVO_PORT_ATTR] = int(
@@ -1682,7 +1691,7 @@ def create_servo_host(dut,
         servo_args[servo_constants.SERVO_RECOVERY_MODE] = True
 
     newhost = ServoHost(**servo_args)
-    if not newhost.is_up_fast(count=3):
+    if newhost.use_icmp and not newhost.is_up_fast(count=3):
         # ServoHost has internal check to wait if servo-host is in reboot
         # process. If servo-host still is not available this check will stop
         # further attempts as we do not have any option to recover servo_host.

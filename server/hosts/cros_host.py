@@ -49,6 +49,7 @@ from autotest_lib.site_utils.admin_audit import constants as audit_const
 from autotest_lib.site_utils.admin_audit import verifiers as audit_verify
 from six.moves import zip
 
+
 # In case cros_host is being ran via SSP on an older Moblab version with an
 # older chromite version.
 try:
@@ -297,6 +298,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
           arguments.
         """
         servo_attrs = (servo_constants.SERVO_HOST_ATTR,
+                       servo_constants.SERVO_HOST_SSH_PORT_ATTR,
                        servo_constants.SERVO_PORT_ATTR,
                        servo_constants.SERVO_SERIAL_ATTR,
                        servo_constants.SERVO_BOARD_ATTR,
@@ -349,8 +351,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param try_servo_recovery:  When True, start servod in recovery mode.
                                     See servo_host for details.
         """
-        super(CrosHost, self)._initialize(hostname=hostname,
-                                          *args, **dargs)
+        super(CrosHost, self)._initialize(hostname=hostname, *args, **dargs)
         self._repair_strategy = cros_repair.create_cros_repair_strategy()
         # hold special dut_state for repair process
         self._device_repair_state = None
@@ -370,9 +371,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 result_dir=self.get_result_dir())
 
         # TODO(otabek@): remove when b/171414073 closed
-        pingable_before_servo = self.is_up_fast(count=3)
-        if pingable_before_servo:
-            logging.info('DUT is pingable before init Servo.')
+        if self.use_icmp:
+            pingable_before_servo = self.is_up_fast(count=3)
+            if pingable_before_servo:
+                logging.info('DUT is pingable before init Servo.')
+        else:
+            logging.info('Skipping ping to DUT before init Servo.')
         _servo_host, servo_state = servo_host.create_servo_host(
                 dut=self,
                 servo_args=servo_args,
@@ -391,19 +395,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         # TODO(otabek@): remove when b/171414073 closed
         # Introduced to collect cases when servo made DUT not sshable
-        pingable_after_servo = self.is_up_fast(count=3)
-        if pingable_after_servo:
-            logging.info('DUT is pingable after init Servo.')
-        elif pingable_before_servo:
-            logging.info('DUT was pingable before init Servo but not now')
-            if servo_args and self._servo_host and self._servo_host.hostname:
-                # collect stats only for tests.
-                dut_ping_servo_init_data = {
-                        'host': self.hostname,
-                        'servo_host': self._servo_host.hostname,
-                }
-                metrics.Counter('chromeos/autotest/dut_ping_servo_init2'
-                                ).increment(fields=dut_ping_servo_init_data)
+        if self.use_icmp:
+            pingable_after_servo = self.is_up_fast(count=3)
+            if pingable_after_servo:
+                logging.info('DUT is pingable after init Servo.')
+            elif pingable_before_servo:
+                logging.info('DUT was pingable before init Servo but not now')
+                if servo_args and self._servo_host and self._servo_host.hostname:
+                    # collect stats only for tests.
+                    dut_ping_servo_init_data = {
+                            'host': self.hostname,
+                            'servo_host': self._servo_host.hostname,
+                    }
+                    metrics.Counter('chromeos/autotest/dut_ping_servo_init2'
+                                    ).increment(
+                                            fields=dut_ping_servo_init_data)
+        else:
+            logging.info('Skipping ping to DUT after init Servo.')
 
         # TODO(waihong): Do the simplication on Chameleon too.
         self._chameleon_host = chameleon_host.create_chameleon_host(
@@ -465,7 +473,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                           self.btpeer)
         except Exception as e:
             logging.error('Exception %s in initialize_btpeer', str(e))
-
 
 
     def get_cros_repair_image_name(self):
@@ -1988,7 +1995,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @return True iff the host answered to ping before the timeout.
 
         """
-        return self._ping_wait_for_status(self._PING_STATUS_UP, timeout)
+        if self.use_icmp:
+            return self._ping_wait_for_status(self._PING_STATUS_UP, timeout)
+        else:
+            logging.debug('Using SSH instead of ICMP for ping_wait_up.')
+            return self.wait_up(timeout)
 
     def ping_wait_down(self, timeout):
         """Wait until the host no longer responds to `ping`.
@@ -2002,7 +2013,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 timeout.
 
         """
-        return self._ping_wait_for_status(self._PING_STATUS_DOWN, timeout)
+        if self.use_icmp:
+            return self._ping_wait_for_status(self._PING_STATUS_DOWN, timeout)
+        else:
+            logging.debug('Using SSH instead of ICMP for ping_wait_down.')
+            return self.wait_down(timeout)
 
     def _is_host_port_forwarded(self):
         """Checks if the dut is connected over port forwarding.

@@ -21,6 +21,8 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 from autotest_lib.server.hosts import rpc_server_tracker
 from autotest_lib.server.hosts import ssh_multiplex
+from autotest_lib.server import autoserv_parser
+
 import six
 from six.moves import filter
 
@@ -66,10 +68,17 @@ class AbstractSSHHost(remote.RemoteHost):
     # Timeout for main ssh connection setup, in seconds.
     DEFAULT_START_MAIN_SSH_TIMEOUT_S = 5
 
-    def _initialize(self, hostname, user="root", port=_DEFAULT_SSH_PORT,
-                    password="", is_client_install_supported=True,
-                    afe_host=None, host_info_store=None, connection_pool=None,
-                    *args, **dargs):
+    def _initialize(self,
+                    hostname,
+                    user="root",
+                    port=_DEFAULT_SSH_PORT,
+                    password="",
+                    is_client_install_supported=True,
+                    afe_host=None,
+                    host_info_store=None,
+                    connection_pool=None,
+                    *args,
+                    **dargs):
         super(AbstractSSHHost, self)._initialize(hostname=hostname,
                                                  *args, **dargs)
         """
@@ -97,6 +106,18 @@ class AbstractSSHHost(remote.RemoteHost):
         self.known_hosts_file = tempfile.mkstemp()[1]
         self._rpc_server_tracker = rpc_server_tracker.RpcServerTracker(self);
 
+        # Read the value of the use_icmp flag, setting to true if missing.
+        args_string = autoserv_parser.autoserv_parser.options.args
+        args_dict = utils.args_to_dict(
+                args_string.split() if args_string is not None else '')
+        value = args_dict.get('use_icmp', 'true').lower()
+        if value == 'true':
+            self._use_icmp = True
+        elif value == 'false':
+            self._use_icmp = False
+        else:
+            raise ValueError(
+                    'use_icmp must be true or false: {}'.format(value))
         """
         Main SSH connection background job, socket temp directory and socket
         control path option. If main-SSH is enabled, these fields will be
@@ -157,6 +178,11 @@ class AbstractSSHHost(remote.RemoteHost):
             return self.hostname
         else:
             return '%s:%d' % (self.hostname, self.port)
+
+    @property
+    def use_icmp(self):
+        """Returns True if icmp pings are allowed."""
+        return self._use_icmp
 
 
     # Though it doesn't use self here, it is not declared as staticmethod
@@ -789,6 +815,12 @@ class AbstractSSHHost(remote.RemoteHost):
         @param count How many time try to ping before decide that host is not
                     reachable by ping.
         """
+        if not self._use_icmp:
+            stack = self._get_server_stack_state(lowest_frames=1,
+                                                 highest_frames=7)
+            logging.warning("is_up_fast called with icmp disabled from %s!",
+                            stack)
+            return True
         ping_config = ping_runner.PingConfig(self.hostname,
                                              count=count,
                                              ignore_result=True,
@@ -933,7 +965,7 @@ class AbstractSSHHost(remote.RemoteHost):
     def verify_connectivity(self):
         super(AbstractSSHHost, self).verify_connectivity()
 
-        logging.info('Pinging host ' + self.host_port)
+        logging.info('Pinging host %s', self.host_port)
         self.ssh_ping()
         logging.info("Host (ssh) %s is alive", self.host_port)
 
@@ -1134,6 +1166,9 @@ class AbstractSSHHost(remote.RemoteHost):
         # * cached status is False, so the method can check if the host is up
         #   again.
         # * If the cached status is older than `expiration_seconds`
+        # If we have icmp disabled, treat that as a cached ping.
+        if not self._use_icmp:
+            return True
         expire_time = time.time() - expiration_seconds
         if (self._cached_up_status_updated is None or
                 not self._cached_up_status or

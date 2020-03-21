@@ -26,6 +26,8 @@ class MockHost(servo_host.ServoHost):
         self.hostname = "chromeos1-row1-rack1-host1"
         self._dut_hostname = 'dut-' + self.hostname
         self.servo_port = '9991'
+        self._is_localhost = False
+        self._use_icmp = True
 
     def run(self, command, **kwargs):
         """Finds the matching result by command value"""

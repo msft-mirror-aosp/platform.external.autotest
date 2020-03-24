@@ -3187,9 +3187,9 @@ class BluetoothAdapterTests(test.test):
     # -------------------------------------------------------------------
 
     @test_retry_and_log
-    def test_power_consumption(self, max_power_mw):
+    def test_power_consumption(self, device, max_power_mw):
         """Test the average power consumption."""
-        power_mw = self.device.servod.MeasurePowerConsumption()
+        power_mw = device.servod.MeasurePowerConsumption()
         self.results = {'power_mw': power_mw}
 
         if (power_mw is None):

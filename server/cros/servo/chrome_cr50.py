@@ -1156,3 +1156,23 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         serial = self.get_devid().replace('0x', '').replace(' ', '-').upper()
         logging.info('CCD serial: %s', serial)
         return serial
+
+    def check_boot_mode(self, mode_exp='NORMAL'):
+        """Query the boot mode to Cr50, and compare it against mode_exp.
+
+        Args:
+            mode_exp: expecting boot mode. It should be either 'NORMAL'
+                      or 'NO_BOOT'.
+        Returns:
+            True if the boot mode matches mode_exp.
+            False, otherwise.
+        Raises:
+            TestError: Input parameter is not valid.
+        """
+
+        if mode_exp not in ['NORMAL', 'NO_BOOT']:
+            raise error.TestError('parameter, mode_exp is not valid: %s' %
+                                  mode_exp)
+        rv = self.send_command_retry_get_output('ec_comm',
+                ['boot_mode\s*:\s*(\w+)'], safe=True)
+        return mode_exp == rv[0][1]

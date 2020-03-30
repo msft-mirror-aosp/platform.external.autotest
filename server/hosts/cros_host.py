@@ -904,8 +904,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @raises AutoservError if the image fails to boot.
 
         """
-        logging.info('Downloading image to USB, then booting from it. Usb boot '
-                     'timeout = %s', usb_boot_timeout)
+        if image_url:
+            logging.info('Downloading image to USB, then booting from it.'
+                         ' Usb boot timeout = %s', usb_boot_timeout)
+        else:
+            logging.info('Booting from USB directly. Usb boot timeout = %s',
+                    usb_boot_timeout)
+
+        metrics_field = {'download': bool(image_url)}
+        metrics.Counter(
+            'chromeos/autotest/provision/servo_install/download_image'
+            ).increment(fields=metrics_field)
+
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/boot_duration'):
             self.servo.install_recovery_image(image_url)
@@ -1094,6 +1104,20 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             return None
 
 
+    def get_battery_state(self):
+        """Get the battery charging state.
+
+        @return: A string representing the battery charging state. It can be
+                 'Charging', 'Fully charged', or 'Discharging'.
+        """
+        try:
+            info = self.get_power_supply_info()
+            logging.info(info)
+            return info['Battery']['state']
+        except (KeyError, ValueError, error.AutoservRunError):
+            return None
+
+
     def get_battery_display_percentage(self):
         """Get the battery display percentage.
 
@@ -1274,10 +1298,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.cleanup_services()
         except (error.AutotestRunError, error.AutoservRunError,
                 FactoryImageCheckerException):
-            logging.warning('Unable to restart ui, rebooting device.')
-            # Since restarting the UI fails fall back to normal Autotest
-            # cleanup routines, i.e. reboot the machine.
-            super(CrosHost, self).cleanup()
+            logging.warning('Unable to restart ui.')
+        
+        # cleanup routines, i.e. reboot the machine.
+        super(CrosHost, self).cleanup()
+
         # Check if the rpm outlet was manipulated.
         if self.has_power():
             self._cleanup_poweron()

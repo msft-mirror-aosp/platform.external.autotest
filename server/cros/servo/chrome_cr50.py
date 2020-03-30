@@ -66,7 +66,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # Use the first group from ACTIVE_VERSION to match the active board id
     # partition.
     BID_ERROR = 'read_board_id: failed'
-    BID_FORMAT = ':\s+[a-f0-9:]+ '
+    BID_FORMAT = ':\s+[a-f0-9:]{26} '
     ACTIVE_BID = r'%s.*(\1%s|%s.*>)' % (ACTIVE_VERSION, BID_FORMAT,
             BID_ERROR)
     WAKE_CHAR = '\n\n'
@@ -437,12 +437,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                     logging.debug('%d %s not in %s', i, rv, past_rv)
                 past_rv.append(rv)
             except Exception, e:
-                err = str(e)
-                logging.info('attempt %d %r: %s', i, command, str(e))
+                err = e
+                logging.info('attempt %d %r: %s %s', i, command, type(e),
+                             str(e))
         if compare_output:
             logging.info('No consistent output for %r %s', command,
                          pprint.pformat(past_rv))
-        raise error.TestError('Issue sending %r command: %s' % (command, err))
+        raise error.TestError('Issue sending %r command: %r' % (command, err))
 
 
     def get_deep_sleep_count(self):

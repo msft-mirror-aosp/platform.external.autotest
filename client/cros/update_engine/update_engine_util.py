@@ -296,7 +296,8 @@ class UpdateEngineUtil(object):
         Appends the dictionary kwargs to the URL url as query string.
 
         This function will replace the already existing query strings in url
-        with the ones in the input dictionary.
+        with the ones in the input dictionary. I also removes keys that have
+        a None value.
 
         @param url: The given input URL.
         @param query_dicl: A dictionary of key/values to be converted to query
@@ -311,7 +312,8 @@ class UpdateEngineUtil(object):
         for k, v in query_dict.items():
             parsed_query[k] = [v]
         parsed_url[3] = '&'.join(
-            '%s=%s' % (k, v[0]) for k, v in parsed_query.items())
+            '%s=%s' % (k, v[0]) for k, v in parsed_query.items()
+            if v[0] is not None)
         return urlparse.urlunsplit(parsed_url)
 
 
@@ -361,17 +363,20 @@ class UpdateEngineUtil(object):
             self._get_file(file, self.resultsdir)
 
 
-    def _get_second_last_update_engine_log(self):
+    def _get_update_engine_log(self, r_index=0):
         """
-        Gets second last update engine log text.
+        Returns the last r_index'th update_engine log.
 
-        This is useful for getting the last update engine log before a reboot.
+        @param r_index: The index of the last r_index'th update_engine log
+                in order they were created. For example:
+                  0 -> last one.
+                  1 -> second to last one.
 
         """
         files = self._run('ls -t -1 %s' %
                           self._UPDATE_ENGINE_LOG_DIR).stdout.splitlines()
-        return self._run('cat %s%s' % (self._UPDATE_ENGINE_LOG_DIR,
-                                       files[1])).stdout
+        return self._run('cat %s' % os.path.join(self._UPDATE_ENGINE_LOG_DIR,
+                                                 files[r_index])).stdout
 
 
     def _create_custom_lsb_release(self, update_url, build='0.0.0.0', **kwargs):
@@ -394,9 +399,9 @@ class UpdateEngineUtil(object):
         self._run('mkdir %s' % os.path.dirname(self._CUSTOM_LSB_RELEASE),
                   ignore_status=True)
         self._run('touch %s' % self._CUSTOM_LSB_RELEASE)
-        self._run('echo CHROMEOS_RELEASE_VERSION=%s > %s' %
+        self._run('echo "CHROMEOS_RELEASE_VERSION=%s" > %s' %
                   (build, self._CUSTOM_LSB_RELEASE))
-        self._run('echo CHROMEOS_AUSERVER=%s >> %s' %
+        self._run('echo "CHROMEOS_AUSERVER=%s" >> %s' %
                   (update_url, self._CUSTOM_LSB_RELEASE))
 
 

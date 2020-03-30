@@ -36,15 +36,18 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._oobe.ExecuteJavaScript('Oobe.skipToUpdateForTesting()')
 
 
-    def _start_oobe_update(self, update_url, critical_update):
+    def _start_oobe_update(self, update_url, critical_update, full_payload):
         """
         Jump to the update check screen at OOBE and wait for update to start.
 
         @param update_url: The omaha update URL we expect to call.
         @param critical_update: True if the update is critical.
+        @param full_payload: Whether we want the full payload or delta.
 
         """
-        self._create_custom_lsb_release(update_url)
+        self._create_custom_lsb_release(update_url,
+                                        critical_update=critical_update,
+                                        full_payload=full_payload)
         # Start chrome instance to interact with OOBE.
         self._chrome = chrome.Chrome(auto_login=False)
         self._oobe = self._chrome.browser.oobe
@@ -69,7 +72,8 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                     raise e
 
 
-    def run_once(self, image_url, cellular=False, critical_update=True):
+    def run_once(self, image_url, cellular=False, critical_update=True,
+                 full_payload=None):
         """
         Test that will start a forced update at OOBE.
 
@@ -78,11 +82,13 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param cellular: True if we should run this test using a sim card.
         @param critical_update: True if we should have deadline:now in omaha
                                 response.
+        @param full_payload: Whether the payload is full or delta. None if we
+                             don't have to care about it.
 
         """
 
         if critical_update:
-            self._start_oobe_update(image_url, critical_update)
+            self._start_oobe_update(image_url, critical_update, full_payload)
             return
 
         metadata_dir = autotemp.tempdir()
@@ -99,7 +105,7 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
             update_url = nebraska.get_update_url(
                 critical_update=critical_update)
             if not cellular:
-                self._start_oobe_update(update_url, critical_update)
+                self._start_oobe_update(update_url, critical_update, None)
                 return
 
             try:
@@ -111,7 +117,7 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                     test_env.shill.connect_service_synchronous(service,
                                                                connect_timeout)
 
-                    self._start_oobe_update(update_url, critical_update)
+                    self._start_oobe_update(update_url, critical_update, None)
 
                     # Remove the custom omaha server from lsb release because
                     # after we reboot it will no longer be running.

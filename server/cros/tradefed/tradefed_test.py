@@ -57,7 +57,7 @@ class TradefedTest(test.test):
     _BRANCH_MAX_RETRY = [(0, 5), (1, 30),      # dev=5, beta=30, stable=99
         (constants.APPROXIMATE_STABLE_BRANCH_NUMBER, 99)]
     # TODO(kinaba): betty-arcnext
-    _BOARD_MAX_RETRY = {'betty': 0}
+    _BOARD_MAX_RETRY = {'betty': 0, 'zork': 0}
 
     _SHARD_CMD = None
     _board_arch = None
@@ -103,13 +103,6 @@ class TradefedTest(test.test):
             cache_root = constants.TRADEFED_CACHE_CONTAINER
         else:
             cache_root = constants.TRADEFED_CACHE_LOCAL
-
-        # TODO(ihf): reevaluate this again when we run out of memory. We could
-        # for example use 32 bit java on the first run but not during retries.
-        # b/62895114. If select_32bit_java gets deleted for good also remove it
-        # from the base image.
-        # Try to save server memory (crbug.com/717413).
-        # select_32bit_java()
 
         # The content of the cache survives across jobs.
         self._safe_makedirs(cache_root)
@@ -841,7 +834,7 @@ class TradefedTest(test.test):
             self._android_version = self._hosts[0].run(
                 'grep ANDROID_SDK /etc/lsb-release',
                 ignore_status=True).stdout.rstrip().split('=')[1]
-        return self._android_version
+        return int(self._android_version)
 
     def _get_max_retry(self, max_retry):
         """Return the maximum number of retries.
@@ -1169,12 +1162,14 @@ class TradefedTest(test.test):
         while steps < self._max_retry:
             steps += 1
             keep_media = media_asset and media_asset.uri and steps >= 1
+            enable_arcvm = self._get_android_version() >= 29
             self._run_commands(login_precondition_commands, ignore_status=True)
             with login.login_chrome(
                     hosts=self._hosts,
                     board=board,
                     dont_override_profile=keep_media,
-                    enable_default_apps=enable_default_apps) as current_logins:
+                    enable_default_apps=enable_default_apps,
+                    enable_arcvm=enable_arcvm) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

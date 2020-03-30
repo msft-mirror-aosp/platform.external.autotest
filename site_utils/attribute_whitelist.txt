@@ -28,7 +28,6 @@ suite:arc-cts-instant
 suite:arc-cts-instant-perbuild
 suite:arc-cts-instant-qual
 suite:arc-cts-perbuild
-suite:arc-cts-q
 suite:arc-cts-qual
 suite:arc-cts-r
 suite:arc-cts-stable
@@ -42,7 +41,6 @@ suite:arc-gts-qual
 suite:arc-gts-tot
 suite:arc-gts-test
 suite:arc-unit-test
-suite:arc-vts
 suite:audio
 suite:audio_advanced
 suite:audio_basic
@@ -71,6 +69,10 @@ suite:bvt-faft
 suite:bvt-inline
 suite:bvt-installer
 suite:bvt-perbuild
+suite:bvt-tast-android-pfq
+suite:bvt-tast-chrome-pfq
+suite:bvt-tast-cq
+suite:bvt-tast-informational
 suite:cell_emulator
 suite:cellular_au
 suite:cellular_au_nightly
@@ -114,10 +116,9 @@ suite:experimental
 suite:factory
 suite:faft
 suite:faft_bios
-suite:faft_bios_au_1
-suite:faft_bios_au_2
-suite:faft_bios_au_3
 suite:faft_bios_ec3po
+suite:faft_bios_ro_qual
+suite:faft_bios_rw_qual
 suite:faft_bios_tot
 suite:faft_cr50_experimental
 suite:faft_cr50_prepvt

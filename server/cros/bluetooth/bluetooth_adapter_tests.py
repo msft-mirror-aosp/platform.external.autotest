@@ -571,6 +571,9 @@ class BluetoothAdapterTests(test.test):
     # Path for btmon logs
     BTMON_DIR_LOG_PATH = '/var/log/btmon'
 
+    #Path for usbmon logs
+    USBMON_DIR_LOG_PATH = '/var/log/usbmon'
+
     def group_btpeers_type(self):
         """Group all Bluetooth peers by the type of their detected device."""
 
@@ -852,6 +855,7 @@ class BluetoothAdapterTests(test.test):
         self.enable_disable_debug_log(enable=True)
 
         self.start_new_btmon()
+        self.start_new_usbmon()
 
 
     def _wait_till_condition_holds(self, func, method_name,
@@ -984,10 +988,37 @@ class BluetoothAdapterTests(test.test):
         self.host.run_background('btmon -SAw %s/%s' % (self.BTMON_DIR_LOG_PATH,
                                                        file_name))
 
+    def start_new_usbmon(self):
+        """ Start a new USBMON process and save the log """
+
+        # Kill all usbmon process before creating a new one
+        self.host.run('pkill tcpdump || true')
+
+        # Make sure the directory exists
+        self.host.run('mkdir -p %s' % self.USBMON_DIR_LOG_PATH)
+
+        # Time format. Ex, 2020_02_20_17_52_45
+        now = time.strftime("%Y_%m_%d_%H_%M_%S")
+        file_name = 'usbmon_%s' % now
+        self.host.run_background('tcpdump -i usbmon0 -w %s/%s' %
+                                 (self.USBMON_DIR_LOG_PATH, file_name))
+
 
     def log_message(self, msg):
         """ Write a string to log."""
         self.bluetooth_facade.log_message(msg)
+
+    def is_wrt_supported(self):
+        """ Check if Bluetooth adapter support WRT logs. """
+        return self.bluetooth_facade.is_wrt_supported()
+
+    def enable_wrt_logs(self):
+        """ Enable WRT logs from Intel Adapters."""
+        return self.bluetooth_facade.enable_wrt_logs()
+
+    def collect_wrt_logs(self):
+        """ Collect WRT logs from Intel Adapters."""
+        return self.bluetooth_facade.collect_wrt_logs()
 
 
     @test_retry_and_log
@@ -1462,13 +1493,7 @@ class BluetoothAdapterTests(test.test):
         return has_device_initially or device_discovered
 
     def _test_discover_by_device(self, device):
-        device_discovered = device.Discover(self.bluetooth_facade.address)
-
-        self.results = {
-                'device_discovered': device_discovered
-        }
-
-        return all(self.results.values())
+        return device.Discover(self.bluetooth_facade.address)
 
     @test_retry_and_log(False)
     def test_discover_by_device(self, device):
@@ -1478,7 +1503,34 @@ class BluetoothAdapterTests(test.test):
 
         @returns: True if the adapter is found by the device.
         """
-        return self._test_discover_by_device(device)
+        adapter_discovered = False
+        discover_by_device = self._test_discover_by_device
+        discovered_initially = discover_by_device(device)
+
+        if not discovered_initially:
+            try:
+                utils.poll_for_condition(
+                        condition=(lambda: discover_by_device(device)),
+                        timeout=self.ADAPTER_DISCOVER_TIMEOUT_SECS,
+                        sleep_interval=
+                        self.ADAPTER_DISCOVER_POLLING_SLEEP_SECS,
+                        desc='Waiting for adapter to be discovered')
+                adapter_discovered = True
+            except utils.TimeoutError as e:
+                logging.error('test_discover_by_device: %s', e)
+            except Exception as e:
+                logging.error('test_discover_by_device: %s', e)
+                err = ('bluetoothd probably crashed.'
+                       'Check out /var/log/messages')
+                logging.error(err)
+            except:
+                logging.error('test_discover_by_device: unexpected error')
+
+        self.results = {
+            'adapter_discovered_initially': discovered_initially,
+            'adapter_discovered': adapter_discovered
+        }
+        return any(self.results.values())
 
     @test_retry_and_log(False)
     def test_discover_by_device_fails(self, device):
@@ -1488,7 +1540,10 @@ class BluetoothAdapterTests(test.test):
 
         @returns False if the adapter is found by the device.
         """
-        return not self._test_discover_by_device(device)
+        self.results = {
+                'adapter_discovered': self._test_discover_by_device(device)
+        }
+        return not any(self.results.values())
 
     @test_retry_and_log(False)
     def test_device_set_discoverable(self, device, discoverable):
@@ -3317,6 +3372,10 @@ class BluetoothAdapterTests(test.test):
             if hasattr(self, 'host'):
                 # Stop btmon process
                 self.host.run('pkill btmon || true')
+
+                #Stop tcpdump usbmon process
+                self.host.run('pkill tcpdump || true')
+
 
         # Close the device properly if a device is instantiated.
         # Note: do not write something like the following statements

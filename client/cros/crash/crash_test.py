@@ -113,6 +113,18 @@ class CrashTest(test.test):
         else:
             utils.system('touch ' + self._PAUSE_FILE)
 
+    def _remove_all_files_in_dir(self, d):
+      """Recursively remove all of the files in |d|, without removing |d|.
+      """
+      try:
+          root, dirs, files = next(os.walk(d))
+      except StopIteration:
+          return
+      for path in files:
+          os.remove(os.path.join(root, path))
+      for path in dirs:
+          shutil.rmtree(os.path.join(root, path))
+
 
     def _reset_rate_limiting(self):
         """Reset the count of crash reports sent today.
@@ -120,7 +132,7 @@ class CrashTest(test.test):
         This clears the contents of the rate limiting directory which has
         the effect of reseting our count of crash reports sent.
         """
-        utils.system('rm -rf ' + self._CRASH_SENDER_RATE_DIR)
+        self._remove_all_files_in_dir(self._CRASH_SENDER_RATE_DIR)
 
 
     def _clear_spooled_crashes(self):
@@ -128,10 +140,11 @@ class CrashTest(test.test):
 
         This will remove all crash reports which are waiting to be sent.
         """
-        utils.system('rm -rf ' + self._SYSTEM_CRASH_DIR)
-        utils.system('rm -rf ' + self._EARLY_BOOT_CRASH_DIR)
-        utils.system('rm -rf %s %s' % (self._USER_CRASH_DIRS,
-                                       self._FALLBACK_USER_CRASH_DIR))
+        self._remove_all_files_in_dir(self._SYSTEM_CRASH_DIR)
+        self._remove_all_files_in_dir(self._EARLY_BOOT_CRASH_DIR)
+        for d in glob.glob(self._USER_CRASH_DIRS):
+          self._remove_all_files_in_dir(d)
+        self._remove_all_files_in_dir(self._FALLBACK_USER_CRASH_DIR)
 
 
     def _kill_running_sender(self):
@@ -673,6 +686,11 @@ class CrashTest(test.test):
         if self._automatic_consent_saving:
             self._pop_consent()
         self._set_crash_test_in_progress(False)
+
+        # Re-initialize crash reporter to clear any state left over
+        # (e.g. core_pattern)
+        self._initialize_crash_reporter(True)
+
         test.test.cleanup(self)
 
 

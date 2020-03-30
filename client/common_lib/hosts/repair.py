@@ -49,8 +49,20 @@ class AutoservVerifyError(error.AutoservError):
     pass
 
 
+class AutoservNonCriticalVerifyError(error.AutoservError):
+    """
+    Exception for failures from `Verifier` objects that not critical enough to
+    conclude the target host is in a bad state.
+    """
+    pass
+
+
 _DependencyFailure = collections.namedtuple(
         '_DependencyFailure', ('dependency', 'error', 'tag'))
+
+
+_NonCriticalDependencyFailure = collections.namedtuple(
+    '_NonCriticalDependencyFailure', ('dependency', 'error', 'tag'))
 
 
 class AutoservVerifyDependencyError(error.AutoservError):
@@ -117,6 +129,17 @@ class AutoservVerifyDependencyError(error.AutoservError):
         for failure in self.failures:
             logging.debug('    %s', failure.dependency)
 
+    def is_critical(self, silent=False):
+        for error in self.failures:
+            if isinstance(error, _NonCriticalDependencyFailure):
+                if not silent:
+                    logging.warning("%s is still failing but forgiven because"
+                                    " it raised a non-critical error.",
+                                    error.tag)
+            else:
+                return True
+        return False
+
 
 class AutoservRepairError(error.AutoservError):
     """
@@ -152,6 +175,16 @@ class _DependencyNode(object):
         self._dependency_list = dependencies
         self._tag = tag
         self._record_tag = record_type + '.' + tag
+
+    def _is_applicable(self, host):
+        """
+        Check if the action is applicable to target host. Subclasses
+        can override this method per their need.
+
+        @param host     Target host to check.
+        @return         A bool value.
+        """
+        return True
 
     def _record(self, host, silent, status_code, *record_args):
         """
@@ -219,6 +252,9 @@ class _DependencyNode(object):
         for v in verifiers:
             try:
                 v._verify_host(host, silent)
+            except AutoservNonCriticalVerifyError as e:
+                failures.add(_NonCriticalDependencyFailure(v.description,
+                                                           str(e), v.tag))
             except AutoservVerifyDependencyError as e:
                 failures.update(e.failures)
             except Exception as e:
@@ -363,7 +399,10 @@ class Verifier(_DependencyNode):
             self.verify(host)
             self._record_good(host, silent)
         except Exception as e:
-            logging.exception('Failed: %s', self.description)
+            message = 'Failed: %s'
+            if isinstance(e, AutoservNonCriticalVerifyError):
+                message = '(Non-critical)Failed: %s'
+            logging.exception(message, self.description)
             self._result = e
             self._record_fail(host, silent, e)
             raise
@@ -555,6 +594,11 @@ class RepairAction(_DependencyNode):
         # If we're blocked by a failed dependency, we exit with an
         # exception.  So set status to 'blocked' first.
         self.status = 'blocked'
+
+        if not self._is_applicable(host):
+            self.status = 'skipped'
+            return
+
         try:
             self._verify_dependencies(host, silent)
         except Exception as e:
@@ -898,4 +942,3 @@ def _filter_metrics_hostname(host):
         return host.hostname
     else:
         return _DISALLOWED_HOSTNAME
-

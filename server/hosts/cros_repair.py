@@ -66,7 +66,6 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
 # simplification.  The ultimate fix is to split the 'cros' verifier
 # into smaller individual verifiers.
 _CROS_AU_TRIGGERS = ('power', 'rwfw', 'python', 'cros',)
-_CROS_EXTENDED_AU_TRIGGERS = _CROS_AU_TRIGGERS + ('ec_reset',)
 _CROS_POWERWASH_TRIGGERS = ('tpm', 'good_au', 'ext4',)
 _CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
 _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
@@ -423,27 +422,6 @@ class JetstreamServicesVerifier(hosts.Verifier):
         return 'Jetstream services must be running'
 
 
-class KvmExistsVerifier(hosts.Verifier):
-    """Verify that /dev/kvm exists if it should be there"""
-
-    def verify(self, host):
-        # pylint: disable=missing-docstring
-        result = host.run('[ ! -e /dev/kvm -a -f /usr/bin/vm_concierge ]',
-                          ignore_status=True)
-        if result.exit_status == 0:
-            # Silently check if the kvm_transition flag is being used by Chrome
-            # indicating /dev/kvm may not be present yet on this system.
-            result = host.run('grep -qsxF "kvm_transition" '
-                              '/etc/ui_use_flags.txt', ignore_status=True)
-            if result.exit_status != 0:
-                raise hosts.AutoservVerifyError('/dev/kvm is missing')
-
-    @property
-    def description(self):
-        # pylint: disable=missing-docstring
-        return '/dev/kvm should exist if device supports Linux VMs'
-
-
 class StopStartUIVerifier(hosts.Verifier):
     """Verify that command 'stop ui' won't crash the DUT.
 
@@ -655,7 +633,14 @@ class ServoInstallRepair(hosts.RepairAction):
     def repair(self, host):
         # pylint: disable=missing-docstring
         repair_utils.require_servo(host)
-        image_name, update_url = host.stage_image_for_servo()
+        image_name = host.get_cros_repair_image_name()
+        update_url = None
+        if host._servo_host.validate_image_usbkey() != image_name:
+            logging.info('Downloading %s to usbkey.', image_name)
+            _, update_url = host.stage_image_for_servo()
+        else:
+            logging.info('Required image %s is already on usbkey,'
+                         ' skipping download.', image_name)
         afe_utils.clean_provision_labels(host)
         host.servo_install(update_url)
         afe_utils.add_provision_labels(host, host.VERSION_PREFIX, image_name)
@@ -664,24 +649,6 @@ class ServoInstallRepair(hosts.RepairAction):
     def description(self):
         # pylint: disable=missing-docstring
         return 'Reinstall from USB using servo'
-
-
-class ColdRebootRepair(_ResetRepairAction):
-    """
-    Repair a Chrome device by performing a cold reboot that resets the EC.
-
-    Use ectool to perform a cold reboot which will reset the EC.
-    """
-
-    def repair(self, host):
-        # pylint: disable=missing-docstring
-        host.reboot(reboot_cmd='ectool reboot_ec cold')
-        self._check_reset_success(host)
-
-    @property
-    def description(self):
-        # pylint: disable=missing-docstring
-        return 'Reset the DUT via cold reboot with ectool'
 
 
 class JetstreamTpmRepair(hosts.RepairAction):
@@ -739,7 +706,6 @@ def _cros_verify_base_dag():
         (FirmwareVersionVerifier,         'rwfw',     ('ssh',)),
         (PythonVerifier,                  'python',   ('ssh',)),
         (repair_utils.LegacyHostVerifier, 'cros',     ('ssh',)),
-        (KvmExistsVerifier,               'ec_reset', ('ssh',)),
     )
     return verify_dag
 
@@ -773,13 +739,11 @@ def _cros_basic_repair_actions():
          'set_default_boot', ('ssh',), ('dev_default_boot',)),
 
         (CrosRebootRepair, 'reboot', ('ssh',), ('devmode', 'writable',)),
-
-        (ColdRebootRepair, 'coldboot', ('ssh',), ('ec_reset',)),
     )
     return repair_actions
 
 
-def _cros_extended_repair_actions(au_triggers=_CROS_EXTENDED_AU_TRIGGERS,
+def _cros_extended_repair_actions(au_triggers=_CROS_AU_TRIGGERS,
                                   powerwash_triggers=_CROS_POWERWASH_TRIGGERS,
                                   usb_triggers=_CROS_USB_TRIGGERS):
     """Return the extended repair actions for a `CrosHost`"""

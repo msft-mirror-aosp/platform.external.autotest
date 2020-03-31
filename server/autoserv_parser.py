@@ -227,7 +227,8 @@ class autoserv_parser(object):
         )
         self.parser.add_argument(
             '--sync-offload-dir', action='store', type=str, default='',
-            help='Absolute path to directory to offload synchronously',
+            help='Relative path from results directory to the sub-directory '
+            'which should be offloaded synchronously',
         )
 
         #

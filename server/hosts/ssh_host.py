@@ -119,7 +119,9 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
              ignore_timeout, ssh_failure_retry_ok):
         """Helper function for run()."""
         if connect_timeout > timeout:
-            connect_timeout = int(timeout)
+            # timeout passed from run_very_slowly may be smaller than 1
+            # due to we minus elapsed time from original timeout supplied.
+            connect_timeout = max(int(timeout), 1)
         original_cmd = command
 
         ssh_cmd = self.ssh_command(connect_timeout, options)

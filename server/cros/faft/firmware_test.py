@@ -257,7 +257,7 @@ class FirmwareTest(FAFTBase):
                                   ' "%s"' % (method_name, test_name, self_name))
 
         logging.info('Starting test: "%s"', test_name)
-        getattr(self, method_name)(*args, **dargs)
+        utils.cherry_pick_call(getattr(self, method_name), *args, **dargs)
 
     def cleanup(self):
         """Autotest cleanup function."""

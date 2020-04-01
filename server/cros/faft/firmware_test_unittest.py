@@ -15,6 +15,13 @@ class TestRunOnce(unittest.TestCase):
             self.test = mock.MagicMock()
             self.test_good = mock.MagicMock()
             self.test_good_better = mock.MagicMock()
+            self.test_host_mock = mock.MagicMock()
+            self.test_arg2_mock = mock.MagicMock()
+        def test_host(self, host, **kwargs):
+            self.test_host_mock(host, **kwargs)
+        def test_arg2(self, arg2):
+            self.test_arg2_mock(arg2)
+
 
     def test_keyword_test_name(self):
         ft = self.GoodFirmwareTest()
@@ -69,6 +76,18 @@ class TestRunOnce(unittest.TestCase):
 
         with self.assertRaises(error.TestError):
             ft.run_once(test_name='GoodFirmwareTest.bad')
+
+    def test_host_arg(self):
+        ft = self.GoodFirmwareTest()
+
+        ft.run_once('GoodFirmwareTest.host', host='host', arg2='arg2')
+        ft.test_host_mock.assert_called_with('host', arg2='arg2')
+
+    def test_arg2(self):
+        ft = self.GoodFirmwareTest()
+
+        ft.run_once('GoodFirmwareTest.arg2', host='host', arg2='arg2')
+        ft.test_arg2_mock.assert_called_with('arg2')
 
 if __name__ == '__main__':
     unittest.main()

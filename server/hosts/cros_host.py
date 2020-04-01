@@ -725,7 +725,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise error.TestFail('Failed to read version from %s.' % image)
 
 
-    def firmware_install(self, build=None, rw_only=False, dest=None,
+    def firmware_install(self, build, rw_only=False, dest=None,
                          local_tarball=None, verify_version=False,
                          try_scp=False):
         """Install firmware to the DUT.
@@ -775,14 +775,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # If local firmware path not provided fetch it from the dev server
         tmpd = None
         if not local_tarball:
-            # If build is not set, try to install firmware from stable CrOS.
-            if not build:
-                build = afe_utils.get_stable_faft_version_v2(info)
-                if not build:
-                    raise error.TestError(
-                            'Failed to find stable firmware build for %s.',
-                            self.hostname)
-                logging.info('Will install firmware from build %s.', build)
+            logging.info('Will install firmware from build %s.', build)
 
             ds = dev_server.ImageServer.resolve(build, self.hostname)
             ds.stage_artifacts(build, ['firmware'])

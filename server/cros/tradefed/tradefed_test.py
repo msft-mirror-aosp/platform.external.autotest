@@ -314,33 +314,12 @@ class TradefedTest(test.test):
         """
         host.run('android-sh -c ' + pipes.quote(command))
 
-    def _write_android_file(self, host, filename, data):
-        """Writes a file to a location relative to the android container.
-
-        This is an internal function used to bootstrap adb.
-        Tests should use adb push to write files.
-        """
-        android_cmd = 'echo %s > %s' % (pipes.quote(data),
-                                        pipes.quote(filename))
-        self._android_shell(host, android_cmd)
-
-    def _connect_adb(self, host, pubkey):
+    def _connect_adb(self, host):
         """Sets up ADB connection to the ARC container.
 
         @param host: DUT that should be connected to.
-        @param pubkey: public key that adb keygen && adb pubkey generated.
         """
         logging.info('Setting up adb connection.')
-        # Push keys for adb.
-        self._write_android_file(host, constants.ANDROID_ADB_KEYS_PATH, pubkey)
-        self._android_shell(
-            host, 'restorecon ' + pipes.quote(constants.ANDROID_ADB_KEYS_PATH))
-
-        # This starts adbd.
-        self._android_shell(host, 'setprop sys.usb.config adb')
-
-        # Also let it be automatically started upon reboot.
-        self._android_shell(host, 'setprop persist.sys.usb.config adb')
 
         # adbd may take some time to come up. Repeatedly try to connect to adb.
         utils.poll_for_condition(
@@ -394,12 +373,10 @@ class TradefedTest(test.test):
 
     def _ready_arc(self):
         """Ready ARC and adb in parallel for running tests via tradefed."""
-        # Generate the adb keys on server.
         key_path = os.path.join(self.tmpdir, 'test_key')
-        self._run_adb_cmd(verbose=True, args=('keygen', pipes.quote(key_path)))
+        with open(key_path, 'w') as f:
+            f.write(constants.PRIVATE_KEY)
         os.environ['ADB_VENDOR_KEYS'] = key_path
-        pubkey = self._run_adb_cmd(verbose=True,
-                args=('pubkey', pipes.quote(key_path))).stdout
 
         for _ in range(2):
             try:
@@ -410,7 +387,7 @@ class TradefedTest(test.test):
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.
                 for host in self._hosts:
-                    self._connect_adb(host, pubkey)
+                    self._connect_adb(host)
                     self._disable_adb_install_dialog(host)
                     self._wait_for_arc_boot(host)
                 self._verify_arc_hosts()

@@ -589,6 +589,9 @@ class power_LoadTest(arc.ArcTest):
                 raise error.TestError('Running on AC power now.')
 
             if self._power_status.battery:
+                if (not self._ac_ok and
+                    self._power_status.battery.status != 'Discharging'):
+                    raise error.TestFail('The battery is not discharging.')
                 charge_now = self._power_status.battery.charge_now
                 energy_rate = self._power_status.battery.energy_rate
                 voltage_now = self._power_status.battery.voltage_now

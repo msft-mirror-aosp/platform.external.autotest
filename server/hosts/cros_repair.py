@@ -719,7 +719,6 @@ def _cros_verify_extended_dag():
 
 def _cros_basic_repair_actions():
     """Return the basic repair actions for a `CrosHost`"""
-    FirmwareRepair = cros_firmware.FirmwareRepair
     repair_actions = (
         # RPM cycling must precede Servo reset:  if the DUT has a dead
         # battery, we need to reattach AC power before we reset via servo.
@@ -733,7 +732,8 @@ def _cros_basic_repair_actions():
         # possible the the last update failed because of the firmware,
         # and we want the repair steps below to be able to trust the
         # firmware.
-        (FirmwareRepair, 'firmware', (), ('ssh', 'fwstatus', 'good_au',)),
+        (cros_firmware.FaftFirmwareRepair,
+         'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_au',)),
 
         (DevDefaultBootRepair,
          'set_default_boot', ('ssh',), ('dev_default_boot',)),

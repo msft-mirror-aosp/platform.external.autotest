@@ -26,8 +26,8 @@ instructions for each option.
 #### Using the wifi testing labs
 
 Our testing lab setups are operated through the skylab infrastructure. If you
-don't have the skylab tool installed on your machine, follow the instrucions
-under *Advanced users: Manual installation* in the [skylab tools guide].
+don't have the skylab tool installed on your machine, follow the instructions
+in the [skylab tools guide].
 
 Once you have the skylab tool, you'll need to run the login command and follow
 its instructions to get started.
@@ -462,7 +462,7 @@ only the frames in the sequence above above are strictly required.)
 [Pyshark documentation]: https://kiminewt.github.io/pyshark/
 [section 4]: #4_let_s-analyze-some-packets
 [skylab portal]: https://chromeos-swarming.appspot.com/botlist?c=id&c=task&c=dut_state&c=label-board&c=label-model&c=label-pool&c=os&c=provisionable-cros-version&c=status&d=asc&f=label-wificell%3ATrue&k=label-wificell&s=id
-[skylab tools guide]: http://doc/1eyvAE5wdI3w-gP0D0TT9Kn5yyqe75076dbU9P50pGYo#heading=h.kvcvpeai9t6z
+[skylab tools guide]: http://go/skylab-cli
 [solutions and hints]: #solutions-and-hints
 [test_that]: ./test-that.md
 [wificell documentation]: ./wificell.md

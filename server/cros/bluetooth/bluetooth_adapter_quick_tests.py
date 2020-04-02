@@ -9,13 +9,15 @@ batches or packages
 
 import functools
 import logging
+import tempfile
 import threading
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.multimedia import remote_facade_factory
-
+from autotest_lib.client.bin import utils
 
 class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     """This class provide wrapper function for Bluetooth quick sanity test
@@ -48,6 +50,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
     # Some delay is needed between tests. TODO(yshavit): investigate and remove
     TEST_SLEEP_SECS = 3
+    GCS_MTBF_BUCKET = 'gs://chromeos-mtbf-bt-results/'
 
 
     def restart_peers(self):
@@ -503,13 +506,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         # The test ran the full duration without failure
                         if self.mtbf_end:
                             self.report_mtbf_result(
-                                True, time.time() - start_time)
+                                True, start_time)
                             break
                     try:
                         batch_method(self, *args, **kwargs)
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
-                        self.report_mtbf_result(False, time.time() - start_time)
+                        self.report_mtbf_result(False, start_time)
                         break
 
                 mtbf_timer.cancel()
@@ -525,6 +528,26 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.mtbf_end = True
 
 
-    def report_mtbf_result(self, success, duration_secs):
-        """Report MTBF report"""
-        logging.info("Logging MTBF result: %r %r", success, duration_secs)
+    def report_mtbf_result(self, success, start_time):
+        """Report MTBF result by uploading it to GCS"""
+        duration_secs = int(time.time() - start_time)
+        start_time = int(start_time)
+        gm_time_struct = time.localtime(start_time)
+        output_file_name = self.GCS_MTBF_BUCKET + \
+                           time.strftime('%Y-%m-%d/', gm_time_struct) + \
+                           time.strftime('%H-%M-%S.csv', gm_time_struct)
+        platform = self.host.get_platform()
+        build = self.host.get_release_version()
+        milestone = 'M' + self.host.get_chromeos_release_milestone()
+        mtbf_result = '{0},{1},{2},{3},{4},{5}'.format(
+            platform, build, milestone, start_time * 1000000, duration_secs,
+            success)
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            tmp_file.write(mtbf_result)
+            tmp_file.flush()
+            cmd = 'gsutil cp {0} {1}'.format(tmp_file.name, output_file_name)
+            logging.info('Result to upload %s %s', mtbf_result, cmd)
+            # Only upload the result when running in the lab.
+            if site_utils.host_in_lab(self.host.hostname):
+                logging.info('Uploading result')
+                utils.run(cmd)

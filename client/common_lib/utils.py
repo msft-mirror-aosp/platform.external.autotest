@@ -3153,3 +3153,58 @@ CHART_ADDRESS_SUFFIX = '-tablet'
 def get_lab_chart_address(hostname):
     """Convert lab DUT hostname to address of camera box chart tablet"""
     return hostname + CHART_ADDRESS_SUFFIX if is_in_container() else None
+
+
+def cherry_pick_args(func, args, dargs):
+    """Sanitize positional and keyword arguments before calling a function.
+
+    Given a callable (func), an argument tuple and a dictionary of keyword
+    arguments, pick only those arguments which the function is prepared to
+    accept and return a new argument tuple and keyword argument dictionary.
+
+    Args:
+      func: A callable that we want to choose arguments for.
+      args: A tuple of positional arguments to consider passing to func.
+      dargs: A dictionary of keyword arguments to consider passing to func.
+    Returns:
+      A tuple of: (args tuple, keyword arguments dictionary)
+    """
+    # Cherry pick args:
+    if func.func_code.co_flags & 0x04:
+        # func accepts *args, so return the entire args.
+        p_args = args
+    else:
+        p_args = ()
+
+    # Cherry pick dargs:
+    if func.func_code.co_flags & 0x08:
+        # func accepts **dargs, so return the entire dargs.
+        p_dargs = dargs
+    else:
+        # Only return the keyword arguments that func accepts.
+        p_dargs = {}
+        for param in get_nonstar_args(func):
+            if param in dargs:
+                p_dargs[param] = dargs[param]
+
+    return p_args, p_dargs
+
+
+def cherry_pick_call(func, *args, **dargs):
+    """Cherry picks arguments from args/dargs based on what "func" accepts
+    and calls the function with the picked arguments."""
+    p_args, p_dargs = cherry_pick_args(func, args, dargs)
+    return func(*p_args, **p_dargs)
+
+
+def get_nonstar_args(func):
+    """Extract all the (normal) function parameter names.
+
+    Given a function, returns a tuple of parameter names, specifically
+    excluding the * and ** parameters, if the function accepts them.
+
+    @param func: A callable that we want to chose arguments for.
+
+    @return: A tuple of parameters accepted by the function.
+    """
+    return func.func_code.co_varnames[:func.func_code.co_argcount]

@@ -612,8 +612,8 @@ RPC_CATEGORIES = [
             },
             {
                 "method_names": [
-                    "get_all_fwids",
-                    "get_all_installed_fwids",
+                    "get_device_fwids",
+                    "get_image_fwids",
                 ],
                 "passing_args": [
                     NO_ARGS,
@@ -629,7 +629,7 @@ RPC_CATEGORIES = [
                                     r"does not contain"),
             },
             {
-                "method_name": "modify_fwids",
+                "method_name": "modify_image_fwids",
                 "passing_args": [
                     NO_ARGS,
                     ("bios", ),

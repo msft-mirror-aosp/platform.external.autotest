@@ -38,19 +38,33 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         timeout_minutes = 10
         timeout = time.time() + 60 * timeout_minutes
         boot_id = self._host.get_boot_id()
+        seen_reboot = False
 
         while True:
-            try:
-                self._get_update_engine_status(timeout=10,
-                                               ignore_timeout=False)
-            except error.AutoservRunError as e:
-                # Check if command timed out because update-engine was taking
-                # a while or if the command didn't even start.
-                query = 'Querying Update Engine status...'
-                if query not in e.result_obj.stderr:
-                    # Command did not start. DUT rebooted at end of update.
-                    self._host.test_wait_for_boot(boot_id)
-                    break
+            if not seen_reboot:
+                try:
+                    self._get_update_engine_status(timeout=10,
+                                                   ignore_timeout=False)
+                except error.AutoservRunError as e:
+                    # Check if command timed out because update-engine was
+                    # taking a while or if the command didn't even start.
+                    query = 'Querying Update Engine status...'
+                    if query not in e.result_obj.stderr:
+                        # Command did not start. DUT rebooted at end of update.
+                        self._host.test_wait_for_boot(boot_id)
+                        seen_reboot = True
+            else:
+                # Now that the device is rebooted, we have to make sure the
+                # update_engine is up and running and new update check has been
+                # perfromed.
+                try:
+                    self._get_update_engine_status(timeout=10,
+                                                   ignore_timeout=False)
+                    self._check_update_engine_log_for_entry(
+                        "Omaha request response:")
+                    break;
+                except (error.TestFail, error.AutoservRunError):
+                    pass
 
             time.sleep(1)
             if time.time() > timeout:

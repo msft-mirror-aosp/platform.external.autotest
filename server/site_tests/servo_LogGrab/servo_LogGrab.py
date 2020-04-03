@@ -35,7 +35,7 @@ class servo_LogGrab(test.test):
         self.logtestdir = tempfile.mkdtemp()
 
     def grab_and_get_directory(self):
-        """Thin wrapper around servo's |grab_logs()| function.
+        """Thin wrapper around servo_host instance_logs function.
 
         @returns: directory name inside |self.logtestdir| containing servod logs
                   None if no directory was created (and logs grabbed)
@@ -43,7 +43,8 @@ class servo_LogGrab(test.test):
         @raises error.TestFail: if log grabbing creates more or less than one
                                 directory
         """
-        self.servo_host.grab_logs(self.logtestdir)
+        ts = self.servo_host.get_instance_logs_ts()
+        self.servo_host.get_instance_logs(ts, self.logtestdir)
         dirs_created = len(os.listdir(self.logtestdir))
         if dirs_created > 1:
             raise error.TestFail('Log grabbing created more than one directory')
@@ -241,11 +242,14 @@ class servo_LogGrab(test.test):
         """
         restarts = 2
         # Need to cache the initial timestamp so that we can reuse it later
-        initial_ts = self.servo_host._initial_instance_ts
+        initial_ts = self.servo_host.get_instance_logs_ts()
         for _ in range(restarts):
             self.servo_host.restart_servod()
         self.servo_host._initial_instance_ts = initial_ts
-        self.servo_host.grab_logs(self.logtestdir)
+        # Grab the logs and probe for old, orphaned logs
+        ts = self.servo_host.get_instance_logs_ts()
+        self.servo_host.probe_servod_restart(ts, self.logtestdir)
+        self.servo_host.get_instance_logs(ts, self.logtestdir)
         # First, validate that in total 3 directories were created: one
         # for the current instance, and two for the old ones
         dirs_created = len(os.listdir(self.logtestdir))
@@ -271,6 +275,26 @@ class servo_LogGrab(test.test):
                     if 'panicinfo' not in f.read():
                         raise error.TestFail('No panicinfo call found in %r.' %
                                              mcu_path)
+    def test_restart_no_servo(self):
+        """Subtest to verify that lack of |_servo| attribute yields no failure.
+
+        @raises error.TestFail: if the lack of _servo causes an issue
+        """
+        self.servo_host.servo = None
+        try:
+            self.test_restart()
+        except AttributeError as e:
+            raise error.TestFail('Setting |_servo| to None caused an error. %s'
+                                 % str(e))
+        except error.TestFail as e:
+            if 'No panicinfo call found in' in str(e):
+                # This means that the lack of |_servo| worked as intended e.g.
+                # the logs are grabbed, but the panicinfo could not be issued.
+                pass
+            # for any other issue, we need to actually raise it.
+            raise e
+        # Restore servo object again.
+        self.servo_host.servo = self.servo
 
     def run_once(self, host):
         """Try 3 scenarios of log grabbing: single, multiple, compressed."""
@@ -280,8 +304,8 @@ class servo_LogGrab(test.test):
         # removes logs on the servo_host side. Alternatively, restart
         # servod if another destructive test is added.
         for subtest in [self.test_singular, self.test_dual,
-                        self.test_compressed, self.test_missing,
-                        self.test_restart]:
+                        self.test_compressed, self.test_restart,
+                        self.test_restart_no_servo, self.test_missing]:
             self.setup_dir()
             subtest()
             logging.info('Success')

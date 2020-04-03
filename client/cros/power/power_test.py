@@ -68,6 +68,8 @@ class power_Test(test.test):
             measurements += power_rapl.create_powercap()
         elif power_utils.has_rapl_support():
             measurements += power_rapl.create_rapl()
+        elif power_utils.has_amd_rapl_support():
+            measurements += power_rapl.create_amd_rapl()
         self._plog = power_status.PowerLogger(measurements,
                 seconds_period=seconds_period,
                 checkpoint_logger=self._checkpoint_logger)

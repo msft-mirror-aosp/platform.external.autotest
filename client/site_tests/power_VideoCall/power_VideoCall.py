@@ -48,7 +48,9 @@ class power_VideoCall(power_test.power_Test):
             logging.info('Navigating left window to %s', self.video_url)
             tab_left.Navigate(self.video_url)
             tab_left.WaitForDocumentReadyStateToBeComplete()
-            time.sleep(5)
+            video_init_time = power_status.VideoFpsLogger.time_until_ready(
+                              tab_left, num_video=5)
+            self.keyvals['video_init_time'] = video_init_time
 
             # Open Google Doc on right half
             logging.info('Navigating right window to %s', self.doc_url)

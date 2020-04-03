@@ -14,6 +14,7 @@ from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import test
 from autotest_lib.server import utils
+from autotest_lib.server.cros.network import wifi_test_context_manager
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
@@ -256,6 +257,25 @@ class tast(test.test):
             return []
         return ['-var=servo=%s:%s' % (host_arg, port_arg)]
 
+    def _get_wificell_args(self):
+        """Gets wificell-related (router, pcap) arguments to pass to "tast run".
+
+        @returns List of command-line flag strings that should be inserted in
+            the command line after "tast run".
+        """
+        # Incorporate information that was passed manually.
+        args_dict = utils.args_to_dict(self._command_args)
+        args = []
+        # Alias of WiFiTestContextManager.
+        WiFiManager = wifi_test_context_manager.WiFiTestContextManager
+        # TODO(crbug.com/1065601): plumb other WiFi test specific arguments,
+        #     e.g. pcap address. See: WiFiTestContextManager's constants.
+        for key, var_arg in [(WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s')]:
+            if key in args_dict:
+                args += ['-var=' + var_arg % args_dict[key]]
+        logging.info('Autotest wificell-related args: %s', args)
+        return args
+
     def _find_devservers(self):
         """Finds available devservers.
 
@@ -364,12 +384,14 @@ class tast(test.test):
         @raises error.TestFail if the tast command fails or times out (but not
             if individual tests fail).
         """
-        args = [
-            '-resultsdir=' + self.resultsdir,
-            '-waituntilready=true',
-            '-timeout=' + str(self._max_run_sec),
-            '-continueafterfailure=true',
-        ] + self._devserver_args + self._get_servo_args()
+        args = (
+            ['-resultsdir=' + self.resultsdir,
+             '-waituntilready=true',
+             '-timeout=' + str(self._max_run_sec),
+             '-continueafterfailure=true']
+            + self._devserver_args
+            + self._get_servo_args()
+            + self._get_wificell_args())
 
         if self._varsfiles:
             for varsfile in self._varsfiles:

@@ -20,6 +20,7 @@ import tast
 from autotest_lib.client.common_lib import base_job
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.cros.network import wifi_test_context_manager
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import servo_constants
 
@@ -520,6 +521,17 @@ class TastTest(unittest.TestCase):
         }
         self._host.host_info_store.commit(host_info.HostInfo(attributes=attr))
         self._run_test()
+
+    def testWificellArgs(self):
+        """Tests passing Wificell specific args into Tast runner."""
+        ROUTER_IP = '192.168.1.2:1234'
+        wificell_var = 'router=%s' % ROUTER_IP
+        self._init_tast_commands([TestInfo('pkg.Test', 0, 0)],
+                                 run_vars=[wificell_var])
+
+        WiFiManager = wifi_test_context_manager.WiFiTestContextManager
+        args = ["%s=%s" % (WiFiManager.CMDLINE_ROUTER_ADDR, ROUTER_IP)]
+        self._run_test(command_args=args)
 
     def testVarsfileOption(self):
         with tempfile.NamedTemporaryFile(

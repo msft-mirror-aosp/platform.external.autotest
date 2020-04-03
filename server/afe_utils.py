@@ -24,7 +24,12 @@ from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
 
 from chromite.lib import auto_updater
-from chromite.lib import auto_updater_transfer
+# TODO(crbug.com/1066686) remove this try/except when moblab is using more
+# recent chromite.
+try:
+   from chromite.lib import auto_updater_transfer
+except ImportError:
+   pass
 from chromite.lib import remote_access
 
 

@@ -558,6 +558,14 @@ class EcServicer(object):
         else:
             self._ec_handler.disable_write_protect()
 
+    def get_write_protect_status(self):
+        """Get a dict describing the status of the write protection
+
+        @return: {'enabled': True/False, 'start': '0x0', 'length': '0x0', ...}
+        @rtype: dict
+        """
+        return self._ec_handler.get_write_protect_status()
+
     def is_efs(self):
         """Return True if the EC supports EFS."""
         return self._ec_handler.has_section_body('rw_b')

@@ -2199,6 +2199,38 @@ class TempLogger(MeasurementLogger):
 class VideoFpsLogger(MeasurementLogger):
     """Class to measure Video FPS."""
 
+    @classmethod
+    def time_until_ready(cls, tab, num_video=1, timeout=120):
+        """Wait until tab is ready for VideoFpsLogger and return time used.
+
+        Keep polling Chrome tab until these 2 conditions are met one by one.
+        - Number of <video> elements detected is equal to |num_video|.
+        - All videos are played for at least 1 ms.
+
+        Args:
+            tab: Chrome tab object
+            num_video: number of expected <video> elements, default 1.
+            timeout: timeout in seconds, default 120.
+
+        Returns:
+            float, number of seconds elasped until condition met.
+
+        Raises:
+            py_utils.TimeoutException if condition are not met by timeout.
+        """
+        start_time = time.time()
+
+        # Number of <video> elements detected is equal to |num_video|.
+        c = 'document.getElementsByTagName("video").length == %d' % num_video
+        tab.WaitForJavaScriptCondition(c, timeout=timeout)
+
+        # All videos are played for at least 1 ms.
+        c = ('Math.min(...Array.from(document.getElementsByTagName("video"))'
+             '.map(v => v.currentTime)) >= 0.001')
+        timeout_left = timeout - (time.time() - start_time)
+        tab.WaitForJavaScriptCondition(c, timeout=timeout_left)
+        return time.time() - start_time
+
     def __init__(self, tab, seconds_period=1.0, checkpoint_logger=None):
         """Initialize a VideoFpsLogger.
 

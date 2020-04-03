@@ -390,7 +390,7 @@ class BiosServicer(object):
         self._bios_handler.write_whole()
 
     def strip_modified_fwids(self):
-        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs.
+        """Strip trailing suffixes out of the FWIDs (see modify_image_fwids).
 
         @return: a dict of any fwids that were adjusted, by section (ro, a, b)
         @rtype: dict
@@ -580,7 +580,7 @@ class EcServicer(object):
                 'ectool reboot_ec cold switch-slot', modifies_device=True)
 
     def strip_modified_fwids(self):
-        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs."""
+        """Strip trailing suffixes out of the FWIDs (see modify_image_fwids)."""
         return self._ec_handler.strip_modified_fwids()
 
 
@@ -1018,17 +1018,17 @@ class UpdaterServicer(object):
         """Retrieve shellball's RW or RO fwid."""
         return self._updater.get_section_fwid(target, section)
 
-    def get_all_fwids(self, target='bios'):
-        """Retrieve shellball's RW and/or RO fwids for all sections."""
-        return self._updater.get_all_fwids(target)
+    def get_device_fwids(self, target='bios'):
+        """Retrieve flash device's fwids for the target."""
+        return self._updater.get_device_fwids(target)
 
-    def get_all_installed_fwids(self, target='bios', filename=None):
-        """Retrieve installed (possibly emulated) fwids for the target."""
-        return self._updater.get_all_installed_fwids(target, filename)
+    def get_image_fwids(self, target='bios', filename=None):
+        """Retrieve image file's fwids for the target."""
+        return self._updater.get_image_fwids(target, filename)
 
-    def modify_fwids(self, target='bios', sections=None):
+    def modify_image_fwids(self, target='bios', sections=None):
         """Modify the fwid in the image, but don't flash it."""
-        return self._updater.modify_fwids(target, sections)
+        return self._updater.modify_image_fwids(target, sections)
 
     def modify_ecid_and_flash_to_bios(self):
         """Modify ecid, put it to AP firmware, and flash it to the system."""

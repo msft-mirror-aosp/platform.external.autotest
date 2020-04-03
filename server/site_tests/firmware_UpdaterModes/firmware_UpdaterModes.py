@@ -36,9 +36,9 @@ class firmware_UpdaterModes(FirmwareTest):
         finally:
             super(firmware_UpdaterModes, self).cleanup()
 
-    def get_bios_fwids(self, path=None):
+    def get_bios_fwids(self, path):
         """Return the BIOS fwids for the given file"""
-        return self.faft_client.updater.get_all_installed_fwids('bios', path)
+        return self.faft_client.updater.get_image_fwids('bios', path)
 
     def run_case(self, mode, write_protected, written, modify_ro=True,
                  should_abort=False, writes_gbb=False):

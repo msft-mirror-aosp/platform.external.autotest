@@ -11,7 +11,6 @@ This is the core infrastructure. Derived from the client side job.py
 Copyright Martin J. Bligh, Andy Whitcroft 2007
 """
 
-import datetime
 import errno
 import fcntl
 import getpass
@@ -29,6 +28,8 @@ import time
 import traceback
 import uuid
 import warnings
+
+from datetime import datetime
 
 from autotest_lib.client.bin import sysinfo
 from autotest_lib.client.common_lib import base_job

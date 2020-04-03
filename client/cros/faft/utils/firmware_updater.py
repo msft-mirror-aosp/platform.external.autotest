@@ -203,45 +203,18 @@ class FirmwareUpdater(object):
         else:
             return None
 
-    def get_all_fwids(self, target='bios'):
-        """Get all non-empty fwids from in-memory image, for the given target.
+    def get_device_fwids(self, target='bios'):
+        """Get all non-empty fwids from flash, for the given target.
 
         @param target: the image type to get from: 'bios' (default) or 'ec'
-        @return: fwid for the sections
-
-        @type target: str
-        @rtype: dict | None
-        """
-        image_path = self._get_image_path(target)
-        if target == 'ec' and not os.path.isfile(image_path):
-            # If the EC image is missing, report a specific error message.
-            raise FirmwareUpdaterError("Shellball does not contain ec.bin")
-
-        handler = self._get_handler(target)
-        handler.new_image(image_path)
-
-        fwids = {}
-        for section in handler.fv_sections:
-            fwid = handler.get_section_fwid(section)
-            if fwid is not None:
-                fwids[section] = fwid
-        return fwids
-
-    def get_all_installed_fwids(self, target='bios', filename=None):
-        """Get all non-empty fwids from disk or flash, for the given target.
-
-        @param target: the image type to get from: 'bios' (default) or 'ec'
-        @param filename: filename to read instead of using the actual flash
         @return: fwid for the sections
 
         @type target: str
         @type filename: str
         @rtype: dict
         """
-        handler = self._create_handler(target, 'installed')
-        if filename:
-            filename = os.path.join(self._temp_path, filename)
-        handler.new_image(filename)
+        handler = self._create_handler(target, 'flashdevice')
+        handler.new_image()
 
         fwids = {}
         for section in handler.fv_sections:
@@ -250,7 +223,36 @@ class FirmwareUpdater(object):
                 fwids[section] = fwid
         return fwids
 
-    def modify_fwids(self, target='bios', sections=None):
+    def get_image_fwids(self, target='bios', filename=None):
+        """Get all non-empty fwids from disk, for the given target.
+
+        @param target: the image type to get from: 'bios' (default) or 'ec'
+        @param filename: filename to read instead of using the default shellball
+        @return: fwid for the sections
+
+        @type target: str
+        @type filename: str
+        @rtype: dict
+        """
+        if filename:
+            filename = os.path.join(self._temp_path, filename)
+            handler = self._create_handler(target, 'image')
+            handler.new_image(filename)
+        else:
+            filename = self._get_image_path(target)
+            handler = self._get_handler(target)
+            if target == 'ec' and not os.path.isfile(filename):
+                # If the EC image is missing, report a specific error message.
+                raise FirmwareUpdaterError("Shellball does not contain ec.bin")
+
+        fwids = {}
+        for section in handler.fv_sections:
+            fwid = handler.get_section_fwid(section)
+            if fwid is not None:
+                fwids[section] = fwid
+        return fwids
+
+    def modify_image_fwids(self, target='bios', sections=None):
         """Modify the fwid in the image, but don't flash it.
 
         @param target: the image type to modify: 'bios' (default) or 'ec'

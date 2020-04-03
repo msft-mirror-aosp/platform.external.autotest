@@ -610,7 +610,7 @@ class BluetoothAdapterTests(test.test):
         logging.debug("self.bt_group is %s",self.btpeer_group)
 
 
-    def wait_for_device(self, device):
+    def wait_for_device(self, device, timeout=10):
         """Waits for device to become available again
 
         We reset raspberry pi peer between tests. This method helps us wait to
@@ -640,7 +640,8 @@ class BluetoothAdapterTests(test.test):
 
         try:
             utils.poll_for_condition(condition=is_device_ready,
-                                     desc='wait_for_device')
+                                     desc='wait_for_device',
+                                     timeout=timeout)
 
         except utils.TimeoutError as e:
             raise error.TestError('Peer is not available after waiting')
@@ -680,7 +681,7 @@ class BluetoothAdapterTests(test.test):
                 raise
 
         # Ensure device is back online before continuing
-        self.wait_for_device(device)
+        self.wait_for_device(device, timeout=30)
 
 
     def get_device_rasp(self, device_num, on_start=True):

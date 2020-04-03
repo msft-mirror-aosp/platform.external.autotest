@@ -26,7 +26,6 @@ from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.networking import wifi_proxy
 from autotest_lib.client.cros.power import power_dashboard
-from autotest_lib.client.cros.power import power_rapl
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
 from telemetry.core import exceptions
@@ -266,32 +265,10 @@ class power_LoadTest(arc.ArcTest):
             logging.info("Assuming no keyboard backlight due to :: %s", str(e))
             self._keyboard_backlight = None
 
-        measurements = []
-        if self._power_status.battery:
-            measurements += \
-                    [power_status.SystemPower(self._power_status.battery_path)]
-        if power_utils.has_powercap_support():
-            measurements += power_rapl.create_powercap()
-        elif power_utils.has_rapl_support():
-            measurements += power_rapl.create_rapl()
-        elif power_utils.has_amd_rapl_support():
-            measurements += power_rapl.create_amd_rapl()
         self._checkpoint_logger = power_status.CheckpointLogger()
-        self._plog = power_status.PowerLogger(measurements,
-                seconds_period=20,
-                checkpoint_logger=self._checkpoint_logger)
-        self._tlog = power_status.TempLogger([],
-                seconds_period=20,
-                checkpoint_logger=self._checkpoint_logger)
-        self._clog = power_status.CPUStatsLogger(
-                seconds_period=20,
-                checkpoint_logger=self._checkpoint_logger)
-        self._meas_logs = [self._plog, self._tlog, self._clog]
-        if power_status.has_fan():
-            self._flog = power_status.FanRpmLogger(
-                seconds_period=20,
-                checkpoint_logger=self._checkpoint_logger)
-            self._meas_logs.append(self._flog)
+        seconds_period = 20.0
+        self._meas_logs = power_status.create_measurement_loggers(
+                seconds_period, self._checkpoint_logger)
         for log in self._meas_logs:
             log.start()
         if self._log_mem_bandwidth:

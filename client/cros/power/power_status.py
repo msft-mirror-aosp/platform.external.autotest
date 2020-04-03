@@ -2044,13 +2044,35 @@ class CPUStatsLogger(MeasurementLogger):
 
 
 class PowerLogger(MeasurementLogger):
-    """Class to measure power consumption.
-    """
+    """Class to measure power consumption."""
+
+    def __init__(self, measurements, seconds_period, checkpoint_logger):
+        if not measurements:
+            measurements = self.create_measurements()
+        super(PowerLogger, self).__init__(measurements, seconds_period,
+                                          checkpoint_logger)
+
+    def create_measurements(self):
+        """Create power measurements based on device config."""
+        # Import here to avoid import loop.
+        from autotest_lib.client.cros.power import power_rapl
+
+        measurements = []
+        status = get_status()
+        if status.battery_discharging():
+            measurements.append(SystemPower(status.battery_path))
+        if power_utils.has_powercap_support():
+            measurements += power_rapl.create_powercap()
+        elif power_utils.has_rapl_support():
+            measurements += power_rapl.create_rapl()
+        elif power_utils.has_amd_rapl_support():
+            measurements += power_rapl.create_amd_rapl()
+        return measurements
+
     def save_results(self, resultsdir, fname_prefix=None):
         if not fname_prefix:
             fname_prefix = 'power_results_%.0f' % time.time()
         super(PowerLogger, self).save_results(resultsdir, fname_prefix)
-
 
     def calc(self, mtype='pwr'):
         return super(PowerLogger, self).calc(mtype)
@@ -2121,42 +2143,48 @@ def has_battery_temp():
 
 class TempLogger(MeasurementLogger):
     """A thread that logs temperature readings in millidegrees Celsius."""
-    def __init__(self, measurements, seconds_period=30.0, checkpoint_logger=None):
+
+    def __init__(self, measurements, seconds_period=30.0,
+                 checkpoint_logger=None):
         if not measurements:
-            domains = set()
-            measurements = []
-            tstats = ThermalStatHwmon()
-            for kname in tstats.fields:
-                match = re.match(r'(\S+)_temp(\d+)_input', kname)
-                if not match:
-                    continue
-                domain = match.group(1) + '-t' + match.group(2)
-                fpath = tstats.fields[kname][0]
-                new_meas = TempMeasurement(domain, fpath)
-                measurements.append(new_meas)
-                domains.add(domain)
+            measurements = self.create_measurements()
+        super(TempLogger, self).__init__(measurements, seconds_period,
+                                         checkpoint_logger)
 
-            if has_battery_temp():
-                measurements.append(BatteryTempMeasurement())
+    def create_measurements(self):
+        """Create measurements for TempLogger."""
+        domains = set()
+        measurements = []
+        tstats = ThermalStatHwmon()
+        for kname in tstats.fields:
+            match = re.match(r'(\S+)_temp(\d+)_input', kname)
+            if not match:
+                continue
+            domain = match.group(1) + '-t' + match.group(2)
+            fpath = tstats.fields[kname][0]
+            new_meas = TempMeasurement(domain, fpath)
+            measurements.append(new_meas)
+            domains.add(domain)
 
-            sysfs_paths = '/sys/class/thermal/thermal_zone*'
-            paths = glob.glob(sysfs_paths)
-            for path in paths:
-                domain_path = os.path.join(path, 'type')
-                temp_path = os.path.join(path, 'temp')
+        if has_battery_temp():
+            measurements.append(BatteryTempMeasurement())
 
-                domain = utils.read_one_line(domain_path)
+        sysfs_paths = '/sys/class/thermal/thermal_zone*'
+        paths = glob.glob(sysfs_paths)
+        for path in paths:
+            domain_path = os.path.join(path, 'type')
+            temp_path = os.path.join(path, 'temp')
 
-                # Skip when thermal_zone and hwmon have same domain.
-                if domain in domains:
-                    continue
+            domain = utils.read_one_line(domain_path)
 
-                domain = domain.replace(' ', '_')
-                new_meas = TempMeasurement(domain, temp_path)
-                measurements.append(new_meas)
+            # Skip when thermal_zone and hwmon have same domain.
+            if domain in domains:
+                continue
 
-        super(TempLogger, self).__init__(measurements, seconds_period, checkpoint_logger)
-
+            domain = domain.replace(' ', '_')
+            new_meas = TempMeasurement(domain, temp_path)
+            measurements.append(new_meas)
+            return measurements
 
     def save_results(self, resultsdir, fname_prefix=None):
         if not fname_prefix:
@@ -2250,6 +2278,27 @@ class FanRpmLogger(MeasurementLogger):
 
     def calc(self, mtype='rpm'):
         return super(FanRpmLogger, self).calc(mtype)
+
+
+def create_measurement_loggers(seconds_period=20.0, checkpoint_logger=None):
+    """Create loggers for power test that is not test-specific.
+
+    Args:
+       seconds_period: float, probing interval in seconds. Default 20.0
+       checkpoint_logger: CheckpointLogger class for the loggers
+
+    Returns:
+        list of loggers created.
+    """
+    loggers = [
+        PowerLogger(None, seconds_period, checkpoint_logger),
+        TempLogger(None, seconds_period, checkpoint_logger),
+        CPUStatsLogger(seconds_period, checkpoint_logger),
+    ]
+    if has_fan():
+        loggers.append(FanRpmLogger(seconds_period, checkpoint_logger))
+
+    return loggers
 
 
 class DiskStateLogger(threading.Thread):

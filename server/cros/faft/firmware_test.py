@@ -1763,7 +1763,7 @@ class FirmwareTest(FAFTBase):
         @return: the dict of versions in the shellball
         """
         fwids = dict()
-        fwids['bios'] = self.faft_client.updater.get_all_fwids('bios')
+        fwids['bios'] = self.faft_client.updater.get_image_fwids('bios')
 
         if include_ec is None:
             if self.faft_config.platform == 'Samus':
@@ -1772,7 +1772,7 @@ class FirmwareTest(FAFTBase):
                 include_ec = self.faft_config.chrome_ec
 
         if include_ec:
-            fwids['ec'] = self.faft_client.updater.get_all_fwids('ec')
+            fwids['ec'] = self.faft_client.updater.get_image_fwids('ec')
         return fwids
 
     def modify_shellball(self, append, modify_ro=True, modify_ec=False):
@@ -1782,15 +1782,19 @@ class FirmwareTest(FAFTBase):
         """
 
         if modify_ro:
-            self.faft_client.updater.modify_fwids('bios', ['ro', 'a', 'b'])
+            self.faft_client.updater.modify_image_fwids(
+                    'bios', ['ro', 'a', 'b'])
         else:
-            self.faft_client.updater.modify_fwids('bios', ['a', 'b'])
+            self.faft_client.updater.modify_image_fwids(
+                    'bios', ['a', 'b'])
 
         if modify_ec:
             if modify_ro:
-                self.faft_client.updater.modify_fwids('ec', ['ro', 'rw'])
+                self.faft_client.updater.modify_image_fwids(
+                        'ec', ['ro', 'rw'])
             else:
-                self.faft_client.updater.modify_fwids('ec', ['rw'])
+                self.faft_client.updater.modify_image_fwids(
+                        'ec', ['rw'])
 
         modded_shellball = self.faft_client.updater.repack_shellball(append)
 

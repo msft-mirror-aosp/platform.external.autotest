@@ -24,7 +24,12 @@ from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
 
 from chromite.lib import auto_updater
-from chromite.lib import auto_updater_transfer
+# TODO(crbug.com/1066686) remove this try/except when moblab is using more
+# recent chromite.
+try:
+   from chromite.lib import auto_updater_transfer
+except ImportError:
+   pass
 from chromite.lib import remote_access
 
 
@@ -170,13 +175,38 @@ def machine_install_and_update_labels(host, update_url,
         quick-provision for the update.
     @param with_cheets: If true, installation is for a specific, custom
         version of Android for a target running ARC.
-    @param staging_server: Sever where images have been staged. Typically,
+    @param staging_server: Server where images have been staged. Typically,
         an instance of dev_server.ImageServer.
     """
     clean_provision_labels(host)
-    # TODO(crbug.com/1049346): The try-except block exists to catch failures in
-    # chromite auto_updater that may occur due to autotest/chromite version
-    # mismatch. This should be removed once that bug is resolved.
+
+    if use_quick_provision:
+        image_name, host_attributes = _provision_with_quick_provision(
+            host, update_url)
+    else:
+        image_name, host_attributes = _provision_with_au(host, update_url,
+                                                         staging_server)
+
+    if with_cheets:
+        image_name += provision.CHEETS_SUFFIX
+    add_provision_labels(host, host.VERSION_PREFIX, image_name, host_attributes)
+
+def _provision_with_au(host, update_url, staging_server):
+    """Installs a build on the host using chromite ChromiumOSUpdater.
+
+    @param host: Host object where the build is to be installed.
+    @param update_url: URL of the build to install.
+    @param staging_server: Server where images have been staged. Typically,
+        an instance of dev_server.ImageServer.
+
+    @returns A tuple of the form `(image_name, host_attributes)`, where
+        'image_name' is the name of the image installed, and 'host_attributes'
+        are new attributes to be applied to the DUT.
+    """
+    logging.debug("Attempting to provision with Chromite ChromiumOSUpdater.")
+    # TODO(crbug.com/1049346): The try-except block exists to catch failures
+    # in chromite auto_updater that may occur due to autotest/chromite
+    # version mismatch. This should be removed once that bug is resolved.
     try:
         # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
         # update_url.
@@ -194,13 +224,26 @@ def machine_install_and_update_labels(host, update_url,
         repo_url = tools.get_package_url(staging_server.url(), image_name)
         host_attributes = {ds_constants.JOB_REPO_URL: repo_url}
     except Exception as e:
-        logging.warning(
-            "Chromite auto_updater has failed with the exception: %s", e)
-        logging.debug("Attempting to provision with quick provision.")
-        updater = autoupdater.ChromiumOSUpdater(
-            update_url, host=host, use_quick_provision=use_quick_provision)
+        logging.warning('Chromite auto_updater has failed with the exception: '
+                        '%s', e)
+        logging.debug('Attempting to provision with autoupdater '
+                      'ChromiumOSUpdater.')
+        updater = autoupdater.ChromiumOSUpdater(update_url, host=host,
+                                                use_quick_provision=False)
         image_name, host_attributes = updater.run_update()
-    if with_cheets:
-        image_name += provision.CHEETS_SUFFIX
-    add_provision_labels(host, host.VERSION_PREFIX, image_name,
-                         host_attributes)
+    return image_name, host_attributes
+
+def _provision_with_quick_provision(host, update_url):
+    """Installs a build on the host using autoupdater quick-provision.
+
+    @param host: Host object where the build is to be installed.
+    @param update_url: URL of the build to install.
+
+    @returns A tuple of the form `(image_name, host_attributes)`, where
+        'image_name' is the name of the image installed, and 'host_attributes'
+        are new attributes to be applied to the DUT.
+    """
+    logging.debug('Attempting to provision with autoupdater quick-provision.')
+    updater = autoupdater.ChromiumOSUpdater(update_url, host=host,
+                                            use_quick_provision=True)
+    return updater.run_update()

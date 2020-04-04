@@ -451,17 +451,18 @@ class atest(object):
                                dest='log_level')
 
 
-    def add_skylab_options(self, enforce_skylab=False):
-        """Add options for reading and writing skylab inventory repository."""
+    def add_skylab_options(self, enforce_skylab=True):
+        """Add options for reading and writing skylab inventory repository.
+
+        The enforce_skylab parameter does nothing and is kept for compatibility.
+        """
         self.allow_skylab = True
-        self.enforce_skylab = enforce_skylab
+        self.enforce_skylab = True
 
         self.parser.add_option('--skylab',
-                                help=('Use the skylab inventory as the data '
-                                      'source. Default to %s.' %
-                                       self.enforce_skylab),
-                                action='store_true', dest='skylab',
-                                default=self.enforce_skylab)
+                               help='Deprecated',
+                               action='store_const', dest='skylab',
+                               const=True)
         self.parser.add_option('--env',
                                help=('Environment ("prod" or "staging") of the '
                                      'machine. Default to "prod". %s' %
@@ -525,9 +526,7 @@ class atest(object):
 
         @param: options: Option values parsed by the parser.
         """
-        self.skylab = options.skylab
-        if not self.skylab:
-            return
+        self.skylab = True
 
         # TODO(nxia): crbug.com/837831 Add skylab_inventory to
         # autotest-server-deps ebuilds to remove the ImportError check.

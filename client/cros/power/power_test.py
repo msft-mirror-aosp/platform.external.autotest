@@ -6,6 +6,7 @@ import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
@@ -50,6 +51,9 @@ class power_Test(test.test):
         if force_discharge:
             if not self.status.battery:
                 raise error.TestNAError('DUT does not have battery. '
+                                        'Could not force discharge.')
+            if not ec.has_cros_ec():
+                raise error.TestNAError('DUT does not have CrOS EC. '
                                         'Could not force discharge.')
             if not power_utils.charge_control_by_ectool(False):
                 raise error.TestError('Could not run battery force discharge.')

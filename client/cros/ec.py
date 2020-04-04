@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import logging
+import os
 import re
 import time
 
@@ -37,6 +38,15 @@ def has_ectool():
     """
     cmd = 'which ectool'
     return (utils.system(cmd, ignore_status=True) == 0)
+
+
+def has_cros_ec():
+    """Check whether DUT has chromium ec or not.
+
+    Returns:
+        boolean whether device has ec or not.
+    """
+    return os.path.exists('/dev/cros_ec')
 
 
 class ECError(Exception):

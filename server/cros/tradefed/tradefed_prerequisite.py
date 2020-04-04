@@ -9,17 +9,14 @@ _ERROR_PREFIX = 'CTS Test Precondition Failed'
 def bluetooth(hosts):
     """Check for missing bluetooth hardware.
     """
-    for host in hosts:
-       # Makes sure the bluetooth daemon is enabled.
-       host.run('start bluetoothd', ignore_status=True)
-       # Makes sure the bluetooth adapter is on.
-       host.run('echo -e "power on\nexit" | bluetoothctl', ignore_status=True)
-       output = host.run('hcitool dev').stdout
-       lines = output.splitlines()
-       if len(lines) < 2 or not lines[0].startswith('Devices:'):
-           return False, '%s: Bluetooth device is missing.'\
-                         'Stdout of the command "hcitool dev"'\
-                         'on host %s was %s' % (_ERROR_PREFIX, host, output)
+    # TODO(ianrlee): Reenable, once a nice check is found in b/148621587.
+    # for host in hosts:
+    #    output = host.run('hcitool dev').stdout
+    #    lines = output.splitlines()
+    #    if len(lines) < 2 or not lines[0].startswith('Devices:'):
+    #        return False, '%s: Bluetooth device is missing.'\
+    #                      'Stdout of the command "hcitool dev"'\
+    #                      'on host %s was %s' % (_ERROR_PREFIX, host, output)
     return True, ''
 
 

@@ -174,10 +174,6 @@ class FirmwareRepair(hosts.RepairAction):
                    self.hostname, 'cannot find firmware stable_version')
         host.firmware_install(build)
 
-    @property
-    def description(self):
-        return 'Re-install the stable firmware via servo'
-
 
 class FaftFirmwareRepair(FirmwareRepair):
     """
@@ -188,12 +184,11 @@ class FaftFirmwareRepair(FirmwareRepair):
         return afe_utils.get_stable_faft_version_v2(info)
 
     def _is_applicable(self, host):
-        if _is_firmware_testing_device(host):
-            return True
-        else:
-            logging.info('Faft firmware repair is not applicable'
-                         ' to host %s.', host.hostname)
-            return False
+        return _is_firmware_testing_device(host)
+
+    @property
+    def description(self):
+        return 'Re-install the stable firmware(faft) via servo'
 
 
 class GeneralFirmwareRepair(FirmwareRepair):
@@ -207,12 +202,11 @@ class GeneralFirmwareRepair(FirmwareRepair):
         return host.get_cros_repair_image_name()
 
     def _is_applicable(self, host):
-        if not _is_firmware_testing_device(host):
-            return True
-        else:
-            logging.info('General firmware repair is not applicable'
-                         ' to host %s.', host.hostname)
-            return False
+        return not _is_firmware_testing_device(host)
+
+    @property
+    def description(self):
+        return 'Re-install the stable firmware(non-faft) via servo'
 
 
 class FirmwareVersionVerifier(hosts.Verifier):

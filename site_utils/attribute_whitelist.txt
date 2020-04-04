@@ -48,6 +48,12 @@ suite:audio_essential
 suite:au_fsi
 suite:au-oobe
 suite:au-perbuild
+suite:av-analysis_per-build
+suite:av-analysis_per-day
+suite:av-analysis_per-week
+suite:av-analysis_trace_per-build
+suite:av-analysis_trace_per-day
+suite:av-analysis_trace_per-week
 suite:av_webcam
 suite:bluestreak-partners
 suite:bluestreak-pre-cq

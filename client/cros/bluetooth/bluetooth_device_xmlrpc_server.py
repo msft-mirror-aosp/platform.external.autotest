@@ -29,7 +29,8 @@ from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import output_recorder
 
 
-CheckQualityArgsClass = collections.namedtuple('args_type', ['filename'])
+CheckQualityArgsClass = collections.namedtuple(
+        'args_type', ['filename', 'rate', 'channel', 'bit_width'])
 
 
 def _dbus_byte_array_to_b64_string(dbus_byte_array):
@@ -1889,19 +1890,22 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                     'reset_advertising: failed: %s', str(error)))
 
 
-    def start_capturing_audio_subprocess(self, audio_data):
+    def start_capturing_audio_subprocess(self, audio_data, recording_device):
         """Start capturing audio in a subprocess.
 
         @param audio_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
 
         @returns: True on success. False otherwise.
         """
+        audio_data = json.loads(audio_data)
         return self._cras_test_client.start_capturing_subprocess(
-                audio_data.file,
-                sample_format=audio_data.format,
-                channels=audio_data.channels,
-                rate=audio_data.rate,
-                duration=audio_data.duration)
+                audio_data[recording_device],
+                sample_format=audio_data['format'],
+                channels=audio_data['channels'],
+                rate=audio_data['rate'],
+                duration=audio_data['duration'])
 
 
     def stop_capturing_audio_subprocess(self):
@@ -1928,14 +1932,20 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                                            duration=audio_data['duration'])
 
 
-    def get_primary_frequencies(self, audio_file):
+    def get_primary_frequencies(self, audio_test_data, recording_device):
         """Get primary frequencies of the audio test file.
 
-        @param audio_file: the audio test file
+        @param audio_test_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
 
         @returns: a list of primary frequencies of channels in the audio file
         """
-        args = CheckQualityArgsClass(filename = audio_file)
+        audio_test_data = json.loads(audio_test_data)
+        args = CheckQualityArgsClass(filename=audio_test_data[recording_device],
+                                     rate=audio_test_data['rate'],
+                                     channel=audio_test_data['channels'],
+                                     bit_width=16)
         raw_data, rate = check_quality.read_audio_file(args)
         checker = check_quality.QualityChecker(raw_data, rate)
         # The highest frequency recorded would be near 24 Khz
@@ -1949,6 +1959,26 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                         for i in range(len(spectra))]
         primary_freq.sort()
         return primary_freq
+
+
+    def enable_wbs(self, value):
+        """Enable or disable wideband speech (wbs) per the value.
+
+        @param value: True to enable wbs.
+
+        @returns: True if the operation succeeds.
+        """
+        return self._cras_test_client.enable_wbs(value)
+
+
+    def select_input_device(self, device_name):
+        """Select the audio input device.
+
+        @param device_name: the name of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return self._cras_test_client.select_input_device(device_name)
 
 
     @xmlrpc_server.dbus_safe(None)

@@ -10,8 +10,13 @@ import os
 audio_test_dir = '/usr/local/autotest/cros/audio/test_data'
 audio_record_dir = '/tmp'
 
+A2DP = 'a2dp'
+HFP_NBS = 'hfp_nbs'
+HFP_WBS = 'hfp_wbs'
 
-audio_test_data = {
+
+common_test_data = {
+    'bit_width': 16,
     'format': 'S16_LE',
     'duration': 5,
 }
@@ -21,23 +26,30 @@ audio_test_data = {
 hfp_nbs_test_data = {
     'rate': 8000,
     'channels': 1,
-    'file': os.path.join(audio_test_dir, 'hfp_nbs_recorded_on_dut.wav'),
-    'recorded_file': os.path.join(audio_record_dir,
-                                  'hfp_nbs_recorded_by_chameleon.wav'),
+    'frequencies': (3500,),
+    'file': os.path.join(audio_test_dir, 'sine_3500hz_rate8000_ch1_5secs.wav'),
+    'recorded_by_peer': os.path.join(audio_record_dir,
+                                     'hfp_nbs_recorded_by_peer.wav'),
+    'recorded_by_dut': os.path.join(audio_record_dir,
+                                    'hfp_nbs_recorded_by_dut.raw'),
 }
-hfp_nbs_test_data.update(audio_test_data)
+hfp_nbs_test_data.update(common_test_data)
 
 
 # Audio test data for hfp wide band speech
 hfp_wbs_test_data = {
     'rate': 16000,
     'channels': 1,
+
+    'frequencies': (7000,),
     'file': os.path.join(audio_test_dir,
-                         'binaural_sine_440hz_880hz_rate48000_5secs.wav'),
-    'recorded_file': os.path.join(audio_record_dir,
-                                  'hfp_wbs_recorded_by_chameleon.wav'),
+                         'sine_7000hz_rate16000_ch1_5secs.wav'),
+    'recorded_by_peer': os.path.join(audio_record_dir,
+                                     'hfp_wbs_recorded_by_peer.wav'),
+    'recorded_by_dut': os.path.join(audio_record_dir,
+                                    'hfp_wbs_recorded_by_dut.raw'),
 }
-hfp_wbs_test_data.update(audio_test_data)
+hfp_wbs_test_data.update(common_test_data)
 
 
 # Audio test data for a2dp
@@ -47,7 +59,14 @@ a2dp_test_data = {
     'frequencies': (440, 20000),
     'file': os.path.join(audio_test_dir,
                          'binaural_sine_440hz_20000hz_rate48000_5secs.wav'),
-    'recorded_file': os.path.join(audio_record_dir,
-                                  'a2dp_recorded_by_chameleon.wav'),
+    'recorded_by_peer': os.path.join(audio_record_dir,
+                                     'a2dp_recorded_by_peer.wav'),
 }
-a2dp_test_data.update(audio_test_data)
+a2dp_test_data.update(common_test_data)
+
+
+audio_test_data = {
+    A2DP: a2dp_test_data,
+    HFP_WBS: hfp_wbs_test_data,
+    HFP_NBS: hfp_nbs_test_data,
+}

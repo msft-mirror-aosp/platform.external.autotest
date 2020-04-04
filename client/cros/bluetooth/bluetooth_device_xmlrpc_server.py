@@ -14,6 +14,7 @@ import gobject
 import json
 import logging
 import logging.handlers
+import os
 import subprocess
 import functools
 import time
@@ -1916,6 +1917,33 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return self._cras_test_client.stop_capturing_subprocess()
 
 
+    def start_playing_audio_subprocess(self, audio_data):
+        """Start playing audio in a subprocess.
+
+        @param audio_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        audio_data = json.loads(audio_data)
+        try:
+            return self._cras_test_client.start_playing_subprocess(
+                    audio_data['file'],
+                    channels=audio_data['channels'],
+                    rate=audio_data['rate'],
+                    duration=audio_data['duration'])
+        except Exception as e:
+            logging.error("start_playing_subprocess() failed: %s", str(e))
+            return False
+
+
+    def stop_playing_audio_subprocess(self):
+        """Stop playing audio in the subprocess.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._cras_test_client.stop_playing_subprocess()
+
+
     def play_audio(self, audio_data):
         """Play audio.
 
@@ -1930,6 +1958,34 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                                            channels=audio_data['channels'],
                                            rate=audio_data['rate'],
                                            duration=audio_data['duration'])
+
+
+    def check_audio_frames_legitimacy(self, audio_test_data, recording_device):
+        """Get the number of frames in the recorded audio file.
+
+        @param audio_test_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+
+        @returns: True if audio frames are legitimate.
+        """
+        audio_test_data = json.loads(audio_test_data)
+        recorded_filename = audio_test_data[recording_device]
+        if recorded_filename.endswith('.raw'):
+            # Make sure that the recorded file does not contain all zeros.
+            filesize = os.path.getsize(recorded_filename)
+            cmd_str = 'cmp -s -n %d %s /dev/zero' % (filesize,
+                                                     recorded_filename)
+            try:
+                result = subprocess.call(cmd_str.split())
+                return result != 0
+            except Exception as e:
+                logging.error("Failed: %s (%s)", cmd_str, str(e))
+                return False
+        else:
+            # The recorded wav file should not be empty.
+            wav_file = check_quality.WaveFile(audio_test_data[recording_device])
+            return wav_file.get_number_frames() > 0
 
 
     def get_primary_frequencies(self, audio_test_data, recording_device):

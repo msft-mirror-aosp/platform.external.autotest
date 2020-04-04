@@ -93,6 +93,30 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 device.GetBluezSinkHFPDevice, device)
 
 
+    def _check_audio_frames_legitimacy(self, audio_test_data, recording_device):
+        """Check if audio frames in the recorded file are legitimate.
+
+        For a wav file, a simple check is to make sure the recorded audio file
+        is not empty.
+
+        For a raw file, a simple check is to make sure the recorded audio file
+        are not all zeros.
+
+        @param audio_test_data: a dictionary about the audio test data
+                defined in client/cros/bluetooth/bluetooth_audio_test_data.py
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+
+        @returns: True if audio frames are legitimate.
+        """
+        result = self.bluetooth_facade.check_audio_frames_legitimacy(
+                audio_test_data, recording_device)
+        if not result:
+            self.results = {'audio_frames_legitimacy': 'empty or all zeros'}
+            logging.error('The recorded audio file is empty or all zeros.')
+        return result
+
+
     def _check_frequency(self, recorded_freq, expected_freq):
         """Check if the recorded frequency is within tolerance.
 
@@ -246,6 +270,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         recorded_file = a2dp_test_data['recorded_by_peer']
         device.ScpToDut(recorded_file, recorded_file, self.host.ip)
 
+        # Check if the audio frames in the recorded file are legitimate.
+        if not self._check_audio_frames_legitimacy(a2dp_test_data,
+                                                   'recorded_by_peer'):
+            return False
+
         # Check if the primary frequencies of recorded file meet expectation.
         check_freq_result = self._check_primary_frequencies(a2dp_test_data,
                                                             'recorded_by_peer')
@@ -291,10 +320,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             raise error.TestError(
                     'Failed to record on the peer Bluetooth audio device.')
 
-        # Play audio on the DUT.
+        # Play audio on the DUT in a non-blocked way.
+        # If there are issues, cras_test_client playing back might be blocked
+        # forever. We would like to avoid the testing procedure from that.
         logging.debug('Start playing audio')
-        if not self.bluetooth_facade.play_audio(hfp_test_data):
+        if not self.bluetooth_facade.start_playing_audio_subprocess(
+                hfp_test_data):
             raise error.TestError('DUT failed to play audio.')
+
+        time.sleep(hfp_test_data['duration'])
 
         logging.debug('Stop recording audio on Pi')
         # Stop recording audio on the peer Bluetooth audio device.
@@ -311,6 +345,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         logging.debug('Scp to DUT')
         recorded_file = hfp_test_data['recorded_by_peer']
         device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+
+        # Check if the audio frames in the recorded file are legitimate.
+        if not self._check_audio_frames_legitimacy(hfp_test_data,
+                                                   'recorded_by_peer'):
+            return False
 
         # Check if the primary frequencies of recorded file meet expectation.
         check_freq_result = self._check_primary_frequencies(hfp_test_data,
@@ -373,6 +412,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         logging.debug('Stop recording audio on DUT')
         if not self.bluetooth_facade.stop_capturing_audio_subprocess():
             raise error.TestError('DUT failed to stop capturing audio.')
+
+        # Check if the audio frames in the recorded file are legitimate.
+        if not self._check_audio_frames_legitimacy(hfp_test_data,
+                                                   'recorded_by_dut'):
+            return False
 
         # Check if the primary frequencies of recorded file meet expectation.
         check_freq_result = self._check_primary_frequencies(hfp_test_data,

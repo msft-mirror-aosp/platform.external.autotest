@@ -20,7 +20,9 @@ from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
-from autotest_lib.client.cros import backchannel, httpd
+from autotest_lib.client.cros import backchannel
+from autotest_lib.client.cros import ec
+from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros import memory_bandwidth_logger
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.audio import audio_helper
@@ -120,6 +122,9 @@ class power_LoadTest(arc.ArcTest):
         if force_discharge:
             if not self._power_status.battery:
                 raise error.TestNAError('DUT does not have battery. '
+                                        'Could not force discharge.')
+            if not ec.has_cros_ec():
+                raise error.TestNAError('DUT does not have CrOS EC. '
                                         'Could not force discharge.')
             if not power_utils.charge_control_by_ectool(False):
                 raise error.TestError('Could not run battery force discharge.')

@@ -39,7 +39,7 @@ The framework itself is split up into a [server side](/server/cros/faft) and a [
     - [Cr50Test](/server/cros/faft/cr50_test.py): Base test class for firmware_Cr50 tests.  It has initialization and utility methods tailored to Cr50 tests.
     - [FingerprintTest](/server/cros/faft/fingerprint_test.py): Base test class firmware_Fingerprint tests.  It has initialization and utility methods tailored to fingerprint tests.
 - ### [Utility modules](/server/cros/faft/utils)
-    - [config](/server/cros/faft/utils/config.py): Table of board specific properties (makes use of [config json](/server/cros/faft/configs) files)
+    - [config](/server/cros/faft/utils/config.py): Table of board specific properties (makes use of [config json](/server/cros/faft/fw-testing-configs) files)
     - [faft_checkers](/server/cros/faft/utils/faft_checkers.py): Various assertions about DUT state.
     - [mode_switcher](/server/cros/faft/utils/mode_switcher.py): Boots the DUT into a specified mode (as in normal, developer, recovery).
 

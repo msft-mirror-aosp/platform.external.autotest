@@ -596,6 +596,8 @@ class RepairAction(_DependencyNode):
         self.status = 'blocked'
 
         if not self._is_applicable(host):
+            logging.info('RepairAction is not applicable, skipping repair: %s',
+                         self.description)
             self.status = 'skipped'
             return
 
@@ -647,7 +649,7 @@ class RepairAction(_DependencyNode):
                 raise
         else:
             self.status = 'skipped'
-            logging.info('No failed triggers, skipping repair:  %s',
+            logging.info('No failed triggers, skipping repair: %s',
                          self.description)
 
     def repair(self, host):

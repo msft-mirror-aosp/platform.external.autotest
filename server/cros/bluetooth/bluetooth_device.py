@@ -798,14 +798,17 @@ class BluetoothDevice(object):
         return self._proxy.reset_advertising()
 
 
-    def start_capturing_audio_subprocess(self, audio_data):
+    def start_capturing_audio_subprocess(self, audio_data, recording_device):
         """Start capturing audio in a subprocess.
 
         @param audio_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
 
         @returns: True on success. False otherwise.
         """
-        return self._proxy.start_capturing_audio_subprocess(audio_data)
+        return self._proxy.start_capturing_audio_subprocess(
+                json.dumps(audio_data), recording_device)
 
 
     def stop_capturing_audio_subprocess(self):
@@ -814,6 +817,25 @@ class BluetoothDevice(object):
         @returns: True on success. False otherwise.
         """
         return self._proxy.stop_capturing_audio_subprocess()
+
+
+    def start_playing_audio_subprocess(self, audio_data):
+        """Start playing audio in a subprocess.
+
+        @param audio_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        audio_data = json.dumps(audio_data)
+        return self._proxy.start_playing_audio_subprocess(audio_data)
+
+
+    def stop_playing_audio_subprocess(self):
+        """Stop playing audio in the subprocess.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._proxy.stop_playing_audio_subprocess()
 
 
     def play_audio(self, audio_data):
@@ -828,14 +850,50 @@ class BluetoothDevice(object):
         return self._proxy.play_audio(json.dumps(audio_data))
 
 
-    def get_primary_frequencies(self, audio_file):
+    def check_audio_frames_legitimacy(self, audio_test_data, recording_device):
+        """Get the number of frames in the recorded audio file.
+        @param audio_test_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+
+        @returns: True if audio frames are legitimate.
+        """
+        return self._proxy.check_audio_frames_legitimacy(
+                json.dumps(audio_test_data), recording_device)
+
+
+    def get_primary_frequencies(self, audio_test_data, recording_device):
         """Get primary frequencies of the audio test file.
 
-        @param audio_file: the audio test file
+        @param audio_test_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
 
         @returns: a list of primary frequencies of channels in the audio file
         """
-        return self._proxy.get_primary_frequencies(audio_file)
+        return self._proxy.get_primary_frequencies(
+                json.dumps(audio_test_data), recording_device)
+
+
+    def enable_wbs(self, value):
+        """Enable or disable wideband speech (wbs) per the value.
+
+        @param value: True to enable wbs.
+
+        @returns: True if the operation succeeds.
+        """
+        logging.debug('%s wbs', 'enable' if value else 'disable')
+        return self._proxy.enable_wbs(value)
+
+
+    def select_input_device(self, device_name):
+        """Select the audio input device.
+
+        @param device_name: the name of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return self._proxy.select_input_device(device_name)
 
 
     def read_characteristic(self, uuid, address):

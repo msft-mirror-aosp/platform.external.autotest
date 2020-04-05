@@ -1,23 +1,25 @@
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.wifi-func'
-TIME = 'MEDIUM'
+NAME = 'tast.av-video-weekly'
+TIME = 'LONG'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_func_tast'
+ATTRIBUTES = 'suite:av-analysis_per-week'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 
-DOC = '''
-Run the Tast tests which verifies basic WiFi functions using wificell fixture.
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
 
-"group:wificell" indicates tests that runs on wificell.
-And its sub-attribute "wificell_func" indicates tests which verifies basic WiFi functions.
+DOC = '''
+Run the Tast graphics-video test suite for screen capture analysis.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
+
+This test runs Tast-based graphics-video tests against a remote DUT.
 
 See http://go/tast-failures for information about investigating failures.
 '''
@@ -25,12 +27,8 @@ See http://go/tast-failures for information about investigating failures.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['(!disabled && "group:wificell" && '
-                             'wificell_func)'],
+                 test_exprs=['(!disabled && "group:graphics" && graphics_weekly && graphics_video && av_analysis)'],
                  ignore_test_failures=True, max_run_sec=10800,
-                 # TODO(crbug.com/1065600): remove the constraint once the issue
-                 # is fixed.
-                 run_private_tests=False,
                  command_args=args)
 
 parallel_simple(run, machines)

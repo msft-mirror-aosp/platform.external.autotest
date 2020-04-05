@@ -8,8 +8,8 @@ import os
 
 import common
 
-CONFIG_DIR = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), os.pardir, 'configs')
+CONFIG_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+        os.pardir, 'fw-testing-configs')
 
 
 def _get_config_filepath(platform):

@@ -8,6 +8,7 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.faft.firmware_test import ConnectionError
 
 
 class firmware_ECWakeSource(FirmwareTest):
@@ -31,7 +32,7 @@ class firmware_ECWakeSource(FirmwareTest):
         super(firmware_ECWakeSource, self).cleanup()
 
     def hibernate_and_wake_by_power_button(self):
-        """Shutdown to G2/S5, then hibernate EC. Finally, wake by power button."""
+        """Shutdown to G3/S5, hibernate EC, and then wake by power button."""
         self.faft_client.system.run_shell_command("shutdown -H now")
         self.switcher.wait_for_client_offline()
         self.ec.send_command("hibernate 1000")
@@ -69,6 +70,24 @@ class firmware_ECWakeSource(FirmwareTest):
 
         logging.info("Suspend and wake by power button.")
         self.suspend_and_wake(self.suspend, self.servo.power_normal_press)
+
+        if not self.check_ec_capability(['keyboard']):
+            logging.info("The device has no internal keyboard. "
+                         "Skip testing suspend/resume by internal keyboard.")
+        else:
+            logging.info("Suspend and wake by internal key press.")
+            self.suspend_and_wake(self.suspend,
+                                  lambda:self.ec.key_press('<enter>'))
+
+        logging.info("Suspend and wake by USB HID key press.")
+        try:
+            self.suspend_and_wake(self.suspend,
+                    lambda:self.servo.set_nocheck('usb_keyboard_enter_key',
+                                                  'press'))
+        except ConnectionError:
+            raise error.TestFail("USB HID suspend/resume fails. Maybe try to "
+                    "update firmware for Atmel USB KB emulator by running "
+                    "firmware_FlashServoKeyboardMap test and then try again?")
 
         if not self.check_ec_capability(['lid']):
             logging.info("The device has no lid. "

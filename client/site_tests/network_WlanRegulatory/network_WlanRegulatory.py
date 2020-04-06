@@ -44,9 +44,9 @@ class network_WlanRegulatory(test.test):
         logging.info('Using iw to set regulatory domain to %s', regdomain)
         self._iw.set_regulatory_domain(regdomain)
 
-        # It takes time for the kernel to invoke udev, which will in turn
-        # invoke CRDA.  Since this is asynchronous with the exit of the
-        # "iw" utility, we must wait a while.
+        # The kernel handles the user hint asynchronously (either calling out
+        # to udev/CRDA, or to the in-kernel database). Wait a bit.
+        # TODO: poll instead, or watch for NL80211_CMD_REG_CHANGE.
         time.sleep(1)
 
         current_regdomain = self._iw.get_regulatory_domain(wiphy=self._wiphy)
@@ -56,24 +56,25 @@ class network_WlanRegulatory(test.test):
 
     def run_once(self):
         """Test main loop"""
-        wlan_ifs = [nic for nic in interface.get_interfaces()
-                    if nic.is_wifi_device()]
-        if not wlan_ifs:
-            raise error.TestFail('No WiFi device found')
-        self._wiphy = wlan_ifs[0].wiphy_name
-
         self._iw = iw_runner.IwRunner()
-        # Stash the global domain; we can only 'set' the global domain, and we
-        # want to restore it in the end if things go awry.
-        self._initial_regdomain = self._iw.get_regulatory_domain()
-        logging.info('Initial global regulatory domain is %s',
-                     self._initial_regdomain)
 
         # If the driver "self manages" (NL80211_ATTR_WIPHY_SELF_MANAGED_REG)
         # its domain detection, we can't guarantee it will respect user-space
         # settings.
         if self._iw.is_regulatory_self_managed():
             raise error.TestNAError('Wiphy is self-managed')
+
+        wlan_ifs = [nic for nic in interface.get_interfaces()
+                    if nic.is_wifi_device()]
+        if not wlan_ifs:
+            raise error.TestFail('No WiFi device found')
+        self._wiphy = wlan_ifs[0].wiphy_name
+
+        # Stash the global domain; we can only 'set' the global domain, and we
+        # want to restore it in the end if things go awry.
+        self._initial_regdomain = self._iw.get_regulatory_domain()
+        logging.info('Initial global regulatory domain is %s',
+                     self._initial_regdomain)
 
         domain_list = self.get_regulatory_domains()
         if not domain_list:

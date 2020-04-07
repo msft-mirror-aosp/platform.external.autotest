@@ -688,6 +688,16 @@ RPC_CATEGORIES = [
                 "failing_args": [NO_ARGS],
             },
             {
+                "method_name": "get_firmwareupdate_command",
+                "passing_args": [
+                    ("autoupdate", ),
+                    ("recovery", ),
+                    ("factory_install", ),
+                ],
+                "failing_args": [NO_ARGS],
+                "expected_return_type": str
+            },
+            {
                 "method_names": [
                     "run_autoupdate",
                     "run_bootok",

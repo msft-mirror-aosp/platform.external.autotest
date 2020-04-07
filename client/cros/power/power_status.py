@@ -2046,7 +2046,8 @@ class CPUStatsLogger(MeasurementLogger):
 class PowerLogger(MeasurementLogger):
     """Class to measure power consumption."""
 
-    def __init__(self, measurements, seconds_period, checkpoint_logger):
+    def __init__(self, measurements, seconds_period=1.0,
+                 checkpoint_logger=None):
         if not measurements:
             measurements = self.create_measurements()
         super(PowerLogger, self).__init__(measurements, seconds_period,

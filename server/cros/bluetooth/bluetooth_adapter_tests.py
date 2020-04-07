@@ -471,6 +471,10 @@ def test_retry_and_log(test_method_or_retry_flag):
                                                       str(instance.results))
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
+                if instance.fail_fast:
+                    logging.info('Fail fast')
+                    raise error.TestFail(instance.fails)
+
             return test_result
         return wrapper
 
@@ -573,6 +577,7 @@ class BluetoothAdapterTests(test.test):
 
     #Path for usbmon logs
     USBMON_DIR_LOG_PATH = '/var/log/usbmon'
+
 
     def group_btpeers_type(self):
         """Group all Bluetooth peers by the type of their detected device."""
@@ -1156,6 +1161,9 @@ class BluetoothAdapterTests(test.test):
     @test_retry_and_log
     def test_stop_discovery(self):
         """Test that the adapter could stop discovery."""
+        if not self.bluetooth_facade.is_discovering():
+            return True
+
         stop_discovery, _ = self.bluetooth_facade.stop_discovery()
         is_not_discovering = self._wait_for_condition(
                 lambda: not self.bluetooth_facade.is_discovering(),
@@ -3309,6 +3317,10 @@ class BluetoothAdapterTests(test.test):
 
         # The count of registered advertisements.
         self.count_advertisements = 0
+
+        # By default don't fail fast so that batch run can continue, for MTBF
+        # it should be set to True
+        self.fail_fast = False
 
 
     def check_btpeer(self):

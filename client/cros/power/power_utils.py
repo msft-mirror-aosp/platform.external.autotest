@@ -104,9 +104,9 @@ def has_amd_rapl_support():
     """
     cpuinfo = utils.get_cpuinfo()[0]
     logging.info(repr(cpuinfo))
-    return (cpuinfo['vendor_id'] == 'AuthenticAMD' and
-            int(cpuinfo['cpu family']) == 0x17 and
-            0 <= int(cpuinfo['model']) <= 0x2f)
+    return (cpuinfo.get('vendor_id', '') == 'AuthenticAMD' and
+            int(cpuinfo.get('cpu family', 0)) == 0x17 and
+            0 <= int(cpuinfo.get('model', -1)) <= 0x2f)
 
 
 def has_lid():

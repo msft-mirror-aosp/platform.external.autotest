@@ -30,6 +30,7 @@ control.storeage_qual_hardware_StorageStress_retention_soak_12
 import copy
 
 STORAGE_QUAL_VERSION = 1
+STORAGE_QUAL_EXTERNAL_VERSION = 1
 DAY_IN_HOURS = 24
 MINUTE_IN_SECS = 60
 HOUR_IN_SECS = MINUTE_IN_SECS * 60
@@ -67,6 +68,12 @@ BASE_AFTER = {
     'priority': 70,
     'length': 'long'
 }
+
+
+BASE_NONROOT_BEFORE = copy.deepcopy(BASE_BEFORE)
+BASE_NONROOT_BEFORE['args']['nonroot'] = True
+BASE_NONROOT_AFTER = copy.deepcopy(BASE_AFTER)
+BASE_NONROOT_AFTER['args']['nonroot'] = True
 
 SOAK_QUICK = copy.deepcopy(SOAK)
 SOAK_QUICK['iterations'] = 2
@@ -188,6 +195,24 @@ SUITES = {
             ]
         }
     ],
+    'storage_qual_external': [
+        {
+            'label': 'storage_qual_external',
+            'tests': [
+                BASE_NONROOT_BEFORE,
+                {
+                    'test': 'hardware_StorageQualSuspendStress',
+                    'args': {'tag': 'suspend', 'duration': 4 * HOUR_IN_SECS,
+                        'other_dev': True
+                    },
+                    'iterations': 2,
+                    'priority': 80,
+                    'length': 'long'
+                },
+                BASE_NONROOT_AFTER
+            ]
+        }
+    ],
     'storage_qual_cq': [
         {
             'label': 'storage_qual_cq_1',
@@ -230,11 +255,26 @@ SUITES = {
 SUITE_ATTRIBUTES = {
     'storage_qual': 'suite:storage_qual',
     'storage_qual_quick': 'suite:storage_qual_quick',
-    'storage_qual_cq': 'suite:storage_qual_cq'
+    'storage_qual_cq': 'suite:storage_qual_cq',
+    'storage_qual_external': 'suite:storage_qual_external'
+}
+
+QUAL_VERSION_KEY = {
+    'storage_qual': "'storage_qual_version'",
+    'storage_qual_quick': "'storage_qual_version'",
+    'storage_qual_cq': "'storage_qual_version'",
+    'storage_qual_external': "'storage_qual_external_version'"
+}
+
+QUAL_VERSION = {
+    'storage_qual': STORAGE_QUAL_VERSION,
+    'storage_qual_quick': STORAGE_QUAL_VERSION,
+    'storage_qual_cq': STORAGE_QUAL_VERSION,
+    'storage_qual_external': STORAGE_QUAL_EXTERNAL_VERSION
 }
 
 TEMPLATE = """
-# Copyright (c) 2018 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -243,7 +283,7 @@ TEMPLATE = """
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "chromeos-storage"
 NAME = "{name}"
 ATTRIBUTES = "{attributes}"
 PURPOSE = "{name}"
@@ -259,7 +299,7 @@ JOB_RETRIES = 0
 DOC = "{name}"
 
 keyval = dict()
-keyval['storage_qual_version'] = {version}
+keyval[{version_key}] = {version}
 keyval['bug_id'] = bug_id
 keyval['part_id'] = part_id
 utils.write_keyval(job.resultdir, keyval)
@@ -287,7 +327,7 @@ def _get_control_file_name(suite, label, test, i=None):
 
 def _get_args(test):
     args = []
-    for key, value in test['args'].iteritems():
+    for key, value in test['args'].items():
         args.append('%s=%s' % (key, repr(value)))
     return ', '.join(args)
 
@@ -303,7 +343,7 @@ for suite in SUITES:
         label = sub_test['label']
         for test in sub_test['tests']:
             if 'iterations' in test:
-                for i in xrange(test['iterations']):
+                for i in range(int(test['iterations'])):
                     control_file = TEMPLATE.format(
                         label = label,
                         name = _get_name(label, test, i),
@@ -312,7 +352,8 @@ for suite in SUITES:
                         test = test['test'],
                         length = test['length'],
                         attributes = SUITE_ATTRIBUTES[suite],
-                        version = STORAGE_QUAL_VERSION,
+                        version_key = QUAL_VERSION_KEY[suite],
+                        version = QUAL_VERSION[suite],
                     )
                     _write_control_file(_get_control_file_name(
                         suite, label, test, i), control_file)
@@ -326,7 +367,8 @@ for suite in SUITES:
                     test = test['test'],
                     length = test['length'],
                     attributes = SUITE_ATTRIBUTES[suite],
-                    version = STORAGE_QUAL_VERSION
+                    version_key = QUAL_VERSION_KEY[suite],
+                    version = QUAL_VERSION[suite]
                 )
                 _write_control_file(_get_control_file_name(suite, label, test),
                         control_file)

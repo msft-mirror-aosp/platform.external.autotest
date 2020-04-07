@@ -219,6 +219,7 @@ suite:something_else
 suite:ssdqual
 suite:storage_qual
 suite:storage_qual_cq
+suite:storage_qual_external
 suite:storage_qual_quick
 suite:storage_qual_temp
 suite:storagequal

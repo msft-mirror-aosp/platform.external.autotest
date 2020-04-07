@@ -41,6 +41,19 @@ class bluetooth_AdapterCLSanity(BluetoothAdapterQuickTests,
         self.test_device_name(device.address, device.name)
 
 
+    @test_wrapper('Discoverable Test', devices={"MOUSE":1})
+    def cl_adapter_discoverable_test(self):
+        """Verifies that DUT can become discoverable and be discovered"""
+
+        device = self.devices['MOUSE'][0]
+
+        # Put DUT into discoverable state
+        self.test_discoverable()
+
+        # Try and discover DUT from peripheral device
+        self.test_discover_by_device(device)
+
+
     @test_wrapper('Pairing Test', devices={"MOUSE":1})
     def cl_adapter_pairing_test(self):
         """Performs pairing test with mouse peripheral"""

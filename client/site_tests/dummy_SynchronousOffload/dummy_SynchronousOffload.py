@@ -18,6 +18,10 @@ class dummy_SynchronousOffload(test.test):
     DIR = os.getenv('SYNCHRONOUS_OFFLOAD_DIR', "")
     if DIR == "":
       raise error.TestFail("Did not find value for SYNCHRONOUS_OFFLOAD_DIR")
+    if not os.path.isdir(DIR):
+      raise error.TestFail("$SYNCHRONOUS_OFFLOAD_DIR=%s, which is not "
+                           "a valid directory." % DIR)
+    logging.debug("Writing to directory %s", DIR)
     with open(os.path.join(DIR,"test_file"), "w") as f:
       f.write("Test string which should be offloaded")
       logging.debug("Wrote string to test file.")

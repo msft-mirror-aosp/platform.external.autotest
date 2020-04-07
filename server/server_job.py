@@ -11,7 +11,6 @@ This is the core infrastructure. Derived from the client side job.py
 Copyright Martin J. Bligh, Andy Whitcroft 2007
 """
 
-import datetime
 import errno
 import fcntl
 import getpass
@@ -30,6 +29,8 @@ import traceback
 import uuid
 import warnings
 
+from datetime import datetime
+
 from autotest_lib.client.bin import sysinfo
 from autotest_lib.client.common_lib import base_job
 from autotest_lib.client.common_lib import control_data
@@ -41,6 +42,7 @@ from autotest_lib.server import profilers
 from autotest_lib.server import site_gtest_runner
 from autotest_lib.server import subcommand
 from autotest_lib.server import test
+from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.server import hosts
@@ -822,13 +824,16 @@ class server_job(base_job.base_job):
                     utils.open_write_close(server_control_file, control)
 
                 sync_dir = self._offload_dir_target_path()
-                namespace['synchronous_offload_dir'] = sync_dir
                 if self._sync_offload_dir:
                     logging.info("Preparing synchronous offload dir")
                     self.create_marker_file()
                     logging.info("Offload dir and marker file ready")
+                    logging.debug("Results dir is %s", self.resultdir)
+                    logging.debug("Synchronous offload dir is %s", sync_dir)
                 logging.info("Processing control file")
                 namespace['use_packaging'] = use_packaging
+                namespace['synchronous_offload_dir'] = sync_dir
+                os.environ[OFFLOAD_ENVVAR] = sync_dir
                 self._execute_code(server_control_file, namespace)
                 logging.info("Finished processing control file")
 
@@ -887,7 +892,7 @@ class server_job(base_job.base_job):
         return os.path.join(self.resultdir, self._sync_offload_dir)
 
 
-    def _client_offload_dir_lambda_generator(self, file_path, offload_path):
+    def _client_off_dir_lambda_generator(self, file_path, offload_path):
         """Generate a parallel_simple-runnable function to mirror offload dir
 
         @param file_path: File to copy as the marker file
@@ -925,26 +930,26 @@ class server_job(base_job.base_job):
             str(datetime.utcnow())
         )
         # Make the server-side directory regardless
-        os.makedirs(
-            self._offload_dir_target_path(force_server=True),
-            exist_ok=True
-        )
+        try:
+          os.makedirs(self._offload_dir_target_path(force_server=True))
+        except OSError as e:
+          if e.errno != errno.EEXIST:
+            raise
         offload_path = self._offload_dir_target_path()
         if self._client:
             _, path = tempfile.mkstemp()
             try:
                 utils.open_write_close(path, marker_string)
                 self.parallel_simple(
-                    self._client_offload_dir_lambda_generator(
-                        path, marker_string, offload_path
-                    ),
+                    self._client_off_dir_lambda_generator(path, offload_path),
                     self.machines
                 )
             finally:
                 os.remove(path)
         else:
             utils.open_write_close(
-                os.path.join(os.path.dirname(offload_path),"marker"),
+                os.path.join(os.path.dirname(offload_path),
+                             "sync_offloads_marker"),
                 marker_string
             )
         return self._offload_dir_target_path()

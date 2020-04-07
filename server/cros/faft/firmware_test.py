@@ -257,7 +257,7 @@ class FirmwareTest(FAFTBase):
                                   ' "%s"' % (method_name, test_name, self_name))
 
         logging.info('Starting test: "%s"', test_name)
-        getattr(self, method_name)(*args, **dargs)
+        utils.cherry_pick_call(getattr(self, method_name), *args, **dargs)
 
     def cleanup(self):
         """Autotest cleanup function."""
@@ -825,6 +825,24 @@ class FirmwareTest(FAFTBase):
         @param enable: True if asserting write protect pin. Otherwise, False.
         """
         self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
+
+    def run_chromeos_firmwareupdate(self, mode, append=None, options=(),
+            ignore_status=False):
+        """Use RPC to get the command to run, but do the actual run via ssh.
+
+        Running the command via SSH improves the reliability in cases where the
+        USB network connection gets interrupted.  SSH will still return the
+        output, and won't hang like RPC would.
+        """
+        update_cmd = self.faft_client.updater.get_firmwareupdate_command(
+                mode, append, options)
+        try:
+            return self._client.run(
+                    update_cmd, timeout=300, ignore_status=ignore_status)
+        except error.AutoservRunError as e:
+            if ignore_status:
+                return e.result_obj
+            raise
 
     def set_ec_write_protect_and_reboot(self, enable):
         """Set EC write protect status and reboot to take effect.
@@ -1763,7 +1781,7 @@ class FirmwareTest(FAFTBase):
         @return: the dict of versions in the shellball
         """
         fwids = dict()
-        fwids['bios'] = self.faft_client.updater.get_all_fwids('bios')
+        fwids['bios'] = self.faft_client.updater.get_image_fwids('bios')
 
         if include_ec is None:
             if self.faft_config.platform == 'Samus':
@@ -1772,7 +1790,7 @@ class FirmwareTest(FAFTBase):
                 include_ec = self.faft_config.chrome_ec
 
         if include_ec:
-            fwids['ec'] = self.faft_client.updater.get_all_fwids('ec')
+            fwids['ec'] = self.faft_client.updater.get_image_fwids('ec')
         return fwids
 
     def modify_shellball(self, append, modify_ro=True, modify_ec=False):
@@ -1782,15 +1800,19 @@ class FirmwareTest(FAFTBase):
         """
 
         if modify_ro:
-            self.faft_client.updater.modify_fwids('bios', ['ro', 'a', 'b'])
+            self.faft_client.updater.modify_image_fwids(
+                    'bios', ['ro', 'a', 'b'])
         else:
-            self.faft_client.updater.modify_fwids('bios', ['a', 'b'])
+            self.faft_client.updater.modify_image_fwids(
+                    'bios', ['a', 'b'])
 
         if modify_ec:
             if modify_ro:
-                self.faft_client.updater.modify_fwids('ec', ['ro', 'rw'])
+                self.faft_client.updater.modify_image_fwids(
+                        'ec', ['ro', 'rw'])
             else:
-                self.faft_client.updater.modify_fwids('ec', ['rw'])
+                self.faft_client.updater.modify_image_fwids(
+                        'ec', ['rw'])
 
         modded_shellball = self.faft_client.updater.repack_shellball(append)
 

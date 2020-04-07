@@ -390,7 +390,7 @@ class BiosServicer(object):
         self._bios_handler.write_whole()
 
     def strip_modified_fwids(self):
-        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs.
+        """Strip trailing suffixes out of the FWIDs (see modify_image_fwids).
 
         @return: a dict of any fwids that were adjusted, by section (ro, a, b)
         @rtype: dict
@@ -558,6 +558,14 @@ class EcServicer(object):
         else:
             self._ec_handler.disable_write_protect()
 
+    def get_write_protect_status(self):
+        """Get a dict describing the status of the write protection
+
+        @return: {'enabled': True/False, 'start': '0x0', 'length': '0x0', ...}
+        @rtype: dict
+        """
+        return self._ec_handler.get_write_protect_status()
+
     def is_efs(self):
         """Return True if the EC supports EFS."""
         return self._ec_handler.has_section_body('rw_b')
@@ -572,7 +580,7 @@ class EcServicer(object):
                 'ectool reboot_ec cold switch-slot', modifies_device=True)
 
     def strip_modified_fwids(self):
-        """Strip any trailing suffixes (from modify_fwids) out of the FWIDs."""
+        """Strip trailing suffixes out of the FWIDs (see modify_image_fwids)."""
         return self._ec_handler.strip_modified_fwids()
 
 
@@ -1010,17 +1018,17 @@ class UpdaterServicer(object):
         """Retrieve shellball's RW or RO fwid."""
         return self._updater.get_section_fwid(target, section)
 
-    def get_all_fwids(self, target='bios'):
-        """Retrieve shellball's RW and/or RO fwids for all sections."""
-        return self._updater.get_all_fwids(target)
+    def get_device_fwids(self, target='bios'):
+        """Retrieve flash device's fwids for the target."""
+        return self._updater.get_device_fwids(target)
 
-    def get_all_installed_fwids(self, target='bios', filename=None):
-        """Retrieve installed (possibly emulated) fwids for the target."""
-        return self._updater.get_all_installed_fwids(target, filename)
+    def get_image_fwids(self, target='bios', filename=None):
+        """Retrieve image file's fwids for the target."""
+        return self._updater.get_image_fwids(target, filename)
 
-    def modify_fwids(self, target='bios', sections=None):
+    def modify_image_fwids(self, target='bios', sections=None):
         """Modify the fwid in the image, but don't flash it."""
-        return self._updater.modify_fwids(target, sections)
+        return self._updater.modify_image_fwids(target, sections)
 
     def modify_ecid_and_flash_to_bios(self):
         """Modify ecid, put it to AP firmware, and flash it to the system."""
@@ -1068,6 +1076,19 @@ class UpdaterServicer(object):
     def reload_images(self):
         """Reload handlers from the on-disk images, in case they've changed."""
         self._updater.reload_images()
+
+    def get_firmwareupdate_command(self, mode, append=None, options=()):
+        """Get the command needed to run updater with the given options.
+
+        The client should run it via ssh, in case the update resets USB network.
+
+        @param mode: mode for the updater
+        @param append: extra string appended to shellball filename to run
+        @param options: options for chromeos-firmwareupdate
+        @return: returncode of the updater
+        @rtype: str
+        """
+        return self._updater.get_firmwareupdate_command(mode, append, options)
 
     def run_firmwareupdate(self, mode, append=None, options=()):
         """Run updater with the given options

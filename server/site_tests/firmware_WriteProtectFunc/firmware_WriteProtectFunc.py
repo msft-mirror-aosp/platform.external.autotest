@@ -20,7 +20,11 @@ class firmware_WriteProtectFunc(FirmwareTest):
         """Initialize the test"""
         super(firmware_WriteProtectFunc, self).initialize(host, cmdline_args)
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
-        self._original_wp = 'on' in self.servo.get('fw_wp_state')
+        bios_sw_wp_dict = self.faft_client.bios.get_write_protect_status()
+        ec_sw_wp_dict = self.faft_client.ec.get_write_protect_status()
+        self._original_bios_sw_wp = bios_sw_wp_dict['enabled']
+        self._original_ec_sw_wp = ec_sw_wp_dict['enabled']
+        self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
         self.backup_firmware()
 
     def cleanup(self):
@@ -30,11 +34,31 @@ class firmware_WriteProtectFunc(FirmwareTest):
                 self.restore_firmware()
         except ConnectionError:
             logging.error("ERROR: DUT did not come up after firmware restore!")
+
         try:
-            if hasattr(self, '_original_wp'):
-              self.set_hardware_write_protect(self._original_wp)
+            # Recover SW WP status.
+            if (hasattr(self, '_original_bios_sw_wp') or
+                hasattr(self, '_original_ec_sw_wp')):
+                # If HW WP is enabled, we have to disable it first so that
+                # SW WP can be changed.
+                current_hw_wp = 'on' in self.servo.get('fw_wp_state')
+                if current_hw_wp:
+                    self.set_hardware_write_protect(False)
+                if hasattr(self, '_original_bios_sw_wp'):
+                    self.faft_client.bios.set_write_protect_region('WP_RO',
+                            self._original_bios_sw_wp)
+                if hasattr(self, '_original_ec_sw_wp'):
+                    self.switcher.mode_aware_reboot(
+                            'custom',
+                            lambda:self.set_ec_write_protect_and_reboot(
+                                    self._original_ec_sw_wp))
+                self.set_hardware_write_protect(current_hw_wp)
+            # Recover HW WP status.
+            if hasattr(self, '_original_hw_wp'):
+              self.set_hardware_write_protect(self._original_hw_wp)
         except Exception as e:
             logging.error('Caught exception: %s', str(e))
+
         super(firmware_WriteProtectFunc, self).cleanup()
 
     def run_cmd(self, command, checkfor=''):
@@ -87,7 +111,6 @@ class firmware_WriteProtectFunc(FirmwareTest):
         # testing. To ensure there is difference in WP_RO section between
         # the firmware on the DUT and the firmware unpacked from the firmware
         # updater, we mess around FRID.
-
         self.faft_client.updater.modify_fwids('bios', ['ro'])
         self.faft_client.updater.modify_fwids('ec', ['ro'])
 
@@ -109,6 +132,7 @@ class firmware_WriteProtectFunc(FirmwareTest):
                      'SUCCESS')
         self.run_cmd('flashrom -p ec -r -i WP_RO:%s' % ec_ro_before,
                      'SUCCESS')
+
         # Writing WP_RO section is expected to fail.
         self.run_cmd('flashrom -p host -w -i WP_RO:%s' % bios_ro_test, 'FAIL')
         self.run_cmd('flashrom -p ec -w -i WP_RO:%s' % ec_ro_test, 'FAIL')

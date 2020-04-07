@@ -110,11 +110,9 @@ class firmware_FWupdate(FirmwareTest):
         @rtype: dict
         """
         versions = dict()
-        versions['bios'] = self.faft_client.updater.get_all_installed_fwids(
-                'bios')
+        versions['bios'] = self.faft_client.updater.get_device_fwids('bios')
         if self.faft_config.chrome_ec:
-            versions['ec'] = self.faft_client.updater.get_all_installed_fwids(
-                    'ec')
+            versions['ec'] = self.faft_client.updater.get_device_fwids('ec')
         return versions
 
     def copy_cmdline_images(self, hostname):

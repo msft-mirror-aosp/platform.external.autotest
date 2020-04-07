@@ -597,15 +597,18 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             event = app.find('event')
 
             result.append({
-                'version': app.attrib['version'],
-                'track': app.attrib['track'],
-                'board': app.attrib['board'],
-                'event_type': event.attrib['eventtype'],
-                'event_result': event.attrib['eventresult'],
+                'version': app.attrib.get('version'),
+                'track': app.attrib.get('track'),
+                'board': app.attrib.get('board'),
+                'event_type': (event.attrib.get('eventtype')
+                               if event is not None else None),
+                'event_result': (event.attrib.get('eventresult')
+                                 if event is not None else None),
                 'timestamp': timestamp.strftime(self._TIMESTAMP_FORMAT),
             })
 
-            previous_version = event.attrib.get('previousversion')
+            previous_version = (event.attrib.get('previousversion')
+                                if event is not None else None)
             if previous_version:
                 result[-1]['previous_version'] = previous_version
 

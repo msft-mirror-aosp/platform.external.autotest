@@ -21,7 +21,6 @@ import time
 from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import test as test_utils
 from autotest_lib.client.cros.input_playback import input_playback
 from autotest_lib.client.cros.power import power_utils
 from functools import wraps
@@ -80,7 +79,7 @@ class GraphicsTest(test.test):
         )
 
         if hasattr(super(GraphicsTest, self), "initialize"):
-            test_utils._cherry_pick_call(super(GraphicsTest, self).initialize,
+            utils.cherry_pick_call(super(GraphicsTest, self).initialize,
                                          *args, **kwargs)
 
     def input_check(self):
@@ -100,7 +99,7 @@ class GraphicsTest(test.test):
             self._player.close()
 
         if hasattr(super(GraphicsTest, self), "cleanup"):
-            test_utils._cherry_pick_call(super(GraphicsTest, self).cleanup,
+            utils.cherry_pick_call(super(GraphicsTest, self).cleanup,
                                          *args, **kwargs)
 
     @contextlib.contextmanager
@@ -167,8 +166,7 @@ class GraphicsTest(test.test):
                 instance = args[0]
                 with instance.failure_report(name, subtest):
                     # Cherry pick the arguments for the wrapped function.
-                    d_args, d_kwargs = test_utils._cherry_pick_args(fn, args,
-                                                                    kwargs)
+                    d_args, d_kwargs = utils.cherry_pick_args(fn, args, kwargs)
                     return fn(instance, *d_args, **d_kwargs)
             return wrapper
         return decorator

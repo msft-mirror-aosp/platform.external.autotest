@@ -15,6 +15,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
+from autotest_lib.client.common_lib.cros import cros_config
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants as client_constants
@@ -725,7 +726,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise error.TestFail('Failed to read version from %s.' % image)
 
 
-    def firmware_install(self, build=None, rw_only=False, dest=None,
+    def firmware_install(self, build, rw_only=False, dest=None,
                          local_tarball=None, verify_version=False,
                          try_scp=False):
         """Install firmware to the DUT.
@@ -775,14 +776,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # If local firmware path not provided fetch it from the dev server
         tmpd = None
         if not local_tarball:
-            # If build is not set, try to install firmware from stable CrOS.
-            if not build:
-                build = afe_utils.get_stable_faft_version_v2(info)
-                if not build:
-                    raise error.TestError(
-                            'Failed to find stable firmware build for %s.',
-                            self.hostname)
-                logging.info('Will install firmware from build %s.', build)
+            logging.info('Will install firmware from build %s.', build)
 
             ds = dev_server.ImageServer.resolve(build, self.hostname)
             ds.stage_artifacts(build, ['firmware'])
@@ -1874,7 +1868,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns a string representing this host's platform.
         """
-        # Look at the firmware for non-unibuild cases or if mosys fails.
+        # Look at the firmware for non-unibuild cases or if cros_config fails.
         crossystem = utils.Crossystem(self)
         crossystem.init()
         # Extract fwid value and use the leading part as the platform id.
@@ -1894,18 +1888,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                               run_method=self.run)
         platform = ''
         if release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1':
-            platform = self.get_platform_from_mosys()
+            platform = self.get_model_from_cros_config()
         return platform if platform else self.get_platform_from_fwid()
 
 
-    def get_platform_from_mosys(self):
-        """Get the host platform from mosys command.
+    def get_model_from_cros_config(self):
+        """Get the host model from cros_config command.
 
-        @returns a string representing this host's platform.
+        @returns a string representing this host's model.
         """
-        cmd = 'mosys platform model'
-        result = self.run(command=cmd, ignore_status=True)
-        return result.stdout.strip() if result.exit_status == 0 else ''
+        return cros_config.call_cros_config_get_output('/ name',
+                self.run, ignore_status=True)
 
 
     def get_architecture(self):

@@ -97,6 +97,18 @@ def has_powercap_support():
     return os.path.isdir('/sys/devices/virtual/powercap/intel-rapl/')
 
 
+def has_amd_rapl_support():
+    """Return True if CPU support AMD RAPL.
+
+    https://www.amd.com/system/files/TechDocs/56255_OSRR.pdf
+    """
+    cpuinfo = utils.get_cpuinfo()[0]
+    logging.info(repr(cpuinfo))
+    return (cpuinfo.get('vendor_id', '') == 'AuthenticAMD' and
+            int(cpuinfo.get('cpu family', 0)) == 0x17 and
+            0 <= int(cpuinfo.get('model', -1)) <= 0x2f)
+
+
 def has_lid():
     """
     Checks whether the device has lid.
@@ -239,10 +251,10 @@ def _charge_control_by_ectool(is_charge, ignore_status):
     ec_cmd_discharge = 'ectool chargecontrol discharge'
     ec_cmd_normal = 'ectool chargecontrol normal'
     try:
-       if is_charge:
-           utils.run(ec_cmd_normal)
-       else:
-           utils.run(ec_cmd_discharge)
+        if is_charge:
+            utils.run(ec_cmd_normal)
+        else:
+            utils.run(ec_cmd_discharge)
     except error.CmdError as e:
         logging.warning('Unable to use ectool: %s', e)
         if ignore_status:
@@ -1021,7 +1033,7 @@ class BaseActivitySimulator(object):
                     bus = re.search('env USB_BUS=([0-9]+)',
                                     init_file_content).group(1)
                     port = re.search('env USB_PORT=([0-9]+)',
-                                    init_file_content).group(1)
+                                     init_file_content).group(1)
                 except AttributeError:
                     raise BaseActivityException("Failed to read usb bus "
                                                 "or port from hammerd file.")
@@ -1032,10 +1044,10 @@ class BaseActivitySimulator(object):
                                  " not found.")
                     self._should_run = False
         if self._should_run:
-            self._base_control_path =  os.path.join(base_power_path,
-                                                    'control')
+            self._base_control_path = os.path.join(base_power_path,
+                                                   'control')
             self._autosuspend_delay_path = os.path.join(base_power_path,
-                                                       'autosuspend_delay_ms')
+                                                        'autosuspend_delay_ms')
             logging.debug("base activity simulator will be running.")
             with open(self._base_control_path, 'r+') as f:
                 self._default_control = f.read()

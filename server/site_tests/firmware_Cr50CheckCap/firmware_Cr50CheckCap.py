@@ -40,6 +40,18 @@ class firmware_Cr50CheckCap(Cr50Test):
                                                              req))
 
 
+    def ccd_ec_uart_works(self):
+        """Returns True if the CCD ec uart works."""
+        logging.info('checking ec console')
+        try:
+            self.servo.get('ec_board', self._ec_prefix)
+            logging.info('ccd ec console is responsive')
+            return True
+        except:
+            logging.info('ccd ec console is unresponsive')
+            return False
+
+
     def check_cap_accessiblity(self, ccd_level, cap_setting, expect_accessible):
         """Check setting cap requirements restricts the capabilities correctly.
 
@@ -77,12 +89,28 @@ class firmware_Cr50CheckCap(Cr50Test):
                 raise error.TestFail('%r is %raccessible' % (cap,
                                      'not ' if expect_accessible else ''))
 
+        if (self.check_ec_uart and
+            expect_accessible != self.ccd_ec_uart_works()):
+            raise error.TestFail('EC UART is %saccessible when it should%s be' %
+                                 ('not ' if expect_accessible else '',
+                                  '' if expect_accessible else "n't"))
+
 
     def run_once(self, ccd_open_restricted=False):
         """Check cr50 capabilities work correctly."""
         self.fast_open(enable_testlab=True)
 
-        # Make sure factory reset sets all capabilites to Always
+        self._ec_prefix = '' if self.servo.main_device_is_ccd() else 'ccd_cr50'
+        self.check_ec_uart = (
+                self.check_ec_capability(suppress_warning=True) and
+                self.servo.has_control('ec_board', self._ec_prefix))
+        if self.check_ec_uart and self._ec_prefix:
+            try:
+                self.servo.set('active_v4_device', self._ec_prefix)
+            except:
+                self.check_ec_uart = False
+
+        # Make sure factory reset sets all capabilities to Always
         self.check_cap_command('ccd reset factory', True, False)
 
         # Make sure ccd reset sets all capabilites to Default

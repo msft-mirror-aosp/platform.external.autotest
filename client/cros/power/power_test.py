@@ -6,9 +6,9 @@ import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.power import power_dashboard
-from autotest_lib.client.cros.power import power_rapl
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_telemetry_utils
 from autotest_lib.client.cros.power import power_utils
@@ -32,14 +32,10 @@ class power_Test(test.test):
 
         @var _checkpoint_logger: power_status.CheckpointLogger to track
                                  checkpoint data.
-        @var _plog: power_status.PowerLogger object to monitor power.
         @var _psr: power_utils.DisplayPanelSelfRefresh object to monitor PSR.
         @var _services: service_stopper.ServiceStopper object.
         @var _start_time: float of time in seconds since Epoch test started.
         @var _stats: power_status.StatoMatic object.
-        @var _tlog: power_status.TempLogger object to monitor temperatures.
-        @var _clog: power_status.CPUStatsLogger object to monitor CPU(s)
-                    frequencies and c-states.
         @var _meas_logs: list of power_status.MeasurementLoggers
         """
         super(power_Test, self).initialize()
@@ -51,45 +47,25 @@ class power_Test(test.test):
         self._checkpoint_logger = power_status.CheckpointLogger()
         self._seconds_period = seconds_period
 
-        measurements = []
-
         self._force_discharge = force_discharge
         if force_discharge:
             if not self.status.battery:
                 raise error.TestNAError('DUT does not have battery. '
                                         'Could not force discharge.')
+            if not ec.has_cros_ec():
+                raise error.TestNAError('DUT does not have CrOS EC. '
+                                        'Could not force discharge.')
             if not power_utils.charge_control_by_ectool(False):
                 raise error.TestError('Could not run battery force discharge.')
 
-        if force_discharge or not self.status.on_ac():
-            measurements.append(
-                power_status.SystemPower(self.status.battery_path))
-        if power_utils.has_powercap_support():
-            measurements += power_rapl.create_powercap()
-        elif power_utils.has_rapl_support():
-            measurements += power_rapl.create_rapl()
-        self._plog = power_status.PowerLogger(measurements,
-                seconds_period=seconds_period,
-                checkpoint_logger=self._checkpoint_logger)
         self._psr = power_utils.DisplayPanelSelfRefresh()
         self._services = service_stopper.ServiceStopper(
                 service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
         self._services.stop_services()
         self._stats = power_status.StatoMatic()
 
-        self._tlog = power_status.TempLogger([],
-                seconds_period=seconds_period,
-                checkpoint_logger=self._checkpoint_logger)
-        self._clog = power_status.CPUStatsLogger(seconds_period=seconds_period,
-                checkpoint_logger=self._checkpoint_logger)
-
-        self._meas_logs = [self._plog, self._tlog, self._clog]
-
-        if power_status.has_fan():
-            self._flog = power_status.FanRpmLogger(
-                seconds_period=seconds_period,
-                checkpoint_logger=self._checkpoint_logger)
-            self._meas_logs.append(self._flog)
+        self._meas_logs = power_status.create_measurement_loggers(
+                seconds_period, self._checkpoint_logger)
 
         self._pdash_note = pdash_note
 

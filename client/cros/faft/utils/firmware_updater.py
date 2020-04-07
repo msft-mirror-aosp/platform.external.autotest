@@ -493,8 +493,8 @@ class FirmwareUpdater(object):
             self._real_ec_handler.deinit()
             self._real_ec_handler.init(ec_file, allow_fallback=True)
 
-    def run_firmwareupdate(self, mode, append=None, options=None):
-        """Do firmwareupdate with updater in temp_dir.
+    def get_firmwareupdate_command(self, mode, append=None, options=None):
+        """Get the command to run firmwareupdate with updater in temp_dir.
 
         @param append: decide which shellball to use with format
                 chromeos-firmwareupdate-[append].
@@ -510,7 +510,7 @@ class FirmwareUpdater(object):
             # Since CL:459837, bootok is moved to chromeos-setgoodfirmware.
             set_good_cmd = '/usr/sbin/chromeos-setgoodfirmware'
             if os.path.isfile(set_good_cmd):
-                return self.os_if.run_shell_command_get_status(set_good_cmd)
+                return set_good_cmd
 
         updater = os.path.join(self._temp_path, 'chromeos-firmwareupdate')
         if append:
@@ -532,10 +532,23 @@ class FirmwareUpdater(object):
                 bios_reader.dump_flash(fake_bios)
             options = ['--emulate', fake_bios] + options
 
-        update_cmd = '/bin/sh %s --mode %s %s' % (updater, mode,
-                                                  ' '.join(options))
+        return '/bin/sh %s --mode %s %s' % (updater, mode, ' '.join(options))
 
-        return self.os_if.run_shell_command_get_status(update_cmd)
+    def run_firmwareupdate(self, mode, append=None, options=None):
+        """Do firmwareupdate with updater in temp_dir.
+
+        @param append: decide which shellball to use with format
+                chromeos-firmwareupdate-[append].
+                Use'chromeos-firmwareupdate' if append is None.
+        @param mode: ex.'autoupdate', 'recovery', 'bootok', 'factory_install'...
+        @param options: ex. ['--noupdate_ec', '--force'] or [] or None.
+
+        @type append: str
+        @type mode: str
+        @type options: list | tuple | None
+        """
+        return self.os_if.run_shell_command_get_status(
+                self.get_firmwareupdate_command(mode, append, options))
 
     def cbfs_setup_work_dir(self):
         """Sets up cbfs on DUT.

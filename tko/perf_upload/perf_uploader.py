@@ -24,11 +24,24 @@ import common
 from autotest_lib.tko import utils as tko_utils
 
 _ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+_OAUTH_IMPORT_OK = False
+_OAUTH_CREDS = None
+try:
+    from google.oauth2 import service_account
+    from google.auth.transport.requests import Request
+    from google.auth.exceptions import RefreshError
+    _OAUTH_IMPORT_OK = True
+except ImportError as e:
+    tko_utils.dprint('Failed to import google-auth:\n%s' % e)
+
+_DASHBOARD_UPLOAD_URL = 'https://chromeperf.appspot.com/add_point'
+_OAUTH_SCOPES = ['https://www.googleapis.com/auth/userinfo.email']
 _PRESENTATION_CONFIG_FILE = os.path.join(
         _ROOT_DIR, 'perf_dashboard_config.json')
 _PRESENTATION_SHADOW_CONFIG_FILE = os.path.join(
         _ROOT_DIR, 'perf_dashboard_shadow_config.json')
-_DASHBOARD_UPLOAD_URL = 'https://chromeperf.appspot.com/add_point'
+_SERVICE_ACCOUNT_FILE = '/creds/service_accounts/skylab-drone.json'
 
 # Format for Chrome and Chrome OS version strings.
 VERSION_REGEXP = r'^(\d+)\.(\d+)\.(\d+)\.(\d+)$'
@@ -254,6 +267,46 @@ def _get_id_from_version(chrome_version, cros_version):
     return int(result_digits)
 
 
+def _initialize_oauth():
+    """Initialize oauth using local credentials and scopes.
+
+    @return A boolean if oauth is apparently ready to use.
+    """
+    global _OAUTH_CREDS
+    if _OAUTH_CREDS:
+        return True
+    if not _OAUTH_IMPORT_OK:
+        return False
+    try:
+        _OAUTH_CREDS = (service_account.Credentials.from_service_account_file(
+                        _SERVICE_ACCOUNT_FILE)
+                        .with_scopes(_OAUTH_SCOPES))
+        return True
+    except Exception as e:
+        tko_utils.dprint('Failed to initialize oauth credentials:\n%s' % e)
+        return False
+
+
+def _add_oauth_token(headers):
+    """Add support for oauth2 via service credentials.
+
+    This is currently best effort, we will silently not add the token
+    for a number of possible reasons (missing service account, etc).
+
+    TODO(engeg@): Once this is validated, make mandatory.
+
+    @param headers: A map of request headers to add the token to.
+    """
+    if _initialize_oauth():
+        if not _OAUTH_CREDS.valid:
+            try:
+                _OAUTH_CREDS.refresh(Request())
+            except RefreshError as e:
+                tko_utils.dprint('Failed to refresh oauth token:\n%s' % e)
+                return
+        _OAUTH_CREDS.apply(headers)
+
+
 def _send_to_dashboard(data_obj):
     """Sends formatted perf data to the perf dashboard.
 
@@ -265,6 +318,7 @@ def _send_to_dashboard(data_obj):
     """
     encoded = urllib.urlencode(data_obj)
     req = urllib2.Request(_DASHBOARD_UPLOAD_URL, encoded)
+    _add_oauth_token(req.headers)
     try:
         urllib2.urlopen(req)
     except urllib2.HTTPError as e:

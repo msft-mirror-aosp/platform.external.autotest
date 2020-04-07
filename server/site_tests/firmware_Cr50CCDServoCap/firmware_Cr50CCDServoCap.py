@@ -170,8 +170,10 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         """Returns True if the CCD ec uart works."""
         try:
             self.servo.get('ccd_cr50.ec_board')
+            logging.info('ccd ec console is responsive')
             return True
         except:
+            logging.info('ccd ec console is unresponsive')
             return False
 
 
@@ -197,6 +199,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
 
         ccd_ext_is_enabled = ccdstate['CCD EXT'] == 'enabled'
         mismatch = []
+        logging.info('checking state flags')
         if ccd_enabled and not ccd_ext_is_enabled:
             mismatch.append('CCD functionality enabled without CCD EXT')
         if ccd_ext_is_enabled:
@@ -208,7 +211,8 @@ class firmware_Cr50CCDServoCap(Cr50Test):
                 mismatch.append('EC UART enabled without EC on')
             if self.check_ec_uart:
                 ccd_ec_uart_works = self.ccd_ec_uart_works()
-                if ccd_ec_uart_enabled and not ccd_ec_uart_works:
+                if (self.servo.get('ec_uart_en') == 'off'
+                    and ccd_ec_uart_enabled and not ccd_ec_uart_works):
                     mismatch.append('ccd ec uart does not work with EC+TX '
                                     'enabled.')
                 if not ccd_ec_uart_enabled and ccd_ec_uart_works:

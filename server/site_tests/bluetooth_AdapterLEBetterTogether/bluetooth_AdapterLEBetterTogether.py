@@ -20,6 +20,15 @@ class bluetooth_AdapterLEBetterTogether(BluetoothAdapterBetterTogether):
     """
 
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
+    test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
+
+    @test_wrapper('Smart Unlock', devices={'BLE_PHONE':1})
+    def smart_unlock_test(self):
+        """Run the smart unlock test"""
+
+        address = self.devices['BLE_PHONE'][0].address
+        self.test_smart_unlock(address=address)
+
 
     @batch_wrapper('Better Together')
     def better_together_batch_run(self, num_iterations=1, test_name=None):

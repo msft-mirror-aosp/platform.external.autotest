@@ -279,7 +279,7 @@ def get_sync_count(_modules, _abi, _is_public):
     return 1
 
 
-def get_suites(modules, abi, is_public):
+def get_suites(modules, abi, is_public, camera_facing=None):
     """Defines the suites associated with a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -326,6 +326,10 @@ def get_suites(modules, abi, is_public):
             suites.add('suite:bvt-arc')
         elif module in CONFIG['BVT_PERBUILD'] and (abi == 'arm' or abi == ''):
             suites.add('suite:bvt-perbuild')
+
+    if camera_facing != None:
+        suites.add('suite:arc-cts-camera')
+
     return sorted(list(suites))
 
 
@@ -743,7 +747,7 @@ def get_controlfile_content(combined,
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
-        suites = get_suites(modules, abi, is_public)
+        suites = get_suites(modules, abi, is_public, camera_facing)
     attributes = ', '.join(suites)
     uri = None if is_public else uri
     target_module = None

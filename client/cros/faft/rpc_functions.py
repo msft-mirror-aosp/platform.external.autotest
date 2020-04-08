@@ -1077,6 +1077,19 @@ class UpdaterServicer(object):
         """Reload handlers from the on-disk images, in case they've changed."""
         self._updater.reload_images()
 
+    def get_firmwareupdate_command(self, mode, append=None, options=()):
+        """Get the command needed to run updater with the given options.
+
+        The client should run it via ssh, in case the update resets USB network.
+
+        @param mode: mode for the updater
+        @param append: extra string appended to shellball filename to run
+        @param options: options for chromeos-firmwareupdate
+        @return: returncode of the updater
+        @rtype: str
+        """
+        return self._updater.get_firmwareupdate_command(mode, append, options)
+
     def run_firmwareupdate(self, mode, append=None, options=()):
         """Run updater with the given options
 

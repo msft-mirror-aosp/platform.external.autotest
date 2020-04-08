@@ -76,7 +76,7 @@ class firmware_SoftwareSync(FirmwareTest):
         else:
             time.sleep(self.faft_config.software_sync_update)
 
-    def run_once(self):
+    def run_test_corrupt_ec_rw(self):
         """Runs a single iteration of the test."""
         logging.info("Corrupt EC firmware RW body.")
         self.check_state((self.checkers.ec_act_copy_checker, 'RW'))
@@ -89,3 +89,55 @@ class firmware_SoftwareSync(FirmwareTest):
 
         logging.info("Expect EC in RW and RW is restored.")
         self.check_state(self.software_sync_checker)
+
+    def run_test_corrupt_hash_in_cr50(self):
+        """Run the test corrupting ECRW hash in CR50."""
+
+        self.check_state((self.checkers.ec_act_copy_checker, 'RW'))
+        self.record_hash()
+
+        logging.info('Corrupt ECRW hashcode in TPM kernel NV index.')
+        ec_corrupt_cmd = 'ec_comm corrupt'
+        self.cr50.send_command(ec_corrupt_cmd)
+
+        try:
+            # Reboot EC but keep AP off, so that it can earn a time to check
+            # if boot_mode is NO_BOOT and EC is in RO.
+            logging.info('Reset EC with AP off.')
+            self.ec.reboot('ap-off')
+            time.sleep(5)
+
+            # The boot mode should be "NO_BOOT".
+            logging.info('Check the boot mode is NO_BOOT mode.')
+            if not self.cr50.check_boot_mode('NO_BOOT'):
+                raise error.TestFail('Boot mode is not NO_BOOT.')
+
+            # Check if the current EC image is RO.
+            logging.info('Check EC is in RO.')
+            if not self.ec.check_ro_rw('RO'):
+                raise error.TestFail('EC is not in RO mode.')
+        finally:
+            # Wake up AP by tapping power button.
+            logging.info('Wake up AP.')
+            self.servo.power_short_press()
+
+        # Wait for software sync is done.
+        self.wait_software_sync_and_boot()
+        self.switcher.wait_for_client()
+
+        # The boot mode should be "NORMAL".
+        logging.info('Check the boot mode is NORMAL mode.')
+        if not self.cr50.check_boot_mode('NORMAL'):
+            logging.warn('You may want to run %r in cr50 console to uncorrupt'
+                         ' EC hash.', ec_corrupt_cmd)
+            raise error.TestFail('Boot mode is not NORMAL.')
+
+        logging.info('Expect EC in RW and RW is restored.')
+        self.check_state(self.software_sync_checker)
+
+    def run_once(self):
+        """Entry point of this test."""
+        self.run_test_corrupt_ec_rw()
+
+        if self.ec.check_feature('EC_FEATURE_EFS2'):
+            self.run_test_corrupt_hash_in_cr50()

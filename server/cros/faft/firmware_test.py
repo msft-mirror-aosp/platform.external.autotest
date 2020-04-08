@@ -826,6 +826,24 @@ class FirmwareTest(FAFTBase):
         """
         self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
 
+    def run_chromeos_firmwareupdate(self, mode, append=None, options=(),
+            ignore_status=False):
+        """Use RPC to get the command to run, but do the actual run via ssh.
+
+        Running the command via SSH improves the reliability in cases where the
+        USB network connection gets interrupted.  SSH will still return the
+        output, and won't hang like RPC would.
+        """
+        update_cmd = self.faft_client.updater.get_firmwareupdate_command(
+                mode, append, options)
+        try:
+            return self._client.run(
+                    update_cmd, timeout=300, ignore_status=ignore_status)
+        except error.AutoservRunError as e:
+            if ignore_status:
+                return e.result_obj
+            raise
+
     def set_ec_write_protect_and_reboot(self, enable):
         """Set EC write protect status and reboot to take effect.
 

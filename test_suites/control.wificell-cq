@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "tienchang, krisr, bmahadev, wiley"
-NAME = "wificell-pre-cq"
+NAME = "wificell-cq"
 PURPOSE = "This suite is a baseline set of tests that act as a wifi pre-cq."
 TIME = "SHORT"
 TEST_CLASS = "suite"

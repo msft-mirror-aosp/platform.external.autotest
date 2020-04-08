@@ -18,7 +18,6 @@ class firmware_Mosys(FirmwareTest):
     * mosys -k ec info
     * mosys platform name
     * mosys eeprom map
-    * mosys platform vendor
     * mosys -k pd info
 
     """
@@ -186,17 +185,6 @@ class firmware_Mosys(FirmwareTest):
         # Check that there are one A and one B.
         if emap['RW_SECTION_A'] != 1 or emap['RW_SECTION_B'] != 1:
             logging.error('Missing RW_SECTION A or B, %s', lines)
-            self._tag_failure(command)
-
-        # mosys platform vendor
-        # Output will be GOOGLE until launch, see crosbug/p/29755
-        command = 'mosys platform vendor'
-        output = self.run_cmd(command)
-        self.check_for_errors(output, command)
-        p = re.compile('^[-\w\s,.]+$')
-        if not p.match(output[0]):
-            logging.error('output is not a string Expect GOOGLE'
-                          'or name of maker.')
             self._tag_failure(command)
 
         # mosys -k pd info

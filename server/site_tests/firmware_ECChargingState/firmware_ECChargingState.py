@@ -15,8 +15,14 @@ class firmware_ECChargingState(FirmwareTest):
     """
     version = 1
 
-    # The delay to wait for the AC state to update
+    # The delay to wait for the AC state to update.
     AC_STATE_UPDATE_DELAY = 3
+
+    # We wait for up to 3 hrs for the battery to report fully charged.
+    FULL_CHARGE_TIMEOUT = 60 * 60 * 3
+
+    # The period to check battery state while charging.
+    CHECK_BATT_STATE_WAIT = 60
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECChargingState, self).initialize(host, cmdline_args)
@@ -49,6 +55,12 @@ class firmware_ECChargingState(FirmwareTest):
             return 'off'
         else:
             return 'unknown'
+
+    def get_battery_level(self):
+        """Get battery charge percentage."""
+        batt_level = int(self.ec.send_command_get_output("battery",
+                ["Charge:\s+(\d+)\s+"])[0][1])
+        return batt_level
 
     def run_once(self, host):
         """Execute the main body of the test."""
@@ -95,3 +107,23 @@ class firmware_ECChargingState(FirmwareTest):
         if batt_state != 'Charging' and batt_state != 'Fully charged':
             raise error.TestFail("Wrong battery state. Expected: "
                     "Charging/Fully charged, got: %s." % batt_state)
+
+        logging.info("Keep charging until the battery reports fully charged.")
+        deadline = time.time() + self.FULL_CHARGE_TIMEOUT
+        while time.time() < deadline:
+            batt_state = host.get_battery_state()
+            if batt_state == 'Fully charged':
+                logging.info("The battery reports fully charged.")
+                return
+            elif batt_state == 'Charging':
+                logging.info("Wait for the battery to be fully charged. "
+                        "The current battery level is %d%%.",
+                        self.get_battery_level())
+            else:
+                raise error.TestFail("The battery state is %s. "
+                        "Is AC unplugged?", batt_state)
+            time.sleep(self.CHECK_BATT_STATE_WAIT)
+
+        raise error.TestFail("The battery does not report fully charged "
+                "before timeout is reached. The final battery level is %d%%.",
+                self.get_battery_level())

@@ -78,11 +78,10 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
                              whole batch
         """
         # TODO: finalize the test cases that need to be run as MTBF
-        self.fail_fast = True
         self.simple_mtbf_test()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None):
+    def run_once(self, host, num_iterations=1, test_name=None, args_dict=None):
         """Run the batch of Bluetooth MTBF tests
 
         @param host: the DUT, usually a chromebook
@@ -91,6 +90,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         """
 
         # Initialize and run the test batch or the requested specific test
+        self.set_fail_fast(args_dict, True)
         self.quick_test_init(host, use_btpeer=True)
         self.mtbf_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -499,13 +499,21 @@ class FirmwareTest(FAFTBase):
 
         self.mark_setup_done('usb_check')
 
-    def setup_pdtester(self, flip_cc=False, dts_mode=False):
+    def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True):
         """Setup the PDTester to a given state.
 
         @param flip_cc: True to flip CC polarity; False to not flip it.
         @param dts_mode: True to config PDTester to DTS mode; False to not.
+        @param pd_faft: True to config PD FAFT setup.
         @raise TestError: If Servo v4 not setup properly.
         """
+
+        # PD FAFT is only tested with servo V4 with servo micro.
+        if pd_faft and self.pdtester.servo_type != 'servo_v4_with_servo_micro':
+            raise error.TestError('servo_v4_with_servo_micro is a mandatory '
+                                  'setup for PD FAFT. Got %s.'
+                                  % self.pdtester.servo_type)
+
         # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
         # the behaviors of what PD FAFT tests. So we want it disabled.
         if 'servo_v4' in self.pdtester.servo_type:

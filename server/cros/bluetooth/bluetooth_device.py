@@ -577,11 +577,14 @@ class BluetoothDevice(object):
         """
         return json.loads(self._proxy.get_dev_info())
 
+
     def get_supported_capabilities(self):
         """ Get the supported_capabilities of the adapter
         @returns (capabilities,None) on success (None, <error>) on failure
         """
-        return self._proxy.get_supported_capabilities()
+        capabilities, error = self._proxy.get_supported_capabilities()
+        return (json.loads(capabilities), error)
+
 
     def register_profile(self, path, uuid, options):
         """Register new profile (service).

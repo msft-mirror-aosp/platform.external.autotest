@@ -471,7 +471,7 @@ def test_retry_and_log(test_method_or_retry_flag):
                                                       str(instance.results))
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
-                if instance.fail_fast:
+                if hasattr(instance, 'fail_fast') and instance.fail_fast:
                     logging.info('Fail fast')
                     raise error.TestFail(instance.fails)
 
@@ -3318,10 +3318,6 @@ class BluetoothAdapterTests(test.test):
         # The count of registered advertisements.
         self.count_advertisements = 0
 
-        # By default don't fail fast so that batch run can continue, for MTBF
-        # it should be set to True
-        self.fail_fast = False
-
 
     def check_btpeer(self):
         """Check the existence of Bluetooth peer
@@ -3348,6 +3344,23 @@ class BluetoothAdapterTests(test.test):
         logging.debug('labels: %s', self.host.get_labels())
         if self.host.chameleon is None and self.host.btpeer_list == []:
             raise error.TestError('Have to specify a working Bluetooth peer')
+
+    def set_fail_fast(self, args_dict, default=False):
+        """Set whether the test should fail fast if running into any problem
+
+        By default it should not fail fast so that a batch test can continue
+        running the rest after a failure in one test
+
+        :param args_dict: the arguments passed int from the command line
+        :param default: the default value when the flag is missing from the
+                        args_dict
+
+        """
+        flag_name = 'fail_fast'
+        if args_dict and flag_name in args_dict:
+            self.fail_fast = bool(args_dict[flag_name].lower() == 'true')
+        else:
+            self.fail_fast = default
 
 
     def run_once(self, *args, **kwargs):

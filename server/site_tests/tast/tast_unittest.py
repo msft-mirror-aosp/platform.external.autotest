@@ -48,6 +48,12 @@ class TastTest(unittest.TestCase):
     TEST_PATTERNS = ['(bvt)']
     MAX_RUN_SEC = 300
 
+    # Default paths where Tast files are installed by Portage packages.
+    _PORTAGE_TAST_PATH = tast.tast._PORTAGE_TAST_PATH
+    _PORTAGE_REMOTE_BUNDLE_DIR = '/usr/libexec/tast/bundles/remote'
+    _PORTAGE_REMOTE_DATA_DIR = '/usr/share/tast/data'
+    _PORTAGE_REMOTE_TEST_RUNNER_PATH = '/usr/bin/remote_test_runner'
+
     def setUp(self):
         self._temp_dir = tempfile.mkdtemp('.tast_unittest')
 
@@ -108,18 +114,23 @@ class TastTest(unittest.TestCase):
         # tast.py can find them; their contents don't matter since fake_tast.py
         # won't actually use them.
         self._tast_path = create_file(
-                tast.tast._SSP_TAST_PATH if ssp else tast.tast._TAST_PATH,
+                tast.tast._SSP_TAST_PATH if ssp else self._PORTAGE_TAST_PATH,
                 os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              'testdata', 'fake_tast.py'))
         self._remote_bundle_dir = os.path.dirname(
                 create_file(os.path.join(tast.tast._SSP_REMOTE_BUNDLE_DIR if ssp
-                                         else tast.tast._REMOTE_BUNDLE_DIR,
+                                         else self._PORTAGE_REMOTE_BUNDLE_DIR,
+                                         'fake')))
+        self._remote_data_dir = os.path.dirname(
+                create_file(os.path.join(tast.tast._SSP_REMOTE_DATA_DIR if ssp
+                                         else self._PORTAGE_REMOTE_DATA_DIR,
                                          'fake')))
         self._remote_test_runner_path = create_file(
                 tast.tast._SSP_REMOTE_TEST_RUNNER_PATH if ssp
-                else tast.tast._REMOTE_TEST_RUNNER_PATH)
+                else self._PORTAGE_REMOTE_TEST_RUNNER_PATH)
 
-    def _init_tast_commands(self, tests, run_private_tests=False,
+    def _init_tast_commands(self, tests, ssp=False, build=False,
+                            build_bundle='fakebundle', run_private_tests=False,
                             run_vars=[], run_varsfiles=None):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
@@ -130,15 +141,31 @@ class TastTest(unittest.TestCase):
         @param run_varsfiles: filenames should be passed to 'run' via -varsfile.
         """
         list_args = [
-            'build=False',
+            'build=%s' % build,
             'patterns=%s' % self.TEST_PATTERNS,
-            'remotebundledir=%s' % self._remote_bundle_dir,
-            'remoterunner=%s' % self._remote_test_runner_path,
             'sshretries=%d' % tast.tast._SSH_CONNECT_RETRIES,
             'target=%s:%d' % (self.HOST, self.PORT),
-            'downloadprivatebundles=%s' % run_private_tests,
             'verbose=True',
         ]
+        if build:
+            list_args.extend([
+                'buildbundle=%s' % build_bundle,
+                'checkbuilddeps=False',
+            ])
+        else:
+            if ssp:
+                list_args.extend([
+                    'remotebundledir=%s' % self._remote_bundle_dir,
+                    'remotedatadir=%s' % self._remote_data_dir,
+                    'remoterunner=%s' % self._remote_test_runner_path,
+                ])
+            else:
+                list_args.extend([
+                    'remotebundledir=None',
+                    'remotedatadir=None',
+                    'remoterunner=None',
+                ])
+            list_args.append('downloadprivatebundles=%s' % run_private_tests)
         run_args = list_args + [
             'resultsdir=%s' % self._test.resultsdir,
             'continueafterfailure=True',
@@ -167,12 +194,17 @@ class TastTest(unittest.TestCase):
                             tast.tast._STREAMED_RESULTS_FILENAME)
 
     def _run_test(self, ignore_test_failures=False, command_args=[],
+                  ssp=False, build=False, build_bundle='fakebundle',
                   run_private_tests=False, varsfiles=None):
         """Writes fake_tast.py's configuration and runs the test.
 
         @param ignore_test_failures: Passed as the identically-named arg to
             Tast.initialize().
         @param command_args: Passed as the identically-named arg to
+            Tast.initialize().
+        @param ssp: Passed as the identically-named arg to Tast.initialize().
+        @param build: Passed as the identically-named arg to Tast.initialize().
+        @param build_bundle: Passed as the identically-named arg to
             Tast.initialize().
         @param run_private_tests: Passed as the identically-named arg to
             Tast.initialize().
@@ -185,6 +217,9 @@ class TastTest(unittest.TestCase):
                               max_run_sec=self.MAX_RUN_SEC,
                               command_args=command_args,
                               install_root=self._root_dir,
+                              ssp=ssp,
+                              build=build,
+                              build_bundle=build_bundle,
                               run_private_tests=run_private_tests,
                               varsfiles=varsfiles)
         self._test.set_fake_now_for_testing(
@@ -422,19 +457,19 @@ class TastTest(unittest.TestCase):
 
     def testMissingTastExecutable(self):
         """Tests that an error is raised if the tast command isn't found."""
-        os.remove(self._get_path_in_root(tast.tast._TAST_PATH))
+        os.remove(self._get_path_in_root(self._PORTAGE_TAST_PATH))
         with self.assertRaises(error.TestFail) as _:
             self._run_test()
 
     def testMissingRemoteTestRunner(self):
         """Tests that an error is raised if remote_test_runner isn't found."""
-        os.remove(self._get_path_in_root(tast.tast._REMOTE_TEST_RUNNER_PATH))
+        os.remove(self._get_path_in_root(self._PORTAGE_REMOTE_TEST_RUNNER_PATH))
         with self.assertRaises(error.TestFail) as _:
             self._run_test()
 
     def testMissingRemoteBundleDir(self):
         """Tests that an error is raised if remote bundles aren't found."""
-        shutil.rmtree(self._get_path_in_root(tast.tast._REMOTE_BUNDLE_DIR))
+        shutil.rmtree(self._get_path_in_root(self._PORTAGE_REMOTE_BUNDLE_DIR))
         with self.assertRaises(error.TestFail) as _:
             self._run_test()
 
@@ -445,8 +480,16 @@ class TastTest(unittest.TestCase):
         self._set_up_root(ssp=True)
 
         tests = [TestInfo('pkg.Test', 0, 1)]
-        self._init_tast_commands(tests)
-        self._run_test()
+        self._init_tast_commands(tests, ssp=True)
+        self._run_test(ssp=True)
+        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
+                         status_string(self._job.status_entries))
+
+    def testBuild(self):
+        """Tests that Tast tests can be built."""
+        tests = [TestInfo('pkg.Test', 0, 1)]
+        self._init_tast_commands(tests, build=True)
+        self._run_test(build=True)
         self.assertEqual(status_string(get_status_entries_from_tests(tests)),
                          status_string(self._job.status_entries))
 

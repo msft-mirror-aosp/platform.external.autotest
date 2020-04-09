@@ -235,6 +235,31 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             logging.warn('Failed to stop ofono. Ignored.')
 
 
+    def initialize_bluetooth_player(self, device):
+        """Initialize the Bluetooth media player.
+
+        @param device: the Bluetooth peer device.
+
+        """
+        if not device.ExportMediaPlayer():
+            raise error.TestError('Failed to export media player.')
+        logging.debug('mpris-proxy is started.')
+
+        # Wait for player to show up and observed by playerctl.
+        desc='waiting for media player'
+        self._poll_for_condition(
+                lambda: bool(device.GetExportedMediaPlayer()), desc=desc)
+
+
+    def cleanup_bluetooth_player(self, device):
+        """Cleanup for Bluetooth media player.
+
+        @param device: the bluetooth peer device.
+
+        """
+        device.UnexportMediaPlayer()
+
+
     # ---------------------------------------------------------------
     # Definitions of all bluetooth audio test cases
     # ---------------------------------------------------------------
@@ -438,3 +463,47 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         check_freq_result = self._check_primary_frequencies(
                 test_profile, hfp_test_data, 'recorded_by_dut')
         return check_freq_result
+
+
+    @test_retry_and_log(False)
+    def test_avrcp_commands(self, device):
+        """Test Case: Test AVRCP commands issued by peer can be received at DUT
+
+        The very first AVRCP command (Linux evdev event) the DUT receives
+        contains extra information than just the AVRCP event, e.g. EV_REP
+        report used to specify delay settings. Send the first command before
+        the actual test starts to avoid dealing with them during test.
+
+        The peer device name is required to monitor the event reception on the
+        DUT. However, as the peer device itself already registered with the
+        kernel as an udev input device. The AVRCP profile will register as an
+        separate input device with the Bluetooth device as its name.
+        Temporarily substitute the device name with its Bluetooth address.
+
+        @param device: the Bluetooth peer device
+
+        @returns: True if the all AVRCP commands received by DUT, false
+                  otherwise
+
+        """
+        device.SendMediaPlayerCommand('play')
+
+        name = device.name
+        device.name = device.address.lower()
+
+        result_pause = self.test_avrcp_event(device,
+            device.SendMediaPlayerCommand, 'pause')
+        result_play = self.test_avrcp_event(device,
+            device.SendMediaPlayerCommand, 'play')
+        result_stop = self.test_avrcp_event(device,
+            device.SendMediaPlayerCommand, 'stop')
+        result_next = self.test_avrcp_event(device,
+            device.SendMediaPlayerCommand, 'next')
+        result_previous = self.test_avrcp_event(device,
+            device.SendMediaPlayerCommand, 'previous')
+
+        device.name = name
+        self.results = {'pause': result_pause, 'play': result_play,
+                        'stop': result_stop, 'next': result_next,
+                        'previous': result_previous}
+        return all(self.results.values())

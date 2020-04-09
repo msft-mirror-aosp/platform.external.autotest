@@ -1174,5 +1174,5 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestError('parameter, mode_exp is not valid: %s' %
                                   mode_exp)
         rv = self.send_command_retry_get_output('ec_comm',
-                ['boot_mode\s*:\s*(\w+)'], safe=True)
+                ['boot_mode\s*:\s*(NORMAL|NO_BOOT)'], safe=True)
         return mode_exp == rv[0][1]

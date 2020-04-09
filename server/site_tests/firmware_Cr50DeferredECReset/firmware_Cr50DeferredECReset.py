@@ -58,6 +58,17 @@ class firmware_Cr50DeferredECReset(Cr50Test):
 
         time.sleep(self.PD_SETTLE_TIME)
 
+    def ac_is_plugged_in(self):
+        """Check if AC is plugged.
+
+        Returns:
+            True if AC is plugged, or False otherwise.
+        """
+
+        rv = self.ec.send_command_get_output('chgstate',
+                                             [r'ac\s*=\s*(0|1)\s*'])[0][1]
+        return rv == '1'
+
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test and check if cr50 exists, DTS is controllable,
            and power delivery mode and power button is adjustable.
@@ -103,18 +114,14 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             self.servo.set('servo_v4_role', 'snk')
             time.sleep(self.PD_SETTLE_TIME)
 
-            rv = self.ec.send_command_get_output('chgstate',['.*>'])[0].strip()
-            logging.info(rv)
-            if 'ac = 0' not in rv:
+            if self.ac_is_plugged_in():
                 raise error.TestFail('Failed to set servo_v4_role sink')
 
             # Test stopping the external power delivery
             self.servo.set('servo_v4_role', 'src')
             time.sleep(self.PD_SETTLE_TIME)
 
-            rv = self.ec.send_command_get_output('chgstate',['.*>'])[0].strip()
-            logging.info(rv)
-            if 'ac = 1' not in rv:
+            if not self.ac_is_plugged_in():
                 raise error.TestFail('Failed to set servo_v4_role source')
 
         # Check if the dut has any RDD recognition issue.
@@ -152,18 +159,15 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         """
 
         # If the console is responsive, then the EC is awake.
-        expecting_txt = ' asserted' if expect_assert else ' deasserted'
-        logging.info('Checking if ecrst is %s', expecting_txt)
+        expected_txt = 'asserted' if expect_assert else 'deasserted'
+        logging.info('Checking if ecrst is %s', expected_txt)
 
         try:
             rv = self.cr50.send_command_get_output('ecrst',
-                    ['(?i)EC_RST_L is \w{0,2}asserted.*>'])[0].strip()
+                                        [r'EC_RST_L is (%s)' % expected_txt])
             logging.info(rv)
         except error.TestError as e:
             raise error.TestFail(str(e))
-
-        if expecting_txt.lower() not in rv.lower():
-            raise error.TestFail(rv)
 
     def ping_ec(self, expect_response):
         """Check if EC is running and responding.

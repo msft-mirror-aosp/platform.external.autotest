@@ -513,6 +513,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
                         self.report_mtbf_result(False, start_time)
+                        # Don't report the test run as failed for MTBF
+                        self.fails = []
                         break
 
                 mtbf_timer.cancel()
@@ -536,11 +538,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         output_file_name = self.GCS_MTBF_BUCKET + \
                            time.strftime('%Y-%m-%d/', gm_time_struct) + \
                            time.strftime('%H-%M-%S.csv', gm_time_struct)
-        platform = self.host.get_platform()
+        board = self.host.get_board().split(':')[1]
         build = self.host.get_release_version()
         milestone = 'M' + self.host.get_chromeos_release_milestone()
         mtbf_result = '{0},{1},{2},{3},{4},{5}'.format(
-            platform, build, milestone, start_time * 1000000, duration_secs,
+            board, build, milestone, start_time * 1000000, duration_secs,
             success)
         with tempfile.NamedTemporaryFile() as tmp_file:
             tmp_file.write(mtbf_result)

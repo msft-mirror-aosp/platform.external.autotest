@@ -135,6 +135,11 @@ class FirmwareTest(FAFTBase):
             if match:
                 args[match.group(1)] = match.group(2)
 
+        self._no_fw_rollback_check = False
+        if 'no_fw_rollback_check' in args:
+            if 'true' in args['no_fw_rollback_check'].lower():
+                self._no_fw_rollback_check = True
+
         self._no_ec_sync = False
         if 'no_ec_sync' in args:
             if 'true' in args['no_ec_sync'].lower():
@@ -1082,7 +1087,16 @@ class FirmwareTest(FAFTBase):
         # And if the "no_ec_sync" argument is set, then disable EC software
         # sync.
         if self._no_ec_sync:
+            logging.info(
+                    'User selected to disable EC software sync')
             flags_to_set |= vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC
+
+        # And if the "no_fw_rollback_check" argument is set, then disable fw
+        # rollback check.
+        if self._no_fw_rollback_check:
+            logging.info(
+                    'User selected to disable FW rollback check')
+            flags_to_set |= vboot.GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK
 
         self.clear_set_gbb_flags(0xffffffff, flags_to_set)
         self.mark_setup_done('gbb_flags')

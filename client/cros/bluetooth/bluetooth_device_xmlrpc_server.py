@@ -1256,8 +1256,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @returns (capabilities, None) on Success. (None, <error>) on failure
         """
         value = self._adapter.GetSupportedCapabilities(
-            dbus_interface=self.BLUEZ_ADAPTER_IFACE)
+                dbus_interface=self.BLUEZ_ADAPTER_IFACE)
         return (json.dumps(value), None)
+
 
     @xmlrpc_server.dbus_safe(False)
     def register_profile(self, path, uuid, options):

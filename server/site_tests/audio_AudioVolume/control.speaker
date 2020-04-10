@@ -30,9 +30,8 @@ def run(machine):
     job.run_test("audio_AudioVolume", host=host, tag="speaker",
                  golden_file=audio_test_data.SIMPLE_FREQUENCY_SPEAKER_TEST_FILE,
                  source_id=chameleon_audio_ids.CrosIds.SPEAKER,
-                 sink_id=None,
                  recorder_id=chameleon_audio_ids.ChameleonIds.MIC,
-                 volume_spec=(70, 100, 0.75)
+                 volume_spec=(70, 100, 0.8)
                 )
 
 parallel_simple(run, machines)

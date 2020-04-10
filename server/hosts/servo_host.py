@@ -277,10 +277,8 @@ class ServoHost(base_servohost.BaseServoHost):
         @returns: image_name on the usbkey, e.g. nami-release/R82.10138.0.0,
                   or empty string if no test image detected, or unexpected
                   error occurred.
-        @raises   AutoservRepairError if mount usb drive failed with no
-                  specific device error, which usually means the usbkey is
-                  not existing or in bad shape.
         """
+        logging.info('Checking ChromeOS image name on usbkey.')
         usb_mount_path = '/media/servo_usb/%s' % self.servo_port
         unmount_cmd = 'umount %s' % usb_mount_path
         # ChromeOS root fs is in /dev/sdx3
@@ -292,50 +290,44 @@ class ServoHost(base_servohost.BaseServoHost):
         try:
             # Attempt to mount the usb drive.
             mount_result = self.run(mount_cmd, ignore_status=True)
-            if mount_result.exit_status == 0:
-                release_content = self.run(
-                    'cat %s/etc/lsb-release' % usb_mount_path,
-                    ignore_status=True).stdout.strip()
-
-                if not re.search(r'RELEASE_TRACK=.*test', release_content):
-                    logging.info('The image on usbkey is not a test image')
-                    return ''
-
-                return lsbrelease_utils.get_chromeos_release_builder_path(
-                    lsb_release_content=release_content)
-            elif (mount_result.exit_status == 32
-                  and 'does not exist' in mount_result.stderr):
-                ## probe_host_usb_dev() sometimes return stale record.
-                raise hosts.AutoservRepairError('No usbkey detected on servo,'
-                                                ' the usbkey may be either'
-                                                ' missing or broken.',
-                                                'missing usbkey')
-            else:
-                logging.error('Unexpected error occurred on mount usb'
-                              ' drive, skipping usbkey validation.')
+            if mount_result.exit_status != 0:
+                logging.error('Unexpected error occurred on mount usb drive.')
                 return ''
+
+            release_content = self.run(
+                'cat %s/etc/lsb-release' % usb_mount_path,
+                ignore_status=True).stdout.strip()
+
+            if not re.search(r'RELEASE_TRACK=.*test', release_content):
+                logging.info('The image on usbkey is not a test image')
+                return ''
+
+            return lsbrelease_utils.get_chromeos_release_builder_path(
+                lsb_release_content=release_content)
         finally:
-            logging.debug('Usbkey validation compeleted, unmounting the'
-                          ' usb drive.')
+            logging.debug('Image check compeleted, unmounting the usb drive.')
             self.run(unmount_cmd, ignore_status=True)
 
 
-    def validate_image_usbkey(self):
-        """This method validate if there is a usbkey on servo that accessible
-        to servohost. It will get the usb disk path, and then mount the usb,
-        if image_name is provided, this method will also check if the image
-        is already on the usb drive, so we can avoid unnecessary download and
-        flash to usb device.
+    def _probe_and_validate_usb_dev(self):
+        """This method probe the usb dev path by talking to servo, and then
+        validate the dev path is valid block device to servohost.
+        Possible output:
+        1. Encounter error during probe usb dev, returns empty string.
+        2. probe usb dev completed without error but cannot find usb dev,
+           raise AutoservRepairError.
+        3. probe usb dev find a usb dev path, but failed validation in this
+           method, raise AutoservRepairError.
 
-        @returns: image_name on the usbkey, e.g. nami-release/R82.10138.0.0,
-                  or empty string if no test image detected, or unexpected
-                  error occurred.
-        @raises:  AutoservRepairError if the usbkey is not detected on servo.
+        @returns: A string of usb dev path(e.g. '/dev/sdb'), or empty string
+        if unexpected error occurred during probe.
+        @raises: AutoservRepairError if servo couldn't probe the usb dev path
+        (servo.probe_host_usb_dev() returns empty string), or the dev path is
+        not valid block device to servohost.
         """
         logging.info('Validating image usbkey on servo.')
-        usbkey_dev = None
         try:
-            usbkey_dev = self._servo.probe_host_usb_dev()
+            usb_dev = self._servo.probe_host_usb_dev()
         except Exception as e:
             # We don't want any unexpected or transient servo communicating
             # failure block usb repair, so capture all errors here.
@@ -344,11 +336,45 @@ class ServoHost(base_servohost.BaseServoHost):
                           ' skipping usbkey validation.')
             return ''
 
-        if not usbkey_dev:
-            raise hosts.AutoservRepairError('No usbkey detected on servo, the'
-                                            ' usbkey may be either missing or'
-                                            ' broken.', 'missing usbkey')
-        return self.get_image_name_from_usbkey(usbkey_dev)
+        if usb_dev:
+            # probe_host_usb_dev() sometimes return stale record,
+            # so we need to make sure the path exists in fdisk.
+            validate_cmd = 'fdisk -l | grep %s' % usb_dev
+            resp = self.run(validate_cmd, ignore_status=True)
+            if resp.exit_status == 0:
+                return usb_dev
+
+            logging.error('%s is reported from "image_usbkey_dev" control but'
+                          ' not detected from fdisk!', usb_dev)
+
+        raise hosts.AutoservRepairError(
+              'No usbkey detected on servo, the usbkey may be either missing'
+              ' or broken. Please replace usbkey on the servo and retry.',
+              'missing usbkey')
+
+
+    def validate_image_usbkey(self):
+        """This method first validate if there is a recover usbkey on servo
+        that accessible to servohost, and second check if a ChromeOS image is
+        already on the usb drive and return the image_name so we can avoid
+        unnecessary download and flash to the recover usbkey on servo.
+
+        Please note that, there is special error handling logic here:
+        1. If unexpected error happens, we return empty string. So repair
+           actions will not get blocked.
+        2. If no working usbkey present on servo, but no errors, we'll raise
+           AutoservRepairError here.
+
+        @returns: image_name on the usbkey, e.g. nami-release/R82.10138.0.0,
+                  or empty string if no test image detected, or unexpected
+                  error occurred.
+        @raises:  AutoservRepairError if the usbkey is not detected on servo.
+        """
+        usb_dev = self._probe_and_validate_usb_dev()
+        if usb_dev:
+            return self.get_image_name_from_usbkey(usb_dev)
+        else:
+            return ''
 
 
     def repair(self, silent=False):

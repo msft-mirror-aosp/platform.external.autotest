@@ -150,16 +150,17 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         return self.get_wifi_ip(0)
 
 
-    def __init__(self, host, test_name, enable_avahi=False):
+    def __init__(self, host, test_name, enable_avahi=False, role='router'):
         """Build a LinuxRouter.
 
         @param host Host object representing the remote machine.
         @param test_name string name of this test.  Used in SSID creation.
         @param enable_avahi: boolean True iff avahi should be started on the
                 router.
+        @param role string description of host (e.g. router, pcap)
 
         """
-        super(LinuxRouter, self).__init__(host, 'router')
+        super(LinuxRouter, self).__init__(host, role)
         self._ssid_prefix = test_name
         self._enable_avahi = enable_avahi
         self.__setup()
@@ -253,7 +254,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.host.run("sed -n -e '/%s/,$p' /var/log/messages >%s" %
                       (self._log_start_timestamp, router_log),
                       ignore_status=True)
-        self.host.get_file(router_log, 'debug/router_host_messages')
+        self.host.get_file(router_log, 'debug/%s_host_messages' % self.role)
         super(LinuxRouter, self).close()
 
 
@@ -429,10 +430,11 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             log_identifier = '%d_%s' % (
                 self._total_hostapd_instances, instance.interface)
         files_to_copy = [(instance.log_file,
-                          'debug/hostapd_router_%s.log' % log_identifier),
+                          'debug/hostapd_%s_%s.log' %
+                          (self.role, log_identifier)),
                          (instance.stderr_log_file,
-                          'debug/hostapd_router_%s.stderr.log' %
-                          log_identifier)]
+                          'debug/hostapd_%s_%s.stderr.log' %
+                          (self.role, log_identifier))]
         for remote_file, local_file in files_to_copy:
             if self.host.run('ls %s >/dev/null 2>&1' % remote_file,
                              ignore_status=True).exit_status:

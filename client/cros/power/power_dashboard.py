@@ -536,43 +536,6 @@ class KeyvalLoggerDashboard(MeasurementLoggerDashboard):
         return power_dict
 
 
-class SimplePowerLoggerDashboard(ClientTestDashboard):
-    """Dashboard class for simple system power measurement taken and publishing
-    it to the dashboard.
-    """
-
-    def __init__(self, duration_secs, power_watts, testname, start_ts,
-                 resultsdir=None, uploadurl=None, note=''):
-
-        if uploadurl is None:
-            uploadurl = 'http://chrome-power.appspot.com/rapl'
-        super(SimplePowerLoggerDashboard, self).__init__(
-                None, testname, start_ts, resultsdir, uploadurl, note)
-
-        self._unit = 'watt'
-        self._type = 'power'
-        self._duration_secs = duration_secs
-        self._power_watts = power_watts
-        self._testname = testname
-
-    def _convert(self):
-        """Convert vbat to raw power measurement dictionary.
-
-        Return:
-            raw measurement dictionary
-        """
-        power_dict = {
-            'sample_count': 1,
-            'sample_duration': self._duration_secs,
-            'average': {'system': self._power_watts},
-            'data': {'system': [self._power_watts]},
-            'unit': {'system': self._unit},
-            'type': {'system': self._type},
-            'checkpoint': [[self._testname]],
-        }
-        return power_dict
-
-
 class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
     """Dashboard class for power_status.CPUStatsLogger.
     """

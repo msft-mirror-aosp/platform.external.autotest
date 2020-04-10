@@ -471,6 +471,71 @@ class TempLoggerDashboard(MeasurementLoggerDashboard):
         self._type = 'temperature'
 
 
+class KeyvalLogger(power_status.MeasurementLogger):
+    """Class for logging custom keyval data to power dashboard.
+
+    Each key should be unique and only map to one value.
+    See power_SpeedoMeter2 for implementation example.
+    """
+
+    def __init__(self, start_ts, end_ts):
+        # Do not call parent constructor to avoid making a new thread.
+        self.times = [start_ts]
+        self._duration_secs = end_ts - start_ts
+        self.keys = []
+        self.values = []
+        self.units = []
+        self.types = []
+
+    def is_unit_valid(self, unit):
+        """Make sure that unit of the data is supported unit."""
+        pattern = re.compile(r'^((kilo|mega|giga)hertz|'
+                             r'percent|celsius|fps|rpm|point|'
+                             r'(milli|micro)?(watt|volt|amp))$')
+        return pattern.match(unit) is not None
+
+    def add_item(self, key, value, unit, type_):
+        """Add a data point to the logger.
+
+        @param key: string, key of the data.
+        @param value: float, measurement value.
+        @param unit: string, unit for the data.
+        @param type: string, type of the data.
+        """
+        if not self.is_unit_valid(unit):
+            raise error.TestError(
+                    'Unit %s is not support in power dashboard.' % unit)
+        self.keys.append(key)
+        self.values.append(value)
+        self.units.append(unit)
+        self.types.append(type_)
+
+    def calc(self, mtype=None):
+        return {}
+
+    def save_results(self, resultsdir=None, fname_prefix=None):
+        pass
+
+
+class KeyvalLoggerDashboard(MeasurementLoggerDashboard):
+    """Dashboard class for custom keyval data in KeyvalLogger class."""
+
+    def _convert(self):
+        """Convert KeyvalLogger data to power dict."""
+        power_dict =  {
+            # 2 samples to show flat value spanning across duration of the test.
+            'sample_count': 2,
+            'sample_duration': self._logger._duration_secs,
+            'average': dict(zip(self._logger.keys, self._logger.values)),
+            'data': dict(zip(self._logger.keys,
+                             ([v, v] for v in self._logger.values))),
+            'unit': dict(zip(self._logger.keys, self._logger.units)),
+            'type': dict(zip(self._logger.keys, self._logger.types)),
+            'checkpoint': [[self._testname], [self._testname]],
+        }
+        return power_dict
+
+
 class SimplePowerLoggerDashboard(ClientTestDashboard):
     """Dashboard class for simple system power measurement taken and publishing
     it to the dashboard.
@@ -631,6 +696,7 @@ class LoggerDashboardFactory(object):
         power_status.TempLogger:     TempLoggerDashboard,
         power_status.VideoFpsLogger: VideoFpsLoggerDashboard,
         power_status.FanRpmLogger:   FanRpmLoggerDashboard,
+        KeyvalLogger:                KeyvalLoggerDashboard,
     }
 
     def registerDataType(self, logger_type, dashboard_type):

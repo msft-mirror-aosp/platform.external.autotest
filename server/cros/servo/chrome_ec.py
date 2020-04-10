@@ -378,7 +378,12 @@ class ChromeEC(ChromeConsole):
         regexp = r'%d-%d:\s*(0x[0-9a-fA-F]{8})' % (feat_start,
                                                    feat_start + 31)
 
-        result = self.send_command_get_output('feat', [regexp])
+        try:
+            result = self.send_command_get_output('feat', [regexp])
+        except servo.ResponsiveConsoleError as e:
+            logging.warn("feat command is not available: %s", str(e))
+            return False
+
         feat_bitmap = int(result[0][1], 16)
 
         return ((1 << (feat_id - feat_start)) & feat_bitmap) != 0

@@ -17,11 +17,12 @@ class firmware_ECCbiEeprom(FirmwareTest):
     EEPROM_LOCATE_INDEX = 0   # Only one EEPROM ever
 
     # Test data to attempt to write to EEPROM
-    TEST_EEPROM_DATA = ('0xaa ' * 16).strip()
-    TEST_EEPROM_DATA_2 = ('0x55 ' * 16).strip()
+    TEST_EEPROM_DATA = ('0xaa ' * 8).strip()
+    TEST_EEPROM_DATA_2 = ('0x55 ' * 8).strip()
 
-    # Size of read and write
-    PAGE_SIZE = 16
+    # Size of read and write. Use 8-bytes as this will work with EEPROMs with
+    # page size 8 or 16 bytes. We allow 8-bytes page size parts.
+    PAGE_SIZE = 8
     NO_READ = 0
 
     # The number of bytes we verify are both writable and write protectable

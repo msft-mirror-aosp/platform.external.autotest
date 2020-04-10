@@ -836,8 +836,8 @@ class server_job(base_job.base_job):
                 os.environ[OFFLOAD_ENVVAR] = sync_dir
                 self._execute_code(server_control_file, namespace)
                 logging.info("Finished processing control file")
-
-                # If no device error occured, no need to collect crashinfo.
+                self._maybe_retrieve_client_offload_dirs()
+                # If no device error occurred, no need to collect crashinfo.
                 collect_crashinfo = self.failed_with_device_error
             except Exception as e:
                 try:
@@ -884,32 +884,55 @@ class server_job(base_job.base_job):
                     self._execute_code(GET_NETWORK_STATS_CONTROL_FILE,
                                        namespace)
 
-    def _offload_dir_target_path(self, force_server=False):
+    def _server_offload_dir_path(self):
+        return os.path.join(self.resultdir, self._sync_offload_dir)
+
+    def _offload_dir_target_path(self):
         if not self._sync_offload_dir:
             return ''
-        if self._client and not force_server:
+        if self._client:
           return os.path.join(DUT_STATEFUL_PATH, self._sync_offload_dir)
         return os.path.join(self.resultdir, self._sync_offload_dir)
 
-
-    def _client_off_dir_lambda_generator(self, file_path, offload_path):
-        """Generate a parallel_simple-runnable function to mirror offload dir
-
-        @param file_path: File to copy as the marker file
-        @param offload_path: Absolute path to the offload dir on the appropriate
-          device (client or server)
-
-        @returns function which takes a machine and creates the dir and marker
-          file on that machine.
-        """
-        cmd = "mkdir -p %s" % offload_path
+    def _maybe_retrieve_client_offload_dirs(self):
+        if not(self._sync_offload_dir and self._client):
+            logging.info("No client dir to retrieve.")
+            return ''
+        logging.info("Retrieving synchronous offload dir from client")
+        server_path = self._server_offload_dir_path()
+        client_path = self._offload_dir_target_path()
         def serial(machine):
             host = hosts.create_host(machine)
-            marker_path = os.path.join(os.path.dirname(offload_path),
-                         "marker-%s" % host.hostname)
-            host.run(cmd, ignore_status=False)
+            server_subpath = os.path.join(server_path, host.hostname)
+            # Empty final piece ensures that get_file gets a trailing slash,
+            #  which makes it copy dir contents rather than the dir itself.
+            client_subpath = os.path.join(client_path, '')
+            logging.debug("Client dir to retrieve is %s", client_subpath)
+            os.makedirs(server_subpath)
+            host.get_file(client_subpath, server_subpath)
+        self.parallel_simple(serial, self.machines)
+        logging.debug("Synchronous offload dir retrieved to %s", server_path)
+        return server_path
+
+    def _create_client_offload_dirs(self):
+        marker_string = "client %s%s" % (
+            "in SSP " if utils.is_in_container() else "",
+            str(datetime.utcnow())
+        )
+        offload_path = self._offload_dir_target_path()
+        _, file_path = tempfile.mkstemp()
+        def serial(machine):
+            host = hosts.create_host(machine)
+            marker_path = os.path.join(offload_path, "sync_offloads_marker")
+            host.run(("mkdir -p %s" % offload_path), ignore_status=False)
             host.send_file(file_path, marker_path)
-        return serial
+
+        try:
+            utils.open_write_close(file_path, marker_string)
+            self.parallel_simple(serial, self.machines)
+        finally:
+            os.remove(file_path)
+
 
     def create_marker_file(self):
         """Create a marker file in the leaf task's synchronous offload dir.
@@ -917,42 +940,29 @@ class server_job(base_job.base_job):
         This ensures that we will get some results offloaded if the test fails
         to create output properly, distinguishing offload errs from test errs.
         @obj_param _client: Boolean, whether the control file is client-side.
-        @obj_param resultdir: absolute path to results directory for this run
-        @obj_param _sync_offload_dir: relative path from results to offload dir.
+        @obj_param _sync_offload_dir: rel. path from results dir to offload dir.
 
-        @returns: path to offload dir on the relevant machine
+        @returns: path to offload dir on the machine of the leaf task
         """
-        # Note that we put all the spaces in the filler values rather than the
-        # format string, to avoid extra whitespace when SSP is not in use
-        marker_string = "%s%s%s" % (
-            "client " if self._client else "server ",
-            "in SSP " if utils.is_in_container() else "",
-            str(datetime.utcnow())
-        )
         # Make the server-side directory regardless
         try:
-          os.makedirs(self._offload_dir_target_path(force_server=True))
+          # 2.7 makedirs doesn't have an option for pre-existing directories
+          os.makedirs(self._server_offload_dir_path())
         except OSError as e:
           if e.errno != errno.EEXIST:
             raise
-        offload_path = self._offload_dir_target_path()
-        if self._client:
-            _, path = tempfile.mkstemp()
-            try:
-                utils.open_write_close(path, marker_string)
-                self.parallel_simple(
-                    self._client_off_dir_lambda_generator(path, offload_path),
-                    self.machines
-                )
-            finally:
-                os.remove(path)
-        else:
+        if not self._client:
+            offload_path = self._offload_dir_target_path()
+            marker_string = "server %s%s" % (
+                "in SSP " if utils.is_in_container() else "",
+                str(datetime.utcnow())
+            )
             utils.open_write_close(
-                os.path.join(os.path.dirname(offload_path),
-                             "sync_offloads_marker"),
+                os.path.join(offload_path, "sync_offloads_marker"),
                 marker_string
             )
-        return self._offload_dir_target_path()
+            return offload_path
+        return self._create_client_offload_dirs()
 
     def run_test(self, url, *args, **dargs):
         """

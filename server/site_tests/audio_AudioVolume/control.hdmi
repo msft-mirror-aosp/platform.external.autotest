@@ -30,7 +30,6 @@ def run(machine):
     job.run_test("audio_AudioVolume", host=host, tag="hdmi",
                  golden_file=audio_test_data.FREQUENCY_TEST_FILE,
                  source_id=chameleon_audio_ids.CrosIds.HDMI,
-                 sink_id=None,
                  recorder_id=chameleon_audio_ids.ChameleonIds.HDMI,
                  volume_spec=(40, 80, 0.2)
                 )

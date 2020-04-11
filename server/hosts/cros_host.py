@@ -930,22 +930,24 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/install_duration'):
             logging.info('Installing image through chromeos-install.')
-            self.run('chromeos-install --yes',timeout=install_timeout)
-
-            self.halt()
-
-        logging.info('Power cycling DUT through servo.')
-        self.servo.get_power_state_controller().power_off()
-        self.servo.switch_usbkey('off')
-        # N.B. The Servo API requires that we use power_on() here
-        # for two reasons:
-        #  1) After turning on a DUT in recovery mode, you must turn
-        #     it off and then on with power_on() once more to
-        #     disable recovery mode (this is a Parrot specific
-        #     requirement).
-        #  2) After power_off(), the only way to turn on is with
-        #     power_on() (this is a Storm specific requirement).
-        self.servo.get_power_state_controller().power_on()
+            try:
+                self.run('chromeos-install --yes',timeout=install_timeout)
+                self.halt()
+            finally:
+                # We need reset the DUT no matter re-install success or not,
+                # as we don't want leave the DUT in boot from usb state.
+                logging.info('Power cycling DUT through servo.')
+                self.servo.get_power_state_controller().power_off()
+                self.servo.switch_usbkey('off')
+                # N.B. The Servo API requires that we use power_on() here
+                # for two reasons:
+                #  1) After turning on a DUT in recovery mode, you must turn
+                #     it off and then on with power_on() once more to
+                #     disable recovery mode (this is a Parrot specific
+                #     requirement).
+                #  2) After power_off(), the only way to turn on is with
+                #     power_on() (this is a Storm specific requirement).
+                self.servo.get_power_state_controller().power_on()
 
         logging.info('Waiting for DUT to come back up.')
         if not self.wait_up(timeout=self.BOOT_TIMEOUT):

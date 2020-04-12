@@ -916,7 +916,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             if not self.wait_up(timeout=usb_boot_timeout):
                 raise hosts.AutoservRepairError(
                         'DUT failed to boot from USB after %d seconds' %
-                        usb_boot_timeout, 'failed_to_reboot')
+                        usb_boot_timeout, 'failed_to_boot_pre_install')
 
         # The new chromeos-tpm-recovery has been merged since R44-7073.0.0.
         # In old CrOS images, this command fails. Skip the error.
@@ -951,9 +951,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         logging.info('Waiting for DUT to come back up.')
         if not self.wait_up(timeout=self.BOOT_TIMEOUT):
-            raise error.AutoservError('DUT failed to reboot installed '
-                                      'test image after %d seconds' %
-                                      self.BOOT_TIMEOUT)
+            raise hosts.AutoservRepairError('DUT failed to reboot installed '
+                                            'test image after %d seconds' %
+                                            self.BOOT_TIMEOUT,
+                                            'failed_to_boot_post_install')
 
 
     def set_servo_host(self, host, servo_state = None):

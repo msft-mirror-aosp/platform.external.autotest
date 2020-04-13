@@ -341,6 +341,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         if not self.bluetooth_facade.stop_capturing_audio_subprocess():
             raise error.TestError('DUT failed to stop capturing audio.')
 
+        # Stop playing audio on DUT.
+        logging.debug('Stop playing audio on DUT')
+        if not self.bluetooth_facade.stop_playing_audio_subprocess():
+            raise error.TestError('DUT failed to stop playing audio.')
+
         # Copy the recorded audio file to the DUT for spectrum analysis.
         logging.debug('Scp to DUT')
         recorded_file = hfp_test_data['recorded_by_peer']

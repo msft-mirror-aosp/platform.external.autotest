@@ -794,8 +794,7 @@ class CrasTestClient(object):
 
     def stop_playing_subprocess(self):
         """Stop the playing subprocess."""
-        result = self.stop_subprocess(self, self._playing_proc,
-                                       self._playing_msg)
+        result = self.stop_subprocess(self._playing_proc, self._playing_msg)
         if result:
             self._playing_proc = None
         return result

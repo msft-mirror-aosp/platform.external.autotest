@@ -249,7 +249,7 @@ suite:wifi_release
 suite:wifi_stress
 suite:wifi_tdls_cast
 suite:wifi_update_router
-suite:wificell-pre-cq
+suite:wificell-cq
 suite:wifichaos
 suite:wilco_bve
 suite:wilco_bve_dock

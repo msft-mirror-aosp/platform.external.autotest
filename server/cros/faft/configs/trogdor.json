@@ -1,0 +1,15 @@
+{
+    "platform": "trogdor",
+    "chrome_ec": true,
+    "ec_capability": [
+        "arm",
+        "battery",
+        "charging",
+        "keyboard",
+        "lid",
+        "usb"
+    ],
+    "custom_usb_enable_names": [
+        "EN_USB_A_5V"
+    ]
+}

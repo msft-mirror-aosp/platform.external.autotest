@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This is a server side USB playback audio test using the Chameleon board."""
 
 import logging
@@ -14,7 +13,6 @@ from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server.cros.audio import audio_test
-from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 
 class audio_AudioBasicUSBRecord(audio_test.AudioTest):
@@ -29,64 +27,61 @@ class audio_AudioBasicUSBRecord(audio_test.AudioTest):
     SUSPEND_SECONDS = 30
     RPC_RECONNECT_TIMEOUT = 60
 
-    def run_once(self, host, suspend=False):
+    def run_once(self, suspend=False):
+        """Runs Basic Audio USB recording test.
+
+        @param suspend: True for suspend the device before recording.
+                        False for not suspend.
+
+        """
         golden_file = audio_test_data.SWEEP_TEST_FILE
 
-        chameleon_board = host.chameleon
-        factory = remote_facade_factory.RemoteFacadeFactory(
-                host, results_dir=self.resultsdir)
-
-        chameleon_board.setup_and_reset(self.outputdir)
-
-        widget_factory = chameleon_audio_helper.AudioWidgetFactory(
-                factory, host)
-
-        source = widget_factory.create_widget(
-            chameleon_audio_ids.ChameleonIds.USBOUT)
-        recorder = widget_factory.create_widget(
-            chameleon_audio_ids.CrosIds.USBIN)
-        binder = widget_factory.create_binder(source, recorder)
+        source = self.widget_factory.create_widget(
+                chameleon_audio_ids.ChameleonIds.USBOUT)
+        recorder = self.widget_factory.create_widget(
+                chameleon_audio_ids.CrosIds.USBIN)
+        binder = self.widget_factory.create_binder(source, recorder)
 
         with chameleon_audio_helper.bind_widgets(binder):
             # Checks the node selected by cras is correct.
-            audio_facade = factory.create_audio_facade()
-
             audio_test_utils.dump_cros_audio_logs(
-                    host, audio_facade, self.resultsdir, 'after_binding')
+                    self.host, self.facade, self.resultsdir, 'after_binding')
 
             audio_test_utils.check_and_set_chrome_active_node_types(
-                    audio_facade, None, 'USB')
+                    self.facade, None, 'USB')
             audio_test_utils.dump_cros_audio_logs(
-                    host, audio_facade, self.resultsdir, 'after_select')
+                    self.host, self.facade, self.resultsdir, 'after_select')
 
-            audio_test_utils.check_audio_nodes(audio_facade,
-                                               (None, ['USB']))
+            audio_test_utils.check_audio_nodes(self.facade, (None, ['USB']))
             logging.info('Setting playback data on Cros device')
 
-            audio_facade.set_selected_output_volume(70)
+            self.facade.set_selected_output_volume(70)
 
             source.set_playback_data(golden_file)
 
             if suspend:
-                audio_test_utils.suspend_resume(host, self.SUSPEND_SECONDS)
-                utils.poll_for_condition(condition=factory.ready,
-                                         timeout=self.RPC_RECONNECT_TIMEOUT,
-                                         desc='multimedia server reconnect')
+                audio_test_utils.suspend_resume(self.host,
+                                                self.SUSPEND_SECONDS)
+                utils.poll_for_condition(
+                        condition=self.factory.ready,
+                        timeout=self.RPC_RECONNECT_TIMEOUT,
+                        desc='multimedia server reconnect')
 
-                audio_test_utils.dump_cros_audio_logs(
-                        host, audio_facade, self.resultsdir, 'after_suspend')
+                audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                      self.resultsdir,
+                                                      'after_suspend')
 
                 # Directly select the node through cras
                 # Should switch to check_and_set_chrome_active_node_types
                 # to set the active node through chrome.audio API when
                 # the telemetry bug is fixed (crbug.com/965704)
-                audio_facade.set_selected_node_types(None, ['USB'])
+                self.facade.set_selected_node_types(None, ['USB'])
 
-                audio_test_utils.dump_cros_audio_logs(
-                        host, audio_facade, self.resultsdir,
-                        'after_resume_select')
+                audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                      self.resultsdir,
+                                                      'after_resume_select')
 
-                audio_test_utils.check_audio_nodes(audio_facade,
+                audio_test_utils.check_audio_nodes(self.facade,
                                                    (None, ['USB']))
             # Starts playing from Chameleon (which waits for Cros device),
             # waits for some time, and then starts recording from Cros device.
@@ -103,7 +98,7 @@ class audio_AudioBasicUSBRecord(audio_test.AudioTest):
             logging.info('Stopped recording from Cros.')
 
             audio_test_utils.dump_cros_audio_logs(
-                    host, audio_facade, self.resultsdir, 'after_recording')
+                    self.host, self.facade, self.resultsdir, 'after_recording')
 
             recorder.read_recorded_binary()
             logging.info('Read recorded binary from Cros.')

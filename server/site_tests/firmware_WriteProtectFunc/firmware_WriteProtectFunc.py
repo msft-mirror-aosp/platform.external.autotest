@@ -111,8 +111,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
         # testing. To ensure there is difference in WP_RO section between
         # the firmware on the DUT and the firmware unpacked from the firmware
         # updater, we mess around FRID.
-        self.faft_client.updater.modify_fwids('bios', ['ro'])
-        self.faft_client.updater.modify_fwids('ec', ['ro'])
+        self.faft_client.updater.modify_image_fwids('bios', ['ro'])
+        self.faft_client.updater.modify_image_fwids('ec', ['ro'])
 
         bios_test = os.path.join(work_path,
                 self.faft_client.updater.get_bios_relative_path())

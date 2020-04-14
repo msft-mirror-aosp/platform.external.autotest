@@ -151,6 +151,8 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
                 whole batch
         """
         self.au_a2dp_test()
+        self.au_hfp_nbs_dut_as_source_test()
+        self.au_hfp_nbs_dut_as_sink_test()
         self.au_hfp_wbs_dut_as_source_test()
         self.au_hfp_wbs_dut_as_sink_test()
         self.au_avrcp_command_test()

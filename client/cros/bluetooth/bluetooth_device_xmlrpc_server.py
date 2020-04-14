@@ -756,6 +756,16 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self._has_adapter and self._adapter is not None
 
+    def is_wake_enabled(self):
+        """Checks whether the bluetooth adapter has wake enabled.
+
+        This will walk through all parents of the hci0 sysfs path and try to
+        find one with a 'power/wakeup' entry and returns whether its value is
+        'enabled'.
+
+        @return True if 'power/wakeup' of an hci0 parent is 'enabled'
+        """
+        return self._is_wake_enabled()
 
     def _reset(self, set_power=False):
         """Remove remote devices and set adapter to set_power state.
@@ -958,6 +968,30 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     def _is_powered_on(self):
         return bool(self._get_adapter_properties().get(u'Powered'))
 
+    def _is_wake_enabled(self):
+        # Resolve hci path to get full device path (i.e. w/ usb or uart)
+        search_at = os.path.realpath('/sys/class/bluetooth/hci0')
+        logging.debug("Start search for power/wakeup at {}".format(search_at))
+
+        # Exit early if path doesn't exist
+        if not os.path.exists(search_at):
+            return False
+
+        # Walk up parents and try to find one with 'power/wakeup'
+        for _ in xrange(search_at.count('/') - 1):
+            search_at = os.path.normpath(os.path.join(search_at, '..'))
+            try:
+                with open(os.path.join(search_at, 'power', 'wakeup'), 'r') as f:
+                    value = f.read()
+                    logging.info('Power/wakeup found at {}: {}'.format(
+                            search_at, value))
+                    return 'enabled' in value
+            except IOError:
+                # No power wakeup at the given location so keep going
+                continue
+
+        # No power wakeup found in path so it's not wake enabled
+        return False
 
     def read_version(self):
         """Read the version of the management interface from the Kernel.

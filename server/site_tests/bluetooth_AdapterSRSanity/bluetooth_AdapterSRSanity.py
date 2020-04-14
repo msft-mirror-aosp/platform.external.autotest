@@ -292,10 +292,8 @@ class bluetooth_AdapterSRSanity(
             # Confirm connection completed
             self.test_device_is_connected(device.address)
 
-            # TODO(b/150899248) - Wait for powerd event that marks the
-            # power/wakeup of hci0's parent to "enabled"; otherwise, we won't be
-            # able to wake
-            time.sleep(10)
+            # Wait until powerd marks adapter as wake enabled
+            self.test_adapter_wake_enabled()
 
             # Trigger suspend, asynchronously trigger wake and wait for resume
             self.suspend_and_wait_for_sleep(suspend)

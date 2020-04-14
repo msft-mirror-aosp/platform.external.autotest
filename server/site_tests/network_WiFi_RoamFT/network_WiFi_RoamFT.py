@@ -198,6 +198,11 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
             if not self.context.client.wait_for_roam(
                    roam_to_bssid, timeout_seconds=self.TIMEOUT_SECONDS):
                 raise error.TestFail('Failed to roam.')
+        # We've roamed at the 802.11 layer, but make sure Shill brings the
+        # connection up completely (DHCP).
+        # TODO(https://crbug.com/1070321): Note that we don't run any ping
+        # test.
+        self.context.client.wait_for_connection(router_ssid)
 
         self.context.client.shill.disconnect(router_ssid)
         self.context.router.deconfig()

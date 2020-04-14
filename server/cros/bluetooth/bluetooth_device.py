@@ -157,6 +157,9 @@ class BluetoothDevice(object):
         """@return True if an adapter is present, False if not."""
         return self._proxy.has_adapter()
 
+    def is_wake_enabled(self):
+        """@return True if adapter is wake enabled, False if not."""
+        return self._proxy.is_wake_enabled()
 
     def set_powered(self, powered):
         """Set the adapter power state.

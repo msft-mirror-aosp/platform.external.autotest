@@ -156,13 +156,19 @@ class power_Test(test.test):
         for key, values in self.keyvals.iteritems():
             if key.endswith('pwr_avg'):
                 self.output_perf_value(description=key, value=values, units='W',
-                                   higher_is_better=False, graph='power')
+                        higher_is_better=False, graph='power')
 
         # publish temperature values
         for key, values in self.keyvals.iteritems():
             if key.endswith('temp_avg'):
                 self.output_perf_value(description=key, value=values, units='C',
-                                   higher_is_better=False, graph='temperature')
+                        higher_is_better=False, graph='temperature')
+
+        # publish fps values
+        for key, values in self.keyvals.iteritems():
+            if key.endswith('fps_avg'):
+                self.output_perf_value(description=key, value=values,
+                        units='fps', higher_is_better=True, graph='fps')
 
         # publish to power dashboard
         dashboard_factory = power_dashboard.get_dashboard_factory()

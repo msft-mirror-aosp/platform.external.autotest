@@ -112,10 +112,10 @@ class power_VideoCall(power_test.power_Test):
             Genuine[ ]Intel[ ]0000                    # Unrelease CPU
         '''
         MEDIUM_REGEX = r'''
-            Intel[ ]Core[ ][im][357]-[0-9]{4-5}[UY]|  # Intel Core i5-8200Y
+            Intel[ ]Core[ ][im][357]-[0-9]{4,5}[UY]|  # Intel Core i5-8200Y
             Intel[ ]Core[ ][im][357]-[67]Y[0-9]{2}|   # Intel Core m7-6Y75
-            Intel[ ]Pentium[ ][0-9]{4-5}[UY]|         # Intel Pentium 6405U
-            Intel[ ]Celeron[ ][0-9]{4-5}[UY]|         # Intel Celeron 5205U
+            Intel[ ]Pentium[ ][0-9]{4,5}[UY]|         # Intel Pentium 6405U
+            Intel[ ]Celeron[ ][0-9]{4,5}[UY]|         # Intel Celeron 5205U
             qcom[ ]sc[0-9]{4}|                        # qcom sc7180
             mediatek[ ]mt819[0-9]                     # mediatek mt8192
         '''

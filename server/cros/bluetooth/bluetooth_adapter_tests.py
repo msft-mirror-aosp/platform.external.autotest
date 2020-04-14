@@ -529,6 +529,7 @@ class BluetoothAdapterTests(test.test):
     ADAPTER_DISCOVER_TIMEOUT_SECS = 60          # 30 seconds too short sometimes
     ADAPTER_DISCOVER_POLLING_SLEEP_SECS = 1
     ADAPTER_DISCOVER_NAME_TIMEOUT_SECS = 30
+    ADAPTER_WAKE_ENABLE_TIMEOUT_SECS = 30
 
     ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS = 10
     ADAPTER_POLLING_DEFAULT_SLEEP_SECS = 1
@@ -1070,6 +1071,16 @@ class BluetoothAdapterTests(test.test):
                 'hci': hci}
         return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_adapter_wake_enabled(self):
+        """Test that the bluetooth adapter is wakeup enabled.
+        """
+        wake_enabled = self._wait_for_condition(
+                self.bluetooth_facade.is_wake_enabled, method_name(),
+                timeout=self.ADAPTER_WAKE_ENABLE_TIMEOUT_SECS)
+
+        self.results = { 'wake_enabled': wake_enabled }
+        return any(self.results.values())
 
     @test_retry_and_log
     def test_power_on_adapter(self):

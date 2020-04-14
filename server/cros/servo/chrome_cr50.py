@@ -1024,7 +1024,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Return a dictionary of the ccdstate once it's done debouncing"""
         for i in range(self.CCDSTATE_MAX_RETRY_COUNT):
             rv = self.send_command_retry_get_output('ccdstate',
-                    ['ccdstate(.*)>'], safe=True)[0][0]
+                    ['ccdstate(.*)>'], safe=True, compare_output=True)[0][0]
 
             # Look for a line like 'AP: on' or 'AP: off'. 'debouncing' or
             # 'unknown' may appear transiently. 'debouncing' should transition

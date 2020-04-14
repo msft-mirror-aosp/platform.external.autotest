@@ -19,7 +19,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     """Server side Bluetooth adapter audio test class."""
 
     DEVICE_TYPE = 'BLUETOOTH_AUDIO'
-    FREQUENCY_TOLERANCE_RATIO = 0.01
+    FREQUENCY_TOLERANCE_RATIO = {
+            A2DP: 0.01,
+            HFP_WBS: 0.01,
+            # NBS provides lower audio quality and thus has larger tolerance.
+            HFP_NBS: 0.05,
+    }
     WAIT_DAEMONS_READY_SECS = 1
 
     def _get_pulseaudio_bluez_source(self, get_source_method, device):
@@ -117,22 +122,25 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return result
 
 
-    def _check_frequency(self, recorded_freq, expected_freq):
+    def _check_frequency(self, test_profile, recorded_freq, expected_freq):
         """Check if the recorded frequency is within tolerance.
 
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
         @param recorded_freq: the frequency of recorded audio
         @param expected_freq: the expected frequency
 
         @returns: True if the recoreded frequency falls within the tolerance of
                   the expected frequency
         """
-        tolerance = expected_freq * self.FREQUENCY_TOLERANCE_RATIO
+        tolerance = expected_freq * self.FREQUENCY_TOLERANCE_RATIO[test_profile]
         return abs(expected_freq - recorded_freq) <= tolerance
 
 
-    def _check_primary_frequencies(self, audio_test_data, recording_device):
+    def _check_primary_frequencies(self, test_profile, audio_test_data,
+                                   recording_device):
         """Check if the recorded frequencies meet expectation.
 
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
         @param audio_test_data: a dictionary about the audio test data
                 defined in client/cros/bluetooth/bluetooth_audio_test_data.py
         @param recording_device: which device recorded the audio,
@@ -154,7 +162,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         else:
             for channel, expected_freq in enumerate(expected_frequencies):
                 recorded_freq = recorded_frequencies[channel]
-                ret_val = self._check_frequency(recorded_freq, expected_freq)
+                ret_val = self._check_frequency(
+                        test_profile, recorded_freq, expected_freq)
                 pass_fail_str = 'pass' if ret_val else 'fail'
                 result = ('primary frequency %d (expected %d): %s' %
                           (recorded_freq, expected_freq, pass_fail_str))
@@ -187,6 +196,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         Note: pulseaudio is not stable. Need to restart it in the beginning.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         """
         if not device.StartPulseaudio():
@@ -211,6 +221,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """Cleanup for Bluetooth audio.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         """
         if device.StopPulseaudio():
@@ -276,8 +287,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             return False
 
         # Check if the primary frequencies of recorded file meet expectation.
-        check_freq_result = self._check_primary_frequencies(a2dp_test_data,
-                                                            'recorded_by_peer')
+        check_freq_result = self._check_primary_frequencies(
+                A2DP, a2dp_test_data, 'recorded_by_peer')
         return check_freq_result
 
 
@@ -341,6 +352,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         if not self.bluetooth_facade.stop_capturing_audio_subprocess():
             raise error.TestError('DUT failed to stop capturing audio.')
 
+        # Stop playing audio on DUT.
+        logging.debug('Stop playing audio on DUT')
+        if not self.bluetooth_facade.stop_playing_audio_subprocess():
+            raise error.TestError('DUT failed to stop playing audio.')
+
         # Copy the recorded audio file to the DUT for spectrum analysis.
         logging.debug('Scp to DUT')
         recorded_file = hfp_test_data['recorded_by_peer']
@@ -352,8 +368,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             return False
 
         # Check if the primary frequencies of recorded file meet expectation.
-        check_freq_result = self._check_primary_frequencies(hfp_test_data,
-                                                            'recorded_by_peer')
+        check_freq_result = self._check_primary_frequencies(
+                test_profile, hfp_test_data, 'recorded_by_peer')
         return check_freq_result
 
 
@@ -419,6 +435,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             return False
 
         # Check if the primary frequencies of recorded file meet expectation.
-        check_freq_result = self._check_primary_frequencies(hfp_test_data,
-                                                            'recorded_by_dut')
+        check_freq_result = self._check_primary_frequencies(
+                test_profile, hfp_test_data, 'recorded_by_dut')
         return check_freq_result

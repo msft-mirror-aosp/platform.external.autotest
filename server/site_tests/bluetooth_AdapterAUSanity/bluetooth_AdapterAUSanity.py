@@ -111,6 +111,22 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_NBS)
 
 
+    @test_wrapper('avrcp command test', devices={'BLUETOOTH_AUDIO':1})
+    def au_avrcp_command_test(self):
+        """AVRCP test to examine commands reception."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_pairing(device, A2DP)
+        self.initialize_bluetooth_audio(device, A2DP)
+        self.test_power_on_adapter()
+        self.test_bluetoothd_running()
+        self.test_connection_by_adapter(device.address)
+        self.initialize_bluetooth_player(device)
+        self.test_avrcp_commands(device)
+        self.cleanup_bluetooth_player(device)
+        self.test_disconnection_by_adapter(device.address)
+        self.cleanup_bluetooth_audio(device, A2DP)
+
+
     @batch_wrapper('Bluetooth Audio Batch Sanity Tests')
     def au_sanity_batch_run(self, num_iterations=1, test_name=None):
         """Run the bluetooth audio sanity test batch or a specific given test.
@@ -122,6 +138,7 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_a2dp_test()
         self.au_hfp_wbs_dut_as_source_test()
         self.au_hfp_wbs_dut_as_sink_test()
+        self.au_avrcp_command_test()
 
 
     def run_once(self, host, num_iterations=1, test_name=None,

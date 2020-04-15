@@ -38,6 +38,7 @@ POOLS_SUPPORT_DUAL_V4 = {'faft-cr50',
 ENABLE_SSH_TUNNEL_FOR_SERVO = _CONFIG.get_config_value(
         'CROS', 'enable_ssh_tunnel_for_servo', type=bool, default=False)
 
+SERVO_TYPE_LABEL_PREFIX = 'servo_type'
 SERVO_STATE_LABEL_PREFIX = 'servo_state'
 SERVO_STATE_WORKING = 'WORKING'
 SERVO_STATE_BROKEN = 'BROKEN'

@@ -391,7 +391,7 @@ class ServoLabel(base_label.BaseLabel):
 
 
 class ServoTypeLabel(base_label.StringPrefixLabel):
-    _NAME = 'servo_type'
+    _NAME = servo_constants.SERVO_TYPE_LABEL_PREFIX
 
     def generate_labels(self, host):
         info = host.host_info_store.get()

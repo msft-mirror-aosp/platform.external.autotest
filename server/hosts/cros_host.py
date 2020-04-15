@@ -654,32 +654,45 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.host_info_store.commit(info)
 
 
-    def get_latest_release_version(self, board):
+    def get_latest_release_version(self, platform, ref_board=None):
         """Search for the latest package release version from the image archive,
             and return it.
 
-        @param board: board name
+        @param platform: platform name, a.k.a. board or model
+        @param ref_board: reference board name, a.k.a. baseboard, parent
 
-        @return 'firmware-{board}-{branch}-firmwarebranch/{release-version}'
+        @return 'firmware-{platform}-{branch}-firmwarebranch/{release-version}/'
+                '{platform}'
                 or None if LATEST release file does not exist.
         """
 
-        # This might be in the format of 'baseboard_model',
-        # e.g. octopus_fleex. In that case, board should be just
-        # 'baseboard' to use in search for image package, e.g. octopus.
-        board = board.split('_')[0]
+        platforms = [ platform ]
 
-        # Read 'LATEST-1.0.0' file
-        branch_dir = provision.FW_BRANCH_GLOB % board
-        latest_file = os.path.join(provision.CROS_IMAGE_ARCHIVE, branch_dir,
-                                'LATEST-1.0.0')
+        # Search the image path in reference board archive as well.
+        # For example, bob has its binary image under its reference board (gru)
+        # image archive.
+        if ref_board:
+            platforms.append(ref_board)
 
-        try:
-            # The result could be one or more.
-            result = utils.system_output('gsutil ls -d ' +  latest_file)
+        for board in platforms:
+            # Read 'LATEST-1.0.0' file
+            branch_dir = provision.FW_BRANCH_GLOB % board
+            latest_file = os.path.join(provision.CROS_IMAGE_ARCHIVE, branch_dir,
+                                       'LATEST-1.0.0')
 
-            candidates = re.findall('gs://.*', result)
-        except error.CmdError:
+            try:
+                # The result could be one or more.
+                result = utils.system_output('gsutil ls -d ' +  latest_file)
+
+                candidates = re.findall('gs://.*', result)
+
+                # Found the directory candidates. No need to check the other
+                # board name cadidates. Let's break the loop.
+                break
+            except error.CmdError:
+                # It doesn't exist. Let's move on to the next item.
+                pass
+        else:
             logging.error('No LATEST release info is available.')
             return None
 
@@ -687,7 +700,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             result = utils.system_output('gsutil cat ' + cand_dir)
 
             release_path = cand_dir.replace('LATEST-1.0.0', result)
-            release_path = os.path.join(release_path, board)
+            release_path = os.path.join(release_path, platform)
             try:
                 # Check if release_path does exist.
                 release = utils.system_output('gsutil ls -d ' + release_path)
@@ -1296,7 +1309,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         except (error.AutotestRunError, error.AutoservRunError,
                 FactoryImageCheckerException):
             logging.warning('Unable to restart ui.')
-        
+
         # cleanup routines, i.e. reboot the machine.
         super(CrosHost, self).cleanup()
 

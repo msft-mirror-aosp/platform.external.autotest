@@ -19,6 +19,7 @@ from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.server.hosts.servo_constants import SERVO_TYPE_LABEL_PREFIX
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
@@ -453,9 +454,9 @@ class ServoTypeVerifier(hosts.Verifier):
         info = host.host_info_store.get()
         try:
             servo_type = host.servo.get_servo_version()
-            if servo_type != info.attributes.get('servo_type', ''):
+            if servo_type != info.attributes.get(SERVO_TYPE_LABEL_PREFIX, ''):
                 logging.info('servo_type mismatch detected, updating...')
-                info.attributes['servo_type'] = servo_type
+                info.attributes[SERVO_TYPE_LABEL_PREFIX] = servo_type
                 host.host_info_store.commit(info)
         except Exception as e:
             # We don't want fail the verifier and break DUTs here just

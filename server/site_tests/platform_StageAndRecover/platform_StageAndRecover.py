@@ -38,8 +38,12 @@ class platform_StageAndRecover(test.test):
         time.sleep(self._SET_DELAY)
         self.host.servo.set('dut_hub1_rst1','on')
         time.sleep(self._SET_DELAY)
+        self.host.servo.set('usb_mux_oe3', 'off')
+        time.sleep(self._SET_DELAY)
 
         # Switch usb_mux_sel1 to enumerate as /dev/sda
+        self.host.servo.set('usb_mux_oe1', 'on')
+        time.sleep(self._SET_DELAY)
         self.host.servo.set('usb_mux_sel1', 'dut_sees_usbkey')
         time.sleep(self._SET_DELAY)
         self.host.servo.set('usb_mux_sel1', 'servo_sees_usbkey')
@@ -104,6 +108,7 @@ class platform_StageAndRecover(test.test):
         recovery_info = ''
 
         self.set_servo_usb_reimage()
+        self.host.servo.system('mkdir -p %s' % (self._MOUNT_PATH))
         time.sleep(self._MOUNT_DELAY)
         self.host.servo.system('mount -r %s %s'
                                % (self._USB_PARTITION, self._MOUNT_PATH))

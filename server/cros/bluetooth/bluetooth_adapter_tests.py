@@ -24,7 +24,8 @@ from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server import test
 
 from autotest_lib.client.bin.input.linux_input import (
-        BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL)
+        BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL,
+        KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG, KEY_PREVIOUSSONG)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
         GATT_ClientFacade, GATT_Application, GATT_HIDApplication)
 from autotest_lib.server.cros.multimedia import remote_facade_factory
@@ -528,6 +529,7 @@ class BluetoothAdapterTests(test.test):
     ADAPTER_DISCOVER_TIMEOUT_SECS = 60          # 30 seconds too short sometimes
     ADAPTER_DISCOVER_POLLING_SLEEP_SECS = 1
     ADAPTER_DISCOVER_NAME_TIMEOUT_SECS = 30
+    ADAPTER_WAKE_ENABLE_TIMEOUT_SECS = 30
 
     ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS = 10
     ADAPTER_POLLING_DEFAULT_SLEEP_SECS = 1
@@ -1069,6 +1071,16 @@ class BluetoothAdapterTests(test.test):
                 'hci': hci}
         return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_adapter_wake_enabled(self):
+        """Test that the bluetooth adapter is wakeup enabled.
+        """
+        wake_enabled = self._wait_for_condition(
+                self.bluetooth_facade.is_wake_enabled, method_name(),
+                timeout=self.ADAPTER_WAKE_ENABLE_TIMEOUT_SECS)
+
+        self.results = { 'wake_enabled': wake_enabled }
+        return any(self.results.values())
 
     @test_retry_and_log
     def test_power_on_adapter(self):
@@ -2827,11 +2839,6 @@ class BluetoothAdapterTests(test.test):
         return True
 
 
-    # -------------------------------------------------------------------
-    # Bluetooth mouse related tests
-    # -------------------------------------------------------------------
-
-
     def _record_input_events(self, device, gesture):
         """Record the input events.
 
@@ -2851,6 +2858,11 @@ class BluetoothAdapterTests(test.test):
         event_values = self.input_facade.get_input_events()
         events = [Event(*ev) for ev in event_values]
         return events
+
+
+    # -------------------------------------------------------------------
+    # Bluetooth mouse related tests
+    # -------------------------------------------------------------------
 
 
     def _test_mouse_click(self, device, button):
@@ -3188,6 +3200,42 @@ class BluetoothAdapterTests(test.test):
             raise error.TestNAError(msg)
 
         logging.debug('Kernel version check passed')
+
+
+    # -------------------------------------------------------------------
+    # Bluetooth AVRCP related test
+    # -------------------------------------------------------------------
+
+
+    @test_retry_and_log
+    def test_avrcp_event(self, device, generator, avrcp_event):
+        """Tests that AVRCP events can be transmitted and received correctly
+
+        @param device: the meta device containing a Bluetooth AVRCP capable
+                       audio device.
+        @param generator: the peer device generator/function which trigger
+                          the AVRCP event.
+        @param avrcp_event: the AVRCP event to test.
+
+        @returns: true if the recorded output matches the expected output
+                  false otherwise
+        """
+        logging.debug('AVRCP Event Test, Event: %s', avrcp_event)
+        linux_input_button = {'play': KEY_PLAYCD, 'pause': KEY_PAUSECD,
+                              'stop': KEY_STOPCD, 'next': KEY_NEXTSONG,
+                              'previous': KEY_PREVIOUSSONG}
+        expected_event = [
+                # Button down
+                Event(EV_KEY, linux_input_button[avrcp_event], 1),
+                recorder.SYN_EVENT,
+                # Button up
+                Event(EV_KEY, linux_input_button[avrcp_event], 0),
+                recorder.SYN_EVENT]
+
+        gesture = lambda: generator(avrcp_event)
+        actual_event = self._record_input_events(device, gesture)
+
+        return actual_event == expected_event
 
 
     # -------------------------------------------------------------------

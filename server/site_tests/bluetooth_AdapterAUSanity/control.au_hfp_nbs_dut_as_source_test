@@ -5,11 +5,11 @@
 from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterAUSanity.all'
+NAME = 'bluetooth_AdapterAUSanity.au_hfp_nbs_dut_as_source_test'
 PURPOSE = ('Batch of Bluetooth Classic Audio sanity tests')
-CRITERIA = 'Pass all sanity test'
-ATTRIBUTES = 'suite:bluetooth' # This control file is used to run all tests locally.
-TIME = 'SHORT'  # Approximately 4 mins
+CRITERIA = 'Pass the HFP NBS test'
+ATTRIBUTES = 'suite:bluetooth_flaky'
+TIME = 'SHORT'  # Approximately 2 mins
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
@@ -24,10 +24,8 @@ DOC = """
     This class can be called to run the entire test batch or to run a
     specific test only
 
-    Currently, the batch contains the following tests:
-    - au_a2dp_test
-    - au_hfp_wbs_dut_as_source_test
-    - au_hfp_wbs_dut_as_sink_test
+    This contains the following tests:
+    - au_hfp_nbs_dut_as_source_test
     """
 
 args_dict = utils.args_to_dict(args)
@@ -37,6 +35,7 @@ btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
     host.initialize_btpeer(btpeer_args)
-    job.run_test('bluetooth_AdapterAUSanity', host=host, num_iterations=1)
+    job.run_test('bluetooth_AdapterAUSanity', host=host, num_iterations=1,
+                 test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

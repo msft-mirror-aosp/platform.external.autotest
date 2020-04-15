@@ -507,3 +507,70 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                         'stop': result_stop, 'next': result_next,
                         'previous': result_previous}
         return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_avrcp_media_info(self, device):
+        """Test Case: Test AVRCP media info sent by DUT can be received by peer
+
+        The test update all media information twice to prevent previous
+        leftover data affect the current iteration of test. Then compare the
+        expected results against the information received on the peer device.
+
+        This test verifies media information including: playback status,
+        length, title, artist, and album. Position of the media is not
+        currently support as playerctl on the peer side cannot correctly
+        retrieve such information.
+
+        Length and position information are transmitted in the unit of
+        microsecond. However, BlueZ process those time data in the resolution
+        of millisecond. Discard microsecond detail when comparing those media
+        information.
+
+        @param device: the Bluetooth peer device
+
+        @returns: True if the all AVRCP media info received by DUT, false
+                  otherwise
+
+        """
+        # First round of updating media information to overwrite all leftovers.
+        init_status = 'stopped'
+        init_length = 20200414
+        init_position = 8686868
+        init_metadata = {'album': 'metadata_album_init',
+                         'artist': 'metadata_artist_init',
+                         'title': 'metadata_title_init'}
+        self.bluetooth_facade.set_player_playback_status(init_status)
+        self.bluetooth_facade.set_player_length(init_length)
+        self.bluetooth_facade.set_player_position(init_position)
+        self.bluetooth_facade.set_player_metadata(init_metadata)
+
+        # Second round of updating for actual testing.
+        expected_status = 'playing'
+        expected_length = 68686868
+        expected_position = 20200414
+        expected_metadata = {'album': 'metadata_album_expected',
+                             'artist': 'metadata_artist_expected',
+                             'title': 'metadata_title_expected'}
+        self.bluetooth_facade.set_player_playback_status(expected_status)
+        self.bluetooth_facade.set_player_length(expected_length)
+        self.bluetooth_facade.set_player_position(expected_position)
+        self.bluetooth_facade.set_player_metadata(expected_metadata)
+
+        received_media_info = device.GetMediaPlayerMediaInfo()
+        logging.debug(received_media_info)
+        result_status = bool(expected_status ==
+            received_media_info.get('status').lower())
+        result_album = bool(expected_metadata['album'] ==
+            received_media_info.get('album'))
+        result_artist = bool(expected_metadata['artist'] ==
+            received_media_info.get('artist'))
+        result_title = bool(expected_metadata['title'] ==
+            received_media_info.get('title'))
+        result_length = bool(expected_length / 1000 ==
+            int(received_media_info.get('length')) / 1000)
+
+        self.results = {'status': result_status, 'album': result_album,
+                        'artist': result_artist, 'title': result_title,
+                        'length': result_length}
+        return all(self.results.values())

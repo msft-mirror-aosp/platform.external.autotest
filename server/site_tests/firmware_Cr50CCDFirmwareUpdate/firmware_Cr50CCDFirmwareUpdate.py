@@ -37,15 +37,22 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
         Raises:
           TestFail: if the firmware version remains unchanged.
+          TestError: if the latest firmware release cannot be located.
           TestNAError: if the test environment is not properly set.
                        e.g. the servo type doesn't support this test.
         """
 
-        # If build info was not given and explicitly it was requested to
-        # get the release version from image archive search, then
-        # do it so.
-        board = self.servo.get_board()
-        value = host.get_latest_release_version(board)
+        # Get the parent (a.k.a. referebce board or baseboard), and hand it
+        # to get_latest_release_version so that it
+        # can use it in search as secondary candidate. For example, bob doesn't
+        # have its own release directory, but its parent, gru does.
+        parent = getattr(self.faft_config, 'parent', None)
+
+        value = host.get_latest_release_version(self.faft_config.platform,
+                                                parent)
+        if not value:
+            raise error.TestError('Cannot locate the latest release for %s',
+                                  self.faft_config.platform)
 
         # Fast open cr50 and check if testlab is enabled.
         self.fast_open(enable_testlab=True)

@@ -5,8 +5,6 @@
 import logging
 from autotest_lib.server import site_linux_system
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib.cros.network import iw_runner
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 from autotest_lib.server.cros.network import wifi_cell_test_base
@@ -48,21 +46,7 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
 
     version = 1
     TIMEOUT_SECONDS = 15
-    GLOBAL_FT_PROPERTY = "WiFi.GlobalFTEnabled"
-
-    def dut_sees_bss(self, bssid):
-        """
-        Check if a DUT can see a BSS in scan results.
-
-        @param bssid: string bssid of AP we expect to see in scan results.
-        @return True iff scan results from DUT include the specified BSS.
-
-        """
-        runner = iw_runner.IwRunner(remote_host=self.context.client.host)
-        is_requested_bss = lambda iw_bss: iw_bss.bss == bssid
-        scan_results = runner.scan(self.context.client.wifi_if)
-        return scan_results and filter(is_requested_bss, scan_results)
-
+    GLOBAL_FT_PROPERTY = 'WiFi.GlobalFTEnabled'
 
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hook into super class to take control files parameters.
@@ -161,48 +145,35 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
         router1_conf.ssid = router_ssid
         self.context.configure(router1_conf, multi_interface=True)
 
-        # Get BSSIDs of the two APs
+        # Get BSSIDs of the two APs.
         bssid0 = self.context.router.get_hostapd_mac(0)
         bssid1 = self.context.router.get_hostapd_mac(1)
+        curr_ap_if = self.context.router.get_hostapd_interface(0)
 
-        # Wait for DUT to see the second AP
-        utils.poll_for_condition(
-            condition=lambda: self.dut_sees_bss(bssid1),
-            exception=error.TestFail('Timed out waiting for DUT'
-                                     'to see second AP'),
-            timeout=self.TIMEOUT_SECONDS,
-            sleep_interval=1)
-
-        # Check which AP we are currently connected.
-        # This is to include the case that wpa_supplicant
-        # automatically roam to AP2 during the scan.
         interface = self.context.client.wifi_if
-        curr_bssid = self.context.client.iw_runner.get_current_bssid(interface)
-        if curr_bssid == bssid0:
-            current_if = self.context.router.get_hostapd_interface(0)
-            roam_to_bssid = bssid1
-        else:
-            current_if = self.context.router.get_hostapd_interface(1)
-            roam_to_bssid = bssid0
 
-        # Set the tx power of the current interface
+        # Set the tx power of the current AP interface.
         # This should fix the tx power at 100mBm == 1dBm. It turns out that
         # set_tx_power does not actually change the signal level seen from the
-        # DUT sufficiently to force a roam (It might vary from -45 to -30), so
-        # this autotest takes advantage of wpa_supplicant's preference for
+        # DUT sufficiently to force a roam (it might vary from -45 to -30), so
+        # this Autotest also takes advantage of wpa_supplicant's preference for
         # 5GHz channels.
-        self.context.router.iw_runner.set_tx_power(current_if, 'fixed 100')
+        self.context.router.iw_runner.set_tx_power(curr_ap_if, 'fixed 100')
 
         # Expect that the DUT will re-connect to the new AP.
         self.context.client._wpa_cli_proxy.run_wpa_cli_cmd('scan')
-        logging.info("Attempting to roam.")
+        logging.info('Attempting to roam %s -> %s', bssid0, bssid1)
         if not self.context.client.wait_for_roam(
-               roam_to_bssid, timeout_seconds=self.TIMEOUT_SECONDS):
+               bssid1, timeout_seconds=self.TIMEOUT_SECONDS):
             self.context.client._wpa_cli_proxy.run_wpa_cli_cmd('scan')
-            logging.info("Attempting to roam again.")
+            logging.info('Attempting to roam again.')
             if not self.context.client.wait_for_roam(
-                   roam_to_bssid, timeout_seconds=self.TIMEOUT_SECONDS):
-                raise error.TestFail('Failed to roam.')
+                   bssid1, timeout_seconds=self.TIMEOUT_SECONDS):
+                curr = self.context.client.iw_runner.get_current_bssid(
+                        interface)
+                raise error.TestFail(
+                        'Failed to roam: current BSS %s, expected %s' %
+                            (curr, bssid1))
         # We've roamed at the 802.11 layer, but make sure Shill brings the
         # connection up completely (DHCP).
         # TODO(https://crbug.com/1070321): Note that we don't run any ping
@@ -228,7 +199,7 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
                 self.GLOBAL_FT_PROPERTY, True):
             self.test_body(self._security_configs[0])
         if len(self._security_configs) > 1:
-            logging.info("Disabling FT and trying again")
+            logging.info('Disabling FT and trying again')
             with self.context.client.set_manager_property(
                     self.GLOBAL_FT_PROPERTY, False):
                 self.test_body(self._security_configs[1])
@@ -236,6 +207,6 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
     def cleanup(self):
         """Cleanup function."""
 
-        if hasattr(self, "veth0"):
+        if hasattr(self, 'veth0'):
             self.context.router.delete_link(self.veth0)
         super(network_WiFi_RoamFT, self).cleanup()

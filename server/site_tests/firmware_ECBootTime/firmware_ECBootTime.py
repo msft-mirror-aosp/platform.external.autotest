@@ -115,9 +115,9 @@ class firmware_ECBootTime(FirmwareTest):
         EC and AP come out of reset.
         """
 
-        arm_legacy = ('Snow', 'Spring', 'Pit', 'Pi', 'Big', 'Blaze', 'Kitty')
+        arm_legacy = ('snow', 'spring', 'pit', 'pi', 'big', 'blaze', 'kitty')
         output = self.faft_client.system.get_platform_name()
-        return output in arm_legacy
+        return output.lower() in arm_legacy
 
     def run_once(self):
         """Execute the main body of the test.

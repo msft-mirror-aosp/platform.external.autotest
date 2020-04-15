@@ -16,8 +16,9 @@ import tempfile
 import traceback
 import xmlrpclib
 
-from autotest_lib.client.cros import xmlrpc_server
+from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import cros_config
+from autotest_lib.client.cros import xmlrpc_server
 from autotest_lib.client.cros.faft.utils import (
         cgpt_handler,
         os_interface,
@@ -790,12 +791,7 @@ class SystemServicer(object):
 
         @return: A string of the platform name.
         """
-        platform = cros_config.call_cros_config_get_output(
-                '/identity platform-name',
-                self._os_if.run_shell_command_get_result)
-        if not platform:
-            raise Exception('Failed getting platform name from cros_config')
-        return platform
+        return lsbrelease_utils.get_current_board()
 
     def get_model_name(self):
         """Get the model name of the current system.

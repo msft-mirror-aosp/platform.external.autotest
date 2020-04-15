@@ -161,11 +161,11 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
         self.context.router.iw_runner.set_tx_power(curr_ap_if, 'fixed 100')
 
         # Expect that the DUT will re-connect to the new AP.
-        self.context.client._wpa_cli_proxy.run_wpa_cli_cmd('scan')
+        self.context.client.shill.request_scan()
         logging.info('Attempting to roam %s -> %s', bssid0, bssid1)
         if not self.context.client.wait_for_roam(
                bssid1, timeout_seconds=self.TIMEOUT_SECONDS):
-            self.context.client._wpa_cli_proxy.run_wpa_cli_cmd('scan')
+            self.context.client.shill.request_scan()
             logging.info('Attempting to roam again.')
             if not self.context.client.wait_for_roam(
                    bssid1, timeout_seconds=self.TIMEOUT_SECONDS):

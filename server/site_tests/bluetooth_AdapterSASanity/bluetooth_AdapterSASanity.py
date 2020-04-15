@@ -117,7 +117,10 @@ class bluetooth_AdapterSASanity(BluetoothAdapterQuickTests,
         self.test_has_adapter()
 
 
-    @test_wrapper('Adapter DiscoverableTimeout test')
+    # TODO(b/145302986): Silencing known firmware issue with AC7260 (WP2)
+    @test_wrapper('Adapter DiscoverableTimeout test', model_testNA=[
+        'auron_paine','auron_yuna','banjo','buddy','candy','enguarde','gandof',
+        'gnawty','guado','heli','kip','lulu','rikku','samus','tidus'])
     def sa_adapter_discoverable_timeout_test(self):
         """Verify that DiscoverableTimout Property works."""
         result = self.test_discoverable_timeout(timeout_values=[0, 7, 15])

@@ -107,6 +107,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     HOSTAPD_STDERR_LOG_FILE_PATTERN = 'hostapd-stderr-test-%s.log'
     HOSTAPD_CONTROL_INTERFACE_PATTERN = 'hostapd-test-%s.ctrl'
     HOSTAPD_DRIVER_NAME = 'nl80211'
+    HOSTAP_BRIDGE_INTERFACE_PREFIX = 'hostapbr'
 
     MGMT_FRAME_SENDER_LOG_FILE = 'send_management_frame-test.log'
 
@@ -206,6 +207,8 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             # Remove it so we can have more unique bytes.
             self._ssid_prefix = self._ssid_prefix[len(self.KNOWN_TEST_PREFIX):]
         self._number_unique_ssids = 0
+
+        self._brif_index = 0
 
         self._total_hostapd_instances = 0
         self.local_servers = []
@@ -523,9 +526,6 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             router_caps = self.get_capabilities()
             if site_linux_system.LinuxSystem.CAPABILITY_VHT not in router_caps:
                 raise error.TestNAError('Router does not have AC support')
-
-        if configuration.use_bridge:
-            configuration._bridge = self.get_brif()
 
         self.start_hostapd(configuration)
         interface = self.hostapd_instances[-1].interface
@@ -1131,3 +1131,15 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         # Add peer interface to the bridge.
         self.add_interface_to_bridge(
                 self.get_virtual_ethernet_peer_interface())
+
+
+    def create_brif(self):
+        """Initialize a new bridge interface
+
+        @return string bridge interface name
+        """
+        brif_name = '%s%d' % (self.HOSTAP_BRIDGE_INTERFACE_PREFIX,
+                              self._brif_index)
+        self._brif_index += 1
+        self.host.run('brctl addbr %s' % brif_name)
+        return brif_name

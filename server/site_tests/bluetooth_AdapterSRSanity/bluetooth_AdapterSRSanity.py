@@ -342,7 +342,9 @@ class bluetooth_AdapterSRSanity(
     # Suspend while discovering and advertising
     # ---------------------------------------------------------------
 
-    @test_wrapper('Suspend while discovering', devices={'BLE_MOUSE': 1})
+    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    @test_wrapper('Suspend while discovering', devices={'BLE_MOUSE': 1},
+                  model_testNA=['dru'])
     def sr_while_discovering(self):
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
@@ -367,7 +369,9 @@ class bluetooth_AdapterSRSanity(
 
         self.test_stop_discovery()
 
-    @test_wrapper('Suspend while advertising', devices={'MOUSE': 1})
+    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    @test_wrapper('Suspend while advertising', devices={'MOUSE': 1},
+                  model_testNA=['dru'])
     def sr_while_advertising(self):
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]

@@ -1,5 +1,7 @@
 # How to run FAFT (Fully Automated Firmware Test) {#faft-how-to-run}
 
+_[go/faft-running](https://goto.google.com/faft-running)_
+
 - [How to run FAFT (Fully Automated Firmware Test)](#faft-how-to-run)
   - [FAFT Overview](#faft-overview)
   - [Hardware Setup](#hardware-setup)

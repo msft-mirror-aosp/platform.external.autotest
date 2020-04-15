@@ -178,7 +178,16 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
         # connection up completely (DHCP).
         # TODO(https://crbug.com/1070321): Note that we don't run any ping
         # test.
-        self.context.client.wait_for_connection(router_ssid)
+        # Check that we don't disconnect along the way here, in case we're
+        # ping-ponging around APs -- and after the first (failed) roam, the
+        # second re-connection will not be testing FT at all.
+        with self.context.client.assert_no_disconnects():
+            self.context.client.wait_for_connection(router_ssid)
+            curr = self.context.client.iw_runner.get_current_bssid(interface)
+            if curr != bssid1:
+                raise error.TestFail(
+                    'Unexpectedly roamed back: current BSS %s, expected %s' %
+                        (curr, bssid1))
 
         self.context.client.shill.disconnect(router_ssid)
         self.context.router.deconfig()

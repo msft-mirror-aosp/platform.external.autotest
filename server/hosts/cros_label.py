@@ -398,6 +398,7 @@ class ServoTypeLabel(base_label.StringPrefixLabel):
 
         servo_type = self._get_from_labels(info)
         if servo_type != '':
+            logging.info("Using servo_type: %s from cache!", servo_type)
             return [servo_type]
 
         if host.servo is not None:
@@ -405,6 +406,10 @@ class ServoTypeLabel(base_label.StringPrefixLabel):
                 servo_type = host.servo.get_servo_version()
                 if servo_type != '':
                     return [servo_type]
+                logging.warning('Cannot collect servo_type from servo'
+                ' by `dut-control servo_type`! Please file a bug'
+                ' and inform infra team as we are not expected '
+                ' to reach this point.')
             except Exception as e:
                 # We don't want fail the label and break DUTs here just
                 # because of servo issue.

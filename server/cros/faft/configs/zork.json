@@ -12,5 +12,6 @@
         "cbi"
     ],
     "servo_prog_state_delay": 1.0,
-    "smm_store": false
+    "smm_store": false,
+    "firmware_screen": 40
 }

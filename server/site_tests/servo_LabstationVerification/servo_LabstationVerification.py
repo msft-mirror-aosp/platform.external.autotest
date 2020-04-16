@@ -228,10 +228,21 @@ class servo_LabstationVerification(test.test):
         temp_dut_host.close()
         return dut_ipv4
 
+    def _set_dut_stable_version(self, dut_host):
+        """ Helper method to set stable_version in DUT host.
+
+        @param dut_host: CrosHost object representing the DUT.
+        """
+        logging.info('Setting stable_version to %s for DUT host.',
+                     self.cros_version)
+        host_info = dut_host.host_info_store.get()
+        host_info.stable_versions['cros'] = self.cros_version
+        dut_host.host_info_store.commit(host_info)
+
     def initialize(self, host, config=None):
         """Setup servod on |host| to run subsequent tests.
 
-        @param host: CrosHost object representing the DUT.
+        @param host: LabstationHost object representing the servohost.
         @param config: the args argument from test_that in a dict.
         """
         # Save the host.
@@ -252,9 +263,22 @@ class servo_LabstationVerification(test.test):
         except error.AutoservRunError:
             raise error.TestFail('Servod did not come up on labstation.')
         self.dut_ip = None
-        if config and 'dut_ip' in config:
-            # Retrieve DUT ip from args if caller specified it.
-            self.dut_ip = config['dut_ip']
+
+        # We need a cros build number for testing download image to usb and
+        # use servo to reimage DUT purpose. So copying labstation's
+        # stable_version here since we don't really care about which build
+        # to install on the DUT.
+        self.cros_version = (
+            self.labstation_host.host_info_store.get().cros_stable_version)
+
+        if config:
+            if 'dut_ip' in config:
+                # Retrieve DUT ip from args if caller specified it.
+                self.dut_ip = config['dut_ip']
+            if 'cros_version' in config:
+                # We allow user to override a cros image build.
+                self.cros_version = config['cros_version']
+
 
     def run_once(self, local=False):
         """Run through the test sequence.
@@ -294,6 +318,12 @@ class servo_LabstationVerification(test.test):
         logging.info('Running the DUT side on DUT %r', self.dut_ip)
         dut_host = factory.create_host(self.dut_ip)
         dut_host.set_servo_host(self.labstation_host)
+
+        # Copy labstation's stable_version to dut_host for later test consume.
+        # TODO(xianuowang@): remove this logic once we figured out how to
+        # propagate DUT's stable_version to the test.
+        self._set_dut_stable_version(dut_host)
+
         success &= self.runsubtest('servo_LogGrab',
                                    host=dut_host, disable_sysinfo=True)
         success &= self.runsubtest('platform_ServoPowerStateController',

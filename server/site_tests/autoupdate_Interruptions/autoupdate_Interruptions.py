@@ -43,12 +43,13 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         self._run_client_test_and_check_result(
             'autoupdate_LoginStartUpdateLogout', update_url=update_url,
             progress_to_complete=progress,
-            full_payload=full_payload)
+            full_payload=full_payload,
+            interrupt_network=interrupt is 'network')
 
-        if interrupt is not None:
+        if interrupt in ['reboot', 'suspend']:
             if self._is_update_finished_downloading():
-                raise error.TestFail('Update finished before interrupt'
-                                     'started.')
+                raise error.TestFail('Update finished before %s '
+                                     'interrupt started.' % interrupt)
             completed = self._get_update_progress()
             if interrupt is 'reboot':
                 self._host.reboot()
@@ -56,17 +57,16 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
                                          desc='update engine to start')
                 self._check_for_update(update_url, critical_update=True,
                                        full_payload=full_payload)
-            elif interrupt is 'network':
-                self._disconnect_then_reconnect_network(update_url)
             elif interrupt is 'suspend':
                 self._suspend_then_resume()
-            else:
-                raise error.TestFail('Unknown interrupt type: %s' % interrupt)
+
             if self._is_update_engine_idle():
                 raise error.TestFail('The update was IDLE after interrupt.')
             if not self._update_continued_where_it_left_off(completed):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
+        elif interrupt not in ['network', None]:
+            raise error.TestFail('Unknown interrupt type: %s' % interrupt)
 
         # Add a new user and crash browser.
         self._run_client_test_and_check_result(

@@ -15,10 +15,9 @@ import traceback
 import urlparse
 
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
-from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
-from autotest_lib.site_utils import stable_version_classify as sv
 from autotest_lib.server import site_utils as server_utils
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
@@ -32,13 +31,6 @@ except ImportError:
    pass
 from chromite.lib import remote_access
 
-
-# TODO(crbug.com/1058095) -- the autotest frontend has been turned down
-# reduce the timeouts so that we spend less time failing to contact it.
-AFE = frontend_wrappers.RetryingAFE(timeout_min=(1.0/60), delay_sec=1)
-_CROS_VERSION_MAP = AFE.get_stable_version_map(AFE.CROS_IMAGE_TYPE)
-_FIRMWARE_VERSION_MAP = AFE.get_stable_version_map(AFE.FIRMWARE_IMAGE_TYPE)
-_FAFT_VERSION_MAP = AFE.get_stable_version_map(AFE.FAFT_IMAGE_TYPE)
 
 _CONFIG = global_config.global_config
 ENABLE_DEVSERVER_TRIGGER_AUTO_UPDATE = _CONFIG.get_config_value(
@@ -75,63 +67,50 @@ def _format_image_name(board, version):
     return "%s-release/%s" % (board, version)
 
 
-def get_stable_cros_image_name_v2(info, _config_override=None):
-    if sv.classify_board(info.board, _config_override=_config_override) == sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_cros_image_name_v2: board %s from host_info_store" % info.board)
-        out = _format_image_name(board=info.board, version=info.cros_stable_version)
-        _log_image_name(out)
-        return out
-    logging.debug("get_stable_cros_image_name_v2: board %s from autotest frontend" % info.board)
-    return get_stable_cros_image_name(info.board)
-
-
-def get_stable_cros_image_name(board):
+def get_stable_cros_image_name_v2(host_info):
     """Retrieve the Chrome OS stable image name for a given board.
 
-    @param board: Board to lookup.
+    @param host_info: a host_info_store object.
 
     @returns Name of a Chrome OS image to be installed in order to
             repair the given board.
     """
-    return _CROS_VERSION_MAP.get_image_name(board)
+    if not host_info.cros_stable_version:
+        raise error.AutoservError("No cros stable_version found"
+                                  " in host_info_store.")
+
+    logging.debug("Get cros stable_version for board: %s",
+                  getattr(host_info, "board", None))
+    out = _format_image_name(board=host_info.board,
+                             version=host_info.cros_stable_version)
+    _log_image_name(out)
+    return out
 
 
-def get_stable_firmware_version_v2(info, _config_override=None):
-    if sv.classify_model(info.model, _config_override=_config_override) == sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_firmware_version_v2: model %s from host_info_store" % info.model)
-        return info.firmware_stable_version
-    logging.debug("get_stable_cros_image_name_v2: model %s from autotest frontend" % info.model)
-    return get_stable_firmware_version(info.model)
-
-
-def get_stable_firmware_version(model):
+def get_stable_firmware_version_v2(host_info):
     """Retrieve the stable firmware version for a given model.
 
-    @param model: Model to lookup.
+    @param host_info: a host_info_store object.
 
     @returns A version of firmware to be installed via
              `chromeos-firmwareupdate` from a repair build.
     """
-    return _FIRMWARE_VERSION_MAP.get_version(model)
+    logging.debug("Get firmware stable_version for model: %s",
+                  getattr(host_info, "model", None))
+    return host_info.firmware_stable_version
 
 
-def get_stable_faft_version_v2(info, _config_override=None):
-    if sv.classify_board(info.board, _config_override=_config_override) == sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_faft_version_v2: model %s from host_info_store" % info.model)
-        return info.faft_stable_version
-    logging.debug("get_stable_faft_version_v2: model %s from autotest frontend" % info.model)
-    return get_stable_faft_version(info.board)
-
-
-def get_stable_faft_version(board):
+def get_stable_faft_version_v2(host_info):
     """Retrieve the stable firmware version for FAFT DUTs.
 
-    @param board: Board to lookup.
+    @param host_info: a host_info_store object.
 
     @returns A version of firmware to be installed in order to
             repair firmware on a DUT used for FAFT testing.
     """
-    return _FAFT_VERSION_MAP.get_version(board)
+    logging.debug("Get faft stable_version for model: %s",
+                  getattr(host_info, "model", None))
+    return host_info.faft_stable_version
 
 
 def clean_provision_labels(host):

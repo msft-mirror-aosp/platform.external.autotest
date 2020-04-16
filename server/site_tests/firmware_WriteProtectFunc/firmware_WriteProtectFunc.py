@@ -10,6 +10,10 @@ from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.faft.firmware_test import ConnectionError
 
 
+BIOS = 'bios'
+EC = 'ec'
+
+
 class firmware_WriteProtectFunc(FirmwareTest):
     """
     This test checks whether the SPI flash write-protection functionally works
@@ -20,10 +24,17 @@ class firmware_WriteProtectFunc(FirmwareTest):
         """Initialize the test"""
         super(firmware_WriteProtectFunc, self).initialize(host, cmdline_args)
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
-        bios_sw_wp_dict = self.faft_client.bios.get_write_protect_status()
-        ec_sw_wp_dict = self.faft_client.ec.get_write_protect_status()
-        self._original_bios_sw_wp = bios_sw_wp_dict['enabled']
-        self._original_ec_sw_wp = ec_sw_wp_dict['enabled']
+        if self.faft_config.chrome_ec:
+            self._targets = (BIOS, EC)
+        else:
+            self._targets = (BIOS, )
+        self._rpcs = {BIOS: self.faft_client.bios,
+                EC: self.faft_client.ec}
+        self._flashrom_targets = {BIOS: 'host', EC: 'ec'}
+        self._original_sw_wps = {}
+        for target in self._targets:
+            sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            self._original_sw_wps[target] = sw_wp_dict['enabled']
         self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
         self.backup_firmware()
 
@@ -37,21 +48,16 @@ class firmware_WriteProtectFunc(FirmwareTest):
 
         try:
             # Recover SW WP status.
-            if (hasattr(self, '_original_bios_sw_wp') or
-                hasattr(self, '_original_ec_sw_wp')):
+            if hasattr(self._original_sw_wps):
                 # If HW WP is enabled, we have to disable it first so that
                 # SW WP can be changed.
                 current_hw_wp = 'on' in self.servo.get('fw_wp_state')
                 if current_hw_wp:
                     self.set_hardware_write_protect(False)
-                if hasattr(self, '_original_bios_sw_wp'):
-                    self.faft_client.bios.set_write_protect_region('WP_RO',
-                            self._original_bios_sw_wp)
-                if hasattr(self, '_original_ec_sw_wp'):
-                    self.switcher.mode_aware_reboot(
-                            'custom',
-                            lambda:self.set_ec_write_protect_and_reboot(
-                                    self._original_ec_sw_wp))
+                for target in self._targets:
+                    if hasattr(self._original_sw_wps, target):
+                        self._set_write_protect(target,
+                                self._original_sw_wps[target])
                 self.set_hardware_write_protect(current_hw_wp)
             # Recover HW WP status.
             if hasattr(self, '_original_hw_wp'):
@@ -60,6 +66,39 @@ class firmware_WriteProtectFunc(FirmwareTest):
             logging.error('Caught exception: %s', str(e))
 
         super(firmware_WriteProtectFunc, self).cleanup()
+
+    def _set_write_protect(self, target, enable):
+        """
+        Set write_protect to `enable` for the specified target.
+
+        @param target: Which firmware to toggle the write-protect for,
+                       either 'bios' or 'ec'
+        @type target: string
+        @param enable: Whether to enable or disable write-protect
+        @type enable: bool
+        """
+        assert target in (BIOS, EC)
+        if target == BIOS:
+            self.set_hardware_write_protect(enable)
+            self.faft_client.bios.set_write_protect_region('WP_RO', enable)
+        elif target == EC:
+            self.switcher.mode_aware_reboot('custom',
+                    lambda:self.set_ec_write_protect_and_reboot(enable))
+
+    def _get_relative_path(self, target):
+        """
+        Send an RPC.updater call to get the relative path for the target.
+
+        @param target: Which firmware to get the relative path to,
+                       either 'bios' or 'ec'.
+        @type target: string
+        @return: The relative path of the bios/ec image in the shellball.
+        """
+        assert target in (BIOS, EC)
+        if target == BIOS:
+            return self.faft_client.updater.get_bios_relative_path()
+        elif target == EC:
+            return self.faft_client.updater.get_ec_relative_path()
 
     def run_cmd(self, command, checkfor=''):
         """
@@ -75,8 +114,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
         output = self.faft_client.system.run_shell_command_get_output(command)
         logging.info('Output >>> %s <<<', output)
         if checkfor and checkfor not in '\n'.join(output):
-            raise error.TestFail('Expect %s in output of %s' %
-                                 (checkfor, '\n'.join(output)))
+            raise error.TestFail('Expect %s in output of cmd <%s>:\n\t%s' %
+                                 (checkfor, command, '\n\t'.join(output)))
         return output
 
     def get_wp_ro_firmware_section(self, firmware_file, wp_ro_firmware_file):
@@ -100,82 +139,56 @@ class firmware_WriteProtectFunc(FirmwareTest):
         """Runs a single iteration of the test."""
         work_path = self.faft_client.updater.get_work_path()
 
-        bios_ro_before = os.path.join(work_path, 'bios_ro_before.bin')
-        bios_ro_after = os.path.join(work_path, 'bios_ro_after.bin')
-        bios_ro_test = os.path.join(work_path, 'bios_ro_test.bin')
-        ec_ro_before = os.path.join(work_path, 'ec_ro_before.bin')
-        ec_ro_after = os.path.join(work_path, 'ec_ro_after.bin')
-        ec_ro_test = os.path.join(work_path, 'ec_ro_test.bin')
+        for target in self._targets:
+            logging.info('Beginning test for target %s', target)
+            ro_before = os.path.join(work_path, '%s_ro_before.bin' % target)
+            ro_after = os.path.join(work_path, '%s_ro_after.bin' % target)
+            ro_test = os.path.join(work_path, '%s_ro_test.bin' % target)
 
-        # Use the firmware blobs unpacked from the firmware updater for
-        # testing. To ensure there is difference in WP_RO section between
-        # the firmware on the DUT and the firmware unpacked from the firmware
-        # updater, we mess around FRID.
-        self.faft_client.updater.modify_image_fwids('bios', ['ro'])
-        self.faft_client.updater.modify_image_fwids('ec', ['ro'])
+            # Use the firmware blobs unpacked from the firmware updater for
+            # testing. To ensure there is difference in WP_RO section between
+            # the firmware on the DUT and the firmware unpacked from the
+            # firmware updater, we mess around FRID.
+            self.faft_client.updater.modify_image_fwids(target, ['ro'])
 
-        bios_test = os.path.join(work_path,
-                self.faft_client.updater.get_bios_relative_path())
-        ec_test = os.path.join(work_path,
-                self.faft_client.updater.get_ec_relative_path())
+            test = os.path.join(work_path, self._get_relative_path(target))
+            self.get_wp_ro_firmware_section(test, ro_test)
 
-        self.get_wp_ro_firmware_section(bios_test, bios_ro_test)
-        self.get_wp_ro_firmware_section(ec_test, ec_ro_test)
+            # Check if RO FW really can't be overwritten when WP is enabled.
+            self._set_write_protect(target, True)
+            self.run_cmd('flashrom -p %s -r -i WP_RO:%s' %
+                    (self._flashrom_targets[target], ro_before),
+                    'SUCCESS')
 
-        # Check if RO FW really can't be overwritten when WP is enabled.
-        self.switcher.mode_aware_reboot(
-                'custom',
-                lambda:self.set_ec_write_protect_and_reboot(True))
-        self.faft_client.bios.set_write_protect_region('WP_RO', True)
+            # Writing WP_RO section is expected to fail.
+            self.run_cmd('flashrom -p %s -w -i WP_RO:%s' %
+                    (self._flashrom_targets[target], ro_test),
+                    'FAIL')
+            self.run_cmd('flashrom -p %s -r -i WP_RO:%s' %
+                    (self._flashrom_targets[target], ro_after),
+                    'SUCCESS')
 
-        self.run_cmd('flashrom -p host -r -i WP_RO:%s' % bios_ro_before,
-                     'SUCCESS')
-        self.run_cmd('flashrom -p ec -r -i WP_RO:%s' % ec_ro_before,
-                     'SUCCESS')
+            self.switcher.mode_aware_reboot(reboot_type='cold')
 
-        # Writing WP_RO section is expected to fail.
-        self.run_cmd('flashrom -p host -w -i WP_RO:%s' % bios_ro_test, 'FAIL')
-        self.run_cmd('flashrom -p ec -w -i WP_RO:%s' % ec_ro_test, 'FAIL')
+            # The WP_RO section on the DUT should not change.
+            cmp_output = self.run_cmd('cmp %s %s' % (ro_before, ro_after))
+            if ''.join(cmp_output) != '':
+                raise error.TestFail('%s RO changes when WP is on!' %
+                        target.upper())
 
-        self.run_cmd('flashrom -p host -r -i WP_RO:%s' % bios_ro_after,
-                     'SUCCESS')
-        self.run_cmd('flashrom -p ec -r -i WP_RO:%s' % ec_ro_after,
-                     'SUCCESS')
+            # Check if RO FW can be overwritten when WP is disabled.
+            self._set_write_protect(target, False)
 
-        self.switcher.mode_aware_reboot(reboot_type='cold')
+            # Writing WP_RO section is expected to succeed.
+            self.run_cmd('flashrom -p %s -w -i WP_RO:%s' %
+                    (self._flashrom_targets[target], ro_test),
+                    'SUCCESS')
+            self.run_cmd('flashrom -p %s -r -i WP_RO:%s' %
+                    (self._flashrom_targets[target], ro_after),
+                    'SUCCESS')
 
-        # The WP_RO section on the DUT should not change.
-        cmp_output = self.run_cmd('cmp %s %s' %
-                (bios_ro_before, bios_ro_after))
-        if ''.join(cmp_output) != '':
-            raise error.TestFail('BIOS RO changes when WP is on!')
-        cmp_output = self.run_cmd('cmp %s %s' % (ec_ro_before, ec_ro_after))
-        if ''.join(cmp_output) != '':
-            raise error.TestFail('EC RO changes when WP is on!')
-
-        # Check if RO FW can be overwritten when WP is disabled.
-        self.switcher.mode_aware_reboot(
-                'custom',
-                lambda:self.set_ec_write_protect_and_reboot(False))
-        self.faft_client.bios.set_write_protect_region('WP_RO', False)
-
-        # Writing WP_RO section is expected to succeed.
-        self.run_cmd('flashrom -p host -w -i WP_RO:%s' % bios_ro_test,
-                     'SUCCESS')
-        self.run_cmd('flashrom -p ec -w -i WP_RO:%s' % ec_ro_test,
-                     'SUCCESS')
-
-        self.run_cmd('flashrom -p host -r -i WP_RO:%s' % bios_ro_after,
-                     'SUCCESS')
-        self.run_cmd('flashrom -p ec -r -i WP_RO:%s' % ec_ro_after,
-                     'SUCCESS')
-
-        # The WP_RO section on the DUT should be the same as the test firmware.
-        cmp_output = self.run_cmd('cmp %s %s' % (bios_ro_test, bios_ro_after))
-        if ''.join(cmp_output) != '':
-            raise error.TestFail('BIOS RO is not flashed correctly'
-                                 'when WP is off!')
-        cmp_output = self.run_cmd('cmp %s %s' % (ec_ro_test, ec_ro_after))
-        if ''.join(cmp_output) != '':
-            raise error.TestFail('EC RO is not flashed correctly'
-                                 'when WP is off!')
+            # The DUT's WP_RO section should be the same as the test firmware.
+            cmp_output = self.run_cmd('cmp %s %s' % (ro_test, ro_after))
+            if ''.join(cmp_output) != '':
+                raise error.TestFail('%s RO is not flashed correctly'
+                                     'when WP is off!' % target.upper())

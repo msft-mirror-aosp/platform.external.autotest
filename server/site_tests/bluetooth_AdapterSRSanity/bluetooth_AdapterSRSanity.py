@@ -319,14 +319,21 @@ class bluetooth_AdapterSRSanity(
         finally:
             self.test_remove_pairing(device.address)
 
-    @test_wrapper('Peer wakeup Classic HID', devices={'MOUSE': 1})
+
+    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
+    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
+    @test_wrapper('Peer wakeup Classic HID', devices={'MOUSE': 1},
+                  model_testNA=['bob', 'dru'])
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device(
             'MOUSE', device, device_test=self.test_mouse_left_click)
 
-    @test_wrapper('Peer wakeup LE HID', devices={'BLE_MOUSE': 1})
+    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
+    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
+    @test_wrapper('Peer wakeup LE HID', devices={'BLE_MOUSE': 1},
+                  model_testNA=['bob', 'dru'])
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]
@@ -342,7 +349,9 @@ class bluetooth_AdapterSRSanity(
     # Suspend while discovering and advertising
     # ---------------------------------------------------------------
 
-    @test_wrapper('Suspend while discovering', devices={'BLE_MOUSE': 1})
+    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    @test_wrapper('Suspend while discovering', devices={'BLE_MOUSE': 1},
+                  model_testNA=['dru'])
     def sr_while_discovering(self):
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
@@ -367,7 +376,9 @@ class bluetooth_AdapterSRSanity(
 
         self.test_stop_discovery()
 
-    @test_wrapper('Suspend while advertising', devices={'MOUSE': 1})
+    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    @test_wrapper('Suspend while advertising', devices={'MOUSE': 1},
+                  model_testNA=['dru'])
     def sr_while_advertising(self):
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]

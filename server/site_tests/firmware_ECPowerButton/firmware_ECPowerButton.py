@@ -61,6 +61,12 @@ class firmware_ECPowerButton(FirmwareTest):
         by power button again.
         """
         self.servo.power_key(shutdown_powerkey_duration)
+
+        # Send a new line to wakeup EC from deepsleep,
+        # it can happen if the EC console is not used for some time
+        if wake_delay > 2:
+            Timer(wake_delay - 1, self.ec.send_command, [""]).start()
+
         Timer(wake_delay,
               self.servo.power_key,
               [wake_powerkey_duration]).start()

@@ -1111,6 +1111,18 @@ class PyYAMLPackage(ExternalPackage):
             ExternalPackage._build_and_install_current_dir_noegg)
 
 
+class GoogleAuthPackage(ExternalPackage):
+    """Google Auth Client."""
+    version = '1.6.3'
+    local_filename = 'google-auth-%s.tar.gz' % version
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = 'a76f97686ebe42097d91e0996a72b26b54118f3b'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
+
 class _ExternalGitRepo(ExternalPackage):
     """
     Parent class for any package which needs to pull a git repo.

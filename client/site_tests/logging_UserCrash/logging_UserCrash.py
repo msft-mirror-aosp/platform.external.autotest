@@ -181,8 +181,10 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
         try:
             utils.system('echo "%s %s" > %s' % (old_core_pattern, test_option,
                                                 self._CORE_PATTERN))
-            result = self._run_crasher_process_and_analyze('root',
-                                                           consent=True)
+            result = self._run_crasher_process_and_analyze(
+                'root',
+                consent=True,
+                expect_crash_reporter_fail=True)
             self._check_crashed_and_caught(result)
             if not self._log_reader.can_find(failure_string):
                 raise error.TestFail('Did not find fail string in log %s' %
@@ -197,13 +199,17 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
                 raise error.TestFail('Expected logged error '
                                      '\"%s\" was \"%s\"' %
                                      (failure_string, log_contents))
+            if not result['pslog']:
+              raise error.TestFail('Missing pslog file')
+            pslog_contents = utils.read_file(result['pslog'])
             # Verify we are generating appropriate diagnostic output.
-            if ((not '===ps output===' in log_contents) or
-                (not '===meminfo===' in log_contents)):
-                raise error.TestFail('Expected full logs, got: ' + log_contents)
+            if ((not '===ps output===' in pslog_contents) or
+                (not '===meminfo===' in pslog_contents)):
+                raise error.TestFail(
+                    'Expected full logs, got: "%s"' % pslog_contents)
             self._check_generated_report_sending(result['meta'],
                                                  result['log'],
-                                                 result['basename'],
+                                                 'crash_reporter_failure',
                                                  'log',
                                                  _COLLECTION_ERROR_SIGNATURE)
         finally:
@@ -318,6 +324,7 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
     # non-root, non-chronos user.
 
     def run_once(self):
+        """ Run all tests once """
         self._prepare_crasher()
         self._populate_symbols()
 

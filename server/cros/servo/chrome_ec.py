@@ -51,6 +51,52 @@ class ChromeConsole(object):
     REGEXP = "_regexp"
     MULTICMD = "_multicmd"
 
+    # EC Features
+    # Quoted from 'enum ec_feature_code' in platform/ec/include/ec_commands.h.
+    EC_FEATURE = {
+        'EC_FEATURE_LIMITED'                            : 0,
+        'EC_FEATURE_FLASH'                              : 1,
+        'EC_FEATURE_PWM_FAN'                            : 2,
+        'EC_FEATURE_PWM_KEYB'                           : 3,
+        'EC_FEATURE_LIGHTBAR'                           : 4,
+        'EC_FEATURE_LED'                                : 5,
+        'EC_FEATURE_MOTION_SENSE'                       : 6,
+        'EC_FEATURE_KEYB'                               : 7,
+        'EC_FEATURE_PSTORE'                             : 8,
+        'EC_FEATURE_PORT80'                             : 9,
+        'EC_FEATURE_THERMAL'                            : 10,
+        'EC_FEATURE_BKLIGHT_SWITCH'                     : 11,
+        'EC_FEATURE_WIFI_SWITCH'                        : 12,
+        'EC_FEATURE_HOST_EVENTS'                        : 13,
+        'EC_FEATURE_GPIO'                               : 14,
+        'EC_FEATURE_I2C'                                : 15,
+        'EC_FEATURE_CHARGER'                            : 16,
+        'EC_FEATURE_BATTERY'                            : 17,
+        'EC_FEATURE_SMART_BATTERY'                      : 18,
+        'EC_FEATURE_HANG_DETECT'                        : 19,
+        'EC_FEATURE_PMU'                                : 20,
+        'EC_FEATURE_SUB_MCU'                            : 21,
+        'EC_FEATURE_USB_PD'                             : 22,
+        'EC_FEATURE_USB_MUX'                            : 23,
+        'EC_FEATURE_MOTION_SENSE_FIFO'                  : 24,
+        'EC_FEATURE_VSTORE'                             : 25,
+        'EC_FEATURE_USBC_SS_MUX_VIRTUAL'                : 26,
+        'EC_FEATURE_RTC'                                : 27,
+        'EC_FEATURE_FINGERPRINT'                        : 28,
+        'EC_FEATURE_TOUCHPAD'                           : 29,
+        'EC_FEATURE_RWSIG'                              : 30,
+        'EC_FEATURE_DEVICE_EVENT'                       : 31,
+        'EC_FEATURE_UNIFIED_WAKE_MASKS'                 : 32,
+        'EC_FEATURE_HOST_EVENT64'                       : 33,
+        'EC_FEATURE_EXEC_IN_RAM'                        : 34,
+        'EC_FEATURE_CEC'                                : 35,
+        'EC_FEATURE_MOTION_SENSE_TIGHT_TIMESTAMPS'      : 36,
+        'EC_FEATURE_REFINED_TABLET_MODE_HYSTERESIS'     : 37,
+        'EC_FEATURE_EFS2'                               : 38,
+        'EC_FEATURE_SCP'                                : 39,
+        'EC_FEATURE_ISH'                                : 40,
+    }
+
     def __init__(self, servo, name):
         """Initialize and keep the servo object.
 
@@ -312,6 +358,36 @@ class ChromeEC(ChromeConsole):
 
         result = self.send_command_get_output('sysinfo', [r'Copy:\s*(RO|RW)'])
         return result[0][1] == img_exp
+
+    def check_feature(self, feature):
+        """Return true if EC supports the given feature
+
+        Args:
+            feature: feature name as a string as in self.EC_FEATURE.
+
+        Returns:
+            True if 'feature' is in EC's feature set.
+            False otherwise
+        """
+        feat_id = self.EC_FEATURE[feature]
+        if feat_id < 32:
+            feat_start = 0
+        else:
+            feat_start = 32
+
+        regexp = r'%d-%d:\s*(0x[0-9a-fA-F]{8})' % (feat_start,
+                                                   feat_start + 31)
+
+        try:
+            result = self.send_command_get_output('feat', [regexp])
+        except servo.ResponsiveConsoleError as e:
+            logging.warn("feat command is not available: %s", str(e))
+            return False
+
+        feat_bitmap = int(result[0][1], 16)
+
+        return ((1 << (feat_id - feat_start)) & feat_bitmap) != 0
+
 
 class ChromeUSBPD(ChromeEC):
     """Manages control of a Chrome USBPD.

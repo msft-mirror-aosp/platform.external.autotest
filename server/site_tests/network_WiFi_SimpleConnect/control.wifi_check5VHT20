@@ -6,7 +6,7 @@ AUTHOR = 'pauletti'
 NAME = 'network_WiFi_SimpleConnect.wifi_check5VHT20'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_flaky', 'subsystem:wifi')
+ATTRIBUTES = ('suite:wifi_matfunc', 'subsystem:wifi')
 DEPENDENCIES = 'wificell'
 
 DOC = """

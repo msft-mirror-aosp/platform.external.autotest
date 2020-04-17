@@ -174,7 +174,10 @@ class TradefedTest(test.test):
         # Kill any lingering adb servers.
         for host in self._hosts:
             try:
-                self._run_adb_cmd(host, verbose=True, args=('kill-server',))
+                self._run_adb_cmd(host, verbose=True, args=('kill-server',),
+                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+            except error.CmdTimeoutError as e:
+                logging.warn(e)
             except (error.CmdError, AttributeError):
                 pass
 
@@ -382,7 +385,8 @@ class TradefedTest(test.test):
             try:
                 # Kill existing adb server to ensure that the env var is picked
                 # up, and reset any previous bad state.
-                self._run_adb_cmd(verbose=True, args=('kill-server',))
+                self._run_adb_cmd(verbose=True, args=('kill-server',),
+                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
 
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.

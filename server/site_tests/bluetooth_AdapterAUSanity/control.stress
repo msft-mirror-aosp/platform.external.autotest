@@ -9,7 +9,7 @@ NAME = 'bluetooth_AdapterAUSanity.stress'
 PURPOSE = ('Batch of Bluetooth Classic Audio sanity tests')
 CRITERIA = 'Pass all sanity test'
 ATTRIBUTES = 'suite:bluetooth_stress'
-TIME = 'SHORT'  # an iteration takes approximately 2 mins
+TIME = 'SHORT'  # an iteration takes approximately 4 mins
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
@@ -26,6 +26,8 @@ DOC = """
 
     Currently, the batch contains the following tests:
     - au_a2dp_test
+    - au_hfp_wbs_dut_as_source_test
+    - au_hfp_wbs_dut_as_sink_test
     """
 
 args_dict = utils.args_to_dict(args)

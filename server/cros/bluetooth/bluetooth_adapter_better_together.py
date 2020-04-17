@@ -113,10 +113,7 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
 
   CONNECTION_CLOSE_MESSAGE = b'\xd2\x00\x00'
 
-  test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
-
-  @test_wrapper('Smart Unlock', devices={'BLE_PHONE':1})
-  def smart_unlock_test(self):
+  def test_smart_unlock(self, address):
     """Simulate the Smart Unlock flow, here are the steps that involve
        1. Set the discovery filter to match LE devices only.
        2. Start the discovery.
@@ -138,7 +135,6 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
     filter = {'Transport':'le'}
     parameters = {'MinimumConnectionInterval':6,
                   'MaximumConnectionInterval':6}
-    address = self.devices['BLE_PHONE'][0].address
 
     # We don't use the control file for iteration since it will involve the
     # device setup steps which don't reflect the real user scenario.
@@ -165,6 +161,8 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
       self.test_disconnection_by_adapter(address)
 
       self.test_remove_device_object(address)
+
+    return True
 
 
   @test_retry_and_log(False)

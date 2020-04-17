@@ -14,8 +14,7 @@ from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 class firmware_FWupdate(FirmwareTest):
     """RO+RW firmware update using chromeos-firmware with various modes.
     If custom images are supplied, the DUT is left running that firmware, so the
-    test can be used to apply updates.  Otherwise, it modifies the FWIDs of the
-    current firmware before flashing, and restores the firmware after the test.
+    test can be used to apply updates.
 
     Accepted --args names:
 
@@ -25,7 +24,7 @@ class firmware_FWupdate(FirmwareTest):
     new_bios=
     new_ec=
     new_pd=
-        apply the given image(s) instead of generating an update with fake fwids
+        apply the given image(s)
 
     """
 
@@ -34,7 +33,6 @@ class firmware_FWupdate(FirmwareTest):
 
     def initialize(self, host, cmdline_args):
 
-        self.images_specified = False
         self.flashed = False
 
         dict_args = utils.args_to_dict(cmdline_args)
@@ -65,24 +63,11 @@ class firmware_FWupdate(FirmwareTest):
                                       % self.new_pd)
             logging.info('new_pd=%s', self.new_pd)
 
-        self._old_bios_wp = self.faft_client.bios.get_write_protect_status()
-
         if not self.images_specified:
-            # TODO(dgoyette): move this into the general FirmwareTest init?
-            stripped_bios = self.faft_client.bios.strip_modified_fwids()
-            if stripped_bios:
-                logging.warn(
-                        "Fixed the previously modified BIOS FWID(s): %s",
-                        stripped_bios)
+            raise error.TestError(
+                    "This test requires specifying images to flash.")
 
-            if self.faft_config.chrome_ec:
-                stripped_ec = self.faft_client.ec.strip_modified_fwids()
-                if stripped_ec:
-                    logging.warn(
-                            "Fixed the previously modified EC FWID(s): %s",
-                            stripped_ec)
-
-            self.backup_firmware()
+        self._old_bios_wp = self.faft_client.bios.get_write_protect_status()
 
         if 'wp' in dict_args:
             self.wp = int(dict_args['wp'])
@@ -110,11 +95,9 @@ class firmware_FWupdate(FirmwareTest):
         @rtype: dict
         """
         versions = dict()
-        versions['bios'] = self.faft_client.updater.get_all_installed_fwids(
-                'bios')
+        versions['bios'] = self.faft_client.updater.get_device_fwids('bios')
         if self.faft_config.chrome_ec:
-            versions['ec'] = self.faft_client.updater.get_all_installed_fwids(
-                    'ec')
+            versions['ec'] = self.faft_client.updater.get_device_fwids('ec')
         return versions
 
     def copy_cmdline_images(self, hostname):
@@ -215,25 +198,15 @@ class firmware_FWupdate(FirmwareTest):
 
         before_fwids = self.get_installed_versions()
 
-        # Repack shellball with modded fwids
-        if self.images_specified:
-            # Use new images as-is
-            logging.info(
-                    "Using specified image(s):"
-                    "new_bios=%s, new_ec=%s, new_pd=%s",
-                    self.new_bios, self.new_ec, self.new_pd)
-            self.copy_cmdline_images(host.hostname)
-            self.faft_client.updater.reload_images()
-            self.faft_client.updater.repack_shellball(append)
-            modded_fwids = self.identify_shellball(include_ec=have_ec)
-        else:
-            # Modify the stock image
-            logging.info(
-                    "Using the currently running firmware, with modified fwids")
-            self.setup_firmwareupdate_shellball()
-            self.faft_client.updater.reload_images()
-            self.modify_shellball(append, modify_ro=True, modify_ec=have_ec)
-            modded_fwids = self.identify_shellball(include_ec=have_ec)
+        # Use new images as-is
+        logging.info(
+                "Using specified image(s):"
+                "new_bios=%s, new_ec=%s, new_pd=%s",
+                self.new_bios, self.new_ec, self.new_pd)
+        self.copy_cmdline_images(host.hostname)
+        self.faft_client.updater.reload_images()
+        self.faft_client.updater.repack_shellball(append)
+        modded_fwids = self.identify_shellball(include_ec=have_ec)
 
         fail_msg = "Section contents didn't show the expected changes."
 
@@ -242,7 +215,7 @@ class firmware_FWupdate(FirmwareTest):
             # try only the specified wp= value
             errors += self.run_case(append, self.wp, before_fwids, modded_fwids)
 
-        elif self.images_specified or self.mode == 'factory':
+        elif self.mode == 'factory':
             # apply images with wp=0 by default
             errors += self.run_case(append, 0, before_fwids, modded_fwids)
 
@@ -255,22 +228,10 @@ class firmware_FWupdate(FirmwareTest):
             raise error.TestFail("%s\n%s" % (fail_msg, '\n'.join(errors)))
 
     def cleanup(self):
-        """
-        If test was given custom images to apply, reboot the EC to apply them.
-
-        Otherwise, restore firmware from the backup taken before flashing.
-        No EC reboot is needed in that case, because the test didn't actually
-        reboot the EC with the new firmware.
-        """
-        self.set_hardware_write_protect(False)
-        self.faft_client.bios.set_write_protect_range(0, 0, False)
+        """Reboot the EC to apply the update."""
 
         if self.flashed:
-            if self.images_specified:
-                self.sync_and_ec_reboot('hard')
-            else:
-                logging.info("Restoring firmware")
-                self.restore_firmware()
+            self.sync_and_ec_reboot('hard')
 
         # Restore the old write-protection value at the end of the test.
         self.faft_client.bios.set_write_protect_range(

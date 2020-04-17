@@ -15,25 +15,22 @@ import traceback
 import urlparse
 
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
-from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
-from autotest_lib.site_utils import stable_version_classify as sv
 from autotest_lib.server import site_utils as server_utils
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
 
 from chromite.lib import auto_updater
-from chromite.lib import auto_updater_transfer
+# TODO(crbug.com/1066686) remove this try/except when moblab is using more
+# recent chromite.
+try:
+   from chromite.lib import auto_updater_transfer
+except ImportError:
+   pass
 from chromite.lib import remote_access
 
-
-# TODO(crbug.com/1058095) -- the autotest frontend has been turned down
-# reduce the timeouts so that we spend less time failing to contact it.
-AFE = frontend_wrappers.RetryingAFE(timeout_min=(1.0/60), delay_sec=1)
-_CROS_VERSION_MAP = AFE.get_stable_version_map(AFE.CROS_IMAGE_TYPE)
-_FIRMWARE_VERSION_MAP = AFE.get_stable_version_map(AFE.FIRMWARE_IMAGE_TYPE)
-_FAFT_VERSION_MAP = AFE.get_stable_version_map(AFE.FAFT_IMAGE_TYPE)
 
 _CONFIG = global_config.global_config
 ENABLE_DEVSERVER_TRIGGER_AUTO_UPDATE = _CONFIG.get_config_value(
@@ -70,63 +67,50 @@ def _format_image_name(board, version):
     return "%s-release/%s" % (board, version)
 
 
-def get_stable_cros_image_name_v2(info, _config_override=None):
-    if sv.classify_board(info.board, _config_override=_config_override) == sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_cros_image_name_v2: board %s from host_info_store" % info.board)
-        out = _format_image_name(board=info.board, version=info.cros_stable_version)
-        _log_image_name(out)
-        return out
-    logging.debug("get_stable_cros_image_name_v2: board %s from autotest frontend" % info.board)
-    return get_stable_cros_image_name(info.board)
-
-
-def get_stable_cros_image_name(board):
+def get_stable_cros_image_name_v2(host_info):
     """Retrieve the Chrome OS stable image name for a given board.
 
-    @param board: Board to lookup.
+    @param host_info: a host_info_store object.
 
     @returns Name of a Chrome OS image to be installed in order to
             repair the given board.
     """
-    return _CROS_VERSION_MAP.get_image_name(board)
+    if not host_info.cros_stable_version:
+        raise error.AutoservError("No cros stable_version found"
+                                  " in host_info_store.")
+
+    logging.debug("Get cros stable_version for board: %s",
+                  getattr(host_info, "board", None))
+    out = _format_image_name(board=host_info.board,
+                             version=host_info.cros_stable_version)
+    _log_image_name(out)
+    return out
 
 
-def get_stable_firmware_version_v2(info, _config_override=None):
-    if sv.classify_model(info.model, _config_override=_config_override) == sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_firmware_version_v2: model %s from host_info_store" % info.model)
-        return info.firmware_stable_version
-    logging.debug("get_stable_cros_image_name_v2: model %s from autotest frontend" % info.model)
-    return get_stable_firmware_version(info.model)
-
-
-def get_stable_firmware_version(model):
+def get_stable_firmware_version_v2(host_info):
     """Retrieve the stable firmware version for a given model.
 
-    @param model: Model to lookup.
+    @param host_info: a host_info_store object.
 
     @returns A version of firmware to be installed via
              `chromeos-firmwareupdate` from a repair build.
     """
-    return _FIRMWARE_VERSION_MAP.get_version(model)
+    logging.debug("Get firmware stable_version for model: %s",
+                  getattr(host_info, "model", None))
+    return host_info.firmware_stable_version
 
 
-def get_stable_faft_version_v2(info, _config_override=None):
-    if sv.classify_board(info.board, _config_override=_config_override) == sv.FROM_HOST_CONFIG:
-        logging.debug("get_stable_faft_version_v2: model %s from host_info_store" % info.model)
-        return info.faft_stable_version
-    logging.debug("get_stable_faft_version_v2: model %s from autotest frontend" % info.model)
-    return get_stable_faft_version(info.board)
-
-
-def get_stable_faft_version(board):
+def get_stable_faft_version_v2(host_info):
     """Retrieve the stable firmware version for FAFT DUTs.
 
-    @param board: Board to lookup.
+    @param host_info: a host_info_store object.
 
     @returns A version of firmware to be installed in order to
             repair firmware on a DUT used for FAFT testing.
     """
-    return _FAFT_VERSION_MAP.get_version(board)
+    logging.debug("Get faft stable_version for model: %s",
+                  getattr(host_info, "model", None))
+    return host_info.faft_stable_version
 
 
 def clean_provision_labels(host):
@@ -170,13 +154,38 @@ def machine_install_and_update_labels(host, update_url,
         quick-provision for the update.
     @param with_cheets: If true, installation is for a specific, custom
         version of Android for a target running ARC.
-    @param staging_server: Sever where images have been staged. Typically,
+    @param staging_server: Server where images have been staged. Typically,
         an instance of dev_server.ImageServer.
     """
     clean_provision_labels(host)
-    # TODO(crbug.com/1049346): The try-except block exists to catch failures in
-    # chromite auto_updater that may occur due to autotest/chromite version
-    # mismatch. This should be removed once that bug is resolved.
+
+    if use_quick_provision:
+        image_name, host_attributes = _provision_with_quick_provision(
+            host, update_url)
+    else:
+        image_name, host_attributes = _provision_with_au(host, update_url,
+                                                         staging_server)
+
+    if with_cheets:
+        image_name += provision.CHEETS_SUFFIX
+    add_provision_labels(host, host.VERSION_PREFIX, image_name, host_attributes)
+
+def _provision_with_au(host, update_url, staging_server):
+    """Installs a build on the host using chromite ChromiumOSUpdater.
+
+    @param host: Host object where the build is to be installed.
+    @param update_url: URL of the build to install.
+    @param staging_server: Server where images have been staged. Typically,
+        an instance of dev_server.ImageServer.
+
+    @returns A tuple of the form `(image_name, host_attributes)`, where
+        'image_name' is the name of the image installed, and 'host_attributes'
+        are new attributes to be applied to the DUT.
+    """
+    logging.debug("Attempting to provision with Chromite ChromiumOSUpdater.")
+    # TODO(crbug.com/1049346): The try-except block exists to catch failures
+    # in chromite auto_updater that may occur due to autotest/chromite
+    # version mismatch. This should be removed once that bug is resolved.
     try:
         # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
         # update_url.
@@ -194,13 +203,26 @@ def machine_install_and_update_labels(host, update_url,
         repo_url = tools.get_package_url(staging_server.url(), image_name)
         host_attributes = {ds_constants.JOB_REPO_URL: repo_url}
     except Exception as e:
-        logging.warning(
-            "Chromite auto_updater has failed with the exception: %s", e)
-        logging.debug("Attempting to provision with quick provision.")
-        updater = autoupdater.ChromiumOSUpdater(
-            update_url, host=host, use_quick_provision=use_quick_provision)
+        logging.warning('Chromite auto_updater has failed with the exception: '
+                        '%s', e)
+        logging.debug('Attempting to provision with autoupdater '
+                      'ChromiumOSUpdater.')
+        updater = autoupdater.ChromiumOSUpdater(update_url, host=host,
+                                                use_quick_provision=False)
         image_name, host_attributes = updater.run_update()
-    if with_cheets:
-        image_name += provision.CHEETS_SUFFIX
-    add_provision_labels(host, host.VERSION_PREFIX, image_name,
-                         host_attributes)
+    return image_name, host_attributes
+
+def _provision_with_quick_provision(host, update_url):
+    """Installs a build on the host using autoupdater quick-provision.
+
+    @param host: Host object where the build is to be installed.
+    @param update_url: URL of the build to install.
+
+    @returns A tuple of the form `(image_name, host_attributes)`, where
+        'image_name' is the name of the image installed, and 'host_attributes'
+        are new attributes to be applied to the DUT.
+    """
+    logging.debug('Attempting to provision with autoupdater quick-provision.')
+    updater = autoupdater.ChromiumOSUpdater(update_url, host=host,
+                                            use_quick_provision=True)
+    return updater.run_update()

@@ -71,6 +71,9 @@
     "usb_plug": 10,
     "usb_plug.DOC": "Delay between power-on and plug USB",
 
+    "usb_unplug": 2,
+    "usb_unplug.DOC": "Delay between USB power-off and detected by the system",
+
     "shutdown": 30,
     "shutdown.DOC": "Delay for waiting for client to shutdown",
 

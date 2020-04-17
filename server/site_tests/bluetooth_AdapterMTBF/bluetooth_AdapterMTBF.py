@@ -9,12 +9,18 @@
    the test case to be used as both part of a MTBF batch and a normal batch.
 """
 
+import time
+
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
     BluetoothAdapterQuickTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_better_together \
     import BluetoothAdapterBetterTogether
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
+    import BluetoothAdapterHIDReportTests
 
-class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether):
+
+class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
+                            BluetoothAdapterHIDReportTests):
     """A Batch of Bluetooth adapter tests for MTBF. This test is written
        as a batch of tests in order to reduce test time, since auto-test ramp up
        time is costly. The batch is using BluetoothAdapterQuickTests wrapper
@@ -24,11 +30,39 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether):
        specific test only
     """
 
-    MTBF_TIMEOUT_MINS = 2
+    MTBF_TIMEOUT_MINS = 300
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
     mtbf_wrapper = BluetoothAdapterQuickTests.quick_test_mtbf_decorator
+    test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 
     @mtbf_wrapper(timeout_mins=MTBF_TIMEOUT_MINS)
+    def run_mtbf_loop(self, phone, mouse):
+        """Run some simple MTBF test scenarios"""
+
+        self.test_smart_unlock(address=phone.address)
+        self.run_mouse_tests(device=mouse)
+
+        return True
+
+
+    @test_wrapper('Simple MTBF', devices={'BLE_PHONE':1, 'BLE_MOUSE':1})
+    def simple_mtbf_test(self):
+        """Do some initialization work then start the MTBF test loop"""
+
+        mouse = self.devices['BLE_MOUSE'][0]
+        phone = self.devices['BLE_PHONE'][0]
+
+        # Pair the mouse first
+        # The steps were copied from bluetooth_AdapterMDSanity
+        self.test_discover_device(mouse.address)
+        self.test_stop_discovery()
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_pairing(mouse.address, mouse.pin, trusted=True)
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_connection_by_adapter(mouse.address)
+
+        self.run_mtbf_loop(phone, mouse)
+
     @batch_wrapper('Adapter MTBF')
     def mtbf_batch_run(self, num_iterations=1, test_name=None):
         """Run the Bluetooth MTBF test batch or a specific
@@ -44,10 +78,10 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether):
                              whole batch
         """
         # TODO: finalize the test cases that need to be run as MTBF
-        self.smart_unlock_test()
+        self.simple_mtbf_test()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None):
+    def run_once(self, host, num_iterations=1, test_name=None, args_dict=None):
         """Run the batch of Bluetooth MTBF tests
 
         @param host: the DUT, usually a chromebook
@@ -56,6 +90,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether):
         """
 
         # Initialize and run the test batch or the requested specific test
+        self.set_fail_fast(args_dict, True)
         self.quick_test_init(host, use_btpeer=True)
         self.mtbf_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

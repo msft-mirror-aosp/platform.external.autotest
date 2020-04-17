@@ -50,7 +50,8 @@ class power_VideoEncode(power_test.power_Test):
             url = self.video_url
             tab.Navigate(url)
             tab.WaitForDocumentReadyStateToBeComplete()
-            time.sleep(10)
+            video_init_time = power_status.VideoFpsLogger.time_until_ready(tab)
+            self.keyvals['video_init_time'] = video_init_time
 
             self._vlog = power_status.VideoFpsLogger(tab,
                 seconds_period=self._seconds_period,

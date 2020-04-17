@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+import re
 import time
 
 from autotest_lib.client.common_lib import error
@@ -27,6 +28,18 @@ class servo_LabstationVerification(test.test):
     version = 1
 
     UL_BIT_MASK = 0x2
+
+    # Regex to match ipv4 byte.
+    IPV4_RE_BLOCK = r'(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])'
+
+    # Full regex to match an ipv4 with optional subnet mask.
+    RE_IPV4 = re.compile(r'^(%(block)s\.){3}(%(block)s)(/\d+)?$' %
+                         {'block':IPV4_RE_BLOCK})
+
+    # Timeout in seconds to wait after cold_reset before attempting to ping
+    # again. This includes a potential fw screen (30s), and some buffer
+    # for the network.
+    RESET_TIMEOUT_S = 60
 
     def get_servo_mac(self, servo_proxy):
         """Given a servo's serial retrieve ethernet port mac address.
@@ -141,35 +154,65 @@ class servo_LabstationVerification(test.test):
         mac_bytes = mac_bytes[:3] + mac_bytes[-3:]
         return ':'.join([c.lower() for c in mac_bytes])
 
-    def _get_dev_from_hostname(self, host):
-        """Determine what network device on |host| is associated with its ip.
+    def _build_ssh_cmd(self, hostname, cmd):
+        """Build the ssh command to run |cmd| via bash on |hostname|.
 
-        @param host: host to inspect
+        @param hostname: hostname/ip where to run the cmd on
+        @param cmd: cmd on hostname to run
 
-        @returns: dev net for network device handling ip associated with |host|
+        @returns: ssh command to run
         """
-        devs = [dev.strip() for dev in
-                host.run('ls /sys/class/net').stdout.strip().split()]
-        host_ip = server_utils.get_ip_address(host.hostname)
-        if host_ip is None:
-            # TODO(coconutruben): this happens when hostname is IPv6. For now,
-            # just use hostname as it is. However, come back to this to either
-            # fix get_ip_address to report the right ip address, or
-            # use the socket API yourself.
-            host_ip = host.hostname
-        for dev in devs:
-            try:
-                host.run('ifconfig %s | grep %s' % (dev, host_ip))
-                # If there's a match, then we found the dev name.
-                return dev
-            except error.AutoservRunError:
-              # It's expected that for all but one network device grep will
-              # find no match. Ignore it.
-              logging.debug('ip %s not on dev %s', host_ip, dev)
-              continue
-        # If we get to this state, then we failed to find a network device.
-        raise error.TestFail('Failed to find network dev corresponding to '
-                             'ip %s.' % host.hostname)
+        ssh_cmd = [r'ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                   r'-o', 'UserKnownHostsFile=/dev/null',
+                   r'root@%s' % hostname,
+                   r'"%s"' % cmd]
+        return ' '.join(ssh_cmd)
+
+    def _ip_info_from_host(self, host, ip, info, host_name):
+        """Retrieve some |info| related to |ip| from host on |ip|.
+
+        @param host: object that implements 'run', where the command
+                     will be executed form
+        @param ip: ip address to run on and to filter for
+        @param info: one of 'ipv4' or 'dev'
+        @param host_name: executing host's name, for error message
+
+        @returns: ipv4 associated on the same nic as |ip| if |info|== 'ipv4'
+                  nic dev name associated with |ip| if |info|== 'dev'
+
+        @raises error.TestError: if output of 'ip --brief addr' is unexpected
+        @raises error.TestError: info not in ['ipv4', 'dev']
+        """
+        if info not in ['ipv4', 'dev']:
+            raise error.TestFail('Cannot retrieve info %r', info)
+        ip_stub = r"ip --brief addr | grep %s" % ip
+        cmd = self._build_ssh_cmd(ip, ip_stub)
+        logging.info('command to find %s on %s: %s', info, host_name, cmd)
+        # The expected output here is of the form:
+        # [net device] [UP/DOWN] [ipv4]/[subnet mask] [ipv6]/[subnet mask]+
+        try:
+            output = host.run(cmd).stdout.strip()
+        except (error.AutoservRunError, error.CmdError) as e:
+            logging.error(str(e))
+            raise error.TestFail('Failed to retrieve %s on %s' % (info, ip))
+        logging.debug('ip raw output: %s', output)
+        components = output.split()
+        if info == 'ipv4':
+            # To be safe, get all IPs, and subsequently report the first ipv4
+            # found.
+            raw_ips = components[2:]
+            for raw_ip in raw_ips:
+                if re.match(self.RE_IPV4, raw_ip):
+                    ret = raw_ip.split('/')[0]
+                    logging.info('ipv4 found: %s', ret)
+                    break
+            else:
+                raise error.TestFail('No ipv4 address found in ip command: %s' %
+                                     ', '.join(raw_ips))
+        if info == 'dev':
+            ret = components[0]
+            logging.info('dev found: %s', ret)
+        return ret
 
     def get_dut_on_servo_ip(self, servo_host_proxy):
         """Retrieve the IPv4 IP of the DUT attached to a servo.
@@ -186,7 +229,9 @@ class servo_LabstationVerification(test.test):
         # Note: throughout this method, sh refers to servo host, dh to DUT host.
         # Figure out servo hosts IPv6 address that's based on its mac address.
         servo_proxy = servo_host_proxy._servo
-        sh_nic_dev = self._get_dev_from_hostname(servo_host_proxy)
+        sh_ip = server_utils.get_ip_address(servo_host_proxy.hostname)
+        sh_nic_dev = self._ip_info_from_host(servo_host_proxy, sh_ip, 'dev',
+                                             'servo host')
         addr_cmd ='cat /sys/class/net/%s/address' % sh_nic_dev
         sh_dev_addr = servo_host_proxy.run(addr_cmd).stdout.strip()
         logging.debug('Inferred Labstation MAC to be: %s', sh_dev_addr)
@@ -203,35 +248,48 @@ class servo_LabstationVerification(test.test):
         dut_ipv6 = self._mac_to_ipv6_addr(self.get_servo_mac(servo_proxy),
                                           network_component)
         logging.info('Inferred DUT IPv6 to be: %s', dut_ipv6)
-        # Make a temporary cros host using the IPv6
-        temp_dut_host = factory.create_host(dut_ipv6)
-        # Try to ping the DUT
-        if not temp_dut_host.is_up(timeout=20):
-            # on failure reboot, wait 7s
-            servo_proxy.set('cold_reset', 'on')
-            servo_proxy.set('cold_reset', 'off')
-            time.sleep(20)
-            if not temp_dut_host.is_up(timeout=20):
-                temp_dut_host.close()
-                raise error.TestFail('Failed to find DUT on IPv6: %s' %
-                                     dut_ipv6)
-        # Figure out what dev the IPv6 belongs to.
-        dh_nic_dev = self._get_dev_from_hostname(temp_dut_host)
-        # Use ifconfig to determine the IPv4 address associated with
-        # |dh_nic_dev| on the DUT under the inet attribute.
-        ipv4_cmd = (r"ifconfig %s | sed -nr 's|\s+inet\s+([0-9.]+)\s.*$|\1|p'" %
-                    dh_nic_dev)
-        dut_ipv4 = temp_dut_host.run(ipv4_cmd).stdout.strip()
-        logging.info('Inferred DUT IPv4 to be: %s', dut_ipv4)
-        # Close out this host as a new host to the same DUT with the IPv4 will
-        # be created.
-        temp_dut_host.close()
+        # Dynamically generate the correct shell-script to retrieve the ipv4.
+        try:
+            server_utils.run('ping -6 -c 1 -w 35 %s' % dut_ipv6)
+        except error.CmdError:
+            # If the DUT cannot be pinged, then try to reset it and try to
+            # ping again.
+            logging.info('Failed to ping DUT on ipv6: %s. Cold resetting',
+                         dut_ipv6)
+            servo_proxy._power_state.reset()
+            time.sleep(self.RESET_TIMEOUT_S)
+        dut_ipv4 = None
+        try:
+            # Pass |server_utils| here as it implements the same interface
+            # as a host to run things locally i.e. on the autoserv runner.
+            dut_ipv4 = self._ip_info_from_host(server_utils, dut_ipv6, 'ipv4',
+                                               'autoserv')
+            return dut_ipv4
+        except error.TestFail:
+            logging.info('Failed to retrieve the DUT ipv4 directly. '
+                         'Going to attempt to tunnel request through '
+                         'labstation and forgive the error for now.')
+        # Lastly, attempt to run the command from the labstation instead
+        # to guard against networking issues.
+        dut_ipv4 = self._ip_info_from_host(servo_host_proxy, dut_ipv6, 'ipv4',
+                                           'autoserv')
         return dut_ipv4
+
+    def _set_dut_stable_version(self, dut_host):
+        """ Helper method to set stable_version in DUT host.
+
+        @param dut_host: CrosHost object representing the DUT.
+        """
+        logging.info('Setting stable_version to %s for DUT host.',
+                     self.cros_version)
+        host_info = dut_host.host_info_store.get()
+        host_info.stable_versions['cros'] = self.cros_version
+        dut_host.host_info_store.commit(host_info)
 
     def initialize(self, host, config=None):
         """Setup servod on |host| to run subsequent tests.
 
-        @param host: CrosHost object representing the DUT.
+        @param host: LabstationHost object representing the servohost.
         @param config: the args argument from test_that in a dict.
         """
         # Save the host.
@@ -252,9 +310,22 @@ class servo_LabstationVerification(test.test):
         except error.AutoservRunError:
             raise error.TestFail('Servod did not come up on labstation.')
         self.dut_ip = None
-        if config and 'dut_ip' in config:
-            # Retrieve DUT ip from args if caller specified it.
-            self.dut_ip = config['dut_ip']
+
+        # We need a cros build number for testing download image to usb and
+        # use servo to reimage DUT purpose. So copying labstation's
+        # stable_version here since we don't really care about which build
+        # to install on the DUT.
+        self.cros_version = (
+            self.labstation_host.host_info_store.get().cros_stable_version)
+
+        if config:
+            if 'dut_ip' in config:
+                # Retrieve DUT ip from args if caller specified it.
+                self.dut_ip = config['dut_ip']
+            if 'cros_version' in config:
+                # We allow user to override a cros image build.
+                self.cros_version = config['cros_version']
+
 
     def run_once(self, local=False):
         """Run through the test sequence.
@@ -294,6 +365,12 @@ class servo_LabstationVerification(test.test):
         logging.info('Running the DUT side on DUT %r', self.dut_ip)
         dut_host = factory.create_host(self.dut_ip)
         dut_host.set_servo_host(self.labstation_host)
+
+        # Copy labstation's stable_version to dut_host for later test consume.
+        # TODO(xianuowang@): remove this logic once we figured out how to
+        # propagate DUT's stable_version to the test.
+        self._set_dut_stable_version(dut_host)
+
         success &= self.runsubtest('servo_LogGrab',
                                    host=dut_host, disable_sysinfo=True)
         success &= self.runsubtest('platform_ServoPowerStateController',

@@ -135,6 +135,11 @@ class FirmwareTest(FAFTBase):
             if match:
                 args[match.group(1)] = match.group(2)
 
+        self._no_fw_rollback_check = False
+        if 'no_fw_rollback_check' in args:
+            if 'true' in args['no_fw_rollback_check'].lower():
+                self._no_fw_rollback_check = True
+
         self._no_ec_sync = False
         if 'no_ec_sync' in args:
             if 'true' in args['no_ec_sync'].lower():
@@ -499,13 +504,21 @@ class FirmwareTest(FAFTBase):
 
         self.mark_setup_done('usb_check')
 
-    def setup_pdtester(self, flip_cc=False, dts_mode=False):
+    def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True):
         """Setup the PDTester to a given state.
 
         @param flip_cc: True to flip CC polarity; False to not flip it.
         @param dts_mode: True to config PDTester to DTS mode; False to not.
+        @param pd_faft: True to config PD FAFT setup.
         @raise TestError: If Servo v4 not setup properly.
         """
+
+        # PD FAFT is only tested with servo V4 with servo micro.
+        if pd_faft and self.pdtester.servo_type != 'servo_v4_with_servo_micro':
+            raise error.TestError('servo_v4_with_servo_micro is a mandatory '
+                                  'setup for PD FAFT. Got %s.'
+                                  % self.pdtester.servo_type)
+
         # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
         # the behaviors of what PD FAFT tests. So we want it disabled.
         if 'servo_v4' in self.pdtester.servo_type:
@@ -601,6 +614,7 @@ class FirmwareTest(FAFTBase):
 
         # Make the dut unable to see the USB disk.
         self.servo.switch_usbkey('off')
+        time.sleep(self.faft_config.usb_unplug)
         no_usb_set = set(
             self.faft_client.system.run_shell_command_get_output(cmd))
 
@@ -825,6 +839,24 @@ class FirmwareTest(FAFTBase):
         @param enable: True if asserting write protect pin. Otherwise, False.
         """
         self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
+
+    def run_chromeos_firmwareupdate(self, mode, append=None, options=(),
+            ignore_status=False):
+        """Use RPC to get the command to run, but do the actual run via ssh.
+
+        Running the command via SSH improves the reliability in cases where the
+        USB network connection gets interrupted.  SSH will still return the
+        output, and won't hang like RPC would.
+        """
+        update_cmd = self.faft_client.updater.get_firmwareupdate_command(
+                mode, append, options)
+        try:
+            return self._client.run(
+                    update_cmd, timeout=300, ignore_status=ignore_status)
+        except error.AutoservRunError as e:
+            if ignore_status:
+                return e.result_obj
+            raise
 
     def set_ec_write_protect_and_reboot(self, enable):
         """Set EC write protect status and reboot to take effect.
@@ -1056,7 +1088,16 @@ class FirmwareTest(FAFTBase):
         # And if the "no_ec_sync" argument is set, then disable EC software
         # sync.
         if self._no_ec_sync:
+            logging.info(
+                    'User selected to disable EC software sync')
             flags_to_set |= vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC
+
+        # And if the "no_fw_rollback_check" argument is set, then disable fw
+        # rollback check.
+        if self._no_fw_rollback_check:
+            logging.info(
+                    'User selected to disable FW rollback check')
+            flags_to_set |= vboot.GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK
 
         self.clear_set_gbb_flags(0xffffffff, flags_to_set)
         self.mark_setup_done('gbb_flags')
@@ -1763,16 +1804,16 @@ class FirmwareTest(FAFTBase):
         @return: the dict of versions in the shellball
         """
         fwids = dict()
-        fwids['bios'] = self.faft_client.updater.get_all_fwids('bios')
+        fwids['bios'] = self.faft_client.updater.get_image_fwids('bios')
 
         if include_ec is None:
-            if self.faft_config.platform == 'Samus':
+            if self.faft_config.platform.lower() == 'samus':
                 include_ec = False  # no ec.bin in shellball
             else:
                 include_ec = self.faft_config.chrome_ec
 
         if include_ec:
-            fwids['ec'] = self.faft_client.updater.get_all_fwids('ec')
+            fwids['ec'] = self.faft_client.updater.get_image_fwids('ec')
         return fwids
 
     def modify_shellball(self, append, modify_ro=True, modify_ec=False):
@@ -1782,15 +1823,19 @@ class FirmwareTest(FAFTBase):
         """
 
         if modify_ro:
-            self.faft_client.updater.modify_fwids('bios', ['ro', 'a', 'b'])
+            self.faft_client.updater.modify_image_fwids(
+                    'bios', ['ro', 'a', 'b'])
         else:
-            self.faft_client.updater.modify_fwids('bios', ['a', 'b'])
+            self.faft_client.updater.modify_image_fwids(
+                    'bios', ['a', 'b'])
 
         if modify_ec:
             if modify_ro:
-                self.faft_client.updater.modify_fwids('ec', ['ro', 'rw'])
+                self.faft_client.updater.modify_image_fwids(
+                        'ec', ['ro', 'rw'])
             else:
-                self.faft_client.updater.modify_fwids('ec', ['rw'])
+                self.faft_client.updater.modify_image_fwids(
+                        'ec', ['rw'])
 
         modded_shellball = self.faft_client.updater.repack_shellball(append)
 

@@ -15,6 +15,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
+from autotest_lib.client.common_lib.cros import cros_config
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants as client_constants
@@ -403,17 +404,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns: current stable cros image name for this host.
         """
-        board = self.host_info_store.get().board
-        if not board:
+        info = self.host_info_store.get()
+        if not info.board:
             logging.warn('No board label value found. Trying to infer '
                          'from the host itself.')
             try:
-                board = self.get_board().split(':')[1]
+                info.labels.append(self.get_board())
             except (error.AutoservRunError, error.AutoservSSHTimeout) as e:
                 logging.error('Also failed to get the board name from the DUT '
                               'itself. %s.', str(e))
-                raise error.AutoservError('Cannot obtain repair image name.')
-        return afe_utils.get_stable_cros_image_name_v2(self.host_info_store.get())
+                raise error.AutoservError('Cannot determine board of the DUT'
+                                          ' while getting repair image name.')
+        return afe_utils.get_stable_cros_image_name_v2(info)
 
 
     def host_version_prefix(self, image):
@@ -653,32 +655,45 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.host_info_store.commit(info)
 
 
-    def get_latest_release_version(self, board):
+    def get_latest_release_version(self, platform, ref_board=None):
         """Search for the latest package release version from the image archive,
             and return it.
 
-        @param board: board name
+        @param platform: platform name, a.k.a. board or model
+        @param ref_board: reference board name, a.k.a. baseboard, parent
 
-        @return 'firmware-{board}-{branch}-firmwarebranch/{release-version}'
+        @return 'firmware-{platform}-{branch}-firmwarebranch/{release-version}/'
+                '{platform}'
                 or None if LATEST release file does not exist.
         """
 
-        # This might be in the format of 'baseboard_model',
-        # e.g. octopus_fleex. In that case, board should be just
-        # 'baseboard' to use in search for image package, e.g. octopus.
-        board = board.split('_')[0]
+        platforms = [ platform ]
 
-        # Read 'LATEST-1.0.0' file
-        branch_dir = provision.FW_BRANCH_GLOB % board
-        latest_file = os.path.join(provision.CROS_IMAGE_ARCHIVE, branch_dir,
-                                'LATEST-1.0.0')
+        # Search the image path in reference board archive as well.
+        # For example, bob has its binary image under its reference board (gru)
+        # image archive.
+        if ref_board:
+            platforms.append(ref_board)
 
-        try:
-            # The result could be one or more.
-            result = utils.system_output('gsutil ls -d ' +  latest_file)
+        for board in platforms:
+            # Read 'LATEST-1.0.0' file
+            branch_dir = provision.FW_BRANCH_GLOB % board
+            latest_file = os.path.join(provision.CROS_IMAGE_ARCHIVE, branch_dir,
+                                       'LATEST-1.0.0')
 
-            candidates = re.findall('gs://.*', result)
-        except error.CmdError:
+            try:
+                # The result could be one or more.
+                result = utils.system_output('gsutil ls -d ' +  latest_file)
+
+                candidates = re.findall('gs://.*', result)
+
+                # Found the directory candidates. No need to check the other
+                # board name cadidates. Let's break the loop.
+                break
+            except error.CmdError:
+                # It doesn't exist. Let's move on to the next item.
+                pass
+        else:
             logging.error('No LATEST release info is available.')
             return None
 
@@ -686,7 +701,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             result = utils.system_output('gsutil cat ' + cand_dir)
 
             release_path = cand_dir.replace('LATEST-1.0.0', result)
-            release_path = os.path.join(release_path, board)
+            release_path = os.path.join(release_path, platform)
             try:
                 # Check if release_path does exist.
                 release = utils.system_output('gsutil ls -d ' + release_path)
@@ -915,7 +930,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             if not self.wait_up(timeout=usb_boot_timeout):
                 raise hosts.AutoservRepairError(
                         'DUT failed to boot from USB after %d seconds' %
-                        usb_boot_timeout, 'failed_to_reboot')
+                        usb_boot_timeout, 'failed_to_boot_pre_install')
 
         # The new chromeos-tpm-recovery has been merged since R44-7073.0.0.
         # In old CrOS images, this command fails. Skip the error.
@@ -929,28 +944,31 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/install_duration'):
             logging.info('Installing image through chromeos-install.')
-            self.run('chromeos-install --yes',timeout=install_timeout)
-
-            self.halt()
-
-        logging.info('Power cycling DUT through servo.')
-        self.servo.get_power_state_controller().power_off()
-        self.servo.switch_usbkey('off')
-        # N.B. The Servo API requires that we use power_on() here
-        # for two reasons:
-        #  1) After turning on a DUT in recovery mode, you must turn
-        #     it off and then on with power_on() once more to
-        #     disable recovery mode (this is a Parrot specific
-        #     requirement).
-        #  2) After power_off(), the only way to turn on is with
-        #     power_on() (this is a Storm specific requirement).
-        self.servo.get_power_state_controller().power_on()
+            try:
+                self.run('chromeos-install --yes',timeout=install_timeout)
+                self.halt()
+            finally:
+                # We need reset the DUT no matter re-install success or not,
+                # as we don't want leave the DUT in boot from usb state.
+                logging.info('Power cycling DUT through servo.')
+                self.servo.get_power_state_controller().power_off()
+                self.servo.switch_usbkey('off')
+                # N.B. The Servo API requires that we use power_on() here
+                # for two reasons:
+                #  1) After turning on a DUT in recovery mode, you must turn
+                #     it off and then on with power_on() once more to
+                #     disable recovery mode (this is a Parrot specific
+                #     requirement).
+                #  2) After power_off(), the only way to turn on is with
+                #     power_on() (this is a Storm specific requirement).
+                self.servo.get_power_state_controller().power_on()
 
         logging.info('Waiting for DUT to come back up.')
         if not self.wait_up(timeout=self.BOOT_TIMEOUT):
-            raise error.AutoservError('DUT failed to reboot installed '
-                                      'test image after %d seconds' %
-                                      self.BOOT_TIMEOUT)
+            raise hosts.AutoservRepairError('DUT failed to reboot installed '
+                                            'test image after %d seconds' %
+                                            self.BOOT_TIMEOUT,
+                                            'failed_to_boot_post_install')
 
 
     def set_servo_host(self, host, servo_state = None):
@@ -1292,7 +1310,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         except (error.AutotestRunError, error.AutoservRunError,
                 FactoryImageCheckerException):
             logging.warning('Unable to restart ui.')
-        
+
         # cleanup routines, i.e. reboot the machine.
         super(CrosHost, self).cleanup()
 
@@ -1867,7 +1885,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns a string representing this host's platform.
         """
-        # Look at the firmware for non-unibuild cases or if mosys fails.
+        # Look at the firmware for non-unibuild cases or if cros_config fails.
         crossystem = utils.Crossystem(self)
         crossystem.init()
         # Extract fwid value and use the leading part as the platform id.
@@ -1887,18 +1905,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                               run_method=self.run)
         platform = ''
         if release_info.get('CHROMEOS_RELEASE_UNIBUILD') == '1':
-            platform = self.get_platform_from_mosys()
+            platform = self.get_model_from_cros_config()
         return platform if platform else self.get_platform_from_fwid()
 
 
-    def get_platform_from_mosys(self):
-        """Get the host platform from mosys command.
+    def get_model_from_cros_config(self):
+        """Get the host model from cros_config command.
 
-        @returns a string representing this host's platform.
+        @returns a string representing this host's model.
         """
-        cmd = 'mosys platform model'
-        result = self.run(command=cmd, ignore_status=True)
-        return result.stdout.strip() if result.exit_status == 0 else ''
+        return cros_config.call_cros_config_get_output('/ name',
+                self.run, ignore_status=True)
 
 
     def get_architecture(self):

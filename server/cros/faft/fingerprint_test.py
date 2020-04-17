@@ -413,12 +413,10 @@ class FingerprintTest(test.test):
 
         # For devices that don't have unibuild support (which is required to
         # use cros_config).
-        # TODO(https://crrev.com/i/2313151): nami has unibuild support, but
-        # needs its model.yaml updated.
         # TODO(https://crbug.com/1030862): remove when nocturne has cros_config
         #  support.
         board = self.host.get_board().replace(ds_constants.BOARD_PREFIX, '')
-        if board == 'nami' or board == 'nocturne':
+        if board == 'nocturne':
             return board + self._FINGERPRINT_BOARD_NAME_SUFFIX
 
         # Use cros_config to get fingerprint board.

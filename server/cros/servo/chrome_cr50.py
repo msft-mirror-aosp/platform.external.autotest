@@ -1024,7 +1024,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Return a dictionary of the ccdstate once it's done debouncing"""
         for i in range(self.CCDSTATE_MAX_RETRY_COUNT):
             rv = self.send_command_retry_get_output('ccdstate',
-                    ['ccdstate(.*)>'], safe=True)[0][0]
+                    ['ccdstate(.*)>'], safe=True, compare_output=True)[0][0]
 
             # Look for a line like 'AP: on' or 'AP: off'. 'debouncing' or
             # 'unknown' may appear transiently. 'debouncing' should transition
@@ -1156,3 +1156,23 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         serial = self.get_devid().replace('0x', '').replace(' ', '-').upper()
         logging.info('CCD serial: %s', serial)
         return serial
+
+    def check_boot_mode(self, mode_exp='NORMAL'):
+        """Query the boot mode to Cr50, and compare it against mode_exp.
+
+        Args:
+            mode_exp: expecting boot mode. It should be either 'NORMAL'
+                      or 'NO_BOOT'.
+        Returns:
+            True if the boot mode matches mode_exp.
+            False, otherwise.
+        Raises:
+            TestError: Input parameter is not valid.
+        """
+
+        if mode_exp not in ['NORMAL', 'NO_BOOT']:
+            raise error.TestError('parameter, mode_exp is not valid: %s' %
+                                  mode_exp)
+        rv = self.send_command_retry_get_output('ec_comm',
+                ['boot_mode\s*:\s*(NORMAL|NO_BOOT)'], safe=True)
+        return mode_exp == rv[0][1]

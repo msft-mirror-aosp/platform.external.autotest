@@ -794,8 +794,7 @@ class CrasTestClient(object):
 
     def stop_playing_subprocess(self):
         """Stop the playing subprocess."""
-        result = self.stop_subprocess(self, self._playing_proc,
-                                       self._playing_msg)
+        result = self.stop_subprocess(self._playing_proc, self._playing_msg)
         if result:
             self._playing_proc = None
         return result
@@ -884,4 +883,69 @@ class CrasTestClient(object):
             return False
 
         logging.debug('call "%s" on the DUT', select_input_cmd)
+        return True
+
+
+    def set_player_playback_status(self, status):
+        """Set playback status for the registered media player.
+
+        @param status: playback status in string.
+
+        """
+        try:
+            get_cras_control_interface().SetPlayerPlaybackStatus(status)
+        except Exception as e:
+            logging.error('Failed to set player playback status: %s', e)
+            return False
+
+        return True
+
+
+    def set_player_position(self, position):
+        """Set media position for the registered media player.
+
+        @param position: position in micro seconds.
+
+        """
+        try:
+            get_cras_control_interface().SetPlayerPosition(position)
+        except Exception as e:
+            logging.error('Failed to set player position: %s', e)
+            return False
+
+        return True
+
+
+    def set_player_metadata(self, metadata):
+        """Set title, artist, and album for the registered media player.
+
+        @param metadata: dictionary of media metadata.
+
+        """
+        try:
+            get_cras_control_interface().SetPlayerMetadata(metadata)
+        except Exception as e:
+            logging.error('Failed to set player metadata: %s', e)
+            return False
+
+        return True
+
+
+    def set_player_length(self, length):
+        """Set metadata length for the registered media player.
+
+        Media length is a part of metadata information. However, without
+        specify its type to int64. dbus-python will guess the variant type to
+        be int32 by default. Separate it from the metadata function to help
+        prepare the data differently.
+
+        @param metadata: DBUS dictionary that contains a variant of int64.
+
+        """
+        try:
+            get_cras_control_interface().SetPlayerMetadata(length)
+        except Exception as e:
+            logging.error('Failed to set player length: %s', e)
+            return False
+
         return True

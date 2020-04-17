@@ -177,12 +177,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.bat_tests_results = []
         self.bat_pass_count = 0
         self.bat_fail_count = 0
+        self.bat_testna_count = 0
         self.bat_name = None
         self.bat_iter = None
 
         self.pkg_tests_results = []
         self.pkg_pass_count = 0
         self.pkg_fail_count = 0
+        self.pkg_testna_count = 0
         self.pkg_name = None
         self.pkg_iter = None
         self.pkg_is_running = False
@@ -191,7 +193,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     @staticmethod
-    def quick_test_test_decorator(test_name, devices={}, flags=['All']):
+    def quick_test_test_decorator(test_name, devices={}, flags=['All'],
+                                  model_testNA=[]):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -203,6 +206,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
            @param flags: list of string to describe who should run the
                          test. The string could be one of the following:
                          ['AVL', 'Quick Sanity', 'All'].
+           @param model_testNA: If the current platform is in this list,
+                                failures are emitted as TestNAError.
         """
 
         def decorator(test_method):
@@ -254,7 +259,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     raise error.TestNAError('Not enough peer available')
                 self.quick_test_test_start(test_name, devices)
                 test_method(self)
-                self.quick_test_test_end()
+                self.quick_test_test_end(model_testNA=model_testNA)
             return wrapper
 
         return decorator
@@ -281,9 +286,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting test: %s', test_name)
             self.log_message('Starting test: %s'% test_name)
 
-    def quick_test_test_end(self):
+    def quick_test_test_end(self, model_testNA=[]):
         """Log and track the test results"""
         result_msgs = []
+        model = self.host.get_platform()
 
         if self.test_iter is not None:
             result_msgs += ['Test Iter: ' + str(self.test_iter)]
@@ -306,6 +312,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             result_msg = 'PASSED | ' + result_msg
             self.bat_pass_count += 1
             self.pkg_pass_count += 1
+        elif model in model_testNA:
+            result_msg = 'TESTNA | ' + result_msg
+            self.bat_testna_count += 1
+            self.pkg_testna_count += 1
         else:
             result_msg = 'FAIL   | ' + result_msg
             self.bat_fail_count += 1
@@ -351,7 +361,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Close the connection between peers
         self.cleanup(test_state='NEW')
 
-
     @staticmethod
     def quick_test_batch_decorator(batch_name):
         """A decorator providing a wrapper to a batch.
@@ -383,7 +392,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         single_test_method()
 
                     if self.fails:
-                        raise error.TestFail(self.fails)
+                        # If failure is marked as TESTNA, prioritize that over
+                        # a failure
+                        if self.bat_testna_count > 0:
+                            raise error.TestNAError(self.fails)
+                        else:
+                            raise error.TestFail(self.fails)
                 else:
                     for iter in xrange(1,num_iterations+1):
                         self.quick_test_batch_start(batch_name, iter)
@@ -399,14 +413,17 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.bat_tests_results = []
         self.bat_pass_count = 0
         self.bat_fail_count = 0
+        self.bat_testna_count = 0
         self.bat_name = bat_name
         self.bat_iter = iteration
 
 
     def quick_test_batch_end(self):
-        """Print results summary of a test batch"""
-        logging.info('%s Test Batch Summary: total pass %d, total fail %d',
-                     self.bat_name, self.bat_pass_count, self.bat_fail_count)
+        """Print results summary of a test batch """
+        logging.info(
+                '%s Test Batch Summary: total pass %d, total fail %d, NA %d',
+                self.bat_name, self.bat_pass_count, self.bat_fail_count,
+                self.bat_testna_count)
         for result in self.bat_tests_results:
             logging.info(result)
         self._print_delimiter();
@@ -415,6 +432,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self._print_delimiter();
             if self.pkg_is_running is False:
                 raise error.TestFail(self.bat_tests_results)
+        elif self.bat_testna_count > 0:
+            logging.error('===> Test Batch Passed! Some TestNA results')
+            self._print_delimiter();
+            if self.pkg_is_running is False:
+                raise error.TestNAError(self.bat_tests_results)
         else:
            logging.info('===> Test Batch Passed! zero failures')
            self._print_delimiter();
@@ -431,8 +453,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
     def quick_test_print_summary(self):
         """Print results summary of a test package"""
-        logging.info('%s Test Package Summary: total pass %d, total fail %d',
-                     self.pkg_name, self.pkg_pass_count, self.pkg_fail_count)
+        logging.info(
+                '%s Test Package Summary: total pass %d, total fail %d, NA %d',
+                self.pkg_name, self.pkg_pass_count, self.pkg_fail_count,
+                self.pkg_testna_count)
         for result in self.pkg_tests_results:
             logging.info(result)
         self._print_delimiter();
@@ -456,6 +480,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.error('===> Test Package Failed! More than one failure')
             self._print_delimiter();
             raise error.TestFail(self.bat_tests_results)
+        elif self.pkg_testna_count > 0:
+            logging.error('===> Test Package Passed! Some TestNA results')
+            self._print_delimiter();
+            raise error.TestNAError(self.bat_tests_results)
         else:
            logging.info('===> Test Package Passed! zero failures')
            self._print_delimiter();
@@ -513,6 +541,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
                         self.report_mtbf_result(False, start_time)
+                        # Don't report the test run as failed for MTBF
+                        self.fails = []
                         break
 
                 mtbf_timer.cancel()
@@ -536,11 +566,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         output_file_name = self.GCS_MTBF_BUCKET + \
                            time.strftime('%Y-%m-%d/', gm_time_struct) + \
                            time.strftime('%H-%M-%S.csv', gm_time_struct)
-        platform = self.host.get_platform()
+        board = self.host.get_board().split(':')[1]
         build = self.host.get_release_version()
         milestone = 'M' + self.host.get_chromeos_release_milestone()
         mtbf_result = '{0},{1},{2},{3},{4},{5}'.format(
-            platform, build, milestone, start_time * 1000000, duration_secs,
+            board, build, milestone, start_time * 1000000, duration_secs,
             success)
         with tempfile.NamedTemporaryFile() as tmp_file:
             tmp_file.write(mtbf_result)

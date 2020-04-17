@@ -315,6 +315,30 @@ class _LidVerifier(hosts.Verifier):
         return 'lid_open control is normal'
 
 
+class _EcBoardVerifier(hosts.Verifier):
+    """
+    Verifier response from the 'ec_board' control.
+    """
+
+    @ignore_exception_for_non_cros_host
+    def verify(self, host):
+        if host.is_ec_supported():
+            ec_board_name = ''
+            try:
+                ec_board_name = host.get_servo().get_ec_board()
+                logging.debug('EC board: %s', ec_board_name)
+            except Exception as e:
+                raise hosts.AutoservNonCriticalVerifyError(
+                        '`ec_board` control is not responding; '
+                        'may be caused of broken EC firmware')
+        else:
+            logging.info('The board not support EC')
+
+    @property
+    def description(self):
+        return 'Check EC by get `ec_board` control'
+
+
 class _RestartServod(hosts.RepairAction):
     """Restart `servod` with the proper BOARD setting."""
 
@@ -429,6 +453,7 @@ def create_servo_repair_strategy():
         (_ServodConnectionVerifier,  'servod',      ['job']),
         (_PowerButtonVerifier,       'pwr_button',  ['servod']),
         (_LidVerifier,               'lid_open',    ['servod']),
+        (_EcBoardVerifier,           'ec_board',    ['servod']),
         # TODO(jrbarnette):  We want a verifier for whether there's
         # a working USB stick plugged into the servo.  However,
         # although we always want to log USB stick problems, we don't
@@ -444,6 +469,6 @@ def create_servo_repair_strategy():
         (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space']),
         (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
-        (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open']),
+        (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open', 'ec_board']),
     ]
     return hosts.RepairStrategy(verify_dag, repair_actions, 'servo')

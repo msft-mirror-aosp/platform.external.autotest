@@ -27,6 +27,7 @@ from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import base_servohost
 from autotest_lib.server.hosts import servo_constants
+from autotest_lib.server.cros.faft.utils import config
 from autotest_lib.client.common_lib import global_config
 
 _CONFIG = global_config.global_config
@@ -352,6 +353,16 @@ class ServoHost(base_servohost.BaseServoHost):
               ' or broken. Please replace usbkey on the servo and retry.',
               'missing usbkey')
 
+
+    def is_ec_supported(self):
+        if self.servo_board:
+            try:
+                frm_config = config.Config(self.servo_board, self.servo_model)
+                return frm_config.chrome_ec
+            except Exception as e:
+                logging.error('Unexpected error when read from firmware'
+                    ' configs; %s', str(e))
+        return False
 
     def validate_image_usbkey(self):
         """This method first validate if there is a recover usbkey on servo

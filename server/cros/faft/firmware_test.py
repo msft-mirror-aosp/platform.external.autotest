@@ -614,6 +614,7 @@ class FirmwareTest(FAFTBase):
 
         # Make the dut unable to see the USB disk.
         self.servo.switch_usbkey('off')
+        time.sleep(self.faft_config.usb_unplug)
         no_usb_set = set(
             self.faft_client.system.run_shell_command_get_output(cmd))
 

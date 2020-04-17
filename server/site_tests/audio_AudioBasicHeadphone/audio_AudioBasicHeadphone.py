@@ -39,7 +39,10 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
                     'Please check label of the host and control file.'
                     'Please check the host label and test dependency.')
 
-        golden_file = audio_test_data.FREQUENCY_TEST_FILE
+        golden_file = audio_test_data.GenerateAudioTestData(
+                path=os.path.join(self.bindir, 'fix_1k_440_16.wav'),
+                duration_secs=6,
+                frequencies=[1000, 440])
 
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.CrosIds.HEADPHONE)
@@ -55,8 +58,8 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
 
             # Selects and checks the node selected by cras is correct.
             audio_test_utils.check_and_set_chrome_active_node_types(
-                    self.facade, audio_test_utils.get_headphone_node(self.host),
-                    None)
+                    self.facade,
+                    audio_test_utils.get_headphone_node(self.host), None)
 
             logging.info('Setting playback data on Cros device')
             source.set_playback_data(golden_file)

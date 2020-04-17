@@ -8,6 +8,7 @@ import os
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
@@ -26,37 +27,76 @@ class audio_AudioVolume(audio_test.AudioTest):
     DELAY_AFTER_BINDING = 0.5
     DELAY_BEFORE_PLAYBACK = 0.5
 
-    def run_once(self, source_id, recorder_id, volume_spec, golden_file):
+    def run_once(self, source_id):
         """Running audio volume test.
 
         @param source_id: An ID defined in chameleon_audio_ids for source.
-        @param recorder: An ID defined in chameleon_audio_ids for recording.
-        @param volume_spec: A tuple (low_volume, high_volume, highest_ratio).
+        """
+
+        def get_recorder_id(source_id):
+            """ Get corresponding recorder_id for the source_id."""
+            if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
+                return chameleon_audio_ids.ChameleonIds.MIC
+            elif source_id == chameleon_audio_ids.CrosIds.HEADPHONE:
+                return chameleon_audio_ids.ChameleonIds.LINEIN
+            elif source_id == chameleon_audio_ids.CrosIds.HDMI:
+                return chameleon_audio_ids.ChameleonIds.HDMI
+            elif source_id == chameleon_audio_ids.CrosIds.USBOUT:
+                return chameleon_audio_ids.ChameleonIds.USBIN
+            return None
+
+        def get_volume_spec(source_id):
+            """ Get corresponding volume spec for the source_id.
+
+            @return volume_spec: A tuple (low_volume, high_volume, ratio).
                             Low volume and high volume specifies the two volumes
-                            used in the test, and highest_ratio speficies the
+                            used in the test, and ratio specifies the
                             highest acceptable value for
                             recorded_volume_low / recorded_volume_high.
                             For example, (50, 100, 0.2) asserts that
                             (recorded magnitude at volume 50) should be lower
                             than (recorded magnitude at volume 100) * 0.2.
-        @param golden_file: A test file defined in audio_test_data.
-        """
+            """
+            if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
+                return (70, 100, 0.8)
+            elif source_id == chameleon_audio_ids.CrosIds.HEADPHONE:
+                return (40, 80, 0.5)
+            elif source_id == chameleon_audio_ids.CrosIds.HDMI:
+                return (40, 80, 0.2)
+            elif source_id == chameleon_audio_ids.CrosIds.USBOUT:
+                return (40, 80, 0.2)
+            return None
+
+        def get_golden_file(source_id):
+            """ Create the golden file for the source_id. """
+            if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
+                return audio_test_data.GenerateAudioTestData(
+                        path=os.path.join(self.bindir, 'fix_440_16_0.5.raw'),
+                        duration_secs=10,
+                        frequencies=[440, 440],
+                        volume_scale=0.5)
+            return audio_test_data.GenerateAudioTestData(
+                    path=os.path.join(self.bindir, 'fix_2k_1k_16.raw'),
+                    duration_secs=10,
+                    frequencies=[2000, 1000])
+
         if (source_id == chameleon_audio_ids.CrosIds.SPEAKER
                     and not audio_test_utils.has_internal_speaker(self.host)):
             return
 
+        golden_file = get_golden_file(source_id)
+
         source = self.widget_factory.create_widget(source_id)
+
+        recorder_id = get_recorder_id(source_id)
         recorder = self.widget_factory.create_widget(recorder_id)
 
-        # Chameleon Mic does not need binding.
-        binding = (recorder_id != chameleon_audio_ids.ChameleonIds.MIC)
-
         binder = None
-
-        if binding:
+        # Chameleon Mic does not need binding.
+        if recorder_id != chameleon_audio_ids.ChameleonIds.MIC:
             binder = self.widget_factory.create_binder(source, recorder)
 
-        low_volume, high_volume, highest_ratio = volume_spec
+        low_volume, high_volume, highest_ratio = get_volume_spec(source_id)
         ignore_frequencies = [50, 60]
 
         second_peak_ratio = audio_test_utils.get_second_peak_ratio(

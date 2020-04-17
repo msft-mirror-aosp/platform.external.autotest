@@ -29,6 +29,8 @@ See http://go/tast-failures for information about investigating failures.
 
 def run(machine):
     # TODO(crbug.com/992303): Fix android condition.
+    # Make sure if you modify this condition to update ATP side config
+    # in http://cs/file:tast_critical.gcl
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['('

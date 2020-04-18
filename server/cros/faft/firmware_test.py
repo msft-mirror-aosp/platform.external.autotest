@@ -75,6 +75,9 @@ class FirmwareTest(FAFTBase):
     # Delay between closing and opening lid
     LID_DELAY = 1
 
+    # The default number of power state check retries (each try takes 3 secs)
+    DEFAULT_PWR_RETRIES = 5
+
     # FWMP space constants
     FWMP_CLEARED_EXIT_STATUS = 1
     FWMP_CLEARED_ERROR_MSG = ('CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS'
@@ -1290,13 +1293,12 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        if self.check_ec_capability(['x86'], suppress_warning=True):
-            self.check_shutdown_power_state(
-                    "G3", pwr_retries=5, orig_boot_id=boot_id)
+        self.check_shutdown_power_state("G3", orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 
-    def check_shutdown_power_state(self, power_state, pwr_retries,
+    def check_shutdown_power_state(self, power_state,
+                                   pwr_retries=DEFAULT_PWR_RETRIES,
                                    orig_boot_id=None):
         """Check whether the device shut down and entered the given power state.
 
@@ -1487,8 +1489,7 @@ class FirmwareTest(FAFTBase):
                     'Should shut the device down after calling %s.' %
                     shutdown_action.__name__)
         except ConnectionError:
-            if self.check_ec_capability(['x86'], suppress_warning=True):
-                self.check_shutdown_power_state("G3", pwr_retries=5)
+            self.check_shutdown_power_state("G3")
             logging.info(
                 'DUT is surely shutdown. We are going to power it on again...')
 

@@ -355,6 +355,7 @@ class ServoHost(base_servohost.BaseServoHost):
 
 
     def is_ec_supported(self):
+        """Check if ec is supported on the servo_board"""
         if self.servo_board:
             try:
                 frm_config = config.Config(self.servo_board, self.servo_model)
@@ -1158,6 +1159,13 @@ def _is_servo_host_information_exist(hostname, port):
 
 
 def is_servo_host_information_valid(hostname, port):
+    """Check if provided servo attributes are valid.
+
+    @param hostname Hostname of the servohost.
+    @param port     servo port number.
+
+    @returns: A bool value to indicate if provided servo attribute valid.
+    """
     if not _is_servo_host_information_exist(hostname, port):
         return False
     # checking range and correct of the port

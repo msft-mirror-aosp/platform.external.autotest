@@ -18,6 +18,7 @@ JOB_RETRIES = 4
 
 DOC = """
 This test check the functionality of EC power button handling. This includes:
+    - Short press (200ms) does not trigger shutdown
     - Short press wake system from G3 (shutdown for more than 10 sec)
     - Short press wake system from S5 (shutdown for less than 10 sec)
     - Long press wake system from G3 (shutdown for more than 10 sec)

@@ -178,6 +178,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.bat_pass_count = 0
         self.bat_fail_count = 0
         self.bat_testna_count = 0
+        self.bat_warn_count = 0
         self.bat_name = None
         self.bat_iter = None
 
@@ -185,6 +186,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.pkg_pass_count = 0
         self.pkg_fail_count = 0
         self.pkg_testna_count = 0
+        self.pkg_warn_count = 0
         self.pkg_name = None
         self.pkg_iter = None
         self.pkg_is_running = False
@@ -194,7 +196,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
     @staticmethod
     def quick_test_test_decorator(test_name, devices={}, flags=['All'],
-                                  model_testNA=[]):
+                                  model_testNA=[],
+                                  model_testWarn=[]):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -208,6 +211,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                          ['AVL', 'Quick Sanity', 'All'].
            @param model_testNA: If the current platform is in this list,
                                 failures are emitted as TestNAError.
+           @param model_testWarn: If the current platform is in this list,
+                                  failures are emitted as TestWarn.
         """
 
         def decorator(test_method):
@@ -259,7 +264,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     raise error.TestNAError('Not enough peer available')
                 self.quick_test_test_start(test_name, devices)
                 test_method(self)
-                self.quick_test_test_end(model_testNA=model_testNA)
+                self.quick_test_test_end(model_testNA=model_testNA,
+                                         model_testWarn=model_testWarn)
             return wrapper
 
         return decorator
@@ -286,7 +292,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting test: %s', test_name)
             self.log_message('Starting test: %s'% test_name)
 
-    def quick_test_test_end(self, model_testNA=[]):
+    def quick_test_test_end(self, model_testNA=[], model_testWarn=[]):
         """Log and track the test results"""
         result_msgs = []
         model = self.host.get_platform()
@@ -316,6 +322,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             result_msg = 'TESTNA | ' + result_msg
             self.bat_testna_count += 1
             self.pkg_testna_count += 1
+        elif model in model_testWarn:
+            result_msg = 'WARN   | ' + result_msg
+            self.bat_warn_count += 1
+            self.pkg_warn_count += 1
         else:
             result_msg = 'FAIL   | ' + result_msg
             self.bat_fail_count += 1
@@ -393,9 +403,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                     if self.fails:
                         # If failure is marked as TESTNA, prioritize that over
-                        # a failure
+                        # a failure. Same with WARN.
                         if self.bat_testna_count > 0:
                             raise error.TestNAError(self.fails)
+                        elif self.bat_warn_count > 0:
+                            raise error.TestWarn(self.fails)
                         else:
                             raise error.TestFail(self.fails)
                 else:
@@ -414,6 +426,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.bat_pass_count = 0
         self.bat_fail_count = 0
         self.bat_testna_count = 0
+        self.bat_warn_count = 0
         self.bat_name = bat_name
         self.bat_iter = iteration
 
@@ -421,8 +434,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def quick_test_batch_end(self):
         """Print results summary of a test batch """
         logging.info(
-                '%s Test Batch Summary: total pass %d, total fail %d, NA %d',
-                self.bat_name, self.bat_pass_count, self.bat_fail_count,
+                '%s Test Batch Summary: total pass %d, total fail %d, '
+                'warn %d, NA %d', self.bat_name, self.bat_pass_count,
+                self.bat_fail_count, self.bat_warn_count,
                 self.bat_testna_count)
         for result in self.bat_tests_results:
             logging.info(result)
@@ -437,9 +451,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self._print_delimiter();
             if self.pkg_is_running is False:
                 raise error.TestNAError(self.bat_tests_results)
+        elif self.bat_warn_count > 0:
+            logging.error('===> Test Batch Passed! Some WARN results')
+            self._print_delimiter();
+            if self.pkg_is_running is False:
+                raise error.TestWarn(self.bat_tests_results)
         else:
-           logging.info('===> Test Batch Passed! zero failures')
-           self._print_delimiter();
+            logging.info('===> Test Batch Passed! zero failures')
+            self._print_delimiter();
 
 
     def quick_test_package_start(self, pkg_name):
@@ -454,8 +473,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def quick_test_print_summary(self):
         """Print results summary of a test package"""
         logging.info(
-                '%s Test Package Summary: total pass %d, total fail %d, NA %d',
-                self.pkg_name, self.pkg_pass_count, self.pkg_fail_count,
+                '%s Test Package Summary: total pass %d, total fail %d, '
+                'Warn %d, NA %d', self.pkg_name, self.pkg_pass_count,
+                self.pkg_fail_count, self.pkg_warn_count,
                 self.pkg_testna_count)
         for result in self.pkg_tests_results:
             logging.info(result)
@@ -484,9 +504,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.error('===> Test Package Passed! Some TestNA results')
             self._print_delimiter();
             raise error.TestNAError(self.bat_tests_results)
+        elif self.pkg_warn_count > 0:
+            logging.error('===> Test Package Passed! Some WARN results')
+            self._print_delimiter();
+            raise error.TestWarn(self.bat_tests_results)
         else:
-           logging.info('===> Test Package Passed! zero failures')
-           self._print_delimiter();
+            logging.info('===> Test Package Passed! zero failures')
+            self._print_delimiter();
         self.pkg_is_running = False
 
 

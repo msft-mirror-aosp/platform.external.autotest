@@ -4,7 +4,7 @@
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterCLSanity.cl_sdp_service_attribute_request_test'
-ATTRIBUTES = ('suite:bluetooth_flaky')
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'Server'

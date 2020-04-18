@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import time
 import logging
 from threading import Timer
 
@@ -24,6 +25,12 @@ class firmware_ECPowerButton(FirmwareTest):
 
     # Duration of holding down power button to shut down without powerd
     POWER_BUTTON_NO_POWERD_DURATION = 11
+
+    # Duration of holding down power button to test ignoring power button press
+    POWER_BUTTON_IGNORE_PRESS_DURATION = 0.2
+
+    # Delay after pressing power button to check power state
+    POWER_BUTTON_IGNORE_PRESS_DELAY = 5
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECPowerButton, self).initialize(host, cmdline_args)
@@ -76,9 +83,18 @@ class firmware_ECPowerButton(FirmwareTest):
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
 
+        logging.info("Check system ignores short (200ms) power button press.")
+        old_boot_id = self.get_bootid(retry=1)
+        self.servo.power_key(self.POWER_BUTTON_IGNORE_PRESS_DURATION)
+        time.sleep(self.POWER_BUTTON_IGNORE_PRESS_DELAY)
+        power_state = self.get_power_state()
+        new_boot_id = self.get_bootid(retry=1)
+        if power_state != "S0" or new_boot_id != old_boot_id:
+            self._reset_client()
+            raise error.TestFail("DUT shutdown from short power button press")
+
         logging.info("Shutdown when powerd is still running and wake from S5 "
                      "with short power button press.")
-
         if self.servo.is_localhost():
             self.check_state(self.debounce_power_button)
         self.switcher.mode_aware_reboot(

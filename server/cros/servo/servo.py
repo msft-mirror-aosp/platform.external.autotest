@@ -23,15 +23,25 @@ from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 # Regex to match XMLRPC errors due to a servod control not existing.
 NO_CONTROL_RE = re.compile(r'No control named (\w*\.?\w*)')
 
+# Please see servo/drv/pty_driver.py for error messages to match.
+
+# This common prefix can apply to all subtypes of console errors.
+                     # The first portion is an optional qualifier of the type
+                     # of error that occurred. Each error is or'd.
+CONSOLE_COMMON_RE = (r'((Timeout waiting for response|'
+                     r'Known error [\w\'\".\s]+). )?'
+                     # The second portion is an optional name for the console
+                     # source
+                     r'(\w+\: )?')
 
 # Regex to match XMLRPC errors due to a console being unresponsive.
-NO_CONSOLE_OUTPUT_RE = re.compile(r'No data was sent from the pty\.')
+NO_CONSOLE_OUTPUT_RE = re.compile(r'%sNo data was sent from the pty\.' %
+                                  CONSOLE_COMMON_RE)
 
 
 # Regex to match XMLRPC errors due to a console control failing, but the
 # underlying Console being responsive.
-CONSOLE_MISMATCH_RE = re.compile(r'Timeout waiting for response. '
-                                 r'There was output')
+CONSOLE_MISMATCH_RE = re.compile(r'%sThere was output:' % CONSOLE_COMMON_RE)
 
 
 # The minimum voltage on the charger port on servo v4 that is expected. This is
@@ -811,7 +821,8 @@ class Servo(object):
         err_str = self._get_xmlrpclib_exception(e)
         # Prefix for error parsing
         prefix = 'Getting' if get else 'Setting'
-        err_msg = "%s '%s' :: %s" % (prefix, ctrl_name, err_str)
+        err_summary = '%s %r' % (prefix, ctrl_name)
+        err_msg = '%s :: %s' % (err_summary, err_str)
         unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
         if unknown_ctrl:
             logging.error('%s %r :: No control named %r', prefix, ctrl_name,
@@ -822,9 +833,11 @@ class Servo(object):
         # all available controls. Do not log it explicitly.
         logging.error(err_msg)
         if re.findall(NO_CONSOLE_OUTPUT_RE, err_str):
-            raise UnresponsiveConsoleError('Console not printing output.')
+            raise UnresponsiveConsoleError('Console not printing output. %s.' %
+                                           err_summary)
         elif re.findall(CONSOLE_MISMATCH_RE, err_str):
-            raise ResponsiveConsoleError('Control failed but console alive.')
+            raise ResponsiveConsoleError('Control failed but console alive. %s.'
+                                         % err_summary)
         raise error.TestFail(err_msg)
 
     def get(self, ctrl_name, prefix=''):

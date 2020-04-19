@@ -83,7 +83,10 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
         @param check_quality: True to check quality.
 
         """
-        golden_file = audio_test_data.FREQUENCY_TEST_FILE
+        golden_file = audio_test_data.GenerateAudioTestData(
+                    path=os.path.join(self.bindir, 'fix_2k_1k_16.raw'),
+                    duration_secs=10,
+                    frequencies=[2000, 1000])
 
         # For DUTs with permanently connected audio jack cable
         # connecting HDMI won't switch automatically the node. Adding

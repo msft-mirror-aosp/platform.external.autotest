@@ -97,7 +97,10 @@ class ChromeLogin(object):
         # installed on the DUT was partially broken, the script may succeed
         # without actually logging into Chrome/Android. See b/129382439.
         self._host.run(
-            'android-sh -c "ls /data/misc/adb"', ignore_status=False, timeout=9)
+            # "/data/anr" is an arbitrary directory accessible only after
+            # proper login and data mount.
+            'android-sh -c "ls /data/anr"',
+            ignore_status=False, timeout=9)
 
     def enter(self):
         """Logs into Chrome with retry."""

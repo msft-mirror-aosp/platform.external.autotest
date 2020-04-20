@@ -333,7 +333,7 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     return sorted(list(suites))
 
 
-def get_dependencies(modules, abi, is_public, is_camerabox_test):
+def get_dependencies(modules, abi, is_public, camera_facing):
     """Defines lab dependencies needed to schedule a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -342,15 +342,16 @@ def get_dependencies(modules, abi, is_public, is_camerabox_test):
                 current test.
     @param is_public: boolean variable to specify whether or not the bundle is
                       from public source or not.
-    @param is_camerabox_test: boolean variable to specify whether it's camerabox
-                              related test.
+    @param camera_facing: specify requirement of camerabox setup with target
+                          test camera facing. Set to None if it's not camerabox
+                          related test.
     """
     dependencies = ['arc']
     if abi in CONFIG['LAB_DEPENDENCY']:
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
 
-    if is_camerabox_test:
-        dependencies.append('camerabox')
+    if camera_facing is not None:
+        dependencies.append('camerabox_facing:'+camera_facing)
 
     for module in modules:
         if is_public and module in CONFIG['PUBLIC_DEPENDENCIES']:
@@ -766,7 +767,7 @@ def get_controlfile_content(combined,
             modules,
             abi,
             is_public,
-            is_camerabox_test=(camera_facing is not None)),
+            camera_facing),
         extra_artifacts=get_extra_artifacts(modules),
         extra_artifacts_host=get_extra_artifacts_host(modules),
         job_retries=get_job_retries(modules, is_public, suites),

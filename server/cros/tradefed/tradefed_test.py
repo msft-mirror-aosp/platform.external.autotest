@@ -372,7 +372,9 @@ class TradefedTest(test.test):
 
         # Android "RescueParty" feature can reset the above settings when the
         # device crashes often. Disable the rescue during testing.
-        self._android_shell(host, 'setprop persist.sys.disable_rescue true')
+        # Keeping only for P and below since R has SELinux restrictions.
+        if self._get_android_version() < 29:
+            self._android_shell(host, 'setprop persist.sys.disable_rescue true')
 
     def _ready_arc(self):
         """Ready ARC and adb in parallel for running tests via tradefed."""

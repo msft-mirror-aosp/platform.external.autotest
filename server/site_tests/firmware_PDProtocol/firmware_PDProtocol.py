@@ -36,9 +36,10 @@ class firmware_PDProtocol(FirmwareTest):
 
     ECTOOL_CMD_DICT = defaultdict(lambda: 'ectool usbpdpower')
 
-    def initialize(self, host, cmdline_args):
+    def initialize(self, host, cmdline_args, ec_wp=None):
         """Initialize the test"""
-        super(firmware_PDProtocol, self).initialize(host, cmdline_args)
+        super(firmware_PDProtocol, self).initialize(host, cmdline_args,
+                                                    ec_wp=ec_wp)
 
         self.ECTOOL_CMD_DICT['samus'] = 'ectool --dev=1 usbpdpower'
 
@@ -54,6 +55,10 @@ class firmware_PDProtocol(FirmwareTest):
         self.original_dev_boot_usb = self.faft_client.system.get_dev_boot_usb()
         logging.info('Original dev_boot_usb value: %s',
                      str(self.original_dev_boot_usb))
+
+        self.hw_wp = self.servo.get('fw_wp_state')
+        self.sw_wp = self.faft_client.ec.get_write_protect_status()['enabled']
+        logging.info('hw_wp=%s, sw_wp=%s', self.hw_wp, self.sw_wp)
 
     def cleanup(self):
         """Cleanup the test"""
@@ -117,24 +122,35 @@ class firmware_PDProtocol(FirmwareTest):
         self.SNK_PD_UNNEGOTIATED = self.pdtester_pd_utils.SNK_DISCOVERY
         self.SNK_CONNECT = self.pdtester_pd_utils.SNK_CONNECT
         self.SRC_CONNECT = self.pdtester_pd_utils.SRC_CONNECT
+        self.PD_CONNECT = [self.SNK_CONNECT, self.SRC_CONNECT]
 
         self.ensure_dev_internal_boot(self.original_dev_boot_usb)
 
-        # Check servo_v4 is negotiated and in SRC_DISCOVERY
+        # Check servo_v4 is negotiated
         state = self.pdtester_pd_utils.get_pd_state(self.pdtester_port)
-        logging.info('Checking PD negotiation, servo_v4 in %s' % state)
-        if state != self.SRC_CONNECT:
-            raise error.TestFail('Expect PD state %s, got %s',
-                                 (self.SRC_CONNECT, state))
+        logging.info('Checking PD negotiation, servo_v4 in %s', state)
+        if state not in self.PD_CONNECT:
+            raise error.TestFail('Expect PD state %s, got %s' %
+                                 (self.PD_CONNECT, state))
 
+        # TODO(b:152148025): Directly set role as pdsnkdts might fail the
+        # PD communication. In short term, we could use PR SWAP instead, and
+        # should also fix the TCPM for handling SRCDTS -> SNKDTS case.
         self.set_servo_v4_role_to_snk(pd_comm=True)
         self.boot_to_recovery()
 
         # Check PD is not negotiated
         state = self.pdtester_pd_utils.get_pd_state(self.pdtester_port)
-        logging.info('Checking PD no negotiation, servo_v4 in %s' % state)
+        logging.info('Checking PD no negotiation, servo_v4 in %s', state)
         if state != self.SNK_PD_UNNEGOTIATED:
             raise error.TestFail(
-                'Expect PD state %s, got %s, PD comm %sabled',
-                (self.SNK_PD_UNNEGOTIATED, state, 'en'
-                 if state in [self.SNK_CONNECT, self.SRC_CONNECT] else 'dis'))
+                'Expect PD state %s, got %s, PD comm %sabled, WP (HW/SW) %s/%s'
+                % (self.SNK_PD_UNNEGOTIATED, state, 'en'
+                   if state in [self.SNK_CONNECT, self.SRC_CONNECT] else 'dis',
+                   self.hw_wp, self.sw_wp))
+
+        # Check WP status. Only both SW/HW WP on should pass the test.
+        if (not self.sw_wp) or ('off' in self.hw_wp):
+            raise error.TestFail(
+                'Expect HW and SW WP on, got hw_wp=%s, sw_wp=%s' %
+                (self.hw_wp, self.sw_wp))

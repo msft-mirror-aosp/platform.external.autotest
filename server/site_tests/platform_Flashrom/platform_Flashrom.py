@@ -50,7 +50,7 @@ class platform_Flashrom(FirmwareTest):
         if self.faft_config.chrome_ec:
             self.run_cmd('flashrom -p ec --wp-status', checkfor='is disabled')
         if self.faft_config.chrome_usbpd:
-            self.run_cmd('flashrom -p ec:dev=1 --wp-status',
+            self.run_cmd('flashrom -p ec:type=pd --wp-status',
                          checkfor='is disabled')
 
     def _get_eeprom(self, fmap):

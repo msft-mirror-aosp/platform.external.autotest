@@ -823,19 +823,20 @@ class Servo(object):
         prefix = 'Getting' if get else 'Setting'
         err_summary = '%s %r' % (prefix, ctrl_name)
         err_msg = '%s :: %s' % (err_summary, err_str)
-        unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
+        unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
         if unknown_ctrl:
+            unknown_ctrl_name = unknown_ctrl.group(1)
             logging.error('%s %r :: No control named %r', prefix, ctrl_name,
-                          unknown_ctrl[0])
+                          unknown_ctrl_name)
             raise ControlUnavailableError('No control named %r' %
-                                          unknown_ctrl[0])
+                                          unknown_ctrl_name)
         # The error message for unavailble controls is huge as it prints
         # all available controls. Do not log it explicitly.
         logging.error(err_msg)
-        if re.findall(NO_CONSOLE_OUTPUT_RE, err_str):
+        if re.search(NO_CONSOLE_OUTPUT_RE, err_str):
             raise UnresponsiveConsoleError('Console not printing output. %s.' %
                                            err_summary)
-        elif re.findall(CONSOLE_MISMATCH_RE, err_str):
+        elif re.search(CONSOLE_MISMATCH_RE, err_str):
             raise ResponsiveConsoleError('Control failed but console alive. %s.'
                                          % err_summary)
         raise error.TestFail(err_msg)

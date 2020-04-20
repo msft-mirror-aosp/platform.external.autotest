@@ -11,6 +11,7 @@ PURPOSE = ('Bluetooth adapter MTBF test')
 CRITERIA = 'Pass the test'
 ATTRIBUTES = 'suite:bluetooth_mtbf'
 TIME = 'LONG'
+MAX_RESULT_SIZE_KB = 512000
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'

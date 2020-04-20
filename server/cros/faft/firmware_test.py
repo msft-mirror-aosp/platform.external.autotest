@@ -1066,6 +1066,19 @@ class FirmwareTest(FAFTBase):
                 pass
         return False
 
+    def run_shutdown_cmd(self):
+        """Shut down the DUT by running '/sbin/shutdown -P now'."""
+        self.faft_client.disconnect()
+        # Shut down in the background after sleeping so the call gets a reply.
+        try:
+            self._client.run_background('sleep 0.5; /sbin/shutdown -P now')
+        except error.AutoservRunError as e:
+            # From the ssh man page, error code 255 indicates ssh errors.
+            if e.result_obj.exit_status == 255:
+                logging.warn("Ignoring error from ssh: %s", e)
+            else:
+                raise
+
     def suspend(self):
         """Suspends the DUT."""
         cmd = '(sleep %d; powerd_dbus_suspend) &' % self.EC_SUSPEND_DELAY

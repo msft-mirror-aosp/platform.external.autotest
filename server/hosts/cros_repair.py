@@ -546,6 +546,30 @@ class ServoResetRepair(_ResetRepairAction):
         return 'Reset the DUT via servo'
 
 
+class ServoCr50RebootRepair(_ResetRepairAction):
+    """
+    Repair a Chrome device by resetting cr50 by servo.
+
+    Reset cr50 which is ec+ccd reset.
+    """
+
+    def repair(self, host):
+        # pylint: disable=missing-docstring
+        host.servo.get_power_state_controller().cr50_reset()
+        self._check_reset_success(host)
+
+    def _is_applicable(self, host):
+        if host.servo:
+            if host.servo.has_control('cr50_reboot'):
+                return True
+        return False
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Reset(cr50) the DUT via servo'
+
+
 class DevDefaultBootRepair(hosts.RepairAction):
     """Repair a CrOS target by setting dev_default_boot to 'disk'"""
 
@@ -726,6 +750,7 @@ def _cros_basic_repair_actions():
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
         (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
         (ServoResetRepair, 'servoreset', (), ('ssh',)),
+        (ServoCr50RebootRepair, 'cr50_reset', (), ('ssh',)),
 
         # N.B. FirmwareRepair can't fix a 'good_au' failure directly,
         # because it doesn't remove the flag file that triggers the

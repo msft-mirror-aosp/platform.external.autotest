@@ -187,7 +187,7 @@ class tast(test.test):
         """Runs a single iteration of the test."""
 
         if self._clear_tpm:
-            tpm_utils.ClearTPMOwnerRequest(self._host)
+            tpm_utils.ClearTPMOwnerRequest(self._host, wait_for_ready=True)
 
         self._log_version()
         self._find_devservers()

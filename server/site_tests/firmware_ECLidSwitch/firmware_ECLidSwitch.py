@@ -48,10 +48,6 @@ class firmware_ECLidSwitch(FirmwareTest):
         """Close lid by servo."""
         self.servo.set('lid_open', 'no')
 
-    def run_shutdown_cmd(self):
-        """Shut down by command"""
-        self.faft_client.system.run_shell_command('shutdown -P now', False)
-
     @delayed(RPC_DELAY)
     def delayed_open_lid(self):
         """Delay by RPC_DELAY and then open lid by servo."""

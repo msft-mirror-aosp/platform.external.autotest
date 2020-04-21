@@ -36,7 +36,8 @@ class audio_AudioPinnedStream(audio_test.AudioTest):
         golden_file = audio_test_data.GenerateAudioTestData(
                 path=os.path.join(self.bindir, 'fix_1330_16.raw'),
                 duration_secs=10,
-                frequencies=[1330, 1330])
+                frequencies=[1330, 1330],
+                volume_scale=0.1)
 
         # [2000, 1000] sine wave
         usb_golden_file = audio_test_data.GenerateAudioTestData(

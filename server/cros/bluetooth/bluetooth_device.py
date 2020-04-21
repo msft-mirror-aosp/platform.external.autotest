@@ -892,6 +892,48 @@ class BluetoothDevice(object):
         return self._proxy.enable_wbs(value)
 
 
+    def set_player_playback_status(self, status):
+        """Set playback status for the registered media player.
+
+        @param status: playback status in string.
+
+        """
+        logging.debug('Set media player playback status to %s', status)
+        return self._proxy.set_player_playback_status(status)
+
+
+    def set_player_position(self, position):
+        """Set media position for the registered media player.
+
+        @param position: position in micro seconds.
+
+        """
+        logging.debug('Set media player position to %d', position)
+        return self._proxy.set_player_position(position)
+
+
+    def set_player_metadata(self, metadata):
+        """Set metadata for the registered media player.
+
+        @param metadata: dictionary of media metadata.
+
+        """
+        logging.debug('Set media player album:%s artist:%s title:%s',
+                      metadata.get("album"), metadata.get("artist"),
+                      metadata.get("title"))
+        return self._proxy.set_player_metadata(metadata)
+
+
+    def set_player_length(self, length):
+        """Set media length for the registered media player.
+
+        @param length: length in micro seconds.
+
+        """
+        logging.debug('Set media player length to %d', length)
+        return self._proxy.set_player_length(length)
+
+
     def select_input_device(self, device_name):
         """Select the audio input device.
 

@@ -2,7 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+load("@proto//chromiumos/config/api/test/metadata/v1/metadata.proto",
+    metadata_pb = "chromiumos.config.api.test.metadata.v1"
+)
 
-# TODO: eventually METADATA should be a RemoteTestDriver.
-load("//client/site_tests/dummy_Pass/def.star", client_dummy_Pass = "TESTS")
-METADATA = client_dummy_Pass[0]
+load("//metadata/tests.star", "TESTS")
+
+METADATA = metadata_pb.RemoteTestDriver(
+    name = "remoteTestDrivers/tauto",
+    # TODO: populate image and command.
+    image = metadata_pb.BuildArtifact(
+        relative_path = ""
+    ),
+    command = "",
+    tests = TESTS,
+)

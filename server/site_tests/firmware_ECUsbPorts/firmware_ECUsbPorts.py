@@ -129,7 +129,7 @@ class firmware_ECUsbPorts(FirmwareTest):
     def check_power_off_mode(self):
         """Shutdown the system and check USB ports are disabled."""
         self._failed = False
-        self.faft_client.system.run_shell_command("shutdown -P now")
+        self.run_shutdown_cmd()
         self.switcher.wait_for_client_offline()
         if not self.wait_port_disabled(self._port_count, self.SHUTDOWN_TIMEOUT):
             logging.info("Fails to wait for USB port disabled")

@@ -162,6 +162,18 @@ class _PowerStateController(object):
         self._check_supported()
         self._servo.set_nocheck('power_state', 'reset')
 
+    def cr50_reset(self):
+        """Force the DUT to reset.
+
+        The DUT is guaranteed to be on at the end of this call,
+        regardless of its previous state, provided that there is
+        working OS software. This also guarantees that the EC has
+        been restarted. Works only for ccd connections.
+
+        """
+        self._check_supported()
+        self._servo.set_nocheck('power_state', 'cr50_reset')
+
     def warm_reset(self):
         """Apply warm reset to the DUT.
 

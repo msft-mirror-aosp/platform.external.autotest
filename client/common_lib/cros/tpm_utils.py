@@ -117,6 +117,11 @@ def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
                     ignore_status=True).stdout.strip()
             logging.debug(status)
             time.sleep(1)
+        # Verify if the TPM is unowned.
+        tpm_status = TPMStatus(client)
+        logging.info('TPM status: %s', tpm_status)
+        if tpm_status['Owned']:
+            raise error.TestFail('Failed to clear TPM.')
 
 
 def ClearTPMIfOwned(client):

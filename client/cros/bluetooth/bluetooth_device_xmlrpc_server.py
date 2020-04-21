@@ -2062,6 +2062,50 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return self._cras_test_client.enable_wbs(value)
 
 
+    def set_player_playback_status(self, status):
+        """Set playback status for the registered media player.
+
+        @param status: playback status in string.
+
+        """
+        return self._cras_test_client.set_player_playback_status(status)
+
+
+    def set_player_position(self, position):
+        """Set media position for the registered media player.
+
+        @param position: position in micro seconds.
+
+        """
+        return self._cras_test_client.set_player_position(position)
+
+
+    def set_player_metadata(self, metadata):
+        """Set metadata for the registered media player.
+
+        @param metadata: dictionary of media metadata.
+
+        """
+        return self._cras_test_client.set_player_metadata(metadata)
+
+
+    def set_player_length(self, length):
+        """Set media length for the registered media player.
+
+        Media length is a part of metadata information. However, without
+        specify its type to int64. dbus-python will guess the variant type to
+        be int32 by default. Separate it from the metadata function to help
+        prepare the data differently.
+
+        @param length: length in micro seconds.
+
+        """
+        length_variant = dbus.types.Int64(length, variant_level = 1)
+        length_dict = dbus.Dictionary({'length': length_variant},
+                signature='sv')
+        return self._cras_test_client.set_player_length(length_dict)
+
+
     def select_input_device(self, device_name):
         """Select the audio input device.
 

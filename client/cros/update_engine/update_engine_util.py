@@ -93,6 +93,16 @@ class UpdateEngineUtil(object):
             [self._UPDATE_ENGINE_DOWNLOADING, self._UPDATE_ENGINE_FINALIZING])
 
 
+    def _has_progress_stopped(self):
+        """Checks that the update_engine progress has stopped moving."""
+        before = self._get_update_engine_status()[self._PROGRESS]
+        for i in range(0, 10):
+            if before != self._get_update_engine_status()[self._PROGRESS]:
+                return False
+            time.sleep(1)
+        return True
+
+
     def _get_update_progress(self):
         """Returns the current payload downloaded progress."""
         while True:

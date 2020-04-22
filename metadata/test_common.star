@@ -8,11 +8,17 @@ load("@proto//chromiumos/config/api/test/metadata/v1/metadata.proto",
 
 _TEST_NAME_PREFIX = "remoteTestDrivers/tauto/tests/"
 
+_COMMON_DEPS = {
+    "bluetooth": "scope.hardware_topology.bluetooth == scope.hardware_features.PRESENT",
+}
+
 def _define_client_test(
     test_name,
     owner_emails = [],
     owner_groups = [],
     suites = [],
+    common_deps = [],
+    dep_expressions = [],
     ):
 
     attrs = [metadata_pb.Attribute(name = "suite:" + s) for s in suites]
@@ -22,13 +28,21 @@ def _define_client_test(
 
     info = metadata_pb.Informational(
         authors = contacts
-        #TODO add doc, purpose, etc. here
     )
+
+    missing = [dep for dep in common_deps if dep not in _COMMON_DEPS]
+    if missing:
+        fail(str(missing) + " are not known common dependencies! " +
+             "Please add to test_common.star or check spelling.")
+
+    dep_strs = dep_expressions + [_COMMON_DEPS[dep] for dep in common_deps]
+    deps = [metadata_pb.DUTCondition(expression = " && ".join(dep_strs))]
 
     return [metadata_pb.Test(
                 name = _TEST_NAME_PREFIX + test_name,
                 attributes = attrs,
                 informational = info,
+                conditions = deps,
     )]
 
 

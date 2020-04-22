@@ -34,7 +34,10 @@ class audio_AudioBasicUSBPlayback(audio_test.AudioTest):
                         False for not suspend.
 
         """
-        golden_file = audio_test_data.SWEEP_TEST_FILE
+        golden_file = audio_test_data.GenerateAudioTestData(
+                path=os.path.join(self.bindir, 'fix_1k_440_16.wav'),
+                duration_secs=6,
+                frequencies=[1000, 440])
 
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.CrosIds.USBOUT)
@@ -98,4 +101,4 @@ class audio_AudioBasicUSBPlayback(audio_test.AudioTest):
         logging.info('Saving recorded data to %s', recorded_file)
         recorder.save_file(recorded_file)
 
-        audio_test_utils.compare_recorded_correlation(golden_file, recorder)
+        audio_test_utils.check_recorded_frequency(golden_file, recorder)

@@ -10,4 +10,10 @@ TESTS = test_common.define_client_test(
     owner_groups = ["team-mdb-group"],
     suites = ["dummy", "dummyclientretries", "push_to_prod",
         "skylab_staging_test", "something_else"],
+) + test_common.define_client_test(
+    test_name = "dummy_Pass.bluetooth",
+    owner_emails = ["email_addr@chromium.org"],
+    suites = ["dummy", "push_to_prod", "skylab_staging_test"],
+    common_deps = ["bluetooth"],
+    #TODO: tag=bluetooth arg
 )

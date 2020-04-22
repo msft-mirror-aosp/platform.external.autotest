@@ -2695,6 +2695,60 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
+    @test_retry_and_log(False)
+    def test_receive_advertisement(self, address=None, UUID=None, timeout=10):
+        """Verifies that we receive an advertisement with specific contents
+
+        Since test_discover_device only uses the existence of a device dbus path
+        to indicate when a device is discovered, it is not adequate if we want
+        to verify that we have received an advertisement from a device. This
+        test monitors btmon around a discovery instance and searches for the
+        relevant advertising report.
+
+        @param address: String address of peer
+        @param UUID: String of hex data
+        @param timeout: seconds to listen for traffic
+
+        @returns True if report was located, otherwise False
+        """
+
+        def _discover_devices():
+            self.test_start_discovery()
+            time.sleep(timeout)
+            self.test_stop_discovery()
+
+        # Run discovery, record btmon log
+        self._get_btmon_log(_discover_devices)
+
+        # Grab all logs received
+        btmon_log = '\n'.join(self.bluetooth_le_facade.btmon_get('', ''))
+
+        desired_strs = []
+
+        if address is not None:
+            desired_strs.append('Address: {}'.format(address))
+
+        if UUID is not None:
+            desired_strs.append('({})'.format(UUID))
+
+        # Split btmon events by HCI and MGMT delimiters
+        event_delimiter = '|'.join(['@ MGMT', '> HCI', '< HCI'])
+        btmon_events = re.split(event_delimiter, btmon_log)
+
+        for event_str in btmon_events:
+            if 'LE Advertising Report' not in event_str:
+                continue
+
+            for desired_str in desired_strs:
+                if desired_str not in event_str:
+                    break
+
+            else:
+                return True
+
+        return False
+
+
     def add_device(self, address, address_type, action):
         """Add a device to the Kernel action list."""
         return self.bluetooth_facade.add_device(address, address_type, action)

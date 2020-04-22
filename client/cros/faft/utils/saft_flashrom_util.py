@@ -489,3 +489,10 @@ class flashrom_util(object):
         """Write the whole base image. """
         layout_map = {'all': (0, len(base_image) - 1)}
         self.write_partial(base_image, ('all', ), layout_map)
+
+    def get_write_cmd(self, image=None):
+        """Get the command to write the whole image (no layout handling)
+
+        @param image: the filename (empty to use current handler data)
+        """
+        return 'flashrom %s -w "%s"' % (self._target_command, image)

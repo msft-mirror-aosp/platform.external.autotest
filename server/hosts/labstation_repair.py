@@ -75,6 +75,6 @@ def create_labstation_repair_strategy():
     ]
 
     repair_actions = [
-        (repair_utils.RPMCycleRepair, 'rpm', [], ['ssh']),
+        (repair_utils.RPMCycleRepair, 'rpm', [], ['ssh', 'reboot']),
     ]
     return hosts.RepairStrategy(verify_dag, repair_actions, 'labstation')

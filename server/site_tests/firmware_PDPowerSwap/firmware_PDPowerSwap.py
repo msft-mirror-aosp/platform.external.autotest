@@ -26,7 +26,7 @@ class firmware_PDPowerSwap(FirmwareTest):
     # Should be an even number; back to the original state at the end
     POWER_SWAP_ITERATIONS = 10
     # Source power role
-    SRC ='SRC_READY'
+    SRC = 'SRC_READY'
     # Sink power role
     SNK = 'SNK_READY'
 
@@ -115,11 +115,51 @@ class firmware_PDPowerSwap(FirmwareTest):
             raise error.TestFail('PD not connected! pd_state = %r' %
                                  pd_state)
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False):
+    def _test_one_way_power_swap_in_suspend(self, pd_port):
+        """Verify SRC-to-SNK power role swap on DUT PD port in S0ix/S3
+
+        Set the DUT power role to source and then suspend the DUT.
+        Verify SRC-to-SNK power role request from the PD tester works,
+        while SNK-to-SRC power role request fails. Note that this is
+        Chrome OS policy decision, not part of the PD spec.
+
+        @param pd_port: port for DUT pd connection
+        """
+        # Ensure DUT PD port is sourcing power.
+        if self.dut_pd_utils.get_pd_state(pd_port) != self.SRC:
+            if (self._attempt_power_swap(pd_port, 'rx') == False or
+                self.dut_pd_utils.get_pd_state(pd_port) != self.SRC):
+                raise error.TestFail('Fail to set DUT power role to source.')
+
+        self.set_ap_off_power_mode('suspend')
+
+        new_state = self.dut_pd_utils.get_pd_state(self.pdtester_port)
+        if new_state != self.SRC:
+            raise error.TestFail('DUT power role changed to %s '
+                    'during S0-to-S3 transition!' % new_state)
+
+        # If the DUT PD port supports DRP in S0, it should supports SRC-to-SNK
+        # power role swap in suspend mode. The other way around (SNK-to-SRC) in
+        # suspend mode should fail.
+        logging.info('Request a SRC-to-SNK power role swap to DUT PD port '
+                     'in suspend mode. Expect to succeed.')
+        if self._attempt_power_swap(pd_port, 'rx') == False:
+            raise error.TestFail('SRC-to-SNK power role swap failed.')
+        logging.info('Request a SNK-to-SRC power role swap to DUT PD port '
+                     'in suspend mode. Expect to fail.')
+        self._test_power_swap_reject(pd_port)
+
+        self.restore_ap_on_power_mode()
+
+    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
+                   init_power_mode=None):
         super(firmware_PDPowerSwap, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, dts_mode)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
+        if init_power_mode:
+            # Set the DUT to suspend (S3) or shutdown (G3/S5) mode
+            self.set_ap_off_power_mode(init_power_mode)
         # Turn off console prints, except for USBPD.
         self.usbpd.enable_console_channel('usbpd')
 
@@ -136,6 +176,7 @@ class firmware_PDPowerSwap(FirmwareTest):
             self.pdtester_pd_utils.send_pd_command('fakedisconnect 100 1000')
 
         self.usbpd.send_command('chan 0xffffffff')
+        self.restore_ap_on_power_mode()
         super(firmware_PDPowerSwap, self).cleanup()
 
     def run_once(self):
@@ -144,9 +185,11 @@ class firmware_PDPowerSwap(FirmwareTest):
         1. Verify that pd console is accessible
         2. Verify that DUT has a valid PD contract and connected to PDTester
         3. Determine if DUT is in dualrole mode
-        4. If not dualrole mode, verify DUT rejects power swap request
-           Else test power swap (tx/rx), then Force DUT to be sink or
-           source only and verify rejecttion of power swap request.
+        4. If dualrole mode is not supported, verify DUT rejects power swap
+           request. If dualrole mode is supported, test power swap (tx/rx) in
+           S0 and one-way power swap (SRC-to-SNK on DUT PD port) in S3/S0ix.
+           Then force DUT to be sink or source only and verify rejection of
+           power swap request.
 
         """
         # TODO(b/35573842): Refactor to use PDPortPartner to probe the port
@@ -178,6 +221,9 @@ class firmware_PDPowerSwap(FirmwareTest):
             self._test_power_swap_reject(self.pd_port)
             logging.info('Power Swap request rejected by DUT as expected')
         else:
+            if self.get_power_state() != 'S0':
+                raise error.TestFail('If the DUT is not is S0, the DUT port '
+                        'shouldn\'t claim dualrole is enabled.')
             # Start with PDTester as source
             if self._set_pdtester_power_role_to_src() == False:
                 raise error.TestFail('PDTester not set to source')
@@ -197,6 +243,8 @@ class firmware_PDPowerSwap(FirmwareTest):
             if success != self.POWER_SWAP_ITERATIONS:
                 raise error.TestFail('Failed %r power swap attempts' %
                                      (self.POWER_SWAP_ITERATIONS - success))
+
+            self._test_one_way_power_swap_in_suspend(self.pd_port)
 
             # Force DUT to only support current power role
             if new_state == self.SRC:

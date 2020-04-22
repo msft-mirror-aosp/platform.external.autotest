@@ -444,7 +444,7 @@ class StopStartUIVerifier(hosts.Verifier):
 
 
 class ServoTypeVerifier(hosts.Verifier):
-    """Verify that servo_type attribute exists"""
+    """Verify that servo_type label exists and has correct value"""
 
     def verify(self, host):
         if not host.servo:
@@ -453,10 +453,10 @@ class ServoTypeVerifier(hosts.Verifier):
 
         info = host.host_info_store.get()
         try:
-            servo_type = host.servo.get_servo_version()
-            if servo_type != info.attributes.get(SERVO_TYPE_LABEL_PREFIX, ''):
-                logging.info('servo_type mismatch detected, updating...')
-                info.attributes[SERVO_TYPE_LABEL_PREFIX] = servo_type
+            if not info.get_label_value(SERVO_TYPE_LABEL_PREFIX):
+                logging.info('servo_type missing, updating...')
+                servo_type = host.servo.get_servo_version()
+                info.set_version_label(SERVO_TYPE_LABEL_PREFIX, servo_type)
                 host.host_info_store.commit(info)
         except Exception as e:
             # We don't want fail the verifier and break DUTs here just

@@ -93,6 +93,7 @@ class FirmwareTest(FAFTBase):
     _backup_cgpt_attr = dict()
     _backup_gbb_flags = None
     _backup_dev_mode = None
+    _restore_power_mode = None
 
     # Class level variable, keep track the states of one time setup.
     # This variable is preserved across tests which inherit this class.
@@ -1008,6 +1009,56 @@ class FirmwareTest(FAFTBase):
             uart_file = getattr(self, '%s_uart_file' % uart, None)
             if uart_file:
                 self.servo.set('%s_uart_capture' % uart, 'off')
+
+    def set_ap_off_power_mode(self, power_mode):
+        """
+        Set the DUT power mode to suspend (S0ix/S3) or shutdown (G3/S5).
+        The DUT must be in S0 when calling this method.
+
+        @param power_mode: a string for the expected power mode, either
+                           'suspend' or 'shutdown'.
+        """
+        if power_mode == 'suspend':
+                target_power_state = 'S0ix|S3'
+        elif power_mode == 'shutdown':
+                target_power_state = 'G3'
+        else:
+            raise error.TestError('%s is not a valid ap-off power mode.' %
+                                  power_mode)
+
+        if self.get_power_state() != 'S0':
+            raise error.TestError('The DUT is not in S0.')
+
+        self._restore_power_mode = True
+
+        if target_power_state == 'G3':
+            self.run_shutdown_cmd()
+            time.sleep(self.faft_config.shutdown)
+        elif target_power_state == 'S0ix|S3':
+            self.suspend()
+
+        if self.wait_power_state(target_power_state, self.DEFAULT_PWR_RETRIES):
+            logging.info('System entered %s state.', target_power_state)
+        else:
+            self._restore_power_mode = False
+            raise error.TestFail('System fail to enter %s state. '
+                    'Current state: %s', target_power_state,
+                    self.get_power_state())
+
+    def restore_ap_on_power_mode(self):
+        """
+        Wake up the DUT to S0. If the DUT was not set to suspend or
+        shutdown mode by set_ap_off_power_mode(), raise an error.
+        """
+        if self.get_power_state() != 'S0':
+            logging.info('Wake up the DUT to S0.')
+            self.servo.power_normal_press()
+            # If the DUT is ping-able, it must be in S0.
+            self.switcher.wait_for_client()
+            if self._restore_power_mode != True:
+                raise error.TestFail('The DUT was not set to suspend/shutdown '
+                        'mode by set_ap_off_power_mode().')
+            self._restore_power_mode = False
 
     def get_power_state(self):
         """

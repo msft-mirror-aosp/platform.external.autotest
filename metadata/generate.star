@@ -30,7 +30,7 @@ def _generate(config):
     A text proto and binary proto are written.
     """
     def _generate_impl(ctx):
-        ctx.output["config.cfg"] = proto.to_textpb(config)
+        ctx.output["config.cfg"] = proto.to_jsonpb(config)
         ctx.output["config.binaryproto"] = proto.to_wirepb(config)
 
     lucicfg.generator(impl = _generate_impl)

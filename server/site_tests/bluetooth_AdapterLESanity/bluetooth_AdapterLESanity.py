@@ -6,6 +6,8 @@
 
 import time
 
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
+     import bluetooth_AdapterControllerRoleTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import \
@@ -16,7 +18,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
 
 class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         BluetoothAdapterPairingTests,
-        BluetoothAdapterHIDReportTests):
+        BluetoothAdapterHIDReportTests,
+        bluetooth_AdapterControllerRoleTests):
     """A Batch of Bluetooth LE sanity tests. This test is written as a batch
        of tests in order to reduce test time, since auto-test ramp up time is
        costly. The batch is using BluetoothAdapterQuickTests wrapper methods to
@@ -124,6 +127,157 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.test_connection_by_adapter(device.address)
         self.test_service_resolved(device.address)
         self.test_gatt_browse(device.address)
+
+
+    @test_wrapper('LE Slave Test', devices={'BLE_KEYBOARD':1})
+    def le_role_slave(self):
+        """Tests connection as slave"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        self.controller_slave_test(kbd, kbd_test_func)
+
+
+    @test_wrapper('LE Master Before Slave Test', devices={'BLE_KEYBOARD':1,
+                                                          'BLE_MOUSE':1})
+    def le_role_master_before_slave(self):
+        """Tests connection as master and then as slave"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'pre')
+        self.controller_slave_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
+
+
+    @test_wrapper('LE Slave Before Master Test', devices={'BLE_KEYBOARD':1,
+                                                          'BLE_MOUSE':1})
+    def le_role_slave_before_master(self):
+        """Tests connection as slave and then as master"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'mid')
+        self.controller_slave_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
+
+
+    @test_wrapper('LE Sender Role Test', devices={'BLE_KEYBOARD':1})
+    def le_role_sender(self):
+        """Tests basic Nearby Sender role"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+
+        self.nearby_sender_role_test(kbd, kbd_test_func)
+
+
+    @test_wrapper('LE Sender Role Test During HID', devices={'BLE_KEYBOARD':1,
+                                                             'BLE_MOUSE':1})
+    def le_role_sender_during_hid(self):
+        """Tests Nearby Sender role while already connected to HID device"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'pre')
+        self.nearby_sender_role_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
+
+
+    @test_wrapper('LE HID Test During Sender Role',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def le_role_hid_during_sender(self):
+        """Tests HID device while already in Nearby Sender role"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'mid')
+        self.nearby_sender_role_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
+
+
+    @test_wrapper('LE Receiver Role Test', devices={'BLE_KEYBOARD':1})
+    def le_role_receiver(self):
+        """Tests basic Nearby Receiver role"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+
+        self.nearby_receiver_role_test(kbd, kbd_test_func)
+
+
+    @test_wrapper('LE Receiver Role Test During HID', devices={'BLE_KEYBOARD':1,
+                                                             'BLE_MOUSE':1})
+    def le_role_receiver_during_hid(self):
+        """Tests Nearby Receiver role while already connected to HID device"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'pre')
+        self.nearby_receiver_role_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
+
+
+    @test_wrapper('LE HID Test During Receiver Adv',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def le_role_hid_during_receiver_adv(self):
+        """Tests HID device while already in Nearby Receiver role adv state"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'mid')
+        self.nearby_receiver_role_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
+
+
+    @test_wrapper('LE HID Test During Receiver Role',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def le_role_hid_during_receiver_connection(self):
+        """Tests HID device while already in Nearby Receiver role connection"""
+
+        kbd = self.devices['BLE_KEYBOARD'][0]
+        mouse = self.devices['BLE_MOUSE'][0]
+
+        kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
+                device, 'simple_text')
+        mouse_test_func = self.test_mouse_left_click
+
+        hid_test_device = (mouse, mouse_test_func, 'end')
+        self.nearby_receiver_role_test(
+                kbd, kbd_test_func, slave_info=hid_test_device)
 
 
     @batch_wrapper('LE Sanity')

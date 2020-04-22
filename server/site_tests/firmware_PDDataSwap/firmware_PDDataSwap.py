@@ -259,15 +259,20 @@ class firmware_PDDataSwap(FirmwareTest):
         if curr_dr != dut_data_role:
             raise error.TestFail('Unexpected PD data role change')
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False):
+    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
+                   init_power_mode=None):
         super(firmware_PDDataSwap, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, dts_mode)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
+        if init_power_mode:
+            # Set the DUT to suspend or shutdown mode
+            self.set_ap_off_power_mode(init_power_mode)
         self.usbpd.send_command('chan 0')
 
     def cleanup(self):
         self.usbpd.send_command('chan 0xffffffff')
+        self.restore_ap_on_power_mode()
         super(firmware_PDDataSwap, self).cleanup()
 
     def run_once(self):

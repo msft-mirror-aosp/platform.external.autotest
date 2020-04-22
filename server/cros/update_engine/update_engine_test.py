@@ -523,17 +523,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                                     update_engine_log)
 
 
-    def _disconnect_then_reconnect_network(self, update_url):
-        """
-        Disconnects the network for a couple of minutes then reconnects.
-
-        @param update_url: A URL to use to check we are online.
-
-        """
-        self._run_client_test_and_check_result(
-            'autoupdate_DisconnectReconnectNetwork', update_url=update_url)
-
-
     def _suspend_then_resume(self):
         """Susepends and resumes the host DUT."""
         try:

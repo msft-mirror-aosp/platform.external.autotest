@@ -103,17 +103,25 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
 
-        # Call client test to start the forced OOBE update.
-        self._run_client_test_and_check_result('autoupdate_StartOOBEUpdate',
-                                               image_url=update_url,
-                                               full_payload=full_payload,
-                                               cellular=cellular,
-                                               critical_update=True)
-
+        progress = None
         if interrupt is not None:
             # Choose a random downloaded progress to interrupt the update.
-            progress = random.uniform(0.1, 0.6)
+            # Moblab may have higher download speeds and take longer to return
+            # from the client test, so we'll use a reduced progress range if
+            # we're interrupting the update on moblab.
+            progress_limit = 0.3 if moblab else 0.6
+            progress = random.uniform(0.1, progress_limit)
             logging.info('Progress when we will interrupt: %f', progress)
+
+        # Call client test to start the forced OOBE update.
+        self._run_client_test_and_check_result(
+            'autoupdate_StartOOBEUpdate', image_url=update_url,
+            full_payload=full_payload, cellular=cellular,
+            critical_update=True, interrupt_network=interrupt is 'network',
+            interrupt_progress=progress)
+
+        if interrupt in ['reboot', 'suspend']:
+            logging.info('Waiting to interrupt update.')
             self._wait_for_progress(progress)
             logging.info('We will now start interrupting the update.')
             self._take_screenshot('before_interrupt.png')
@@ -121,12 +129,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
             if interrupt is 'reboot':
                 self._host.reboot()
-            elif interrupt is 'network':
-                self._disconnect_then_reconnect_network(update_url)
             elif interrupt is 'suspend':
                 self._suspend_then_resume()
-            else:
-                raise error.TestFail('Unknown interrupt type: %s' % interrupt)
             # Screenshot to check that OOBE was not skipped by interruption.
             self._take_screenshot('after_interrupt.png')
 
@@ -135,6 +139,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             if not self._update_continued_where_it_left_off(completed):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
+        elif interrupt not in ['network', None]:
+            raise error.TestFail('Unknown interrupt type: %s' % interrupt)
 
         # We create a new lsb-release file with no_update=True so there won't be
         # any more actual updates happen.

@@ -1,0 +1,14 @@
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+TESTS = []
+def _append_tests(tests):
+    for t in tests:
+        TESTS.append(t)
+
+load("//client/site_tests/dummy_Pass/def.star", client_dummy_Pass = "TESTS")
+_append_tests(client_dummy_Pass)
+
+load("//client/site_tests/dummy_Fail/def.star", client_dummy_Fail = "TESTS")
+_append_tests(client_dummy_Fail)

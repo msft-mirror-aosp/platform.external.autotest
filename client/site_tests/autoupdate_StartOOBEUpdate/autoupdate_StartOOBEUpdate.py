@@ -73,7 +73,8 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
 
 
     def run_once(self, image_url, cellular=False, critical_update=True,
-                 full_payload=None):
+                 full_payload=None, interrupt_network=False,
+                 interrupt_progress=0.0):
         """
         Test that will start a forced update at OOBE.
 
@@ -84,11 +85,31 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                                 response.
         @param full_payload: Whether the payload is full or delta. None if we
                              don't have to care about it.
+        @param interrupt_network: True to cause a network interruption after
+                                  starting the update. Should only be used
+                                  during a critical update.
+        @param interrupt_progress: If interrupt_network is True, we will wait
+                                   for the update progress to reach this
+                                   value before interrupting. Should be
+                                   expressed as a number between 0 and 1.
 
         """
 
         if critical_update:
             self._start_oobe_update(image_url, critical_update, full_payload)
+            if interrupt_network:
+                self._wait_for_progress(interrupt_progress)
+                self._take_screenshot('before_interrupt.png')
+                completed = self._get_update_progress()
+                self._disconnect_reconnect_network_test(image_url)
+                self._take_screenshot('after_interrupt.png')
+
+                if self._is_update_engine_idle():
+                    raise error.TestFail(
+                        'The update was IDLE after interrupt.')
+                if not self._update_continued_where_it_left_off(completed):
+                    raise error.TestFail('The update did not continue where '
+                                         'it left off after interruption.')
             return
 
         metadata_dir = autotemp.tempdir()

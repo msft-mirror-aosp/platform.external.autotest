@@ -7,8 +7,8 @@ def _append_tests(tests):
     for t in tests:
         TESTS.append(t)
 
-load("//client/site_tests/dummy_Pass/def.star", client_dummy_Pass = "TESTS")
-_append_tests(client_dummy_Pass)
+load("//client/site_tests/dummy_Pass/def.star", client_dummy_Pass_def = "TESTS")
+_append_tests(client_dummy_Pass_def)
 
-load("//client/site_tests/dummy_Fail/def.star", client_dummy_Fail = "TESTS")
-_append_tests(client_dummy_Fail)
+load("//client/site_tests/dummy_Fail/def.star", client_dummy_Fail_def = "TESTS")
+_append_tests(client_dummy_Fail_def)

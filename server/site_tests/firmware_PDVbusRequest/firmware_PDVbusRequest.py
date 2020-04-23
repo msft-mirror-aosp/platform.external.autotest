@@ -51,24 +51,29 @@ class firmware_PDVbusRequest(FirmwareTest):
         """
         # Get Vbus voltage and current
         vbus_voltage = self.pdtester.vbus_voltage
-        # Compute voltage tolerance range
-        tolerance = self.VBUS_TOLERANCE * expected_vbus_voltage
+        # Compute voltage tolerance range. To handle the case where VBUS is
+        # off, set the minimal tolerance to USBC_SINK_VOLTAGE * VBUS_TOLERANCE.
+        tolerance = (self.VBUS_TOLERANCE * max(expected_vbus_voltage,
+                                               self.USBC_SINK_VOLTAGE))
         voltage_difference = math.fabs(expected_vbus_voltage - vbus_voltage)
         result_str = 'Target = %02dV:\tAct = %.2f\tDelta = %.2f' % \
                      (expected_vbus_voltage, vbus_voltage, voltage_difference)
         # Verify that measured Vbus voltage is within expected range
-        voltage_difference = math.fabs(expected_vbus_voltage - vbus_voltage)
         if voltage_difference > tolerance:
             result = 'ALLOWED_FAIL' if ok_to_fail else 'FAIL'
         else:
             result = 'PASS'
         return result, result_str
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False):
+    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
+                   init_power_mode=None):
         super(firmware_PDVbusRequest, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, dts_mode)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
+        if init_power_mode:
+            # Set the DUT to suspend or shutdown mode
+            self.set_ap_off_power_mode(init_power_mode)
         self.usbpd.send_command('chan 0')
 
     def cleanup(self):
@@ -76,6 +81,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
 
         self.usbpd.send_command('chan 0xffffffff')
+        self.restore_ap_on_power_mode()
         super(firmware_PDVbusRequest, self).cleanup()
 
     def run_once(self):
@@ -112,7 +118,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         if dut_voltage_limit not in charging_voltages:
             raise error.TestError('Plugged a wrong charger to servo v4? '
                                   '%dV not in supported voltages %s.' %
-                                  dut_voltage_limit, str(charging_voltages))
+                                  (dut_voltage_limit, str(charging_voltages)))
 
         for voltage in charging_voltages:
             logging.info('********* %r *********', voltage)
@@ -122,10 +128,13 @@ class firmware_PDVbusRequest(FirmwareTest):
             time.sleep(self.PD_SETTLE_DELAY)
             # Get current PDTester PD state
             pdtester_state = pd_pdtester_utils.get_pd_state(self.pdtester_port)
-            # If PDTester is sink, then Vbus_exp = 5v, not skip failure even
-            # using charger profile override.
+            # If PDTester is in SNK mode and the DUT is in S0, the DUT should
+            # source VBUS = USBC_SINK_VOLTAGE. If PDTester is in SNK mode, and
+            # the DUT is not in S0, the DUT shouldn't source VBUS, which means
+            # VBUS = 0.
             if pdtester_state == pd_pdtester_utils.SNK_CONNECT:
-                expected_vbus_voltage = self.USBC_SINK_VOLTAGE
+                expected_vbus_voltage = (self.USBC_SINK_VOLTAGE
+                        if self.get_power_state() == 'S0' else 0)
                 ok_to_fail = False
             else:
                 expected_vbus_voltage = min(voltage, dut_voltage_limit)

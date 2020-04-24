@@ -1047,10 +1047,11 @@ class Cr50Test(FirmwareTest):
         else:
             logging.info('Opened Cr50')
 
-    def fast_open(self, enable_testlab=False):
+    def fast_open(self, enable_testlab=False, reset_ccd=True):
         """Try to use testlab open. If that fails, do regular ap open.
 
         @param enable_testlab: If True, enable testlab mode after cr50 is open.
+        @param reset_ccd: If True, reset ccd after open.
         """
         if not self.faft_config.has_powerbutton:
             logging.warning('No power button', exc_info=True)
@@ -1063,14 +1064,16 @@ class Cr50Test(FirmwareTest):
 
         if self.servo.has_control('chassis_open'):
             self.servo.set('chassis_open', 'yes')
+        pw = '' if self.cr50.password_is_reset() else self.PASSWORD
         # Use the console to open cr50 without entering dev mode if possible. It
         # takes longer and relies on more systems to enter dev mode and ssh into
         # the AP. Skip the steps that aren't required.
-        if not self.cr50.get_cap('OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]:
+        if not (pw or self.cr50.get_cap(
+                        'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
             self.enter_mode_after_checking_tpm_state('dev')
 
-        if self.cr50.get_cap('OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
-            self.cr50.set_ccd_level(self.cr50.OPEN)
+        if pw or self.cr50.get_cap('OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
+            self.cr50.set_ccd_level(self.cr50.OPEN, pw)
         else:
             self.ccd_open_from_ap()
 
@@ -1079,6 +1082,9 @@ class Cr50Test(FirmwareTest):
 
         if enable_testlab:
             self.cr50.set_ccd_testlab('on')
+
+        if reset_ccd:
+            self.cr50.send_command('ccd reset')
 
         # Make sure the device is in normal mode. After opening cr50, the TPM
         # should be cleared and the device should automatically reset to normal

@@ -25,6 +25,7 @@ def _define_client_test(
     suites = [],
     common_deps = [],
     dep_expressions = [],
+    named_args = {},
 ):
 
     attrs = [metadata_pb.Attribute(name = "suite:" + s) for s in suites]
@@ -35,6 +36,7 @@ def _define_client_test(
     details = google_pb.Struct(fields = {
         "purpose": google_pb.Value(string_value = purpose),
         "doc": google_pb.Value(string_value = doc),
+        "named_args": google_pb.Value(string_value = to_json(named_args))
     })
 
     info = metadata_pb.Informational(

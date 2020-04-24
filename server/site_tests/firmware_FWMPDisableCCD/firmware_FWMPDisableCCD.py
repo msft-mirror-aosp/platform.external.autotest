@@ -16,7 +16,6 @@ class firmware_FWMPDisableCCD(Cr50Test):
 
     FWMP_DEV_DISABLE_CCD_UNLOCK = (1 << 6)
     GSCTOOL_ERR = 'Error: rv 7, response 7'
-    PASSWORD = 'Password'
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize servo check if cr50 exists"""

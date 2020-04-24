@@ -61,6 +61,8 @@ class Cr50Test(FirmwareTest):
     # USB issues may show up with the timer sof calibration overflow interrupt.
     # Count these during cleanup.
     CR50_USB_ERROR = 'timer_sof_calibration_overflow_int'
+    # CCD password used by tests.
+    PASSWORD = 'Password'
 
     def initialize(self,
                    host,

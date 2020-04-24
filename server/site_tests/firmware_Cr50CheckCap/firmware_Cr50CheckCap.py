@@ -18,7 +18,6 @@ class firmware_Cr50CheckCap(Cr50Test):
     SPECIAL_CAPS = ['OpenNoDevMode', 'OpenFromUSB']
     EXPECTED_REQ_PREPVT = 'Always'
     EXPECTED_REQ_PROD = 'IfOpened'
-    PASSWORD = 'Password'
 
     def check_cap_command(self, command, enable_factory, reset_caps):
         """Verify the cr50 cap response after running the given command"""

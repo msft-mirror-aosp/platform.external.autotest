@@ -4,31 +4,50 @@
 
 load("//metadata/test_common.star", "test_common")
 
+DOC = """
+This is a helper test that will succeed. Used to verify various
+autotest scheduling features, including pass results, dependencies, etc.
+"""
+
 TESTS = [
     test_common.define_client_test(
         test_name = "dummy_Pass",
         purpose = "Demonstrate success methods of autotests.",
-        doc = """
-This is a helper test that will succeed. Used to verify the behavior of
-Autotest.
-""",
+        doc = DOC,
         owner_emails = ["email_addr@chromium.org"],
         owner_groups = ["team-mdb-group"],
         suites = ["dummy", "dummyclientretries", "push_to_prod",
             "skylab_staging_test", "something_else"],
-        #TODO: max_result_size_kb
+        #TODO: max_result_size_kb = 5000
+    ),
+
+    test_common.define_client_test(
+        test_name = "dummy_Pass.actionable",
+        purpose = "Demonstrate success methods of autotests",
+        doc = DOC,
+        owner_emails = ["email_addr@chromium.org"],
+        suites = ["dummy", "dummyclientretries", "push_to_prod",
+            "skylab_staging_test", "something_else"],
+        #TODO: common_deps = ["cleanup-reboot"],
+        named_args = {"tag": "actionable"},
     ),
 
     test_common.define_client_test(
         test_name = "dummy_Pass.bluetooth",
         purpose = "Demonstrate DEPENDENCIES in autotests.",
-        doc = """
-This is a helper test that can only run on bluetooth devices,
-and should succeed trivially.
-""",
+        doc = DOC,
         owner_emails = ["email_addr@chromium.org"],
         suites = ["dummy", "push_to_prod", "skylab_staging_test"],
         common_deps = ["bluetooth"],
-        #TODO: tag=bluetooth arg
+        named_args = {"tag": "bluetooth"},
+    ),
+
+    test_common.define_client_test(
+        test_name = "dummy_Pass.experimental",
+        purpose = "Demonstrate success methods of autotests.",
+        doc = DOC,
+        owner_emails = ["email_addr@chromium.org"],
+        suites = ["dummy", "dummyclientretries", "something_else"],
+        named_args = {"tag": "experimental"},
     ),
 ]

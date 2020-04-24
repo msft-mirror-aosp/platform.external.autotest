@@ -9,7 +9,6 @@ from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 class firmware_Cr50Password(Cr50Test):
     """Verify cr50 set password."""
     version = 1
-    PASSWORD = 'Password'
     NEW_PASSWORD = 'robot'
 
 

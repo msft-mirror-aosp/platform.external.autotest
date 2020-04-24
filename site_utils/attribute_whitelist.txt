@@ -161,6 +161,7 @@ suite:moblab_quick
 suite:moblab_storage_qual
 suite:network_nightly
 suite:network_ui
+suite:offloads
 suite:partners
 suite:paygen_au_beta
 suite:paygen_au_canary

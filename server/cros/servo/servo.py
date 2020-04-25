@@ -489,11 +489,24 @@ class Servo(object):
 
     def get_servod_version(self):
         """Returns the servod version."""
-        result = self._servo_host.run('servod --version')
-        # TODO: use system_output once servod --version prints to stdout
-        stdout = result.stdout.strip()
-        return stdout if stdout else result.stderr.strip()
-
+        # TODO: use system_output once servod --sversion prints to stdout
+        try:
+            result = self._servo_host.run('servod --sversion')
+        except error.AutoservRunError as e:
+            if 'command execution error' in str(e):
+                # Fall back to version if sversion is not supported yet.
+                result = self._servo_host.run('servod --version')
+                return result.stdout.strip() or result.stderr.strip()
+            # An actually unexpected error occurred, just raise.
+            raise e
+        sversion = result.stdout or result.stderr
+        # The sversion output contains 3 lines:
+        # servod v1.0.816-ff8e966 // the extended version with git hash
+        # 2020-04-08 01:10:29 // the time of the latest commit
+        # chromeos-ci-legacy-us-central1-b-x32-55-u8zc // builder information
+        # For debugging purposes, we mainly care about the version, and the
+        # timestamp.
+        return ' '.join(sversion.split()[1:4])
 
     def power_long_press(self):
         """Simulate a long power button press."""

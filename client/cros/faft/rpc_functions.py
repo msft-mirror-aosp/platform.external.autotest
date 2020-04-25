@@ -430,16 +430,6 @@ class BiosServicer(object):
         # Use the real handler, to avoid .init() raising an exception
         return self._real_bios_handler.is_available()
 
-    def get_write_cmd(self, image=None):
-        """Get the command needed to write the whole image to the device.
-
-        @param image: the filename (empty to use current handler data)
-        """
-        if image:
-            # Don't bother loading the usual image, since it's overridden.
-            return self._real_bios_handler.get_write_cmd(image)
-        else:
-            return self._bios_handler.get_write_cmd()
 
 class CgptServicer(object):
     """Class to service all CGPT RPCs"""
@@ -593,17 +583,6 @@ class EcServicer(object):
     def strip_modified_fwids(self):
         """Strip trailing suffixes out of the FWIDs (see modify_image_fwids)."""
         return self._ec_handler.strip_modified_fwids()
-
-    def get_write_cmd(self, image=None):
-        """Get the command needed to write the whole image to the device.
-
-        @param image: the filename (empty to use current handler data)
-        """
-        if image:
-            # Don't bother loading the usual image, since it's overridden.
-            return self._real_ec_handler.get_write_cmd(image)
-        else:
-            return self._ec_handler.get_write_cmd()
 
 
 class KernelServicer(object):

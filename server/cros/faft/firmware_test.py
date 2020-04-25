@@ -1706,25 +1706,17 @@ class FirmwareTest(FAFTBase):
 
         # Restore firmware.
         remote_temp_dir = self.faft_client.system.create_temp_dir()
+        self._client.send_file(os.path.join(self.resultsdir, 'bios' + suffix),
+                               os.path.join(remote_temp_dir, 'bios'))
 
-        bios_local = os.path.join(self.resultsdir, 'bios%s' % suffix)
-        bios_remote = os.path.join(remote_temp_dir, 'bios%s' % suffix)
-        self._client.send_file(bios_local, bios_remote)
-        self.faft_client.bios.write_whole(bios_remote)
+        self.faft_client.bios.write_whole(
+            os.path.join(remote_temp_dir, 'bios'))
 
         if self.faft_config.chrome_ec and restore_ec:
-            ec_local = os.path.join(self.resultsdir, 'ec%s' % suffix)
-            ec_remote = os.path.join(remote_temp_dir, 'ec%s' % suffix)
-            self._client.send_file(ec_local, ec_remote)
-            ec_cmd = self.faft_client.ec.get_write_cmd(ec_remote)
-            try:
-                self._client.run(' '.join(ec_cmd), timeout=300)
-            except error.AutoservSSHTimeout:
-                logging.warn("DUT connection died during EC restore")
-
-            except error.GenericHostRunError:
-                logging.warn("DUT command failed during EC restore")
-                logging.debug("Full exception:", exc_info=True)
+            self._client.send_file(os.path.join(self.resultsdir, 'ec' + suffix),
+                os.path.join(remote_temp_dir, 'ec'))
+            self.faft_client.ec.write_whole(
+                os.path.join(remote_temp_dir, 'ec'))
 
         self.switcher.mode_aware_reboot()
         logging.info('Successfully restored firmware.')

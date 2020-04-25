@@ -660,6 +660,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return self.get_active_version_info()[1].strip()
 
 
+    def get_full_version(self):
+        """Get the complete RW version string."""
+        _, rw_ver, dbg, ver_str = self.get_active_version_info()
+        return  rw_ver + (dbg if dbg else '') + ver_str
+
+
     def ccd_is_enabled(self):
         """Return True if ccd is enabled.
 

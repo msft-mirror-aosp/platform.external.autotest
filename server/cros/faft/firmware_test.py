@@ -323,7 +323,7 @@ class FirmwareTest(FAFTBase):
         system_info.update(self.servo.get_servo_fw_versions())
 
         if hasattr(self, 'cr50'):
-            system_info['cr50_version'] = self.servo.get('cr50_version')
+            system_info['cr50_version'] = self.cr50.get_full_version()
 
         logging.info('System info:\n%s', pprint.pformat(system_info))
         self.write_attr_keyval(system_info)

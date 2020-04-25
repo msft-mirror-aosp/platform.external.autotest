@@ -127,13 +127,13 @@ class firmware_FWupdate(FirmwareTest):
                 pd_path = os.path.join(extract_dir, 'pd.bin')
                 dut_access.CopyToDevice(self.new_pd, pd_path, mode='scp')
 
-    def run_case(self, append, write_protected, before_fwids, image_fwids):
+    def run_case(self, append, write_protected, before_fwids, modded_fwids):
         """Run chromeos-firmwareupdate with given sub-case
 
         @param append: additional piece to add to shellball name
         @param write_protected: is the flash write protected (--wp)?
         @param before_fwids: fwids before flashing ('bios' and 'ec' as keys)
-        @param image_fwids: fwids in image ('bios' and 'ec' as keys)
+        @param modded_fwids: fwids in image ('bios' and 'ec' as keys)
         @return: a list of failure messages for the case
         """
 
@@ -151,6 +151,7 @@ class firmware_FWupdate(FirmwareTest):
                     self.WP_REGION, False)
 
         expected_written = {}
+        written_desc = []
 
         if write_protected:
             bios_written = ['a', 'b']
@@ -161,39 +162,23 @@ class firmware_FWupdate(FirmwareTest):
             ec_written = ['ro', 'rw']
 
         expected_written['bios'] = bios_written
+        written_desc += ['bios %s' % '+'.join(bios_written)]
 
         if self.faft_config.chrome_ec and ec_written:
             expected_written['ec'] = ec_written
+            written_desc += ['ec %s' % '+'.join(ec_written)]
 
-        # remove quotes and braces: bios: [a, b], ec: [ro, rw]
-        written_desc = repr(expected_written).replace("'", "")[1:-1]
-        logging.debug('Before(%s): %s', append, before_fwids)
-        logging.debug('Image(%s):  %s', append, image_fwids)
-        logging.info("Run %s (should write %s)", cmd_desc, written_desc)
+        written_desc = '(should write %s)' % ', '.join(written_desc)
+        logging.info("Run %s %s", cmd_desc, written_desc)
 
         # make sure we restore firmware after the test, if it tried to flash.
         self.flashed = True
-
-        errors = []
-        options = ['--quirks=ec_partial_recovery=0']
-        result = self.run_chromeos_firmwareupdate(
-                self.mode, append, options, ignore_status=True)
-
-        if result.exit_status == 255:
-            logging.warn("DUT network dropped during update.")
-        elif result.exit_status != 0:
-            if (image_fwids == before_fwids and
-                    'Good. It seems nothing was changed.' in result.stdout):
-                logging.info("DUT already matched the image; updater aborted.")
-            else:
-                errors.append('...updater: unexpectedly failed (rc=%s)' %
-                              result.exit_status)
+        self.faft_client.updater.run_firmwareupdate(self.mode, append)
 
         after_fwids = self.get_installed_versions()
-        logging.debug('After(%s):  %s', append, after_fwids)
 
-        errors += self.check_fwids_written(
-                before_fwids, image_fwids, after_fwids, expected_written)
+        errors = self.check_fwids_written(
+                before_fwids, modded_fwids, after_fwids, expected_written)
 
         if errors:
             logging.debug('%s', '\n'.join(errors))

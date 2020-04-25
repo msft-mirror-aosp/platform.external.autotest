@@ -864,16 +864,3 @@ class FlashromHandler(object):
                 suffixes[section] = suffix
 
         return suffixes
-
-    def get_write_cmd(self, image=None):
-        """Get the command needed to write the whole image to the device.
-
-        @param image: the filename (empty to use current handler data)
-        """
-        if image:
-            return self.fum.get_write_cmd(image)
-        else:
-            tmp_image = self.os_if.create_temp_file('tmp_%s.bin.' % self.target)
-            self.os_if.write_file(tmp_image, self.image)
-            cmd = self.fum.get_write_cmd(tmp_image)
-            return '%s; rm %s' % (cmd, tmp_image)

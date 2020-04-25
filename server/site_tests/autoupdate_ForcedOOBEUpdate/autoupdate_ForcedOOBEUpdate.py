@@ -60,9 +60,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 try:
                     self._get_update_engine_status(timeout=10,
                                                    ignore_timeout=False)
-                    self._check_update_engine_log_for_entry(
-                        "Omaha request response:")
-                    break;
+                    if self._check_update_engine_log_for_entry(
+                          "Omaha request response:")
+                        break;
                 except (error.TestFail, error.AutoservRunError):
                     pass
 

@@ -387,8 +387,15 @@ class TradefedTest(test.test):
             try:
                 # Kill existing adb server to ensure that the env var is picked
                 # up, and reset any previous bad state.
-                self._run_adb_cmd(verbose=True, args=('kill-server',),
-                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+                #
+                # The timeout is ignored, since the only known failure pattern
+                # b/142828365 is due to a zombie process that does not prevent
+                # starting a new server is new adb key.
+                try:
+                    self._run_adb_cmd(verbose=True, args=('kill-server',),
+                        timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+                except error.CmdTimeoutError as e:
+                    logging.warn(e)
 
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.

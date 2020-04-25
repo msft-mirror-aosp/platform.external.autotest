@@ -570,6 +570,12 @@ class Cr50Test(FirmwareTest):
     def cleanup(self):
         """Attempt to cleanup the cr50 state. Then run firmware cleanup"""
         try:
+            # Reset the password as the first thing in cleanup. It is important
+            # that if some other part of cleanup fails, the password has at
+            # least been reset.
+            # DO NOT PUT ANYTHING BEFORE THIS.
+            self._try_quick_ccd_cleanup()
+
             self.servo.enable_main_servo_device()
 
             self._try_to_bring_dut_up()
@@ -682,15 +688,16 @@ class Cr50Test(FirmwareTest):
             raise error.TestError('Unexpected state mismatch during '
                                   'cleanup %s' % mismatch)
 
-    def _restore_ccd_settings(self):
-        """Restore the original ccd state."""
-        # Reset the password as the first thing in cleanup. It is important that
-        # if some other part of cleanup fails, the password has at least been
-        # reset.
+    def _try_quick_ccd_cleanup(self):
+        """Try to clear all ccd state."""
         self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('rddkeepalive disable')
         self.cr50.send_command('ccd reset')
         self.cr50.send_command('wp follow_batt_pres atboot')
+
+    def _restore_ccd_settings(self):
+        """Restore the original ccd state."""
+        self._try_quick_ccd_cleanup()
 
         # Reboot cr50 if the console is accessible. This will reset most state.
         if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_IS_ACCESSIBLE]:

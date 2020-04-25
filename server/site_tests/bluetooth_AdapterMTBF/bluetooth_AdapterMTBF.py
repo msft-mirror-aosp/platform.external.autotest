@@ -51,6 +51,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
         mouse = self.devices['BLE_MOUSE'][0]
         phone = self.devices['BLE_PHONE'][0]
+        phone.RemoveDevice(self.bluetooth_facade.address)
 
         # Pair the mouse first
         # The steps were copied from bluetooth_AdapterMDSanity

@@ -13,5 +13,8 @@ _append_tests(client_dummy_Pass_wifichaos)
 load("//client/site_tests/dummy_Pass/def.star", client_dummy_Pass_def = "TESTS")
 _append_tests(client_dummy_Pass_def)
 
+load("//client/site_tests/policy_AllowDinosaurEasterEgg/def.star", client_policy_AllowDinosaurEasterEgg_def = "TESTS")
+_append_tests(client_policy_AllowDinosaurEasterEgg_def)
+
 load("//client/site_tests/dummy_Fail/def.star", client_dummy_Fail_def = "TESTS")
 _append_tests(client_dummy_Fail_def)

@@ -46,7 +46,6 @@ class BluetoothAdapterPairingTests(
         self.test_discover_device(device.address)
 
         # Test if the discovery could be stopped.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_stop_discovery()
 
         # Test if the discovered device class of service is correct.

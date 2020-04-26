@@ -3,13 +3,11 @@
 # found in the LICENSE file.
 
 import logging
-import os
 from threading import Timer
 
 from autotest_lib.client.common_lib import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.faft.utils import config
 
 
 class firmware_FAFTSetup(FirmwareTest):
@@ -95,14 +93,3 @@ class firmware_FAFTSetup(FirmwareTest):
             self.check_state(self.keyboard_checker)
         else:
             logging.info("Skip keyboard simulation on an embedded device")
-
-        # Verify whether fw-testing-configs directory is available
-        # TODO(b:153768975): Remove this once the lab environment has the dir
-        fw_testing_configs_dir = os.path.abspath(os.path.join(
-                config.CONFIG_DIR, os.pardir, 'fw-testing-configs'))
-        if os.path.isdir(fw_testing_configs_dir):
-            logging.info("Found fw-testing-configs directory: %s",
-                    fw_testing_configs_dir)
-        else:
-            logging.warn("Could not find fw-testing-configs directory: %s",
-                    fw_testing_configs_dir)

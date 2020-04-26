@@ -28,7 +28,7 @@ class LabstationHost(base_servohost.BaseServoHost):
 
     # Uptime threshold to perform a labstation reboot, this is to prevent a
     # broken DUT keep trying to reboot a labstation. In hours
-    UP_TIME_THRESH_HOLD_HOURS = 24
+    UP_TIME_THRESH_HOLD_HOURS = 6
 
     VERSION_PREFIX = provision.CROS_VERSION_PREFIX
 
@@ -78,7 +78,8 @@ class LabstationHost(base_servohost.BaseServoHost):
 
         if not self._validate_uptime():
             logging.info('Ignoring DUTs reboot request because %s was'
-                         ' rebooted in last 24 hours.', self.hostname)
+                         ' rebooted in last %d hours.',
+                         self.hostname, self.UP_TIME_THRESH_HOLD_HOURS)
             return False
 
         cmd = 'find %s*%s' % (self.TEMP_FILE_DIR, self.REBOOT_FILE_POSTFIX)

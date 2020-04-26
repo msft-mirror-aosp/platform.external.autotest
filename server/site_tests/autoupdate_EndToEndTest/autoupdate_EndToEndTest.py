@@ -83,9 +83,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     _WAIT_FOR_UPDATE_COMPLETED_SECONDS = 4 * 60
     _WAIT_FOR_UPDATE_CHECK_AFTER_REBOOT_SECONDS = 15 * 60
 
-    _DEVSERVER_HOSTLOG_ROOTFS = 'devserver_hostlog_rootfs'
-    _DEVSERVER_HOSTLOG_REBOOT = 'devserver_hostlog_reboot'
-
     def initialize(self):
         """Sets up variables that will be used by test."""
         super(autoupdate_EndToEndTest, self).initialize()
@@ -108,27 +105,28 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                              test_conf['target_archive_uri'],
                              test_conf['update_type'])
 
-    def _get_hostlog_file(self, filename, pid):
+
+    def _get_hostlog_file(self, filename, identifier):
         """Return the hostlog file location.
 
         This hostlog file contains the update engine events that were fired
-        during the update. The pid is returned from dev_server.auto_update().
+        during the update.
 
         @param filename: The partial filename to look for.
-        @param pid: The pid of the update.
+        @param identifier: A string that is appended to the logfile when it is
+                           saved so that multiple files with the same name can
+                           be differentiated.
 
         """
-        hosts = [self._host.hostname, self._host.ip]
-        for host in hosts:
-            hostlog = '%s_%s_%s' % (filename, host, pid)
-            file_url = os.path.join(self.job.resultdir,
-                                    dev_server.AUTO_UPDATE_LOG_DIR,
-                                    hostlog)
-            if os.path.exists(file_url):
-                logging.info('Hostlog file to be used for checking update '
-                             'steps: %s', file_url)
-                return file_url
-        raise error.TestFail('Could not find %s for pid %s' % (filename, pid))
+        hostlog = '%s_%s_%s' % (filename, self._host.hostname, identifier)
+        file_url = os.path.join(self.job.resultdir,
+                                dev_server.AUTO_UPDATE_LOG_DIR,
+                                hostlog)
+        if os.path.exists(file_url):
+            logging.info('Hostlog file to be used for checking update '
+                         'steps: %s', file_url)
+            return file_url
+        raise error.TestFail('Could not find %s' % filename)
 
 
     def _dump_update_engine_log(self, test_platform):
@@ -216,6 +214,31 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             logging.error(err_msg)
             raise error.TestFail(err_msg)
 
+
+    def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
+                                          clobber_stateful=False):
+        """Updates the device.
+
+        @param cros_device: The device to be updated.
+        @param payload_uri: The payload with which the device should be updated.
+        @param clobber_stateful: Boolean that determines whether the stateful
+                                 of the device should be force updated. By
+                                 default, set to False
+
+        @raise error.TestFail if anything goes wrong with the update.
+
+        @return Path to directory where generated hostlog files and nebraska
+                logfiles are stored.
+        """
+        try:
+            logs_dir = cros_device.install_version_without_cros_au_rpc(
+                payload_uri, clobber_stateful=clobber_stateful)
+        except Exception as e:
+            logging.error('ERROR: Failed to update device.')
+            raise error.TestFail(str(e))
+        return logs_dir
+
+
     def run_update_test(self, cros_device, test_conf):
         """Runs the update test, collects perf stats, checks expected version.
 
@@ -231,17 +254,13 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         target_release = test_conf['target_release']
 
         cros_device.copy_perf_script_to_device(self.bindir)
-        try:
-            # Update the DUT to the target image.
-            pid = cros_device.install_target_image(test_conf[
-                'target_payload_uri'])
-        except dev_server.DevServerException as e:
-            logging.fatal('ERROR: Failure occurred during the target update.')
-            raise error.TestFail(str(e))
 
-        # Verify the hostlog of events was returned from the update.
+        logs_dir = self.update_device_without_cros_au_rpc(
+            cros_device, test_conf['target_payload_uri'])
+        self._copy_generated_nebraska_logs(logs_dir, 'target')
+
         file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
-                                          pid)
+                                          'target')
 
         try:
             # Call into base class to compare expected events against hostlog.
@@ -267,8 +286,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                                  cros_device.get_cros_version())
         else:
             # Verify we have a hostlog for the post-reboot update check.
-            file_url = self._get_hostlog_file(
-                self._DEVSERVER_HOSTLOG_REBOOT, pid)
+            file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
+                                              'target')
 
             try:
                 # Compare expected events against hostlog.
@@ -308,10 +327,9 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         # Install source image
         source_payload_uri = test_conf['source_payload_uri']
         if source_payload_uri is not None:
-            try:
-                cros_device.install_source_image(source_payload_uri)
-            except dev_server.DevServerException as e:
-                raise error.TestFail(str(e))
+            logs_dir = self.update_device_without_cros_au_rpc(
+                cros_device, source_payload_uri, clobber_stateful=True)
+            self._copy_generated_nebraska_logs(logs_dir, 'source')
             cros_device.check_login_after_source_update()
 
         # Start the update to the target image.

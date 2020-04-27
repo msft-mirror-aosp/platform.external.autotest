@@ -20,6 +20,7 @@ from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
 from autotest_lib.server.cros.faft.utils import mode_switcher
 from autotest_lib.server.cros.faft.utils.faft_checkers import FAFTCheckers
+from autotest_lib.server.cros.power import utils as PowerUtils
 from autotest_lib.server.cros.servo import chrome_base_ec
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.server.cros.servo import chrome_ec
@@ -508,12 +509,15 @@ class FirmwareTest(FAFTBase):
 
         self.mark_setup_done('usb_check')
 
-    def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True):
+    def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True,
+                       min_batt_level=None):
         """Setup the PDTester to a given state.
 
         @param flip_cc: True to flip CC polarity; False to not flip it.
         @param dts_mode: True to config PDTester to DTS mode; False to not.
         @param pd_faft: True to config PD FAFT setup.
+        @param min_batt_level: An int for minimum battery level, or None for
+                               skip.
         @raise TestError: If Servo v4 not setup properly.
         """
 
@@ -522,6 +526,13 @@ class FirmwareTest(FAFTBase):
             raise error.TestError('servo_v4_with_servo_micro is a mandatory '
                                   'setup for PD FAFT. Got %s.'
                                   % self.pdtester.servo_type)
+
+        # Ensure the battery is enough for testing, this should be done before
+        # all the following setup.
+        if (min_batt_level is not None) and self._client.has_battery():
+            logging.info('Start charging if batt level < %d', min_batt_level)
+            PowerUtils.put_host_battery_in_range(self._client, min_batt_level,
+                                                 100, 600)
 
         # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
         # the behaviors of what PD FAFT tests. So we want it disabled.

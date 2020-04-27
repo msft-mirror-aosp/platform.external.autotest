@@ -276,7 +276,7 @@ class servo_LabstationVerification(test.test):
         return dut_ipv4
 
     def _set_dut_stable_version(self, dut_host):
-        """ Helper method to set stable_version in DUT host.
+        """Helper method to set stable_version in DUT host.
 
         @param dut_host: CrosHost object representing the DUT.
         """
@@ -285,6 +285,69 @@ class servo_LabstationVerification(test.test):
         host_info = dut_host.host_info_store.get()
         host_info.stable_versions['cros'] = self.cros_version
         dut_host.host_info_store.commit(host_info)
+
+    def _get_dut_info_from_config(self):
+        """Get DUT info from json config file.
+
+        @returns a list of dicts that each dict represents a dut.
+        """
+        ctrl_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 'labstation_to_dut_map.json')
+        with open(ctrl_path, 'r') as f:
+            data = json.load(f, object_hook=self._byteify)
+            # create a default dut dict in case the servohost is not in config
+            # map, this is normally happened in local testing.
+            default_dut = {
+                'hostname': None,
+                'servo_port': '9999',
+                'servo_serial': None
+            }
+            return data.get(self.labstation_host.hostname, [default_dut])
+
+    def _byteify(self, data, ignore_dicts=False):
+        """Helper method to convert unicode to string.
+        """
+        if isinstance(data, unicode):
+            return data.encode('utf-8')
+        if isinstance(data, list):
+            return [self._byteify(item, ignore_dicts=True) for item in data]
+        if isinstance(data, dict) and not ignore_dicts:
+            return {
+                self._byteify(key, ignore_dicts=True):
+                    self._byteify(value, ignore_dicts=True)
+                for key, value in data.iteritems()
+            }
+        return data
+
+    def _setup_servod(self):
+        """Setup all servod instances under servohost for later testing.
+        """
+        for dut in self.dut_list:
+            # Use board: nami as default for local testing.
+            board = dut.get('board', 'nami')
+            port = dut.get('servo_port')
+            serial = dut.get('servo_serial')
+
+            logging.info('Setting up servod for port %s', port)
+
+            # Stop existing servod instance.
+            stop_servod_cmd = 'stop servod PORT=%s' % port
+            self.labstation_host.run(stop_servod_cmd, ignore_status=True)
+            # Wait for existing servod turned down.
+            time.sleep(3)
+            # Then, restart servod ourselves.
+            start_servod_cmd = 'start servod BOARD=%s PORT=%s' % (board, port)
+            if serial:
+                start_servod_cmd += ' SERIAL=%s' % serial
+            self.labstation_host.run(start_servod_cmd)
+            # Give servod plenty of time to come up.
+            time.sleep(40)
+            try:
+                validate_cmd = 'servodutil show -p %s' % port
+                self.labstation_host.run_grep(validate_cmd,
+                    stdout_err_regexp='No servod scratch entry found.')
+            except error.AutoservRunError:
+                raise error.TestFail('Servod did not come up on labstation.')
 
     def initialize(self, host, config=None):
         """Setup servod on |host| to run subsequent tests.
@@ -296,21 +359,10 @@ class servo_LabstationVerification(test.test):
         self.labstation_host = host
         # Make sure recovery is quick in case of failure.
         self.job.fast = True
-        # First, stop all servod instances running on the labstation to test.
-        host.run('sudo stop servod PORT=9999', ignore_status=True)
-        # Wait for existing servod turned down.
-        time.sleep(3)
-        # Then, restart servod ourselves.
-        host.run_background('start servod BOARD=nami PORT=9999')
-        # Give servod plenty of time to come up.
-        time.sleep(40)
-        try:
-            host.run_grep('servodutil show -p 9999',
-                          stdout_err_regexp='No servod scratch entry found.')
-        except error.AutoservRunError:
-            raise error.TestFail('Servod did not come up on labstation.')
-        self.dut_ip = None
-
+        # Get list of duts under the servohost.
+        self.dut_list = self._get_dut_info_from_config()
+        # Setup servod for all duts.
+        self._setup_servod()
         # We need a cros build number for testing download image to usb and
         # use servo to reimage DUT purpose. So copying labstation's
         # stable_version here since we don't really care about which build
@@ -318,6 +370,8 @@ class servo_LabstationVerification(test.test):
         self.cros_version = (
             self.labstation_host.host_info_store.get().cros_stable_version)
 
+        # collect user input args that used for local testing.
+        self.dut_ip = None
         if config:
             if 'dut_ip' in config:
                 # Retrieve DUT ip from args if caller specified it.
@@ -347,11 +401,16 @@ class servo_LabstationVerification(test.test):
         success &= self.runsubtest('servo_LabControlVerification',
                                    host=self.labstation_host,
                                    disable_sysinfo=True)
-        # Servod came up successfully - build a servo host and use it to verify
-        # basic functionality.
+        # Servod came up successfully - build a ServoHost and CrosHost for
+        # later testing to verfiy servo functionality. Since we only need
+        # one CrosHost so we just pick the first one in the dut list.
+        dut_hostname = self.dut_list[0].get('hostname') or self.dut_ip
+        servo_port = self.dut_list[0].get('servo_port')
+        servo_serial = self.dut_list[0].get('servo_serial')
         servo_args = {
             servo_constants.SERVO_HOST_ATTR: self.labstation_host.hostname,
-            servo_constants.SERVO_PORT_ATTR: 9999,
+            servo_constants.SERVO_PORT_ATTR: servo_port,
+            servo_constants.SERVO_SERIAL_ATTR: servo_serial,
             'is_in_lab': False,
         }
         # Close out this host as the test will restart it as a servo host.
@@ -360,10 +419,10 @@ class servo_LabstationVerification(test.test):
             None, servo_args)
         self.labstation_host.connect_servo()
         servo_proxy = self.labstation_host.get_servo()
-        if not self.dut_ip:
-            self.dut_ip = self.get_dut_on_servo_ip(self.labstation_host)
-        logging.info('Running the DUT side on DUT %r', self.dut_ip)
-        dut_host = factory.create_host(self.dut_ip)
+        if not dut_hostname:
+            dut_hostname = self.get_dut_on_servo_ip(self.labstation_host)
+        logging.info('Running the DUT side on DUT %r', dut_hostname)
+        dut_host = factory.create_host(dut_hostname)
         dut_host.set_servo_host(self.labstation_host)
 
         # Copy labstation's stable_version to dut_host for later test consume.

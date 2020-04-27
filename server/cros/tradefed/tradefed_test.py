@@ -132,10 +132,12 @@ class TradefedTest(test.test):
 
         # If use_jdk9 is set true, use jdk9 than default jdk8.
         if use_jdk9:
+            logging.info('Using JDK9')
             try:
                 os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
                 os.environ['PATH'] = os.environ['JAVA_HOME']\
                                   + '/bin:' + os.environ['PATH']
+                os.system('java -version')
             except OSError:
                 logging.error('Can\'t change current PATH directory')
 
@@ -372,7 +374,9 @@ class TradefedTest(test.test):
 
         # Android "RescueParty" feature can reset the above settings when the
         # device crashes often. Disable the rescue during testing.
-        self._android_shell(host, 'setprop persist.sys.disable_rescue true')
+        # Keeping only for P and below since R has SELinux restrictions.
+        if self._get_android_version() < 29:
+            self._android_shell(host, 'setprop persist.sys.disable_rescue true')
 
     def _ready_arc(self):
         """Ready ARC and adb in parallel for running tests via tradefed."""
@@ -385,8 +389,15 @@ class TradefedTest(test.test):
             try:
                 # Kill existing adb server to ensure that the env var is picked
                 # up, and reset any previous bad state.
-                self._run_adb_cmd(verbose=True, args=('kill-server',),
-                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+                #
+                # The timeout is ignored, since the only known failure pattern
+                # b/142828365 is due to a zombie process that does not prevent
+                # starting a new server is new adb key.
+                try:
+                    self._run_adb_cmd(verbose=True, args=('kill-server',),
+                        timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+                except error.CmdTimeoutError as e:
+                    logging.warn(e)
 
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.

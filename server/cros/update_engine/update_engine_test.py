@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import urlparse
 
 from datetime import datetime, timedelta
@@ -20,6 +21,7 @@ from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
+from chromite.lib import osutils
 from chromite.lib import retry_util
 
 
@@ -54,6 +56,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # The names of the two hostlog files we will be verifying
     _DEVSERVER_HOSTLOG_ROOTFS = 'devserver_hostlog_rootfs'
     _DEVSERVER_HOSTLOG_REBOOT = 'devserver_hostlog_reboot'
+    _NEBRASKA_LOG = 'nebraska.log'
 
     # Version we tell the DUT it is on before update.
     _CUSTOM_LSB_VERSION = '0.0.0.0'
@@ -523,17 +526,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                                     update_engine_log)
 
 
-    def _disconnect_then_reconnect_network(self, update_url):
-        """
-        Disconnects the network for a couple of minutes then reconnects.
-
-        @param update_url: A URL to use to check we are online.
-
-        """
-        self._run_client_test_and_check_result(
-            'autoupdate_DisconnectReconnectNetwork', update_url=update_url)
-
-
     def _suspend_then_resume(self):
         """Susepends and resumes the host DUT."""
         try:
@@ -666,6 +658,39 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         answer = 'yes' if update_over_cellular else 'no'
         cmd = 'update_engine_client --update_over_cellular=%s' % answer
         retry_util.RetryException(error.AutoservRunError, 2, self._run, cmd)
+
+
+    def _copy_generated_nebraska_logs(self, logs_dir, identifier):
+        """Copies nebraska logs from logs_dir into job results directory.
+
+        The nebraska process on the device generates logs (with the names:
+        devserver_hostlog_rootfs, devserver_hostlog_reboot, nebraska.log) and
+        stores those logs in a /tmp directory. This method copies the logfiles
+        from the tmp directory into the job results directory.
+
+        @param logs_dir: Directory containing paths to the log files generated
+                         by the nebraska process.
+        @param identifier: A string that is appended to the logfile when it is
+                           saved so that multiple files with the same name can
+                           be differentiated.
+        """
+        results_dir = os.path.join(self.job.resultdir,
+                                   dev_server.AUTO_UPDATE_LOG_DIR)
+        osutils.SafeMakedirs(results_dir)
+        partial_filename = '%s_%s_%s' % ('%s', self._host.hostname, identifier)
+        src_files = [self._DEVSERVER_HOSTLOG_ROOTFS,
+                     self._DEVSERVER_HOSTLOG_REBOOT,
+                     self._NEBRASKA_LOG]
+
+        for src_fname in src_files:
+            source = os.path.join(logs_dir, src_fname)
+            dest = os.path.join(results_dir, partial_filename % src_fname)
+            logging.debug('Copying logs from %s to %s', source, dest)
+            try:
+                shutil.copyfile(source, dest)
+            except Exception as e:
+                logging.error('Could not copy logs from %s into %s due to '
+                              'exception: %s', source, dest, e)
 
 
     def verify_update_events(self, source_release, hostlog_filename,

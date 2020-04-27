@@ -82,7 +82,7 @@ class FingerprintTest(test.test):
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.3455-bc55b4ae',  # not yet finalized
+        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.3504-f45c30a9',  # not yet finalized
         _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
         _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
         _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
@@ -105,6 +105,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_SHA256SUM: '821bb12c74920396f5ef8829ec283cdb73ef47b00dc0fdd417c1dc7fd87b4f18',
                 _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.3455-bc55b4ae',
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.3455-bc55b4ae',
+                _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+            'bloonchipper_v2.0.3504-f45c30a9.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '6f5fe59909097287c95ddd879832e30790926c307e203c617ba7d04bd007dcea',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.3504-f45c30a9',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.3504-f45c30a9',
                 _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
             },
         },

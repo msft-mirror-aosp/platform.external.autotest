@@ -20,6 +20,7 @@ from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
 from autotest_lib.server.cros.faft.utils import mode_switcher
 from autotest_lib.server.cros.faft.utils.faft_checkers import FAFTCheckers
+from autotest_lib.server.cros.power import utils as PowerUtils
 from autotest_lib.server.cros.servo import chrome_base_ec
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.server.cros.servo import chrome_ec
@@ -75,6 +76,9 @@ class FirmwareTest(FAFTBase):
     # Delay between closing and opening lid
     LID_DELAY = 1
 
+    # The default number of power state check retries (each try takes 3 secs)
+    DEFAULT_PWR_RETRIES = 5
+
     # FWMP space constants
     FWMP_CLEARED_EXIT_STATUS = 1
     FWMP_CLEARED_ERROR_MSG = ('CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS'
@@ -90,6 +94,7 @@ class FirmwareTest(FAFTBase):
     _backup_cgpt_attr = dict()
     _backup_gbb_flags = None
     _backup_dev_mode = None
+    _restore_power_mode = None
 
     # Class level variable, keep track the states of one time setup.
     # This variable is preserved across tests which inherit this class.
@@ -319,7 +324,7 @@ class FirmwareTest(FAFTBase):
         system_info.update(self.servo.get_servo_fw_versions())
 
         if hasattr(self, 'cr50'):
-            system_info['cr50_version'] = self.servo.get('cr50_version')
+            system_info['cr50_version'] = self.cr50.get_full_version()
 
         logging.info('System info:\n%s', pprint.pformat(system_info))
         self.write_attr_keyval(system_info)
@@ -504,12 +509,15 @@ class FirmwareTest(FAFTBase):
 
         self.mark_setup_done('usb_check')
 
-    def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True):
+    def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True,
+                       min_batt_level=None):
         """Setup the PDTester to a given state.
 
         @param flip_cc: True to flip CC polarity; False to not flip it.
         @param dts_mode: True to config PDTester to DTS mode; False to not.
         @param pd_faft: True to config PD FAFT setup.
+        @param min_batt_level: An int for minimum battery level, or None for
+                               skip.
         @raise TestError: If Servo v4 not setup properly.
         """
 
@@ -518,6 +526,13 @@ class FirmwareTest(FAFTBase):
             raise error.TestError('servo_v4_with_servo_micro is a mandatory '
                                   'setup for PD FAFT. Got %s.'
                                   % self.pdtester.servo_type)
+
+        # Ensure the battery is enough for testing, this should be done before
+        # all the following setup.
+        if (min_batt_level is not None) and self._client.has_battery():
+            logging.info('Start charging if batt level < %d', min_batt_level)
+            PowerUtils.put_host_battery_in_range(self._client, min_batt_level,
+                                                 100, 600)
 
         # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
         # the behaviors of what PD FAFT tests. So we want it disabled.
@@ -1006,6 +1021,56 @@ class FirmwareTest(FAFTBase):
             if uart_file:
                 self.servo.set('%s_uart_capture' % uart, 'off')
 
+    def set_ap_off_power_mode(self, power_mode):
+        """
+        Set the DUT power mode to suspend (S0ix/S3) or shutdown (G3/S5).
+        The DUT must be in S0 when calling this method.
+
+        @param power_mode: a string for the expected power mode, either
+                           'suspend' or 'shutdown'.
+        """
+        if power_mode == 'suspend':
+                target_power_state = 'S0ix|S3'
+        elif power_mode == 'shutdown':
+                target_power_state = 'G3'
+        else:
+            raise error.TestError('%s is not a valid ap-off power mode.' %
+                                  power_mode)
+
+        if self.get_power_state() != 'S0':
+            raise error.TestError('The DUT is not in S0.')
+
+        self._restore_power_mode = True
+
+        if target_power_state == 'G3':
+            self.run_shutdown_cmd()
+            time.sleep(self.faft_config.shutdown)
+        elif target_power_state == 'S0ix|S3':
+            self.suspend()
+
+        if self.wait_power_state(target_power_state, self.DEFAULT_PWR_RETRIES):
+            logging.info('System entered %s state.', target_power_state)
+        else:
+            self._restore_power_mode = False
+            raise error.TestFail('System fail to enter %s state. '
+                    'Current state: %s', target_power_state,
+                    self.get_power_state())
+
+    def restore_ap_on_power_mode(self):
+        """
+        Wake up the DUT to S0. If the DUT was not set to suspend or
+        shutdown mode by set_ap_off_power_mode(), raise an error.
+        """
+        if self.get_power_state() != 'S0':
+            logging.info('Wake up the DUT to S0.')
+            self.servo.power_normal_press()
+            # If the DUT is ping-able, it must be in S0.
+            self.switcher.wait_for_client()
+            if self._restore_power_mode != True:
+                raise error.TestFail('The DUT was not set to suspend/shutdown '
+                        'mode by set_ap_off_power_mode().')
+            self._restore_power_mode = False
+
     def get_power_state(self):
         """
         Return the current power state of the AP (via EC 'powerinfo' command)
@@ -1062,6 +1127,19 @@ class FirmwareTest(FAFTBase):
             except error.TestFail:
                 pass
         return False
+
+    def run_shutdown_cmd(self):
+        """Shut down the DUT by running '/sbin/shutdown -P now'."""
+        self.faft_client.disconnect()
+        # Shut down in the background after sleeping so the call gets a reply.
+        try:
+            self._client.run_background('sleep 0.5; /sbin/shutdown -P now')
+        except error.AutoservRunError as e:
+            # From the ssh man page, error code 255 indicates ssh errors.
+            if e.result_obj.exit_status == 255:
+                logging.warn("Ignoring error from ssh: %s", e)
+            else:
+                raise
 
     def suspend(self):
         """Suspends the DUT."""
@@ -1290,13 +1368,12 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        if self.check_ec_capability(['x86'], suppress_warning=True):
-            self.check_shutdown_power_state(
-                    "G3", pwr_retries=5, orig_boot_id=boot_id)
+        self.check_shutdown_power_state("G3", orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 
-    def check_shutdown_power_state(self, power_state, pwr_retries,
+    def check_shutdown_power_state(self, power_state,
+                                   pwr_retries=DEFAULT_PWR_RETRIES,
                                    orig_boot_id=None):
         """Check whether the device shut down and entered the given power state.
 
@@ -1487,8 +1564,8 @@ class FirmwareTest(FAFTBase):
                     'Should shut the device down after calling %s.' %
                     shutdown_action.__name__)
         except ConnectionError:
-            if self.check_ec_capability(['x86'], suppress_warning=True):
-                self.check_shutdown_power_state("G3", pwr_retries=5)
+            if self.faft_config.chrome_ec:
+                self.check_shutdown_power_state("G3")
             logging.info(
                 'DUT is surely shutdown. We are going to power it on again...')
 

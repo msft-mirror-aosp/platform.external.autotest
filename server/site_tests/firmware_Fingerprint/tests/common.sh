@@ -6,12 +6,26 @@
 
 set -e
 
-readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
+# nocturne does not support unibuild, so the cros_config command will exit
+# with error and not print a board.
+readonly _BOARD="$(cros_config /fingerprint board || true)"
+
+# TODO(b/149590275): remove once fixed
+if [[ "${_BOARD}" == "bloonchipper" ]]; then
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
+Flash protect flags: 0x0000040f wp_gpio_asserted ro_at_boot ro_now rollback_now all_now
+Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Writable flags:      0x00000000
+SETVAR
+  )"
+else
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
 Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
 Writable flags:      0x00000004 all_now
 SETVAR
-)"
+  )"
+fi
 
 readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_DISABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000000
@@ -20,12 +34,22 @@ Writable flags:      0x00000001 ro_at_boot
 SETVAR
 )"
 
-readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
-Flash protect flags: 0x00000003 ro_at_boot ro_now
+# TODO(b/149590275): remove once fixed
+if [[ "${_BOARD}" == "bloonchipper" ]]; then
+  readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
+Flash protect flags: 0x00000407 ro_at_boot ro_now rollback_now all_now
 Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
 Writable flags:      0x00000000
 SETVAR
 )"
+else
+  readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
+Flash protect flags: 0x00000003 ro_at_boot ro_now
+Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Writable flags:      0x00000000
+SETVAR
+  )"
+fi
 
 readonly _FP_FRAME_RAW_ACCESS_DENIED_ERROR="$(cat <<SETVAR
 EC result 4 (ACCESS_DENIED)

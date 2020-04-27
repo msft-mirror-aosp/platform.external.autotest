@@ -444,7 +444,7 @@ class StopStartUIVerifier(hosts.Verifier):
 
 
 class ServoTypeVerifier(hosts.Verifier):
-    """Verify that servo_type attribute exists"""
+    """Verify that servo_type label exists and has correct value"""
 
     def verify(self, host):
         if not host.servo:
@@ -453,10 +453,10 @@ class ServoTypeVerifier(hosts.Verifier):
 
         info = host.host_info_store.get()
         try:
-            servo_type = host.servo.get_servo_version()
-            if servo_type != info.attributes.get(SERVO_TYPE_LABEL_PREFIX, ''):
-                logging.info('servo_type mismatch detected, updating...')
-                info.attributes[SERVO_TYPE_LABEL_PREFIX] = servo_type
+            if not info.get_label_value(SERVO_TYPE_LABEL_PREFIX):
+                logging.info('servo_type missing, updating...')
+                servo_type = host.servo.get_servo_version()
+                info.set_version_label(SERVO_TYPE_LABEL_PREFIX, servo_type)
                 host.host_info_store.commit(info)
         except Exception as e:
             # We don't want fail the verifier and break DUTs here just
@@ -544,6 +544,30 @@ class ServoResetRepair(_ResetRepairAction):
     def description(self):
         # pylint: disable=missing-docstring
         return 'Reset the DUT via servo'
+
+
+class ServoCr50RebootRepair(_ResetRepairAction):
+    """
+    Repair a Chrome device by resetting cr50 by servo.
+
+    Reset cr50 which is ec+ccd reset.
+    """
+
+    def repair(self, host):
+        # pylint: disable=missing-docstring
+        host.servo.get_power_state_controller().cr50_reset()
+        self._check_reset_success(host)
+
+    def _is_applicable(self, host):
+        if host.servo:
+            if host.servo.has_control('cr50_reboot'):
+                return True
+        return False
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Reset(cr50) the DUT via servo'
 
 
 class DevDefaultBootRepair(hosts.RepairAction):
@@ -726,6 +750,7 @@ def _cros_basic_repair_actions():
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
         (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
         (ServoResetRepair, 'servoreset', (), ('ssh',)),
+        (ServoCr50RebootRepair, 'cr50_reset', (), ('ssh',)),
 
         # N.B. FirmwareRepair can't fix a 'good_au' failure directly,
         # because it doesn't remove the flag file that triggers the

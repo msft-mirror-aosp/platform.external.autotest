@@ -61,6 +61,8 @@ class Cr50Test(FirmwareTest):
     # USB issues may show up with the timer sof calibration overflow interrupt.
     # Count these during cleanup.
     CR50_USB_ERROR = 'timer_sof_calibration_overflow_int'
+    # CCD password used by tests.
+    PASSWORD = 'Password'
 
     def initialize(self,
                    host,
@@ -568,6 +570,12 @@ class Cr50Test(FirmwareTest):
     def cleanup(self):
         """Attempt to cleanup the cr50 state. Then run firmware cleanup"""
         try:
+            # Reset the password as the first thing in cleanup. It is important
+            # that if some other part of cleanup fails, the password has at
+            # least been reset.
+            # DO NOT PUT ANYTHING BEFORE THIS.
+            self._try_quick_ccd_cleanup()
+
             self.servo.enable_main_servo_device()
 
             self._try_to_bring_dut_up()
@@ -680,15 +688,16 @@ class Cr50Test(FirmwareTest):
             raise error.TestError('Unexpected state mismatch during '
                                   'cleanup %s' % mismatch)
 
-    def _restore_ccd_settings(self):
-        """Restore the original ccd state."""
-        # Reset the password as the first thing in cleanup. It is important that
-        # if some other part of cleanup fails, the password has at least been
-        # reset.
+    def _try_quick_ccd_cleanup(self):
+        """Try to clear all ccd state."""
         self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('rddkeepalive disable')
         self.cr50.send_command('ccd reset')
         self.cr50.send_command('wp follow_batt_pres atboot')
+
+    def _restore_ccd_settings(self):
+        """Restore the original ccd state."""
+        self._try_quick_ccd_cleanup()
 
         # Reboot cr50 if the console is accessible. This will reset most state.
         if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_IS_ACCESSIBLE]:
@@ -1045,10 +1054,11 @@ class Cr50Test(FirmwareTest):
         else:
             logging.info('Opened Cr50')
 
-    def fast_open(self, enable_testlab=False):
+    def fast_open(self, enable_testlab=False, reset_ccd=True):
         """Try to use testlab open. If that fails, do regular ap open.
 
         @param enable_testlab: If True, enable testlab mode after cr50 is open.
+        @param reset_ccd: If True, reset ccd after open.
         """
         if not self.faft_config.has_powerbutton:
             logging.warning('No power button', exc_info=True)
@@ -1061,14 +1071,16 @@ class Cr50Test(FirmwareTest):
 
         if self.servo.has_control('chassis_open'):
             self.servo.set('chassis_open', 'yes')
+        pw = '' if self.cr50.password_is_reset() else self.PASSWORD
         # Use the console to open cr50 without entering dev mode if possible. It
         # takes longer and relies on more systems to enter dev mode and ssh into
         # the AP. Skip the steps that aren't required.
-        if not self.cr50.get_cap('OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]:
+        if not (pw or self.cr50.get_cap(
+                        'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
             self.enter_mode_after_checking_tpm_state('dev')
 
-        if self.cr50.get_cap('OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
-            self.cr50.set_ccd_level(self.cr50.OPEN)
+        if pw or self.cr50.get_cap('OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
+            self.cr50.set_ccd_level(self.cr50.OPEN, pw)
         else:
             self.ccd_open_from_ap()
 
@@ -1077,6 +1089,9 @@ class Cr50Test(FirmwareTest):
 
         if enable_testlab:
             self.cr50.set_ccd_testlab('on')
+
+        if reset_ccd:
+            self.cr50.send_command('ccd reset')
 
         # Make sure the device is in normal mode. After opening cr50, the TPM
         # should be cleared and the device should automatically reset to normal

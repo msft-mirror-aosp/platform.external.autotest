@@ -28,8 +28,8 @@ class PDConsoleUtils(object):
     PD_MAX_PORTS = 2
     CONNECT_TIME = 4
 
-    DUALROLE_QUERY_DELAY = 0.25
-    # Dualrole input/ouput values of methods in this class.
+    DUALROLE_QUERY_DELAY = 0.5
+    # Dualrole input/output values of methods in this class.
     DUALROLE_VALUES = ['on', 'off', 'snk', 'src']
     # Strings passing to the console command "pd dualrole"
     DUALROLE_CMD_ARGS = ['on', 'off', 'sink', 'source']

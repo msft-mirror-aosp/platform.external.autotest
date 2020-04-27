@@ -132,10 +132,12 @@ class TradefedTest(test.test):
 
         # If use_jdk9 is set true, use jdk9 than default jdk8.
         if use_jdk9:
+            logging.info('Using JDK9')
             try:
                 os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
                 os.environ['PATH'] = os.environ['JAVA_HOME']\
                                   + '/bin:' + os.environ['PATH']
+                os.system('java -version')
             except OSError:
                 logging.error('Can\'t change current PATH directory')
 

@@ -48,16 +48,14 @@ class firmware_WriteProtectFunc(FirmwareTest):
 
         try:
             # Recover SW WP status.
-            if hasattr(self._original_sw_wps):
+            if hasattr(self, '_original_sw_wps'):
                 # If HW WP is enabled, we have to disable it first so that
                 # SW WP can be changed.
                 current_hw_wp = 'on' in self.servo.get('fw_wp_state')
                 if current_hw_wp:
                     self.set_hardware_write_protect(False)
-                for target in self._targets:
-                    if hasattr(self._original_sw_wps, target):
-                        self._set_write_protect(target,
-                                self._original_sw_wps[target])
+                for target, original_sw_wp in self._original_sw_wps.items():
+                    self._set_write_protect(target, original_sw_wp)
                 self.set_hardware_write_protect(current_hw_wp)
             # Recover HW WP status.
             if hasattr(self, '_original_hw_wp'):

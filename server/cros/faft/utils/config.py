@@ -14,12 +14,6 @@ _CONFIG_DIR = os.path.abspath(os.path.join(
         os.path.dirname(os.path.realpath(__file__)), os.pardir,
         'fw-testing-configs'))
 
-# Path to the old FAFT configs directory
-# TODO(b/154756599): Remove this once we have verified that the lab
-# machines are able to read from fw-testing-configs
-_OLD_CONFIG_DIR = os.path.abspath(os.path.join(
-        _CONFIG_DIR, os.pardir, 'configs'))
-
 def _get_config_dir():
     """
     Return the path to the directory containing platform config files.
@@ -28,14 +22,9 @@ def _get_config_dir():
     the fw-testing-configs repository. However, if that directory cannot
     be found, then instead use the old configs/ directory.
 
-    TODO(b/154756599): Remove this logic once we have verified that the
-    lab machines are able to read from fw-testing-configs.
-
     """
-    if os.path.isdir(_CONFIG_DIR):
-        return _CONFIG_DIR
-    else:
-        return _OLD_CONFIG_DIR
+    assert os.path.isdir(_CONFIG_DIR)
+    return _CONFIG_DIR
 
 def _get_config_filepath(platform):
     """Find the JSON file containing the platform's config"""
@@ -68,9 +57,6 @@ class Config(object):
     If the platform inherits overrides from a parent platform, then the child
     platform's overrides take precedence over the parent's.
 
-    TODO(gredelston): Move the JSON out of this Autotest, as per
-    go/cros-fw-testing-configs
-
     @ivar platform: string containing the board name being tested.
     @ivar model: string containing the model name being tested
     """
@@ -81,7 +67,6 @@ class Config(object):
 
         @param platform: The name of the platform being tested.
         """
-        logging.info('Using FAFT config dir: %s', _get_config_dir())
         self._precedence_list = []
         self._precedence_names = []
         # Loadthe most specific JSON config possible by splitting

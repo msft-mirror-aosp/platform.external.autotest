@@ -1564,7 +1564,8 @@ class FirmwareTest(FAFTBase):
                     'Should shut the device down after calling %s.' %
                     shutdown_action.__name__)
         except ConnectionError:
-            self.check_shutdown_power_state("G3")
+            if self.faft_config.chrome_ec:
+                self.check_shutdown_power_state("G3")
             logging.info(
                 'DUT is surely shutdown. We are going to power it on again...')
 

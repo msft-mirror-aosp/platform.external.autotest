@@ -43,8 +43,15 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         while True:
             if not seen_reboot:
                 try:
-                    self._get_update_engine_status(timeout=10,
-                                                   ignore_timeout=False)
+                    status = self._get_update_engine_status(
+                        timeout=10, ignore_timeout=False)
+                    if status is not None:
+                        if (status[self._CURRENT_OP] ==
+                            self._UPDATE_STATUS_REPORTING_ERROR_EVENT):
+                            err_str = self._get_last_error_string()
+                            raise error.TestFail('Update status reported error'
+                                                 'during OOBE update: %s' %
+                                                 err_str)
                 except error.AutoservRunError as e:
                     # Check if command timed out because update-engine was
                     # taking a while or if the command didn't even start.
@@ -61,7 +68,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                     self._get_update_engine_status(timeout=10,
                                                    ignore_timeout=False)
                     if self._check_update_engine_log_for_entry(
-                          "Omaha request response:")
+                        'Omaha request response:'):
                         break;
                 except (error.TestFail, error.AutoservRunError):
                     pass

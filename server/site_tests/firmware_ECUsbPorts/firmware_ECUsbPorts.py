@@ -130,7 +130,6 @@ class firmware_ECUsbPorts(FirmwareTest):
         """Shutdown the system and check USB ports are disabled."""
         self._failed = False
         self.run_shutdown_cmd()
-        self.switcher.wait_for_client_offline()
         if not self.wait_port_disabled(self._port_count, self.SHUTDOWN_TIMEOUT):
             logging.info("Fails to wait for USB port disabled")
             self._failed = True

@@ -40,7 +40,7 @@ class firmware_PDResetSoft(FirmwareTest):
     def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
                    init_power_mode=None):
         super(firmware_PDResetSoft, self).initialize(host, cmdline_args)
-        self.setup_pdtester(flip_cc, dts_mode)
+        self.setup_pdtester(flip_cc, dts_mode, min_batt_level=10)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         if init_power_mode:

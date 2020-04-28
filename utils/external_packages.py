@@ -1122,6 +1122,16 @@ class GoogleAuthPackage(ExternalPackage):
             ExternalPackage._build_and_install_current_dir_setup_py)
 
 
+class CachetoolsPackage(ExternalPackage):
+    """Cachetools package."""
+    version = '3.1.1'
+    local_filename = 'cachetools-%s.tar.gz' % version
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = 'd030bfdfa91b0b1188993f5e8d7da077308c1eaf'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
 
 class _ExternalGitRepo(ExternalPackage):
     """

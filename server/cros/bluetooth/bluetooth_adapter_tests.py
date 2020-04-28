@@ -4,17 +4,11 @@
 
 """Server side bluetooth adapter subtests."""
 
-import errno
-import functools
-import httplib
 import inspect
+import functools
 import logging
-import os
 import re
-from socket import error as SocketError
 import time
-
-import bluetooth_test_utils
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
@@ -24,22 +18,16 @@ from autotest_lib.client.bin.input.linux_input import (
         BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL)
 
 
+REBOOTING_CHAMELEON = False
+
 Event = recorder.Event
 
-# Useful locations for handling HID keyboard data traces used by
-# test_keyboard_input_from_trace
-AUTO_TEST_LOCATION = 'trunk/src/third_party/autotest/files'
-TRACE_LOCATION = '/server/cros/bluetooth/input_traces/keyboard'
-INPUT_TRACE_LOCATION = AUTO_TEST_LOCATION + TRACE_LOCATION
-BASE_DIR = os.path.join(os.path.expanduser('~'))
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
-    'MOUSE': lambda chameleon: chameleon.get_bluetooth_hid_mouse,
-    'KEYBOARD': lambda chameleon: chameleon.get_bluetooth_hid_keyboard,
-    'BLE_MOUSE': lambda chameleon: chameleon.get_ble_mouse,
-    'BLE_KEYBOARD': lambda chameleon: chameleon.get_ble_keyboard,
-    'A2DP_SINK': lambda chameleon: chameleon.get_bluetooth_a2dp_sink,
+    'MOUSE': lambda host: host.chameleon.get_bluetooth_hid_mouse,
+    'LE_MOUSE': lambda host: host.chameleon.get_bluetooth_hog_mouse,
+    'BLE_MOUSE': lambda host: host.chameleon.get_ble_mouse,
 }
 
 
@@ -78,11 +66,11 @@ def _run_method(method, method_name, *args, **kwargs):
     return result
 
 
-def get_bluetooth_emulated_device(chameleon, device_type):
+def get_bluetooth_emulated_device(host, device_type):
     """Get the bluetooth emulated device object.
 
-    @param chameleon: the chameleon host
-    @param device_type : the bluetooth device type, e.g., 'MOUSE'
+    @param host: the DUT, usually a chromebook
+    @param device_type : the bluetooth HID device type, e.g., 'MOUSE'
 
     @returns: the bluetooth device object
 
@@ -106,12 +94,11 @@ def get_bluetooth_emulated_device(chameleon, device_type):
         contrary, given device.GetAdvertisedName, it is not feasible to get the
         method name by device.GetAdvertisedName.__name__
 
-        Also note that if the device method fails, we would try remediation
-        step and retry the device method. The remediation steps are
-         1) re-creating the serial device.
-         2) reset (powercycle) the bluetooth dongle.
-         3) reboot chameleond host.
-        If the device method still fails after these steps, we fail the test
+        Also note that if the device method fails at the first time, we would
+        try to fix the problem by re-creating the serial device and see if the
+        problem is fixed. If not, we will reboot the chameleon board and see
+        if the problem is fixed. If yes, execute the target method the second
+        time.
 
         The default values exist for uses of this function before the options
         were added, ideally we should change zero_ok to False.
@@ -119,39 +106,22 @@ def get_bluetooth_emulated_device(chameleon, device_type):
         @param method_name: the string of the method name.
         @param legal_falsy_values: Values that are falsy but might be OK.
 
-        @returns: the result returned by the device's method if the call was
-                  successful
-
-        @raises: TestError if the devices's method fails or if repair of
-                 peripheral kit fails
+        @returns: the result returned by the device's method.
 
         """
-
-        action_table = [('recreate' , 'Fixing the serial device'),
-                        ('reset', 'Power cycle the peer device'),
-                        ('reboot', 'Reboot the chamleond host')]
-
-        for i, (action, description) in enumerate(action_table):
-            logging.info('Attempt %s : %s ', i+1, method_name)
-
-            result = _run_method(getattr(device, method_name), method_name)
-            if _is_successful(result, legal_falsy_values):
-                return result
-
-            logging.error('%s failed the %s time. Attempting to %s',
-                          method_name,i,description)
-            if not fix_serial_device(chameleon, device, action):
-                logging.info('%s failed', description)
-            else:
-                logging.info('%s successful', description)
-
-        #try it last time after fix it by last action
         result = _run_method(getattr(device, method_name), method_name)
         if _is_successful(result, legal_falsy_values):
             return result
 
-        raise error.TestError('Failed to execute %s. Bluetooth peer device is'
-                              'not working' % method_name)
+        logging.error('%s failed the 1st time. Try to fix the serial device.',
+                      method_name)
+
+        # Try to fix the serial device if possible.
+        if not fix_serial_device(host, device):
+            return False
+
+        logging.info('%s: retry the 2nd time.', method_name)
+        return _run_method(getattr(device, method_name), method_name)
 
 
     if device_type not in SUPPORTED_DEVICE_TYPES:
@@ -159,7 +129,7 @@ def get_bluetooth_emulated_device(chameleon, device_type):
                               device_type)
 
     # Get the bluetooth device object and query some important properties.
-    device = SUPPORTED_DEVICE_TYPES[device_type](chameleon)()
+    device = SUPPORTED_DEVICE_TYPES[device_type](host)()
 
     # Get some properties of the kit
     # NOTE: Strings updated here must be kept in sync with Chameleon.
@@ -240,58 +210,37 @@ def recreate_serial_device(device):
         return False
 
 
-def _check_device_init(device, operation):
-    # Check if the serial device could initialize, connect, and
-    # enter command mode correctly.
-    logging.info('Checking device status...')
-    if not _run_method(device.Init, 'Init'):
-        logging.info('device.Init: failed after %s', operation)
-        return False
-    if not device.CheckSerialConnection():
-        logging.info('device.CheckSerialConnection: failed after %s', operation)
-        return False
-    if not _run_method(device.EnterCommandMode, 'EnterCommandMode'):
-        logging.info('device.EnterCommandMode: failed after %s', operation)
-        return False
-    logging.info('The device is created successfully after %s.', operation)
-    return True
+def _reboot_chameleon(host, device):
+    REBOOT_SLEEP_SECS = 40
 
-def _reboot_chameleon(chameleon, device):
-    """ Reboot chameleond host
-
-    Also power cycle the device since reboot may not do that.."""
-
-    # Chameleond fizz hosts should have write protect removed and
-    # set_gbb_flags set to 0 to minimize boot time
-    REBOOT_SLEEP_SECS = 10
-    RESET_SLEEP_SECS = 1
+    if not REBOOTING_CHAMELEON:
+        logging.info('Skip rebooting chameleon.')
+        return False
 
     # Close the bluetooth peripheral device and reboot the chameleon board.
     device.Close()
-    logging.info("Powercycling the device")
-    device.PowerCycle()
-    time.sleep(RESET_SLEEP_SECS)
     logging.info('rebooting chameleon...')
-    chameleon.reboot()
+    host.chameleon.reboot()
 
     # Every chameleon reboot would take a bit more than REBOOT_SLEEP_SECS.
     # Sleep REBOOT_SLEEP_SECS and then begin probing the chameleon board.
     time.sleep(REBOOT_SLEEP_SECS)
-    return _check_device_init(device, 'reboot')
 
-def _reset_device_power(device):
-    """Power cycle the device."""
-    RESET_SLEEP_SECS = 1
-    try:
-        if not device.PowerCycle():
-            logging.info('device.PowerCycle() failed')
-            return False
-    except:
-        logging.error('exception in device.PowerCycle')
-    else:
-        logging.info('device powercycled')
-    time.sleep(RESET_SLEEP_SECS)
-    return _check_device_init(device, 'reset')
+    # Check if the serial device could initialize, connect, and
+    # enter command mode correctly.
+    logging.info('Checking device status...')
+    if not _run_method(device.Init, 'Init'):
+        logging.info('device.Init: failed after reboot')
+        return False
+    if not device.CheckSerialConnection():
+        logging.info('device.CheckSerialConnection: failed after reboot')
+        return False
+    if not _run_method(device.EnterCommandMode, 'EnterCommandMode'):
+        logging.info('device.EnterCommandMode: failed after reboot')
+        return False
+    logging.info('The device is created successfully after reboot.')
+    return True
+
 
 def _is_successful(result, legal_falsy_values=[]):
     """Is the method result considered successful?
@@ -312,56 +261,35 @@ def _is_successful(result, legal_falsy_values=[]):
     return truthiness_of_result or result in legal_falsy_values
 
 
-def fix_serial_device(chameleon, device, operation='reset'):
+def fix_serial_device(host, device):
     """Fix the serial device.
 
     This function tries to fix the serial device by
     (1) re-creating a serial device, or
-    (2) power cycling the usb port to which device is connected
-    (3) rebooting the chameleon board.
+    (2) rebooting the chameleon board.
 
-    Argument operation determine which of the steps above are perform
-
-    Note that rebooting the chameleon board or reseting the device will remove
-    the state on the peripheral which might cause test failures. Please use
-    reset/reboot only before or after a test.
-
-    @param chameleon: the chameleon host
-    @param device: the bluetooth device.
-    @param operation: Recovery operation to perform 'recreate/reset/reboot'
+    @param host: the DUT, usually a chromebook
+    @param device: the bluetooth HID device
 
     @returns: True if the serial device is fixed. False otherwise.
 
     """
+    # Check the serial connection. Fix it if needed.
+    if device.CheckSerialConnection():
+        # The USB serial connection still exists.
+        # Re-connection suffices to solve the problem. The problem
+        # is usually caused by serial port change. For example,
+        # the serial port changed from /dev/ttyUSB0 to /dev/ttyUSB1.
+        logging.info('retry: creating a new serial device...')
+        if not recreate_serial_device(device):
+            return False
 
-    if operation == 'recreate':
-        # Check the serial connection. Fix it if needed.
-        if device.CheckSerialConnection():
-            # The USB serial connection still exists.
-            # Re-connection suffices to solve the problem. The problem
-            # is usually caused by serial port change. For example,
-            # the serial port changed from /dev/ttyUSB0 to /dev/ttyUSB1.
-            logging.info('retry: creating a new serial device...')
-            return recreate_serial_device(device)
-        else:
-            # Recreate the bluetooth peer device
-            return _check_device_init(device, operation)
-
-    elif operation == 'reset':
-        # Powercycle the USB port where the bluetooth peer device is connected.
-        # RN-42 and RN-52 share the same vid:pid so both will be powercycled.
-        # This will only work on fizz host with write protection removed.
-        # Note that the state on the device will be lost.
-        return _reset_device_power(device)
-
-    elif operation == 'reboot':
-        # Reboot the chameleon host.
-        # The device is power cycled before rebooting chameleon host
-        return _reboot_chameleon(chameleon, device)
-
-    else:
-        logging.error('fix_serial_device Invalid operation %s', operation)
-        return False
+    # Check if recreate_serial_device() above fixes the problem.
+    # If not, reboot the chameleon board including creation of a new
+    # bluetooth device. Check if reboot fixes the problem.
+    # If not, return False.
+    result = _run_method(device.EnterCommandMode, 'EnterCommandMode')
+    return _is_successful(result) or _reboot_chameleon(host, device)
 
 
 def retry(test_method, instance, *args, **kwargs):
@@ -381,24 +309,20 @@ def retry(test_method, instance, *args, **kwargs):
         return True
 
     # Try to fix the serial device if applicable.
-    logging.error('%s failed at the 1st time: (%s)', test_method.__name__,
-                  str(instance.results))
+    logging.error('%s failed at the 1st time.', test_method.__name__)
 
     # If this test does not use any attached serial device, just re-run
     # the test.
     logging.info('%s: retry the 2nd time.', test_method.__name__)
     time.sleep(1)
-
-
-    if not hasattr(instance, 'use_chameleon'):
+    if not hasattr(instance, 'device_type'):
         return _is_successful(_run_method(test_method, test_method.__name__,
                                           instance, *args, **kwargs))
-    for device_type in SUPPORTED_DEVICE_TYPES:
-        for device in getattr(instance, 'devices')[device_type]:
-            #fix_serial_device in 'recreate' mode doesn't require chameleon
-            #so just pass None for convinent.
-            if not fix_serial_device(None, device, "recreate"):
-                return False
+
+    host = instance.host
+    device = instance.devices[instance.device_type]
+    if not fix_serial_device(host, device):
+        return False
 
     logging.info('%s: retry the 2nd time.', test_method.__name__)
     return _is_successful(_run_method(test_method, test_method.__name__,
@@ -509,6 +433,8 @@ class BluetoothAdapterTests(test.test):
     ADAPTER_DISCOVER_TIMEOUT_SECS = 60          # 30 seconds too short sometimes
     ADAPTER_DISCOVER_POLLING_SLEEP_SECS = 1
     ADAPTER_DISCOVER_NAME_TIMEOUT_SECS = 30
+    # TODO(shijinabraham@) Remove when crbug/905374 is fixed
+    ADAPTER_STOP_DISCOVERY_TIMEOUT_SECS = 180
 
     ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS = 10
     ADAPTER_POLLING_DEFAULT_SLEEP_SECS = 1
@@ -545,125 +471,19 @@ class BluetoothAdapterTests(test.test):
             'GAP_UUID': '00001800-0000-1000-8000-00805f9b34fb'}
 
 
-    def group_chameleons_type(self):
-        """Group all chameleons by the type of their detected device
-        """
-
-        def chameleon_device_type(chameleon, idx):
-            for device_type,gen_device_func in SUPPORTED_DEVICE_TYPES.items():
-                try:
-                    device = gen_device_func(chameleon)()
-                    if device.CheckSerialConnection():
-                        return device_type
-                except:
-                    logging.debug('Error with initializing %s on %d-th'
-                                  'chameleon', device_type, idx)
-            logging.error('No device is detected on %d-th chameleon', idx)
-            return None
-
-        for device_type in SUPPORTED_DEVICE_TYPES:
-            self.chameleon_group[device_type] = list()
-
-        for idx,chameleon in enumerate(self.host.chameleon_list):
-            chameleon_type = chameleon_device_type(chameleon, idx)
-            self.chameleon_group[chameleon_type].append(chameleon)
-            logging.info('%d-th chameleon find device %s', idx, chameleon_type)
-
-    def get_device_rasp(self, device_num):
-        """Get all bluetooth device objects from chameleons.
-        This method should be called only after group_chameleons_type
-        @param device_num : dict of {device_type:number}, to specify the number
-                            of device needed for each device_type.
-        @returns: True if Success.
-        """
-
-        for device_type, number in device_num.items():
-            if len(self.chameleon_group[device_type]) < number:
-                logging.error('Number of chameleon with device type'
-                      '%s is %d, which is less then needed %d', device_type,
-                      len(self.chameleon_group[device_type]), number)
-
-            for chameleon in self.chameleon_group[device_type][:number]:
-                device = get_bluetooth_emulated_device(chameleon, device_type)
-
-                try:
-                    # Tell generic chameleon to bind to this device type
-                    device.SpecifyDeviceType(device_type)
-
-                # Catch generic Fault exception by rpc server, ignore method not
-                # available as it indicates platform didn't support method and
-                # that's ok
-                except Exception, e:
-                    if not (e.__class__.__name__ == 'Fault' and
-                        'is not supported' in str(e)):
-                        raise
-
-                self.devices[device_type].append(device)
-
-        return True
-
-
     def get_device(self, device_type):
         """Get the bluetooth device object.
 
-        @param device_type : the bluetooth device type, e.g., 'MOUSE'
+        @param device_type : the bluetooth HID device type, e.g., 'MOUSE'
 
         @returns: the bluetooth device object
 
         """
-        self.devices[device_type].append(get_bluetooth_emulated_device(\
-                                    self.host.chameleon, device_type))
-
-        try:
-            # Tell generic chameleon to bind to this device type
-            self.devices[device_type][-1].SpecifyDeviceType(device_type)
-
-        # Catch generic Fault exception by rpc server, ignore method not
-        # available as it indicates platform didn't support method and that's
-        # ok
-        except Exception, e:
-            if not (e.__class__.__name__ == 'Fault' and
-                'is not supported' in str(e)):
-                raise
-
-        return self.devices[device_type][-1]
-
-
-    def is_device_available(self, chameleon, device_type):
-        """Determines if the named device is available on the linked chameleon
-
-        @param device_type: the bluetooth HID device type, e.g., 'MOUSE'
-
-        @returns: True if it is able to resolve the device, false otherwise
-        """
-
-        device = SUPPORTED_DEVICE_TYPES[device_type](chameleon)()
-        try:
-            # The proxy prevents us from checking if the object is None directly
-            # so instead we call a fast method that any peripheral must support.
-            # This will fail if the object over the proxy doesn't exist
-            getattr(device, 'GetCapabilities')()
-
-        except Exception as e:
-            return False
-
-        return True
-
-
-    def list_devices_available(self):
-        """Queries which devices are available on chameleon/s
-
-        @returns: dict mapping HID device types to number of supporting peers
-                  available, e.g. {'MOUSE':1, 'KEYBOARD':1}
-        """
-        devices_available = {}
-        for device_type in SUPPORTED_DEVICE_TYPES:
-            for chameleon in self.host.chameleon_list:
-                if self.is_device_available(chameleon, device_type):
-                    devices_available[device_type] = \
-                        devices_available.get(device_type, 0) + 1
-
-        return devices_available
+        self.device_type = device_type
+        if self.devices[device_type] is None:
+            self.devices[device_type] = get_bluetooth_emulated_device(
+                    self.host, device_type)
+        return self.devices[device_type]
 
 
     def suspend_resume(self, suspend_time=SUSPEND_TIME_SECS):
@@ -686,14 +506,13 @@ class BluetoothAdapterTests(test.test):
                             sleep_interval=ADAPTER_POLLING_DEFAULT_SLEEP_SECS):
         """Wait for the func() to become True.
 
-        @param func: the function to wait for.
+        @param fun: the function to wait for.
         @param method_name: the invoking class method.
         @param timeout: number of seconds to wait before giving up.
         @param sleep_interval: the interval in seconds to sleep between
                 invoking func().
 
-        @returns: True if the condition is met,
-                  False otherwise
+        @returns: the bluetooth device object
 
         """
 
@@ -736,13 +555,6 @@ class BluetoothAdapterTests(test.test):
         """Test that bluetoothd could be stopped successfully."""
         return self.bluetooth_facade.stop_bluetoothd()
 
-
-    @_test_retry_and_log
-    def test_has_adapter(self):
-        """Verify that there is an adapter. This will return True only if both
-        the kernel and bluetooth daemon see the adapter.
-        """
-        return self.bluetooth_facade.has_adapter()
 
     @_test_retry_and_log
     def test_adapter_work_state(self):
@@ -848,7 +660,8 @@ class BluetoothAdapterTests(test.test):
         stop_discovery = self.bluetooth_facade.stop_discovery()
         is_not_discovering = self._wait_for_condition(
                 lambda: not self.bluetooth_facade.is_discovering(),
-                method_name())
+                method_name(),
+                timeout=self.ADAPTER_STOP_DISCOVERY_TIMEOUT_SECS)
 
         self.results = {
                 'stop_discovery': stop_discovery,
@@ -867,165 +680,6 @@ class BluetoothAdapterTests(test.test):
                 'set_discoverable': set_discoverable,
                 'is_discoverable': is_discoverable}
         return all(self.results.values())
-
-    def _test_timeout_property(self, set_property, check_property, set_timeout,
-                              get_timeout, property_name,
-                              timeout_values = [0, 60, 180]):
-        """Common method to test (Discoverable/Pairable)Timeout property.
-
-        This is used to test
-        - DiscoverableTimeout property
-        - PairableTimeout property
-
-        The test performs the following
-           - Set PropertyTimeout
-           - Read PropertyTimeout and make sure values match
-           - Set adapter propety
-           - In a loop check if property is active
-           - Test fails property is false before timeout
-           - Test fails property is True after timeout
-           Repeat the test for different values for timeout
-
-           Note : Value of 0 mean it never timeouts, so the test will
-                 end after 30 seconds.
-        """
-        def check_timeout(timeout):
-            """Check for timeout value in loop while recording failures."""
-            actual_timeout = get_timeout()
-            if timeout != actual_timeout:
-                logging.debug('%s timeout value read %s does not '
-                              'match value set %s, yet', property_name,
-                              actual_timeout, timeout)
-                return False
-            else:
-                return True
-
-        def _test_timeout_property(timeout):
-            # minium time after timeout before checking property
-            MIN_DELTA_SECS = 3
-            # Time between checking  property
-            WAIT_TIME_SECS = 2
-
-            # Set and read back the timeout value
-            if not set_timeout(timeout):
-                logging.error('Setting the %s timeout failed',property_name)
-                return False
-
-
-            if not self._wait_for_condition(lambda : check_timeout(timeout),
-                                            'check_'+property_name):
-                logging.error('checking %s_timeout value timed out',
-                              property_name)
-                return False
-
-            #
-            # Check that the timeout works
-            # Check property is true until timeout
-            # and then it is not
-
-            property_set = set_property(True)
-            property_is_true = self._wait_for_condition(check_property,
-                                                        method_name())
-
-            self.results = { 'set_%s' % property_name : property_set,
-                             'is_%s' % property_name: property_is_true}
-            logging.debug(self.results)
-
-            if not all(self.results.values()):
-                logging.error('Setting %s failed',property_name)
-                return False
-
-            start_time = time.time()
-            while True:
-                time.sleep(WAIT_TIME_SECS)
-                cur_time = time.time()
-                property_set = check_property()
-                time_elapsed = cur_time - start_time
-
-                # Ignore check_property results made near the timeout
-                # to avoid spurious failures.
-                if abs(int(timeout - time_elapsed)) < MIN_DELTA_SECS:
-                    continue
-
-                # Timeout of zero seconds mean that the adapter never times out
-                # Check for 30 seconds and then exit the test.
-                if timeout == 0:
-                    if not property_set:
-                        logging.error('Adapter is not %s after %.2f '
-                                      'secs with a timeout of zero ',
-                                      property_name, time_elapsed)
-                        return False
-                    elif time_elapsed > 30:
-                        logging.debug('Adapter %s after %.2f seconds '
-                                      'with timeout of zero as expected' ,
-                                      property_name, time_elapsed)
-                        return True
-                    continue
-
-                #
-                # Check if property is true till timeout ends and
-                # false afterwards
-                #
-                if time_elapsed < timeout:
-                    if not property_set:
-                        logging.error('Adapter is not %s after %.2f '
-                                      'secs before timeout of %.2f',
-                                      property_name, time_elapsed, timeout)
-                        return False
-                else:
-                    if property_set:
-                        logging.error('Adapter is still %s after '
-                                      ' %.2f secs with timeout of %.2f',
-                                      property_name, time_elapsed, timeout)
-                        return False
-                    else:
-                        logging.debug('Adapter not %s after %.2f '
-                                      'secs with timeout of %.2f as expected ',
-                                      property_name, time_elapsed, timeout)
-                        return True
-
-        default_value = check_property()
-        default_timeout = get_timeout()
-
-        result = []
-        try:
-            for timeout in timeout_values:
-                result.append(_test_timeout_property(timeout))
-            logging.debug("Test returning %s", all(result))
-            return all(result)
-        except:
-            logging.error("exception in test_%s_timeout",property_name)
-            raise
-        finally:
-            # Set the property back to default value permanently before
-            # exiting the test
-            set_timeout(0)
-            set_property(default_value)
-            # Set the timeout back to default value before exiting the test
-            set_timeout(default_timeout)
-
-
-    @_test_retry_and_log
-    def test_discoverable_timeout(self, timeout_values = [0, 60, 180]):
-        """Test adapter dbus property DiscoverableTimeout."""
-        return self._test_timeout_property(
-            set_property = self.bluetooth_facade.set_discoverable,
-            check_property = self.bluetooth_facade.is_discoverable,
-            set_timeout = self.bluetooth_facade.set_discoverable_timeout,
-            get_timeout = self.bluetooth_facade.get_discoverable_timeout,
-            property_name = 'discoverable',
-            timeout_values = timeout_values)
-
-    @_test_retry_and_log
-    def test_pairable_timeout(self, timeout_values = [0, 60, 180]):
-        """Test adapter dbus property PairableTimeout."""
-        return self._test_timeout_property(
-            set_property = self.bluetooth_facade.set_pairable,
-            check_property = self.bluetooth_facade.is_pairable,
-            set_timeout = self.bluetooth_facade.set_pairable_timeout,
-            get_timeout = self.bluetooth_facade.get_pairable_timeout,
-            property_name = 'pairable',
-            timeout_values = timeout_values)
 
 
     @_test_retry_and_log
@@ -1137,19 +791,8 @@ class BluetoothAdapterTests(test.test):
                     self.ADAPTER_PAIRING_TIMEOUT_SECS)
 
 
-        def _verify_connection_info():
-            """Verify that connection info to device is retrievable.
-
-            @returns: True if the connection info is retrievable.
-                      False otherwise.
-            """
-            return (self.bluetooth_facade.get_connection_info(device_address)
-                    is not None)
-
-
         has_device = False
         paired = False
-        connection_info_retrievable = False
         if self.bluetooth_facade.has_device(device_address):
             has_device = True
             try:
@@ -1164,12 +807,7 @@ class BluetoothAdapterTests(test.test):
             except:
                 logging.error('test_pairing: unexpected error')
 
-            connection_info_retrievable = _verify_connection_info()
-
-        self.results = {
-                'has_device': has_device,
-                'paired': paired,
-                'connection_info_retrievable': connection_info_retrievable}
+        self.results = {'has_device': has_device, 'paired': paired}
         return all(self.results.values())
 
 
@@ -1393,8 +1031,7 @@ class BluetoothAdapterTests(test.test):
                 'disconnection_seen_by_adapter': disconnection_seen_by_adapter}
         return all(self.results.values())
 
-
-    @_test_retry_and_log(False)
+    @_test_retry_and_log
     def test_device_is_connected(self, device_address):
         """Test that device address given is currently connected.
 
@@ -1402,8 +1039,8 @@ class BluetoothAdapterTests(test.test):
 
         @returns: True if the device is connected.
                   False otherwise.
-        """
 
+        """
         def _is_connected():
             """Test if device is connected.
 
@@ -1423,57 +1060,13 @@ class BluetoothAdapterTests(test.test):
                         condition=_is_connected,
                         timeout=self.ADAPTER_CONNECTION_TIMEOUT_SECS,
                         sleep_interval=self.ADAPTER_PAIRING_POLLING_SLEEP_SECS,
-                        desc='Waiting to check connection to %s' %
-                              device_address)
+                        desc='Waiting for connection to %s' % device_address)
                 connected = True
             except utils.TimeoutError as e:
                 logging.error('%s: %s', method_name, e)
             except:
                 logging.error('%s: unexpected error', method_name)
         self.results = {'has_device': has_device, 'connected': connected}
-        return all(self.results.values())
-
-
-    @_test_retry_and_log(False)
-    def test_device_is_not_connected(self, device_address):
-        """Test that device address given is NOT currently connected.
-
-        @param device_address: Address of the device.
-
-        @returns: True if the device is NOT connected.
-                  False otherwise.
-
-        """
-
-        def _is_not_connected():
-            """Test if device is not connected.
-
-            @returns: True if device is not connected. False otherwise.
-
-            """
-            return not self.bluetooth_facade.device_is_connected(
-                    device_address)
-
-
-        method_name = 'test_device_is_not_connected'
-        not_connected = False
-        if self.bluetooth_facade.has_device(device_address):
-            try:
-                utils.poll_for_condition(
-                        condition=_is_not_connected,
-                        timeout=self.ADAPTER_CONNECTION_TIMEOUT_SECS,
-                        sleep_interval=self.ADAPTER_PAIRING_POLLING_SLEEP_SECS,
-                        desc='Waiting to check connection to %s' %
-                              device_address)
-                not_connected = True
-            except utils.TimeoutError as e:
-                logging.error('%s: %s', method_name, e)
-            except:
-                logging.error('%s: unexpected error', method_name)
-                raise
-        else:
-            not_connected = True
-        self.results = {'not_connected': not_connected}
         return all(self.results.values())
 
 
@@ -2213,36 +1806,6 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
-    def add_device(self, address, address_type, action):
-        """Add a device to the Kernel action list."""
-        return self.bluetooth_facade.add_device(address, address_type, action)
-
-
-    def remove_device(self, address, address_type):
-        """Remove a device from the Kernel action list."""
-        return self.bluetooth_facade.remove_device(address,address_type)
-
-
-    def read_supported_commands(self):
-        """Read the set of supported commands from the Kernel."""
-        return self.bluetooth_facade.read_supported_commands()
-
-
-    def read_info(self):
-        """Read the adapter information from the Kernel."""
-        return self.bluetooth_facade.read_info()
-
-
-    def get_adapter_properties(self):
-        """Read the adapter properties from the Bluetooth Daemon."""
-        return self.bluetooth_facade.get_adapter_properties()
-
-
-    def get_dev_info(self):
-        """Read raw HCI device information."""
-        return self.bluetooth_facade.get_dev_info()
-
-
     # -------------------------------------------------------------------
     # Bluetooth mouse related tests
     # -------------------------------------------------------------------
@@ -2493,122 +2056,6 @@ class BluetoothAdapterTests(test.test):
 
 
     # -------------------------------------------------------------------
-    # Bluetooth keyboard related tests
-    # -------------------------------------------------------------------
-
-    # TODO may be deprecated as stated in b:140515628
-    @_test_retry_and_log
-    def test_keyboard_input_from_string(self, device, string_to_send):
-        """Test that the keyboard's key events could be received correctly.
-
-        @param device: the meta device containing a bluetooth HID device
-        @param string_to_send: the set of keys that will be pressed one-by-one
-
-        @returns: True if the report received by the host matches the
-                  expected one. False otherwise.
-
-        """
-
-        gesture = lambda: device.KeyboardSendString(string_to_send)
-
-        actual_events = self._record_input_events(device, gesture)
-
-        resulting_string = bluetooth_test_utils.reconstruct_string(
-                           actual_events)
-
-        return string_to_send == resulting_string
-
-
-    @_test_retry_and_log
-    def test_keyboard_input_from_trace(self, device, trace_name):
-        """ Tests that keyboard events can be transmitted and received correctly
-
-        @param device: the meta device containing a bluetooth HID device
-        @param trace_name: string name for keyboard activity trace to be used
-                           in the test i.e. "simple_text"
-
-        @returns: true if the recorded output matches the expected output
-                  false otherwise
-        """
-
-        # Read data from trace I/O files
-        input_trace = bluetooth_test_utils.parse_trace_file(os.path.join(
-                      BASE_DIR, INPUT_TRACE_LOCATION,
-                      '{}_input.txt'.format(trace_name)))
-        output_trace = bluetooth_test_utils.parse_trace_file(os.path.join(
-                      BASE_DIR, INPUT_TRACE_LOCATION,
-                      '{}_output.txt'.format(trace_name)))
-
-        if not input_trace or not output_trace:
-            logging.error('Failure in using trace')
-            return False
-
-        # Disregard timing data for now
-        input_scan_codes = [tup[1] for tup in input_trace]
-        predicted_events = [Event(*tup[1]) for tup in output_trace]
-
-        # Create and run this trace as a gesture
-        gesture = lambda: device.KeyboardSendTrace(input_scan_codes)
-        rec_events = self._record_input_events(device, gesture)
-
-        # Filter out any input events that were not from the keyboard
-        rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
-
-        # Fail if we didn't record the correct number of events
-        if len(rec_key_events) != len(input_scan_codes):
-            return False
-
-        for idx, predicted in enumerate(predicted_events):
-            recorded = rec_key_events[idx]
-
-            if not predicted == recorded:
-                return False
-
-        return True
-
-
-    def is_newer_kernel_version(self, version, minimum_version):
-        """ Check if given kernel version is newer than unsupported version."""
-
-        return utils.compare_versions(version, minimum_version) >= 0
-
-
-    def is_supported_kernel_version(self, kernel_version, minimum_version,
-                                    msg=None):
-        """ Check if kernel version is greater than minimum version.
-
-            Check if given kernel version is greater than or equal to minimum
-            version. Raise TEST_NA if given kernel version is lower than the
-            minimum version.
-
-            Note: Kernel version may have suffixes, so ensure that minimum
-            version should be the smallest version that is permissible.
-            Ex: If minimum version is 3.8.11 then 3.8.11-<random> will
-            pass the check.
-
-            @param kernel_version: kernel version to be checked as a string
-            @param: minimum_version: minimum kernel version requried
-
-            @returns: None
-
-            @raises: TEST_NA if kernel version is not greater than the minimum
-                     version
-        """
-
-        logging.debug('kernel version is {} minimum version'
-                      'is {}'.format(kernel_version,minimum_version))
-
-        if msg is None:
-            msg = 'Test not supported on this kernel version'
-
-        if not self.is_newer_kernel_version(kernel_version, minimum_version):
-            logging.debug('Kernel version check failed. Exiting the test')
-            raise error.TestNAError(msg)
-
-        logging.debug('Kernel version check passed')
-
-
-    # -------------------------------------------------------------------
     # Autotest methods
     # -------------------------------------------------------------------
 
@@ -2626,7 +2073,7 @@ class BluetoothAdapterTests(test.test):
         # Some tests may instantiate a peripheral device for testing.
         self.devices = dict()
         for device_type in SUPPORTED_DEVICE_TYPES:
-            self.devices[device_type] = list()
+            self.devices[device_type] = None
 
         # The count of registered advertisements.
         self.count_advertisements = 0
@@ -2665,7 +2112,7 @@ class BluetoothAdapterTests(test.test):
         raise NotImplementedError
 
 
-    def cleanup(self, on_start=True):
+    def cleanup(self):
         """Clean up bluetooth adapter tests."""
         # Close the device properly if a device is instantiated.
         # Note: do not write something like the following statements
@@ -2674,39 +2121,6 @@ class BluetoothAdapterTests(test.test):
         #           if bool(self.devices[device_type]):
         #       Otherwise, it would try to invoke bluetooth_mouse.__nonzero__()
         #       which just does not exist.
-        for device_name, device_list  in self.devices.items():
-            for device in device_list:
-                if device is not None:
-                    device.Close()
-
-                    # If module has a reset feature, use it
-                    if on_start:
-                        try:
-                            device.ResetStack()
-
-                        except SocketError as e:
-                            # Ignore conn reset, expected during stack reset
-                            if e.errno != errno.ECONNRESET:
-                                raise
-
-                        except httplib.BadStatusLine as e:
-                            # BadStatusLine occurs occasionally when chameleon
-                            # is restarted. We ignore it here
-                            logging.error('Ignoring badstatusline exception')
-                            pass
-
-                        # Catch generic Fault exception by rpc server, ignore
-                        # method not available as it indicates platform didn't
-                        # support method and that's ok
-                        except Exception, e:
-                            if not (e.__class__.__name__ == 'Fault' and
-                                'is not supported' in str(e)):
-                                raise
-
-                    else:
-                        # If we are doing a reset action, powercycle device
-                        device.PowerCycle()
-
-        self.devices = dict()
         for device_type in SUPPORTED_DEVICE_TYPES:
-            self.devices[device_type] = list()
+            if self.devices[device_type] is not None:
+                self.devices[device_type].Close()

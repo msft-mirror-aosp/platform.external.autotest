@@ -4,8 +4,6 @@
 
 """This module provides the test utilities for audio spec."""
 
-import collections
-
 _BOARD_TYPE_CHROMEBOX = 'CHROMEBOX'
 _BOARD_TYPE_CHROMEBIT = 'CHROMEBIT'
 _BOARD_WITHOUT_SOUND_CARD = ['gale', 'veyron_rialto']
@@ -62,91 +60,6 @@ def has_hotwording(board_name, model_name):
     @returns: True if the board has hotwording.
 
     """
-    if board_name in ['coral', 'eve', 'kevin', 'nami', 'pyro', 'rammus', 'samus']:
+    if board_name in ['coral', 'eve', 'kevin', 'nami', 'pyro', 'samus']:
         return True
     return False
-
-
-BoardInfo = collections.namedtuple('BoardInfo', ['board', 'model', 'sku'])
-
-BORADS_WITH_TWO_INTERNAL_MICS = [
-        BoardInfo('coral', 'nasher360', ''),
-        BoardInfo('octopus', 'bobba360', '9'),
-        BoardInfo('octopus', 'bobba360', '10'),
-        BoardInfo('snappy', 'snappy', '8'),
-]
-
-def get_num_internal_microphone(board, model, sku):
-    """Gets the number of internal microphones.
-
-    @param board: board name of the DUT.
-    @param model: model name of the DUT.
-    @param sku: sku number string of the DUT.
-
-    @returns: The number of internal microphones.
-
-    """
-    if not has_internal_microphone(board):
-        return 0
-
-    for b in BORADS_WITH_TWO_INTERNAL_MICS:
-        if b.board == board and b.model == model:
-            if b.sku == '' or b.sku == sku:
-                return 2
-
-    return 1
-
-INTERNAL_MIC_NODE = {
-        ('nami', 'pantheon'): 'FRONT_MIC',
-        ('nami', 'sona'): 'FRONT_MIC',
-        ('nami', 'syndra'): 'FRONT_MIC',
-        ('nami', 'vayne'): 'FRONT_MIC',
-}
-
-def get_internal_mic_node(board, model, sku):
-    """Return the expected internal microphone node for given board name and
-       model name.
-
-    @param board: board name of the DUT.
-    @param model: model name of the DUT.
-    @param sku: sku number string of the DUT.
-
-    @returns: The name of the expected internal microphone nodes.
-    """
-    if get_num_internal_microphone(board, model, sku) == 2:
-        return 'FRONT_MIC'
-
-    return INTERNAL_MIC_NODE.get((board, model), 'INTERNAL_MIC')
-
-
-INTERNAL_MIC_NODES = {
-        ('nami', 'vayne'): ['FRONT_MIC'],
-}
-
-def get_plugged_internal_mics(board, model, sku):
-    """Return a list of all the plugged internal microphone nodes for given
-       board name and model name.
-
-    @param board: board name of the DUT.
-    @param model: model name of the DUT.
-    @param sku: sku number string of the DUT.
-
-    @returns: A list of all the plugged internal microphone nodes.
-    """
-    if get_num_internal_microphone(board, model, sku) == 2:
-        return ['FRONT_MIC', 'REAR_MIC']
-
-    return INTERNAL_MIC_NODES.get((board, model), ['INTERNAL_MIC'])
-
-HEADPHONE_NODE = {
-    ('sarien'): 'LINEOUT',
-}
-
-def get_headphone_node(board):
-    """Return the expected headphone node for given board name.
-
-    @param board: board name of the DUT.
-
-    @returns: The name of the expected headphone node.
-    """
-    return HEADPHONE_NODE.get((board), 'HEADPHONE')

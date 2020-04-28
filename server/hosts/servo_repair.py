@@ -7,6 +7,7 @@ import time
 
 import common
 from autotest_lib.client.common_lib import hosts
+from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.server.hosts import repair_utils
 
 
@@ -261,9 +262,6 @@ class _RestartServod(hosts.RepairAction):
                     'embedded Chrome OS.',
                     'servo_not_applicable_to_non_cros_host')
         host.run('stop servod PORT=%d || true' % host.servo_port)
-        # Wait for existing servod process turned down.
-        time.sleep(3)
-
         serial = 'SERIAL=%s' % host.servo_serial if host.servo_serial else ''
         model = 'MODEL=%s' % host.servo_model if host.servo_model else ''
         if host.servo_board:
@@ -300,10 +298,9 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
     Reboot repair action that also waits for an update.
 
     This is the same as the standard `RebootRepair`, but for
-    a non-multi-DUTs servo host, if there's a pending update,
-    we wait for that to complete before rebooting.  This should
-    ensure that the servo_v3 is up-to-date after reboot. Labstation
-    reboot and update is handled by labstation host class.
+    a servo host, if there's a pending update, we wait for that
+    to complete before rebooting.  This should ensure that the
+    servo is up-to-date after reboot.
     """
 
     def repair(self, host):
@@ -311,12 +308,15 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
             raise hosts.AutoservRepairError(
                 'Target servo is not a test lab servo',
                 'servo_not_applicable_to_host_outside_lab')
-        if host.is_labstation():
-            host.request_reboot()
-            logging.warning('Reboot labstation requested, it will be '
-                            'handled by labstation administrative task.')
+        host.update_image(wait_for_update=True)
+        afe = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10)
+        dut_list = host.get_attached_duts(afe)
+        if len(dut_list) > 1:
+            raise hosts.AutoservRepairError(
+                    'Repairing labstation with > 1 host not supported.'
+                    ' See crbug.com/843358',
+                    'can_not_repair_labstation_with_multiple_hosts')
         else:
-            host.update_image(wait_for_update=True)
             super(_ServoRebootRepair, self).repair(host)
 
     @property

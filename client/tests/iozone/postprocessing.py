@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 """
 Postprocessing module for IOzone. It is capable to pick results from an
 IOzone run, calculate the geometric mean for all throughput results for

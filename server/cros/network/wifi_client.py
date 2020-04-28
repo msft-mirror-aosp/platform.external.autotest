@@ -118,8 +118,8 @@ class WiFiClient(site_linux_system.LinuxSystem):
     MAC_ADDRESS_RANDOMIZATION_SUPPORTED = 'MACAddressRandomizationSupported'
     MAC_ADDRESS_RANDOMIZATION_ENABLED = 'MACAddressRandomizationEnabled'
 
-    CONNECTED_STATES = ['portal', 'no-connectivity', 'redirect-found',
-                        'portal-suspected', 'online', 'ready']
+    CONNECTED_STATES = ['ready', 'portal', 'online']
+
 
     @property
     def machine_id(self):
@@ -272,15 +272,6 @@ class WiFiClient(site_linux_system.LinuxSystem):
         """
         return self._interface.signal_level
 
-    @property
-    def wifi_signal_level_all_chains(self):
-        """Returns the signal level of all chains of this DUT's WiFi interface.
-
-        @return int array signal level of each chain of connected WiFi interface
-                or None (e.g. [-67, -60]).
-
-        """
-        return self._interface.signal_level_all_chains
 
     @staticmethod
     def assert_bsses_include_ssids(found_bsses, expected_ssids):
@@ -392,7 +383,8 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
     def _raise_logging_level(self):
         """Raises logging levels for WiFi on DUT."""
-        self.host.run('ff_debug --level -2', ignore_status=True)
+        self.host.run('wpa_debug excessive', ignore_status=True)
+        self.host.run('ff_debug --level -5', ignore_status=True)
         self.host.run('ff_debug +wifi', ignore_status=True)
 
 

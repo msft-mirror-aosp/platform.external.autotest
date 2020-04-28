@@ -4,7 +4,9 @@
 #
 
 AUTHOR = "ARC Team"
-ATTRIBUTES = "suite:bvt-perbuild"
+# Do not remove any of these suites without wider discussion as it will cause
+# instability in the testing lab.
+ATTRIBUTES = "suite:bvt-arc, suite:bvt-cq, suite:bvt-inline"
 NAME = "cheets_StartAndroid.stress.0"
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

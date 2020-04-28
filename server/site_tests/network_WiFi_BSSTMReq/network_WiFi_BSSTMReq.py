@@ -78,16 +78,10 @@ class network_WiFi_BSSTMReq(wifi_cell_test_base.WiFiCellTestBase):
             roam_to_bssid = bssid0
 
         # Send BSS Transition Management Request to client
-        reply = self.context.router.send_bss_tm_req(
-            self.context.client.wifi_mac,
-            [roam_to_bssid])
-        if reply == 'OK':
-            pass
-        elif reply.startswith('Unknown command'):
+        if not self.context.router.send_bss_tm_req(self.context.client.wifi_mac,
+                                                   [roam_to_bssid]):
             raise error.TestNAError('AP does not support BSS Transition '
                                     'Management')
-        else:
-            raise error.TestFail('Failed to send BSS TM Request: %s', reply)
 
         # Expect that the DUT will re-connect to the new AP
         if not self.context.client.wait_for_roam(

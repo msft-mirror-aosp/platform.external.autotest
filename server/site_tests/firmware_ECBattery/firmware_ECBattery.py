@@ -44,7 +44,7 @@ class firmware_ECBattery(FirmwareTest):
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         self.ec.send_command("chan 0")
-        self._host = host
+
 
     def cleanup(self):
         try:
@@ -56,21 +56,10 @@ class firmware_ECBattery(FirmwareTest):
 
     def _get_battery_path(self):
         """Get battery path in sysfs."""
-        match = self.faft_client.System.RunShellCommandGetOutput(
+        match = self.faft_client.system.run_shell_command_get_output(
                 'grep -iH --color=no "Battery" /sys/class/power_supply/*/type')
-        name = None
-        for item in match:
-            logging.info("Battery sysfs %s", item)
-            name = re.search("/sys/class/power_supply/([^/]+)/",
-                             item).group(1)
-            if (self._host.path_exists(self.BATTERY_STATUS % name) and
-                self._host.path_exists(self.BATTERY_VOLTAGE_READING % name) and
-                self._host.path_exists(self.BATTERY_CURRENT_READING % name)):
-                break
-            else:
-                name = None
-        if name is None:
-            raise error.TestFail("Can't find a battery sysfs node")
+        name = re.search("/sys/class/power_supply/([^/]+)/",
+                         match[0]).group(1)
         logging.info("Battery name is %s", name)
         self._battery_status = self.BATTERY_STATUS % name
         self._battery_voltage = self.BATTERY_VOLTAGE_READING % name
@@ -87,7 +76,7 @@ class firmware_ECBattery(FirmwareTest):
         servo_reading = int(self.servo.get('ppvar_vbat_mv'))
         # Kernel gives voltage value in uV. Convert to mV here.
         kernel_reading = int(
-            self.faft_client.System.RunShellCommandGetOutput(
+            self.faft_client.system.run_shell_command_get_output(
                 'cat %s' % self._battery_voltage)[0]) / 1000
         logging.info("Voltage reading from servo: %dmV", servo_reading)
         logging.info("Voltage reading from kernel: %dmV", kernel_reading)
@@ -110,7 +99,7 @@ class firmware_ECBattery(FirmwareTest):
         servo_reading = abs(int(self.servo.get('ppvar_vbat_ma')))
         # Kernel gives current value in uA. Convert to mA here.
         kernel_reading = abs(
-            int(self.faft_client.System.RunShellCommandGetOutput(
+            int(self.faft_client.system.run_shell_command_get_output(
                 'cat %s' % self._battery_current)[0])) / 1000
         logging.info("Current reading from servo: %dmA", servo_reading)
         logging.info("Current reading from kernel: %dmA", kernel_reading)

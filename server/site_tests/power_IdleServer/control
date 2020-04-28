@@ -17,11 +17,9 @@ draw at idle.
 
 from autotest_lib.server import utils
 
-args_dict = utils.args_to_dict(args)
-servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run_system_power_idle(machine):
-    host = hosts.create_host(machine, servo_args=servo_args)
+    host = hosts.create_host(machine)
     if host.has_power():
         host.power_off()
 

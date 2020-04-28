@@ -38,7 +38,7 @@ class KernelTrace(object):
        - currently only supports trace events.  Add other tracers.
     """
     _TRACE_ROOT = '/sys/kernel/debug/tracing'
-    _TRACE_ON_PATH = os.path.join(_TRACE_ROOT, 'tracing_on')
+    _TRACE_EN_PATH = os.path.join(_TRACE_ROOT, 'tracing_enabled')
 
     def __init__(self, flush=True, events=None, on=True):
         """Constructor for KernelTrace class"""
@@ -65,16 +65,18 @@ class KernelTrace(object):
 
 
     def _onoff(self, val):
-        """Turn tracing on or off.
+        """Enable/Disable tracing.
 
         Arguments:
             val: integer, 1 for on, 0 for off
 
         Raises:
-            error.TestFail: If unable to turn tracing on or off.
+            error.TestFail: If unable to enable/disable tracing
+              boolean of tracing on/off status
         """
-        utils.write_one_line(self._TRACE_ON_PATH, val)
-        result = int(utils.read_one_line(self._TRACE_ON_PATH).strip())
+        utils.write_one_line(self._TRACE_EN_PATH, val)
+        fname = os.path.join(self._TRACE_ROOT, 'tracing_on')
+        result = int(utils.read_one_line(fname).strip())
         if not result == val:
             raise error.TestFail("Unable to %sable tracing" %
                                  'en' if val == 1 else 'dis')
@@ -96,7 +98,8 @@ class KernelTrace(object):
         Returns:
             True if tracing enabled and at least one event is enabled.
         """
-        result = int(utils.read_one_line(self._TRACE_ON_PATH).strip())
+        fname = os.path.join(self._TRACE_ROOT, 'tracing_on')
+        result = int(utils.read_one_line(fname).strip())
         if result == 1 and len(self._events) > 0:
             return True
         return False

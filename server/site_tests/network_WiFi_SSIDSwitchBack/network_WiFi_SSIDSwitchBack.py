@@ -19,6 +19,7 @@ class network_WiFi_SSIDSwitchBack(wifi_cell_test_base.WiFiCellTestBase):
     BSSID_2 = "06:07:08:09:0a:0b"
     SSID_1 = "InsideADogItsTooDarkToRead"
     SSID_2 = "HeReallyIsAnIdiot"
+    CONNECTED_STATE = 'ready', 'portal', 'online'
 
 
     def configure_connect_verify_deconfig_wait(self, ssid, freq, mode, bssid):
@@ -84,9 +85,9 @@ class network_WiFi_SSIDSwitchBack(wifi_cell_test_base.WiFiCellTestBase):
         success, state, elapsed_seconds = \
                 self.context.client.wait_for_service_states(
                         network_WiFi_SSIDSwitchBack.SSID_1,
-                        self.context.client.CONNECTED_STATES, 30)
+                        network_WiFi_SSIDSwitchBack.CONNECTED_STATE, 30)
         if (not success or
-            state not in self.context.client.CONNECTED_STATES):
+            state not in network_WiFi_SSIDSwitchBack.CONNECTED_STATE):
             raise error.TestFail(
                     'Failed to connect to "%s" in %f seconds (state=%s)' %
                     (network_WiFi_SSIDSwitchBack.SSID_1, elapsed_seconds,

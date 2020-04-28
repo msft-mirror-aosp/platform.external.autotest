@@ -82,7 +82,8 @@ class MasterSsh(object):
             # Start a new master SSH connection.
             if not self._master_job:
                 # Create a shared socket in a temp location.
-                self._master_tempdir = autotemp.tempdir(dir=_short_tmpdir())
+                self._master_tempdir = autotemp.tempdir(
+                        unique_id='ssh-master', dir='/tmp')
 
                 # Start the master SSH connection in the background.
                 master_cmd = _MASTER_SSH_COMMAND_TEMPLATE % {
@@ -106,10 +107,11 @@ class MasterSsh(object):
                             condition=lambda: os.path.exists(self._socket_path),
                             timeout=timeout,
                             sleep_interval=0.2,
-                            desc='master-ssh connection up')
+                            desc='Wait for a socket file to exist')
+                # log the issue if it fails, but don't throw an exception
                 except utils.TimeoutError:
-                    # poll_for_conditional already logs an error upon timeout
-                    pass
+                    logging.info('Timed out waiting for master-ssh connection '
+                                 'to be established.')
 
 
     def close(self):
@@ -164,15 +166,3 @@ class ConnectionPool(object):
         """Closes all ssh multiplex connections."""
         for ssh in self._pool.itervalues():
             ssh.close()
-
-
-def _short_tmpdir():
-    # crbug/865171 Unix domain socket paths are limited to 108 characters.
-    # crbug/945523 Swarming does not like too many top-level directories in
-    # /tmp.
-    # So use a shared parent directory in /tmp
-    user = os.environ.get("USER", "no_USER")[:8]
-    d = '/tmp/ssh-master_%s' % user
-    if not os.path.exists(d):
-        os.mkdir(d)
-    return d

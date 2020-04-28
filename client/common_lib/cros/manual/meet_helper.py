@@ -25,7 +25,10 @@ def restart_chrome(handle, is_meeting, recovery):
         if recovery:
             logging.info('+++Restart chrome')
             handle.restart_chrome_for_cfm()
-            handle.wait_for_telemetry_commands()
+        if is_meeting:
+            handle.wait_for_meetings_telemetry_commands()
+        else:
+            handle.wait_for_hangouts_telemetry_commands()
     except Exception as e:
         errmsg = 'Fail to run telemetry api restart_chrome_for_cfm.'
         logging.exception(errmsg)

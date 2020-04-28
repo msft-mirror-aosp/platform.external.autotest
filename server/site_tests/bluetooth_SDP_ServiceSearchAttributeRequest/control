@@ -4,12 +4,11 @@
 
 AUTHOR = 'arakhov@chromium.org'
 NAME = 'bluetooth_SDP_ServiceSearchAttributeRequest'
-ATTRIBUTES = ('suite:bluetooth, suite:bluetooth_qualification,'
-              'suite:bluetooth_e2e')
+ATTRIBUTES = "suite:bluetooth, suite:bluetooth_qualification"
 TIME = 'SHORT'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'bluetooth, chameleon:bt_peer'
+DEPENDENCIES = 'bluetooth,wificell'
 
 DOC = """
 Verify the correct behaviour of the device when executing Service Search

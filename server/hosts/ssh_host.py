@@ -104,13 +104,14 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
 
         @param command: the ssh command to be executed.
         """
-        # The last few frames on the stack are not useful, so skip them.
+        # The last 3 frames on the stack are boring. Print 6-3=3 stack frames.
         stack = self._get_server_stack_state(lowest_frames=3, highest_frames=6)
-        # If logger executable exists on the DUT, use it to report the command.
-        # Then regardless of logger, run the command as usual.
-        command = ('test -x /usr/bin/logger && /usr/bin/logger --id=$$ '
-                   '--tag=autotest "from [%s] ssh_run: %s"; %s'
-                   % (stack, utils.sh_escape(command), command))
+        # If "logger" executable exists on the DUT use it to respew |command|.
+        # Then regardless of "logger" run |command| as usual.
+        command = ('if type "logger" > /dev/null 2>&1; then'
+                   ' logger -tag "autotest" "server[stack::%s] -> ssh_run(%s)";'
+                   'fi; '
+                   '%s' % (stack, utils.sh_escape(command), command))
         return command
 
 
@@ -120,7 +121,6 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         """Helper function for run()."""
         if connect_timeout > timeout:
             connect_timeout = int(timeout)
-        original_cmd = command
 
         ssh_cmd = self.ssh_command(connect_timeout, options)
         if not env.strip():
@@ -257,8 +257,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
             if re.search(r'^ssh: connect to host .* port .*: '
                          r'Connection timed out\r$', result.stderr):
                 counters_inc('run', 'final_timeout')
-                raise error.AutoservSSHTimeout(
-                        "ssh timed out: %s" % original_cmd.strip(), result)
+                raise error.AutoservSSHTimeout("ssh timed out", result)
             if "Permission denied." in result.stderr:
                 msg = "ssh permission denied"
                 counters_inc('run', 'final_eperm')
@@ -266,13 +265,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
 
         if not ignore_status and result.exit_status > 0:
             counters_inc('run', 'final_run_error')
-            msg = result.stderr.strip()
-            if not msg:
-                msg = result.stdout.strip()
-                if msg:
-                    msg = msg.splitlines()[-1]
-            raise error.AutoservRunError("command execution error (%d): %s" %
-                                         (result.exit_status, msg), result)
+            raise error.AutoservRunError("command execution error", result)
 
         counters_inc('run', failure_name)
         return result
@@ -284,10 +277,10 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
             ignore_timeout=False, ssh_failure_retry_ok=False):
         """
         Run a command on the remote host.
-        @note: This RPC call has an overhead of minimum 40ms and up to 400ms on
-               servers (crbug.com/734887). Each time a call is added for
-               every job, a server core dies in the lab.
-        @see: common_lib.hosts.host.run()
+        This RPC call has an overhead of minimum 40ms and up to 400ms on
+        servers (crbug.com/734887). Each time a run_very_slowly is added for
+        every job - a server core dies in the lab.
+        @see common_lib.hosts.host.run()
 
         @param timeout: command execution timeout in seconds. Default is 1 hour.
         @param connect_timeout: ssh connection timeout (in seconds)
@@ -338,7 +331,8 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 raise error.AutoservRunError(timeout_message, cmderr.args[1])
 
 
-    run = run_very_slowly
+    def run(self, *args, **kwargs):
+        return self.run_very_slowly(*args, **kwargs)
 
 
     def run_background(self, command, verbose=True):
@@ -447,13 +441,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                         return
 
         if not ignore_status and result.exit_status > 0:
-            msg = result.stderr.strip()
-            if not msg:
-                msg = result.stdout.strip()
-                if msg:
-                    msg = msg.splitlines()[-1]
-            raise error.AutoservRunError("command execution error (%d): %s" %
-                                         (result.exit_status, msg), result)
+            raise error.AutoservRunError("command execution error", result)
 
 
     def setup_ssh_key(self):

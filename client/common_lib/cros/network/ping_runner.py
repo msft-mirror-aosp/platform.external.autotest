@@ -66,8 +66,6 @@ class MacPingDelegate(object):
             args.append('-s %d' % ping_config.size)
         if ping_config.interval is not None:
             args.append('-i %f' % ping_config.interval)
-        if ping_config.source_iface is not None:
-            args.append('-b %s' % ping_config.source_iface)
         if ping_config.qos is not None:
             if ping_config.qos == 'be':
                 ping_config.append('-k 0')
@@ -154,8 +152,6 @@ class LinuxPingDelegate(object):
             args.append('-s %d' % ping_config.size)
         if ping_config.interval is not None:
             args.append('-i %f' % ping_config.interval)
-        if ping_config.source_iface is not None:
-            args.append('-I %s' % ping_config.source_iface)
         if ping_config.qos is not None:
             if ping_config.qos == 'be':
                 args.append('-Q 0x04')
@@ -242,7 +238,7 @@ class PingConfig(object):
     PACKET_WAIT_MARGIN_SECONDS = 120
 
     def __init__(self, target_ip, count=DEFAULT_COUNT, size=None,
-                 interval=None, qos=None, source_iface=None,
+                 interval=None, qos=None,
                  ignore_status=False, ignore_result=False):
         super(PingConfig, self).__init__()
         self.target_ip = target_ip
@@ -252,7 +248,6 @@ class PingConfig(object):
         if qos:
             qos = qos.lower()
         self.qos = qos
-        self.source_iface = source_iface
         self.ignore_status = ignore_status
         self.ignore_result = ignore_result
         interval_seconds = self.interval or 1

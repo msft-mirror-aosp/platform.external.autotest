@@ -112,7 +112,7 @@ def extract_tarball(tarball):
         topdir = line.split('/')[0]
         if os.path.isdir(topdir):
             if dir:
-                assert(dir == topdir), 'tarball must be a a single directory'
+                assert(dir == topdir)
             else:
                 dir = topdir
     if dir:
@@ -1111,34 +1111,6 @@ def process_is_alive(name_pattern):
     return utils.system("pgrep -f '^([^ /]*/)*(%s)([ ]|$)'" % name_pattern,
                         ignore_status=True) == 0
 
-def set_hwclock(time='system',
-                utc=True,
-                rtc=None,
-                noadjfile=False,
-                ignore_status=False):
-    """Uses the hwclock command to set time of an RTC.
-
-    @param time: Either 'system', meaning use the system time, or a string
-                 to be passed to the --date argument of hwclock.
-    @param utc: Boolean of whether to use UTC or localtime.
-    @param rtc: String to be passed to the --rtc arg of hwclock.
-    @param noadjfile: Boolean of whether to use --noadjfile flag with hwclock.
-    @param ignore_status: Boolean of whether to ignore exit code of hwclock.
-    """
-    cmd = '/sbin/hwclock'
-    if time == 'system':
-        cmd += ' --systohc'
-    else:
-        cmd += ' --set --date "{}"'.format(time)
-    if utc:
-        cmd += ' --utc'
-    else:
-        cmd += ' --localtime'
-    if rtc is not None:
-        cmd += ' --rtc={}'.format(rtc)
-    if noadjfile:
-        cmd += ' --noadjfile'
-    return utils.system(cmd, ignore_status=ignore_status)
 
 def get_hwclock_seconds(utc=True):
     """
@@ -1763,7 +1735,7 @@ def wait_for_cool_machine():
     temperature = get_current_temperature_max()
     # We got here with a cold machine, return immediately. This should be the
     # most common case.
-    if temperature < 45:
+    if temperature < 50:
         return True
     logging.info('Got a hot machine of %dC. Sleeping 1 minute.', temperature)
     # A modest wait should cool the machine.
@@ -1784,36 +1756,6 @@ def wait_for_cool_machine():
     logging.warning('Did not cool down (%dC), giving up.', temperature)
     log_process_activity()
     return False
-
-
-def report_temperature(test, keyname):
-    """Report current max observed temperature with given keyname.
-
-    @param test: autotest_lib.client.bin.test.test instance
-    @param keyname: key to be used when reporting perf value.
-    """
-    temperature = get_temperature_input_max()
-    logging.info('%s = %f degree Celsius', keyname, temperature)
-    test.output_perf_value(
-        description=keyname,
-        value=temperature,
-        units='Celsius',
-        higher_is_better=False)
-
-
-def report_temperature_critical(test, keyname):
-    """Report temperature at which we will see throttling with given keyname.
-
-    @param test: autotest_lib.client.bin.test.test instance
-    @param keyname: key to be used when reporting perf value.
-    """
-    temperature = get_temperature_critical()
-    logging.info('%s = %f degree Celsius', keyname, temperature)
-    test.output_perf_value(
-        description=keyname,
-        value=temperature,
-        units='Celsius',
-        higher_is_better=False)
 
 
 # System paths for machine performance state.
@@ -2082,15 +2024,6 @@ def get_board_type():
     return get_board_property('DEVICETYPE')
 
 
-def get_chromeos_version():
-    """
-    Get the ChromeOS build version from /etc/lsb-release.
-
-    @return chromeos release version.
-    """
-    return get_board_property('CHROMEOS_RELEASE_VERSION')
-
-
 def get_platform():
     """
     Get the ChromeOS platform name.
@@ -2111,19 +2044,6 @@ def get_platform():
     if platform == '':
         platform = get_board()
     return platform
-
-
-def get_sku():
-    """
-    Get the SKU number.
-
-    @returns SKU number
-    """
-    command = 'mosys platform sku'
-    result = utils.run(command, ignore_status=True)
-    if result.exit_status != 0:
-        return ''
-    return result.stdout.strip()
 
 
 def get_ec_version():

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 import unittest
 import common
 from autotest_lib.client.bin import kernel_versions

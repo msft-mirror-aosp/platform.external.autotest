@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python -u
 # Copyright 2007-2008 Martin J. Bligh <mbligh@google.com>, Google Inc.
 # Released under the GPL v2
 
@@ -383,6 +383,7 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
         if use_ssp and results:
             correct_results_folder_permission(results)
 
+        # TODO (sbasi) - remove the time.sleep when crbug.com/302815 is solved.
         # This sleep allows the pending output to be logged before the kill
         # signal is sent.
         time.sleep(.1)
@@ -394,7 +395,6 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
                 container = bucket.get_container(container_id)
                 if container:
                     container.destroy()
-                    logging.debug("Container %s destroyed.", container_id)
                 else:
                     logging.debug('Container %s is not found.', container_id)
             except:
@@ -727,7 +727,6 @@ def main():
             no_console_prefix=parser.options.no_console_prefix)
 
     logging.debug('autoserv is running in drone %s.', socket.gethostname())
-    logging.debug('autoserv environment: %r', os.environ)
     logging.debug('autoserv command was: %s', ' '.join(sys.argv))
     logging.debug('autoserv parsed options: %s', parser.options)
 

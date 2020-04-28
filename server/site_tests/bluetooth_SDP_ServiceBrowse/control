@@ -4,12 +4,11 @@
 
 AUTHOR = 'arakhov@chromium.org'
 NAME = 'bluetooth_SDP_ServiceBrowse'
-ATTRIBUTES = ('suite:bluetooth, suite:bluetooth_qualification,'
-              'suite:bluetooth_e2e')
+ATTRIBUTES = "suite:bluetooth, suite:bluetooth_qualification"
 TIME = 'SHORT'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'bluetooth, chameleon:bt_peer'
+DEPENDENCIES = 'bluetooth,wificell'
 
 DOC = """
 Verify that the IUT behave correct during Service Browse procedure.

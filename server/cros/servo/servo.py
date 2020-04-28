@@ -9,26 +9,16 @@ import ast
 import logging
 import os
 import re
-import socket
 import time
 import xmlrpclib
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.servo import firmware_programmer
 
 # Time to wait when probing for a usb device, it takes on avg 17 seconds
 # to do a full probe.
 _USB_PROBE_TIMEOUT = 40
-
-
-# Regex to match XMLRPC errors due to a servod control not existing.
-NO_CONTROL_RE = re.compile(r'No control named (\w*\.?\w*)')
-
-class ControlUnavailableError(error.TestFail):
-    """Custom error class to indicate a control is unavailable on servod."""
-    pass
 
 
 def _extract_image_from_tarball(tarball, dest_dir, image_candidates):
@@ -104,13 +94,7 @@ class _PowerStateController(object):
         Generally, this causes the board to restart.
 
         """
-        # TODO: warm_reset support has added to power_state.py. Once it
-        # available to labstation remove fallback method.
-        try:
-            self._servo.set_nocheck('power_state', 'warm_reset')
-        except error.TestFail as err:
-            logging.info("Fallback to warm_reset control method")
-            self._servo.set_get_all(['warm_reset:on',
+        self._servo.set_get_all(['warm_reset:on',
                                  'sleep:%.4f' % self._RESET_HOLD_TIME,
                                  'warm_reset:off'])
 
@@ -149,90 +133,69 @@ class _PowerStateController(object):
 
 
 class _Uart(object):
-    """Class to capture UART streams of CPU, EC, Cr50, etc."""
-    _UartToCapture = ('cpu', 'ec', 'cr50', 'servo_v4', 'servo_micro', 'usbpd')
-
+    """Class to capture CPU/EC UART streams."""
     def __init__(self, servo):
         self._servo = servo
         self._streams = []
-        self.logs_dir = None
-
-    def _start_stop_capture(self, uart, start):
-        """Helper function to start/stop capturing on specified UART.
-
-        @param uart:  The UART name to start/stop capturing.
-        @param start:  True to start capturing, otherwise stop.
-
-        @returns True if the operation completes successfully.
-                 False if the UART capturing is not supported or failed due to
-                 an error.
-        """
-        logging.debug('%s capturing %s UART.', 'Start' if start else 'Stop',
-                      uart)
-        uart_cmd = '%s_uart_capture' % uart
-        target_level = 'on' if start else 'off'
-        level = None
-        if self._servo.has_control(uart_cmd):
-            # Do our own implementation of set() here as not_applicable
-            # should also count as a valid control.
-            logging.debug('Trying to set %s to %s.', uart_cmd, target_level)
-            try:
-                self._servo.set_nocheck(uart_cmd, target_level)
-                level = self._servo.get(uart_cmd)
-            except error.TestFail as e:
-                # Any sort of test failure here should not stop the test. This
-                # is just to capture more output. Log and move on.
-                logging.warning('Failed to set %s to %s. %s. Ignoring.',
-                                uart_cmd, target_level, str(e))
-            if level == target_level:
-              logging.debug('Managed to set %s to %s.', uart_cmd, level)
-            else:
-              logging.debug('Failed to set %s to %s. Got %s.', uart_cmd,
-                            target_level, level)
-        return level == target_level
+        self._logs_dir = None
 
     def start_capture(self):
-        """Start capturing UART streams."""
-        for uart in self._UartToCapture:
-            if self._start_stop_capture(uart, True):
-                self._streams.append(('%s_uart_stream' % uart, '%s_uart.log' %
-                                      uart))
+        """Start capturing Uart streams."""
+        logging.debug('Start capturing CPU/EC UART.')
+        self._servo.set('cpu_uart_capture', 'on')
+        self._streams.append(('cpu_uart_stream', 'cpu_uart.log'))
+        try:
+            self._servo.set('ec_uart_capture', 'on')
+            self._streams.append(('ec_uart_stream', 'ec_uart.log'))
+        except error.TestFail as err:
+            if 'No control named' in str(err):
+                logging.debug('The servod is too old that ec_uart_capture not '
+                              'supported.')
 
     def dump(self):
         """Dump UART streams to log files accordingly."""
-        if not self.logs_dir:
+        if not self._logs_dir:
             return
 
         for stream, logfile in self._streams:
-            logfile_fullname = os.path.join(self.logs_dir, logfile)
+            logfile_fullname = os.path.join(self._logs_dir, logfile)
             try:
                 content = self._servo.get(stream)
             except Exception as err:
                 logging.warn('Failed to get UART log for %s: %s', stream, err)
                 continue
 
-            if content == 'not_applicable':
-                logging.warn('%s is not applicable', stream)
-                continue
-
             # The UART stream may contain non-printable characters, and servo
             # returns it in string representation. We use `ast.leteral_eval`
             # to revert it back.
             with open(logfile_fullname, 'a') as fd:
-                try:
-                    fd.write(ast.literal_eval(content))
-                except ValueError:
-                    logging.exception('Invalid value for %s: %r', stream,
-                                      content)
+                fd.write(ast.literal_eval(content))
 
     def stop_capture(self):
         """Stop capturing UART streams."""
-        for uart in self._UartToCapture:
+        logging.debug('Stop capturing CPU/EC UART.')
+        for uart in ('cpu_uart_capture', 'ec_uart_capture'):
             try:
-                self._start_stop_capture(uart, False)
+                self._servo.set(uart, 'off')
+            except error.TestFail as err:
+                if 'No control named' in str(err):
+                    logging.debug('The servod is too old that %s not '
+                                  'supported.', uart)
             except Exception as err:
                 logging.warn('Failed to stop UART logging for %s: %s', uart,
                              err)
+
+    @property
+    def logs_dir(self):
+        """Return the directory to save UART logs."""
+        return self._logs_dir
+
+    @logs_dir.setter
+    def logs_dir(self, a_dir):
+        """Set directory to save UART logs.
+
+        @param a_dir  String of logs directory name."""
+        self._logs_dir = a_dir
 
 
 class Servo(object):
@@ -293,7 +256,6 @@ class Servo(object):
 
         @param servo_host: A ServoHost object representing
                            the host running servod.
-        @type servo_host: autotest_lib.server.hosts.servo_host.ServoHost
         @param servo_serial: Serial number of the servo board.
         """
         # TODO(fdeng): crbug.com/298379
@@ -306,81 +268,13 @@ class Servo(object):
         self._uart = _Uart(self)
         self._usb_state = None
         self._programmer = None
-        self._prev_log_inode = None
-        self._prev_log_size = 0
+
 
     @property
     def servo_serial(self):
         """Returns the serial number of the servo board."""
         return self._servo_serial
 
-    def rotate_servod_logs(self, filename=None, directory=None):
-        """Save the latest servod log into a local directory, then rotate logs.
-
-        The files will be <filename>.DEBUG, <filename>.INFO, <filename>.WARNING,
-        or just <filename>.log if not using split level logging.
-
-        @param filename: local filename prefix (no file extension) to use.
-                         If None, rotate log but don't save it.
-        @param directory: local directory to save logs into (if unset, use cwd)
-        """
-        if self.is_localhost():
-            # Local servod usually runs without log-dir, so can't be collected.
-            # TODO(crbug.com/1011516): allow localhost when rotation is enabled
-            return
-
-        log_dir = '/var/log/servod_%s' % self._servo_host.servo_port
-
-        if filename:
-            # TODO(crrev.com/c/1793030): remove no-level case once CL is pushed
-            for level_name in ('', 'DEBUG', 'INFO', 'WARNING'):
-
-                remote_path = os.path.join(log_dir, 'latest')
-                if level_name:
-                    remote_path += '.%s' % level_name
-
-                local_path = '%s.%s' % (filename, level_name or 'log')
-                if directory:
-                    local_path = os.path.join(directory, local_path)
-
-                try:
-                    self._servo_host.get_file(
-                            remote_path, local_path, try_rsync=False)
-
-                except error.AutoservRunError as e:
-                    result = e.result_obj
-                    if result.exit_status != 0:
-                        stderr = result.stderr.strip()
-
-                        # File not existing is okay, but warn for anything else.
-                        if 'no such' not in stderr.lower():
-                            logging.warn(
-                                    "Couldn't retrieve servod log: %s",
-                                    stderr or '\n%s' % result)
-
-                try:
-                    if os.stat(local_path).st_size == 0:
-                        os.unlink(local_path)
-                except EnvironmentError:
-                    pass
-
-        else:
-            # No filename given, so caller wants to discard the log lines.
-            # Remove the symlinks to prevent old log-dir links from being
-            # picked up multiple times when using servod without log-dir.
-            remote_path = os.path.join(log_dir, 'latest*')
-            self._servo_host.run(
-                    "rm %s" % remote_path,
-                    stderr_tee=None, ignore_status=True)
-
-        # Servod log rotation renames current log, then creates a new file with
-        # the old name: log.<date> -> log.<date>.1.tbz2 -> log.<date>.2.tbz2
-
-        # Must rotate after copying, or the copy would be the new, empty file.
-        try:
-            self.set_nocheck('rotate_servod_logs', 'yes')
-        except ControlUnavailableError as e:
-            logging.warn("Couldn't rotate servod logs: %s", str(e))
 
     def get_power_state_controller(self):
         """Return the power state controller for this Servo.
@@ -392,7 +286,7 @@ class Servo(object):
         return self._power_state
 
 
-    def initialize_dut(self, cold_reset=False, enable_main=True):
+    def initialize_dut(self, cold_reset=False):
         """Initializes a dut for testing purposes.
 
         This sets various servo signals back to default values
@@ -411,19 +305,8 @@ class Servo(object):
 
         @param cold_reset If True, cold reset the device after
                           initialization.
-        @param enable_main If True, make sure the main servo device has
-                           control of the dut.
-
         """
-        if enable_main:
-            self.enable_main_servo_device()
-
-        try:
-            self._server.hwinit()
-        except socket.error as e:
-            e.filename = '%s:%s' % (self._servo_host.hostname,
-                                    self._servo_host.servo_port)
-            raise
+        self._server.hwinit()
         self.set('usb_mux_oe1', 'on')
         self._usb_state = None
         self.switch_usbkey('off')
@@ -432,14 +315,6 @@ class Servo(object):
             self._power_state.reset()
         logging.debug('Servo initialized, version is %s',
                       self._server.get_version())
-        if self.has_control('init_keyboard'):
-            # This indicates the servod version does not
-            # have explicit keyboard initialization yet.
-            # Ignore this.
-            # TODO(coconutruben): change this back to set() about a month
-            # after crrev.com/c/1586239 has been merged (or whenever that
-            # logic is in the labstation images).
-            self.set_nocheck('init_keyboard','on')
 
 
     def is_localhost(self):
@@ -451,59 +326,31 @@ class Servo(object):
         return self._servo_host.is_localhost()
 
 
-    def get_os_version(self):
-        """Returns the chromeos release version."""
-        lsb_release_content = self.system_output('cat /etc/lsb-release',
-                                                 ignore_status=True)
-        return lsbrelease_utils.get_chromeos_release_builder_path(
-                    lsb_release_content=lsb_release_content)
-
-
-    def get_servod_version(self):
-        """Returns the servod version."""
-        result = self._servo_host.run('servod --version')
-        # TODO: use system_output once servod --version prints to stdout
-        stdout = result.stdout.strip()
-        return stdout if stdout else result.stderr.strip()
-
-
     def power_long_press(self):
         """Simulate a long power button press."""
         # After a long power press, the EC may ignore the next power
         # button press (at least on Alex).  To guarantee that this
         # won't happen, we need to allow the EC one second to
         # collect itself.
-        # long_press is defined as 8.5s in servod
-        self.set_nocheck('power_key', 'long_press')
+        self._server.power_long_press()
 
 
     def power_normal_press(self):
         """Simulate a normal power button press."""
-        # press is defined as 1.2s in servod
-        self.set_nocheck('power_key', 'press')
+        self._server.power_normal_press()
 
 
     def power_short_press(self):
         """Simulate a short power button press."""
-        # tab is defined as 0.2s in servod
-        self.set_nocheck('power_key', 'tab')
+        self._server.power_short_press()
 
 
-    def power_key(self, press_secs='tab'):
+    def power_key(self, press_secs=''):
         """Simulate a power button press.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('power_key', press_secs)
-
-
-    def pwr_button(self, action='press'):
-        """Simulate a power button press.
-
-        @param action: str; could be press or could be release.
-        """
-        self.set_nocheck('pwr_button', action)
+        self._server.power_key(press_secs)
 
 
     def lid_open(self):
@@ -518,12 +365,6 @@ class Servo(object):
         """
         self.set('lid_open', 'no')
         time.sleep(Servo.SLEEP_DELAY)
-
-
-    def vbus_power_get(self):
-        """Get current vbus_power."""
-        return self.get('vbus_power')
-
 
     def volume_up(self, timeout=300):
         """Simulate pushing the volume down button.
@@ -561,91 +402,90 @@ class Servo(object):
             time_left = time_left - self.SHORT_DELAY
         raise error.TestFail("Failed setting volume_down to no")
 
-    def ctrl_d(self, press_secs='tab'):
+    def ctrl_d(self, press_secs=''):
         """Simulate Ctrl-d simultaneous button presses.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('ctrl_d', press_secs)
+        self._server.ctrl_d(press_secs)
 
 
-    def ctrl_u(self, press_secs='tab'):
+    def ctrl_u(self):
         """Simulate Ctrl-u simultaneous button presses.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('ctrl_u', press_secs)
+        self._server.ctrl_u()
 
 
-    def ctrl_enter(self, press_secs='tab'):
+    def ctrl_enter(self, press_secs=''):
         """Simulate Ctrl-enter simultaneous button presses.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('ctrl_enter', press_secs)
+        self._server.ctrl_enter(press_secs)
 
 
-    def ctrl_key(self, press_secs='tab'):
+    def d_key(self, press_secs=''):
         """Simulate Enter key button press.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('ctrl_key', press_secs)
+        self._server.d_key(press_secs)
 
 
-    def enter_key(self, press_secs='tab'):
+    def ctrl_key(self, press_secs=''):
         """Simulate Enter key button press.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('enter_key', press_secs)
+        self._server.ctrl_key(press_secs)
 
 
-    def refresh_key(self, press_secs='tab'):
+    def enter_key(self, press_secs=''):
+        """Simulate Enter key button press.
+
+        @param press_secs : Str. Time to press key.
+        """
+        self._server.enter_key(press_secs)
+
+
+    def refresh_key(self, press_secs=''):
         """Simulate Refresh key (F3) button press.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('refresh_key', press_secs)
+        self._server.refresh_key(press_secs)
 
 
-    def ctrl_refresh_key(self, press_secs='tab'):
+    def ctrl_refresh_key(self, press_secs=''):
         """Simulate Ctrl and Refresh (F3) simultaneous press.
 
         This key combination is an alternative of Space key.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('ctrl_refresh_key', press_secs)
+        self._server.ctrl_refresh_key(press_secs)
 
 
-    def imaginary_key(self, press_secs='tab'):
+    def imaginary_key(self, press_secs=''):
         """Simulate imaginary key button press.
 
         Maps to a key that doesn't physically exist.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('imaginary_key', press_secs)
+        self._server.imaginary_key(press_secs)
 
 
-    def sysrq_x(self, press_secs='tab'):
+    def sysrq_x(self, press_secs=''):
         """Simulate Alt VolumeUp X simulataneous press.
 
         This key combination is the kernel system request (sysrq) X.
 
-        @param press_secs: int, float, str; time to press key in seconds or
-                           known shorthand: 'tab' 'press' 'long_press'
+        @param press_secs : Str. Time to press key.
         """
-        self.set_nocheck('sysrq_x', press_secs)
+        self._server.sysrq_x(press_secs)
 
 
     def toggle_recovery_switch(self):
@@ -738,47 +578,19 @@ class Servo(object):
         """
         return re.sub('^.*>:', '', xmlexc.faultString)
 
-    def has_control(self, control):
-        """Query servod server to determine if |control| is a valid control.
-
-        @param control: str, control name to query
-
-        @returns: true if |control| is a known control, false otherwise.
-        """
-        assert control
-        try:
-            # If the control exists, doc() will work.
-            self._server.doc(control)
-            return True
-        except xmlrpclib.Fault as e:
-            if re.search('No control %s' % control,
-                         self._get_xmlrpclib_exception(e)):
-                return False
-            raise e
 
     def get(self, gpio_name):
         """Get the value of a gpio from Servod.
 
         @param gpio_name Name of the gpio.
-
-        @returns: server response to |gpio_name| request.
-
-        @raise ControlUnavailableError: if |gpio_name| not a known control.
-        @raise error.TestFail: for all other failures doing get().
         """
         assert gpio_name
         try:
             return self._server.get(gpio_name)
         except  xmlrpclib.Fault as e:
-            err_str = self._get_xmlrpclib_exception(e)
-            err_msg = "Getting '%s' :: %s" % (gpio_name, err_str)
-            unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
-            if unknown_ctrl:
-                raise ControlUnavailableError('No control named %r' %
-                                              unknown_ctrl[0])
-            else:
-                logging.error(err_msg)
-                raise error.TestFail(err_msg)
+            err_msg = "Getting '%s' :: %s" % \
+                (gpio_name, self._get_xmlrpclib_exception(e))
+            raise error.TestFail(err_msg)
 
 
     def set(self, gpio_name, gpio_value):
@@ -786,22 +598,17 @@ class Servo(object):
 
         @param gpio_name Name of the gpio.
         @param gpio_value New setting for the gpio.
-        @raise error.TestFail: if the control value fails to change.
         """
         self.set_nocheck(gpio_name, gpio_value)
         retry_count = Servo.GET_RETRY_MAX
-        actual_value = self.get(gpio_name)
-        while gpio_value != actual_value and retry_count:
+        while gpio_value != self.get(gpio_name) and retry_count:
             logging.warning("%s != %s, retry %d", gpio_name, gpio_value,
-                            retry_count)
+                         retry_count)
             retry_count -= 1
             time.sleep(Servo.SHORT_DELAY)
-            actual_value = self.get(gpio_name)
-
-        if gpio_value != actual_value:
-            raise error.TestFail(
-                    'Servo failed to set %s to %s. Got %s.'
-                    % (gpio_name, gpio_value, actual_value))
+        if not retry_count:
+            assert gpio_value == self.get(gpio_name), \
+                'Servo failed to set %s to %s' % (gpio_name, gpio_value)
 
 
     def set_nocheck(self, gpio_name, gpio_value):
@@ -809,25 +616,15 @@ class Servo(object):
 
         @param gpio_name Name of the gpio.
         @param gpio_value New setting for the gpio.
-
-        @raise ControlUnavailableError: if |gpio_name| not a known control.
-        @raise error.TestFail: for all other failures doing set().
         """
-        # The real danger here is to pass a None value through the xmlrpc.
-        assert gpio_name and gpio_value is not None
-        logging.debug('Setting %s to %r', gpio_name, gpio_value)
+        assert gpio_name and gpio_value
+        logging.info('Setting %s to %r', gpio_name, gpio_value)
         try:
             self._server.set(gpio_name, gpio_value)
         except  xmlrpclib.Fault as e:
-            err_str = self._get_xmlrpclib_exception(e)
-            err_msg = "Setting '%s' :: %s" % (gpio_name, err_str)
-            unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
-            if unknown_ctrl:
-                raise ControlUnavailableError('No control named %r' %
-                                              unknown_ctrl[0])
-            else:
-                logging.error(err_msg)
-                raise error.TestFail(err_msg)
+            err_msg = "Setting '%s' to %r :: %s" % \
+                (gpio_name, gpio_value, self._get_xmlrpclib_exception(e))
+            raise error.TestFail(err_msg)
 
 
     def set_get_all(self, controls):
@@ -839,7 +636,7 @@ class Servo(object):
         """
         rv = []
         try:
-            logging.debug('Set/get all: %s', str(controls))
+            logging.info('Set/get all: %s', str(controls))
             rv = self._server.set_get_all(controls)
         except xmlrpclib.Fault as e:
             # TODO(waihong): Remove the following backward compatibility when
@@ -903,19 +700,11 @@ class Servo(object):
         # to do to the device after hotplug.  To avoid surprises,
         # force the DUT to be off.
         self._server.hwinit()
-        if self.has_control('init_keyboard'):
-            # This indicates the servod version does not
-            # have explicit keyboard initialization yet.
-            # Ignore this.
-            # TODO(coconutruben): change this back to set() about a month
-            # after crrev.com/c/1586239 has been merged (or whenever that
-            # logic is in the labstation images).
-            self.set_nocheck('init_keyboard','on')
         self._power_state.power_off()
 
+        # Set up Servo's usb mux.
+        self.switch_usbkey('host')
         if image_path:
-            # Set up Servo's usb mux.
-            self.switch_usbkey('host')
             logging.info('Searching for usb device and copying image to it. '
                          'Please wait a few minutes...')
             if not self._server.download_image_to_usb(image_path):
@@ -949,10 +738,6 @@ class Servo(object):
                 after installation.
         """
         self.image_to_servo_usb(image_path, make_image_noninteractive)
-        # Give the DUT some time to power_off if we skip
-        # download image to usb. (crbug.com/982993)
-        if not image_path:
-            time.sleep(10)
         self.boot_in_recovery_mode()
 
 
@@ -1003,53 +788,13 @@ class Servo(object):
                                     args=args).stdout.strip()
 
 
-    def get_servo_version(self, active=False):
+    def get_servo_version(self):
         """Get the version of the servo, e.g., servo_v2 or servo_v3.
 
-        @param active: Only return the servo type with the active device.
         @return: The version of the servo.
 
         """
-        servo_type = self._server.get_version()
-        if '_and_' not in servo_type or not active:
-            return servo_type
-
-        # If servo v4 is using ccd and servo micro, modify the servo type to
-        # reflect the active device.
-        active_device = self.get('active_v4_device')
-        if active_device in servo_type:
-            logging.info('%s is active', active_device)
-            return 'servo_v4_with_' + active_device
-
-        logging.warn("%s is active even though it's not in servo type",
-                     active_device)
-        return servo_type
-
-
-    def get_main_servo_device(self):
-        """Return the main servo device"""
-        servo_type = self.get_servo_version()
-        return servo_type.split('_with_')[-1].split('_and_')[0]
-
-
-    def enable_main_servo_device(self):
-        """Make sure the main device has control of the dut."""
-        # Cr50 detects servo using the EC uart. It doesn't work well if the
-        # board doesn't use EC uart. The lab active_v4_device doesn't handle
-        # this correctly. Check ec_uart_pty before trying to change the active
-        # device.
-        # TODO(crbug.com/1016842): reenable the setting the main device when
-        # active device works on labstations.
-        return
-        if not self.has_control('active_v4_device'):
-            return
-        self.set('active_v4_device', self.get_main_servo_device())
-
-
-    def running_through_ccd(self):
-        """Returns True if the setup is using ccd to run."""
-        servo = self._server.get_version()
-        return 'ccd_cr50' in servo and 'servo_micro' not in servo
+        return self._server.get_version()
 
 
     def _initialize_programmer(self, rw_only=False):
@@ -1123,10 +868,7 @@ class Servo(object):
 
         @raise: TestError if cannot extract firmware from the tarball.
         """
-        dest_dir = os.path.join(os.path.dirname(tarball_path), firmware_name)
-        # Create the firmware_name subdirectory if it doesn't exist.
-        if not os.path.exists(dest_dir):
-            os.mkdir(dest_dir)
+        dest_dir = os.path.dirname(tarball_path)
         image = _extract_image_from_tarball(tarball_path, dest_dir,
                                             image_candidates)
         if not image:
@@ -1137,13 +879,6 @@ class Servo(object):
                 raise error.TestError('Failed to extract the %s image from '
                                       'tarball' % firmware_name)
 
-        # Extract subsidiary binaries for EC
-        if firmware_name == 'EC':
-            # Find a monitor binary for NPCX_UUT chip type, if any.
-            mon_candidates = [ w.replace('ec.bin', 'npcx_monitor.bin')
-                                   for w in image_candidates ]
-            _extract_image_from_tarball(tarball_path, dest_dir, mon_candidates)
-
         logging.info('Will re-program %s %snow', firmware_name,
                      'RW ' if rw_only else '')
 
@@ -1153,19 +888,16 @@ class Servo(object):
             self.program_bios(os.path.join(dest_dir, image), rw_only)
 
 
-    def program_firmware(self, board, model, tarball_path, rw_only=False):
+    def program_firmware(self, model, tarball_path, rw_only=False):
         """Program firmware (EC, if applied, and BIOS) of the DUT.
 
-        @param board: The DUT board name.
         @param model: The DUT model name.
         @param tarball_path: The path of the downloaded build tarball.
         @param rw_only: True to only install firmware to its RW portions. Keep
                 the RO portions unchanged.
         """
-        ap_image_candidates = ('image.bin', 'image-%s.bin' % model,
-                               'image-%s.bin' % board)
-        ec_image_candidates = ('ec.bin', '%s/ec.bin' % model,
-                               '%s/ec.bin' % board)
+        ap_image_candidates = ('image.bin', 'image-%s.bin' % model)
+        ec_image_candidates = ('ec.bin', '%s/ec.bin' % model)
 
         self._reprogram(tarball_path, 'EC', ec_image_candidates, rw_only)
         self._reprogram(tarball_path, 'BIOS', ap_image_candidates, rw_only)
@@ -1280,35 +1012,6 @@ class Servo(object):
                 logging.debug('Already in the role: %s.', role)
         else:
             logging.debug('Not a servo v4, unable to set role to %s.', role)
-
-
-    def set_servo_v4_dts_mode(self, state):
-        """Set servo v4 dts mode to off or on.
-
-        It does nothing if not a servo v4. Disable the ccd watchdog if we're
-        disabling dts mode. CCD will disconnect. The watchdog only allows CCD
-        to disconnect for 10 seconds until it kills servod. Disable the
-        watchdog, so CCD can stay disconnected indefinitely.
-
-        @param state: Set servo v4 dts mode 'off' or 'on'.
-        """
-        servo_version = self.get_servo_version()
-        if not servo_version.startswith('servo_v4'):
-            logging.debug('Not a servo v4, unable to set dts mode %s.', state)
-            return
-
-        # TODO(mruthven): remove watchdog check once the labstation has been
-        # updated to have support for modifying the watchdog.
-        set_watchdog = self.has_control('watchdog') and 'ccd' in servo_version
-        enable_watchdog = state == 'on'
-
-        if set_watchdog and not enable_watchdog:
-            self.set_nocheck('watchdog_remove', 'ccd')
-
-        self.set_nocheck('servo_v4_dts_mode', state)
-
-        if set_watchdog and enable_watchdog:
-            self.set_nocheck('watchdog_add', 'ccd')
 
 
     @property

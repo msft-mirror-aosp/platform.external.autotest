@@ -208,45 +208,6 @@ class BluetoothDevice(object):
         return properties.get('Discoverable') == 1
 
 
-    def set_discoverable_timeout(self, discoverable_timeout):
-        """Set the adapter DiscoverableTimeout.
-
-        @param discoverable_timeout: adapter DiscoverableTimeout
-                value to set in seconds (Integer).
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.set_discoverable_timeout(discoverable_timeout)
-
-    def get_discoverable_timeout(self):
-        """Get the adapter DiscoverableTimeout.
-
-        @return Value of property DiscoverableTimeout in seconds (Integer).
-
-        """
-        return self._proxy.get_discoverable_timeout()
-
-    def set_pairable_timeout(self, pairable_timeout):
-        """Set the adapter PairableTimeout.
-
-        @param pairable_timeout: adapter PairableTimeout
-                value to set in seconds (Integer).
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.set_pairable_timeout(pairable_timeout)
-
-    def get_pairable_timeout(self):
-        """Get the adapter PairableTimeout.
-
-        @return Value of property PairableTimeout in seconds (Integer).
-
-        """
-        return self._proxy.get_pairable_timeout()
-
-
     def set_pairable(self, pairable):
         """Set the adapter pairable state.
 
@@ -749,19 +710,6 @@ class BluetoothDevice(object):
         self.host.collect_logs(self.XMLRPC_LOG_PATH, destination)
 
 
-    def get_connection_info(self, address):
-        """Get device connection info.
-
-        @param address: The MAC address of the device.
-
-        @returns: On success, a tuple of:
-                      ( RSSI, transmit_power, max_transmit_power )
-                  None otherwise.
-
-        """
-        return self._proxy.get_connection_info(address)
-
-
     def close(self, close_host=True):
         """Tear down state associated with the client.
 
@@ -773,8 +721,8 @@ class BluetoothDevice(object):
         """
         # Turn off the discoverable flag since it may affect future tests.
         self._proxy.set_discoverable(False)
-        # Reset the adapter and leave it on.
-        self._proxy.reset_on()
+        # Leave the adapter powered off, but don't do a full reset.
+        self._proxy.set_powered(False)
         # This kills the RPC server.
         if close_host:
           self.host.close()

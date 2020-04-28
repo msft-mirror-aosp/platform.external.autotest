@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -42,13 +42,8 @@ class UpdateEnginePerformanceMonitor(object):
 
         @return  a list of process identifiers.
         """
-        try:
-            with open('/sys/fs/cgroup/cpu/update-engine/tasks') as f:
-                return [int(i) for i in f.read().split()]
-        except (IOError, OSError) as e:
-            sys.stderr.write('update-engine not running :%s', e)
-            return []
-
+        with open('/sys/fs/cgroup/cpu/update-engine/tasks') as f:
+            return [int(i) for i in f.read().split()]
 
 
     @staticmethod

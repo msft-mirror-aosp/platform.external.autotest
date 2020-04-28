@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -275,6 +275,50 @@ def play_sine(channel, odev='default', freq=1000, duration=10,
     cmdargs = get_play_sine_args(channel, odev, freq, duration, sample_size)
     utils.system(' '.join(cmdargs))
 
+# Functions to compose customized sox command, execute it and process the
+# output of sox command.
+def get_sox_mixer_cmd(infile, channel,
+                      num_channels=_DEFAULT_NUM_CHANNELS,
+                      sox_format=_DEFAULT_SOX_FORMAT):
+    """Gets sox mixer command to reduce channel.
+
+    @param infile: Input file name.
+    @param channel: The selected channel to take effect.
+    @param num_channels: The number of total channels to test.
+    @param sox_format: Format to generate sox command.
+    """
+    # Build up a pan value string for the sox command.
+    if channel == 0:
+        pan_values = '1'
+    else:
+        pan_values = '0'
+    for pan_index in range(1, num_channels):
+        if channel == pan_index:
+            pan_values = '%s%s' % (pan_values, ',1')
+        else:
+            pan_values = '%s%s' % (pan_values, ',0')
+
+    return '%s -c 2 %s %s -c 1 %s - mixer %s' % (SOX_PATH,
+            sox_format, infile, sox_format, pan_values)
+
+def sox_stat_output(infile, channel,
+                    num_channels=_DEFAULT_NUM_CHANNELS,
+                    sox_format=_DEFAULT_SOX_FORMAT):
+    """Executes sox stat command.
+
+    @param infile: Input file name.
+    @param channel: The selected channel.
+    @param num_channels: The number of total channels to test.
+    @param sox_format: Format to generate sox command.
+
+    @return The output of sox stat command
+    """
+    sox_mixer_cmd = get_sox_mixer_cmd(infile, channel,
+                                      num_channels, sox_format)
+    stat_cmd = '%s -c 1 %s - -n stat 2>&1' % (SOX_PATH, sox_format)
+    sox_cmd = '%s | %s' % (sox_mixer_cmd, stat_cmd)
+    return utils.system_output(sox_cmd, retain_output=True)
+
 def get_audio_rms(sox_output):
     """Gets the audio RMS value from sox stat output
 
@@ -375,6 +419,64 @@ def run_in_parallel(*funs):
 
     for t in threads:
         t.join()
+
+def loopback_test_channels(noise_file_name, wav_dir,
+                           playback_callback=None,
+                           check_recorded_callback=check_audio_rms,
+                           preserve_test_file=True,
+                           num_channels = _DEFAULT_NUM_CHANNELS,
+                           record_callback=record_sample,
+                           mix_callback=None):
+    """Tests loopback on all channels.
+
+    @param noise_file_name: Name of the file contains pre-recorded noise.
+    @param wav_dir: The directory of created wav file.
+    @param playback_callback: The callback to do the playback for
+        one channel.
+    @param record_callback: The callback to do the recording.
+    @param check_recorded_callback: The callback to check recorded file.
+    @param preserve_test_file: Retain the recorded files for future debugging.
+    @param num_channels: The number of total channels to test.
+    @param mix_callback: The callback to do on the one-channel file.
+    """
+    for channel in xrange(num_channels):
+        record_file_name = create_wav_file(wav_dir,
+                                           "record-%d" % channel)
+        functions = [lambda: record_callback(record_file_name)]
+
+        if playback_callback:
+            functions.append(lambda: playback_callback(channel))
+
+        if mix_callback:
+            mix_file_name = create_wav_file(wav_dir, "mix-%d" % channel)
+            functions.append(lambda: mix_callback(mix_file_name))
+
+        run_in_parallel(*functions)
+
+        if mix_callback:
+            sox_output_mix = sox_stat_output(mix_file_name, channel)
+            rms_val_mix = get_audio_rms(sox_output_mix)
+            logging.info('Got mixed audio RMS value of %f.', rms_val_mix)
+
+        sox_output_record = sox_stat_output(record_file_name, channel)
+        rms_val_record = get_audio_rms(sox_output_record)
+        logging.info('Got recorded audio RMS value of %f.', rms_val_record)
+
+        reduced_file_name = create_wav_file(wav_dir,
+                                            "reduced-%d" % channel)
+        noise_reduce_file(record_file_name, noise_file_name,
+                          reduced_file_name)
+
+        sox_output_reduced = sox_stat_output(reduced_file_name, channel)
+
+        if not preserve_test_file:
+            os.unlink(reduced_file_name)
+            os.unlink(record_file_name)
+            if mix_callback:
+                os.unlink(mix_file_name)
+
+        check_recorded_callback(sox_output_reduced)
+
 
 def get_channel_sox_stat(
         input_audio, channel_index, channels=2, bits=16, rate=48000):
@@ -750,35 +852,6 @@ def compare_data_correlation(golden_data_binary, golden_data_format,
         error_msg = 'There are more than one best delay: %s' % best_delays
         logging.error(error_msg)
         raise error.TestFail(error_msg)
-
-
-def recorded_filesize_check(filesize,
-                            duration,
-                            channels=1,
-                            rate=48000,
-                            bits=16,
-                            tolerant_ratio=0.1):
-    """Checks the recorded file size is correct. The check will pass if the
-    file size is larger than expected and smaller than our tolerant size. We
-    can tolerate size larger than expected as the way cras_test_client stop
-    recording base on duration is not always accurate but should record longer
-    than expected audio.
-
-    @param filesize: Actually file size.
-    @param duration: Expected seconds to record.
-    @param channels: Number of channels to record.
-    @param rate: Recording sample rate.
-    @param bits: The sample bit width.
-    @param tolerant_ratio: The larger than expected file size ratio that we
-    regard as pass.
-
-    @raises: TestFail if the size is less or larger than expect.
-    """
-    expected = duration * channels * (bits / 8) * rate
-    ratio = abs(float(filesize) / expected)
-    if ratio < 1 or ratio > 1 + tolerant_ratio:
-        raise error.TestFail(
-                'File size not correct: %d expect: %d' % (filesize, expected))
 
 
 class _base_rms_test(test.test):

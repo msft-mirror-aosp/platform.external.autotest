@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import fcntl, logging, os, re, stat, struct, time
+import logging, os, re, time
 from autotest_lib.client.bin import fio_util, test, utils
 from autotest_lib.client.common_lib import error
 
@@ -22,9 +22,6 @@ class hardware_StorageFio(test.test):
 
     # Initialize fail counter used to determine test pass/fail.
     _fail_count = 0
-
-    # 0x1277 is ioctl BLKDISCARD command
-    IOCTL_TRIM_CMD = 0x1277
 
     def __get_disk_size(self):
         """Return the size in bytes of the device pointed to by __filename"""
@@ -164,20 +161,7 @@ class hardware_StorageFio(test.test):
             ]
 
         results = {}
-
-        if stat.S_ISBLK(os.stat(self.__filename).st_mode) and \
-           self.__filesize != 0:
-            try:
-                fd = os.open(self.__filename, os.O_RDWR)
-                fcntl.ioctl(fd, self.IOCTL_TRIM_CMD,
-                            struct.pack('QQ', 0, self.__filesize))
-            except IOError, err:
-                pass
-            finally:
-                os.close(fd)
-
         for job, options in requirements:
-
             # Keys are labeled according to the test case name, which is
             # unique per run, so they cannot clash
             if self.VERIFY_OPTION in options:

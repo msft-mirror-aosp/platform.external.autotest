@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # pylint: disable=missing-docstring
 
 import logging, os, signal, unittest

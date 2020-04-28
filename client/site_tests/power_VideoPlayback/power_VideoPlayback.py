@@ -18,75 +18,57 @@ class power_VideoPlayback(power_test.power_Test):
     """
     version = 1
 
-    _BASE_URL='http://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/power/2m/'
+    _BASE_URL='http://commondatastorage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/perf/'
 
     # list of video name and url.
     _VIDEOS = [
-        ('h264_720_30fps',
-         _BASE_URL + '720p30fpsH264_foodmarket_sync_2m.mp4'
-        ),
-        ('h264_720_60fps',
-         _BASE_URL + '720p60fpsH264_boat_sync_2m.mp4'
-        ),
         ('h264_1080_30fps',
-         _BASE_URL + '1080p30fpsH264_foodmarket_sync_2m.mp4'
+         _BASE_URL + 'h264/1080p_30fps_300frames_20181225.h264.mp4'
         ),
         ('h264_1080_60fps',
-         _BASE_URL + '1080p60fpsH264_boat_sync_2m.mp4'
+         _BASE_URL + 'h264/1080p_60fps_600frames_20181225.h264.mp4'
         ),
         ('h264_4k_30fps',
-         _BASE_URL + '4k30fpsH264_foodmarket_sync_vod_2m.mp4'
+         _BASE_URL + 'h264/2160p_30fps_300frames_20181225.h264.mp4'
         ),
         ('h264_4k_60fps',
-         _BASE_URL + '4k60fpsH264_boat_sync_vod_2m.mp4'
-        ),
-        ('vp8_720_30fps',
-         _BASE_URL + '720p30fpsVP8_foodmarket_sync_2m.webm'
-        ),
-        ('vp8_720_60fps',
-         _BASE_URL + '720p60fpsVP8_boat_sync_2m.webm'
+         _BASE_URL + 'h264/2160p_60fps_600frames_20181225.h264.mp4'
         ),
         ('vp8_1080_30fps',
-         _BASE_URL + '1080p30fpsVP8_foodmarket_sync_2m.webm'
+         _BASE_URL + 'vp8/1080p_30fps_300frames_20181225.vp8.webm'
         ),
         ('vp8_1080_60fps',
-         _BASE_URL + '1080p60fpsVP8_boat_sync_2m.webm'
+         _BASE_URL + 'vp8/1080p_60fps_600frames_20181225.vp8.webm'
         ),
         ('vp8_4k_30fps',
-         _BASE_URL + '4k30fpsVP8_foodmarket_sync_2m.webm'
+         _BASE_URL + 'vp8/2160p_30fps_300frames_20181225.vp8.webm'
         ),
         ('vp8_4k_60fps',
-         _BASE_URL + '4k60fpsVP8_boat_sync_2m.webm'
-        ),
-        ('vp9_720_30fps',
-         _BASE_URL + '720p30fpsVP9_foodmarket_sync_2m.webm'
-        ),
-        ('vp9_720_60fps',
-         _BASE_URL + '720p60fpsVP9_boat_sync_2m.webm'
+         _BASE_URL + 'vp8/2160p_60fps_600frames_20181225.vp8.webm'
         ),
         ('vp9_1080_30fps',
-         _BASE_URL + '1080p30fpsVP9_foodmarket_sync_2m.webm'
+         _BASE_URL + 'vp9/1080p_30fps_300frames_20181225.vp9.webm'
         ),
         ('vp9_1080_60fps',
-         _BASE_URL + '1080p60fpsVP9_boat_sync_2m.webm'
+         _BASE_URL + 'vp9/1080p_60fps_600frames_20181225.vp9.webm'
         ),
         ('vp9_4k_30fps',
-         _BASE_URL + '4k30fpsVP9_foodmarket_sync_2m.webm'
+         _BASE_URL + 'vp9/2160p_30fps_300frames_20181225.vp9.webm'
         ),
         ('vp9_4k_60fps',
-         _BASE_URL + '4k60fpsVP9_boat_sync_2m.webm'
+         _BASE_URL + 'vp9/2160p_60fps_600frames_20181225.vp9.webm'
         ),
         ('av1_720_30fps',
-         _BASE_URL + '720p30fpsAV1_foodmarket_sync_2m.mp4'
+         _BASE_URL + 'av1/720p_30fps_300frames_20190305.av1.mp4'
         ),
         ('av1_720_60fps',
-         _BASE_URL + '720p60fpsAV1_boat_sync_2m.mp4'
+         _BASE_URL + 'av1/720p_60fps_600frames_20190305.av1.mp4'
         ),
         ('av1_1080_30fps',
-         _BASE_URL + '1080p30fpsAV1_foodmarket_sync_2m.mp4'
+         _BASE_URL + 'av1/1080p_30fps_300frames_20190305.av1.mp4'
         ),
         ('av1_1080_60fps',
-         _BASE_URL + '1080p60fpsAV1_boat_sync_2m.mp4'
+         _BASE_URL + 'av1/1080p_60fps_600frames_20190305.av1.mp4'
         ),
     ]
 
@@ -94,16 +76,16 @@ class power_VideoPlayback(power_test.power_Test):
     # We use ram disk to avoid power hit from network / disk usage.
     _RAMDISK = '/tmp/ramdisk'
 
-    # Time in seconds to wait after set up before starting each video.
-    _WAIT_FOR_IDLE = 15
+    # Time in seconds to wait after set up before starting test.
+    _WAIT_FOR_IDLE = 10
 
     # Time in seconds to measure power per video file.
-    _MEASUREMENT_DURATION = 120
+    _MEASUREMENT_DURATION = 30
 
-    # Chrome arguments to disable HW video decode
+    # Chrome arguemnts to disable HW video decode
     _DISABLE_HW_VIDEO_DECODE_ARGS = '--disable-accelerated-video-decode'
 
-    def initialize(self, pdash_note='', seconds_period=3):
+    def initialize(self, pdash_note='', seconds_period=5):
         """Create and mount ram disk to download video."""
         super(power_VideoPlayback, self).initialize(
                 seconds_period=seconds_period, pdash_note=pdash_note)
@@ -127,6 +109,8 @@ class power_VideoPlayback(power_test.power_Test):
         tab = cr.browser.tabs[0]
         tab.Navigate(cr.browser.platform.http_server.UrlOf(local_path))
         tab.WaitForDocumentReadyStateToBeComplete()
+        tab.EvaluateJavaScript("document.getElementsByTagName('video')[0]."
+                               "loop=true")
 
     def _calculate_dropped_frame_percent(self, tab):
         """Calculate percent of dropped frame.
@@ -158,8 +142,18 @@ class power_VideoPlayback(power_test.power_Test):
         @param secs_per_video: time in seconds to play video and measure power.
         @param use_hw_decode: if False, disable hw video decoding.
         """
+        videos_local = []
+        loop = 0
+
         if not videos:
             videos = self._VIDEOS
+
+        # Download video to ramdisk
+        for name, url in videos:
+            local_path = os.path.join(self._RAMDISK, os.path.basename(url))
+            logging.info('Downloading %s to %s', url, local_path)
+            file_utils.download_file(url, local_path)
+            videos_local.append((name, local_path))
 
         extra_browser_args = []
         if not use_hw_decode:
@@ -167,6 +161,7 @@ class power_VideoPlayback(power_test.power_Test):
 
         with chrome.Chrome(extra_browser_args=extra_browser_args,
                            init_network_controller=True) as self.cr:
+            self.cr.browser.platform.SetHTTPServerDirectories(self._RAMDISK)
             tab = self.cr.browser.tabs.New()
             tab.Activate()
 
@@ -176,31 +171,19 @@ class power_VideoPlayback(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
+            time.sleep(self._WAIT_FOR_IDLE)
             self.start_measurements()
-            idle_start = time.time()
 
-            for name, url in videos:
-                # Download video to ramdisk
-                local_path = os.path.join(self._RAMDISK, os.path.basename(url))
-                logging.info('Downloading %s to %s', url, local_path)
-                file_utils.download_file(url, local_path)
-                self.cr.browser.platform.SetHTTPServerDirectories(self._RAMDISK)
-
-                time.sleep(self._WAIT_FOR_IDLE)
-
+            for name, url in videos_local:
                 logging.info('Playing video: %s', name)
-                self._play_video(self.cr, local_path)
-                self.checkpoint_measurements('idle', idle_start)
-
+                self._play_video(self.cr, url)
+                tagname = '%s_%s' % (self.tagged_testname, name)
                 loop_start = time.time()
-                time.sleep(secs_per_video)
-                self.checkpoint_measurements(name, loop_start)
-
-                idle_start = time.time()
+                self.loop_sleep(loop, secs_per_video)
                 self.keyvals[name + '_dropped_frame_percent'] = \
                         self._calculate_dropped_frame_percent(tab)
-                self.cr.browser.platform.StopAllLocalServers()
-                os.remove(local_path)
+                self.checkpoint_measurements(tagname, loop_start)
+                loop += 1
 
     def cleanup(self):
         """Unmount ram disk."""

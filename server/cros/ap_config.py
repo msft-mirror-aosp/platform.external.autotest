@@ -2,20 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
 import ConfigParser
 import logging
 import os
 import time
 
 from autotest_lib.client.common_lib.cros.network import ap_constants
+from autotest_lib.site_utils.rpm_control_system import rpm_client
 from autotest_lib.server.cros.ap_configurators import ap_spec
 
+# chaos_shadow_ap_list.conf is used for testing against local APs.
+AP_CONFIG_FILES = { ap_constants.AP_TEST_TYPE_CHAOS:
+                    ('chaos_ap_list.conf',
+                     'chaos_shadow_ap_list.conf'),}
 
 TIMEOUT = 100
 
-
-def get_ap_list():
+def get_ap_list(ap_test_type):
     """
     Returns the list of AP's from the corresponding configuration file.
 
@@ -25,8 +28,8 @@ def get_ap_list():
 
     """
     aps = []
-    # chaos_shadow_ap_list.conf is used for testing against local APs.
-    for filename in ('chaos_ap_list.conf', 'chaos_shadow_ap_list.conf'):
+    ap_config_files = AP_CONFIG_FILES.get(ap_test_type, None)
+    for filename in ap_config_files:
         ap_config = ConfigParser.RawConfigParser(
                 {AP.CONF_RPM_MANAGED: 'False'})
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -50,8 +53,6 @@ class APSectionError(Exception):
     """ Exception raised when AP instance does not exist in the config. """
     pass
 
-RPMUnit = collections.namedtuple('RPMUnit', 'hostname outlet')
-
 class AP(object):
     """ An instance of an ap defined in the chaos config file.
 
@@ -68,8 +69,6 @@ class AP(object):
     CONF_WAN_MAC = 'wan mac'
     CONF_WAN_HOST = 'wan_hostname'
     CONF_RPM_MANAGED = 'rpm_managed'
-    CONF_RPM_HOSTNAME = 'rpm_hostname'
-    CONF_RPM_OUTLET = 'rpm_outlet'
     CONF_BSS = 'bss'
     CONF_BSS5 = 'bss5'
     CONF_BANDWIDTH = 'bandwidth'
@@ -122,14 +121,9 @@ class AP(object):
         return self.ap_config.get(self.bss, self.CONF_WAN_HOST)
 
 
-    def get_rpm_unit(self):
-        """@return RPMUnit for this AP. None if AP is not managed via RPM."""
-        if not self._get_rpm_managed():
-            return None
-        return RPMUnit(
-            self.ap_config.get(self.bss, self.CONF_RPM_HOSTNAME),
-            self.ap_config.get(self.bss, self.CONF_RPM_OUTLET),
-        )
+    def get_rpm_managed(self):
+        """@return bool for AP power via rpm from config file"""
+        return self.ap_config.getboolean(self.bss, self.CONF_RPM_MANAGED)
 
 
     def get_bss(self):
@@ -196,8 +190,19 @@ class AP(object):
         return self.ap_config.get(self.bss, self.CONF_ADMIN_IP)
 
 
-    def _get_rpm_managed(self):
-        return self.ap_config.getboolean(self.bss, self.CONF_RPM_MANAGED)
+    def power_off(self):
+        """call rpm_client to power off AP"""
+        rpm_client.set_power_afe(self.get_wan_host(), 'OFF')
+
+
+    def power_on(self):
+        """call rpm_client to power on AP"""
+        rpm_client.set_power_afe(self.get_wan_host(), 'ON')
+
+        # Hard coded timer for now to wait for the AP to come alive
+        # before trying to use it.  We need scanning code
+        # to scan until the AP becomes available (crosbug.com/36710).
+        time.sleep(TIMEOUT)
 
 
     def __str__(self):

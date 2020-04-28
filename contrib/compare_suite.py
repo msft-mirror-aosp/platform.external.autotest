@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#! /usr/bin/python
 
 # The tool gathers the time used by special tasks/test jobs to a tab-separated
 # output.

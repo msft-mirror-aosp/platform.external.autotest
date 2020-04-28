@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 """
 Further display the tests in a matrix of the form tests X machines
 to help understand the results selected from the previous form.

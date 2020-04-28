@@ -77,34 +77,18 @@ def get_stable_faft_version(board):
     return _FAFT_VERSION_MAP.get_version(board)
 
 
-def clean_provision_labels(host):
-    """Clean provision-related labels.
+def _clear_host_attributes_before_provision(host, info):
+    """Clear host attributes before provision, e.g., job_repo_url.
 
-    @param host: Host object.
+    @param host: A Host object to clear attributes before provision.
+    @param info: A HostInfo to update the attributes in.
     """
-    info = host.host_info_store.get()
-    info.clear_version_labels()
     attributes = host.get_attributes_to_clear_before_provision()
+    if not attributes:
+        return
+
     for key in attributes:
-      info.attributes.pop(key, None)
-
-    host.host_info_store.commit(info)
-
-
-def add_provision_labels(host, version_prefix, image_name,
-                         provision_attributes={}):
-    """Add provision labels for host.
-
-    @param host: Host object.
-    @param version_prefix: a string version prefix, e.g. "cros-version:"
-    @param image_name: a string image name, e.g. peppy-release/R70-11011.0.0.
-    @param provision_attributes: a map, including attributes for provisioning,
-        e.g. {"job_repo_url": "http://..."}
-    """
-    info = host.host_info_store.get()
-    info.attributes.update(provision_attributes)
-    info.set_version_label(version_prefix, image_name)
-    host.host_info_store.commit(info)
+        info.attributes.pop(key, None)
 
 
 def machine_install_and_update_labels(host, update_url,
@@ -119,12 +103,16 @@ def machine_install_and_update_labels(host, update_url,
     @param with_cheets: If true, installation is for a specific, custom
         version of Android for a target running ARC.
     """
-    clean_provision_labels(host)
+    info = host.host_info_store.get()
+    info.clear_version_labels()
+    _clear_host_attributes_before_provision(host, info)
+    host.host_info_store.commit(info)
     updater = autoupdater.ChromiumOSUpdater(
             update_url, host=host, use_quick_provision=use_quick_provision)
     image_name, host_attributes = updater.run_update()
+    info = host.host_info_store.get()
+    info.attributes.update(host_attributes)
     if with_cheets:
         image_name += provision.CHEETS_SUFFIX
-
-    add_provision_labels(
-            host, host.VERSION_PREFIX, image_name, host_attributes)
+    info.set_version_label(host.VERSION_PREFIX, image_name)
+    host.host_info_store.commit(info)

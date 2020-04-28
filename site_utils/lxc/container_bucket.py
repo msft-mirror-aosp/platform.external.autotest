@@ -10,6 +10,7 @@ import common
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.global_config import global_config
 from autotest_lib.site_utils.lxc import config as lxc_config
 from autotest_lib.site_utils.lxc import constants
 from autotest_lib.site_utils.lxc import lxc
@@ -28,6 +29,12 @@ except ImportError:
     metrics = utils.metrics_mock
     ts_mon = mock.Mock()
 
+
+# Timeout (in seconds) for container pool operations.
+_CONTAINER_POOL_TIMEOUT = 3
+
+_USE_LXC_POOL = global_config.get_config_value('LXC_POOL', 'use_lxc_pool',
+                                               type=bool)
 
 class ContainerBucket(object):
     """A wrapper class to interact with containers in a specific container path.
@@ -78,10 +85,7 @@ class ContainerBucket(object):
         @return: A dictionary of all containers with detailed attributes,
                  indexed by container name.
         """
-        logging.debug("Fetching all extant LXC containers")
         info_collection = lxc.get_container_info(self.container_path)
-        if force_update:
-          logging.debug("Clearing cached container info")
         containers = {} if force_update else self.container_cache
         for info in info_collection:
             if info["name"] in containers:
@@ -103,15 +107,10 @@ class ContainerBucket(object):
         @return: A container object with matching name. Returns None if no
                  container matches the given name.
         """
-        logging.debug("Fetching LXC container with id %s", container_id)
         if container_id in self.container_cache:
-            logging.debug("Found container %s in cache", container_id)
             return self.container_cache[container_id]
 
-        container = self.get_all().get(container_id, None)
-        if None == container:
-          logging.debug("Could not find container %s", container_id)
-        return container
+        return self.get_all().get(container_id, None)
 
 
     def exist(self, container_id):
@@ -209,21 +208,13 @@ class ContainerBucket(object):
         if control:
             container.install_control_file(safe_control)
 
-        # Use a pre-packaged Trusty-compatible Autotest site_packages
-        # instead if it exists.  crbug.com/1013241
-        if os.path.exists(constants.TRUSTY_SITE_PACKAGES_PATH):
-            mount_entries = [(constants.TRUSTY_SITE_PACKAGES_PATH,
-                              constants.CONTAINER_SITE_PACKAGES_PATH,
-                              True)]
-        else:
-            mount_entries = [(constants.SITE_PACKAGES_PATH,
-                              constants.CONTAINER_SITE_PACKAGES_PATH,
-                              True)]
-        mount_entries.extend([
-                (result_path,
-                 os.path.join(constants.RESULT_DIR_FMT % job_folder),
-                 False),
-        ])
+        mount_entries = [(constants.SITE_PACKAGES_PATH,
+                          constants.CONTAINER_SITE_PACKAGES_PATH,
+                          True),
+                         (result_path,
+                          os.path.join(constants.RESULT_DIR_FMT % job_folder),
+                          False),
+        ]
 
         # Update container config to mount directories.
         for source, destination, readonly in mount_entries:

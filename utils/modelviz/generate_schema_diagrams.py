@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 Generates schema diagrams for Django apps.  Just run the script with no

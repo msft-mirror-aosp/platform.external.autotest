@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 """Tests for autotest_lib.client.bin.partition."""
 

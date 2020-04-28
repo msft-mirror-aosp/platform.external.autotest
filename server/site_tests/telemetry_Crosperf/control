@@ -11,7 +11,6 @@ TIME = "LONG"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "performance"
 TEST_TYPE = "server"
-JOB_RETRIES = 0
 
 DOC = """
 This runs various Telemetry performance tests under the crosperf script.

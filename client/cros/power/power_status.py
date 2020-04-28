@@ -415,7 +415,7 @@ class SysStat(object):
 
     Fields:
 
-    battery:   A BatteryStat object.
+    battery:   A list of BatteryStat objects.
     linepower: A list of LineStat objects.
     """
     psu_types = ['Mains', 'USB', 'USB_ACA', 'USB_C', 'USB_CDP', 'USB_DCP',
@@ -457,7 +457,7 @@ class SysStat(object):
         self.linepower = []
 
         if self.battery_path:
-            self.battery = BatteryStat(self.battery_path)
+            self.battery = [ BatteryStat(self.battery_path) ]
 
         for path in self.linepower_path:
             self.linepower.append(LineStat(path))
@@ -486,19 +486,14 @@ class SysStat(object):
         return on_ac
 
 
-    def battery_charging(self):
+    def ac_charging(self):
         """
-        Returns true if battery is currently charging or false otherwise.
+        Returns true if device is currently charging from AC power.
         """
+        charging = False
         for linepower in self.linepower:
-            if linepower.status == 'Charging':
-                return True
-
-        if not self.battery_path:
-            logging.warn('Unable to determine battery charge status')
-            return False
-
-        return self.battery.status.rstrip() == 'Charging'
+            charging |= (linepower.status == 'Charging')
+        return charging
 
 
     def battery_discharging(self):
@@ -509,7 +504,7 @@ class SysStat(object):
             logging.warn('Unable to determine battery discharge status')
             return False
 
-        return self.battery.status.rstrip() == 'Discharging'
+        return(self.battery[0].status.rstrip() == 'Discharging')
 
 
     def battery_discharge_ok_on_ac(self):
@@ -518,14 +513,14 @@ class SysStat(object):
         some devices cycle between charge & discharge above a certain
         SoC.  If AC is charging and SoC > 95% we can safely assume that.
         """
-        return self.battery_charging() and (self.percent_current_charge() > 95)
+        return self.ac_charging() and (self.percent_current_charge() > 95)
 
 
     def percent_current_charge(self):
         """Returns current charge compare to design capacity in percent.
         """
-        return self.battery.charge_now * 100 / \
-               self.battery.charge_full_design
+        return self.battery[0].charge_now * 100 / \
+               self.battery[0].charge_full_design
 
 
     def assert_battery_state(self, percent_initial_charge_min):
@@ -613,7 +608,7 @@ class AbstractStats(object):
 
     def __init__(self, name=None, incremental=True):
         if not name:
-            raise error.TestFail("Need to name AbstractStats instance please.")
+            error.TestFail("Need to name AbstractStats instance please.")
         self.name = name
         self.incremental = incremental
         self._stats = self._read_stats()
@@ -681,18 +676,16 @@ class AbstractStats(object):
 
 CPU_BASE_PATH = '/sys/devices/system/cpu/'
 
-def count_all_cpus():
+def get_all_cpus():
     """
-    Return count of cpus on system.
+    Retrieve all numbers of 'cpu\d+' files under |CPU_BASE_PATH|.
     """
-    path = '%s/cpu[0-9]*' % CPU_BASE_PATH
-    return len(glob.glob(path))
-
-def get_online_cpus():
-    """
-    Return list of integer cpu numbers that are online.
-    """
-    cpus = [int(f.split('/')[-1]) for f in glob.iglob('/dev/cpu/[0-9]*')]
+    cpu_entry_re = re.compile(r'cpu(\d+)')
+    cpus = []
+    for f in os.listdir(CPU_BASE_PATH):
+      match = cpu_entry_re.match(f)
+      if match:
+        cpus.append(int(match.groups()[0]))
     return frozenset(cpus)
 
 def get_cpus_filepaths_for_suffix(cpus, suffix):
@@ -723,35 +716,31 @@ class CPUFreqStats(AbstractStats):
         name = 'cpufreq'
         stats_suffix = 'cpufreq/stats/time_in_state'
         key_suffix = 'cpufreq/scaling_available_frequencies'
-        cpufreq_driver = '/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver'
+        intel_pstate_msr_path = '/dev/cpu/*/msr'
+        all_cpus = get_all_cpus()
         if not cpus:
-            cpus = get_online_cpus()
-        _, self._file_paths = get_cpus_filepaths_for_suffix(cpus,
-                                                            stats_suffix)
-
-        if len(cpus) and len(cpus) < count_all_cpus():
+            cpus = all_cpus
+        cpus, self._file_paths = get_cpus_filepaths_for_suffix(cpus,
+                                                               stats_suffix)
+        if len(cpus) and len(cpus) < len(all_cpus):
             name = '%s_%s' % (name, '_'.join([str(c) for c in cpus]))
+        _, cpufreq_key_paths = get_cpus_filepaths_for_suffix(cpus, key_suffix)
+        intel_pstate_msr_paths = glob.glob(intel_pstate_msr_path)
         self._running_intel_pstate = False
         self._initial_perf = None
         self._current_perf = None
         self._max_freq = 0
-        self._cpus = cpus
-        self._available_freqs = set()
-
         if not self._file_paths:
             logging.debug('time_in_state file not found')
+            if intel_pstate_msr_paths:
+                logging.debug('intel_pstate msr file found')
+                self._num_cpus = len(intel_pstate_msr_paths)
+                self._running_intel_pstate = True
 
-        # assumes cpufreq driver for CPU0 is the same as the others.
-        freq_driver = utils.read_one_line(cpufreq_driver)
-        if freq_driver == 'intel_pstate':
-            logging.debug('intel_pstate driver active')
-            self._running_intel_pstate = True
-        else:
-            _, cpufreq_key_paths = get_cpus_filepaths_for_suffix(cpus,
-                                                                 key_suffix)
-            for path in cpufreq_key_paths:
-                self._available_freqs |= set(int(x) for x in
-                                             utils.read_file(path).split())
+        self._available_freqs = set()
+        for path in cpufreq_key_paths:
+            self._available_freqs |= set(int(x) for x in
+                                         utils.read_file(path).split())
 
         super(CPUFreqStats, self).__init__(name=name)
 
@@ -761,7 +750,7 @@ class CPUFreqStats(AbstractStats):
             aperf = 0
             mperf = 0
 
-            for cpu in self._cpus:
+            for cpu in range(self._num_cpus):
                 aperf += utils.rdmsr(self.MSR_IA32_APERF, cpu)
                 mperf += utils.rdmsr(self.MSR_IA32_MPERF, cpu)
 
@@ -845,10 +834,11 @@ class CPUIdleStats(CPUCStateStats):
     def __init__(self, cpus=None):
         name = 'cpuidle'
         cpuidle_suffix = 'cpuidle'
+        all_cpus = get_all_cpus()
         if not cpus:
-            cpus = get_online_cpus()
+            cpus = all_cpus
         cpus, self._cpus = get_cpus_filepaths_for_suffix(cpus, cpuidle_suffix)
-        if len(cpus) and len(cpus) < count_all_cpus():
+        if len(cpus) and len(cpus) < len(all_cpus):
             name = '%s_%s' % (name, '_'.join([str(c) for c in cpus]))
         super(CPUIdleStats, self).__init__(name=name, non_c0_stat='non-C0')
 
@@ -1287,7 +1277,7 @@ def get_cpu_sibling_groups():
     siblings_suffix = 'topology/core_siblings_list'
     sibling_groups = []
     cpus_processed = set()
-    cpus, sibling_file_paths = get_cpus_filepaths_for_suffix(get_online_cpus(),
+    cpus, sibling_file_paths = get_cpus_filepaths_for_suffix(get_all_cpus(),
                                                              siblings_suffix)
     for c, siblings_path in zip(cpus, sibling_file_paths):
         if c in cpus_processed:

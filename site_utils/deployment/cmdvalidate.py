@@ -480,9 +480,7 @@ def _get_upload_basename(arguments):
     @param arguments  Namespace object returned from argument parsing.
     @return  A filename as a string.
     """
-    time_format = '%Y-%m-%dT%H%M%S.%f%z'
-    timestamp = datetime.datetime.now(dateutil.tz.tzlocal()).strftime(
-            time_format)
+    timestamp = datetime.datetime.now(dateutil.tz.tzlocal()).isoformat()
     return '{time}-{board}'.format(time=timestamp, board=arguments.board)
 
 

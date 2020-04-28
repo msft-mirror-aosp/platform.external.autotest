@@ -77,6 +77,7 @@ class video_PlaybackPerf(test.test):
                                "loop=true")
 
 
+    @helper_logger.video_log_wrapper
     def run_once(self, video_name, video_description, capability,
                  power_test=False):
         """
@@ -283,7 +284,8 @@ class video_PlaybackPerf(test.test):
         keyvals = {}
 
         with chrome.Chrome(
-                extra_browser_args=[ENABLE_AUTOPLAY],
+                extra_browser_args=[helper_logger.chrome_vmodule_flag(),
+                                    ENABLE_AUTOPLAY],
                 init_network_controller=True) as cr:
 
             # crbug/753292 - enforce the idle checks after login

@@ -124,16 +124,16 @@ class power_Test(test.test):
             keyvals['b_on_ac'] = 0
 
         if self.status.battery:
-            keyvals['ah_charge_full'] = self.status.battery.charge_full
+            keyvals['ah_charge_full'] = self.status.battery[0].charge_full
             keyvals['ah_charge_full_design'] = \
-                                self.status.battery.charge_full_design
-            keyvals['ah_charge_now'] = self.status.battery.charge_now
-            keyvals['a_current_now'] = self.status.battery.current_now
-            keyvals['wh_energy'] = self.status.battery.energy
-            keyvals['w_energy_rate'] = self.status.battery.energy_rate
+                                self.status.battery[0].charge_full_design
+            keyvals['ah_charge_now'] = self.status.battery[0].charge_now
+            keyvals['a_current_now'] = self.status.battery[0].current_now
+            keyvals['wh_energy'] = self.status.battery[0].energy
+            keyvals['w_energy_rate'] = self.status.battery[0].energy_rate
             keyvals['v_voltage_min_design'] = \
-                                self.status.battery.voltage_min_design
-            keyvals['v_voltage_now'] = self.status.battery.voltage_now
+                                self.status.battery[0].voltage_min_design
+            keyvals['v_voltage_now'] = self.status.battery[0].voltage_now
 
         for log in self._meas_logs:
             keyvals.update(log.calc())
@@ -184,8 +184,6 @@ class power_Test(test.test):
     def postprocess_iteration(self):
         """Write keyval and send data to dashboard."""
         power_telemetry_utils.end_measurement()
-        for log in self._meas_logs:
-            log.done = True
         super(power_Test, self).postprocess_iteration()
         self._publish_dashboard()
         self._save_results()

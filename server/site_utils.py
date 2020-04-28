@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 
-import collections
 import contextlib
 import grp
 import httplib
@@ -342,7 +341,6 @@ def check_lab_status(build):
 
 
 def host_in_lab(hostname):
-    """Check if the execution is against a host in the lab"""
     return (not utils.in_moblab_ssp()
             and not lsbrelease_utils.is_moblab()
             and utils.host_is_in_lab_zone(hostname))
@@ -390,12 +388,8 @@ def get_test_views_from_tko(suite_job_id, tko):
 
     @param suite_job_id: ID of suite job.
     @param tko: an instance of TKO as defined in server/frontend.py.
-    @return: A defaultdict where keys are test names and values are
-             lists of test statuses, e.g.,
-             {'dummy_Fail.Error': ['ERROR'. 'ERROR'],
-              'dummy_Fail.NAError': ['TEST_NA'],
-              'dummy_Fail.RetrySuccess': ['ERROR', 'GOOD'],
-              }
+    @return: A dictionary of test status keyed by test name, e.g.,
+             {'dummy_Fail.Error': 'ERROR', 'dummy_Fail.NAError': 'TEST_NA'}
     @raise: Exception when there is no test view found.
 
     """
@@ -404,9 +398,10 @@ def get_test_views_from_tko(suite_job_id, tko):
     if not relevant_views:
         raise Exception('Failed to retrieve job results.')
 
-    test_views = collections.defaultdict(list)
+    test_views = {}
     for view in relevant_views:
-        test_views[view['test_name']].append(view['status'])
+        test_views[view['test_name']] = view['status']
+
     return test_views
 
 

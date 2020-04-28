@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 """
 Selects all rows and columns that satisfy the condition specified
 and prints the matrix.

@@ -71,6 +71,10 @@ class Suspender(object):
         # Hard disk sync and overall just slow
         'parrot': 8,
         'kiev': 9,
+
+        # Temporary increased delay for octopus until suspend time is better
+        # b/79782439/
+        'octopus': 8,
     }
 
     # alarm/not_before value guaranteed to raise SpuriousWakeup in _hwclock_ts
@@ -466,18 +470,17 @@ class Suspender(object):
 
         @returns: a float representing arc resume timestamp in  CPU seconds
                   starting from the last boot if arc logcat resume log is parsed
-                  correctly; otherwise None.
+                  correctly; otherwise 'unknown'.
 
         """
         command = 'android-sh -c "logcat -v monotonic -t 300 *:silent' \
                   ' ArcPowerManagerService:D"'
         regex_resume = re.compile(r'^\s*(\d+\.\d+).*ArcPowerManagerService: '
-                                  'Device finished resuming$')
+                                  'Suspend is over; resuming all apps$')
         for retry in xrange(retries + 1):
             arc_logcat = utils.system_output(command, ignore_status=False)
             arc_logcat = arc_logcat.splitlines()
             for line in arc_logcat:
-                logging.debug('arc_resume: %s', line)
                 match_resume = regex_resume.search(line)
                 # ARC logcat is cleared before suspend so the first ARC resume
                 # timestamp is the one we are looking for.
@@ -486,7 +489,7 @@ class Suspender(object):
             time.sleep(0.005 * 2**retry)
         else:
             logging.error('ARC did not resume correctly.')
-            return None
+            return 'unknown'
 
 
     def get_suspend_delay(self):
@@ -600,10 +603,8 @@ class Suspender(object):
                 }
 
             if measure_arc:
-                arc_resume_ts = self._arc_resume_ts()
-                if arc_resume_ts:
-                    successful_suspend['seconds_system_resume_arc'] = \
-                        arc_resume_ts - start_resume
+                successful_suspend['seconds_system_resume_arc'] = \
+                        self._arc_resume_ts() - start_resume
 
             self.successes.append(successful_suspend)
 

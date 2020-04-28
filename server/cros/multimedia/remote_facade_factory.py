@@ -17,7 +17,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants
 from autotest_lib.server import autotest
-from autotest_lib.server.cros.multimedia import assistant_facade_adapter
 from autotest_lib.server.cros.multimedia import audio_facade_adapter
 from autotest_lib.server.cros.multimedia import bluetooth_hid_facade_adapter
 from autotest_lib.server.cros.multimedia import browser_facade_adapter
@@ -35,11 +34,6 @@ from autotest_lib.server.cros.multimedia import video_facade_adapter
 CLIENT_LOG_STREAM = logging_manager.LoggingFile(
         level=logging.DEBUG,
         prefix='[client] ')
-
-
-class WebSocketConnectionClosedException(Exception):
-    """WebSocket is closed during Telemetry inspecting the backend."""
-    pass
 
 
 class _Method:
@@ -81,15 +75,13 @@ class RemoteFacadeProxy(object):
     XMLRPC_RETRY_DELAY = 10
     REBOOT_TIMEOUT = 60
 
-    def __init__(self, host, no_chrome, extra_browser_args=None,
-                 disable_arc=False):
+    def __init__(self, host, no_chrome, extra_browser_args=None):
         """Construct a RemoteFacadeProxy.
 
         @param host: Host object representing a remote host.
         @param no_chrome: Don't start Chrome by default.
         @param extra_browser_args: A list containing extra browser args passed
                                    to Chrome in addition to default ones.
-        @param disable_arc: True to disable ARC++.
 
         """
         self._client = host
@@ -97,12 +89,10 @@ class RemoteFacadeProxy(object):
         self._log_saving_job = None
         self._no_chrome = no_chrome
         self._extra_browser_args = extra_browser_args
-        self._disable_arc = disable_arc
         self.connect()
         if not no_chrome:
             self._start_chrome(reconnect=False, retry=True,
-                               extra_browser_args=self._extra_browser_args,
-                               disable_arc=self._disable_arc)
+                               extra_browser_args=self._extra_browser_args)
 
 
     def __getattr__(self, name):
@@ -134,16 +124,13 @@ class RemoteFacadeProxy(object):
 
             @return: A tuple of (keyword, reason); or None if not found.
             """
+            EXCEPTION_PATTERN = r'(\w+): (.+)'
             # Search the line containing the exception keyword, like:
             #   "TestFail: Not able to start session."
-            #   "WebSocketException... Error message: socket is already closed."
-            EXCEPTION_PATTERNS = (r'(\w+): (.+)',
-                                  r'(.*)\. Error message: (.*)')
             for line in reversed(message.split('\n')):
-                for pattern in EXCEPTION_PATTERNS:
-                    m = re.match(pattern, line)
-                    if m:
-                        return (m.group(1), m.group(2))
+                m = re.match(EXCEPTION_PATTERN, line)
+                if m:
+                    return (m.group(1), m.group(2))
             return None
 
         def call_rpc_with_log():
@@ -164,8 +151,6 @@ class RemoteFacadeProxy(object):
                         raise error.TestFail(reason)
                     elif keyword == 'TestError':
                         raise error.TestError(reason)
-                    elif 'WebSocketConnectionClosedException' in keyword:
-                        raise WebSocketConnectionClosedException(reason)
 
                     # Raise the exception with the original exception keyword.
                     raise Exception('%s: %s' % (keyword, reason))
@@ -187,15 +172,13 @@ class RemoteFacadeProxy(object):
                 return call_rpc_with_log()
             except (socket.error,
                     xmlrpclib.ProtocolError,
-                    httplib.BadStatusLine,
-                    WebSocketConnectionClosedException):
+                    httplib.BadStatusLine):
                 # Reconnect the RPC server in case connection lost, e.g. reboot.
                 self.connect()
                 if not self._no_chrome:
                     self._start_chrome(
                             reconnect=True, retry=False,
-                            extra_browser_args=self._extra_browser_args,
-                            disable_arc=self._disable_arc)
+                            extra_browser_args=self._extra_browser_args)
                 # Try again.
                 logging.warning('Retrying RPC %s.', rpc)
                 return call_rpc_with_log()
@@ -266,15 +249,13 @@ class RemoteFacadeProxy(object):
         return True
 
 
-    def _start_chrome(self, reconnect, retry=False, extra_browser_args=None,
-                      disable_arc=False):
+    def _start_chrome(self, reconnect, retry=False, extra_browser_args=None):
         """Starts Chrome using browser facade on Cros host.
 
         @param reconnect: True for reconnection, False for the first-time.
         @param retry: True to retry using a reboot on host.
         @param extra_browser_args: A list containing extra browser args passed
                                    to Chrome in addition to default ones.
-        @param disable_arc: True to disable ARC++.
 
         @raise: error.TestError: if fail to start Chrome after retry.
 
@@ -283,7 +264,7 @@ class RemoteFacadeProxy(object):
                 'Start Chrome with default arguments and extra browser args %s...',
                 extra_browser_args)
         success = self._xmlrpc_proxy.browser.start_default_chrome(
-                reconnect, extra_browser_args, disable_arc)
+                reconnect, extra_browser_args)
         if not success and retry:
             logging.warning('Can not start Chrome. Reboot host and try again')
             # Reboot host and try again.
@@ -295,7 +276,7 @@ class RemoteFacadeProxy(object):
                     'Retry starting Chrome with default arguments and '
                     'extra browser args %s...', extra_browser_args)
             success = self._xmlrpc_proxy.browser.start_default_chrome(
-                    reconnect, extra_browser_args, disable_arc)
+                    reconnect, extra_browser_args)
 
         if not success:
             raise error.TestError(
@@ -318,7 +299,7 @@ class RemoteFacadeFactory(object):
     """
 
     def __init__(self, host, no_chrome=False, install_autotest=True,
-                 results_dir=None, extra_browser_args=None, disable_arc=False):
+                 results_dir=None, extra_browser_args=None):
         """Construct a RemoteFacadeFactory.
 
         @param host: Host object representing a remote host.
@@ -327,7 +308,6 @@ class RemoteFacadeFactory(object):
         @param results_dir: A directory to store multimedia server init log.
         @param extra_browser_args: A list containing extra browser args passed
                                    to Chrome in addition to default ones.
-        @param disable_arc: True to disable ARC++.
         If it is not None, we will get multimedia init log to the results_dir.
 
         """
@@ -341,8 +321,7 @@ class RemoteFacadeFactory(object):
             self._proxy = RemoteFacadeProxy(
                     host=self._client,
                     no_chrome=no_chrome,
-                    extra_browser_args=extra_browser_args,
-                    disable_arc=disable_arc)
+                    extra_browser_args=extra_browser_args)
         finally:
             if results_dir:
                 host.get_file(constants.MULTIMEDIA_XMLRPC_SERVER_LOG_FILE,
@@ -354,10 +333,6 @@ class RemoteFacadeFactory(object):
         """Returns the proxy ready status"""
         return self._proxy.ready()
 
-    def create_assistant_facade(self):
-        """Creates an assistant facade object."""
-        return assistant_facade_adapter.AssistantFacadeRemoteAdapter(
-                self._client, self._proxy)
 
     def create_audio_facade(self):
         """Creates an audio facade object."""

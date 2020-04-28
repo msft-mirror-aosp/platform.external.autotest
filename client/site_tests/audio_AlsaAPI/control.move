@@ -4,7 +4,7 @@
 
 AUTHOR = 'The Chromium OS Authors,chromeos-audio@google.com'
 NAME = 'audio_AlsaAPI.move'
-ATTRIBUTES = ""
+ATTRIBUTES = "suite:audio"
 PURPOSE = 'Test that simple ALSA API succeeds to move appl_ptr.'
 CRITERIA = """
 Check that the ALSA API succeeds.

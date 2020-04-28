@@ -5,9 +5,7 @@
 import logging
 from threading import Timer
 
-from autotest_lib.client.common_lib import common
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
@@ -25,6 +23,7 @@ class firmware_FAFTSetup(FirmwareTest):
     # Delay to ensure client is ready to read the key press.
     KEY_PRESS_DELAY = 2
 
+
     def console_checker(self):
         """Verify EC console is available if using Chrome EC."""
         if not self.check_ec_capability(suppress_warning=True):
@@ -33,12 +32,11 @@ class firmware_FAFTSetup(FirmwareTest):
         try:
             if self.ec.get_version():
                 return True
-        except:  # pylint: disable=W0702
+        except: # pylint: disable=W0702
             pass
 
         logging.error("Cannot talk to EC console.")
-        logging.error(
-                "Please check there is no terminal opened on EC console.")
+        logging.error("Please check there is no terminal opened on EC console.")
         raise error.TestFail("Failed EC console check.")
 
     def base_keyboard_checker(self, press_action):
@@ -49,17 +47,17 @@ class firmware_FAFTSetup(FirmwareTest):
         """
         result = True
         # Stop UI so that key presses don't go to Chrome.
-        self.faft_client.System.RunShellCommand("stop ui")
+        self.faft_client.system.run_shell_command("stop ui")
 
         # Press the keys
         Timer(self.KEY_PRESS_DELAY, press_action).start()
 
         # Invoke client side script to monitor keystrokes
-        if not self.faft_client.System.CheckKeys([28, 29, 32]):
+        if not self.faft_client.system.check_keys([28, 29, 32]):
             result = False
 
         # Turn UI back on
-        self.faft_client.System.RunShellCommand("start ui")
+        self.faft_client.system.run_shell_command("start ui")
         return result
 
     def keyboard_checker(self):
@@ -72,24 +70,6 @@ class firmware_FAFTSetup(FirmwareTest):
 
         return self.base_keyboard_checker(keypress)
 
-    def _verify_grpc_imports(self):
-        """Try importing grpc packages, and throw warnings if unable."""
-        for package_name in ("grpc", "grpc_tools"):
-            try:
-                __import__(package_name)
-                logging.info("Successfully imported package <%s>",
-                             package_name)
-            except ImportError as e:
-                logging.warn("Failed to import package <%s>", package_name)
-                logging.warn("stderr: <%s>", e)
-        protoc_cmd = "python -m grpc_tools.protoc --help"
-        protoc_result = utils.run(protoc_cmd, ignore_status=True)
-        if protoc_result.exit_status:
-            logging.warn("Failed to run protoc command: <%s>", protoc_cmd)
-            logging.warn("stderr: <%s>", protoc_result.stderr.strip())
-        else:
-            logging.info("Successfully ran protoc command <%s>", protoc_cmd)
-
     def run_once(self):
         """Main test logic"""
         logging.info("Check EC console is available and test warm reboot")
@@ -100,19 +80,14 @@ class firmware_FAFTSetup(FirmwareTest):
         self.setup_usbkey(usbkey=True, host=False)
         self.switcher.reboot_to_mode(to_mode='rec')
 
-        self.check_state((self.checkers.crossystem_checker, {
-                'mainfw_type': 'recovery'
-        }))
+        self.check_state((self.checkers.crossystem_checker,
+                          {'mainfw_type': 'recovery'}))
 
         logging.info("Check cold boot")
         self.switcher.mode_aware_reboot(reboot_type='cold')
 
-        if self.faft_config.mode_switcher_type == 'keyboard_dev_switcher':
+        if self.faft_config.fw_bypasser_type == 'ctrl_d_bypasser':
             logging.info("Check keyboard simulation")
             self.check_state(self.keyboard_checker)
         else:
             logging.info("Skip keyboard simulation on an embedded device")
-
-        # TODO (gredelston): Remove this check once we have verified
-        # that the autotest drone can import grpc and grpc_tools.
-        self._verify_grpc_imports()

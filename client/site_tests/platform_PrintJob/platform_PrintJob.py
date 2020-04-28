@@ -7,17 +7,15 @@ import os
 import time
 
 from autotest_lib.client.bin import test, utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.client.cros.input_playback import input_playback
 
 _CHECK_TIMEOUT = 20
+_NOTIF_TITLE = "Successfully printed"
+_NOW_PRINTING_STATUS = "Now printing"
 _PRINTER_NAME = "HP OfficeJet g55"
-_PRINTING_COMPLETE_NOTIF = "Printing complete"
-_PRINTING_NOTIF = "Printing"
-_STEPS_BETWEEN_CONTROLS = 4
-_USB_PRINTER_CONNECTED_NOTIF = "USB printer connected"
-
 _SHORT_WAIT = 2
 
 class platform_PrintJob(test.test):
@@ -76,24 +74,45 @@ class platform_PrintJob(test.test):
         time.sleep(_SHORT_WAIT)
 
 
+    def _check_printer_in_dialog(self):
+        """Use autotest_private to read discovered printers.
+
+        @raises: error.TestFail if printer is not found in print dialog list.
+        """
+        self.cr.autotest_ext.ExecuteJavaScript(
+                'window.__printers = null; '
+                'chrome.autotestPrivate.getPrinterList(function(printers) {'
+                '    window.__printers = printers'
+                '});')
+        printers = self.cr.autotest_ext.EvaluateJavaScript(
+                'window.__printers;')
+        logging.info(str(printers))
+        printers_number = len(printers)
+        if printers_number != 1:
+            raise error.TestFail('Bad number of printers: %d' % printers_number)
+        if printers[0]['printerName'] != 'Chameleon ' + _PRINTER_NAME+' (USB)':
+            raise error.TestFail('Chameleon printer name not found!')
+        return printers
+
+
     def execute_print_job(self):
         """Using keyboard imput navigate to print dialog and execute a job."""
 
         # Open dialog and select 'See more'
         self._open_print_dialog()
-        time.sleep(_SHORT_WAIT)
-
-        # Navigate to printer selection
-        for x in range(_STEPS_BETWEEN_CONTROLS):
-            self._press_tab()
+        self._press_tab()
         self._press_down()
+
+        # Navigate to and select the emulated printer
         self._press_tab()
         self._press_down()
         self._press_enter()
 
+        # Check printer is in the peinter's list
+        self._check_printer_in_dialog()
+
         # Go back to Print button
-        for x in range(_STEPS_BETWEEN_CONTROLS):
-            self._press_shift_tab()
+        self._press_shift_tab()
 
         # Send the print job
         self._press_enter()
@@ -125,7 +144,6 @@ class platform_PrintJob(test.test):
         tab.Navigate(self.cr.browser.platform.http_server.UrlOf(pdf_path))
         tab.WaitForDocumentReadyStateToBeInteractiveOrBetter(
                 timeout=_CHECK_TIMEOUT);
-        time.sleep(_SHORT_WAIT)
 
 
     def run_once(self, host, args):
@@ -142,15 +160,12 @@ class platform_PrintJob(test.test):
 
         with chrome.Chrome(autotest_ext=True,
                            init_network_controller=True) as self.cr:
-            usb_printer.Plug()
-            self.check_notification(_USB_PRINTER_CONNECTED_NOTIF)
-            logging.info('Chameleon printer connected!')
             self.navigate_to_pdf()
+            usb_printer.Plug()
             time.sleep(_SHORT_WAIT)
-            logging.info('PDF file opened in browser!')
             self.execute_print_job()
             usb_printer.StartCapturingPrinterData()
-            self.check_notification(_PRINTING_NOTIF)
-            self.check_notification(_PRINTING_COMPLETE_NOTIF)
+            self.check_notification('Now printing')
+            self.check_notification('Successfully printed')
             usb_printer.StopCapturingPrinterData()
             usb_printer.Unplug()

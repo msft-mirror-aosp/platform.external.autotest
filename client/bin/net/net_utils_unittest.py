@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 import unittest, os, socket, time, sys, struct
 import common
 from autotest_lib.client.bin import utils

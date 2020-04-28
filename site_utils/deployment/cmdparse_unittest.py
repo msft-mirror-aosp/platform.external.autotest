@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import contextlib
 import sys
@@ -194,14 +194,12 @@ class _CommandParserTestCase(unittest.TestCase):
         self.assertTrue(arguments.stageusb)
         self.assertFalse(arguments.install_firmware)
         self.assertFalse(arguments.install_test_image)
-        self.assertFalse(arguments.reinstall_test_image)
 
     def test_firmware_defaults(self):
         """Test argument defaults for `deploy firmware`."""
         arguments = _test_parse_command(['firmware'])
         self._check_common_defaults(arguments)
         self.assertFalse(arguments.stageusb)
-        self.assertFalse(arguments.reinstall_test_image)
         self.assertTrue(arguments.install_firmware)
         self.assertTrue(arguments.install_test_image)
 
@@ -211,7 +209,6 @@ class _CommandParserTestCase(unittest.TestCase):
         self._check_common_defaults(arguments)
         self.assertFalse(arguments.stageusb)
         self.assertFalse(arguments.install_firmware)
-        self.assertFalse(arguments.reinstall_test_image)
         self.assertTrue(arguments.install_test_image)
 
     def test_repair_defaults(self):
@@ -220,8 +217,7 @@ class _CommandParserTestCase(unittest.TestCase):
         self._check_common_defaults(arguments)
         self.assertFalse(arguments.stageusb)
         self.assertFalse(arguments.install_firmware)
-        self.assertFalse(arguments.install_test_image)
-        self.assertTrue(arguments.reinstall_test_image)
+        self.assertTrue(arguments.install_test_image)
 
 
 if __name__ == '__main__':

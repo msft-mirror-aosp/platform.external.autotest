@@ -4,11 +4,11 @@
 
 AUTHOR = 'keybuk@chromium.org'
 NAME = 'bluetooth_Sanity_DefaultState'
-ATTRIBUTES = ('suite:bluetooth, suite:bluetooth_sanity')
+ATTRIBUTES = "suite:bluetooth, suite:bluetooth_sanity"
 TIME = 'SHORT'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth,wificell'
 
 DOC = """
 Verify that the device's Bluetooth adapter has the correct default state when
@@ -18,6 +18,8 @@ This is a useful sanity check to ensure that the device state is what we
 expect, and that the device state returns to the initial state after a power
 cycle.
 
+This is also a security check that our devices are not discoverable unless we
+specifically set them to be.
 """
 
 def run(machine):

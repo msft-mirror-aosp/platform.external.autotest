@@ -113,14 +113,6 @@ class PDDevice(object):
         raise NotImplementedError(
                 'drp_set should be implemented in derived class')
 
-    def drp_get(self):
-        """Gets dualrole mode
-
-        @returns one of the modes (on, off, snk, src)
-        """
-        raise NotImplementedError(
-                'drp_set should be implemented in derived class')
-
     def drp_disconnect_connect(self, disc_time_sec):
         """Force PD disconnect/connect via drp settings
 
@@ -131,7 +123,7 @@ class PDDevice(object):
                 derived class')
 
     def cc_disconnect_connect(self, disc_time_sec):
-        """Force PD disconnect/connect using PDTester fw command
+        """Force PD disconnect/connect using Plankton fw command
 
         @param disc_time_sec: Time in seconds between disconnect and reconnect
         """
@@ -160,8 +152,8 @@ class PDConsoleDevice(PDDevice):
         self.utils = pd_console.PDConsoleUtils(console)
         # Save the PD port number for this device
         self.port = port
-        # Not a PDTester device
-        self.is_pdtester = False
+        # Not a Plankton device
+        self.is_plankton = False
 
     def is_src(self):
         """Checks if the port is connected as a source
@@ -195,15 +187,14 @@ class PDConsoleDevice(PDDevice):
         """
         state = self.utils.get_pd_state(self.port)
         return bool(state == self.utils.SRC_DISC or
-                    state == self.utils.SNK_DISC or
-                    state == self.utils.DRP_AUTO_TOGGLE)
+                    state == self.utils.SNK_DISC)
 
     def is_drp(self):
         """Checks if dual role mode is supported
 
         @returns True if dual role mode is 'on', False otherwise
         """
-        return self.utils.is_pd_dual_role_enabled(self.port)
+        return self.utils.is_pd_dual_role_enabled()
 
     def drp_disconnect_connect(self, disc_time_sec):
         """Disconnect/reconnect using drp mode settings
@@ -270,18 +261,13 @@ class PDConsoleDevice(PDDevice):
         @returns True is set was successful, False otherwise
         """
         # Set desired dualrole mode
-        self.utils.set_pd_dualrole(self.port, mode)
+        self.utils.set_pd_dualrole(mode)
+        # Get the expected output
+        resp = self.utils.dualrole_resp[self.utils.dual_index[mode]]
         # Get current setting
-        current = self.utils.get_pd_dualrole(self.port)
+        current = self.utils.get_pd_dualrole()
         # Verify that setting is correct
-        return bool(mode == current)
-
-    def drp_get(self):
-        """Gets dualrole mode
-
-        @returns one of the modes (on, off, snk, src)
-        """
-        return self.utils.get_pd_dualrole(self.port)
+        return bool(resp == current)
 
     def try_src(self, enable):
         """Enables/Disables Try.SRC PD protocol setting
@@ -388,11 +374,11 @@ class PDConsoleDevice(PDDevice):
         return current_pr != new_pr
 
 
-class PDTesterDevice(PDConsoleDevice):
-    """Class for PDTester devices
+class PDPlanktonDevice(PDConsoleDevice):
+    """Class for PD Plankton devices
 
     This class contains methods for PD funtions which are unique to the
-    PDTester board, e.g. Plankton or Servo v4. It inherits all the methods
+    Plankton Type C factory testing board. It inherits all the methods
     for PD console devices.
     """
 
@@ -403,23 +389,23 @@ class PDTesterDevice(PDConsoleDevice):
         @param port: USB PD port number
         """
         # Instantiate the PD console object
-        super(PDTesterDevice, self).__init__(console, port)
-        # Indicate this is PDTester device
-        self.is_pdtester = True
+        super(PDPlanktonDevice, self).__init__(console, 0)
+        # Indicate this is Plankton device
+        self.is_plankton = True
 
-    def _toggle_pdtester_drp(self):
-        """Issue 'usbc_action drp' PDTester command
+    def _toggle_plankton_drp(self):
+        """Issue 'usbc_action drp' Plankton command
 
-        @returns value of drp_enable in PDTester FW
+        @returns value of drp_enable in Plankton FW
         """
         drp_cmd = 'usbc_action drp'
         drp_re = ['DRP\s=\s(\d)']
-        # Send DRP toggle command to PDTester and get value of 'drp_enable'
+        # Send DRP toggle command to Plankton and get value of 'drp_enable'
         m = self.utils.send_pd_command_get_output(drp_cmd, drp_re)
         return int(m[0][1])
 
-    def _enable_pdtester_drp(self):
-        """Enable DRP mode on PDTester
+    def _enable_plankton_drp(self):
+        """Enable DRP mode on Plankton
 
         DRP mode can only be toggled and is not able to be explicitly
         enabled/disabled via the console. Therefore, this method will
@@ -430,10 +416,10 @@ class PDTesterDevice(PDConsoleDevice):
         @returns True when DRP mode is enabled, False if not successful
         """
         for attempt in xrange(2):
-            if self._toggle_pdtester_drp() == True:
-                logging.info('PDTester DRP mode enabled')
+            if self._toggle_plankton_drp() == True:
+                logging.info('Plankton DRP mode enabled')
                 return True
-        logging.error('PDTester DRP mode set failure')
+        logging.error('Plankton DRP mode set failure')
         return False
 
     def _verify_state_sequence(self, states_list, console_log):
@@ -447,29 +433,29 @@ class PDTesterDevice(PDConsoleDevice):
         # For each state in the expected state transiton table, build
         # the regexp and search for it in the state transition log.
         for state in states_list:
-            state_regx = r'C{0}\s+[\w]+:?\s({1})'.format(self.port,
-                                                         state)
+            state_regx = r'C{0}\s+[\w]+:\s({1})'.format(self.port,
+                                                        state)
             if re.search(state_regx, console_log) is None:
                 return False
         return True
 
     def cc_disconnect_connect(self, disc_time_sec):
-        """Disconnect/reconnect using PDTester
+        """Disconnect/reconnect using Plankton
 
-        PDTester supports a feature which simulates a USB Type C disconnect
+        Plankton supports a feature which simulates a USB Type C disconnect
         and reconnect.
 
         @param disc_time_sec: Time in seconds for disconnect period.
         """
         DISC_DELAY = 100
-        disc_cmd = 'fakedisconnect %d  %d' % (DISC_DELAY,
-                                              disc_time_sec * 1000)
+        disc_cmd = 'fake_disconnect %d  %d' % (DISC_DELAY,
+                                               disc_time_sec * 1000)
         self.utils.send_pd_command(disc_cmd)
 
     def drp_disconnect_connect(self, disc_time_sec):
-        """Disconnect/reconnect using PDTester
+        """Disconnect/reconnect using Plankton
 
-        Utilize PDTester disconnect/connect utility and verify
+        Utilize Plankton disconnect/connect utility and verify
         that both disconnect and reconnect actions were successful.
 
         @param disc_time_sec: Time in seconds for disconnect period.
@@ -492,27 +478,29 @@ class PDTesterDevice(PDConsoleDevice):
         @returns True if dualrole mode matches the requested value or
         is successfully set to that value. False, otherwise.
         """
+        # Get correct dualrole console response
+        resp = self.utils.dualrole_resp[self.utils.dual_index[mode]]
         # Get current value of dualrole
-        drp = self.utils.get_pd_dualrole(self.port)
-        if drp == mode:
+        drp = self.utils.get_pd_dualrole()
+        if drp == resp:
             return True
 
         if mode == 'on':
-            # Setting dpr_enable on PDTester will set dualrole mode to on
-            return self._enable_pdtester_drp()
+            # Setting dpr_enable on Plankton will set dualrole mode to on
+            return self._enable_plankton_drp()
         else:
             # If desired setting is other than 'on', need to ensure that
-            # drp mode on PDTester is disabled.
-            if drp == 'on':
+            # drp mode on Plankton is disabled.
+            if resp == 'on':
                 # This will turn off drp_enable flag and set dualmode to 'off'
-                return self._toggle_pdtester_drp()
+                return self._toggle_plankton_drp()
             # With drp_enable flag off, can set to desired setting
-            return self.utils.set_pd_dualrole(self.port, mode)
+            return self.utils.set_pd_dualrole(mode)
 
     def _reset(self, cmd, states_list):
         """Initates a PD reset sequence
 
-        PDTester device has state names available on the console. When
+        Plankton device has state names available on the console. When
         a soft reset is issued the console log is extracted and then
         compared against the expected state transisitons.
 
@@ -522,7 +510,7 @@ class PDTesterDevice(PDConsoleDevice):
         @returns True if state transitions match, False otherwise
         """
         # Want to grab all output until either SRC_READY or SNK_READY
-        reply_exp = ['(.*)(C%d)\s+[\w]+:?\s([\w]+_READY)' % self.port]
+        reply_exp = ['(.*)(C\d)\s+[\w]+:\s([\w]+_READY)']
         m = self.utils.send_pd_command_get_output(cmd, reply_exp)
         return self._verify_state_sequence(states_list, m[0][0])
 
@@ -660,11 +648,11 @@ class PDPortPartner(object):
         except error.TestFail:
             return False
 
-    def _is_pdtester_console(self, console):
-        """Check for PDTester console
+    def _is_plankton_console(self, console):
+        """Check for Plankton console
 
         This method looks for a console command option 'usbc_action' which
-        is unique to PDTester PD devices.
+        is unique to Plankton PD devices.
 
         @param console: uart console accssed via servo
 
@@ -697,19 +685,19 @@ class PDPortPartner(object):
         return bool((dev_pair[0].is_src() and dev_pair[1].is_snk()) or
                     (dev_pair[0].is_snk() and dev_pair[1].is_src()))
 
-    def _verify_pdtester_connection(self, dev_pair):
-        """Verify DUT to PDTester PD connection
+    def _verify_plankton_connection(self, dev_pair):
+        """Verify DUT to Plankton PD connection
 
-        This method checks for a PDTester PD connection for the
+        This method checks for a Plankton PD connection for the
         given port by first verifying if a PD connection is present.
-        If found, then it uses a PDTester feature to force a PD disconnect.
+        If found, then it uses a Plankton feature to force a PD disconnect.
         If the port is no longer in the connected state, and following
         a delay, is found to be back in the connected state, then
-        a DUT pd to PDTester connection is verified.
+        a DUT pd to Plankton connection is verified.
 
         @param dev_pair: list of two PD devices
 
-        @returns True if DUT to PDTester pd connection is verified
+        @returns True if DUT to Plankton pd connection is verified
         """
         DISC_CHECK_TIME = .5
         DISC_WAIT_TIME = 2
@@ -730,19 +718,19 @@ class PDPortPartner(object):
                     time.sleep(DISC_WAIT_TIME + CONNECT_TIME)
                     if self._check_port_pair(dev_pair):
                         # Have verifed a pd disconnect/reconnect sequence
-                        logging.info('PDTester <-> DUT pair found')
+                        logging.info('Plankton <-> DUT pair found')
                         return True
                 else:
                     # Delay to allow
                     time.sleep(DISC_WAIT_TIME + CONNECT_TIME)
             except NotImplementedError:
-                logging.info('dev %d is not PDTester', index)
+                logging.info('dev %d is not Plankton', index)
         return False
 
     def identify_pd_devices(self):
         """Instantiate PD devices present in test setup
 
-        @returns list of 2 PD devices if a DUT <-> PDTester found. If
+        @returns list of 2 PD devices if a DUT <-> Plankton found. If
         not found, then returns an empty list.
         """
         devices = []
@@ -750,14 +738,14 @@ class PDPortPartner(object):
         # is present and determine the number of PD ports.
         for console in self.consoles:
             if self._is_pd_console(console):
-                is_tester = self._is_pdtester_console(console)
+                is_plank = self._is_plankton_console(console)
                 num_ports = self._find_num_pd_ports(console)
                 # For each PD port that can be accessed via the console,
-                # instantiate either PDConsole or PDTester device.
+                # instantiate either PDConsole or PDPlankton device.
                 for port in xrange(num_ports):
-                    if is_tester:
-                        logging.info('PDTester PD Device on port %d', port)
-                        devices.append(PDTesterDevice(console, port))
+                    if is_plank:
+                        logging.info('Plankton PD Device on port %d', port)
+                        devices.append(PDPlanktonDevice(console, port))
                     else:
                         devices.append(PDConsoleDevice(console, port))
                         logging.info('Console PD Device on port %d', port)
@@ -770,7 +758,7 @@ class PDPortPartner(object):
             for dev_idx in range(devices.index(deva) + 1, len(devices)):
                 devb = devices[dev_idx]
                 pair = [deva, devb]
-                if self._verify_pdtester_connection(pair):
+                if self._verify_plankton_connection(pair):
                     test_pair = pair
                     devices.remove(deva)
                     devices.remove(devb)

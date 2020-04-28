@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import os, cgi, cgitb, time, urllib
 import db, unique_cookie

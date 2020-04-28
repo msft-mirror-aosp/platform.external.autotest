@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -88,11 +88,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     UPSTART_ERROR_ALREADYSTARTED = \
             'com.ubuntu.Upstart0_6.Error.AlreadyStarted'
 
-    BLUETOOTHD_JOB = 'btdispatch'
+    BLUETOOTHD_JOB = 'bluetoothd'
 
     DBUS_ERROR_SERVICEUNKNOWN = 'org.freedesktop.DBus.Error.ServiceUnknown'
 
-    BLUETOOTH_SERVICE_NAME = 'org.chromium.Bluetooth'
+    BLUEZ_SERVICE_NAME = 'org.bluez'
     BLUEZ_MANAGER_PATH = '/'
     BLUEZ_MANAGER_IFACE = 'org.freedesktop.DBus.ObjectManager'
     BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
@@ -104,7 +104,6 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     BLUEZ_PROFILE_MANAGER_PATH = '/org/bluez'
     BLUEZ_PROFILE_MANAGER_IFACE = 'org.bluez.ProfileManager1'
     BLUEZ_ERROR_ALREADY_EXISTS = 'org.bluez.Error.AlreadyExists'
-    BLUEZ_PLUGIN_DEVICE_IFACE = 'org.chromium.BluetoothDevice'
     DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
     AGENT_PATH = '/test/agent'
 
@@ -117,9 +116,6 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
     def __init__(self):
         super(BluetoothDeviceXmlRpcDelegate, self).__init__()
-
-        # Always connect to btdispatch regardless of NewBlue enable status.
-        self._bluetooth_service_name = self.BLUETOOTH_SERVICE_NAME
 
         # Open the Bluetooth Raw socket to the kernel which provides us direct,
         # raw, access to the HCI controller.
@@ -301,7 +297,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         bluez = None
         try:
-            bluez = self._system_bus.get_object(self._bluetooth_service_name,
+            bluez = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                                 self.BLUEZ_MANAGER_PATH)
             logging.debug('bluetoothd is running')
         except dbus.exceptions.DBusException as e:
@@ -383,7 +379,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             if self.BLUEZ_ADAPTER_IFACE in ifaces:
                 logging.debug('using adapter %s', path)
                 adapter = self._system_bus.get_object(
-                        self._bluetooth_service_name,
+                        self.BLUEZ_SERVICE_NAME,
                         path)
                 return adapter
         else:
@@ -462,21 +458,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         # Turn on the adapter in order to remove all remote devices.
         if not self._is_powered_on():
-            if not self._set_powered(True):
-                logging.warning('Unable to power on the adapter')
-                return False
+            self._set_powered(True)
 
         for device in devices:
             logging.debug('removing %s', device.get('Address'))
             self.remove_device_object(device.get('Address'))
 
-        # Toggle power to the adapter.
-        if not self._set_powered(False):
-            logging.warning('Unable to power off adapter')
-            return False
-        if set_power and not self._set_powered(True):
-            logging.warning('Unable to power on adapter')
-            return False
+        if not set_power:
+            self._set_powered(False)
 
         return True
 
@@ -498,7 +487,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             else:
                 logging.warning('Adapter not found!')
                 return False
-        return self._set_powered(powered)
+        self._set_powered(powered)
+        return True
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -509,10 +499,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         logging.debug('_set_powered %r', powered)
-        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Powered',
-                          dbus.Boolean(powered, variant_level=1),
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Powered', powered,
                           dbus_interface=dbus.PROPERTIES_IFACE)
-        return True
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -530,66 +518,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             # has happened.
             return True
         self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
-                          'Discoverable',
-                          dbus.Boolean(discoverable, variant_level=1),
-                          dbus_interface=dbus.PROPERTIES_IFACE)
-        return True
-
-
-    @xmlrpc_server.dbus_safe(False)
-    def get_discoverable_timeout(self):
-        """Get the adapter discoverable_timeout.
-
-        @return True on success, False otherwise.
-
-        """
-        return int(self._adapter.Get(self.BLUEZ_ADAPTER_IFACE,
-                          'DiscoverableTimeout',
-                          dbus_interface=dbus.PROPERTIES_IFACE))
-
-
-    @xmlrpc_server.dbus_safe(False)
-    def set_discoverable_timeout(self, discoverable_timeout):
-        """Set the adapter discoverable_timeout property.
-
-        @param discoverable_timeout: adapter discoverable_timeout value
-               in seconds to set (Integer).
-
-        @return True on success, False otherwise.
-
-        """
-        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
-                          'DiscoverableTimeout',
-                          dbus.UInt32(discoverable_timeout, variant_level=1),
-                          dbus_interface=dbus.PROPERTIES_IFACE)
-        return True
-
-
-    @xmlrpc_server.dbus_safe(False)
-    def get_pairable_timeout(self):
-        """Get the adapter pairable_timeout.
-
-        @return True on success, False otherwise.
-
-        """
-        return int(self._adapter.Get(self.BLUEZ_ADAPTER_IFACE,
-                          'PairableTimeout',
-                          dbus_interface=dbus.PROPERTIES_IFACE))
-
-
-    @xmlrpc_server.dbus_safe(False)
-    def set_pairable_timeout(self, pairable_timeout):
-        """Set the adapter pairable_timeout property.
-
-        @param pairable_timeout: adapter pairable_timeout value
-               in seconds to set (Integer).
-
-        @return True on success, False otherwise.
-
-        """
-        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
-                          'PairableTimeout',
-                          dbus.UInt32(pairable_timeout, variant_level=1),
+                          'Discoverable', discoverable,
                           dbus_interface=dbus.PROPERTIES_IFACE)
         return True
 
@@ -603,8 +532,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @return True on success, False otherwise.
 
         """
-        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Pairable',
-                          dbus.Boolean(pairable, variant_level=1),
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE, 'Pairable', pairable,
                           dbus_interface=dbus.PROPERTIES_IFACE)
         return True
 
@@ -642,11 +570,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( version, revision )
 
         """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_version())
+        return json.dumps(self._control.read_version())
 
 
     def read_supported_commands(self):
@@ -656,11 +580,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( commands, events )
 
         """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_supported_commands())
+        return json.dumps(self._control.read_supported_commands())
 
 
     def read_index_list(self):
@@ -669,11 +589,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @return the information as a JSON-encoded array of controller indexes.
 
         """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_index_list())
+        return json.dumps(self._control.read_index_list())
 
 
     def read_info(self):
@@ -685,11 +601,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             name, short_name )
 
         """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_info(0))
+        return json.dumps(self._control.read_info(0))
 
 
     def add_device(self, address, address_type, action):
@@ -703,11 +615,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( address, address_type ), None on failure.
 
         """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.add_device(
+        return json.dumps(self._control.add_device(
                 0, address, address_type, action))
 
 
@@ -721,11 +629,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
           ( address, address_type ), None on failure.
 
         """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.remove_device(
+        return json.dumps(self._control.remove_device(
                 0, address, address_type))
 
 
@@ -851,13 +755,10 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         profile_manager = dbus.Interface(
                               self._system_bus.get_object(
-                                  self._bluetooth_service_name,
+                                  self.BLUEZ_SERVICE_NAME,
                                   self.BLUEZ_PROFILE_MANAGER_PATH),
                               self.BLUEZ_PROFILE_MANAGER_IFACE)
-        dbus_object = self._system_bus.get_object(
-                            self._bluetooth_service_name, path)
-        profile_manager.RegisterProfile(dbus_object, uuid,
-                                    dbus.Dictionary(options, signature='sv'))
+        profile_manager.RegisterProfile(path, uuid, options)
         return True
 
 
@@ -899,7 +800,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         path = self._get_device_path(address)
         if path:
             obj = self._system_bus.get_object(
-                        self._bluetooth_service_name, path)
+                        self.BLUEZ_SERVICE_NAME, path)
             return dbus.Interface(obj, self.BLUEZ_DEVICE_IFACE)
         logging.info('Device not found')
         return None
@@ -944,21 +845,16 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._pairing_agent= PairingAgent(pin, self._system_bus,
                                           self.AGENT_PATH)
         agent_manager = dbus.Interface(
-                self._system_bus.get_object(self._bluetooth_service_name,
+                self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                             self.BLUEZ_AGENT_MANAGER_PATH),
                 self.BLUEZ_AGENT_MANAGER_IFACE)
         try:
-            agent_obj = self._system_bus.get_object(
-                            self._bluetooth_service_name,
-                            self.AGENT_PATH)
-            agent_manager.RegisterAgent(agent_obj,
-                                        dbus.String(self._capability))
+            agent_manager.RegisterAgent(self.AGENT_PATH, self._capability)
         except dbus.exceptions.DBusException, e:
             if e.get_dbus_name() == self.BLUEZ_ERROR_ALREADY_EXISTS:
                 logging.info('Unregistering old agent and registering the new')
-                agent_manager.UnregisterAgent(agent_obj)
-                agent_manager.RegisterAgent(agent_obj,
-                                            dbus.String(self._capability))
+                agent_manager.UnregisterAgent(self.AGENT_PATH)
+                agent_manager.RegisterAgent(self.AGENT_PATH, self._capability)
             else:
                 logging.error('Error setting up pin agent: %s', e)
                 raise
@@ -1023,8 +919,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         try:
             properties = dbus.Interface(device, self.DBUS_PROP_IFACE)
-            properties.Set(self.BLUEZ_DEVICE_IFACE, 'Trusted',
-                           dbus.Boolean(trusted, variant_level=1))
+            properties.Set(self.BLUEZ_DEVICE_IFACE, 'Trusted', trusted)
             return True
         except Exception as e:
             logging.error('_set_trusted_by_device: %s', e)
@@ -1044,7 +939,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         try:
-            device = self._system_bus.get_object(self._bluetooth_service_name,
+            device = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                                  device_path)
             return self._set_trusted_by_device(device, trusted)
         except Exception as e:
@@ -1136,12 +1031,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             finally:
                 mainloop.quit()
 
-        try:
-            device.Pair(reply_handler=pair_reply, error_handler=pair_error,
-                        timeout=timeout * 1000)
-        except Exception as e:
-            logging.error('Exception %s in pair_legacy_device', e)
-            return False
+
+        device.Pair(reply_handler=pair_reply, error_handler=pair_error,
+                    timeout=timeout * 1000)
         mainloop.run()
         return self._is_paired(device)
 
@@ -1313,7 +1205,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @returns: an empty string '' on success;
                   None if there is no _advertising interface manager; and
-                  an error string if the dbus method fails or exception occurs
+                  an error string if the dbus method fails.
 
         """
 
@@ -1335,12 +1227,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             return None
 
         # Call dbus_method with handlers.
-        try:
-            dbus_method(*args, reply_handler=successful_cb,
-                        error_handler=error_cb)
-        except Exception as e:
-            logging.error('Exception %s in advertising_async_method ', e)
-            return str(e)
+        dbus_method(*args, reply_handler=successful_cb, error_handler=error_cb)
 
         self._adv_mainloop.run()
 
@@ -1369,7 +1256,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 lambda error: logging.error(
                     'register_advertisement: failed: %s', str(error)),
                 # other arguments
-                adv.get_path(), dbus.Dictionary({}, signature='sv'))
+                adv.get_path(), {})
 
 
     def unregister_advertisement(self, advertisement_data):
@@ -1431,8 +1318,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 lambda error: logging.error(
                     'set_advertising_intervals: failed: %s', str(error)),
                 # other arguments
-                dbus.UInt16(min_adv_interval_ms),
-                dbus.UInt16(max_adv_interval_ms))
+                min_adv_interval_ms, max_adv_interval_ms)
 
 
     def reset_advertising(self):
@@ -1509,7 +1395,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         if not path:
             return None
         return dbus.Interface(
-            self._system_bus.get_object(self._bluetooth_service_name, path),
+            self._system_bus.get_object(self.BLUEZ_SERVICE_NAME, path),
             self.BLUEZ_GATT_IFACE)
 
 
@@ -1575,36 +1461,6 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         """
         return bool(self.get_characteristic_map(address).get(uuid))
-
-
-    @xmlrpc_server.dbus_safe(False)
-    def get_connection_info(self, address):
-        """Get device connection info.
-
-        @param address: The MAC address of the device.
-
-        @returns: On success, a JSON-encoded tuple of:
-                      ( RSSI, transmit_power, max_transmit_power )
-                  None otherwise.
-
-        """
-        path = self._get_device_path(address)
-        if path is None:
-            return None
-
-        try:
-            plugin_device = dbus.Interface(
-                                self._system_bus.get_object(
-                                    self._bluetooth_service_name,
-                                    path),
-                                self.BLUEZ_PLUGIN_DEVICE_IFACE)
-            connection_info = plugin_device.GetConnInfo()
-            return json.dumps(connection_info)
-        except Exception as e:
-            logging.error('get_connection_info: %s', e)
-        except:
-            logging.error('get_connection_info: unexpected error')
-        return None
 
 
 if __name__ == '__main__':

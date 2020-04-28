@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#! /usr/bin/python
 
 """A simple heartbeat client.
 

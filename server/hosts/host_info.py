@@ -35,22 +35,12 @@ class HostInfo(object):
     # Constants related to exposing labels as more semantic properties.
     _BOARD_PREFIX = 'board'
     _MODEL_PREFIX = 'model'
-    # sku was already used for perf labeling, but it's a human readable
-    # string (gen'd from HWID) and not the raw sku value, so avoiding collision
-    # with device-sku instead.
-    _DEVICE_SKU_PREFIX = 'device-sku'
-    _BRAND_CODE_PREFIX = 'brand-code'
     _OS_PREFIX = 'os'
     _POOL_PREFIX = 'pool'
 
-    _OS_VERSION_LABELS = (
+    _VERSION_LABELS = (
             provision.CROS_VERSION_PREFIX,
             provision.CROS_ANDROID_VERSION_PREFIX,
-    )
-
-    _VERSION_LABELS = _OS_VERSION_LABELS + (
-            provision.FW_RO_VERSION_PREFIX,
-            provision.FW_RW_VERSION_PREFIX,
     )
 
     def __init__(self, labels=None, attributes=None):
@@ -72,7 +62,7 @@ class HostInfo(object):
         @returns The first build label for this host (if there are multiple).
                 None if no build label is found.
         """
-        for label_prefix in self._OS_VERSION_LABELS:
+        for label_prefix in self._VERSION_LABELS:
             build_labels = self._get_stripped_labels_with_prefix(label_prefix)
             if build_labels:
                 return build_labels[0]
@@ -98,24 +88,6 @@ class HostInfo(object):
         """
         return self.get_label_value(self._MODEL_PREFIX)
 
-
-    @property
-    def device_sku(self):
-        """Retrieve the device_sku label value for the host.
-
-        @returns: The (stripped) device_sku label, or the empty string if no
-        label is found.
-        """
-        return self.get_label_value(self._DEVICE_SKU_PREFIX)
-
-    @property
-    def brand_code(self):
-        """Retrieve the brand_code label value for the host.
-
-        @returns: The (stripped) brand_code label, or the empty string if no
-        label is found.
-        """
-        return self.get_label_value(self._BRAND_CODE_PREFIX)
 
     @property
     def os(self):

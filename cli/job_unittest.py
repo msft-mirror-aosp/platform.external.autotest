@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python -u
 #
 # Copyright 2008 Google Inc. All Rights Reserved.
 

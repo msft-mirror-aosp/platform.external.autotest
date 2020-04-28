@@ -4,11 +4,10 @@
 
 AUTHOR = 'rzakarian'
 NAME = 'stress_EnrollmentRetainment.EnrollmentRetainment'
-TIME = 'LONG'
+TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'
 TEST_TYPE = 'server'
-ATTRIBUTES = 'suite:enroll_retainment'
 
 DOC = """
 Sets up and runs the client test for the policy_EnrollmentRetainment.

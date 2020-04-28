@@ -45,10 +45,9 @@ class L2TPIPSecVPNServer(VPNServer):
         'etc/strongswan.conf' :
             'charon {\n'
             '  filelog {\n'
-            '    test_vpn {\n'
-            '      path = %(charon-logfile)s\n'
-            '      default = 3\n'
+            '    %(charon-logfile)s {\n'
             '      time_format = %%b %%e %%T\n'
+            '      default = 3\n'
             '    }\n'
             '  }\n'
             '  install_routes = no\n'

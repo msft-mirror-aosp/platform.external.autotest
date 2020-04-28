@@ -384,8 +384,7 @@ class AbstractSSHHost(remote.RemoteHost):
 
 
     def get_file(self, source, dest, delete_dest=False, preserve_perm=True,
-                 preserve_symlinks=False, retry=True, safe_symlinks=False,
-                 try_rsync=True):
+                 preserve_symlinks=False, retry=True, safe_symlinks=False):
         """
         Copy files from the remote host to a local path.
 
@@ -412,7 +411,6 @@ class AbstractSSHHost(remote.RemoteHost):
                                    transforming them into files/dirs on copy
                 safe_symlinks: same as preserve_symlinks, but discard links
                                that may point outside the copied tree
-                try_rsync: set to False to skip directly to using scp
         Raises:
                 AutoservRunError: the scp command failed
         """
@@ -429,7 +427,7 @@ class AbstractSSHHost(remote.RemoteHost):
 
         # If rsync is disabled or fails, try scp.
         try_scp = True
-        if try_rsync and self.use_rsync():
+        if self.use_rsync():
             logging.debug('Using Rsync.')
             try:
                 remote_source = self._encode_remote_paths(source)
@@ -946,9 +944,7 @@ class AbstractSSHHost(remote.RemoteHost):
         # Using a shell leaves a dangling ssh process, because we deliver
         # signals to the shell wrapping ssh, not the ssh process itself.
         args = shlex.split(tunnel_cmd)
-        with open('/dev/null', 'w') as devnull:
-            tunnel_proc = subprocess.Popen(args, stdout=devnull, stderr=devnull,
-                                           close_fds=True)
+        tunnel_proc = subprocess.Popen(args, close_fds=True)
         logging.debug('Started ssh tunnel, local = %d'
                       ' remote = %d, pid = %d',
                       local_port, port, tunnel_proc.pid)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -85,8 +85,6 @@ from autotest_lib.utils import labellib
 _LOG_FORMAT = '%(asctime)s | %(levelname)-10s | %(message)s'
 
 _DEFAULT_POOL = constants.Labels.POOL_PREFIX + 'suites'
-
-_LABSTATION_DEFAULT_POOL = constants.Labels.POOL_PREFIX + 'labstation_main'
 
 _DIVIDER = '\n============\n'
 
@@ -437,15 +435,13 @@ def _get_afe_host(afe, hostname, host_attrs, arguments):
         # This host was pre-existing; if the user didn't supply
         # attributes, don't update them, because the defaults may
         # not be correct.
-        if host_attrs and not arguments.labstation:
+        if host_attrs:
             _update_host_attributes(afe, hostname, host_attrs)
     else:
         afe_host = afe.create_host(hostname,
                                    locked=True,
                                    lock_reason=_LOCK_REASON_NEW_HOST)
-
-        if not arguments.labstation:
-            _update_host_attributes(afe, hostname, host_attrs)
+        _update_host_attributes(afe, hostname, host_attrs)
 
     # Correct board/model label is critical to installation. Always ensure user
     # supplied board/model matches the AFE information.
@@ -520,12 +516,6 @@ def _install_test_image(host, arguments):
         except Exception as e:
             logging.exception('Failed to stage image on USB: %s', e)
             raise Exception('USB staging failed')
-    if arguments.install_test_image:
-        try:
-            preparedut.install_test_image(host)
-        except error.AutoservRunError as e:
-            logging.exception('Failed to install: %s', e)
-            raise Exception('chromeos-install failed')
     if arguments.install_firmware:
         try:
             if arguments.using_servo:
@@ -533,28 +523,19 @@ def _install_test_image(host, arguments):
                 preparedut.flash_firmware_using_servo(host, repair_image)
             else:
                 logging.debug('Install FW by chromeos-firmwareupdate.')
-                preparedut.install_firmware(host)
+                preparedut.install_firmware(host, arguments.force_firmware)
         except error.AutoservRunError as e:
             logging.exception('Firmware update failed: %s', e)
             msg = '%s failed' % (
                     'Flashing firmware using servo' if arguments.using_servo
                     else 'chromeos-firmwareupdate')
             raise Exception(msg)
-    if arguments.reinstall_test_image:
+    if arguments.install_test_image:
         try:
-            preparedut.reinstall_test_image(host)
+            preparedut.install_test_image(host)
         except error.AutoservRunError as e:
             logging.exception('Failed to install: %s', e)
             raise Exception('chromeos-install failed')
-    if arguments.install_test_image and arguments.install_firmware:
-        # we need to verify that DUT can successfully boot in to recovery mode
-        # if it's initial deploy.
-        try:
-            preparedut.verify_boot_into_rec_mode(host)
-        except error.AutoservRunError as e:
-            logging.exception('Failed to validate DUT can boot from '
-                              'recovery mode: %s', e)
-            raise Exception('recovery mode validation failed')
 
 
 def _install_and_update_afe(afe, hostname, host_attrs, arguments):
@@ -579,15 +560,10 @@ def _install_and_update_afe(afe, hostname, host_attrs, arguments):
     host = None
     try:
         host = _create_host(hostname, afe, afe_host)
-        if arguments.labstation:
-            _setup_labstation(host)
-        else:
-            with _create_host_for_installation(host, arguments) as target_host:
-                _install_test_image(target_host, arguments)
-                _update_servo_type_attribute(target_host, host)
+        with _create_host_for_installation(host, arguments) as host_to_install:
+            _install_test_image(host_to_install, arguments)
 
-        if ((arguments.install_test_image or arguments.reinstall_test_image)
-            and not arguments.dry_run):
+        if arguments.install_test_image and not arguments.dry_run:
             host.labels.update_labels(host)
             platform_labels = afe.get_labels(
                     host__hostname=hostname, platform=True)
@@ -672,7 +648,7 @@ def _report_hosts(report_log, heading, host_results_list):
     report_log.write('\n')
 
 
-def _report_results(afe, report_log, hostnames, results, arguments):
+def _report_results(afe, report_log, hostnames, results):
     """Gather and report a summary of results from installation.
 
     Segregate results into successes and failures, reporting
@@ -685,7 +661,6 @@ def _report_results(afe, report_log, hostnames, results, arguments):
     @param results      List of error messages, in the same order
                         as the hostnames.  `None` means the
                         corresponding host succeeded.
-    @param arguments  Command line arguments with options.
     """
     successful_hosts = []
     success_reports = []
@@ -705,13 +680,9 @@ def _report_results(afe, report_log, hostnames, results, arguments):
                     success_reports.append(result)
                     break
             else:
-                if arguments.labstation:
-                    target_pool = _LABSTATION_DEFAULT_POOL
-                else:
-                    target_pool = _DEFAULT_POOL
-                h.add_labels([target_pool])
+                h.add_labels([_DEFAULT_POOL])
                 result = _ReportResult(h.hostname,
-                                       'Host added to %s' % target_pool)
+                                       'Host added to %s' % _DEFAULT_POOL)
                 success_reports.append(result)
     report_log.write(_DIVIDER)
     _report_hosts(report_log, 'Successes', success_reports)
@@ -915,68 +886,18 @@ def install_duts(arguments):
         install_function = functools.partial(_install_dut, arguments,
                                              host_attr_dict)
         results_list = install_pool.map(install_function, arguments.hostnames)
-        _report_results(afe, report_log, arguments.hostnames, results_list,
-                        arguments)
+        _report_results(afe, report_log, arguments.hostnames, results_list)
 
     if arguments.upload:
         try:
             gspath = _get_upload_log_path(arguments)
             sys.stderr.write('Logs will be uploaded to %s\n' % (gspath,))
             _upload_logs(arguments.logdir, gspath)
-        except Exception:
+        except Exception as e:
             upload_failure_log_path = os.path.join(arguments.logdir,
                                                    'gs_upload_failure.log')
-            with open(upload_failure_log_path, 'w') as file_:
-                traceback.print_exc(limit=None, file=file_)
+            with open(upload_failure_log_path, 'w') as file:
+                traceback.print_exc(limit=None, file=file)
             sys.stderr.write('Failed to upload logs;'
                              ' failure details are stored in {}.\n'
                              .format(upload_failure_log_path))
-
-
-def _update_servo_type_attribute(host, host_to_update):
-    """Update servo_type attribute for the DUT.
-
-    @param host              A CrOSHost with a initialized servo property.
-    @param host_to_update    A CrOSHost with AfeStore as its host_info_store.
-
-    """
-    info = host_to_update.host_info_store.get()
-    if 'servo_type' not in info.attributes:
-        logging.info("Collecting and adding servo_type attribute.")
-        info.attributes['servo_type'] = host.servo.get_servo_version()
-        host_to_update.host_info_store.commit(info)
-
-
-def _setup_labstation(host):
-    """Do initial setup for labstation host.
-
-    @param host    A LabstationHost object.
-
-    """
-    try:
-        if not host.is_labstation():
-            raise InstallFailedError('Current OS on host %s is not a labstation'
-                                     ' image.', host.hostname)
-    except AttributeError:
-        raise InstallFailedError('Unable to verify host has a labstation image,'
-                                 ' this can be caused by host is unsshable.')
-
-    try:
-        # TODO: we should setup hwid and serial number for DUT in deploy script
-        #  as well, which is currently obtained from repair job.
-        info = host.host_info_store.get()
-        hwid = host.run('crossystem hwid', ignore_status=True).stdout
-        if hwid:
-            info.attributes['HWID'] = hwid
-
-        serial_number = host.run('vpd -g serial_number',
-                                 ignore_status=True).stdout
-        if serial_number:
-            info.attributes['serial_number'] = serial_number
-        if info != host.host_info_store.get():
-            host.host_info_store.commit(info)
-    except Exception as e:
-        raise InstallFailedError('Failed to get HWID & Serial Number for host'
-                                 ' %s: %s' % (host.hostname, str(e)))
-
-    host.labels.update_labels(host)

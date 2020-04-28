@@ -2358,6 +2358,7 @@ class ImageServer(ImageServerBase):
         if is_aue2etest:
             kwargs['payload_filename'] = payload_filename
 
+        error_msg = 'CrOS auto-update failed for host %s: %s'
         error_msg_attempt = 'Exception raised on auto_update attempt #%s:\n%s'
         is_au_success = False
         au_log_dir = os.path.join(log_dir,
@@ -2497,12 +2498,15 @@ class ImageServer(ImageServerBase):
             real_error = ', '.join(['%d) %s' % (i, e.summary)
                                     for i, e in enumerate(error_list)])
             if retry_with_another_devserver:
-                raise RetryableProvisionException(real_error)
+                raise RetryableProvisionException(
+                        error_msg % (host_name, real_error))
             else:
-                raise error_list[0].classified_exception(real_error)
+                raise error_list[0].classified_exception(
+                    error_msg % (host_name, real_error))
         else:
-            raise DevServerException('RPC calls after the whole auto-update '
-                                     'process failed.')
+            raise DevServerException(error_msg % (
+                        host_name, ('RPC calls after the whole auto-update '
+                                    'process failed.')))
 
 
 class AndroidBuildServer(ImageServerBase):

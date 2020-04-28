@@ -5,7 +5,6 @@
 import difflib
 import logging
 import os
-import pprint
 import re
 import time
 
@@ -31,7 +30,6 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     COMPARE_LINES = '\n'
     COMPARE_WORDS = None
     SORTED = True
-    CMD_RETRY_COUNT = 5
     TESTS = [
         ['pinmux', 'pinmux(.*)>', COMPARE_LINES, not SORTED],
         ['help', 'Known commands:(.*)HELP LIST.*>', COMPARE_WORDS, SORTED],
@@ -43,10 +41,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     # exclude can be none if there is no label that shoud be excluded based on
     # the property.
     BOARD_PROPERTIES = [
-        ['BOARD_SLAVE_CONFIG_SPI', 'sps', 'i2cs'],
-        ['BOARD_SLAVE_CONFIG_I2C', 'i2cs', 'sps'],
-        ['BOARD_USE_PLT_RESET', 'plt_rst', 'sys_rst'],
-        ['BOARD_CLOSED_SOURCE_SET1', 'closed_source_set1', 'open_source_set'],
+        [0x1, 'sps', 'i2cs'],
+        [0x2, 'i2cs', 'sps'],
+        [0x40, 'plt_rst', 'sys_rst'],
     ]
 
     def initialize(self, host, cmdline_args, full_args):
@@ -80,9 +77,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
 
     def get_output(self, cmd, regexp, split_str, sort):
         """Return the cr50 console output"""
-        old_output = []
-        output = self.cr50.send_command_retry_get_output(
-                cmd, [regexp], safe=True, compare_output=True)[0][1].strip()
+        output = self.cr50.send_safe_command_get_output(cmd,
+                                                        [regexp])[0][1].strip()
+        logging.debug('%s output:%s\n', cmd, output)
 
         # Record the original command output
         results_path = os.path.join(self.resultsdir, cmd)
@@ -156,35 +153,27 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         The saved board property flags will not include oboslete flags or the wp
         setting. These won't change the gpio or pinmux settings.
         """
+        brdprop = self.cr50.get_board_properties()
         self.include = []
         self.exclude = []
         for prop, include, exclude in self.BOARD_PROPERTIES:
-            if self.cr50.uses_board_property(prop):
+            if prop & brdprop:
                 self.include.append(include)
                 if exclude:
                     self.exclude.append(exclude)
             else:
                 self.exclude.append(include)
-        version = self.cr50.get_version().split('.')
-        # Factory images end with 22. Expect guc attributes if the version
-        # ends in 22.
-        if version[2] == '22':
-            self.include.append('guc')
-        else:
-            self.exclude.append('guc')
-
-        # Use the major version to determine prePVT or MP. prePVT have even
-        # major versions. prod have odd.
-        if int(version[1]) % 2:
+        # use the major version to determine prePVT or MP. prePVT have even
+        # major versions. prod have odd
+        version = self.cr50.get_version().split('.')[1]
+        if 'mp' in self.servo.get('cr50_version'):
             self.include.append('mp')
             self.exclude.append('prepvt')
         else:
             self.exclude.append('mp')
             self.include.append('prepvt')
-        brdprop = self.cr50.get_board_properties()
-        logging.info('brdprop: 0x%x', brdprop)
-        logging.info('include: %s', ', '.join(self.include))
-        logging.info('exclude: %s', ', '.join(self.exclude))
+        logging.info('%s brdprop 0x%x: %s', self.servo.get('ec_board'),
+                     brdprop, ', '.join(self.include))
 
 
     def run_once(self, host):
@@ -195,11 +184,15 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         for command, regexp, split_str, sort in self.TESTS:
             self.check_command(command, regexp, split_str, sort)
 
+        if (not self.past_matches.get('ccd_has_been_enabled', 0) and
+            self.past_matches.get('ccd_enabled', 0)):
+            err.append('Inconsistent ccd settings')
+
         if len(self.missing):
             err.append('MISSING OUTPUT: ' + ', '.join(self.missing))
         if len(self.extra):
             err.append('EXTRA OUTPUT: ' + ', '.join(self.extra))
-        logging.debug("Past matches:\n%s", pprint.pformat(self.past_matches))
+        logging.info(self.past_matches)
 
         if len(err):
             raise error.TestFail('\t'.join(err))

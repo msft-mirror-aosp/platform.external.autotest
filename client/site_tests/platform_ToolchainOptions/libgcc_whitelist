@@ -1,4 +1,6 @@
 /opt/google/chrome/nacl_helper
+# crbug.com/887869, remove this after Intel fixes their parser
+/opt/intel/fw_parser
 # Rust compiler is using libgcc_s, remove this after rust is fixed.
 /usr/sbin/mosys
 # These files are delivered as binaries in Chrome OS.
@@ -11,24 +13,15 @@
 /usr/lib64/libia_ltm.so
 /usr/lib64/libSkyCamAIC.so
 /usr/lib64/libSkyCamAICKBL.so
+# Remove these after Rust code is built with compiler-rt.
+# https://crbug.com/814480.
+/usr/bin/crosvm
+/usr/bin/memd
+/usr/bin/9s
+/usr/bin/crostini_client
+/usr/lib*/libqcow_utils.so
+/usr/lib64/libcrosvm_plugin.so
 # Remove these files after mesa is fixed to not need libgcc_s.
 # https://crbug.com/808264
 /usr/lib/dri/kms_swrast_dri.so
 /usr/lib/dri/swrast_dri.so
-# Prebuilt binaries installed by Mediatek Camera HAL on kukui boards.
-/usr/lib/lib3a.ae.core.so
-/usr/lib/lib3a.ae.so
-/usr/lib/lib3a.af.core.so
-/usr/lib/lib3a.af.so
-/usr/lib/lib3a.awb.core.so
-/usr/lib/lib3a.awb.so
-/usr/lib/lib3a.flash.so
-/usr/lib/lib3a.gma.so
-/usr/lib/lib3a.lce.so
-/usr/lib/libcamalgo.eis.so
-/usr/lib/libcamalgo.fdft.so
-/usr/lib/libcamalgo.flicker.so
-/usr/lib/libcamalgo.ispfeature.so
-/usr/lib/libcamalgo.lsc.so
-/usr/lib/libcamalgo.nr.so
-/usr/lib/libcamalgo.utility.so

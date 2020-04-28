@@ -80,7 +80,7 @@ class AudioFacadeNative(object):
         """
         self._resource = resource
         self._listener = None
-        self._recorders = {}
+        self._recorder = None
         self._player = None
         self._counter = None
         self._loaded_extension_handler = None
@@ -97,14 +97,6 @@ class AudioFacadeNative(object):
             self._loaded_extension_handler = (
                     audio_extension_handler.AudioExtensionHandler(extension))
         return self._loaded_extension_handler
-
-
-    def get_audio_availability(self):
-        """Returns the availability of chrome.audio API.
-
-        @returns: True if chrome.audio exists
-        """
-        return self._extension_handler.get_audio_api_availability()
 
 
     def get_audio_devices(self):
@@ -188,11 +180,8 @@ class AudioFacadeNative(object):
         for path in glob.glob('/tmp/listen_*'):
             os.unlink(path)
 
-        if self._recorders:
-            for _, recorder in self._recorders:
-                recorder.cleanup()
-        self._recorders.clear()
-
+        if self._recorder:
+            self._recorder.cleanup()
         if self._player:
             self._player.cleanup()
         if self._listener:
@@ -202,8 +191,7 @@ class AudioFacadeNative(object):
             self._arc_resource.cleanup()
 
 
-    def playback(self, file_path, data_format, blocking=False, node_type=None,
-                 block_size=None):
+    def playback(self, file_path, data_format, blocking=False):
         """Playback a file.
 
         @param file_path: The path to the file.
@@ -215,10 +203,6 @@ class AudioFacadeNative(object):
                             channel: number of channels.
                             rate: sampling rate.
         @param blocking: Blocks this call until playback finishes.
-        @param node_type: A Cras node type defined in cras_utils.CRAS_NODE_TYPES
-                          that we like to pin at. None to have the playback on
-                          active selected device.
-        @param block_size: The number for frames per callback.
 
         @returns: True.
 
@@ -232,13 +216,8 @@ class AudioFacadeNative(object):
             raise AudioFacadeNativeError(
                     'data format %r is not supported' % data_format)
 
-        device_id = None
-        if node_type:
-            device_id = int(cras_utils.get_device_id_from_node_type(
-                    node_type, False))
-
         self._player = Player()
-        self._player.start(file_path, blocking, device_id, block_size)
+        self._player.start(file_path, blocking)
 
         return True
 
@@ -248,7 +227,7 @@ class AudioFacadeNative(object):
         self._player.stop()
 
 
-    def start_recording(self, data_format, node_type=None, block_size=None):
+    def start_recording(self, data_format):
         """Starts recording an audio file.
 
         Currently the format specified in _CAPTURE_DATA_FORMATS is the only
@@ -260,15 +239,11 @@ class AudioFacadeNative(object):
                                            little-endian.
                             channel: channel number.
                             rate: sampling rate.
-        @param node_type: A Cras node type defined in cras_utils.CRAS_NODE_TYPES
-                          that we like to pin at. None to have the recording
-                          from active selected device.
-        @param block_size: The number for frames per callback.
+
 
         @returns: True
 
-        @raises: AudioFacadeNativeError if data format is not supported, no
-                 active selected node or the specified node is occupied.
+        @raises: AudioFacadeNativeError if data format is not supported.
 
         """
         logging.info('AudioFacadeNative record format: %r', data_format)
@@ -277,62 +252,25 @@ class AudioFacadeNative(object):
             raise AudioFacadeNativeError(
                     'data format %r is not supported' % data_format)
 
-        if node_type is None:
-            device_id = None
-            node_type = cras_utils.get_selected_input_device_type()
-            if node_type is None:
-                raise AudioFacadeNativeError('No active selected input node.')
-        else:
-            device_id = int(cras_utils.get_device_id_from_node_type(
-                    node_type, True))
-
-        if node_type in self._recorders:
-            raise AudioFacadeNativeError(
-                    'Node %s is already ocuppied' % node_type)
-
-        self._recorders[node_type] = Recorder()
-        self._recorders[node_type].start(data_format, device_id, block_size)
+        self._recorder = Recorder()
+        self._recorder.start(data_format)
 
         return True
 
 
-    def stop_recording(self, node_type=None):
+    def stop_recording(self):
         """Stops recording an audio file.
-        @param node_type: A Cras node type defined in cras_utils.CRAS_NODE_TYPES
-                          that we like to pin at. None to have the recording
-                          from active selected device.
 
         @returns: The path to the recorded file.
                   None if capture device is not functional.
 
-        @raises: AudioFacadeNativeError if no recording is started on
-                 corresponding node.
         """
-        if node_type is None:
-            device_id = None
-            node_type = cras_utils.get_selected_input_device_type()
-            if node_type is None:
-                raise AudioFacadeNativeError('No active selected input node.')
-        else:
-            device_id = int(cras_utils.get_device_id_from_node_type(
-                    node_type, True))
-
-
-        if node_type not in self._recorders:
-            raise AudioFacadeNativeError(
-                    'No recording is started on node %s' % node_type)
-
-        recorder = self._recorders[node_type]
-        recorder.stop()
-        del self._recorders[node_type]
-
-        file_path = recorder.file_path
-        if file_contains_all_zeros(recorder.file_path):
+        self._recorder.stop()
+        if file_contains_all_zeros(self._recorder.file_path):
             logging.error('Recorded file contains all zeros. '
                           'Capture device is not functional')
             return None
-
-        return file_path
+        return self._recorder.file_path
 
 
     def start_listening(self, data_format):
@@ -555,7 +493,7 @@ class Recorder(object):
         self._capture_subprocess = None
 
 
-    def start(self, data_format, pin_device, block_size):
+    def start(self, data_format):
         """Starts recording.
 
         Starts recording subprocess. It can be stopped by calling stop().
@@ -566,15 +504,16 @@ class Recorder(object):
                                            little-endian.
                             channel: channel number.
                             rate: sampling rate.
-        @param pin_device: A integer of device id to record from.
-        @param block_size: The number for frames per callback.
+
+        @raises: RecorderError: If recording subprocess is terminated
+                 unexpectedly.
+
         """
         self._capture_subprocess = cmd_utils.popen(
                 cras_utils.capture_cmd(
                         capture_file=self.file_path, duration=None,
                         channels=data_format['channel'],
-                        rate=data_format['rate'],
-                        pin_device=pin_device, block_size=block_size))
+                        rate=data_format['rate']))
 
 
     def stop(self):
@@ -613,20 +552,17 @@ class Player(object):
         self._playback_subprocess = None
 
 
-    def start(self, file_path, blocking, pin_device, block_size):
-        """Starts playing.
+    def start(self, file_path, blocking):
+        """Starts recording.
 
-        Starts playing subprocess. It can be stopped by calling stop().
+        Starts recording subprocess. It can be stopped by calling stop().
 
         @param file_path: The path to the file.
         @param blocking: Blocks this call until playback finishes.
-        @param pin_device: A integer of device id to play on.
-        @param block_size: The number for frames per callback.
 
         """
         self._playback_subprocess = cras_utils.playback(
-                blocking, playback_file=file_path, pin_device=pin_device,
-                block_size=block_size)
+                blocking, playback_file=file_path)
 
 
     def stop(self):

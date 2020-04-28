@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 This file generates all telemetry_GpuTest control files from a master list.

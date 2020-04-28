@@ -26,6 +26,7 @@ class RandomMACAddressTestBase(wifi_cell_test_base.WiFiCellTestBase):
     DEFAULT_NUM_SCANS = 5
 
     def initialize(self, host):
+        super(RandomMACAddressTestBase, self).initialize(host)
         self._ap_config = hostap_config.HostapConfig(channel=1)
 
 

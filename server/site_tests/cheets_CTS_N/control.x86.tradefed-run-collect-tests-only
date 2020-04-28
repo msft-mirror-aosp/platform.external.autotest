@@ -15,13 +15,14 @@ MAX_RESULT_SIZE_KB = 512000
 PRIORITY = 70
 DOC = 'Run all of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
-def run_TS(machine):
+def run_CTS(machine):
     host_list = [hosts.create_host(machine)]
     job.run_test(
         'cheets_CTS_N',
         hosts=host_list,
         iterations=1,
         max_retry=0,
+        needs_push_media=False,
         tag='x86.tradefed-run-collect-tests-only',
         test_name='cheets_CTS_N.x86.tradefed-run-collect-tests-only',
         run_template=['run', 'commandAndExit', 'collect-tests-only'],
@@ -33,4 +34,4 @@ def run_TS(machine):
         warn_on_test_retry=False,
         timeout=2400)
 
-parallel_simple(run_TS, machines)
+parallel_simple(run_CTS, machines)

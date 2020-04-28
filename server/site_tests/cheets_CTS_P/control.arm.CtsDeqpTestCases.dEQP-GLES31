@@ -15,12 +15,13 @@ MAX_RESULT_SIZE_KB = 512000
 PRIORITY = 50
 DOC = 'Run module CtsDeqpTestCases.dEQP-GLES31 of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
-def run_TS(machine):
+def run_CTS(machine):
     host_list = [hosts.create_host(machine)]
     job.run_test(
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
+        needs_push_media=False,
         tag='arm.CtsDeqpTestCases.dEQP-GLES31',
         test_name='cheets_CTS_P.arm.CtsDeqpTestCases.dEQP-GLES31',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases', '--test', 'dEQP-GLES31.*'],
@@ -32,4 +33,4 @@ def run_TS(machine):
         warn_on_test_retry=False,
         timeout=43200)
 
-parallel_simple(run_TS, machines)
+parallel_simple(run_CTS, machines)

@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python -u
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -14,24 +14,11 @@ import errno
 import logging
 import logging.config
 import os
-import sys
 
 import common
-from autotest_lib.client.common_lib import enum
 from autotest_lib.server import afe_utils
 from autotest_lib.server.hosts import file_store
 from autotest_lib.site_utils.deployment.prepare import dut as preparedut
-
-
-RETURN_CODES = enum.Enum(
-        'OK',
-        'STAGE_USB_FAILURE',
-        'INSTALL_FIRMWARE_FAILURE',
-        'INSTALL_TEST_IMAGE_FAILURE',
-        'BOOT_FROM_RECOVERY_MODE_FAILURE',
-        'UPDATE_LABEL_FAILURE',
-        'OTHER_FAILURES',
-)
 
 
 class DutPreparationError(Exception):
@@ -43,13 +30,8 @@ def main():
   opts = _parse_args()
   _configure_logging('prepare_dut', os.path.join(opts.results_dir, _LOG_FILE))
 
-  try:
-    info = _read_store(opts.host_info_file)
-    repair_image = _get_cros_repair_image_name(info.board)
-  except Exception as err:
-    logging.error("fail to prepare: %s", err)
-    return RETURN_CODES.OTHER_FAILURES
-
+  info = _read_store(opts.host_info_file)
+  repair_image = _get_cros_repair_image_name(info.board)
   logging.info('Using repair image %s, obtained from AFE', repair_image)
   with _create_host(opts.hostname, info, opts.results_dir) as host:
     if opts.dry_run:
@@ -57,41 +39,11 @@ def main():
       return
 
     if 'stage-usb' in opts.actions:
-      try:
-        preparedut.download_image_to_servo_usb(host, repair_image)
-      except Exception as err:
-        logging.error("fail to stage image to usb: %s", err)
-        return RETURN_CODES.STAGE_USB_FAILURE
-
-    if 'install-test-image' in opts.actions:
-      try:
-        preparedut.install_test_image(host)
-      except Exception as err:
-        logging.error("fail to install test image: %s", err)
-        return RETURN_CODES.INSTALL_TEST_IMAGE_FAILURE
-
+      preparedut.download_image_to_servo_usb(host, repair_image)
     if 'install-firmware' in opts.actions:
-      try:
-        preparedut.install_firmware(host)
-      except Exception as err:
-        logging.error("fail to install firmware: %s", err)
-        return RETURN_CODES.INSTALL_FIRMWARE_FAILURE
-
-    if 'verify-recovery-mode' in opts.actions:
-      try:
-        preparedut.verify_rec_mode_boot_into_usb(host)
-      except Exception as err:
-        logging.error("fail to boot from recovery mode: %s", err)
-        return RETURN_CODES.BOOT_FROM_RECOVERY_MODE_FAILURE
-
-    if 'update-label' in opts.actions:
-      try:
-        host.labels.update_labels(host)
-      except Exception as err:
-        logging.error("fail to update label: %s", err)
-        return RETURN_CODES.UPDATE_LABEL_FAILURE
-
-  return RETURN_CODES.OK
+      preparedut.install_firmware(host, opts.force_firmware)
+    if 'install-test-image' in opts.actions:
+      preparedut.install_test_image(host)
 
 
 _LOG_FILE = 'prepare_dut.log'
@@ -105,8 +57,7 @@ def _parse_args():
   parser.add_argument(
       'actions',
       nargs='+',
-      choices=['stage-usb', 'install-test-image', 'install-firmware',
-               'verify-recovery-mode', 'update-label'],
+      choices=['stage-usb', 'install-firmware', 'install-test-image'],
       help='DUT preparation actions to execute.',
   )
   parser.add_argument(
@@ -131,6 +82,12 @@ def _parse_args():
       required=True,
       help=('Full path to HostInfo file.'
             ' DUT inventory information is read from the HostInfo file.'),
+  )
+
+  parser.add_argument(
+      '--force-firmware',
+      action='store_true',
+      help='Force firmware isntallation via chromeos-installfirmware.',
   )
 
   return parser.parse_args()
@@ -232,4 +189,4 @@ def _get_cros_repair_image_name(board):
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+  main()

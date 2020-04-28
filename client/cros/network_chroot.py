@@ -221,8 +221,7 @@ class NetworkChroot(object):
 
     def make_chroot(self):
         """Make a chroot filesystem."""
-        self._temp_dir = utils.system_output(
-                'mktemp -d /usr/local/tmp/chroot.XXXXXXXXX')
+        self._temp_dir = utils.system_output('mktemp -d /tmp/chroot.XXXXXXXXX')
         utils.system('chmod go+rX %s' % self._temp_dir)
         for rootdir in self._root_directories:
             os.mkdir(self.chroot_path(rootdir))

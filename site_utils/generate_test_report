@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -324,7 +324,7 @@ class ResultCollector(object):
 
         # Status is True if GOOD, else False for all others.
         status = False
-        error_msg = ''
+        error_msg = None
         status_raw = open(status_file, 'r').read()
         failure_tags = 'ABORT|ERROR|FAIL'
         warning_tag = 'WARN|TEST_NA'
@@ -791,12 +791,6 @@ class ReportGenerator(object):
             status_entry = self._GenStatusString(result['status'])
             if result['status']:
                 color = self._color.GREEN
-                # Change the color of 'PASSED' if the test run wasn't completely
-                # ok, so it's more obvious it isn't a pure pass.
-                if 'WARN' in result['error_msg']:
-                    color = self._color.YELLOW
-                elif 'TEST_NA' in result['error_msg']:
-                    color = self._color.MAGENTA
                 tests_pass += 1
             else:
                 color = self._color.RED

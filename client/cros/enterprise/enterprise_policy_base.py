@@ -9,7 +9,6 @@ import os
 import time
 
 from autotest_lib.client.common_lib.cros import arc
-
 from autotest_lib.client.common_lib.cros.arc import is_android_container_alive
 
 from autotest_lib.client.bin import test
@@ -21,9 +20,6 @@ from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.enterprise import enterprise_fake_dmserver
-from autotest_lib.client.cros.enterprise import enterprise_policy_utils
-from autotest_lib.client.cros.enterprise.device_policy_lookup import DEVICE_POLICY_DICT
-from autotest_lib.client.common_lib import ui_utils
 from py_utils import TimeoutException
 
 from telemetry.core import exceptions
@@ -67,6 +63,18 @@ USERNAME = 'fake-user@managedchrome.com'
 PASSWORD = 'fakepassword'
 GAIA_ID = 'fake-gaia-id'
 
+# Convert from chrome://policy name to what fake dms expects.
+DEVICE_POLICY_DICT = {
+    'DeviceAutoUpdateDisabled': 'update_disabled',
+    'DeviceEphemeralUsersEnabled': 'ephemeral_users_enabled',
+    'DeviceOpenNetworkConfiguration': 'open_network_configuration',
+    'DeviceRollbackToTargetVersion': 'rollback_to_target_version',
+    'DeviceTargetVersionPrefix': 'target_version_prefix',
+    'SystemTimezone': 'timezone',
+    'ReportUploadFrequency': 'device_status_frequency',
+    'DeviceLocalAccounts': 'account',
+    'DeviceLocalAccountAutoLoginId': 'auto_login_id'
+}
 
 # Default settings for managed user policies
 DEFAULT_POLICY = {
@@ -240,11 +248,10 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                    auto_login=True,
                    auto_logout=True,
                    init_network_controller=False,
-                   arc_mode=None,
+                   arc_mode=False,
                    setup_arc=True,
                    use_clouddpc_test=None,
                    disable_default_apps=True,
-                   real_gaia=False,
                    extension_paths=[],
                    extra_chrome_flags=[]):
         """Set up DMS, log in, and verify policy values.
@@ -281,7 +288,7 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         # Need a real account, for now. Note: Even though the account is 'real'
         # you can still use a fake DM server.
-        if (arc_mode and self.username == USERNAME) or real_gaia:
+        if arc_mode and self.username == USERNAME:
             self.username = 'tester50@managedchrome.com'
             self.password = 'Test0000'
 
@@ -299,7 +306,6 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                             extension_paths=extension_paths,
                             arc_mode=arc_mode,
                             disable_default_apps=disable_default_apps,
-                            real_gaia=real_gaia,
                             extra_chrome_flags=extra_chrome_flags)
 
         # Skip policy check upon request or if we enroll but don't log in.
@@ -379,8 +385,7 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
         arc.write_android_file(temp_shell_script_path, cmd)
 
         logging.info('Running clouddpc test with policy: %s', policy_blob_str)
-        results = arc.adb_shell('sh ' + temp_shell_script_path,
-                                ignore_status=True).strip()
+        results = arc.adb_shell('sh ' + temp_shell_script_path).strip()
         arc.remove_android_file(temp_shell_script_path)
         if results.find('FAILURES!!!') >= 0:
             logging.info('CloudDPC E2E Results:\n%s', results)
@@ -452,27 +457,6 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         return policy_map
 
-    def update_policies(self, user_policies={}, suggested_user_policies={},
-                        device_policies={}, extension_policies={}):
-        """
-        Will update the currently existing policies set by the DM server.
-        All existing policies will be overwritten by this call. If you want to
-        change some policies, but not all, the original (ie not changing)
-        policies must also be provided.
-
-        @param user_policies: mandatory user policies -> values.
-        @param suggested user_policies: suggested user policies -> values.
-        @param device_policies: mandatory device policies -> values.
-        @param extension_policies: extension policies.
-
-        """
-        self.fake_dm_server.setup_policy(
-            self._make_json_blob(user_policies,
-                                 suggested_user_policies,
-                                 device_policies,
-                                 extension_policies))
-        self.reload_policies()
-
     def _make_json_blob(self, user_policies={}, suggested_user_policies={},
                         device_policies={}, extension_policies={}):
         """Create JSON policy blob from mandatory and suggested policies.
@@ -488,6 +472,7 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         @returns: JSON policy blob to send to the fake DM server.
         """
+
         user_p = copy.deepcopy(user_policies)
         s_user_p = copy.deepcopy(suggested_user_policies)
         device_p = copy.deepcopy(device_policies)
@@ -495,28 +480,28 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         # Replace all device policies with their FakeDMS-friendly names.
         fixed_device_p = {}
-        for Policy in device_p:
-            if Policy not in DEVICE_POLICY_DICT:
-                raise error.TestError('Cannot convert %s!' % Policy)
-            fixed_device_p[DEVICE_POLICY_DICT[Policy]] = device_p[Policy]
+        for policy in device_p:
+            if policy not in DEVICE_POLICY_DICT:
+                raise error.TestError('Cannot convert %s!' % policy)
+            fixed_device_p[DEVICE_POLICY_DICT[policy]] = device_p[policy]
 
         # Remove "Not set" policies and json-ify dicts because the
         # FakeDMServer expects "policy": "{value}" not "policy": {value}
         # and "policy": "[{value}]" not "policy": [{value}].
         for policies_dict in [user_p, s_user_p, fixed_device_p]:
             policies_to_pop = []
-            for Policy in policies_dict:
-                value = policies_dict[Policy]
+            for policy in policies_dict:
+                value = policies_dict[policy]
                 if value is None:
-                    policies_to_pop.append(Policy)
+                    policies_to_pop.append(policy)
                 elif isinstance(value, dict):
-                    policies_dict[Policy] = encode_json_string(value)
-                # "account" is the Kiosk Policy, which has special formatting.
-                elif isinstance(value, list) and Policy != 'device_local_accounts.account':
+                    policies_dict[policy] = encode_json_string(value)
+                elif isinstance(value, list) and not (
+                    policies_dict in [fixed_device_p]):
                     if value and isinstance(value[0], dict):
-                        policies_dict[Policy] = encode_json_string(value)
-            for Policy in policies_to_pop:
-                policies_dict.pop(Policy)
+                        policies_dict[policy] = encode_json_string(value)
+            for policy in policies_to_pop:
+                policies_dict.pop(policy)
 
         management_dict = {
             'managed_users': ['*'],
@@ -540,7 +525,6 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
         if extension_p:
             management_dict['google/chrome/extension'] = extension_p
         logging.info('Created policy blob: %s', management_dict)
-
         return encode_json_string(management_dict)
 
 
@@ -579,9 +563,16 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
 
         return table_index
 
+
     def reload_policies(self):
         """Force a policy fetch."""
-        enterprise_policy_utils.refresh_policies(self.cr.autotest_ext)
+        policy_tab = self.navigate_to_url(self.CHROME_POLICY_PAGE)
+        reload_button = "document.querySelector('button#reload-policies')"
+        policy_tab.ExecuteJavaScript("%s.click()" % reload_button)
+        policy_tab.WaitForJavaScriptCondition("!%s.disabled" % reload_button,
+                                              timeout=1)
+        policy_tab.Close()
+
 
     def verify_extension_stats(self, extension_policies, sensitive_fields=[]):
         """
@@ -904,8 +895,7 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
     def _create_chrome(self,
                        enroll=False,
                        auto_login=True,
-                       arc_mode=None,
-                       real_gaia=False,
+                       arc_mode=False,
                        init_network_controller=False,
                        disable_default_apps=True,
                        extension_paths=[],
@@ -933,15 +923,23 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
         if enroll:
             self.cr = chrome.Chrome(
                     auto_login=False,
-                    autotest_ext=True,
                     extra_browser_args=extra_flags,
                     extension_paths=extension_paths,
                     expect_policy_fetch=True)
             if self.dms_is_fake:
                 if self._kiosk_mode:
-                    enrollment.KioskEnrollment(
-                        self.cr.browser, self.username, self.password,
-                        self.gaia_id)
+                    # This try is needed for kiosk; without it the test fails
+                    # in telemtry code in _WaitForEnterpriseWebview. Webview
+                    # never loads since it's kiosk.
+                    # TODO(rzakarian): Try to modify telemetry code to not
+                    # wait for Webview when in kiosk mode.
+                    # http://crbug.com/934876.
+                    try:
+                        enrollment.EnterpriseFakeEnrollment(
+                            self.cr.browser, self.username, self.password,
+                            self.gaia_id, auto_login=auto_login)
+                    except TimeoutException:
+                        pass
                 else:
                     enrollment.EnterpriseFakeEnrollment(
                         self.cr.browser, self.username, self.password,
@@ -952,19 +950,16 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                         auto_login=auto_login)
 
         elif auto_login:
-            if arc_mode or real_gaia:
+            if arc_mode:
                 self.cr = chrome.Chrome(extension_paths=extension_paths,
                                         username=self.username,
                                         password=self.password,
                                         arc_mode=arc_mode,
-                                        gaia_login=True,
                                         disable_gaia_services=False,
-                                        expect_policy_fetch=True,
                                         disable_arc_opt_in=False,
-                                        disable_default_apps=False,
                                         enterprise_arc_test=True,
-                                        autotest_ext=True,
                                         extra_browser_args=extra_flags)
+
             else:
                 self.cr = chrome.Chrome(
                         extra_browser_args=extra_flags,
@@ -985,7 +980,6 @@ class EnterprisePolicyTest(arc.ArcTest, test.test):
                     autotest_ext=True,
                     expect_policy_fetch=True)
 
-        self.ui = ui_utils.UI_Handler()
         # Used by arc.py to determine the state of the chrome obj
         self.initialized = True
         if auto_login:

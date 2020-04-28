@@ -9,9 +9,5 @@
   "version": "0.1",
   "permissions" : [
     "autotestPrivate"
-  ],
-  "automation": {
-    "interact": true,
-    "desktop": true
-  }
+  ]
 }

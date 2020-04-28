@@ -15,9 +15,8 @@ class network_WiFi_ScanPerformance(wifi_cell_test_base.WiFiCellTestBase):
         """Sets up a router, scan for APs """
 
         # Default router configuration
-        mode_n = hostap_config.HostapConfig.MODE_11N_PURE
-        router_conf = hostap_config.HostapConfig(channel=36, mode=mode_n);
-        freq = hostap_config.HostapConfig.get_frequency_for_channel(36)
+        router_conf = hostap_config.HostapConfig(channel=6);
+        freq = hostap_config.HostapConfig.get_frequency_for_channel(6)
         self.context.configure(router_conf)
         ssids = [self.context.router.get_ssid()]
 

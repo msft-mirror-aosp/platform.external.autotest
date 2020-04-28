@@ -14,9 +14,9 @@ from autotest_lib.client.cros.audio import audio_data
 from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.audio import cras_configs
 from autotest_lib.client.cros.audio import sox_utils
-from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids as ids
 from autotest_lib.client.cros.chameleon import chameleon_port_finder
+
 
 _CHAMELEON_FILE_PATH = os.path.join(os.path.dirname(__file__))
 
@@ -83,38 +83,17 @@ class AudioInputWidget(AudioWidget):
         self._init_channel_map_without_link()
 
 
-    def start_recording(self, pinned=False, block_size=None):
-        """Starts recording.
-
-        @param pinned: Pins the audio to the input device.
-        @param block_size: The number for frames per callback.
-
-        """
+    def start_recording(self):
+        """Starts recording."""
         self._remote_rec_path = None
         self._rec_binary = None
         self._rec_format = None
-        node_type = None
-        if pinned:
-            node_type = audio_test_utils.cros_port_id_to_cras_node_type(
-                    self.port_id)
-
-        self.handler.start_recording(node_type=node_type, block_size=block_size)
+        self.handler.start_recording()
 
 
-    def stop_recording(self, pinned=False):
-        """Stops recording.
-
-        @param pinned: Stop the recording on the pinned input device.
-                       False means to stop the active selected one.
-
-        """
-        node_type = None
-        if pinned:
-            node_type = audio_test_utils.cros_port_id_to_cras_node_type(
-                    self.port_id)
-
-        self._remote_rec_path, self._rec_format = self.handler.stop_recording(
-                node_type=node_type)
+    def stop_recording(self):
+        """Stops recording."""
+        self._remote_rec_path, self._rec_format = self.handler.stop_recording()
 
 
     def start_listening(self):
@@ -298,22 +277,13 @@ class AudioOutputWidget(AudioWidget):
 
         return self._remote_playback_path
 
-    def start_playback(self, blocking=False, pinned=False, block_size=None):
+    def start_playback(self, blocking=False):
         """Starts playing audio specified in previous set_playback_data call.
 
         @param blocking: Blocks this call until playback finishes.
-        @param pinned: Pins the audio to the active output device.
-        @param block_size: The number for frames per callback.
 
         """
-        node_type = None
-        if pinned:
-            node_type = audio_test_utils.cros_port_id_to_cras_node_type(
-                    self.port_id)
-
-        self.handler.start_playback(
-                self._remote_playback_path, blocking, node_type=node_type,
-                block_size=block_size)
+        self.handler.start_playback(self._remote_playback_path, blocking)
 
     def start_playback_with_path(self, remote_playback_path, blocking=False):
         """Starts playing audio specified in previous set_playback_data call
@@ -414,22 +384,16 @@ class ChameleonInputWidgetHandler(ChameleonWidgetHandler):
     This class abstracts a Chameleon audio input widget handler.
 
     """
-    def start_recording(self, **kargs):
-        """Starts recording.
-
-        @param kargs: Other arguments that Chameleon doesn't support.
-
-        """
+    def start_recording(self):
+        """Starts recording."""
         self._port.start_capturing_audio()
 
 
-    def stop_recording(self, **kargs):
+    def stop_recording(self):
         """Stops recording.
 
         Gets remote recorded path and format from Chameleon. The format can
         then be used in get_recorded_binary()
-
-        @param kargs: Other arguments that Chameleon doesn't support.
 
         @returns: A tuple (remote_path, data_format) for recorded data.
                   Refer to stop_capturing_audio call of ChameleonAudioInput.
@@ -580,14 +544,12 @@ class ChameleonOutputWidgetHandler(ChameleonWidgetHandler):
             test_data_for_chameleon.delete()
 
 
-    def start_playback(self, path, blocking=False, **kargs):
+    def start_playback(self, path, blocking=False):
         """Starts playback.
 
         @param path: The path to the file to play on Chameleon.
         @param blocking: Blocks this call until playback finishes.
-        @param kargs: Other arguments that Chameleon doesn't support.
 
-        @raises: NotImplementedError if blocking is True.
         """
         if blocking:
             raise NotImplementedError(
@@ -759,31 +721,14 @@ class CrosInputWidgetHandler(CrosWidgetHandler):
                                 sample_format='S16_LE',
                                 channel=1,
                                 rate=48000)
-    _recording_on = None
-    _SELECTED = "Selected"
 
-    def start_recording(self, node_type=None, block_size=None):
-        """Starts recording audio.
-
-        @param node_type: A Cras node type defined in cras_utils.CRAS_NODE_TYPES
-        @param block_size: The number for frames per callback.
-
-        @raises: CrosInputWidgetHandlerError if a recording was already started.
-        """
-        if self._recording_on:
-            raise CrosInputWidgetHandlerError(
-                    "A recording was already started on %s." %
-                    self._recording_on)
-
-        self._recording_on = node_type if node_type else self._SELECTED
-        self._audio_facade.start_recording(self._DEFAULT_DATA_FORMAT, node_type,
-                                           block_size)
+    def start_recording(self):
+        """Starts recording audio."""
+        self._audio_facade.start_recording(self._DEFAULT_DATA_FORMAT)
 
 
-    def stop_recording(self, node_type=None):
+    def stop_recording(self):
         """Stops recording audio.
-
-        @param node_type: A Cras node type defined in cras_utils.CRAS_NODE_TYPES
 
         @returns:
             A tuple (remote_path, format).
@@ -795,23 +740,8 @@ class CrosInputWidgetHandler(CrosWidgetHandler):
                     channel: channel number.
                     rate: sampling rate.
 
-        @raises: CrosInputWidgetHandlerError if no corresponding responding
-        device could be stopped.
         """
-        if self._recording_on is None:
-            raise CrosInputWidgetHandlerError("No recording was started.")
-
-        if node_type is None and self._recording_on != self._SELECTED:
-            raise CrosInputWidgetHandlerError(
-                    "No recording on selected device.")
-
-        if node_type and node_type != self._recording_on:
-            raise CrosInputWidgetHandlerError(
-                    "No recording was started on %s." % node_type)
-
-        self._recording_on = None
-        return (self._audio_facade.stop_recording(node_type=node_type),
-                self._DEFAULT_DATA_FORMAT)
+        return self._audio_facade.stop_recording(), self._DEFAULT_DATA_FORMAT
 
 
     def get_recorded_binary(self, remote_path, record_format):
@@ -893,11 +823,10 @@ class CrosIntMicInputWidgetHandler(CrosInputWidgetHandler):
         self._audio_facade.set_input_gain(proper_gain)
 
 
-    def start_recording(self, node_type=None, block_size=None):
+    def start_recording(self):
         """Starts recording audio with proper gain."""
         self.set_proper_gain()
-        super(CrosIntMicInputWidgetHandler, self).start_recording(
-                node_type, block_size)
+        self._audio_facade.start_recording(self._DEFAULT_DATA_FORMAT)
 
 
 class CrosHotwordingWidgetHandler(CrosInputWidgetHandler):
@@ -966,18 +895,15 @@ class CrosOutputWidgetHandler(CrosWidgetHandler):
         return self._audio_facade.set_playback_file(test_data.path)
 
 
-    def start_playback(self, path, blocking=False, node_type=None,
-                       block_size=None):
+    def start_playback(self, path, blocking=False):
         """Starts playing audio.
 
         @param path: The path to the file to play on Cros device.
         @param blocking: Blocks this call until playback finishes.
-        @param node_type: A Cras node type defined in cras_utils.CRAS_NODE_TYPES
-        @param block_size: The number for frames per callback.
 
         """
-        self._audio_facade.playback(path, self._DEFAULT_DATA_FORMAT, blocking,
-                node_type, block_size)
+        self._audio_facade.playback(path, self._DEFAULT_DATA_FORMAT, blocking)
+
 
     def stop_playback(self):
         """Stops playing audio."""

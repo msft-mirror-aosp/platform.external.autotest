@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import os
 
 from autotest_lib.client.bin import utils
@@ -10,7 +11,6 @@ from autotest_lib.server import test, autotest
 
 
 class firmware_TouchMTBSetup(test.test):
-    """Installs firmware_TouchMTB and version info to the remote machine."""
     version = 1
     client_test_name = 'firmware_TouchMTB'
 

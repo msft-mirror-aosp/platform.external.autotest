@@ -33,19 +33,16 @@ class BrowserFacadeNative(object):
         return self._resource.start_custom_chrome(kwargs)
 
 
-    def start_default_chrome(self, restart=False, extra_browser_args=None,
-                             disable_arc=False):
+    def start_default_chrome(self, restart=False, extra_browser_args=None):
         """Start the default Chrome.
 
         @param restart: True to start Chrome without clearing previous state.
         @param extra_browser_args: A list containing extra browser args passed
                                    to Chrome in addition to default ones.
-        @param disable_arc: True to disable ARC++.
         @return: True on success, False otherwise.
 
         """
-        return self._resource.start_default_chrome(restart, extra_browser_args,
-                                                   disable_arc)
+        return self._resource.start_default_chrome(restart, extra_browser_args)
 
 
     def set_http_server_directories(self, directories):
@@ -126,15 +123,3 @@ class BrowserFacadeNative(object):
         """
         return self._resource.evaluate_javascript(
                 tab_descriptor, expression, timeout)
-
-
-    def get_tab_urls(self):
-        """Gets urls from current Chrome tabs.
-
-        @returns: A list of str objects which contain urls from current Chrome
-        tabs.
-        """
-        logging.info("Getting tab objects from Chrome...")
-        tabs = self._resource.get_tabs()
-
-        return [tab.url for tab in tabs]

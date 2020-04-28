@@ -55,7 +55,6 @@ public class SuiteRunnerView extends TabView {
   private HashMap<String, String> modelBoardMap;
 
   private static List<String> suiteNames = Arrays.asList(
-    "au_fsi",
     "bvt-cq",
     "bvt-inline",
     "bvt-tast-cq",

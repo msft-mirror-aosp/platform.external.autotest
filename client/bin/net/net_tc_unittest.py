@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # TODO(chavey) complete all the unit test in this file
 

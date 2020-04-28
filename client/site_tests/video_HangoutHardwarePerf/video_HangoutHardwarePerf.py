@@ -210,6 +210,7 @@ class video_HangoutHardwarePerf(chrome_binary_test.ChromeBinaryTest):
             '--test_video_data=%s' % ';'.join(test_video_data),
             '--rendering_fps=%f' % RENDERING_FPS,
             '--num_play_throughs=%d' % MAX_INT,
+            helper_logger.chrome_vmodule_flag(),
         ]
         cmd_line.append('--ozone-platform=gbm')
         return cmd_line
@@ -233,6 +234,7 @@ class video_HangoutHardwarePerf(chrome_binary_test.ChromeBinaryTest):
             '--test_stream_data=%s' % ';'.join(test_stream_data),
             '--run_at_fps',
             '--num_frames_to_encode=%d' % MAX_INT,
+            helper_logger.chrome_vmodule_flag(),
         ]
         cmd_line.append('--ozone-platform=gbm')
         return cmd_line
@@ -265,6 +267,7 @@ class video_HangoutHardwarePerf(chrome_binary_test.ChromeBinaryTest):
         finally:
             cmd_utils.kill_or_log_returncode(*popens)
 
+    @helper_logger.video_log_wrapper
     @chrome_binary_test.nuke_chrome
     def run_once(self, resources, decode_videos, encode_videos, measurement,
                  capabilities, decode_threads=1, encode_threads=1):

@@ -17,11 +17,6 @@ Virtual NVRAM functionality in cr50. Finally, it clears the TPM again.
 Every time the TPM is cleared, the system is rebooted.
 """
 
-if 'args_dict' not in locals():
-    args_dict = {}
-
-args_dict.update(utils.args_to_dict(args))
-
 def run_test(machine):
     host = hosts.create_host(machine)
     job.run_test('firmware_Cr50VirtualNVRamServer', host=host)

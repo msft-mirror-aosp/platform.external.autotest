@@ -9,11 +9,6 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import arc
 from autotest_lib.client.cros.graphics import graphics_utils
-try:
-    # Importing this private util fails on public boards (e.g amd64-generic)
-    from autotest_lib.client.common_lib.cros import password_util
-except ImportError:
-    logging.error('Failed to import password_util from autotest-private')
 
 
 class cheets_AppCompatTest(arc.ArcTest):
@@ -44,12 +39,11 @@ class cheets_AppCompatTest(arc.ArcTest):
         if self._touch_view_mode:
             browser_args = ['--force-tablet-mode=touch_view']
 
-        cred = password_util.get_appcompat_credentials()
         super(cheets_AppCompatTest, self).initialize(
             disable_arc_opt_in=False, extra_browser_args=browser_args,
             disable_app_sync=True, disable_play_auto_install=True,
-            username=cred.username,
-            password=cred.password)
+            username='crosarcappcompat@gmail.com',
+            password='appcompatautotest')
 
 
     def arc_setup(self):
@@ -59,7 +53,7 @@ class cheets_AppCompatTest(arc.ArcTest):
     def cleanup(self):
         arc.adb_cmd('uninstall com.hcl.actframework')
         arc.adb_cmd('uninstall com.hcl.actframework.test')
-        arc.adb_cmd('uninstall %s' % self._pkg_name, ignore_status=True)
+        arc.adb_cmd('uninstall %s' % self._pkg_name)
         arc.adb_shell('rm -f /sdcard/autresources.xml > /dev/null')
         arc.adb_shell('rm -f /sdcard/touchView.txt > /dev/null',
                       ignore_status=True)
@@ -123,8 +117,7 @@ class cheets_AppCompatTest(arc.ArcTest):
 
     def _grab_screenshots(self):
         """Captures screenshots that are created by the UIAutomator tests."""
-        for screenshot in arc.adb_shell('find /sdcard/*.png',
-                                        ignore_status=True).splitlines():
+        for screenshot in arc.adb_shell('find /sdcard/*.png').splitlines():
             logging.debug('Screenshot is %s.', screenshot)
             arc.adb_cmd('pull %s %s' % (screenshot, self.resultsdir),
                         ignore_status=True)
@@ -139,21 +132,20 @@ class cheets_AppCompatTest(arc.ArcTest):
 
 
     def _parse_results(self):
-        """Parse the pass/fail/blocked/skipped entries from logcat. """
+        """Parse the pass/fail/skipped entries from logcat. """
         passed = self._get_log_entry_count(",PASS,")
         failed = self._get_log_entry_count(",FAIL,")
         nt = self._get_log_entry_count(",NT,")
         blocked = self._get_log_entry_count(",BLOCKED,")
         skipped = self._get_log_entry_count(",SKIPPED,")
-        ft = self._get_list_of_test_cases(",FAIL,")
-        bt = self._get_list_of_test_cases(",BLOCKED,")
+        ft = self._get_failed_test_cases()
 
         result = ('Test results for %s(%s): Passed %s, Failed %s, Not Tested '
-                  '%s, Blocked %s, Skipped %s. Failed tests: [%s] Blocked tests: [%s]' % (
+                  '%s, Blocked %s, Skipped %s. Failed tests: [%s]' % (
                   self._pkg_name, self._app_version, passed, failed, nt,
-                  blocked, skipped, ft, bt))
+                  blocked, skipped, ft))
         logging.info(result)
-        pass_status = int(failed) == 0 and int(blocked) == 0 and int(passed) > 0
+        pass_status = int(failed) == 0 and int(passed) > 0
         return pass_status, result
 
 
@@ -162,19 +154,19 @@ class cheets_AppCompatTest(arc.ArcTest):
         logcat = os.path.join(self.resultsdir, self._logcat)
         return utils.run('grep "%s" %s | grep -c "%s"' %
                         (self._LOG_TAG, logcat, entry),
-                        ignore_status=True).stdout.strip()
+                         ignore_status=True).stdout.strip()
 
 
-    def _get_list_of_test_cases(self, status):
-        """Get the list of test cases that are fail/blocked from logcat."""
+    def _get_failed_test_cases(self):
+        """Get the list of test cases that failed from logcat."""
         logcat = os.path.join(self.resultsdir, self._logcat)
-        fail_or_blocked_tests = []
-        fail_or_blocked_tests_list = utils.run('grep "%s" %s | grep "%s"' %
-                            (self._LOG_TAG, logcat, status),
+        failed_tests = []
+        failed_tests_list = utils.run('grep "%s" %s | grep ",FAIL,"' %
+                            (self._LOG_TAG, logcat),
                             ignore_status=True).stdout.strip().splitlines()
-        for line in fail_or_blocked_tests_list:
-            fail_or_blocked_tests.append(line.split(',')[-4:])
-        return fail_or_blocked_tests
+        for line in failed_tests_list:
+            failed_tests.append(line.split(',')[-4:])
+        return failed_tests
 
 
     def _increase_logcat_buffer(self):
@@ -202,19 +194,18 @@ class cheets_AppCompatTest(arc.ArcTest):
 
 
     def run_once(self, retries=3):
-        """Main entry for the test."""
         self._increase_logcat_buffer()
         self._copy_resources_to_dut()
         self._grant_storage_permission()
 
         for trial in range(retries):
-            logging.info('Iteration %d: Trying to launch play store', trial)
+            logging.info('Iteration %d: Trying to launch play store' % trial)
 
             # Bring Play Store to front.
             arc.adb_shell('am start %s' % self._PLAY_STORE_ACTIVITY)
             self._take_screenshot('test_start')
             self._start_test()
-            logging.info('Iteration %d: Test finished', trial)
+            logging.info('Iteration %d: Test finished' % trial)
             self._take_screenshot('test_end')
             self._get_app_version()
             self._capture_bugreport()

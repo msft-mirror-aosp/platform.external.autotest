@@ -18,6 +18,15 @@ class CfmHangoutsAPI(object):
         self._webview_context = webview_context
 
 
+    def wait_for_telemetry_commands(self):
+        """Wait for hotrod app to load and telemetry commands to be available.
+        """
+        self._webview_context.WaitForJavaScriptCondition(
+                "typeof window.hrOobIsStartPageForTest == 'function'",
+                timeout=DEFAULT_TIMEOUT)
+        logging.info('Hotrod telemetry commands available for testing.')
+
+
     def wait_for_meetings_in_call_page(self):
         """Waits for the in-call page to launch."""
         raise NotImplementedError

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -21,8 +21,6 @@ import logging, os, re
 # contains only the client/ subtree), on a normal autotest
 # installation/repository or as a python module used on a client-side test.
 import common
-
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 
 INFO_PATH = "/sys/block"
@@ -48,7 +46,7 @@ def read_file(path_to_file, host=None):
 
     if not os.path.isfile(path_to_file):
         raise error.TestError("No such file or directory %s" % path_to_file)
-    return utils.read_file(path_to_file).strip()
+    return utils.read_file(path_to_file)
 
 
 def system_output(command, host=None, ignore_status=False):
@@ -239,7 +237,6 @@ def get_partition_info(part_path, bus, model, partid=None, fstype=None,
                     # replacing ' ' (space).
                     # Following '.decode('unicode-escape')' handles the same
                     dev['mountpoint'] = mount.decode('unicode-escape')
-                    dev['is_removable'] = is_removable
                     dev['usb_type'], dev['serial'] = \
                             get_usbdevice_type_and_serial(dev['device'],
                                                           lsusb_info=lsusb_info,
@@ -267,7 +264,6 @@ def get_partition_info(part_path, bus, model, partid=None, fstype=None,
                 dev['fstype'] = fstype
                 dev['is_mounted'] = False
                 dev['mountpoint'] = "/media/removable/%s" % label
-                dev['is_removable'] = is_removable
                 dev['usb_type'], dev['serial'] = \
                         get_usbdevice_type_and_serial(dev['device'],
                                                       lsusb_info=lsusb_info,

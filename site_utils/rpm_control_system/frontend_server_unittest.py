@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -45,11 +45,8 @@ class TestFrontendServer(mox.MoxTestBase):
     def testNoRegisteredDispatchers(self):
         """ Queue request with no dispatchers. Should fail. """
         self.mox.ResetAll()
-        self.assertRaises(
-                RPMInfrastructureException,
-                self.frontend.set_power_via_rpm,
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        )
+        self.assertRaises(RPMInfrastructureException,
+                          self.frontend.queue_request, DUT_HOSTNAME, NEW_STATE)
 
 
     def testSuccessfullyQueueRequest(self):
@@ -59,12 +56,11 @@ class TestFrontendServer(mox.MoxTestBase):
         Expects the request to succeed.
         """
         self.xmlrpc_mock.queue_request(
-                mox.IgnoreArg(), NEW_STATE).AndReturn(True)
+                self.frontend._rpm_info[DUT_HOSTNAME],
+                NEW_STATE).AndReturn(True)
         self.mox.ReplayAll()
         self.frontend.register_dispatcher(FAKE_DISPATCHER_URI1)
-        self.assertTrue(self.frontend.set_power_via_rpm(
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        ))
+        self.assertTrue(self.frontend.queue_request(DUT_HOSTNAME, NEW_STATE))
         self.mox.VerifyAll()
 
 
@@ -75,12 +71,11 @@ class TestFrontendServer(mox.MoxTestBase):
         Expects the request to fail.
         """
         self.xmlrpc_mock.queue_request(
-                mox.IgnoreArg(), NEW_STATE).AndReturn(False)
+                self.frontend._rpm_info[DUT_HOSTNAME],
+                NEW_STATE).AndReturn(False)
         self.mox.ReplayAll()
         self.frontend.register_dispatcher(FAKE_DISPATCHER_URI1)
-        self.assertFalse(self.frontend.set_power_via_rpm(
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        ))
+        self.assertFalse(self.frontend.queue_request(DUT_HOSTNAME, NEW_STATE))
         self.mox.VerifyAll()
 
 
@@ -91,18 +86,14 @@ class TestFrontendServer(mox.MoxTestBase):
         queue_request should return True then False.
         """
         self.xmlrpc_mock.queue_request(
-                mox.IgnoreArg(), NEW_STATE).AndReturn(True)
+                self.frontend._rpm_info[DUT_HOSTNAME],
+                NEW_STATE).AndReturn(True)
         self.mox.ReplayAll()
         self.frontend.register_dispatcher(FAKE_DISPATCHER_URI1)
-        self.assertTrue(self.frontend.set_power_via_rpm(
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        ))
+        self.assertTrue(self.frontend.queue_request(DUT_HOSTNAME, NEW_STATE))
         self.frontend.unregister_dispatcher(FAKE_DISPATCHER_URI1)
-        self.assertRaises(
-                RPMInfrastructureException,
-                self.frontend.set_power_via_rpm,
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        )
+        self.assertRaises(RPMInfrastructureException,
+                          self.frontend.queue_request, DUT_HOSTNAME, NEW_STATE)
         self.mox.VerifyAll()
 
 
@@ -116,7 +107,7 @@ class TestFrontendServer(mox.MoxTestBase):
         return False as there is no other dispatch servers available.
         """
         self.xmlrpc_mock.queue_request(
-                mox.IgnoreArg(), NEW_STATE).AndRaise(
+                self.frontend._rpm_info[DUT_HOSTNAME], NEW_STATE).AndRaise(
                 socket.error(FAKE_ERRNO, UNREACHABLE_SERVER_MSG))
         frontend_server.xmlrpclib.ServerProxy(
                 FAKE_DISPATCHER_URI1,
@@ -126,11 +117,8 @@ class TestFrontendServer(mox.MoxTestBase):
                 socket.error(FAKE_ERRNO, UNREACHABLE_SERVER_MSG))
         self.mox.ReplayAll()
         self.frontend.register_dispatcher(FAKE_DISPATCHER_URI1)
-        self.assertRaises(
-                RPMInfrastructureException,
-                self.frontend.set_power_via_rpm,
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        )
+        self.assertRaises(RPMInfrastructureException,
+                          self.frontend.queue_request, DUT_HOSTNAME, NEW_STATE)
         self.mox.VerifyAll()
 
 
@@ -144,7 +132,7 @@ class TestFrontendServer(mox.MoxTestBase):
         should make a second attempt that should be successful.
         """
         self.xmlrpc_mock.queue_request(
-                mox.IgnoreArg(), NEW_STATE).AndRaise(
+                self.frontend._rpm_info[DUT_HOSTNAME], NEW_STATE).AndRaise(
                 socket.error(FAKE_ERRNO,UNREACHABLE_SERVER_MSG))
         frontend_server.xmlrpclib.ServerProxy(
                 mox.IgnoreArg(), allow_none=True).MultipleTimes(3).AndReturn(
@@ -153,13 +141,11 @@ class TestFrontendServer(mox.MoxTestBase):
                 socket.error(FAKE_ERRNO, UNREACHABLE_SERVER_MSG))
         self.xmlrpc_mock.is_up().AndReturn(True)
         self.xmlrpc_mock.queue_request(
-                mox.IgnoreArg(), NEW_STATE).AndReturn(True)
+                self.frontend._rpm_info[DUT_HOSTNAME], NEW_STATE).AndReturn(True)
         self.mox.ReplayAll()
         self.frontend.register_dispatcher(FAKE_DISPATCHER_URI1)
         self.frontend.register_dispatcher(FAKE_DISPATCHER_URI2)
-        self.assertTrue(self.frontend.set_power_via_rpm(
-                DUT_HOSTNAME, POWERUNIT_HOSTNAME, OUTLET, '', NEW_STATE,
-        ))
+        self.assertTrue(self.frontend.queue_request(DUT_HOSTNAME, NEW_STATE))
         self.mox.VerifyAll()
 
 

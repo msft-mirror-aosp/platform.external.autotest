@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -15,8 +15,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.site_utils import lxc
 from autotest_lib.site_utils.lxc import utils as lxc_utils
 
-# TODO (crbug/960959): Fix this flakey test.
-@unittest.skip('Flakey (http://crbug/960959)')
+
 class SharedHostDirTests(lxc_utils.LXCTests):
     """Unit tests for the ContainerBucket class."""
 
@@ -76,7 +75,6 @@ class SharedHostDirTests(lxc_utils.LXCTests):
             host_dir.cleanup()
 
 
-@unittest.skip('Flakey (http://crbug/960959)')
 class TimeoutTests(lxc_utils.LXCTests):
     """Test the timeouts on the shared host dir class."""
 

@@ -18,8 +18,7 @@ class firmware_UpdateKernelVersion(FirmwareTest):
     version = 1
 
     def check_kernel_version(self, expected_ver):
-        """Checks the kernel version."""
-        actual_ver = self.faft_client.Kernel.GetVersion('b')
+        actual_ver = self.faft_client.kernel.get_version('b')
         if actual_ver != expected_ver:
             raise error.TestFail(
                 'Kernel Version should be %s, but got %s.'
@@ -30,12 +29,11 @@ class firmware_UpdateKernelVersion(FirmwareTest):
                 actual_ver)
 
     def modify_kernel_b_and_set_cgpt_priority(self, delta, target_dev):
-        """Modifies kernel B and sets CGPT priority."""
         if delta == 1:
-            self.faft_client.Kernel.MoveVersionForward('b')
+            self.faft_client.kernel.move_version_forward('b')
         elif delta == -1:
             self.check_kernel_version(self._update_version)
-            self.faft_client.Kernel.MoveVersionBackward('b')
+            self.faft_client.kernel.move_version_backward('b')
 
         if target_dev == 'a':
             self.reset_and_prioritize_kernel('a')
@@ -43,12 +41,11 @@ class firmware_UpdateKernelVersion(FirmwareTest):
             self.reset_and_prioritize_kernel('b')
 
     def initialize(self, host, cmdline_args, dev_mode=True):
-        """Initialize the test"""
         super(firmware_UpdateKernelVersion, self).initialize(host, cmdline_args)
 
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
 
-        actual_ver = self.faft_client.Kernel.GetVersion('b')
+        actual_ver = self.faft_client.kernel.get_version('b')
         logging.info('Original Kernel Version of KERN-B is %s', actual_ver)
 
         self._update_version = actual_ver + 1
@@ -57,11 +54,9 @@ class firmware_UpdateKernelVersion(FirmwareTest):
         self.setup_kernel('a')
 
     def cleanup(self):
-        """Cleanup after the test"""
         super(firmware_UpdateKernelVersion, self).cleanup()
 
     def run_once(self):
-        """Runs a single iteration of the test."""
         logging.info("Update Kernel Version.")
         self.check_state((self.check_root_part_on_non_recovery, 'a'))
         self.modify_kernel_b_and_set_cgpt_priority(1, 'b')

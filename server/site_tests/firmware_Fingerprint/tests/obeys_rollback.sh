@@ -19,6 +19,7 @@ check_file_exists "${RB1_FW_FILE}"
 check_file_exists "${RB9_FW_FILE}"
 
 echo "Making sure all write protect is enabled"
+enable_sw_write_protect
 check_hw_and_sw_write_protect_enabled
 
 echo "Validating initial state"

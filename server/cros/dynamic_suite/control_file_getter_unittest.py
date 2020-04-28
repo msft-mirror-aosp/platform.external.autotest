@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 #
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -30,6 +30,7 @@ class DevServerGetterTest(mox.MoxTestBase):
     def setUp(self):
         super(DevServerGetterTest, self).setUp()
         self.dev_server = self.mox.CreateMock(dev_server.ImageServer)
+        self.dev_server.hostname = 'localhost'
         self.getter = control_file_getter.DevServerGetter(self._BUILD,
                                                           self.dev_server)
 

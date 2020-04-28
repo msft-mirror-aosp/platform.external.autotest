@@ -109,7 +109,10 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         self._host.wait_for_restart(old_boot_id=boot_id)
         self.cfm_facade.restart_chrome_for_cfm()
         time.sleep(SHORT_TIMEOUT)
-        self.cfm_facade.wait_for_telemetry_commands()
+        if self._is_meeting:
+            self.cfm_facade.wait_for_meetings_telemetry_commands()
+        else:
+            self.cfm_facade.wait_for_hangouts_telemetry_commands()
         self._kernel_usb_sanity_test()
 
 
@@ -155,7 +158,10 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         self._check_peripherals()
         self._kernel_usb_sanity_test()
 
-        self.cfm_facade.wait_for_telemetry_commands()
+        if self._is_meeting:
+            self.cfm_facade.wait_for_meetings_telemetry_commands()
+        else:
+            self.cfm_facade.wait_for_hangouts_telemetry_commands()
 
         for i in xrange(1, repetitions + 1):
             logging.info('Running test cycle %d/%d', i, repetitions)

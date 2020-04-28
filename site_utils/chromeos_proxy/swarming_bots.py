@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#! /usr/bin/python
 
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -37,7 +37,6 @@ Manage swarming bots.
     ** Restart a bot given a bot id.
 """
 import argparse
-import json
 import logging
 import logging.handlers
 import os
@@ -54,7 +53,6 @@ import urllib
 import common
 
 from autotest_lib.client.common_lib import global_config
-from chromite.lib import cros_build_lib
 
 
 LOGGING_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
@@ -65,10 +63,6 @@ DEFAULT_SWARMING_PROXY = global_config.global_config.get_config_value(
 ID_RANGE_FMT = r'(\d+)-(\d+)'
 KILL_PROC_TIMEOUT_SECS = 3600 * 3 # 3 hours
 MAX_KILL_PROC_SLEEP_SECS = 60
-
-SWARMING_SCRIPT = os.path.join(
-    os.path.expanduser('~'),
-    'chromiumos/chromite/third_party/swarming.client/swarming.py')
 
 
 class BotManagementError(Exception):
@@ -112,7 +106,8 @@ class SwarmingBot(object):
     BOT_CMD_PATTERN = 'swarming_bot.*zip start_bot'
 
 
-    def __init__(self, bot_id, parent_dir, swarming_proxy):
+    def __init__(self, bot_id, parent_dir, swarming_proxy,
+                 specify_bot_id=False):
         """Initialize.
 
         @param bot_id: An integer.
@@ -122,7 +117,10 @@ class SwarmingBot(object):
                         at run time.
         @param swarming_proxy: URL to the swarming instance.
         """
-        self.bot_id = '%s-%s' % (get_hostname(), str(bot_id))
+        self.bot_id = bot_id
+        self.specify_bot_id = specify_bot_id
+        if specify_bot_id:
+            self.bot_id = '%s-%s' % (get_hostname(), str(self.bot_id))
 
         self.swarming_proxy = swarming_proxy
         self.parent_dir = os.path.abspath(os.path.expanduser(parent_dir))
@@ -218,12 +216,15 @@ class SwarmingBot(object):
         new_env['SWARMING_EXTERNAL_BOT_SETUP'] = '1'
         logging.debug('[Bot %s] Getting bot code from: %s/bot_code',
                       self.bot_id, self.swarming_proxy)
-        url = '%s/bot_code?bot_id=%s' % (self.swarming_proxy, self.bot_id)
-        new_env['SWARMING_BOT_ID'] = self.bot_id
+        if self.specify_bot_id:
+            url = '%s/bot_code?bot_id=%s' % (self.swarming_proxy, self.bot_id)
+            new_env['SWARMING_BOT_ID'] = self.bot_id
+        else:
+            url = '%s/bot_code' % self.swarming_proxy
 
         logging.info('Download bot code from %s', url)
         urllib.urlretrieve(url, dest)
-        cmd = [sys.executable, self.BOT_FILENAME, 'start_bot']
+        cmd = [sys.executable, self.BOT_FILENAME]
         logging.debug('[Bot %s] Calling command: %s', self. bot_id, cmd)
         process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -271,45 +272,20 @@ class BotManager(object):
     CHECK_BOTS_PATTERN = '{executable} {working_dir}.*{bot_cmd_pattern}'
 
 
-    def __init__(self, bot_ids, working_dir, swarming_proxy, auth_json_path):
+    def __init__(self, bot_ids, working_dir, swarming_proxy,
+                 specify_bot_id=False):
         """Initialize.
 
         @param bot_ids: a set of integers.
         @param working_dir: Working directory of the bots.
                             Store temporary files.
         @param swarming_proxy: The swarming instance to talk to.
-        @param auth_json_path: The string path of an auth json file.
         """
         self.bot_ids = bot_ids
         self.working_dir = os.path.abspath(os.path.expanduser(working_dir))
-        self.auth_json_path = auth_json_path
-        self.swarming_proxy = swarming_proxy
-        self.bots = [SwarmingBot(bid, self.working_dir, swarming_proxy)
+        self.bots = [SwarmingBot(bid, self.working_dir, swarming_proxy,
+                                 specify_bot_id)
                      for bid in bot_ids]
-
-    def _kill_dead_bots(self):
-        """Check swarming proxy to get dead bots and kill them."""
-        cmd = [SWARMING_SCRIPT, 'query',
-               '--swarming', self.swarming_proxy,
-               '--auth-service-account-json', self.auth_json_path,
-               'bots/list?is_dead=TRUE']
-        try:
-            bots = cros_build_lib.RunCommand(cmd, capture_output=True)
-            bot_info = json.loads(bots.output)
-            dead_bot_ids = {item['bot_id'] for item in bot_info['items']}
-            logging.debug('Dead bots: %r', dead_bot_ids)
-            for b in self.bots:
-                logging.debug('Checking if bot %s is dead', b.bot_id)
-                if b.bot_id not in dead_bot_ids:
-                    continue
-
-                logging.info('Killing dead bot %s', b.bot_id)
-                b.kill()
-        except Exception as e:
-            # Don't stop bot manager due to dead bots detection error.
-            # TODO (xixuan): Add metrics.
-            logging.warning(str(e))
-
 
     def launch(self):
         """Launch bots."""
@@ -351,7 +327,6 @@ class BotManager(object):
 
     def check(self):
         """Check running bots, start it if not running."""
-        self._kill_dead_bots()
         pattern =  self.CHECK_BOTS_PATTERN.format(
                 executable=sys.executable, working_dir=self.working_dir,
                 bot_cmd_pattern=SwarmingBot.BOT_CMD_PATTERN)

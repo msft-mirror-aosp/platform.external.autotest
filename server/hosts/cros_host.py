@@ -24,13 +24,13 @@ from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools, frontend_wrappers
-from autotest_lib.server.cros.servo import pdtester
+from autotest_lib.server.cros.servo import plankton
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import chameleon_host
 from autotest_lib.server.hosts import cros_label
 from autotest_lib.server.hosts import cros_repair
-from autotest_lib.server.hosts import pdtester_host
+from autotest_lib.server.hosts import plankton_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.site_utils.rpm_control_system import rpm_client
 
@@ -104,12 +104,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     # _USB_POWER_TIMEOUT: Time to allow for USB to power toggle ON and OFF.
     # _POWER_CYCLE_TIMEOUT: Time to allow for manual power cycle.
-    # _CHANGE_SERVO_ROLE_TIMEOUT: Time to allow DUT regain network connection
-    #                             since changing servo role will reset USB state
-    #                             and causes temporary ethernet drop.
     _USB_POWER_TIMEOUT = 5
     _POWER_CYCLE_TIMEOUT = 10
-    _CHANGE_SERVO_ROLE_TIMEOUT = 180
 
     _RPM_HOSTNAME_REGEX = ('chromeos(\d+)(-row(\d+))?-rack(\d+[a-z]*)'
                            '-host(\d+)')
@@ -128,31 +124,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     # Allowed values for the power_method argument.
 
-    # POWER_CONTROL_RPM: Used in power_off/on/cycle() methods, default for all
-    #                    DUTs except those with servo_v4 CCD.
-    # POWER_CONTROL_CCD: Used in power_off/on/cycle() methods, default for all
-    #                    DUTs with servo_v4 CCD.
+    # POWER_CONTROL_RPM: Passed as default arg for power_off/on/cycle() methods.
     # POWER_CONTROL_SERVO: Used in set_power() and power_cycle() methods.
     # POWER_CONTROL_MANUAL: Used in set_power() and power_cycle() methods.
     POWER_CONTROL_RPM = 'RPM'
-    POWER_CONTROL_CCD = 'CCD'
     POWER_CONTROL_SERVO = 'servoj10'
     POWER_CONTROL_MANUAL = 'manual'
 
     POWER_CONTROL_VALID_ARGS = (POWER_CONTROL_RPM,
-                                POWER_CONTROL_CCD,
                                 POWER_CONTROL_SERVO,
                                 POWER_CONTROL_MANUAL)
-
-    # CCD_SERVO: The string of servo type to compare with the return value of
-    #            self.servo.get_servo_version() to decide default power method.
-    CCD_SERVO = 'servo_v4_with_ccd_cr50'
 
     _RPM_OUTLET_CHANGED = 'outlet_changed'
 
     # URL pattern to download firmware image.
     _FW_IMAGE_URL_PATTERN = CONFIG.get_config_value(
             'CROS', 'firmware_url_pattern', type=str)
+
 
     @staticmethod
     def check_host(host, timeout=10):
@@ -169,8 +157,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             result = host.run(
                     'grep -q CHROMEOS /etc/lsb-release && '
                     '! test -f /mnt/stateful_partition/.android_tester && '
-                    '! grep -q moblab /etc/lsb-release && '
-                    '! grep -q labstation /etc/lsb-release',
+                    '! grep -q moblab /etc/lsb-release',
                     ignore_status=True, timeout=timeout)
             if result.exit_status == 0:
                 lsb_release_content = host.run(
@@ -202,37 +189,27 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param args_dict Dictionary from which to extract the chameleon
           arguments.
         """
-        if 'chameleon_host_list' in args_dict:
-            result = []
-            for chameleon in args_dict['chameleon_host_list'].split(','):
-                result.append({key: value for key,value in
-                    zip(('chameleon_host','chameleon_port'),
-                    chameleon.split(':'))})
-
-            logging.info(result)
-            return result
-        else:
-           return {key: args_dict[key]
+        return {key: args_dict[key]
                 for key in ('chameleon_host', 'chameleon_port')
                 if key in args_dict}
 
 
     @staticmethod
-    def get_pdtester_arguments(args_dict):
+    def get_plankton_arguments(args_dict):
         """Extract chameleon options from `args_dict` and return the result.
 
         Recommended usage:
         ~~~~~~~~
             args_dict = utils.args_to_dict(args)
-            pdtester_args = hosts.CrosHost.get_pdtester_arguments(args_dict)
-            host = hosts.create_host(machine, pdtester_args=pdtester_args)
+            plankton_args = hosts.CrosHost.get_plankton_arguments(args_dict)
+            host = hosts.create_host(machine, plankton_args=plankton_args)
         ~~~~~~~~
 
-        @param args_dict Dictionary from which to extract the pdtester
+        @param args_dict Dictionary from which to extract the plankton
           arguments.
         """
         return {key: args_dict[key]
-                for key in ('pdtester_host', 'pdtester_port')
+                for key in ('plankton_host', 'plankton_port')
                 if key in args_dict}
 
 
@@ -265,7 +242,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def _initialize(self, hostname, chameleon_args=None, servo_args=None,
-                    pdtester_args=None, try_lab_servo=False,
+                    plankton_args=None, try_lab_servo=False,
                     try_servo_repair=False,
                     ssh_verbosity_flag='', ssh_options='',
                     *args, **dargs):
@@ -309,61 +286,34 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 dut=self, servo_args=servo_args,
                 try_lab_servo=try_lab_servo,
                 try_servo_repair=try_servo_repair))
-        self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
-        if type(chameleon_args) is list:
-            self.multi_chameleon = True
-            chameleon_args_list = chameleon_args
-        else:
-            self.multi_chameleon = False
-            chameleon_args_list = [chameleon_args]
+        self._chameleon_host = chameleon_host.create_chameleon_host(
+                dut=self.hostname, chameleon_args=chameleon_args)
+        # Add plankton host if plankton args were added on command line
+        self._plankton_host = plankton_host.create_plankton_host(plankton_args)
 
-        self._chameleon_host_list = [
-            chameleon_host.create_chameleon_host(
-            dut=self.hostname, chameleon_args=_args)
-            for _args in chameleon_args_list]
-
-        self.chameleon_list = [_host.create_chameleon_board() for _host in
-                               self._chameleon_host_list if _host is not None]
-        if len(self.chameleon_list) > 0:
-            self.chameleon = self.chameleon_list[0]
+        if self._chameleon_host:
+            self.chameleon = self._chameleon_host.create_chameleon_board()
         else:
             self.chameleon = None
 
-        # Add pdtester host if pdtester args were added on command line
-        self._pdtester_host = pdtester_host.create_pdtester_host(
-                pdtester_args, self._servo_host)
-
-        if self._pdtester_host:
-            self.pdtester_servo = self._pdtester_host.get_servo()
-            logging.info('pdtester_servo: %r', self.pdtester_servo)
-            # Create the pdtester object used to access the ec uart
-            self.pdtester = pdtester.PDTester(self.pdtester_servo,
-                    self._pdtester_host.get_servod_server_proxy())
+        if self._plankton_host:
+            self.plankton_servo = self._plankton_host.get_servo()
+            logging.info('plankton_servo: %r', self.plankton_servo)
+            # Create the plankton object used to access the ec uart
+            self.plankton = plankton.Plankton(self.plankton_servo,
+                    self._plankton_host.get_servod_server_proxy())
         else:
-            self.pdtester = None
+            self.plankton = None
 
 
     def get_cros_repair_image_name(self):
-        """Get latest stable cros image name from AFE.
-
-        Use the board name from the info store. Should that fail, try to
-        retrieve the board name from the host's installed image itself.
-
-        @returns: current stable cros image name for this host.
-        """
-        board = self.host_info_store.get().board
-        if not board:
-            logging.warn('No board label value found. Trying to infer '
-                         'from the host itself.')
-            try:
-                board = self.get_board().split(':')[1]
-            except (error.AutoservRunError, error.AutoservSSHTimeout) as e:
-                logging.error('Also failed to get the board name from the DUT '
-                              'itself. %s.', str(e))
-                raise error.AutoservError('Cannot obtain repair image name.')
-        return afe_utils.get_stable_cros_image_name(board)
+        info = self.host_info_store.get()
+        if not info.board:
+            raise error.AutoservError('Cannot obtain repair image name. '
+                                      'No board label value found')
+        return afe_utils.get_stable_cros_image_name(info.board)
 
 
     def host_version_prefix(self, image):
@@ -497,7 +447,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             else:
                 raise error.AutoservError(
                         'Failed to stage server-side package. The host has '
-                        'no job_repo_url attribute or cros-version label.')
+                        'no job_report_url attribute or version label.')
 
         # Get the OS version of the build, for any build older than
         # MIN_VERSION_SUPPORT_SSP, server side packaging is not supported.
@@ -518,9 +468,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param image_name: a name like lumpy-release/R27-3837.0.0
         @param artifact: a string like 'test_image'. Requests
             appropriate image to be staged.
-        @returns a tuple of (image_name, URL) like
-            (lumpy-release/R27-3837.0.0,
-             http://172.22.50.205:8082/update/lumpy-release/R27-3837.0.0)
+        @returns an update URL like:
+            http://172.22.50.205:8082/update/lumpy-release/R27-3837.0.0
         """
         if not image_name:
             image_name = self.get_cros_repair_image_name()
@@ -528,9 +477,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         devserver = dev_server.ImageServer.resolve(image_name, self.hostname)
         devserver.stage_artifacts(image_name, [artifact])
         if artifact == 'test_image':
-            return image_name, devserver.get_test_image_url(image_name)
+            return devserver.get_test_image_url(image_name)
         elif artifact == 'recovery_image':
-            return image_name, devserver.get_recovery_image_url(image_name)
+            return devserver.get_recovery_image_url(image_name)
         else:
             raise error.AutoservError("Bad artifact!")
 
@@ -584,11 +533,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param rw_only: True to only clear fwrw_version; otherewise, clear
                         both fwro_version and fwrw_version.
         """
-        info = self.host_info_store.get()
-        info.clear_version_labels(provision.FW_RW_VERSION_PREFIX)
+        labels = self._AFE.get_labels(
+                name__startswith=provision.FW_RW_VERSION_PREFIX,
+                host__hostname=self.hostname)
         if not rw_only:
-            info.clear_version_labels(provision.FW_RO_VERSION_PREFIX)
-        self.host_info_store.commit(info)
+            labels = labels + self._AFE.get_labels(
+                    name__startswith=provision.FW_RO_VERSION_PREFIX,
+                    host__hostname=self.hostname)
+        for label in labels:
+            label.remove_hosts(hosts=[self.hostname])
 
 
     def _add_fw_version_label(self, build, rw_only):
@@ -599,14 +552,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         fwro_version and fwrw_version.
 
         """
-        info = self.host_info_store.get()
-        info.set_version_label(provision.FW_RW_VERSION_PREFIX, build)
+        fw_label = provision.fwrw_version_to_label(build)
+        self._AFE.run('label_add_hosts', id=fw_label, hosts=[self.hostname])
         if not rw_only:
-            info.set_version_label(provision.FW_RO_VERSION_PREFIX, build)
-        self.host_info_store.commit(info)
+            fw_label = provision.fwro_version_to_label(build)
+            self._AFE.run('label_add_hosts', id=fw_label, hosts=[self.hostname])
 
 
-    def firmware_install(self, build=None, rw_only=False, dest=None):
+    def firmware_install(self, build=None, rw_only=False):
         """Install firmware to the DUT.
 
         Use stateful update if the DUT is already running the same build.
@@ -624,7 +577,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                       e.g. 'link-firmware/R22-2695.1.144'.
         @param rw_only: True to only install firmware to its RW portions. Keep
                         the RO portions unchanged.
-        @param dest: Directory to store the firmware in.
 
         TODO(dshi): After bug 381718 is fixed, update here with corresponding
                     exceptions that could be raised.
@@ -637,13 +589,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # Get the DUT board name from AFE.
         info = self.host_info_store.get()
         board = info.board
-        model = info.model
 
         if board is None or board == '':
             board = self.servo.get_board()
-
-        if model is None or model == '':
-            model = self.get_platform_from_fwid()
 
         # If build is not set, try to install firmware from stable CrOS.
         if not build:
@@ -657,22 +605,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         ds = dev_server.ImageServer.resolve(build, self.hostname)
         ds.stage_artifacts(build, ['firmware'])
 
-        tmpd = None
-        if not dest:
-            tmpd = autotemp.tempdir(unique_id='fwimage')
-            dest = tmpd.name
+        tmpd = autotemp.tempdir(unique_id='fwimage')
         try:
             fwurl = self._FW_IMAGE_URL_PATTERN % (ds.url(), build)
-            local_tarball = os.path.join(dest, os.path.basename(fwurl))
+            local_tarball = os.path.join(tmpd.name, os.path.basename(fwurl))
             ds.download_file(fwurl, local_tarball)
 
             self._clear_fw_version_labels(rw_only)
-            self.servo.program_firmware(board, model, local_tarball, rw_only)
+            self.servo.program_firmware(board, local_tarball, rw_only)
             if utils.host_is_in_lab_zone(self.hostname):
                 self._add_fw_version_label(build, rw_only)
         finally:
-            if tmpd:
-                tmpd.clean()
+            tmpd.clean()
 
 
     def servo_install(self, image_url=None, usb_boot_timeout=USB_BOOT_TIMEOUT,
@@ -717,8 +661,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/install_duration'):
             logging.info('Installing image through chromeos-install.')
-            self.run('chromeos-install --yes',timeout=install_timeout)
-
+            self.run('chromeos-install --yes', timeout=install_timeout)
             self.halt()
 
         logging.info('Power cycling DUT through servo.')
@@ -790,10 +733,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def close(self):
         """Close connection."""
         super(CrosHost, self).close()
-
-        for chameleon_host in self._chameleon_host_list:
-            if chameleon_host:
-                chameleon_host.close()
+        if self._chameleon_host:
+            self._chameleon_host.close()
 
         if self._servo_host:
             self._servo_host.close()
@@ -995,8 +936,42 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @raise error.AutoservError: If any mismatch between cros-version label
                                     and the build installed in dut is found.
         """
-        # crbug.com/1007333: This check is being removed.
-        return True
+        labels = self._AFE.get_labels(
+                name__startswith=ds_constants.VERSION_PREFIX,
+                host__hostname=self.hostname)
+        mismatch_found = False
+        if labels:
+            # Ask the DUT for its canonical image name.  This will be in
+            # a form like this:  kevin-release/R66-10405.0.0
+            release_builder_path = self.get_release_builder_path()
+            host_list = [self.hostname]
+            for label in labels:
+                # Remove any cros-version label that does not match
+                # the DUT's installed image.
+                #
+                # TODO(jrbarnette):  We make exceptions for certain
+                # known cases where the version label will not match the
+                # original CHROMEOS_RELEASE_BUILDER_PATH setting:
+                #  * Tests for the `arc-presubmit` pool append
+                #    "-cheetsth" to the label.
+                #  * Moblab use cases based on `cros stage` store images
+                #    under a name with the string "-custom" embedded.
+                #    It's not reliable to match such an image name to the
+                #    label.
+                label_version = label.name[len(ds_constants.VERSION_PREFIX):]
+                if '-custom' in label_version:
+                    continue
+                if label_version.endswith('-cheetsth'):
+                    label_version = label_version[:-len('-cheetsth')]
+                if label_version != release_builder_path:
+                    logging.warn(
+                        'cros-version label "%s" does not match '
+                        'release_builder_path %s. Removing the label.',
+                        label.name, release_builder_path)
+                    label.remove_hosts(hosts=host_list)
+                    mismatch_found = True
+        if mismatch_found:
+            raise error.AutoservError('The host has wrong cros-version label.')
 
 
     def cleanup_services(self):
@@ -1501,22 +1476,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def _set_power(self, state, power_method):
-        """Sets the power to the host via RPM, CCD, Servo or manual.
+        """Sets the power to the host via RPM, Servo or manual.
 
         @param state Specifies which power state to set to DUT
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" or "CCD" will be used based
-                            on servo type. Valid values from
-                            POWER_CONTROL_VALID_ARGS, or None to use default.
+                            use. By default "RPM" will be used. Valid values
+                            are the strings "RPM", "manual", "servoj10".
 
         """
         ACCEPTABLE_STATES = ['ON', 'OFF']
 
-        if not power_method:
-            power_method = self.get_default_power_method()
-
-        state = state.upper()
-        if state not in ACCEPTABLE_STATES:
+        if state.upper() not in ACCEPTABLE_STATES:
             raise error.TestError('State must be one of: %s.'
                                    % (ACCEPTABLE_STATES,))
 
@@ -1528,65 +1498,45 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.info('You have %d seconds to set the AC power to %s.',
                          self._POWER_CYCLE_TIMEOUT, state)
             time.sleep(self._POWER_CYCLE_TIMEOUT)
-        elif power_method == self.POWER_CONTROL_CCD:
-            servo_role = 'src' if state == 'ON' else 'snk'
-            logging.info('servo ccd power pass through detected,'
-                         ' changing servo_role to %s.', servo_role)
-            self.servo.set_servo_v4_role(servo_role)
-            if not self.ping_wait_up(timeout=self._CHANGE_SERVO_ROLE_TIMEOUT):
-                # Make sure we don't leave DUT with no power(servo_role=snk)
-                # when DUT is not pingable, as we raise a exception here
-                # that may break a power cycle in the middle.
-                self.servo.set_servo_v4_role('src')
-                raise error.AutoservError(
-                    'DUT failed to regain network connection after %d seconds.'
-                    % self._CHANGE_SERVO_ROLE_TIMEOUT)
         else:
             if not self.has_power():
                 raise error.TestFail('DUT does not have RPM connected.')
             self._add_rpm_changed_tag()
-            rpm_client.set_power(self, state, timeout_mins=5)
+            rpm_client.set_power(self, state.upper(), timeout_mins=5)
 
 
-    def power_off(self, power_method=None):
-        """Turn off power to this host via RPM, CCD, Servo or manual.
+    def power_off(self, power_method=POWER_CONTROL_RPM):
+        """Turn off power to this host via RPM, Servo or manual.
 
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" or "CCD" will be used based
-                            on servo type. Valid values from
-                            POWER_CONTROL_VALID_ARGS, or None to use default.
+                            use. By default "RPM" will be used. Valid values
+                            are the strings "RPM", "manual", "servoj10".
 
         """
         self._set_power('OFF', power_method)
 
 
-    def power_on(self, power_method=None):
-        """Turn on power to this host via RPM, CCD, Servo or manual.
+    def power_on(self, power_method=POWER_CONTROL_RPM):
+        """Turn on power to this host via RPM, Servo or manual.
 
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" or "CCD" will be used based
-                            on servo type. Valid values from
-                            POWER_CONTROL_VALID_ARGS, or None to use default.
+                            use. By default "RPM" will be used. Valid values
+                            are the strings "RPM", "manual", "servoj10".
 
         """
         self._set_power('ON', power_method)
 
 
-    def power_cycle(self, power_method=None):
+    def power_cycle(self, power_method=POWER_CONTROL_RPM):
         """Cycle power to this host by turning it OFF, then ON.
 
         @param power_method Specifies which method of power control to
-                            use. By default "RPM" or "CCD" will be used based
-                            on servo type. Valid values from
-                            POWER_CONTROL_VALID_ARGS, or None to use default.
+                            use. By default "RPM" will be used. Valid values
+                            are the strings "RPM", "manual", "servoj10".
 
         """
-        if not power_method:
-            power_method = self.get_default_power_method()
-
         if power_method in (self.POWER_CONTROL_SERVO,
-                            self.POWER_CONTROL_MANUAL,
-                            self.POWER_CONTROL_CCD):
+                            self.POWER_CONTROL_MANUAL):
             self.power_off(power_method=power_method)
             time.sleep(self._POWER_CYCLE_TIMEOUT)
             self.power_on(power_method=power_method)
@@ -1594,21 +1544,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self._add_rpm_changed_tag()
             rpm_client.set_power(self, 'CYCLE')
 
-
-    def get_platform_from_fwid(self):
-        """Determine the platform from the crossystem fwid.
-
-        @returns a string representing this host's platform.
-        """
-        # Look at the firmware for non-unibuild cases or if mosys fails.
-        crossystem = utils.Crossystem(self)
-        crossystem.init()
-        # Extract fwid value and use the leading part as the platform id.
-        # fwid generally follow the format of {platform}.{firmware version}
-        # Example: Alex.X.YYY.Z or Google_Alex.X.YYY.Z
-        platform = crossystem.fwid().split('.')[0].lower()
-        # Newer platforms start with 'Google_' while the older ones do not.
-        return platform.replace('google_', '')
 
     def get_platform(self):
         """Determine the correct platform label for this host.
@@ -1624,7 +1559,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             result = self.run(command=cmd, ignore_status=True)
             if result.exit_status == 0:
                 platform = result.stdout.strip()
-        return platform if platform else self.get_platform_from_fwid()
+
+        if not platform:
+            # Look at the firmware for non-unibuild cases or if mosys fails.
+            crossystem = utils.Crossystem(self)
+            crossystem.init()
+            # Extract fwid value and use the leading part as the platform id.
+            # fwid generally follow the format of {platform}.{firmware version}
+            # Example: Alex.X.YYY.Z or Google_Alex.X.YYY.Z
+            platform = crossystem.fwid().split('.')[0].lower()
+            # Newer platforms start with 'Google_' while the older ones do not.
+            platform = platform.replace('google_', '')
+        return platform
 
 
     def get_architecture(self):
@@ -2027,22 +1973,3 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def get_labels(self):
         """Return the detected labels on the host."""
         return self.labels.get_labels(self)
-
-
-    def get_default_power_method(self):
-        """
-        Get the default power method for power_on/off/cycle() methods.
-        @return POWER_CONTROL_RPM or POWER_CONTROL_CCD
-        """
-        if not self._default_power_method:
-            self._default_power_method = self.POWER_CONTROL_RPM
-            info = self.host_info_store.get()
-            if info.attributes.get('servo_type') == self.CCD_SERVO:
-                if self.servo:
-                    self._default_power_method = self.POWER_CONTROL_CCD
-                else:
-                    logging.warn('CCD servo detected but failed to apply CCD'
-                                 ' servo RPM method due to servo instance'
-                                 ' was not initialized, fall back to normal'
-                                 ' RPM method.')
-        return self._default_power_method

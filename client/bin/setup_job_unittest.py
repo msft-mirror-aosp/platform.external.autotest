@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 #pylint: disable-msg=C0111
 import logging
 import os

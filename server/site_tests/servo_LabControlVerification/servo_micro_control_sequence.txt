@@ -1,2 +1,0 @@
-pwr_button:press
-pwr_button:release

@@ -30,8 +30,8 @@ class provision_FirmwareUpdate(test.test):
             logging.warning('Failed to get build label from the DUT, skip '
                             'staging ChromeOS image on the servo USB stick.')
         else:
-            _, update_url = host.stage_image_for_servo(info.build)
-            host.servo.image_to_servo_usb(update_url)
+            host.servo.image_to_servo_usb(
+                    host.stage_image_for_servo(info.build))
             logging.debug('ChromeOS image %s is staged on the USB stick.',
                           info.build)
 
@@ -55,8 +55,7 @@ class provision_FirmwareUpdate(test.test):
         else:
             return None
 
-    def run_once(self, host, value, rw_only=False, stage_image_to_usb=False,
-                flash_device=None):
+    def run_once(self, host, value, rw_only=False, stage_image_to_usb=False):
         """The method called by the control file to start the test.
 
         @param host:  a CrosHost object of the machine to update.
@@ -66,12 +65,7 @@ class provision_FirmwareUpdate(test.test):
         @param rw_only: True to only update the RW firmware.
         @param stage_image_to_usb: True to stage the current ChromeOS image on
                 the USB stick connected to the servo. Default is False.
-        @param flash_device: Servo V4 Flash Device name.
-                             Use this to choose one other than the default
-                             device when  servod has run in dual V4 device mode.
-                             e.g. flash_device='ccd_cr50'
         """
-        orig_act_dev = None
         try:
             host.repair_servo()
 
@@ -79,18 +73,10 @@ class provision_FirmwareUpdate(test.test):
             if stage_image_to_usb:
                 self.stage_image_to_usb(host)
 
-            if flash_device == 'ccd_cr50':
-                orig_act_dev = host.servo.get('active_v4_device').strip()
-                host.servo.set('active_v4_device', 'ccd_cr50')
-
-            host.firmware_install(build=value, rw_only=rw_only,
-                                  dest=self.resultsdir)
+            host.firmware_install(build=value, rw_only=rw_only)
         except Exception as e:
             logging.error(e)
             raise error.TestFail, str(e), sys.exc_info()[2]
-        finally:
-            if orig_act_dev != None:
-                host.servo.set_nocheck('active_v4_device', orig_act_dev)
 
         # DUT reboots after the above firmware_install(). Wait it to boot.
         host.test_wait_for_boot()

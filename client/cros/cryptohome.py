@@ -758,7 +758,7 @@ class CryptohomeProxy(DBusClient):
 
 
     def remove(self, user, async=True):
-        """Removes a users cryptohome.
+        """Removes a users crypothome.
 
         Returns True if the operation succeeds or False otherwise.
         """

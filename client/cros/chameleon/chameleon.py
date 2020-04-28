@@ -342,12 +342,14 @@ class ChameleonBoard(object):
         return self._chameleond_proxy.bluetooth_mouse
 
 
-    def get_bluetooth_hid_keyboard(self):
-        """Gets the emulated Bluetooth (BR/EDR) HID keyboard on Chameleon.
+    def get_bluetooth_hog_mouse(self):
+        """Gets the emulated Bluetooth Low Energy HID mouse on Chameleon.
 
-        @return: A BluetoothHIDKeyboardFlow object.
+        Note that this uses HID over GATT, or HOG.
+
+        @return: A BluetoothHOGMouseFlow object.
         """
-        return self._chameleond_proxy.bluetooth_keyboard
+        return self._chameleond_proxy.bluetooth_hog_mouse
 
 
     def get_bluetooth_ref_controller(self):
@@ -403,13 +405,6 @@ class ChameleonBoard(object):
         @return: A BluetoothHIDFlow object.
         """
         return self._chameleond_proxy.ble_mouse
-
-    def get_ble_keyboard(self):
-        """Gets the BLE keyboard on chameleon host.
-
-        @return: A BluetoothHIDFlow object.
-        """
-        return self._chameleond_proxy.ble_keyboard
 
 
 class ChameleonPort(object):
@@ -564,18 +559,18 @@ class ChameleonVideoInput(ChameleonPort):
           self.chameleond_proxy.ApplyEdid(self.port_id, edid_id)
           self.chameleond_proxy.DestroyEdid(edid_id)
 
-    def set_edid_from_file(self, filename, check_video_input=True):
+
+    def set_edid_from_file(self, filename):
         """Sets EDID from a file.
 
         The method is similar to set_edid but reads EDID from a file.
 
         @param filename: path to EDID file.
-        @param check_video_input: False to disable wait_video_input_stable.
         """
-        self.set_edid(edid_lib.Edid.from_file(filename),
-                      check_video_input=check_video_input)
+        self.set_edid(edid_lib.Edid.from_file(filename))
 
-    def set_edid(self, edid, check_video_input=True):
+
+    def set_edid(self, edid):
         """The complete flow of setting EDID.
 
         Unplugs the port if needed, sets EDID, plugs back if it was plugged.
@@ -583,7 +578,6 @@ class ChameleonVideoInput(ChameleonPort):
         call.
 
         @param edid: An Edid object.
-        @param check_video_input: False to disable wait_video_input_stable.
         """
         plugged = self.plugged
         if plugged:
@@ -597,8 +591,8 @@ class ChameleonVideoInput(ChameleonPort):
         if plugged:
             time.sleep(self._DURATION_UNPLUG_FOR_EDID)
             self.plug()
-            if check_video_input:
-                self.wait_video_input_stable(self._TIMEOUT_VIDEO_STABLE_PROBE)
+            self.wait_video_input_stable(self._TIMEOUT_VIDEO_STABLE_PROBE)
+
 
     def restore_edid(self):
         """Restores original EDID stored when set_edid was called."""
@@ -610,7 +604,7 @@ class ChameleonVideoInput(ChameleonPort):
 
 
     @contextmanager
-    def use_edid(self, edid, check_video_input=True):
+    def use_edid(self, edid):
         """Uses the given EDID in a with statement.
 
         It sets the EDID up in the beginning and restores to the original
@@ -621,10 +615,9 @@ class ChameleonVideoInput(ChameleonPort):
                 do_some_test_on(chameleon_port)
 
         @param edid: An EDID object.
-        @param check_video_input: False to disable wait_video_input_stable.
         """
         # Set the EDID up in the beginning.
-        self.set_edid(edid, check_video_input=check_video_input)
+        self.set_edid(edid)
 
         try:
             # Yeild to execute the with statement.
@@ -633,7 +626,8 @@ class ChameleonVideoInput(ChameleonPort):
             # Restore the original EDID in the end.
             self.restore_edid()
 
-    def use_edid_file(self, filename, check_video_input=True):
+
+    def use_edid_file(self, filename):
         """Uses the given EDID file in a with statement.
 
         It sets the EDID up in the beginning and restores to the original
@@ -644,10 +638,9 @@ class ChameleonVideoInput(ChameleonPort):
                 do_some_test_on(chameleon_port)
 
         @param filename: A path to the EDID file.
-        @param check_video_input: False to disable wait_video_input_stable.
         """
-        return self.use_edid(edid_lib.Edid.from_file(filename),
-                             check_video_input=check_video_input)
+        return self.use_edid(edid_lib.Edid.from_file(filename))
+
 
     def fire_hpd_pulse(self, deassert_interval_usec, assert_interval_usec=None,
                        repeat_count=1, end_level=1):

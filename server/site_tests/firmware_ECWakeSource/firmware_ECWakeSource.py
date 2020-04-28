@@ -35,7 +35,6 @@ class firmware_ECWakeSource(FirmwareTest):
     def hibernate_and_wake_by_power_button(self):
         """Shutdown to G3/S5, hibernate EC, and then wake by power button."""
         self.run_shutdown_cmd()
-        self.switcher.wait_for_client_offline()
         self.ec.send_command('hibernate 1000')
         time.sleep(self.WAKE_DELAY)
         # If the DUT enters hibernate mode successfully, EC console shouldn't

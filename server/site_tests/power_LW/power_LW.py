@@ -53,6 +53,8 @@ class power_LW(test.test):
 
     def _stop_ethernet(self, host):
         """Find and unbind servo v4 usb ethernet."""
+        # Stop check_ethernet.hook to reconnect the usb device
+        host.run('stop recover_duts')
         eth_usb = host.find_usb_devices(
             self.SERVO_V4_ETH_VENDOR, self.SERVO_V4_ETH_PRODUCT)
         if len(eth_usb) == 1 and eth_usb[0] and host.get_wlan_ip():

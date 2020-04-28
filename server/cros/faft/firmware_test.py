@@ -1140,6 +1140,7 @@ class FirmwareTest(FAFTBase):
                 logging.warn("Ignoring error from ssh: %s", e)
             else:
                 raise
+        self.switcher.wait_for_client_offline()
 
     def suspend(self):
         """Suspends the DUT."""

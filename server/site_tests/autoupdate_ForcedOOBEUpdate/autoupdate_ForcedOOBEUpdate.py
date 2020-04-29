@@ -46,10 +46,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                     status = self._get_update_engine_status(
                         timeout=10, ignore_timeout=False)
                     if status is not None:
-                        if (status[self._CURRENT_OP] ==
-                            self._UPDATE_STATUS_REPORTING_ERROR_EVENT):
+                        if self._is_update_engine_reporting_error(status):
                             err_str = self._get_last_error_string()
-                            raise error.TestFail('Update status reported error'
+                            raise error.TestFail('Update status reported error '
                                                  'during OOBE update: %s' %
                                                  err_str)
                 except error.AutoservRunError as e:

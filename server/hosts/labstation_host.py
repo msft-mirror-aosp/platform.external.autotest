@@ -24,7 +24,7 @@ class LabstationHost(base_servohost.BaseServoHost):
     """Labstation specific host class"""
 
     # Threshold we decide to ignore a in_use file lock. In minutes
-    IN_USE_FILE_EXPIRE_MINS = 120
+    IN_USE_FILE_EXPIRE_MINS = 90
 
     # Uptime threshold to perform a labstation reboot, this is to prevent a
     # broken DUT keep trying to reboot a labstation. In hours

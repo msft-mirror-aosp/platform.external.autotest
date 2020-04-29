@@ -325,71 +325,6 @@ class AudioLoopbackDongleLabel(base_label.BaseLabel):
         return task_name in (REPAIR_TASK_NAME, '')
 
 
-class ServoLabel(base_label.BaseLabel):
-    # class will be removed as part of decommission the old servo label
-    # "not_connected" and "wrong_config" will be part of ServoHost
-    """
-    Label servo is applying if a servo is present.
-    Label servo_state present always.
-    """
-
-    _NAME_OLD = 'servo'
-    _NAME = servo_constants.SERVO_STATE_LABEL_PREFIX
-
-    def get(self, host):
-        state = self._get_state(host)
-        servo_state = self._NAME + ':' + state
-        if state == servo_constants.SERVO_STATE_NOT_CONNECTED:
-            return [servo_state]
-        return [self._NAME_OLD, servo_state]
-
-    def get_all_labels(self):
-        return set([self._NAME]), set([self._NAME_OLD])
-
-    def exists(self, host):
-        pass
-
-    def _get_state(self, host):
-        # Based on crbug.com/995900, Servo sometimes flips.
-        # Ensure that labels has servo or servo_state label
-        # forever, after it returns state *once*.
-        state = self._cached_servo_state_status(host)
-        if state:
-            # If status exist we do not need to run anything
-            return state
-
-        # by last changes this point should not reached now
-        # only till not all DUTs have servo_state label
-        servo_label = self._cached_servo_label(host)
-        if servo_label:
-            return servo_constants.SERVO_STATE_WORKING
-        return servo_constants.SERVO_STATE_NOT_CONNECTED
-
-    def _cached_servo_state_status(self, host):
-        """Get the state of Servo in the data store"""
-        info = host.host_info_store.get()
-        # First try to find targeted label
-        for label in info.labels:
-            if  label.startswith(self._NAME):
-                suffix_length = len(self._NAME) + 1
-                return label[suffix_length:]
-        return ''
-
-    def _cached_servo_label(self, host):
-        """Get the state of Servo in the data store"""
-        info = host.host_info_store.get()
-        # First try to find targeted label
-        for label in info.labels:
-            if label is not None and label.strip() == self._NAME_OLD:
-                return True
-        return False
-
-    def update_for_task(self, task_name):
-        # This label is stored in the state config, so only repair tasks update
-        # it or when no task name is mentioned.
-        return task_name in (REPAIR_TASK_NAME, '')
-
-
 class ServoTypeLabel(base_label.StringPrefixLabel):
     _NAME = servo_constants.SERVO_TYPE_LABEL_PREFIX
 
@@ -574,7 +509,6 @@ CROS_LABELS = [
     common_label.OSLabel(),
     DeviceSkuLabel(), #LABCONFIG
     HWIDLabel(),
-    ServoLabel(), #STATECONFIG
     ServoTypeLabel(), #LABCONFIG
     # Temporarily add back as there's no way to reference cr50 configs.
     # See crbug.com/1057145 for the root cause.

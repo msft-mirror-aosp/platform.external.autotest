@@ -7,8 +7,13 @@
     "spi_voltage": "pp3300",
     "chrome_ec": true,
     "ec_capability": [
+        "cbi",
+        "usb",
         "x86"
     ],
     "delay_reboot_to_ping": 40,
+    "custom_usb_enable_names": [
+        "EN_PP5000_USB_VBUS"
+    ],
     "smm_store": false
 }

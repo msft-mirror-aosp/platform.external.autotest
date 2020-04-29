@@ -31,8 +31,8 @@ class UpdateEngineUtil(object):
 
     # Update engine statuses.
     _UPDATE_STATUS_IDLE = 'UPDATE_STATUS_IDLE'
-    _UPDATE_ENGINE_DOWNLOADING = 'UPDATE_STATUS_DOWNLOADING'
-    _UPDATE_ENGINE_FINALIZING = 'UPDATE_STATUS_FINALIZING'
+    _UPDATE_STATUS_DOWNLOADING = 'UPDATE_STATUS_DOWNLOADING'
+    _UPDATE_STATUS_FINALIZING = 'UPDATE_STATUS_FINALIZING'
     _UPDATE_STATUS_UPDATED_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
     _UPDATE_STATUS_REPORTING_ERROR_EVENT = 'UPDATE_STATUS_REPORTING_ERROR_EVENT'
 
@@ -90,7 +90,7 @@ class UpdateEngineUtil(object):
         if status is None:
             return False
         return any(arg == status[self._CURRENT_OP] for arg in
-            [self._UPDATE_ENGINE_DOWNLOADING, self._UPDATE_ENGINE_FINALIZING])
+            [self._UPDATE_STATUS_DOWNLOADING, self._UPDATE_STATUS_FINALIZING])
 
 
     def _has_progress_stopped(self):
@@ -109,24 +109,21 @@ class UpdateEngineUtil(object):
             status = self._get_update_engine_status()
             if not status:
                 continue
-            if self._UPDATE_STATUS_IDLE == status[self._CURRENT_OP]:
+            if self._is_update_engine_idle(status):
                 err_str = self._get_last_error_string()
                 raise error.TestFail('Update status was idle while trying to '
                                      'get download status. Last error: %s' %
                                      err_str)
-            if self._UPDATE_STATUS_REPORTING_ERROR_EVENT == status[
-                self._CURRENT_OP]:
+            if self._is_update_engine_reporting_error(status):
                 err_str = self._get_last_error_string()
                 raise error.TestFail('Update status reported error: %s' %
                                      err_str)
             # When the update has moved to the final stages, update engine
             # displays progress as 0.0  but for our needs we will return 1.0
-            if status[self._CURRENT_OP] in [
-                self._UPDATE_STATUS_UPDATED_NEED_REBOOT,
-                self._UPDATE_ENGINE_FINALIZING]:
+            if self._is_update_finished_downloading(status):
                 return 1.0
             # If we call this right after reboot it may not be downloading yet.
-            if self._UPDATE_ENGINE_DOWNLOADING != status[self._CURRENT_OP]:
+            if status[self._CURRENT_OP] != self._UPDATE_STATUS_DOWNLOADING:
                 time.sleep(1)
                 continue
             return float(status[self._PROGRESS])
@@ -158,18 +155,17 @@ class UpdateEngineUtil(object):
         """
         statuses = [self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
         if finalizing_ok:
-            statuses.append(self._UPDATE_ENGINE_FINALIZING)
+            statuses.append(self._UPDATE_STATUS_FINALIZING)
         while True:
             status = self._get_update_engine_status()
 
             # During reboot, status will be None
             if status is not None:
-                if self._UPDATE_STATUS_REPORTING_ERROR_EVENT == status[
-                    self._CURRENT_OP]:
+                if self._is_update_engine_reporting_error(status):
                     err_str = self._get_last_error_string()
                     raise error.TestFail('Update status reported error: %s' %
                                          err_str)
-                if status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE:
+                if self._is_update_engine_idle(status):
                     err_str = self._get_last_error_string()
                     raise error.TestFail('Update status was unexpectedly '
                                          'IDLE when we were waiting for the '
@@ -241,17 +237,46 @@ class UpdateEngineUtil(object):
         raise error.TestFail(err_str if err_str else error_str)
 
 
-    def _is_update_finished_downloading(self):
-        """Checks if the update has moved to the final stages."""
-        s = self._get_update_engine_status()
-        return s[self._CURRENT_OP] in [self._UPDATE_ENGINE_FINALIZING,
-                                       self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
+    def _is_update_finished_downloading(self, status=None):
+        """
+        Checks if the update has moved to the final stages.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
+        return status[self._CURRENT_OP] in [
+            self._UPDATE_STATUS_FINALIZING,
+            self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
 
 
-    def _is_update_engine_idle(self):
-        """Checks if the update engine is idle."""
-        status = self._get_update_engine_status()
+    def _is_update_engine_idle(self, status=None):
+        """
+        Checks if the update engine is idle.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
         return status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE
+
+
+    def _is_update_engine_reporting_error(self, status=None):
+        """
+        Checks if the update engine status reported an error.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
+        return (status[self._CURRENT_OP] ==
+                self._UPDATE_STATUS_REPORTING_ERROR_EVENT)
 
 
     def _update_continued_where_it_left_off(self, progress):

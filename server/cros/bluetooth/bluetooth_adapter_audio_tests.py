@@ -27,17 +27,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     }
     WAIT_DAEMONS_READY_SECS = 1
 
-    def _get_pulseaudio_bluez_source(self, get_source_method, device):
+    def _get_pulseaudio_bluez_source(self, get_source_method, device,
+                                     test_profile):
         """Get the specified bluez device number in the pulseaudio source list.
 
         @param get_source_method: the method to get distinct bluez source
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified bluez source is derived
         """
-        sources = device.ListSources()
+        sources = device.ListSources(test_profile)
         logging.debug('ListSources()\n%s', sources)
-        self.bluez_source = get_source_method()
+        self.bluez_source = get_source_method(test_profile)
         result = bool(self.bluez_source)
         if result:
             logging.debug('bluez_source device number: %s', self.bluez_source)
@@ -46,17 +48,18 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return result
 
 
-    def _get_pulseaudio_bluez_sink(self, get_sink_method, device):
+    def _get_pulseaudio_bluez_sink(self, get_sink_method, device, test_profile):
         """Get the specified bluez device number in the pulseaudio sink list.
 
         @param get_sink_method: the method to get distinct bluez sink
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified bluez sink is derived
         """
-        sinks = device.ListSinks()
+        sinks = device.ListSinks(test_profile)
         logging.debug('ListSinks()\n%s', sinks)
-        self.bluez_sink = get_sink_method()
+        self.bluez_sink = get_sink_method(test_profile)
         result = bool(self.bluez_sink)
         if result:
             logging.debug('bluez_sink device number: %s', self.bluez_sink)
@@ -65,37 +68,40 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return result
 
 
-    def _get_pulseaudio_bluez_source_a2dp(self, device):
+    def _get_pulseaudio_bluez_source_a2dp(self, device, test_profile):
         """Get the a2dp bluez source device number.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified a2dp bluez source is derived
         """
         return self._get_pulseaudio_bluez_source(
-                device.GetBluezSourceA2DPDevice, device)
+                device.GetBluezSourceA2DPDevice, device, test_profile)
 
 
-    def _get_pulseaudio_bluez_source_hfp(self, device):
+    def _get_pulseaudio_bluez_source_hfp(self, device, test_profile):
         """Get the hfp bluez source device number.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified hfp bluez source is derived
         """
         return self._get_pulseaudio_bluez_source(
-                device.GetBluezSourceHFPDevice, device)
+                device.GetBluezSourceHFPDevice, device, test_profile)
 
 
-    def _get_pulseaudio_bluez_sink_hfp(self, device):
+    def _get_pulseaudio_bluez_sink_hfp(self, device, test_profile):
         """Get the hfp bluez sink device number.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified hfp bluez sink is derived
         """
         return self._get_pulseaudio_bluez_sink(
-                device.GetBluezSinkHFPDevice, device)
+                device.GetBluezSinkHFPDevice, device, test_profile)
 
 
     def _check_audio_frames_legitimacy(self, audio_test_data, recording_device):
@@ -199,7 +205,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         """
-        if not device.StartPulseaudio():
+        if not device.StartPulseaudio(test_profile):
             raise error.TestError('Failed to start pulseaudio.')
         logging.debug('pulseaudio is started.')
 
@@ -277,16 +283,16 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         a2dp_test_data = audio_test_data[A2DP]
 
-        # Wait for pulseaudio bluez hfp source
+        # Wait for pulseaudio a2dp bluez source
         desc='waiting for pulseaudio a2dp bluez source'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_a2dp(device),
+                lambda: self._get_pulseaudio_bluez_source_a2dp(device, A2DP),
                 desc=desc)
 
         # Start recording audio on the peer Bluetooth audio device.
         logging.debug('Start recording a2dp')
-        if not device.StartRecordingAudioSubprocess('a2dp'):
+        if not device.StartRecordingAudioSubprocess(A2DP):
             raise error.TestError(
                     'Failed to record on the peer Bluetooth audio device.')
 
@@ -347,7 +353,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         desc='waiting for pulseaudio bluez hfp source'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_hfp(device),
+                lambda: self._get_pulseaudio_bluez_source_hfp(device,
+                                                              test_profile),
                 desc=desc)
 
         logging.debug('Start recording audio on Pi')
@@ -428,7 +435,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         desc='waiting for pulseaudio bluez hfp sink'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_sink_hfp(device), desc=desc)
+                lambda: self._get_pulseaudio_bluez_sink_hfp(device,
+                                                            test_profile),
+                desc=desc)
 
         # Select audio input device.
         logging.debug('Select input device')

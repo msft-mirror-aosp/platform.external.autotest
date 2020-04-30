@@ -119,6 +119,11 @@ class BluetoothAdapterPairingTests(
         if device.can_init_connection:
             # Verify that the device could initiate the connection.
             self.test_connection_by_device(device)
+
+            # With raspberry pi peer, it takes a moment before the device is
+            # registered as an input device. Without delay, the input recorder
+            # doesn't find the device
+            time.sleep(1)
             check_connected_method(device)
         else:
             # Reconnect so that we can test disconnection from the kit
@@ -219,6 +224,11 @@ class BluetoothAdapterPairingTests(
 
             # Verify that the device is reconnecting
             self.test_device_is_connected(device.address)
+
+            # With raspberry pi peer, it takes a moment before the device is
+            # registered as an input device. Without delay, the input recorder
+            # doesn't find the device
+            time.sleep(1)
             check_connected_method(device)
             end_time = time.time()
             time_diff = end_time - start_time

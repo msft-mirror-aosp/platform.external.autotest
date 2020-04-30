@@ -1616,9 +1616,16 @@ class BluetoothAdapterTests(test.test):
             return (self.bluetooth_facade.get_connection_info(device_address)
                     is not None)
 
+        def _verify_connected():
+            """Verify the device is connected.
+
+            @returns: True if the device is connected, False otherwise.
+            """
+            return self.bluetooth_facade.device_is_connected(device_address)
 
         has_device = False
         paired = False
+        connected = False
         connection_info_retrievable = False
         if self.bluetooth_facade.has_device(device_address):
             has_device = True
@@ -1635,10 +1642,12 @@ class BluetoothAdapterTests(test.test):
                 logging.error('test_pairing: unexpected error')
 
             connection_info_retrievable = _verify_connection_info()
+            connected = _verify_connected()
 
         self.results = {
                 'has_device': has_device,
                 'paired': paired,
+                'connected': connected,
                 'connection_info_retrievable': connection_info_retrievable}
         return all(self.results.values())
 

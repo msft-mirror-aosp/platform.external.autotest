@@ -70,8 +70,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(device.address)
 
         # With raspberry pi peer, it takes a moment before the device is
         # registered as an input device. Without delay, the input recorder
@@ -93,8 +91,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(device.address)
 
         # With raspberry pi peer, it takes a moment before the device is
         # registered as an input device. Without delay, the input recorder
@@ -123,8 +119,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(device.address)
         self.test_service_resolved(device.address)
         self.test_gatt_browse(device.address)
 

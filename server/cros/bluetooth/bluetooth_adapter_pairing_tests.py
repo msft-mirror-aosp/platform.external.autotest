@@ -58,19 +58,14 @@ class BluetoothAdapterPairingTests(
 
         # Verify that the adapter could pair with the device.
         # Also set the device trusted when pairing is done.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+        # Device will be connected at the end of pairing.
         self.test_pairing(device.address, device.pin, trusted=True)
-
-        # Verify that the adapter could connect to the device.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(device.address)
 
         # Test if the discovered device name is correct.
         # Sometimes, it takes quite a long time after discovering
         # the device (more than 60 seconds) to resolve the device name.
         # Hence, it is safer to test the device name after pairing and
         # connection is done.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_device_name(device.address, device.name)
 
         # Test if the device is still connected after suspend/resume.

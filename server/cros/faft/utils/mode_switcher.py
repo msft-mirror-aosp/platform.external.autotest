@@ -457,6 +457,41 @@ class _BaseModeSwitcher(object):
                        wait_for_dut_up=True):
         """Reboot and execute the mode switching sequence.
 
+        This method simulates what a user would do to switch between different
+        modes of ChromeOS.  Note that the modes are end-states where the OS is
+        booted up to the Welcome screen, so it takes care of navigating through
+        intermediate steps such as various boot confirmation screens.
+
+        From the user perspective, these are the states (note that there's also
+        a rec_force_mrc mode which is like rec mode but forces MRC retraining):
+
+        normal <-----> dev <------ rec
+          ^                         ^
+          |                         |
+          +-------------------------+
+
+        This is the implementation, note that "from_mode" is only used for
+        logging purposes.
+
+        Normal <-----> Dev:
+          _enable_dev_mode_and_reboot()
+
+        Rec,normal -----> Dev:
+          _disable_rec_mode_and_reboot()
+
+        Any -----> normal:
+          _enable_normal_mode_and_reboot()
+
+        Normal <-----> rec:
+          enable_rec_mode_and_reboot(usb_state='dut')
+
+        Normal <-----> rec_force_mrc:
+          _enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
+
+        Note that one shouldn't transition to dev again without going through the
+        normal mode.  This is because trying to disable os_verification when it's
+        already off is not supported by reboot_to_mode.
+
         @param to_mode: The target mode, one of 'normal', 'dev', or 'rec'.
         @param from_mode: The original mode, optional, one of 'normal, 'dev',
                           or 'rec'.

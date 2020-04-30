@@ -286,6 +286,9 @@ class bluetooth_AdapterSRSanity(
         suspend = self._suspend_async(
             suspend_time=LONG_SUSPEND, allow_early_resume=True)
 
+        # Clear wake before testing
+        self.test_adapter_set_wake_disabled()
+
         try:
             self.test_discover_and_pair(device)
             self.test_device_set_discoverable(device, False)

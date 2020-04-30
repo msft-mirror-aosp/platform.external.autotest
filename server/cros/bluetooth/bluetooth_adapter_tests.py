@@ -1082,6 +1082,14 @@ class BluetoothAdapterTests(test.test):
         self.results = { 'wake_enabled': wake_enabled }
         return any(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_adapter_set_wake_disabled(self):
+      """Disable wake and verify it was written.
+      """
+      success = self.bluetooth_facade.set_wake_enabled(False)
+      self.results = { 'disable_wake': success }
+      return all(self.results.values())
+
     @test_retry_and_log
     def test_power_on_adapter(self):
         """Test that the adapter could be powered on successfully."""

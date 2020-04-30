@@ -756,6 +756,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self._has_adapter and self._adapter is not None
 
+
     def is_wake_enabled(self):
         """Checks whether the bluetooth adapter has wake enabled.
 
@@ -765,7 +766,24 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @return True if 'power/wakeup' of an hci0 parent is 'enabled'
         """
-        return self._is_wake_enabled()
+        enabled = self._is_wake_enabled()
+        return enabled
+
+
+    def set_wake_enabled(self, value):
+        """Sets wake enabled to the value if path exists.
+
+        This will walk through all parents of the hci0 sysfs path and write the
+        value to the first one it finds.
+
+        Args:
+            value: Sets power/wakeup to "enabled" if value is true, else
+                   "disabled"
+
+        @return True if it wrote value to a power/wakeup, False otherwise
+        """
+        return self._set_wake_enabled(value)
+
 
     def _reset(self, set_power=False):
         """Remove remote devices and set adapter to set_power state.
@@ -968,29 +986,58 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     def _is_powered_on(self):
         return bool(self._get_adapter_properties().get(u'Powered'))
 
-    def _is_wake_enabled(self):
+    def _get_wake_enabled_path(self):
+        # Walk up the parents from hci0 sysfs path and find the first one with
+        # a power/wakeup property. Return that path (including power/wakeup).
+
         # Resolve hci path to get full device path (i.e. w/ usb or uart)
         search_at = os.path.realpath('/sys/class/bluetooth/hci0')
-        logging.debug("Start search for power/wakeup at {}".format(search_at))
 
         # Exit early if path doesn't exist
         if not os.path.exists(search_at):
-            return False
+            return None
 
         # Walk up parents and try to find one with 'power/wakeup'
         for _ in xrange(search_at.count('/') - 1):
             search_at = os.path.normpath(os.path.join(search_at, '..'))
             try:
-                with open(os.path.join(search_at, 'power', 'wakeup'), 'r') as f:
+                path = os.path.join(search_at, 'power', 'wakeup')
+                with open(path, 'r') as f:
+                    return path
+            except IOError:
+                # No power wakeup at the given location so keep going
+                continue
+
+        return None
+
+    def _is_wake_enabled(self):
+        search_at = self._get_wake_enabled_path()
+
+        if search_at is not None:
+            try:
+                with open(search_at, 'r') as f:
                     value = f.read()
                     logging.info('Power/wakeup found at {}: {}'.format(
                             search_at, value))
                     return 'enabled' in value
             except IOError:
-                # No power wakeup at the given location so keep going
-                continue
+                # Path was not readable
+                return False
 
-        # No power wakeup found in path so it's not wake enabled
+        logging.debug('No power/wakeup path found')
+        return False
+
+    def _set_wake_enabled(self, value):
+        path = self._get_wake_enabled_path()
+        if path is not None:
+            try:
+                with open(path, 'w') as f:
+                    f.write('enabled' if value else 'disabled')
+                    return True
+            except IOError:
+                # Path was not writeable
+                return False
+
         return False
 
     def read_version(self):

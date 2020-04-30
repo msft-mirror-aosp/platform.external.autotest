@@ -161,6 +161,15 @@ class BluetoothDevice(object):
         """@return True if adapter is wake enabled, False if not."""
         return self._proxy.is_wake_enabled()
 
+    def set_wake_enabled(self, value):
+        """ Sets the power/wakeup value for the adapter.
+
+        Args:
+            value: Whether the adapter can wake from suspend
+
+        @return True if able to set it to value, False if not."""
+        return self._proxy.set_wake_enabled(value)
+
     def set_powered(self, powered):
         """Set the adapter power state.
 

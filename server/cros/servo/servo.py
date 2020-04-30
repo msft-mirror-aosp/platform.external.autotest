@@ -1279,6 +1279,13 @@ class Servo(object):
 
         # Check if EC image was found and return path or raise error
         if ec_image:
+            # Extract subsidiary binaries for EC
+            # Find a monitor binary for NPCX_UUT chip type, if any.
+            mon_candidates = [candidate.replace('ec.bin', 'npcx_monitor.bin')
+                              for candidate in ec_image_candidates]
+            _extract_image_from_tarball(tarball_path, dest_dir, mon_candidates,
+                                        self.EXTRACT_TIMEOUT_SECS)
+
             return os.path.join(dest_dir, ec_image)
         else:
             raise error.TestError('Failed to extract EC image from %s',

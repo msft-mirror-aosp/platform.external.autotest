@@ -43,8 +43,7 @@ class autoupdate_OmahaResponse(update_engine_test.UpdateEngineTest):
         self._job_repo_url = job_repo_url
 
         # Reboot DUT if a previous test left update_engine not idle.
-        status = self._get_update_engine_status()
-        if self._UPDATE_STATUS_IDLE != status[self._CURRENT_OP]:
+        if not self._is_update_engine_idle():
             self._host.reboot()
 
         # Figure out the payload to use for the current build.

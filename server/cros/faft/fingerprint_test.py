@@ -217,7 +217,7 @@ class FingerprintTest(test.test):
                                  % ectool_output)
         return ret
 
-    def initialize(self, host, test_dir, use_dev_signed_fw=False,
+    def setup_test(self, host, test_dir, use_dev_signed_fw=False,
                    enable_hardware_write_protect=True,
                    enable_software_write_protect=True,
                    force_firmware_flashing=False, init_entropy=True):

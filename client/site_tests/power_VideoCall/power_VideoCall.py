@@ -60,10 +60,18 @@ class power_VideoCall(power_test.power_Test):
             logging.info('Navigating left window to %s', self.video_url)
             tab_left.Navigate(self.video_url)
             tab_left.WaitForDocumentReadyStateToBeComplete()
-            tab_left.EvaluateJavaScript('setPreset("%s")' % preset)
+
+            # We need to make sure that default camera preset was init properly
+            # before changing preset or else MediaRecorder won't get torn down
+            # properly. So capture the init time with the default preset and
+            # then switch to appropriate preset later.
             video_init_time = power_status.VideoFpsLogger.time_until_ready(
                               tab_left, num_video=5)
             self.keyvals['video_init_time'] = video_init_time
+            tab_left.EvaluateJavaScript('setPreset("%s")' % preset)
+
+            # Wait for camera to init for the new preset.
+            power_status.VideoFpsLogger.time_until_ready(tab_left, num_video=5)
 
             # Open Google Doc on right half
             logging.info('Navigating right window to %s', self.doc_url)

@@ -1596,12 +1596,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """Pairs a device with a given pin code.
 
         Registers a agent who handles pin code request and
-        pairs a device with known pin code.
-
-        Note that the adapter does not automatically connnect to the device
-        when pairing is done. The connect_device() method has to be invoked
-        explicitly to connect to the device. This provides finer control
-        for testing purpose.
+        pairs a device with known pin code. After pairing, this function will
+        automatically connect to the device as well (prevents timing issues
+        between pairing and connect and reduces overall test execution time).
 
         @param address: Address of the device to pair.
         @param pin: The pin code of the device to pair.
@@ -1625,6 +1622,19 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._setup_pairing_agent(pin)
         mainloop = gobject.MainLoop()
 
+        def connect_reply():
+            """Handler when connect succeeded."""
+            logging.info('Device connected: %s', device_path)
+            mainloop.quit()
+
+        def connect_error(error):
+            """Handler when connect failed.
+
+            @param error: one of the errors defined in org.bluez.Error
+            representing the error in connect.
+            """
+            logging.error('Connect device failed: %s', error)
+            mainloop.quit()
 
         def pair_reply():
             """Handler when pairing succeeded."""
@@ -1632,8 +1642,13 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             if trusted:
                 self._set_trusted_by_path(device_path, trusted=True)
                 logging.info('Device trusted: %s', device_path)
-            mainloop.quit()
 
+            # On finishing pairing, also connect; let connect result exit
+            # mainloop instead
+            device.Connect(
+                    reply_handler=connect_reply,
+                    error_handler=connect_error,
+                    timeout=timeout * 1000)
 
         def pair_error(error):
             """Handler when pairing failed.
@@ -1654,13 +1669,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 mainloop.quit()
 
         try:
+            # On success, this will also connect
             device.Pair(reply_handler=pair_reply, error_handler=pair_error,
                         timeout=timeout * 1000)
         except Exception as e:
             logging.error('Exception %s in pair_legacy_device', e)
             return False
         mainloop.run()
-        return self._is_paired(device)
+        return self._is_paired(device) and self._is_connected(device)
 
 
     @xmlrpc_server.dbus_safe(False)

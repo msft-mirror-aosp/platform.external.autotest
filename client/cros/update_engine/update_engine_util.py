@@ -506,7 +506,7 @@ class UpdateEngineUtil(object):
             file_location = os.path.join('/tmp', filename)
             self._run('screenshot %s' % file_location)
             self._get_file(file_location, self.resultsdir)
-        except error.AutoservRunError:
+        except (error.AutoservRunError, error.CmdError):
             logging.exception('Failed to take screenshot.')
 
 

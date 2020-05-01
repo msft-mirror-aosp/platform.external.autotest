@@ -430,6 +430,20 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         return provision.get_version_label_prefix(image)
 
+    def stage_build_to_usb(self, build):
+        """Stage the current ChromeOS image on the USB stick connected to the
+        servo.
+
+        @param build: The build to download and send to USB.
+        """
+        if not self.servo:
+            raise error.TestError('Host %s does not have servo.' %
+                                  self.hostname)
+
+        _, update_url = self.stage_image_for_servo(build)
+        self.servo.image_to_servo_usb(update_url)
+        logging.debug('ChromeOS image %s is staged on the USB stick.',
+                      build)
 
     def verify_job_repo_url(self, tag=''):
         """

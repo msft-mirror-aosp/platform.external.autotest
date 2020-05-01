@@ -692,7 +692,21 @@ RPC_CATEGORIES = [
                 "passing_args": [NO_ARGS],
                 "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
                 "expected_return_type": dict
-            }
+            },
+            {
+                "method_name": "get_write_cmd",
+                "passing_args": [
+                    NO_ARGS,
+                    (""),
+                    ("bios.bin",),
+                ],
+                "failing_args": [
+                    ("bios.bin", []),
+                    ("bios.bin", 1),
+                    ("bios.bin", [], 'extra')
+                ],
+                "expected_return_type": str
+            },
         ],
     },
     {
@@ -760,6 +774,20 @@ RPC_CATEGORIES = [
                 "passing_args": [NO_ARGS],
                 "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
                 "allow_error_msg": "CmdError",
+            },
+            {
+                "method_name": "get_write_cmd",
+                "passing_args": [
+                    NO_ARGS,
+                    (""),
+                    ("ec.bin",),
+                ],
+                "failing_args": [
+                    ("ec.bin", []),
+                    ("ec.bin", 1),
+                    ("ec.bin", [], 'extra')
+                ],
+                "expected_return_type": str
             },
         ],
     },

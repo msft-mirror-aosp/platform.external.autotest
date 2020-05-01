@@ -756,6 +756,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self._has_adapter and self._adapter is not None
 
+
     def is_wake_enabled(self):
         """Checks whether the bluetooth adapter has wake enabled.
 
@@ -765,7 +766,24 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @return True if 'power/wakeup' of an hci0 parent is 'enabled'
         """
-        return self._is_wake_enabled()
+        enabled = self._is_wake_enabled()
+        return enabled
+
+
+    def set_wake_enabled(self, value):
+        """Sets wake enabled to the value if path exists.
+
+        This will walk through all parents of the hci0 sysfs path and write the
+        value to the first one it finds.
+
+        Args:
+            value: Sets power/wakeup to "enabled" if value is true, else
+                   "disabled"
+
+        @return True if it wrote value to a power/wakeup, False otherwise
+        """
+        return self._set_wake_enabled(value)
+
 
     def _reset(self, set_power=False):
         """Remove remote devices and set adapter to set_power state.
@@ -968,29 +986,58 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     def _is_powered_on(self):
         return bool(self._get_adapter_properties().get(u'Powered'))
 
-    def _is_wake_enabled(self):
+    def _get_wake_enabled_path(self):
+        # Walk up the parents from hci0 sysfs path and find the first one with
+        # a power/wakeup property. Return that path (including power/wakeup).
+
         # Resolve hci path to get full device path (i.e. w/ usb or uart)
         search_at = os.path.realpath('/sys/class/bluetooth/hci0')
-        logging.debug("Start search for power/wakeup at {}".format(search_at))
 
         # Exit early if path doesn't exist
         if not os.path.exists(search_at):
-            return False
+            return None
 
         # Walk up parents and try to find one with 'power/wakeup'
         for _ in xrange(search_at.count('/') - 1):
             search_at = os.path.normpath(os.path.join(search_at, '..'))
             try:
-                with open(os.path.join(search_at, 'power', 'wakeup'), 'r') as f:
+                path = os.path.join(search_at, 'power', 'wakeup')
+                with open(path, 'r') as f:
+                    return path
+            except IOError:
+                # No power wakeup at the given location so keep going
+                continue
+
+        return None
+
+    def _is_wake_enabled(self):
+        search_at = self._get_wake_enabled_path()
+
+        if search_at is not None:
+            try:
+                with open(search_at, 'r') as f:
                     value = f.read()
                     logging.info('Power/wakeup found at {}: {}'.format(
                             search_at, value))
                     return 'enabled' in value
             except IOError:
-                # No power wakeup at the given location so keep going
-                continue
+                # Path was not readable
+                return False
 
-        # No power wakeup found in path so it's not wake enabled
+        logging.debug('No power/wakeup path found')
+        return False
+
+    def _set_wake_enabled(self, value):
+        path = self._get_wake_enabled_path()
+        if path is not None:
+            try:
+                with open(path, 'w') as f:
+                    f.write('enabled' if value else 'disabled')
+                    return True
+            except IOError:
+                # Path was not writeable
+                return False
+
         return False
 
     def read_version(self):
@@ -1549,12 +1596,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """Pairs a device with a given pin code.
 
         Registers a agent who handles pin code request and
-        pairs a device with known pin code.
-
-        Note that the adapter does not automatically connnect to the device
-        when pairing is done. The connect_device() method has to be invoked
-        explicitly to connect to the device. This provides finer control
-        for testing purpose.
+        pairs a device with known pin code. After pairing, this function will
+        automatically connect to the device as well (prevents timing issues
+        between pairing and connect and reduces overall test execution time).
 
         @param address: Address of the device to pair.
         @param pin: The pin code of the device to pair.
@@ -1578,6 +1622,19 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._setup_pairing_agent(pin)
         mainloop = gobject.MainLoop()
 
+        def connect_reply():
+            """Handler when connect succeeded."""
+            logging.info('Device connected: %s', device_path)
+            mainloop.quit()
+
+        def connect_error(error):
+            """Handler when connect failed.
+
+            @param error: one of the errors defined in org.bluez.Error
+            representing the error in connect.
+            """
+            logging.error('Connect device failed: %s', error)
+            mainloop.quit()
 
         def pair_reply():
             """Handler when pairing succeeded."""
@@ -1585,8 +1642,13 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             if trusted:
                 self._set_trusted_by_path(device_path, trusted=True)
                 logging.info('Device trusted: %s', device_path)
-            mainloop.quit()
 
+            # On finishing pairing, also connect; let connect result exit
+            # mainloop instead
+            device.Connect(
+                    reply_handler=connect_reply,
+                    error_handler=connect_error,
+                    timeout=timeout * 1000)
 
         def pair_error(error):
             """Handler when pairing failed.
@@ -1607,13 +1669,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 mainloop.quit()
 
         try:
+            # On success, this will also connect
             device.Pair(reply_handler=pair_reply, error_handler=pair_error,
                         timeout=timeout * 1000)
         except Exception as e:
             logging.error('Exception %s in pair_legacy_device', e)
             return False
         mainloop.run()
-        return self._is_paired(device)
+        return self._is_paired(device) and self._is_connected(device)
 
 
     @xmlrpc_server.dbus_safe(False)

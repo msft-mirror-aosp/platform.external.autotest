@@ -42,6 +42,9 @@ class UpdateEngineUtil(object):
     _CUSTOM_LSB_RELEASE = '/mnt/stateful_partition/etc/lsb-release'
     _UPDATE_ENGINE_PREFS_DIR = '/var/lib/update_engine/prefs/'
 
+    # Update engine prefs
+    _UPDATE_CHECK_RESPONSE_HASH = 'update-check-response-hash'
+
     # Public key used to force update_engine to verify omaha response data on
     # test images.
     _IMAGE_PUBLIC_KEY = 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFxZE03Z25kNDNjV2ZRenlydDE2UQpESEUrVDB5eGcxOE9aTys5c2M4aldwakMxekZ0b01Gb2tFU2l1OVRMVXArS1VDMjc0ZitEeElnQWZTQ082VTVECkpGUlBYVXp2ZTF2YVhZZnFsalVCeGMrSlljR2RkNlBDVWw0QXA5ZjAyRGhrckduZi9ya0hPQ0VoRk5wbTUzZG8Kdlo5QTZRNUtCZmNnMUhlUTA4OG9wVmNlUUd0VW1MK2JPTnE1dEx2TkZMVVUwUnUwQW00QURKOFhtdzRycHZxdgptWEphRm1WdWYvR3g3K1RPbmFKdlpUZU9POUFKSzZxNlY4RTcrWlppTUljNUY0RU9zNUFYL2xaZk5PM1JWZ0cyCk83RGh6emErbk96SjNaSkdLNVI0V3daZHVobjlRUllvZ1lQQjBjNjI4NzhxWHBmMkJuM05wVVBpOENmL1JMTU0KbVFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=='
@@ -279,18 +282,50 @@ class UpdateEngineUtil(object):
                 self._UPDATE_STATUS_REPORTING_ERROR_EVENT)
 
 
-    def _update_continued_where_it_left_off(self, progress):
+    def _update_continued_where_it_left_off(self, progress,
+                                            reboot_interrupt=False):
         """
         Checks that the update did not restart after an interruption.
 
+        When testing a reboot interrupt we can do additional checks on the
+        logs before and after reboot to see if the update resumed.
+
         @param progress: The progress the last time we checked.
+        @param reboot_interrupt: True if we are doing a reboot interrupt test.
 
         @returns True if update continued. False if update restarted.
 
         """
         completed = self._get_update_progress()
         logging.info('New value: %f, old value: %f', completed, progress)
-        return completed >= progress
+        if completed >= progress:
+            return True
+
+        # Sometimes update_engine will continue an update but the first reported
+        # progress won't be correct. So check the logs for resume info.
+        if not reboot_interrupt or not self._check_update_engine_log_for_entry(
+            'Resuming an update that was previously started'):
+            return False
+
+        # Find the reported Completed and Resumed progress.
+        pattern = ('(.*)/(.*) operations \((.*)%\), (.*)/(.*) bytes downloaded'
+                   ' \((.*)%\), overall progress (.*)%')
+        before_pattern = 'Completed %s' % pattern
+        before_log = self._get_update_engine_log(r_index=1)
+        before_match = re.findall(before_pattern, before_log)[-1]
+        after_pattern = 'Resuming after %s' % pattern
+        after_log = self._get_update_engine_log(r_index=0)
+        after_match = re.findall(after_pattern, after_log)[0]
+        logging.debug('Progress before interrupt: %s', before_match)
+        logging.debug('Progress after interrupt: %s', after_match)
+
+        # Check the Resuming progress is greater than Completed progress.
+        for i in range(0, len(before_match)):
+            logging.debug('Comparing %d and %d', int(before_match[i]),
+                          int(after_match[i]))
+            if int(before_match[i]) > int(after_match[i]):
+              return False
+        return True
 
 
     def _get_payload_properties_file(self, payload_url, target_dir, **kwargs):

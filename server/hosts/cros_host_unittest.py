@@ -6,6 +6,7 @@ import unittest
 
 import common
 
+from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.hosts import host_info
@@ -199,6 +200,25 @@ class DictFilteringTestCase(unittest.TestCase):
         host.set_servo_host(servo_host, 'passed_State')
         self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'state_of_host2')
 
+class CrosHostTestCase(unittest.TestCase):
+    """Tests to verify CrosHost."""
+
+    class TestCrosHost(cros_host.CrosHost):
+        def __init__(self, *args, **kwargs):
+            self.hostname = 'hostname'
+            self.servo = mock.create_autospec(servo.Servo)
+
+    @mock.patch('autotest_lib.server.hosts.cros_host.dev_server')
+    def test_stage_build_to_usb(self, devserver_mock):
+        host = self.TestCrosHost()
+        image_server = mock.MagicMock()
+        devserver_mock.ImageServer.resolve.return_value = image_server
+        image_server.get_test_image_url.return_value = 'image_url'
+
+        host.stage_build_to_usb('board/version')
+
+        image_server.stage_artifacts.assert_called_with('board/version', ['test_image'])
+        host.servo.image_to_servo_usb.assert_called_with('image_url')
+
 if __name__ == "__main__":
     unittest.main()
-

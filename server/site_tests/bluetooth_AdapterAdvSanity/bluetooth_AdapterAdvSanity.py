@@ -63,6 +63,15 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
             'reboot', num_iterations=1)
 
 
+    @test_wrapper('Advertising peer test', devices={'BLE_MOUSE':1})
+    def adv_peer_test(self):
+        """Verify advertising from a peer"""
+
+        device = self.devices['BLE_MOUSE'][0]
+
+        self.advertising_peer_test(device)
+
+
     @batch_wrapper('Advertising Sanity')
     def adv_sanity_batch_run(self, num_iterations=1, test_name=None):
         """Run the advertising sanity test batch or a specific given test.
@@ -90,6 +99,6 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
         @param num_iterations: the number of rounds to execute the test
         """
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_btpeer=False, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.adv_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

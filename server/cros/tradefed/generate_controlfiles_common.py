@@ -408,7 +408,10 @@ def get_max_retries(modules, abi, suites, is_public):
 
     # Ugly overrides.
     # In bvt we don't want to hold the CQ/PFQ too long.
-    if 'suite:bvt-arc' in suites or 'suite:bvt-perbuild' in suites:
+    if 'suite:bvt-arc' in suites:
+        retry = 3
+    # Not strict as CQ for bvt-perbuild. Let per-module config take priority.
+    if retry == -1 and 'suite:bvt-perbuild' in suites:
         retry = 3
     # During qualification we want at least 9 retries, possibly more.
     # TODO(kinaba&yoshiki): do not abuse suite names

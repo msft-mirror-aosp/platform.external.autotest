@@ -386,6 +386,11 @@ class Verifier(_DependencyNode):
         @param host     The host to be tested for a problem.
         @param silent   If true, don't log host status records.
         """
+        if not self._is_applicable(host):
+            logging.info('Verfy %s is not applicable to %s, skipping...',
+                         self.description, host.hostname)
+            return
+
         if self._result is not None:
             if isinstance(self._result, Exception):
                 raise self._result  # cached failure

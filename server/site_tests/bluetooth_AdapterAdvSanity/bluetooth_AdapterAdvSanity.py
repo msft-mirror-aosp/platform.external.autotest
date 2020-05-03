@@ -27,7 +27,9 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    @test_wrapper('Multiple LE advertising test')
+    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    @test_wrapper('Multiple LE advertising test',
+                  model_testNA=['dru', 'druwl'])
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(
@@ -43,7 +45,9 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
             'single_advertising', num_iterations=1)
 
 
-    @test_wrapper('Suspend resume LE advertising test')
+    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    @test_wrapper('Suspend resume LE advertising test',
+                  model_testNA=['dru', 'druwl'])
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(

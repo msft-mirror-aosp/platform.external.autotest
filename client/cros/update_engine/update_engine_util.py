@@ -389,8 +389,7 @@ class UpdateEngineUtil(object):
         @param number_of_logs: The number of logs to save.
 
         """
-        files = self._run('ls -t -1 %s' %
-                          self._UPDATE_ENGINE_LOG_DIR).stdout.splitlines()
+        files = self._get_update_engine_logs()
 
         for i in range(number_of_logs if number_of_logs <= len(files) else
                        len(files)):
@@ -398,7 +397,21 @@ class UpdateEngineUtil(object):
             self._get_file(file, self.resultsdir)
 
 
-    def _get_update_engine_log(self, r_index=0):
+    def _get_update_engine_logs(self, timeout=3600, ignore_timeout=True):
+        """
+        Helper function to return the list of files in /var/log/update_engine/.
+
+        @param timeout: How many seconds to wait for command to complete.
+        @param ignore_timeout: True if we should not throw an error on timeout.
+
+        """
+        cmd = ['ls', '-t', '-1', self._UPDATE_ENGINE_LOG_DIR]
+        return self._run(cmd, timeout=timeout,
+                         ignore_timeout=ignore_timeout).stdout.splitlines()
+
+
+    def _get_update_engine_log(self, r_index=0, timeout=3600,
+                               ignore_timeout=True):
         """
         Returns the last r_index'th update_engine log.
 
@@ -406,10 +419,11 @@ class UpdateEngineUtil(object):
                 in order they were created. For example:
                   0 -> last one.
                   1 -> second to last one.
+        @param timeout: How many seconds to wait for command to complete.
+        @param ignore_timeout: True if we should not throw an error on timeout.
 
         """
-        files = self._run('ls -t -1 %s' %
-                          self._UPDATE_ENGINE_LOG_DIR).stdout.splitlines()
+        files = self._get_update_engine_logs()
         return self._run('cat %s' % os.path.join(self._UPDATE_ENGINE_LOG_DIR,
                                                  files[r_index])).stdout
 

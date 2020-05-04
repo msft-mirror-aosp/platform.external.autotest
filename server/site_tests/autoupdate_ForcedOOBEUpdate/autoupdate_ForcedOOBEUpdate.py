@@ -4,6 +4,7 @@
 
 import logging
 import random
+import os
 import time
 
 from autotest_lib.client.common_lib import error
@@ -123,6 +124,12 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
 
+        # Clear any previously started updates.
+        pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
+                                 self._UPDATE_CHECK_RESPONSE_HASH)
+        self._host.run(['rm', pref_file], ignore_status=True)
+        self._host.run(['restart', 'update-engine'], ignore_status=True)
+
         progress = None
         if interrupt is not None:
             # Choose a random downloaded progress to interrupt the update.
@@ -156,7 +163,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
             if self._is_update_engine_idle():
                 raise error.TestFail('The update was IDLE after interrupt.')
-            if not self._update_continued_where_it_left_off(completed):
+            if not self._update_continued_where_it_left_off(
+                completed, reboot_interrupt=interrupt is 'reboot'):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
         elif interrupt not in ['network', None]:

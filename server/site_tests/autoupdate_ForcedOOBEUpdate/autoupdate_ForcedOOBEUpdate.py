@@ -73,8 +73,10 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
             time.sleep(1)
             if time.time() > timeout:
-                raise error.TestFail('OOBE update did not finish in %d '
-                                     'minutes.' % timeout_minutes)
+                raise error.TestFail(
+                    'OOBE update did not finish in %d minutes. Last status: %s,'
+                    ' Last Progress: %s' % (timeout_minutes,
+                    status[self._CURRENT_OP], status[self._PROGRESS]))
 
 
     def _wait_for_oobe_update_to_complete(self):

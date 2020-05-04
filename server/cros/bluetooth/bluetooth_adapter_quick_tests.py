@@ -401,15 +401,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         self.test_iter = iter
                         single_test_method()
 
-                    if self.fails:
-                        # If failure is marked as TESTNA, prioritize that over
-                        # a failure. Same with WARN.
-                        if self.bat_testna_count > 0:
-                            raise error.TestNAError(self.fails)
-                        elif self.bat_warn_count > 0:
-                            raise error.TestWarn(self.fails)
-                        else:
-                            raise error.TestFail(self.fails)
+                    # If failure is marked as TESTNA, prioritize that over
+                    # a failure. Same with WARN.
+                    if self.bat_testna_count > 0:
+                        raise error.TestNAError(self.bat_tests_results)
+                    elif self.bat_warn_count > 0:
+                        raise error.TestWarn(self.bat_tests_results)
+                    elif self.bat_fail_count > 0:
+                        raise error.TestFail(self.bat_tests_results)
                 else:
                     for iter in xrange(1,num_iterations+1):
                         self.quick_test_batch_start(batch_name, iter)

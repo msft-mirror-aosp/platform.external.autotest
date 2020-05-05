@@ -2904,6 +2904,14 @@ class BluetoothAdapterTests(test.test):
                 if pattern.search(diff_str):
                     diff.remove(diff_str)
 
+        # Remove any difference in Includes [] versus None
+        # TODO(b:155596705) Cleanup these code when we switch to bluez 5.54
+        pattern = re.compile('^Service .* is different in Includes: \[\] vs '
+                             'None')
+        for diff_str in diff[::]:
+            if pattern.search(diff_str):
+                diff.remove(diff_str)
+
         if len(diff) != 0:
             logging.error('Application Diff: %s', diff)
             return False

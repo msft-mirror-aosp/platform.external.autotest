@@ -376,4 +376,18 @@ class telemetry_Crosperf(test.test):
                 raise error.TestFail('Error: No profiles collected, test may '
                                      'not run correctly.')
 
+        # In skylab run, environment variable SYNCHRONOUS_OFFLOAD_DIR is set to
+        # be a directory; In test_that run, it will not be set.
+        synchronous_dir = os.getenv('SYNCHRONOUS_OFFLOAD_DIR', '')
+        # For skylab run, push logs and json results to the synchronous offload
+        # directory for instant access for report.
+        if synchronous_dir and os.path.isdir(synchronous_dir):
+            try:
+                dst = os.path.join(synchronous_dir, 'results')
+                shutil.copytree(self.resultsdir, dst)
+            except:
+                raise RuntimeError(
+                    'Failed to copy results in %s to synchronous offload'
+                    ' directory %s' % (self.resultsdir, synchronous_dir))
+
         return result

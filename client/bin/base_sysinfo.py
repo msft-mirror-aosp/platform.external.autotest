@@ -20,6 +20,9 @@ _DEFAULT_COMMANDS_TO_LOG_PER_BOOT = [
     'mount',
     'hostname',
     'uptime',
+    # for Downloadable Content (DLC)
+    'losetup',
+    'dlcservice_util --list',
 ]
 _DEFAULT_COMMANDS_TO_LOG_BEFORE_ITERATION = []
 _DEFAULT_COMMANDS_TO_LOG_AFTER_ITERATION = []
@@ -238,6 +241,14 @@ class base_sysinfo(object):
         self.boot_loggables.add(command('uname -a',
                                         logf='uname',
                                         log_in_keyval=True))
+
+        # log contents of DLC directories with meaningful filenames
+        self.boot_loggables.add(command('tree /var/cache/dlc',
+                                        logf='dlc_images'))
+        self.boot_loggables.add(command(
+            'tree /mnt/stateful_partition/var_overlay/cache/dlc-images',
+            logf='dlc_preloaded_images'))
+
         self._installed_packages = []
         self._journal_cursor = None
 

@@ -31,6 +31,8 @@ class UpdateEngineUtil(object):
 
     # Update engine statuses.
     _UPDATE_STATUS_IDLE = 'UPDATE_STATUS_IDLE'
+    _UPDATE_STATUS_CHECKING_FOR_UPDATE = 'UPDATE_STATUS_CHECKING_FOR_UPDATE'
+    _UPDATE_STATUS_UPDATE_AVAILABLE = 'UPDATE_STATUS_UPDATE_AVAILABLE'
     _UPDATE_STATUS_DOWNLOADING = 'UPDATE_STATUS_DOWNLOADING'
     _UPDATE_STATUS_FINALIZING = 'UPDATE_STATUS_FINALIZING'
     _UPDATE_STATUS_UPDATED_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
@@ -266,6 +268,21 @@ class UpdateEngineUtil(object):
         if status is None:
             status = self._get_update_engine_status()
         return status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE
+
+
+    def _is_checking_for_update(self, status=None):
+        """
+        Checks if the update status is still checking for an update.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
+        return status[self._CURRENT_OP] in (
+            self._UPDATE_STATUS_CHECKING_FOR_UPDATE,
+            self._UPDATE_STATUS_UPDATE_AVAILABLE)
 
 
     def _is_update_engine_reporting_error(self, status=None):

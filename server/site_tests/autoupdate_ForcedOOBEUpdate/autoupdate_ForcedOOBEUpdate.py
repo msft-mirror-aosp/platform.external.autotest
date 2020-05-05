@@ -56,6 +56,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
             # Check that the status is not reporting an error.
             if status is not None:
+                if self._is_checking_for_update(status):
+                    continue
                 if self._is_update_engine_reporting_error(status):
                     err_str = self._get_last_error_string()
                     raise error.TestFail('Update status reported error '

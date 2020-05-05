@@ -51,6 +51,13 @@ SETVAR
   )"
 fi
 
+
+if [[ "${_BOARD}" == "bloonchipper" ]]; then
+  readonly _ROLLBACK_FLASH_OFFSET="0x20000"
+else
+  readonly _ROLLBACK_FLASH_OFFSET="0xe0000"
+fi
+
 readonly _FP_FRAME_RAW_ACCESS_DENIED_ERROR="$(cat <<SETVAR
 EC result 4 (ACCESS_DENIED)
 Failed to get FP sensor frame
@@ -126,7 +133,7 @@ check_raw_fpframe_fails() {
 
 read_from_flash() {
   local output_file="${1}"
-  run_ectool_cmd "flashread" "0xe0000" "0x1000" "${output_file}"
+  run_ectool_cmd "flashread" "${_ROLLBACK_FLASH_OFFSET}" "0x1000" "${output_file}"
 }
 
 read_from_flash_in_bootloader_mode_without_modifying_RDP_level() {

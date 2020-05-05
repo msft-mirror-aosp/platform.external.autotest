@@ -538,6 +538,88 @@ class ServoHost(base_servohost.BaseServoHost):
         self.start_servod(quick_startup)
 
 
+    def _process_servodtool_error(self, response):
+        """Helper function to handle non-zero servodtool response.
+        """
+        if re.search(servo_constants.ERROR_MESSAGE_USB_HUB_NOT_COMPATIBLE,
+                     response.stderr):
+            logging.error('The servo is not plugged on a usb hub that supports'
+                          ' power-cycle!')
+            return
+
+        if re.search(servo_constants.ERROR_MESSAGE_DEVICE_NOT_FOUND %
+                     self.servo_serial, response.stdout):
+            logging.error('No servo with serial %s found!', self.servo_serial)
+            return
+
+        logging.error('Unexpected error occurred from usbhub control, please'
+                      ' file a bug and inform chrome-fleet-software@ team!')
+
+
+    def _get_servo_usb_devnum(self):
+        """Helper function to collect current usb devnum of servo.
+        """
+        resp = self.run('servodtool device -s %s usb-path' % self.servo_serial,
+                        ignore_status=True)
+        if resp.exit_status != 0:
+            self._process_servodtool_error(resp)
+            return ''
+        usb_path = resp.stdout.strip()
+        logging.info('Usb path of servo %s is %s', self.servo_serial, usb_path)
+
+        resp = self.run('cat %s/devnum' % usb_path,
+                        ignore_status=True)
+        if resp.exit_status != 0:
+            self._process_servodtool_error(resp)
+            return ''
+        return resp.stdout.strip()
+
+
+    def _reset_servo(self):
+        logging.info('Resetting servo through smart usbhub.')
+        resp = self.run('servodtool device -s %s power-cycle' %
+                        self.servo_serial, ignore_status=True)
+        if resp.exit_status != 0:
+            self._process_servodtool_error(resp)
+            return False
+
+        logging.debug('Wait %s seconds for servo to come back from reset.',
+                      servo_constants.SERVO_RESET_TIMEOUT_SECONDS)
+        time.sleep(servo_constants.SERVO_RESET_TIMEOUT_SECONDS)
+        return True
+
+
+    def reset_servo(self):
+        """Reset(power-cycle) the servo via smart usbhub.
+        """
+        if not self.is_labstation():
+            logging.info('Servo reset is not applicable to servo_v3.')
+            return
+
+        pre_reset_devnum = self._get_servo_usb_devnum()
+        logging.info('Servo usb devnum before reset: %s', pre_reset_devnum)
+        result = self._reset_servo()
+        if not result:
+            message = ('Failed to reset servo with serial: %s'
+                       % self.servo_serial)
+            logging.warning(message)
+            self.record('INFO', None, None, message)
+            return
+
+        post_reset_devnum = self._get_servo_usb_devnum()
+        logging.info('Servo usb devnum after reset: %s', post_reset_devnum)
+        if not (pre_reset_devnum and post_reset_devnum):
+            message = ('Servo reset completed but unable to verify'
+                       ' devnum change!')
+        elif pre_reset_devnum != post_reset_devnum:
+            message = ('Reset servo with serial %s completed successfully!'
+                       % self.servo_serial)
+        else:
+            message = 'Servo reset completed but devnum is still not changed!'
+        logging.info(message)
+        self.record('INFO', None, None, message)
+
+
     def _extract_compressed_logs(self, logdir, relevant_files):
         """Decompress servod logs in |logdir|.
 
@@ -1099,6 +1181,14 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         return None, servo_constants.SERVO_STATE_BROKEN
 
     newhost = ServoHost(**servo_args)
+
+    # Reset servo if the servo is locked, as we check if the servohost is up,
+    # if the servohost is labstation and if the servohost is in lab inside the
+    # locking logic. Also check try_servo_repair to make sure we only do this
+    # in AdminRepair tasks.
+    if newhost._is_locked and try_servo_repair:
+        newhost.reset_servo()
+
     try:
         newhost.restart_servod(quick_startup=True)
     except error.AutoservSSHTimeout:

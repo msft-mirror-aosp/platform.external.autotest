@@ -35,7 +35,6 @@ import re
 import time
 
 from autotest_lib.server.cros.bluetooth import advertisements_data
-from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
 test_case_log = bluetooth_adapter_tests.test_case_log
@@ -1315,6 +1314,3 @@ class bluetooth_AdapterLEAdvertising(
                 self.test_case_SI200_RA3_CD_PC_CD_UA3()
                 self.test_case_RA3_CD_SI200_CD_PC_CD_UA3()
                 self.test_case_RA1_CD_SI200_CD_PC_CD_UA1()
-
-        if self.fails:
-            raise error.TestFail(self.fails)

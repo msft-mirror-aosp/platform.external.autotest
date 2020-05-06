@@ -42,7 +42,7 @@ class firmware_FAFTModeTransitions(FirmwareTest):
                          " image.")
             info = self._client.host_info_store.get()
             if info.build:
-                self._client.stage_image_to_usb(info.build)
+                self._client.stage_build_to_usb(info.build)
             else:
                 logging.warn('Failed to get build label from the DUT, will use'
                              ' existing image in USB.')

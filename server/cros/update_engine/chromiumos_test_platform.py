@@ -5,8 +5,6 @@
 import logging
 import urlparse
 
-from autotest_lib.server import autotest
-
 from chromite.lib import auto_updater_transfer
 from chromite.scripts import cros_update
 
@@ -103,12 +101,6 @@ class ChromiumOSTestPlatform(object):
         return pid
 
 
-    def _run_login_test(self, tag):
-        """Runs login_LoginSuccess test on the DUT."""
-        client_at = autotest.Autotest(self._host)
-        client_at.run_test('login_LoginSuccess', tag=tag)
-
-
     @staticmethod
     def _get_update_parameters_from_uri(payload_uri):
         """Extract vars needed to update with a Google Storage payload URI.
@@ -139,11 +131,6 @@ class ChromiumOSTestPlatform(object):
         return build_name, payload_file
 
 
-    def reboot_device(self):
-        """Reboot the device."""
-        self._host.reboot()
-
-
     def install_source_image(self, source_payload_uri):
         """Install source payload on device.
 
@@ -154,16 +141,6 @@ class ChromiumOSTestPlatform(object):
             self._install_version(source_payload_uri, clobber_stateful=True)
 
 
-    def check_login_after_source_update(self):
-        """Make sure we can login before the target update."""
-        self._run_login_test('source_update')
-
-
-    def get_active_slot(self):
-        """Returns the current active slot."""
-        return self._host.run('rootdev -s').stdout.strip()
-
-
     def install_target_image(self, target_payload_uri):
         """Install target payload on the device.
 
@@ -172,25 +149,3 @@ class ChromiumOSTestPlatform(object):
         """
         logging.info('Updating device to target image.')
         return self._install_version(target_payload_uri)
-
-
-    def get_update_log(self, num_lines):
-        """Get the latest lines from the update engine log."""
-        return self._host.run_output(
-                'tail -n %d /var/log/update_engine.log' % num_lines,
-                stdout_tee=None)
-
-
-    def check_login_after_target_update(self):
-        """Check we can login after updating."""
-        self._run_login_test('target_update')
-
-
-    def oobe_triggers_update(self):
-        """Check if this device has an OOBE that completes itself."""
-        return self._host.oobe_triggers_update()
-
-
-    def get_cros_version(self):
-        """Returns the ChromeOS version installed on this device."""
-        return self._host.get_release_version()

@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
 import os
 
@@ -140,45 +139,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             pass
 
 
-    def _report_perf_data(self, perf_file):
-        """Reports performance and resource data.
-
-        Currently, performance attributes are expected to include 'rss_peak'
-        (peak memory usage in bytes).
-
-        @param perf_file: A file with performance metrics.
-        """
-        logging.debug('Reading perf results from %s.', perf_file)
-        try:
-            with open(perf_file, 'r') as perf_file_handle:
-                perf_data = json.load(perf_file_handle)
-        except Exception as e:
-            logging.warning('Error while reading the perf data file: %s', e)
-            return
-
-        rss_peak = perf_data.get('rss_peak')
-        if rss_peak:
-            rss_peak_kib = rss_peak / 1024
-            logging.info('Peak memory (RSS) usage on DUT: %d KiB', rss_peak_kib)
-            self.output_perf_value(description='mem_usage_peak',
-                                   value=int(rss_peak_kib),
-                                   units='KiB',
-                                   higher_is_better=False)
-        else:
-            logging.warning('No rss_peak key in JSON returned by update '
-                            'engine perf script.')
-
-        update_time = perf_data.get('update_length')
-        if update_time:
-            logging.info('Time it took to update: %s seconds', update_time)
-            self.output_perf_value(description='update_length',
-                                   value=int(update_time), units='sec',
-                                   higher_is_better=False)
-        else:
-            logging.warning('No data about how long it took to update was '
-                            'found.')
-
-
     def _verify_active_slot_changed(self, source_active_slot,
                                     target_active_slot, source_release,
                                     target_release):
@@ -240,7 +200,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
 
     def run_update_test(self, cros_device, test_conf):
-        """Runs the update test, collects perf stats, checks expected version.
+        """Runs the update test and checks it succeeded.
 
         @param cros_device: The device under test.
         @param test_conf: A dictionary containing test configuration values.
@@ -252,8 +212,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
-
-        cros_device.copy_perf_script_to_device(self.bindir)
 
         logs_dir = self.update_device_without_cros_au_rpc(
             cros_device, test_conf['target_payload_uri'])
@@ -268,12 +226,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         except update_engine_test.UpdateEngineEventMissing:
             self._dump_update_engine_log(cros_device)
             raise
-
-        # Collect perf stats about this update run.
-        perf_file = cros_device.get_perf_stats_for_update(
-            self.job.resultdir)
-        if perf_file is not None:
-            self._report_perf_data(perf_file)
 
         # Device is updated. Check that we are running the expected version.
         if cros_device.oobe_triggers_update():

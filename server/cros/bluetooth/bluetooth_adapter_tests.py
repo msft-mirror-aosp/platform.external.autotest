@@ -552,8 +552,8 @@ class BluetoothAdapterTests(test.test):
     CLASS_OF_DEVICE_MASK = 0x001FFF
 
     # Constants about advertising.
-    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 1280
-    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 1280
+    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 181.25
+    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 181.25
     ADVERTISING_INTERVAL_UNIT = 0.625
 
     # Error messages about advertising dbus methods.
@@ -2903,6 +2903,14 @@ class BluetoothAdapterTests(test.test):
             for diff_str in diff[::]:
                 if pattern.search(diff_str):
                     diff.remove(diff_str)
+
+        # Remove any difference in Includes [] versus None
+        # TODO(b:155596705) Cleanup these code when we switch to bluez 5.54
+        pattern = re.compile('^Service .* is different in Includes: \[\] vs '
+                             'None')
+        for diff_str in diff[::]:
+            if pattern.search(diff_str):
+                diff.remove(diff_str)
 
         if len(diff) != 0:
             logging.error('Application Diff: %s', diff)

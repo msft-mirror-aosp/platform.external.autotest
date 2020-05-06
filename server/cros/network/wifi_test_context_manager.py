@@ -219,7 +219,7 @@ class WiFiTestContextManager(object):
                 allow_failure=True,
                 cmdline_override=self._cmdline_args.get(self.CMDLINE_PCAP_ADDR,
                                                         None))
-        if pcap_addr and ping_helper.simple_ping(pcap_addr):
+        if pcap_addr:
             if pcap_as_router:
                 self._pcap_host = site_linux_router.LinuxRouter(
                         hosts.create_host(pcap_addr),

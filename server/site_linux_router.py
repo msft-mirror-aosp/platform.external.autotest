@@ -77,10 +77,13 @@ def build_router_proxy(test_name='', client_hostname=None, router_addr=None,
     router_hostname = build_router_hostname(client_hostname=client_hostname,
                                             router_hostname=router_addr)
     logging.info('Connecting to router at %s', router_hostname)
-    ping_helper = ping_runner.PingRunner()
-    if not ping_helper.simple_ping(router_hostname):
-        raise error.TestError('Router at %s is not pingable.' %
-                              router_hostname)
+    # Don't bother pinging if manually specified. It could, for instance, be
+    # only accessible over SSH.
+    if not router_addr:
+        ping_helper = ping_runner.PingRunner()
+        if not ping_helper.simple_ping(router_hostname):
+            raise error.TestError('Router at %s is not pingable.' %
+                                  router_hostname)
 
     # Use CrosHost for all router hosts and avoid host detection.
     # Host detection would use JetstreamHost for Whirlwind routers.

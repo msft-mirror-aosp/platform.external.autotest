@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "firmware_FWupdate"
+NAME = "firmware_FWupdate.downgrade_rw"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
@@ -11,6 +11,7 @@ TEST_TYPE = "server"
 
 DOC = """
 RO+RW firmware update using chromeos-firmwareupdate --mode=recovery
+This variant is RO=old, RW=old->new->old.
 
 Required arguments:
     test_that ... --args "old_bios=/path/to/old.bin new_bios=/path/to/new.bin"

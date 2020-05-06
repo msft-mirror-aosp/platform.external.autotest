@@ -63,7 +63,7 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         else:
             return True
 
-    def _compare_error(self, expected, actual):
+    def _compare_error(self, actual, expected):
         """ Helper function to compare error and log. """
         if expected == actual:
             return True

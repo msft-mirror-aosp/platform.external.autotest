@@ -155,7 +155,6 @@ suite:faft_smoke
 suite:faft_stress
 suite:faft_wilco
 suite:fingerprint
-suite:gpu_hang
 suite:graphics
 suite:graphics_browser
 suite:graphics_per-build

@@ -13,6 +13,7 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
+from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import afe_utils
 from autotest_lib.server import crashcollect
 from autotest_lib.server.cros import autoupdater
@@ -337,6 +338,63 @@ class HWIDVerifier(hosts.Verifier):
         return 'The host should have valid HWID and Serial Number'
 
 
+class EnrollmentStateVerifier(hosts.Verifier):
+    """Verify that the device's enrollment state is clean.
+
+    There are two "flags" that generate 3 possible enrollment states here.
+    Flag 1 - The presence of install attributes file in
+             /home/.shadow/install_attributes.pb
+
+    Flag 2 - The value of "check_enrollment" from VPD. Can be obtained by
+             reading the cache file in
+             /mnt/stateful_partition/unencrypted/cache/vpd/full-v2.txt
+
+    The states:
+    State 1 - Device is enrolled, means flag 1 is true and in
+              flag 2 check_enrollment=1
+    State 2 - Device is consumer owned, means flag 1 is true and in
+              flag 2 check_enrollment=0
+    State 3 - Device is enrolled and has been powerwashed, means flag 1 is
+              false. If the value in flag 2 is check_enrollment=1 then the
+              device will perform forced re-enrollment check and depending
+              on the response from the server might force the device to enroll
+              again. If the value is check_enrollment=0, then device can be
+              used like a new device.
+
+    We consider state 1, and first scenario(check_enrollment=1) of state 3
+    as unacceptable state here as they may interfere with normal tests.
+    """
+
+    VPD_CACHE = '/mnt/stateful_partition/unencrypted/cache/vpd/full-v2.txt'
+
+    def verify(self, host):
+        # pylint: disable=missing-docstring
+        if self._get_enrollment_state(host):
+            raise hosts.AutoservVerifyError('The device is enrolled.')
+
+    def _get_enrollment_state(self, host):
+        logging.debug('checking enrollment state from VPD cache...')
+        response = host.run('grep "check_enrollment" %s' % self.VPD_CACHE)
+        if response.exit_status == 0:
+            result = response.stdout.strip()
+            logging.info('Enrollment state in VPD cache: %s', result)
+            return result == '"check_enrollment"="1"'
+
+        logging.error('Unexpected error occured during verify enrollment state'
+                      ' in VPD cache, skipping verify process.')
+        return True
+
+    def _is_applicable(self, host):
+        info = host.host_info_store.get()
+        # if os type is missing from host_info, then we assume it's cros.
+        return getattr(info, 'os', 'cros') in ('', 'cros')
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'The enrollment state is clean on the host'
+
+
 class JetstreamTpmVerifier(hosts.Verifier):
     """Verify that Jetstream TPM is in a good state."""
 
@@ -602,6 +660,28 @@ class CrosRebootRepair(repair_utils.RebootRepair):
         return 'Reset GBB flags and Reboot the host'
 
 
+class EnrollmentCleanupRepair(hosts.RepairAction):
+    """Cleanup enrollment state on ChromeOS device"""
+
+    def repair(self, host):
+        # Reset VPD enrollment state.
+        host.run('/usr/sbin/update_rw_vpd check_enrollment 0')
+
+        # Clear TPM Owner state.
+        tpm_utils.ClearTPMOwnerRequest(host, wait_for_ready=True,
+                                       timeout=host.BOOT_TIMEOUT)
+
+    def _is_applicable(self, host):
+        info = host.host_info_store.get()
+        # if os type is missing from host_info, then we assume it's cros.
+        return getattr(info, 'os', 'cros') in ('', 'cros')
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Cleanup enrollment state and reboot the host'
+
+
 class AutoUpdateRepair(hosts.RepairAction):
     """
     Repair by re-installing a test image using autoupdate.
@@ -721,6 +801,7 @@ def _cros_verify_base_dag():
         (ServoTypeVerifier,               'servo_type', ()),
         (DevDefaultBootVerifier,          'dev_default_boot', ('ssh',)),
         (DevModeVerifier,                 'devmode',  ('ssh',)),
+        (EnrollmentStateVerifier,         'enrollment_state', ('ssh',)),
         (HWIDVerifier,                    'hwid',     ('ssh',)),
         (ACPowerVerifier,                 'power',    ('ssh',)),
         (EXT4fsErrorVerifier,             'ext4',     ('ssh',)),
@@ -765,6 +846,8 @@ def _cros_basic_repair_actions():
          'set_default_boot', ('ssh',), ('dev_default_boot',)),
 
         (CrosRebootRepair, 'reboot', ('ssh',), ('devmode', 'writable',)),
+        (EnrollmentCleanupRepair, 'cleanup_enrollment', ('ssh',),
+         ('enrollment_state',)),
     )
     return repair_actions
 

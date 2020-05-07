@@ -67,6 +67,14 @@ class FirmwareTest(FAFTBase):
     CHROMEOS_MAGIC = "CHROMEOS"
     CORRUPTED_MAGIC = "CORRUPTD"
 
+    # System power states
+    POWER_STATE_S0 = 'S0'
+    POWER_STATE_S0IX = 'S0ix'
+    POWER_STATE_S3 = 'S3'
+    POWER_STATE_S5 = 'S5'
+    POWER_STATE_G3 = 'G3'
+    POWER_STATE_SUSPEND = '|'.join([POWER_STATE_S0IX, POWER_STATE_S3])
+
     # Delay for waiting client to return before EC suspend
     EC_SUSPEND_DELAY = 5
 
@@ -1031,22 +1039,22 @@ class FirmwareTest(FAFTBase):
                            'suspend' or 'shutdown'.
         """
         if power_mode == 'suspend':
-                target_power_state = 'S0ix|S3'
+            target_power_state = self.POWER_STATE_SUSPEND
         elif power_mode == 'shutdown':
-                target_power_state = 'G3'
+            target_power_state = self.POWER_STATE_G3
         else:
             raise error.TestError('%s is not a valid ap-off power mode.' %
                                   power_mode)
 
-        if self.get_power_state() != 'S0':
+        if self.get_power_state() != self.POWER_STATE_S0:
             raise error.TestError('The DUT is not in S0.')
 
         self._restore_power_mode = True
 
-        if target_power_state == 'G3':
+        if target_power_state == self.POWER_STATE_G3:
             self.run_shutdown_cmd()
             time.sleep(self.faft_config.shutdown)
-        elif target_power_state == 'S0ix|S3':
+        elif target_power_state == self.POWER_STATE_SUSPEND:
             self.suspend()
 
         if self.wait_power_state(target_power_state, self.DEFAULT_PWR_RETRIES):
@@ -1062,7 +1070,7 @@ class FirmwareTest(FAFTBase):
         Wake up the DUT to S0. If the DUT was not set to suspend or
         shutdown mode by set_ap_off_power_mode(), raise an error.
         """
-        if self.get_power_state() != 'S0':
+        if self.get_power_state() != self.POWER_STATE_S0:
             logging.info('Wake up the DUT to S0.')
             self.servo.power_normal_press()
             # If the DUT is ping-able, it must be in S0.
@@ -1370,7 +1378,8 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        self.check_shutdown_power_state("G3", orig_boot_id=boot_id)
+        self.check_shutdown_power_state(self.POWER_STATE_G3,
+                                        orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 
@@ -1389,7 +1398,7 @@ class FirmwareTest(FAFTBase):
         """
         if not self.wait_power_state(power_state, pwr_retries):
             current_state = self.get_power_state()
-            if current_state == 'S0' and self._client.wait_up():
+            if current_state == self.POWER_STATE_S0 and self._client.wait_up():
                 # DUT is unexpectedly up, so check whether it rebooted instead.
                 new_boot_id = self.get_bootid()
                 logging.debug('orig_boot_id=%s, new_boot_id=%s',
@@ -1567,7 +1576,7 @@ class FirmwareTest(FAFTBase):
                     shutdown_action.__name__)
         except ConnectionError:
             if self.faft_config.chrome_ec:
-                self.check_shutdown_power_state("G3")
+                self.check_shutdown_power_state(self.POWER_STATE_G3)
             logging.info(
                 'DUT is surely shutdown. We are going to power it on again...')
 

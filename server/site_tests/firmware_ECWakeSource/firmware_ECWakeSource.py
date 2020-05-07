@@ -18,6 +18,10 @@ class firmware_ECWakeSource(FirmwareTest):
     """
     version = 1
 
+    # After suspending the device, wait this long before waking it again.
+    SUSPEND_WAIT_TIME_SECONDS = 5
+    # Retries allowed for reaching S0ix|S3 after suspend and S0 after wake.
+    POWER_STATE_RETRY_COUNT = 10
     # The timeout (in seconds) to confirm the device is woken up from
     # suspend mode.
     RESUME_TIMEOUT = 60
@@ -67,7 +71,12 @@ class firmware_ECWakeSource(FirmwareTest):
         """
         suspend_func()
         self.switcher.wait_for_client_offline()
+        if not self.wait_power_state('S0ix|S3', self.POWER_STATE_RETRY_COUNT):
+            raise error.TestFail('Platform failed to reach S0ix or S3 state.')
+        time.sleep(self.SUSPEND_WAIT_TIME_SECONDS);
         wake_func()
+        if not self.wait_power_state('S0', self.POWER_STATE_RETRY_COUNT):
+            raise error.TestFail('Platform failed to reach S0 state.')
         self.switcher.wait_for_client(timeout=self.RESUME_TIMEOUT)
 
     def run_once(self, host):

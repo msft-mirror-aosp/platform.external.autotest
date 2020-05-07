@@ -118,7 +118,7 @@ class FirmwareTest(FAFTBase):
     }
 
     # CCD password used by tests.
-    PASSWORD = 'Password'
+    CCD_PASSWORD = 'Password'
 
     @classmethod
     def check_setup_done(cls, label):
@@ -2298,7 +2298,7 @@ class FirmwareTest(FAFTBase):
         if self.cr50.get_ccd_level() != 'open':
             if self.servo.has_control('chassis_open'):
                 self.servo.set('chassis_open', 'yes')
-            pw = '' if self.cr50.password_is_reset() else self.PASSWORD
+            pw = '' if self.cr50.password_is_reset() else self.CCD_PASSWORD
             # Use the console to open cr50 without entering dev mode if
             # possible. Ittakes longer and relies on more systems to enter dev
             # mode and ssh into the AP. Skip the steps that aren't required.

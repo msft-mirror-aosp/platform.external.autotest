@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-import os
 import urlparse
 
 from autotest_lib.server import autotest
@@ -19,10 +18,6 @@ class ChromiumOSTestPlatform(object):
     the device specific things that we need during an update: reboot,
     check active slot, login, get logs, start an update etc.
     """
-
-    _UPDATE_ENGINE_PERF_PATH = '/mnt/stateful_partition/unencrypted/preserve'
-    _UPDATE_ENGINE_PERF_SCRIPT = 'update_engine_performance_monitor.py'
-    _UPDATE_ENGINE_PERF_RESULTS_FILE = 'perf_data_results.json'
 
     def __init__(self, host, autotest_devserver, results_dir):
         """Initialize the class.
@@ -167,33 +162,6 @@ class ChromiumOSTestPlatform(object):
     def get_active_slot(self):
         """Returns the current active slot."""
         return self._host.run('rootdev -s').stdout.strip()
-
-
-    def copy_perf_script_to_device(self, bindir):
-        """Copy performance monitoring script to DUT.
-
-        The updater will kick off the script during the update.
-        """
-        logging.info('Copying %s to device.', self._UPDATE_ENGINE_PERF_SCRIPT)
-        path = os.path.join(bindir, self._UPDATE_ENGINE_PERF_SCRIPT)
-        self._host.send_file(path, self._UPDATE_ENGINE_PERF_PATH)
-
-
-    def get_perf_stats_for_update(self, resultdir):
-        """ Get the performance metrics created during update."""
-        try:
-            path = os.path.join('/var/log',
-                                self._UPDATE_ENGINE_PERF_RESULTS_FILE)
-            self._host.get_file(path, resultdir)
-            self._host.run('rm %s' % path)
-            script = os.path.join(self._UPDATE_ENGINE_PERF_PATH,
-                                  self._UPDATE_ENGINE_PERF_SCRIPT)
-            self._host.run('rm %s' % script)
-            return os.path.join(resultdir,
-                                self._UPDATE_ENGINE_PERF_RESULTS_FILE)
-        except:
-            logging.warning('Failed to copy performance metrics from DUT.')
-            return None
 
 
     def install_target_image(self, target_payload_uri):

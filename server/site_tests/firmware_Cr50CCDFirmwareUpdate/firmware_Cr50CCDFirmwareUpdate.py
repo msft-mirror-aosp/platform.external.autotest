@@ -4,7 +4,7 @@
 
 
 """The autotest performing FW update, both EC and AP in CCD mode."""
-
+import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
@@ -27,6 +27,15 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         servo_type = self.servo.get_servo_version()
         if 'ccd_cr50' not in servo_type:
             raise error.TestNAError('unsupported servo type: %s' % servo_type)
+        self.backup_firmware()
+
+    def cleanup(self):
+        try:
+            if self.is_firmware_saved():
+                self.restore_firmware()
+        except Exception as e:
+            logging.error("Caught exception: %s", str(e))
+        super(firmware_Cr50CCDFirmwareUpdate, self).cleanup()
 
     def run_once(self, host, rw_only=False):
         """The method called by the control file to start the test.

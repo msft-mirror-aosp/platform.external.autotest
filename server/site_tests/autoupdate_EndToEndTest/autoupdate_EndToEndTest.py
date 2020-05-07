@@ -31,18 +31,14 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     Performs an end-to-end test of updating a ChromeOS device from one version
     to another. The test performs the following steps:
 
-      1. Stages the source (full) and target update payload on the central
-         devserver.
-      2. Installs a source image on the DUT (if provided) and reboots to it.
-      3. Then starts the target update by calling cros_au RPC on the devserver.
-      4. This call copies the devserver code and all payloads to the DUT.
-      5. Starts a devserver on the DUT.
-      6. Starts an update pointing to this localhost devserver.
-      7. Watches as the DUT applies the update to rootfs and stateful.
-      8. Reboots and repeats steps 5-6, ensuring that the next update check
-         shows the new image version.
-      9. Returns the hostlogs collected during each update check for
-         verification against expected update events.
+      - Stages the source (full) and target update payloads on a devserver.
+      - Installs source image on the DUT (if provided) and reboots to it.
+      - Verifies that sign in works correctly on the source image.
+      - Installs target image on the DUT and reboots.
+      - Does a final update check.
+      - Verifies that sign in works correctly on the target image.
+      - Returns the hostlogs collected during each update check for
+        verification against expected update events.
 
     This class interacts with several others:
     UpdateEngineTest: base class for comparing expected update events against
@@ -52,23 +48,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                             updating. It has functions for things the DUT can
                             do: get logs, reboot, start update etc
 
-    The flow is like this: this class stages the payloads on
-    the devserver and then controls the flow of the test. It tells
-    ChromiumOSTestPlatform to start the update. When that is done updating, it
-    asks UpdateEngineTest to compare the update that just completed with an
-    expected update.
-
-    Some notes on naming:
-      devserver: Refers to a machine running the Chrome OS Update Devserver.
-      autotest_devserver: An autotest wrapper to interact with a devserver.
-                          Can be used to stage artifacts to a devserver. We
-                          will also class cros_au RPC on this devserver to
-                          start the update.
-      staged_url's: In this case staged refers to the fact that these items
-                     are available to be downloaded statically from these urls
-                     e.g. 'localhost:8080/static/my_file.gz'. These are usually
-                     given after staging an artifact using a autotest_devserver
-                     though they can be re-created given enough assumptions.
     """
     version = 1
 
@@ -82,11 +61,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     _WAIT_FOR_UPDATE_COMPLETED_SECONDS = 4 * 60
     _WAIT_FOR_UPDATE_CHECK_AFTER_REBOOT_SECONDS = 15 * 60
 
-    def initialize(self):
-        """Sets up variables that will be used by test."""
-        super(autoupdate_EndToEndTest, self).initialize()
-        self._host = None
-        self._autotest_devserver = None
 
     def _stage_payloads_onto_devserver(self, test_conf):
         """Stages payloads that will be used by the test onto the devserver.
@@ -257,18 +231,13 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         logging.info('Update successful, test completed')
 
 
-    def run_once(self, host, test_conf):
+    def run_once(self, test_conf):
         """Performs a complete auto update test.
 
-        @param host: a host object representing the DUT.
         @param test_conf: a dictionary containing test configuration values.
 
-        @raise error.TestError if anything went wrong with setting up the test;
-               error.TestFail if any part of the test has failed.
         """
-        self._host = host
         logging.debug('The test configuration supplied: %s', test_conf)
-
         self._autotest_devserver = self._get_least_loaded_devserver(test_conf)
         self._stage_payloads_onto_devserver(test_conf)
 

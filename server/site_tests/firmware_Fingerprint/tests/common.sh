@@ -27,6 +27,17 @@ SETVAR
   )"
 fi
 
+if [[ "${_BOARD}" == "bloonchipper" ]]; then
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
+Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
+Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Writable flags:      0x00000004 all_now
+SETVAR
+  )"
+else
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="${_FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED}"
+fi
+
 readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_DISABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000000
 Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
@@ -336,6 +347,17 @@ check_hw_and_sw_write_protect_enabled() {
   output="$(get_flashprotect_status)"
 
   if [[ "${output}" != "${_FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED}" ]]; then
+    echo "Incorrect flashprotect state: ${output}"
+    echo "Make sure HW write protect is enabled (wp_gpio_asserted)"
+    exit 1
+  fi
+}
+
+check_hw_and_sw_write_protect_enabled_ro() {
+  local output
+  output="$(get_flashprotect_status)"
+
+  if [[ "${output}" != "${_FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO}" ]]; then
     echo "Incorrect flashprotect state: ${output}"
     echo "Make sure HW write protect is enabled (wp_gpio_asserted)"
     exit 1

@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros.bluetooth import bluetooth_test
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterMTBF.simple_mtbf_test'
+NAME = 'bluetooth_AdapterMTBF.better_together_stress_test'
 PURPOSE = ('Bluetooth adapter MTBF test')
 CRITERIA = 'Pass the test'
 ATTRIBUTES = 'suite:bluetooth_mtbf'
@@ -18,7 +18,7 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, chameleon:bt_peer'
 
 DOC = """
-	The test is to run some typical bluetooth use cases and measure the Mean
+	The test is to stress the better together test and measure the Mean
 	Time Between Failures (MTBF).
       """
 
@@ -35,6 +35,7 @@ def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
     host.initialize_btpeer(btpeer_args)
     job.run_test('bluetooth_AdapterMTBF', host=host,
-                  num_iterations=1, args_dict=args_dict)
+                 num_iterations=1, args_dict=args_dict,
+                 test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

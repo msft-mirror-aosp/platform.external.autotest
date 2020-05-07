@@ -10,7 +10,6 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Performance"
 TEST_CLASS = "enterprise"
 ATTRIBUTES = "suite:hotrod-remora"
-DEPENDENCIES = "meet_app"
 TEST_TYPE = "server"
 JOB_RETRIES = 3
 

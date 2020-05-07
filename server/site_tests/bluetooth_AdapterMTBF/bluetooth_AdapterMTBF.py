@@ -35,22 +35,22 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     mtbf_wrapper = BluetoothAdapterQuickTests.quick_test_mtbf_decorator
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 
-    @mtbf_wrapper(timeout_mins=MTBF_TIMEOUT_MINS)
-    def run_mtbf_loop(self, phone, mouse):
-        """Run some simple MTBF test scenarios"""
+    @mtbf_wrapper(timeout_mins=MTBF_TIMEOUT_MINS, test_name='typical_use_cases')
+    def run_typical_use_cases(self, phone, mouse):
+        """Run typical MTBF test scenarios"""
 
         self.test_smart_unlock(address=phone.address)
         self.run_mouse_tests(device=mouse)
 
-        return True
 
-
-    @test_wrapper('Simple MTBF', devices={'BLE_PHONE':1, 'BLE_MOUSE':1})
-    def simple_mtbf_test(self):
-        """Do some initialization work then start the MTBF test loop"""
+    @test_wrapper(
+        'MTBF Typical Use Cases', devices={'BLE_PHONE': 1, 'BLE_MOUSE': 1})
+    def typical_use_cases_test(self):
+        """Do some initialization work then start the typical MTBF test loop"""
 
         mouse = self.devices['BLE_MOUSE'][0]
         phone = self.devices['BLE_PHONE'][0]
+
         phone.RemoveDevice(self.bluetooth_facade.address)
 
         # Pair the mouse first
@@ -62,7 +62,25 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_connection_by_adapter(mouse.address)
 
-        self.run_mtbf_loop(phone, mouse)
+        self.run_typical_use_cases(phone, mouse)
+
+
+    @mtbf_wrapper(
+        timeout_mins=MTBF_TIMEOUT_MINS, test_name='better_together_stress')
+    def run_better_together_stress(self, address):
+        """Run better together stress test"""
+
+        self.test_smart_unlock(address)
+
+
+    @test_wrapper('MTBF Better Together Stress', devices={'BLE_PHONE': 1})
+    def better_together_stress_test(self):
+        """Run better together stress test"""
+
+        phone = self.devices['BLE_PHONE'][0]
+        phone.RemoveDevice(self.bluetooth_facade.address)
+        self.run_better_together_stress(address=phone.address)
+
 
     @batch_wrapper('Adapter MTBF')
     def mtbf_batch_run(self, num_iterations=1, test_name=None):
@@ -79,7 +97,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
                              whole batch
         """
         # TODO: finalize the test cases that need to be run as MTBF
-        self.simple_mtbf_test()
+        self.typical_use_cases_test()
 
 
     def run_once(self, host, num_iterations=1, test_name=None, args_dict=None):

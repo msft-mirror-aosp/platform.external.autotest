@@ -179,6 +179,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
                 _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.3266-99b5e2c98',
                 _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
+            },
+            'dartmonkey_v2.0.4017-9c45fb4b3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'b84914c70e93c28e2221f48be338dbf0ad0cfb12b7877baaf6b47f7bfd2aa958',
+                _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
+                _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.4017-9c45fb4b3',
+                _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
             }
         }
     }

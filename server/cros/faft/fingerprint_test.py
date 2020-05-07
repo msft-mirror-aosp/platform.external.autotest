@@ -70,6 +70,7 @@ class FingerprintTest(test.test):
         '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799': _KEY_TYPE_MP,
 
         # nocturne
+        '8a8fc039a9463271995392f079b83ce33832d07d': _KEY_TYPE_DEV,
         '6f38c866182bd9bf7a4462c06ac04fa6a0074351': _KEY_TYPE_MP,
         'f6f7d96c48bd154dbae7e3fe3a3b4c6268a10934': _KEY_TYPE_PRE_MP,
 
@@ -131,6 +132,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_SHA256SUM: '73d822071518cf1b6e705d9c5903c2bcf37bae536784b275b96d916c44d3b6b7',
                 _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
                 _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.3266-99b5e2c98',
+                _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
+            },
+            'nocturne_fp_v2.0.4017-9c45fb4b3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '16c405eeaff75dcbc76dbc9f368f66e3fabc47e2ebcf13bd2b64b8b133bbff97',
+                _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
+                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.4017-9c45fb4b3',
                 _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
             },
         },

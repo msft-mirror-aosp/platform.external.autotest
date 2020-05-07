@@ -530,13 +530,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     @staticmethod
-    def quick_test_mtbf_decorator(timeout_mins):
+    def quick_test_mtbf_decorator(timeout_mins, test_name):
         """A decorator enabling a test to be run as a MTBF test, it will run
            the underlying test in a infinite loop until it fails or timeout is
            reached, in both cases the time elapsed time will be reported.
 
            @param timeout_mins: the max execution time of the test, once the
                                 time is up the test will report success and exit
+           @param test_name: the MTBF test name to be output to the dashboard
         """
 
         def decorator(batch_method):
@@ -557,14 +558,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     with self.mtbf_end_lock:
                         # The test ran the full duration without failure
                         if self.mtbf_end:
-                            self.report_mtbf_result(
-                                True, start_time)
+                            self.report_mtbf_result(True, start_time, test_name)
                             break
                     try:
                         batch_method(self, *args, **kwargs)
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
-                        self.report_mtbf_result(False, start_time)
+                        self.report_mtbf_result(False, start_time, test_name)
                         # Don't report the test run as failed for MTBF
                         self.fails = []
                         break
@@ -582,7 +582,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.mtbf_end = True
 
 
-    def report_mtbf_result(self, success, start_time):
+    def report_mtbf_result(self, success, start_time, test_name):
         """Report MTBF result by uploading it to GCS"""
         duration_secs = int(time.time() - start_time)
         start_time = int(start_time)
@@ -593,9 +593,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         board = self.host.get_board().split(':')[1]
         build = self.host.get_release_version()
         milestone = 'M' + self.host.get_chromeos_release_milestone()
-        mtbf_result = '{0},{1},{2},{3},{4},{5}'.format(
+        mtbf_result = '{0},{1},{2},{3},{4},{5},{6}'.format(
             board, build, milestone, start_time * 1000000, duration_secs,
-            success)
+            success, test_name)
         with tempfile.NamedTemporaryFile() as tmp_file:
             tmp_file.write(mtbf_result)
             tmp_file.flush()

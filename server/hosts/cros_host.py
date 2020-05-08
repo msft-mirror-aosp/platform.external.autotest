@@ -2266,7 +2266,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             if board_type in _NO_BATTERY_BOARD_TYPE:
                 logging.warn('Do NOT believe type %s has battery. '
                              'See debug for mosys details', board_type)
-                psu = self.system_output('mosys -vvvv psu type',
+                psu = utils.system_output('mosys -vvvv psu type',
                                          ignore_status=True)
                 logging.debug(psu)
                 rv = False

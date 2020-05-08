@@ -523,7 +523,7 @@ class FirmwareTest(FAFTBase):
 
         # PD FAFT is only tested with a least a servo V4 with servo micro.
         if pd_faft and (
-                'servo_v4_with_servo_micro' in self.pdtester.servo_type):
+                'servo_v4_with_servo_micro' not in self.pdtester.servo_type):
             raise error.TestError('servo_v4_with_servo_micro is a mandatory '
                                   'setup for PD FAFT. Got %s.'
                                   % self.pdtester.servo_type)

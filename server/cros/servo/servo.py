@@ -1037,7 +1037,11 @@ class Servo(object):
         # This call has a built-in delay to ensure that we wait a timeout
         # for the stick to enumerate and settle on the DUT side.
         self.switch_usbkey('dut')
-        self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+        try:
+            self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+        except error.TestFail as e:
+            logging.error('Failed to boot DUT in recovery mode. %s.', str(e))
+            raise error.AutotestError('Failed to boot DUT in recovery mode.')
 
     def install_recovery_image(self, image_path=None,
                                make_image_noninteractive=False):

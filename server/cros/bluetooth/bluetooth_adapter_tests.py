@@ -1152,6 +1152,24 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
+    @test_retry_and_log(False)
+    def test_is_facade_valid(self):
+        """Checks whether the bluetooth facade is in a good state.
+
+        If bluetoothd restarts (i.e. due to a crash), the object proxies will no
+        longer be valid (because the session will be closed). Check whether the
+        session failed and wait for a new session if it did.
+        """
+        initially_ok = self.bluetooth_facade.is_bluetoothd_valid()
+        bluez_started = initially_ok or self.bluetooth_facade.start_bluetoothd()
+
+        self.results = {
+                'initially_ok': initially_ok,
+                'bluez_started': bluez_started
+        }
+        return all(self.results.values())
+
+
     @test_retry_and_log
     def test_UUIDs(self):
         """Test that basic profiles are supported."""

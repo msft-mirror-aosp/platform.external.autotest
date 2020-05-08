@@ -27,7 +27,7 @@ echo "Validating that we're now running the RO version"
 check_running_ro_firmware
 
 echo "Validating flash protection hasn't changed"
-check_hw_and_sw_write_protect_enabled
+check_hw_and_sw_write_protect_enabled_ro
 
 echo "Rebooting back into RW"
 reboot_ec

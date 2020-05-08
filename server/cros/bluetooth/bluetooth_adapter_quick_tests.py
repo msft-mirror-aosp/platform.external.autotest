@@ -168,6 +168,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Delete files created in previous run
         self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
                                                     self.BTMON_DIR_LOG_PATH))
+        self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
+                                                    self.USBMON_DIR_LOG_PATH))
+
         self.start_new_btmon()
         self.start_new_usbmon()
 

@@ -22,10 +22,14 @@ Example invocation:
   telemetry_AFDOGenerate
 """
 
+from __future__ import print_function
+
 import bz2
 import logging
 import os
 import time
+
+from contextlib import contextmanager
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import autotest
@@ -34,7 +38,6 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros import filesystem_util
 from autotest_lib.server.cros import telemetry_runner
 from autotest_lib.site_utils import test_runner_utils
-from contextlib import contextmanager
 
 # These are arguments to the linux "perf" tool.
 # The -e value is processor specific and comes from the Intel SDM vol 3b
@@ -135,7 +138,8 @@ class telemetry_AFDOGenerate(test.test):
         cmd = []
         src = ('root@%s:%s/%s' % (dut.hostname, DUT_CHROME_RESULTS_DIR,
                                   'perf.data'))
-        cmd.extend(['scp', DUT_SCP_OPTIONS, RSA_KEY, '-v', src, host_dir])
+        cmd.extend(['scp', DUT_SCP_OPTIONS, RSA_KEY, '-P', str(dut.port), '-v',
+                    src, host_dir])
         command = ' '.join(cmd)
 
         logging.debug('Retrieving Perf Data: %s', command)

@@ -279,6 +279,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         self.test_name = test_name
 
+        # Bluetoothd could have crashed behind the scenes; check to see if
+        # everything is still ok and recover if needed.
+        self.test_is_facade_valid()
+
         # Reset the adapter
         self.test_reset_on_adapter()
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
@@ -339,6 +343,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         if self.test_name is not None:
             logging.info('Cleanning up and restarting towards next test...')
+
+
+        # Bluetoothd could have crashed behind the scenes; check if everything
+        # is ok and recover if needed. This is done as part of clean-up as well
+        # to make sure we can fully remove pairing info between tests
+        self.test_is_facade_valid()
 
         self.bluetooth_facade.stop_discovery()
 

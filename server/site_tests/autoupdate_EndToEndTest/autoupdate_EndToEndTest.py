@@ -11,20 +11,6 @@ from autotest_lib.server.cros.update_engine import chromiumos_test_platform
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
-def snippet(text):
-    """Returns the text with start/end snip markers around it.
-
-    @param text: The snippet text.
-
-    @return The text with start/end snip markers around it.
-    """
-    snip = '---8<---' * 10
-    start = '-- START -'
-    end = '-- END -'
-    return ('%s%s\n%s\n%s%s' %
-            (start, snip[len(start):], text, end, snip[len(end):]))
-
-
 class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     """Complete update test between two Chrome OS releases.
 
@@ -60,6 +46,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     _WAIT_FOR_DOWNLOAD_COMPLETED_SECONDS = 20 * 60
     _WAIT_FOR_UPDATE_COMPLETED_SECONDS = 4 * 60
     _WAIT_FOR_UPDATE_CHECK_AFTER_REBOOT_SECONDS = 15 * 60
+
+    _LOGIN_TEST = 'login_LoginSuccess'
 
 
     def _stage_payloads_onto_devserver(self, test_conf):
@@ -100,17 +88,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                          'steps: %s', file_url)
             return file_url
         raise error.TestFail('Could not find %s' % filename)
-
-
-    def _dump_update_engine_log(self, test_platform):
-        """Dumps relevant AU error log."""
-        try:
-            error_log = test_platform.get_update_log(80)
-            logging.error('Dumping snippet of update_engine log:\n%s',
-                          snippet(error_log))
-        except Exception:
-            # Mute any exceptions we get printing debug logs.
-            pass
 
 
     def _verify_active_slot_changed(self, source_active_slot,
@@ -181,7 +158,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         # Record the active root partition.
-        source_active_slot = cros_device.get_active_slot()
+        source_active_slot = self._host.get_active_boot_slot()
         logging.info('Source active slot: %s', source_active_slot)
 
         source_release = test_conf['source_release']
@@ -198,18 +175,17 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             # Call into base class to compare expected events against hostlog.
             self.verify_update_events(source_release, file_url)
         except update_engine_test.UpdateEngineEventMissing:
-            self._dump_update_engine_log(cros_device)
+            logging.exception('Event missing from target update.')
             raise
 
         # Device is updated. Check that we are running the expected version.
-        if cros_device.oobe_triggers_update():
+        if self._host.oobe_triggers_update():
             # If DUT automatically checks for update during OOBE (e.g
             # rialto), this update check fires before the test can get the
             # post-reboot update check. So we just check the version from
             # lsb-release.
             logging.info('Skipping post reboot update check.')
-            self._verify_version(target_release,
-                                 cros_device.get_cros_version())
+            self._verify_version(target_release, self._get_chromeos_version())
         else:
             # Verify we have a hostlog for the post-reboot update check.
             file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
@@ -220,12 +196,12 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                 self.verify_update_events(source_release, file_url,
                                           target_release)
             except update_engine_test.UpdateEngineEventMissing:
-                self._dump_update_engine_log(cros_device)
+                logging.exception('Event missing from post-reboot check.')
                 raise
 
-
+        target_active_slot = self._host.get_active_boot_slot()
         self._verify_active_slot_changed(source_active_slot,
-                                         cros_device.get_active_slot(),
+                                         target_active_slot,
                                          source_release, target_release)
 
         logging.info('Update successful, test completed')
@@ -251,10 +227,11 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             logs_dir = self.update_device_without_cros_au_rpc(
                 cros_device, source_payload_uri, clobber_stateful=True)
             self._copy_generated_nebraska_logs(logs_dir, 'source')
-            cros_device.check_login_after_source_update()
+            self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                                   tag='source')
 
         # Start the update to the target image.
         self.run_update_test(cros_device, test_conf)
 
         # Check we can login after the update.
-        cros_device.check_login_after_target_update()
+        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

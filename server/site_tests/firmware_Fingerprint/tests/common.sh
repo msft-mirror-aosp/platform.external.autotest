@@ -27,6 +27,17 @@ SETVAR
   )"
 fi
 
+if [[ "${_BOARD}" == "bloonchipper" ]]; then
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
+Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
+Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Writable flags:      0x00000004 all_now
+SETVAR
+  )"
+else
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="${_FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED}"
+fi
+
 readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_DISABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000000
 Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
@@ -51,6 +62,11 @@ SETVAR
   )"
 fi
 
+# SYSTEM_IS_LOCKED
+# SYSTEM_JUMP_ENABLED
+# SYSTEM_JUMPED_TO_CURRENT_IMAGE
+# See https://chromium.googlesource.com/chromiumos/platform/ec/+/10fe09bf9aaf59213d141fc1d479ed259f786049/include/ec_commands.h#1865
+readonly _SYSINFO_SYSTEM_IS_LOCKED_FLAGS="0x0000000d"
 
 if [[ "${_BOARD}" == "bloonchipper" ]]; then
   readonly _ROLLBACK_FLASH_OFFSET="0x20000"
@@ -144,6 +160,11 @@ read_from_flash_in_bootloader_mode_without_modifying_RDP_level() {
 read_from_flash_in_bootloader_mode_while_setting_RDP_to_level_0() {
   local output_file="${1}"
   flash_fp_mcu --read "${output_file}"
+}
+
+
+get_sysinfo_flags() {
+  run_ectool_cmd "sysinfo" "flags"
 }
 
 get_running_firmware_copy() {
@@ -342,6 +363,17 @@ check_hw_and_sw_write_protect_enabled() {
   fi
 }
 
+check_hw_and_sw_write_protect_enabled_ro() {
+  local output
+  output="$(get_flashprotect_status)"
+
+  if [[ "${output}" != "${_FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO}" ]]; then
+    echo "Incorrect flashprotect state: ${output}"
+    echo "Make sure HW write protect is enabled (wp_gpio_asserted)"
+    exit 1
+  fi
+}
+
 check_hw_and_sw_write_protect_disabled() {
   local output
   output="$(get_flashprotect_status)"
@@ -425,4 +457,14 @@ check_file_contains_all_0xFF_bytes() {
   check_files_match "${file_to_compare}" "${tmp_file}"
 
   rm -rf "${tmp_file}"
+}
+
+check_system_is_locked() {
+  local flags
+  flags="$(get_sysinfo_flags)"
+  if [[ "${flags}" != "${_SYSINFO_SYSTEM_IS_LOCKED_FLAGS}" ]]; then
+    echo "sysinfo flags do not match. expected: "\
+         "${_SYSINFO_SYSTEM_IS_LOCKED_FLAGS}, actual: ${flags}"
+    exit 1
+  fi
 }

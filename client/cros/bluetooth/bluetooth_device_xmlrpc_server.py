@@ -601,6 +601,28 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return bool(self._get_dbus_proxy_for_bluetoothd())
 
 
+    def is_bluetoothd_proxy_valid(self):
+        """Checks whether the proxy object for bluetoothd is ok.
+
+        The dbus proxy object (self._bluez) can become unusable if bluetoothd
+        crashes or restarts for any reason. This method checks whether this has
+        happened by attempting to use the object proxy. If bluetoothd has
+        restarted (or is not available), then the session will no longer be
+        valid and this will result in a dbus exception.
+
+        Returns:
+            True if the bluez proxy is still usable. False otherwise.
+        """
+
+        try:
+            _ = self._bluez.GetManagedObjects(
+                    dbus_interface=self.BLUEZ_MANAGER_IFACE)
+        except dbus.exceptions.DBusException:
+            return False
+
+        return True
+
+
     def _update_bluez(self):
         """Store a D-Bus proxy for the Bluetooth daemon in self._bluez.
 

@@ -6,6 +6,7 @@
 
 import logging
 from contextlib import closing
+from contextlib import contextmanager
 
 from autotest_lib.client.bin import local_host
 from autotest_lib.client.bin import utils
@@ -22,6 +23,7 @@ from autotest_lib.server.hosts import gce_host
 from autotest_lib.server.hosts import sonic_host
 from autotest_lib.server.hosts import ssh_host
 from autotest_lib.server.hosts import labstation_host
+from autotest_lib.server.hosts import file_store
 
 
 CONFIG = global_config.global_config
@@ -264,3 +266,37 @@ def create_target_machine(machine, **kwargs):
         logging.debug('Hostname of machine is converted to %s for the test to '
                       'run inside a container.', hostname)
     return create_host(machine, **kwargs)
+
+@contextmanager
+def create_target_host(hostname, host_info_path=None, host_info_store=None,
+                        servo_uart_logs_dir=None, **kwargs):
+    """Create the target host, accounting for containers.
+
+    @param hostname: hostname of the device
+    @param host_info_path: path to the host info file to create host_info
+    @param host_info_store: if exist then using as the primary host_info
+                            instance when creaating machine
+    @param kwargs: Keyword args to pass to the testbed initialization.
+
+    @yield: The target host object to be used for you :)
+    """
+
+    if not host_info_store and host_info_path:
+        host_info_store = file_store.FileStore(host_info_path)
+
+    if host_info_store:
+        machine = {
+            'hostname': hostname,
+            'host_info_store': host_info_store,
+            'afe_host': server_utils.EmptyAFEHost()
+        }
+    else:
+        machine = hostname
+
+    host = create_target_machine(machine, **kwargs)
+    if servo_uart_logs_dir and host.servo:
+        host.servo.uart_logs_dir = servo_uart_logs_dir
+    try:
+      yield host
+    finally:
+      host.close()

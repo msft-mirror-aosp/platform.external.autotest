@@ -2934,6 +2934,15 @@ class BluetoothAdapterTests(test.test):
             if pattern.search(diff_str):
                 diff.remove(diff_str)
 
+        # Remove any difference in Battery Service
+        # TODO(b:155596705) Cleanup these code until b:155505162 is solved.
+        pattern = re.compile('^Service %s is not included in both Applications:'
+                             'False vs True' % GATT_HIDApplication.\
+                                                            BatteryServiceUUID)
+        for diff_str in diff[::]:
+            if pattern.search(diff_str):
+                diff.remove(diff_str)
+
         if len(diff) != 0:
             logging.error('Application Diff: %s', diff)
             return False

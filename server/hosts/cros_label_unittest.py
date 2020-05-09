@@ -302,8 +302,7 @@ class ServoTypeLabelTests(unittest.TestCase):
     """Unit tests for ServoTypeLabel"""
     def test_update_for_task(self):
         self.assertTrue(ServoTypeLabel().update_for_task(''))
-        # make false when all DUT has servo_type
-        self.assertTrue(ServoTypeLabel().update_for_task('repair'))
+        self.assertFalse(ServoTypeLabel().update_for_task('repair'))
         self.assertTrue(ServoTypeLabel().update_for_task('deploy'))
 
     def test_generate_labels_return_value_from_labels(self):

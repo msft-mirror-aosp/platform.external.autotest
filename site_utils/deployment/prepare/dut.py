@@ -78,39 +78,6 @@ def create_cros_host(hostname, board, model, servo_hostname, servo_port,
         host.close()
 
 
-@contextlib.contextmanager
-def create_labstation_host(hostname, board, model):
-    """Yield a server.hosts.LabstationHost object to use for labstation
-    preparation.
-
-    This object contains just enough inventory data to be able to prepare the
-    labstation for lab deployment. It does not contain any reference to
-    AFE / Skylab so that DUT preparation is guaranteed to be isolated from
-    the scheduling infrastructure.
-
-    @param hostname:        FQDN of the host to prepare.
-    @param board:           The autotest board label for the DUT.
-    @param model:           The autotest model label for the DUT.
-
-    @yield a server.hosts.Host object.
-    """
-    labels = [
-        'board:%s' % board,
-        'model:%s' % model,
-        'os:labstation'
-        ]
-
-    store = host_info.InMemoryHostInfoStore(info=host_info.HostInfo(
-        labels=labels,
-    ))
-    machine_dict = _get_machine_dict(hostname, store)
-    host = hosts.create_host(machine_dict)
-    try:
-        yield host
-    finally:
-        host.close()
-
-
 def _get_machine_dict(hostname, host_info_store):
     """Helper function to generate a machine_dic to feed hosts.create_host.
 

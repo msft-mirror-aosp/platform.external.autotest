@@ -23,11 +23,8 @@ class UpdateEngineUtil(object):
     """Utility code shared between client and server update_engine autotests"""
 
     # Update engine status lines.
-    _LAST_CHECKED_TIME = 'LAST_CHECKED_TIME'
     _PROGRESS = 'PROGRESS'
     _CURRENT_OP = 'CURRENT_OP'
-    _NEW_VERSION = 'NEW VERSION'
-    _NEW_SIZE = 'NEW_SIZE'
 
     # Update engine statuses.
     _UPDATE_STATUS_IDLE = 'UPDATE_STATUS_IDLE'
@@ -94,8 +91,8 @@ class UpdateEngineUtil(object):
         status = self._get_update_engine_status()
         if status is None:
             return False
-        return any(arg == status[self._CURRENT_OP] for arg in
-            [self._UPDATE_STATUS_DOWNLOADING, self._UPDATE_STATUS_FINALIZING])
+        return status[self._CURRENT_OP] in (
+            self._UPDATE_STATUS_DOWNLOADING, self._UPDATE_STATUS_FINALIZING)
 
 
     def _has_progress_stopped(self):
@@ -175,7 +172,7 @@ class UpdateEngineUtil(object):
                     raise error.TestFail('Update status was unexpectedly '
                                          'IDLE when we were waiting for the '
                                          'update to complete: %s' % err_str)
-                if any(arg in status[self._CURRENT_OP] for arg in statuses):
+                if status[self._CURRENT_OP] in statuses:
                     break
             time.sleep(1)
 
@@ -523,8 +520,7 @@ class UpdateEngineUtil(object):
         @returns: a sequential list of <request> xml blocks or None if none.
 
         """
-        update_log = self._run('cat %s' %
-                               self._UPDATE_ENGINE_LOG).stdout
+        update_log = self._get_update_engine_log()
 
         # Matches <request ... /request>.  The match can be on multiple
         # lines and the search is not greedy so it only matches one block.
@@ -539,9 +535,7 @@ class UpdateEngineUtil(object):
                   (second accuracy), or None if no such timestamp exists.
 
         """
-        update_log = ''
-        with open(self._UPDATE_ENGINE_LOG) as fh:
-            update_log = fh.read()
+        update_log = self._get_update_engine_log()
 
         # Matches any single line with "MMDD/HHMMSS ... Request ... xml", e.g.
         # "[0723/133526:INFO:omaha_request_action.cc(794)] Request: <?xml".
@@ -584,7 +578,7 @@ class UpdateEngineUtil(object):
 
         """
         err_str = 'Updating payload state for error code: '
-        log = self._run('cat %s' % self._UPDATE_ENGINE_LOG).stdout.splitlines()
+        log = self._get_update_engine_log().splitlines()
         targets = [line for line in log if err_str in line]
         logging.debug('Error lines found: %s', targets)
         if not targets:

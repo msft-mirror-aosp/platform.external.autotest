@@ -20,7 +20,6 @@ from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
-from autotest_lib.server.hosts.servo_constants import SERVO_TYPE_LABEL_PREFIX
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
@@ -501,31 +500,6 @@ class StopStartUIVerifier(hosts.Verifier):
         return 'The DUT image works fine when stop ui/start ui.'
 
 
-class ServoTypeVerifier(hosts.Verifier):
-    """Verify that servo_type label exists and has correct value"""
-
-    def verify(self, host):
-        if not host.servo:
-            logging.info("Host has no working servo.")
-            return
-
-        info = host.host_info_store.get()
-        try:
-            if not info.get_label_value(SERVO_TYPE_LABEL_PREFIX):
-                logging.info('servo_type missing, updating...')
-                servo_type = host.servo.get_servo_version()
-                info.set_version_label(SERVO_TYPE_LABEL_PREFIX, servo_type)
-                host.host_info_store.commit(info)
-        except Exception as e:
-            # We don't want fail the verifier and break DUTs here just
-            # because of servo issue.
-            logging.error("Failed to update servo_type, %s", str(e))
-
-    @property
-    def description(self):
-        return 'The host has servo_type attribute'
-
-
 class _ResetRepairAction(hosts.RepairAction):
     """Common handling for repair actions that reset a DUT."""
 
@@ -798,7 +772,6 @@ def _cros_verify_base_dag():
     FirmwareVersionVerifier = cros_firmware.FirmwareVersionVerifier
     verify_dag = (
         (repair_utils.SshVerifier,        'ssh',        ()),
-        (ServoTypeVerifier,               'servo_type', ()),
         (DevDefaultBootVerifier,          'dev_default_boot', ('ssh',)),
         (DevModeVerifier,                 'devmode',  ('ssh',)),
         (EnrollmentStateVerifier,         'enrollment_state', ('ssh',)),

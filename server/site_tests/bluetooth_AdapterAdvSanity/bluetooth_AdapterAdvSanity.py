@@ -10,7 +10,6 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_leadvertising_tests \
      import bluetooth_AdapterLEAdvertising
 
-
 class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
         bluetooth_AdapterLEAdvertising):
 
@@ -85,6 +84,7 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
            @param test_name: specific test to run otherwise None to run the
                              whole batch
         """
+        self.adv_peer_test()
         self.adv_multiple_advertising_test()
         self.adv_single_advertising_test()
         self.adv_suspend_resume_advertising_test()
@@ -92,13 +92,13 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
 
 
     def run_once(self, host, num_iterations=1, test_name=None,
-                 flag='Quick Sanity'):
+                 flag='Quick Sanity', peer_required=True):
         """Run the batch of Bluetooth advertising sanity tests
 
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         """
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_btpeer=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=peer_required, flag=flag)
         self.adv_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

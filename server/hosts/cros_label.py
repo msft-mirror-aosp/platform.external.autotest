@@ -363,8 +363,7 @@ class ServoTypeLabel(base_label.StringPrefixLabel):
         # This label is stored in the lab config,
         # only deploy and repair tasks update it
         # or when no task name is mentioned.
-        # use REPAIR_TASK_NAME till restore value for all DUTs
-        return task_name in (REPAIR_TASK_NAME, DEPLOY_TASK_NAME, '')
+        return task_name in (DEPLOY_TASK_NAME, '')
 
 
 def _parse_hwid_labels(hwid_info_list):

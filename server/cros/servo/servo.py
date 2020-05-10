@@ -1142,6 +1142,10 @@ class Servo(object):
         return servo_type
 
 
+    def get_servo_type(self):
+        return self._servo_type
+
+
     def get_main_servo_device(self):
         """Return the main servo device"""
         return self._servo_type.split('_with_')[-1].split('_and_')[0]

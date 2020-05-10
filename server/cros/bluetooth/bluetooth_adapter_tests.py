@@ -4,11 +4,13 @@
 
 """Server side bluetooth adapter subtests."""
 
+from datetime import datetime, timedelta
 import errno
 import functools
 import httplib
 import inspect
 import logging
+import multiprocessing
 import os
 import re
 from socket import error as SocketError
@@ -36,6 +38,8 @@ Event = recorder.Event
 # Location of data traces relative to this (bluetooth_adapter_tests.py) file
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
+
+RESUME_DELTA = 5
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
@@ -1145,6 +1149,24 @@ class BluetoothAdapterTests(test.test):
         self.results = {
                 'reset_off': reset_off,
                 'is_powered_off': is_powered_off}
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_is_facade_valid(self):
+        """Checks whether the bluetooth facade is in a good state.
+
+        If bluetoothd restarts (i.e. due to a crash), the object proxies will no
+        longer be valid (because the session will be closed). Check whether the
+        session failed and wait for a new session if it did.
+        """
+        initially_ok = self.bluetooth_facade.is_bluetoothd_valid()
+        bluez_started = initially_ok or self.bluetooth_facade.start_bluetoothd()
+
+        self.results = {
+                'initially_ok': initially_ok,
+                'bluez_started': bluez_started
+        }
         return all(self.results.values())
 
 
@@ -3420,6 +3442,82 @@ class BluetoothAdapterTests(test.test):
 
         return (self.bluetooth_facade.get_connection_info(address)
                 is not None)
+
+
+    @test_retry_and_log(False)
+    def test_suspend_and_wait_for_sleep(self, suspend, sleep_timeout):
+        """ Suspend the device and wait until it is sleeping.
+
+        @param suspend: Sub-process that does the actual suspend call.
+        @param sleep_timeout time limit in seconds to allow the host sleep.
+
+        @return True if host is asleep within a short timeout, False otherwise.
+        """
+        suspend.start()
+        try:
+            self.host.test_wait_for_sleep(sleep_timeout)
+        except:
+            suspend.join()
+            return False
+
+        return True
+
+
+    @test_retry_and_log(False)
+    def test_wait_for_resume(
+        self, boot_id, suspend, resume_timeout, fail_on_timeout=False):
+        """ Wait for device to resume from suspend.
+
+        @param boot_id: Current boot id
+        @param suspend: Sub-process that does actual suspend call.
+        @param resume_timeout: Expect device to resume in given timeout.
+        @param fail_on_timeout: Fails if timeout is reached
+
+        @return True if suspend sub-process completed without error.
+        """
+        success = True
+
+        # Sometimes it takes longer to resume from suspend; give some leeway
+        resume_timeout = resume_timeout + RESUME_DELTA
+        try:
+            start = datetime.now()
+            self.host.test_wait_for_resume(
+                boot_id, resume_timeout=resume_timeout)
+
+            # As of now, a timeout in test_wait_for_resume doesn't raise. Force
+            # a failure here instead by checking against the start time.
+            delta = datetime.now() - start
+            if delta > timedelta(seconds=resume_timeout):
+                success = False if fail_on_timeout else True
+        except Exception as e:
+            success = False
+            logging.error("wait_for_resume: %s", e)
+        finally:
+            suspend.join()
+            self.results = {
+                "resume_success": success,
+                "suspend_result": suspend.exitcode == 0
+            }
+
+            return all(self.results.values())
+
+
+    def suspend_async(self, suspend_time, allow_early_resume=False):
+        """ Suspend asynchronously and return process for joining
+
+        @param suspend_time: how long to stay in suspend
+        @param allow_early_resume: are we expecting to wake up earlier
+        @returns multiprocessing.Process object with suspend task
+        """
+
+        def _action_suspend():
+            self.host.suspend(
+                suspend_time=suspend_time,
+                allow_early_resume=allow_early_resume)
+
+        proc = multiprocessing.Process(target=_action_suspend)
+        proc.daemon = True
+        return proc
 
 
     # -------------------------------------------------------------------

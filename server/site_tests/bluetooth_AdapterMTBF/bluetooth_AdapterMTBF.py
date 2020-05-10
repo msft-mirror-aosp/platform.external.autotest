@@ -18,6 +18,9 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_better_together \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
     import BluetoothAdapterHIDReportTests
 
+SHORT_SUSPEND = 10
+ACTION_TIMEOUT = 10
+SLEEP_FOR_DISCONNECTION = 10
 
 class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
                             BluetoothAdapterHIDReportTests):
@@ -35,11 +38,28 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     mtbf_wrapper = BluetoothAdapterQuickTests.quick_test_mtbf_decorator
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 
+    def test_suspend_resume(self, device):
+        """Test the device can connect after suspending and resuming"""
+        boot_id = self.host.get_boot_id()
+        suspend = self.suspend_async(
+            suspend_time=SHORT_SUSPEND, allow_early_resume=True)
+
+        self.test_suspend_and_wait_for_sleep(
+            suspend, sleep_timeout=ACTION_TIMEOUT)
+        self.test_wait_for_resume(
+            boot_id, suspend, resume_timeout=ACTION_TIMEOUT)
+
+        # LE can't reconnect without advertising/discoverable
+        self.test_device_set_discoverable(device, True)
+        self.test_connection_by_device(device)
+
+
     @mtbf_wrapper(timeout_mins=MTBF_TIMEOUT_MINS, test_name='typical_use_cases')
     def run_typical_use_cases(self, phone, mouse):
         """Run typical MTBF test scenarios"""
 
         self.test_smart_unlock(address=phone.address)
+        self.test_suspend_resume(device=mouse)
         self.run_mouse_tests(device=mouse)
 
 

@@ -78,8 +78,9 @@ class firmware_FWupdate(FirmwareTest):
         self.new_bios_ro = self.new_images.get('bios_ro')
         self.new_bios_rw = self.new_images.get('bios_rw')
 
-        if not self.new_images['bios']:
-            raise error.TestError('Must specify at least new_bios=<path>')
+        if not (self.new_bios or self.new_bios_rw):
+            raise error.TestError('Must specify at least new_bios=<path>'
+                                  ' or new_bios_rw=<path>')
 
         self.backup_firmware()
 
@@ -394,14 +395,17 @@ class firmware_FWupdate(FirmwareTest):
 
     def test(self):
         """Run all the test_* cases"""
-        self.check_bios_specified(
-                old_ro=True, old_rw=True, new_ro=True, new_rw=True)
+        self.check_bios_specified(old_ro=True, old_rw=True, new_rw=True)
 
         errors = []
         errors += self.test_old(raise_error=False)
         errors += self.test_downgrade_rw(raise_error=False)
         errors += self.test_upgrade_rw(raise_error=False)
-        errors += self.test_new(raise_error=False)
+        if self.new_bios or (self.new_bios_ro and self.new_bios_rw):
+            errors += self.test_new(raise_error=False)
+        else:
+            logging.warn("No 'new_bios_ro' given, skipping: %s",
+                         self.test_new.__doc__)
         if errors:
             if len(errors) > 1:
                 errors.insert(0, "%s RO+RW combinations failed." % len(errors))

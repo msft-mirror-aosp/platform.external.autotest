@@ -90,15 +90,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                      target_active_slot)
 
 
-    def _verify_version(self, expected, actual):
-        """Compares actual and expected versions."""
-        if expected != actual:
-            err_msg = 'Failed to verify OS version. Expected %s, was %s' % (
-                expected, actual)
-            logging.error(err_msg)
-            raise error.TestFail(err_msg)
-
-
     def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
                                           clobber_stateful=False):
         """Updates the device.
@@ -141,36 +132,13 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             cros_device, test_conf['target_payload_uri'])
         self._copy_generated_nebraska_logs(logs_dir, 'target')
 
-        file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
+        # Compare hostlog events from the update to the expected ones.
+        rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
+                                        'target')
+        reboot = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
                                           'target')
-
-        try:
-            # Call into base class to compare expected events against hostlog.
-            self.verify_update_events(source_release, file_url)
-        except update_engine_test.UpdateEngineEventMissing:
-            logging.exception('Event missing from target update.')
-            raise
-
-        # Device is updated. Check that we are running the expected version.
-        if self._host.oobe_triggers_update():
-            # If DUT automatically checks for update during OOBE (e.g
-            # rialto), this update check fires before the test can get the
-            # post-reboot update check. So we just check the version from
-            # lsb-release.
-            logging.info('Skipping post reboot update check.')
-            self._verify_version(target_release, self._get_chromeos_version())
-        else:
-            # Verify we have a hostlog for the post-reboot update check.
-            file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
-                                              'target')
-
-            try:
-                # Compare expected events against hostlog.
-                self.verify_update_events(source_release, file_url,
-                                          target_release)
-            except update_engine_test.UpdateEngineEventMissing:
-                logging.exception('Event missing from post-reboot check.')
-                raise
+        self.verify_update_events(source_release, rootfs)
+        self.verify_update_events(source_release, reboot, target_release)
 
         target_active_slot = self._host.get_active_boot_slot()
         self._verify_active_slot_changed(source_active_slot,

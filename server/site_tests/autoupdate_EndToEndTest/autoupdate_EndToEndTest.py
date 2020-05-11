@@ -153,7 +153,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         logging.debug('The test configuration supplied: %s', test_conf)
-        self._autotest_devserver = self._get_least_loaded_devserver(test_conf)
+        self._autotest_devserver = self._get_devserver_for_test(test_conf)
         self._stage_payloads(test_conf['source_payload_uri'],
                              test_conf['source_archive_uri'])
 

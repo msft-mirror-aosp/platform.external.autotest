@@ -14,6 +14,7 @@ from autotest_lib.server.cros.update_engine import update_engine_test
 
 
 class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
+    """Tests autoupdating to/from kernel-next images."""
     version = 1
 
     def _get_target_uri(self, target_board, version_regex, max_image_checks):
@@ -56,7 +57,7 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
                                   target_board)
 
         if metadata_uri is None:
-            logging.warning('No image met quality criteria. Checked %d images' %
+            logging.warning('No image met quality criteria. Checked %d images',
                             len(candidate_uris))
             # At this point we've checked as many images as possible up to the
             # specified maximum, and none of them have qualified with our pass/
@@ -248,6 +249,7 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
 
 
     def run_once(self, test_conf, max_image_checks):
+        """Main entry point of the test."""
         logging.debug("Using test_conf: %s", test_conf)
 
         self._source_payload_uri = test_conf['source_payload_uri']
@@ -260,10 +262,10 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
             self._target_payload_uri = self._get_target_uri(
                 target_board, target_version_regex, max_image_checks)
 
-        logging.debug('Using source image %s' % self._source_payload_uri)
-        logging.debug('Using target image %s' % self._target_payload_uri)
+        logging.debug('Using source image %s', self._source_payload_uri)
+        logging.debug('Using target image %s', self._target_payload_uri)
 
-        self._autotest_devserver = self._get_least_loaded_devserver(
+        self._autotest_devserver = self._get_devserver_for_test(
             {'target_payload_uri': self._target_payload_uri})
 
         self._stage_payloads_onto_devserver()

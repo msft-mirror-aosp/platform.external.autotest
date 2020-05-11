@@ -370,26 +370,20 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             raise error.TestError('Failed to stage payload: %s' % e)
 
 
-    def _get_least_loaded_devserver(self, test_conf):
+    def _get_devserver_for_test(self, test_conf):
         """Find a devserver to use.
 
-        We first try to pick a devserver with the least load. In case all
-        devservers' load are higher than threshold, fall back to
-        the old behavior by picking a devserver based on the payload URI,
-        with which ImageServer.resolve will return a random devserver based on
-        the hash of the URI. The picked devserver needs to respect the
-        location of the host if 'prefer_local_devserver' is set to True or
-        'restricted_subnets' is  set.
+        We use the payload URI as the hash for ImageServer.resolve. The chosen
+        devserver needs to respect the location of the host if
+        'prefer_local_devserver' is set to True or 'restricted_subnets' is set.
 
         @param test_conf: a dictionary of test settings.
+
         """
-        # TODO(dhaddock): Change back to using least loaded when
-        # crbug.com/1010226 is resolved.
         autotest_devserver = dev_server.ImageServer.resolve(
             test_conf['target_payload_uri'], self._host.hostname)
         devserver_hostname = urlparse.urlparse(
             autotest_devserver.url()).hostname
-
         logging.info('Devserver chosen for this run: %s', devserver_hostname)
         return autotest_devserver
 

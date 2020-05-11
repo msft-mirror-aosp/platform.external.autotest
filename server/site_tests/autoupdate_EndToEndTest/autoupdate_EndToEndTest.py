@@ -76,10 +76,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                     'corrupt.')
             elif source_release == target_release:
                 err_msg += (' Given that the source and target versions are '
-                            'identical, either it (1) rebooted into the '
-                            'old image due to a bad payload or (2) we retried '
-                            'the update after it failed once and the second '
-                            'attempt was written to the original slot.')
+                            'identical, we rebooted into the old image due to '
+                            'a bad payload.')
             else:
                 err_msg += (' This is strange since the DUT reported the '
                             'correct target version. This is probably a system '

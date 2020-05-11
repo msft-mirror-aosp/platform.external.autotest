@@ -181,7 +181,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
                                        'update_engine.log_second_dut'))
 
         # Return the update_engine logs so we can check for p2p entries.
-        return host.run('cat %s' % self._UPDATE_ENGINE_LOG).stdout
+        return self._get_update_engine_log()
 
 
     def _check_for_p2p_entries_in_update_log(self, update_engine_log):

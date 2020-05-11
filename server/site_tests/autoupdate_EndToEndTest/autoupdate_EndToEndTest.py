@@ -37,34 +37,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     """
     version = 1
 
-    # Timeout periods, given in seconds.
-    _WAIT_FOR_INITIAL_UPDATE_CHECK_SECONDS = 12 * 60
-    # TODO(sosa): Investigate why this needs to be so long (this used to be
-    # 120 and regressed).
-    _WAIT_FOR_DOWNLOAD_STARTED_SECONDS = 4 * 60
-    # See https://crbug.com/731214 before changing WAIT_FOR_DOWNLOAD
-    _WAIT_FOR_DOWNLOAD_COMPLETED_SECONDS = 20 * 60
-    _WAIT_FOR_UPDATE_COMPLETED_SECONDS = 4 * 60
-    _WAIT_FOR_UPDATE_CHECK_AFTER_REBOOT_SECONDS = 15 * 60
-
     _LOGIN_TEST = 'login_LoginSuccess'
-
-
-    def _stage_payloads_onto_devserver(self, test_conf):
-        """Stages payloads that will be used by the test onto the devserver.
-
-        @param test_conf: a dictionary containing payload urls to stage.
-
-        """
-        logging.info('Staging images onto autotest devserver (%s)',
-                     self._autotest_devserver.url())
-
-        self._stage_payloads(test_conf['source_payload_uri'],
-                             test_conf['source_archive_uri'])
-
-        self._stage_payloads(test_conf['target_payload_uri'],
-                             test_conf['target_archive_uri'],
-                             test_conf['update_type'])
 
 
     def _get_hostlog_file(self, filename, identifier):
@@ -215,7 +188,11 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         """
         logging.debug('The test configuration supplied: %s', test_conf)
         self._autotest_devserver = self._get_least_loaded_devserver(test_conf)
-        self._stage_payloads_onto_devserver(test_conf)
+        self._stage_payloads(test_conf['source_payload_uri'],
+                             test_conf['source_archive_uri'])
+
+        self._stage_payloads(test_conf['target_payload_uri'],
+                             test_conf['target_archive_uri'])
 
         # Get an object representing the CrOS DUT.
         cros_device = chromiumos_test_platform.ChromiumOSTestPlatform(

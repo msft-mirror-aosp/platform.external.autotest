@@ -48,7 +48,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # Timeout periods, given in seconds.
     _INITIAL_CHECK_TIMEOUT = 12 * 60
     _DOWNLOAD_STARTED_TIMEOUT = 4 * 60
-    # See https://crbug.com/731214 before changing _DOWNLOAD_FINISHED_TIMEOUT
     _DOWNLOAD_FINISHED_TIMEOUT = 20 * 60
     _UPDATE_COMPLETED_TIMEOUT = 4 * 60
     _POST_REBOOT_TIMEOUT = 15 * 60
@@ -428,21 +427,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return payloads[0]
 
 
-    def _get_partial_path_from_url(self, url):
-        """
-        Strip partial path to payload from GS Url.
-
-        Example: gs://chromeos-image-archive/samus-release/R77-112.0.0/bla.bin
-        returns samus-release/R77-112.0.0/bla.bin.
-
-        @param url: The Google Storage url.
-
-        """
-        gs = dev_server._get_image_storage_server()
-        staged_path = url.partition(gs)
-        return staged_path[2]
-
-
     @staticmethod
     def _get_stateful_uri(build_uri):
         """Returns a complete GS URI of a stateful update given a build path."""
@@ -479,6 +463,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             return staged_uri, staged_stateful
 
         return None, None
+
 
     def _payload_to_stateful_uri(self, payload_uri):
         """Given a payload GS URI, returns the corresponding stateful URI."""

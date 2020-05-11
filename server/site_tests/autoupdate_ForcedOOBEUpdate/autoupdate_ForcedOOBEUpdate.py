@@ -21,7 +21,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._host.run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
 
         # Get the last two update_engine logs: before and after reboot.
-        self._save_extra_update_engine_logs()
+        self._save_extra_update_engine_logs(number_of_logs=2)
         self._change_cellular_setting_in_update_engine(False)
 
         # Cancel any update still in progress.

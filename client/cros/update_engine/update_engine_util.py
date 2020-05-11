@@ -431,7 +431,7 @@ class UpdateEngineUtil(object):
         self._run(cmd, ignore_status=ignore_status)
 
 
-    def _save_extra_update_engine_logs(self, number_of_logs=2):
+    def _save_extra_update_engine_logs(self, number_of_logs):
         """
         Get the last X number of update_engine logs on the DUT.
 

@@ -1004,7 +1004,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             servo_state = self._servo_host.get_servo_state()
         else:
             self.servo = None
-
+        self.set_servo_type()
         self.set_servo_state(servo_state)
 
 
@@ -1031,6 +1031,30 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.set_servo_host(self._servo_host)
 
 
+    def set_servo_type(self):
+        """Set servo info labels to dut host_info"""
+        if not self.servo:
+            logging.warning('Servo is not initialized to get servo_type.')
+            return
+        servo_type = self.servo.get_servo_type()
+        if not servo_type:
+            logging.warning('Cannot collect servo_type from servo'
+                ' by `dut-control servo_type`! Please file a bug'
+                ' and inform infra team as we are not expected '
+                ' to reach this point.')
+            return
+        host_info = self.host_info_store.get()
+        prefix = servo_constants.SERVO_TYPE_LABEL_PREFIX
+        old_type = host_info.get_label_value(prefix)
+        if old_type == servo_type:
+            # do not need update
+            return
+        host_info.set_version_label(prefix, servo_type)
+        self.host_info_store.commit(host_info)
+        logging.info('ServoHost: servo_type updated to %s '
+                    '(previous: %s)', servo_type, old_type)
+
+
     def set_servo_state(self, servo_state):
         """Set servo info labels to dut host_info"""
         if servo_state is not None:
@@ -1050,6 +1074,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         host_info = self.host_info_store.get()
         servo_state_prefix = servo_constants.SERVO_STATE_LABEL_PREFIX
         return host_info.get_label_value(servo_state_prefix)
+
 
     def repair(self):
         """Attempt to get the DUT to pass `self.verify()`.

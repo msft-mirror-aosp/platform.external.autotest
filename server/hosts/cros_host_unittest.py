@@ -125,7 +125,9 @@ class DictFilteringTestCase(unittest.TestCase):
         host = MockHost()
         host.servo = None
         host._servo_host = mock.Mock()
-        host._servo_host.get_servo.return_value = 'Not Empty'
+        servo = mock.Mock()
+        servo.get_servo_type.return_value = None
+        host._servo_host.get_servo.return_value = servo
         host._servo_host.get_servo_state.return_value = 'SOME_STATE'
         host.host_info_store = host_info.InMemoryHostInfoStore()
         return host
@@ -169,7 +171,9 @@ class DictFilteringTestCase(unittest.TestCase):
     def test_set_servo_host_update_servo_state_when_host_exist(self):
         host = self.create_host()
         host._servo_host = mock.Mock()
-        host._servo_host.get_servo.return_value = 'Not Empty'
+        servo = mock.Mock()
+        servo.get_servo_type.return_value = None
+        host._servo_host.get_servo.return_value = servo
         host._servo_host.get_servo_state.return_value = 'SOME_STATE'
         self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), '')
 
@@ -190,7 +194,9 @@ class DictFilteringTestCase(unittest.TestCase):
     def test_set_servo_host_use_servo_state_from_host_when_host_is_passed(self):
         host = self.create_host()
         servo_host = mock.Mock()
-        servo_host.get_servo.return_value = 'Not Empty'
+        servo = mock.Mock()
+        servo.get_servo_type.return_value = None
+        servo_host.get_servo.return_value = servo
         servo_host.get_servo_state.return_value = 'state_of_host'
 
         host.set_servo_host(servo_host)

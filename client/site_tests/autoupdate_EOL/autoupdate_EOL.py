@@ -22,10 +22,6 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
     _EXPECTED_WARNING_TITLE = 'Updates end {}'
     _UNIX_EPOCH = datetime.datetime(1970, 1, 1)
 
-    def cleanup(self):
-        self._save_extra_update_engine_logs()
-        super(autoupdate_EOL, self).cleanup()
-
 
     def _get_expected_eol_date(self, eol_date):
         """Figure out the expected eol date."""

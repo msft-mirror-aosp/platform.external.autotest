@@ -15,7 +15,7 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
     version = 1
 
     def cleanup(self):
-        self._save_extra_update_engine_logs(4)
+        self._save_extra_update_engine_logs(number_of_logs=2)
         super(autoupdate_Interruptions, self).cleanup()
 
 

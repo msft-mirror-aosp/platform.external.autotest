@@ -162,11 +162,8 @@ class bluetooth_AdapterSRSanity(
         ]
         self.run_reconnect_device(devices)
 
-    # TODO(b/151872292) - Blooglet gets LMP timeout with 2 LE devices
-    #                     disconnecting during suspend
     @test_wrapper('Reconnect Multiple LE HID',
-                  devices={'BLE_MOUSE': 1, 'BLE_KEYBOARD': 1},
-                  model_testWarn=['blooglet'])
+                  devices={'BLE_MOUSE': 1, 'BLE_KEYBOARD': 1})
     def sr_reconnect_multiple_le_hid(self):
         """ Reconnects multiple LE HID devices after suspend/resume. """
         devices = [

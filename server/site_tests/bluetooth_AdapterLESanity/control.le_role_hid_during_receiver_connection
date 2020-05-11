@@ -10,7 +10,7 @@ NAME = 'bluetooth_AdapterLESanity.le_role_hid_during_receiver_connection'
 PURPOSE = ('Tests controller can initiate HID connection while connected to'
             'device in Sender role')
 CRITERIA = 'Pass the test'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = ''
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

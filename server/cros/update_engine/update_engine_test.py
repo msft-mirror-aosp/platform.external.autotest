@@ -337,29 +337,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         filenames = [filename]
         if properties_file:
             filenames.append(filename + '.json')
-        return self._stage_payload(build_name, filenames,
-                                   archive_url=archive_url)
-
-
-    def _stage_payload(self, build_name, filenames, archive_url=None):
-        """Stage the given payload onto the devserver.
-
-        Works for either a stateful or full/delta test payload. Expects the
-        gs_path or a combo of build_name + filename.
-
-        @param build_name: The build name e.g. x86-mario-release/<version>.
-                           If set, assumes default gs archive bucket and
-                           requires filename to be specified.
-        @param filenames: In conjunction with build_name, these are the files
-                          you are downloading.
-        @param archive_url: An optional GS archive location, if not using the
-                            devserver's default.
-
-        @return URL of the staged payload (and properties file) on the server.
-
-        @raise error.TestError if there's a problem with staging.
-
-        """
         try:
             self._autotest_devserver.stage_artifacts(image=build_name,
                                                      files=filenames,

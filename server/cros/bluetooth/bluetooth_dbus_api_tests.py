@@ -564,6 +564,9 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         reset = self._reset_state()
         is_discovering = self._wait_till_discovery_starts()
         pause_discovery, error = self.bluetooth_facade.pause_discovery()
+        # Make sure the pause discovery has completed
+        pause_discovery_complete = self._wait_till_hci_state_no_inquiry_holds()
+
         unpause_discovery, _ = self.bluetooth_facade.unpause_discovery()
 
         unpause_again, error = self.bluetooth_facade.unpause_discovery()
@@ -574,6 +577,7 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
             'reset' : reset,
             'is_discovering': is_discovering,
             'pause_discovery' : pause_discovery,
+            'pause_discovery_complete' : pause_discovery_complete,
             'unpause_discovery' : unpause_discovery,
             'unpause_again_failed': not unpause_again,
             'error_matches' : self._compare_error(error,

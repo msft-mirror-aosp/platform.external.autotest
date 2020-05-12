@@ -196,7 +196,6 @@ def _provision_with_au(host, update_url, staging_server):
                 staging_server=staging_server.url(), reboot=False,
                 transfer_class=auto_updater_transfer.LabTransfer)
             updater.CheckPayloads()
-            updater.PreparePayloadPropsFile()
             updater.RunUpdate()
             updater.SetClearTpmOwnerRequest()
             updater.RebootAndVerify()

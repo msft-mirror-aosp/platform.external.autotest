@@ -276,7 +276,7 @@ TIME = "{length}"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "Hardware"
 TEST_TYPE = "server"
-REQUIRE_SSP = False
+REQUIRE_SSP = True
 PRIORITY = {priority}
 DEPENDENCIES = "{label}"
 JOB_RETRIES = 0
@@ -355,4 +355,3 @@ for suite in SUITES:
                 )
                 _write_control_file(_get_control_file_name(suite, label, test),
                         control_file)
-

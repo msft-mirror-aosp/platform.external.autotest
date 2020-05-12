@@ -10,7 +10,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "dummy"
 TEST_TYPE = "server"
-REQUIRE_SSP = False
+REQUIRE_SSP = True
 
 DOC = """
 

@@ -48,7 +48,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # Timeout periods, given in seconds.
     _INITIAL_CHECK_TIMEOUT = 12 * 60
     _DOWNLOAD_STARTED_TIMEOUT = 4 * 60
-    # See https://crbug.com/731214 before changing _DOWNLOAD_FINISHED_TIMEOUT
     _DOWNLOAD_FINISHED_TIMEOUT = 20 * 60
     _UPDATE_COMPLETED_TIMEOUT = 4 * 60
     _POST_REBOOT_TIMEOUT = 15 * 60
@@ -338,29 +337,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         filenames = [filename]
         if properties_file:
             filenames.append(filename + '.json')
-        return self._stage_payload(build_name, filenames,
-                                   archive_url=archive_url)
-
-
-    def _stage_payload(self, build_name, filenames, archive_url=None):
-        """Stage the given payload onto the devserver.
-
-        Works for either a stateful or full/delta test payload. Expects the
-        gs_path or a combo of build_name + filename.
-
-        @param build_name: The build name e.g. x86-mario-release/<version>.
-                           If set, assumes default gs archive bucket and
-                           requires filename to be specified.
-        @param filenames: In conjunction with build_name, these are the files
-                          you are downloading.
-        @param archive_url: An optional GS archive location, if not using the
-                            devserver's default.
-
-        @return URL of the staged payload (and properties file) on the server.
-
-        @raise error.TestError if there's a problem with staging.
-
-        """
         try:
             self._autotest_devserver.stage_artifacts(image=build_name,
                                                      files=filenames,
@@ -371,26 +347,20 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             raise error.TestError('Failed to stage payload: %s' % e)
 
 
-    def _get_least_loaded_devserver(self, test_conf):
+    def _get_devserver_for_test(self, test_conf):
         """Find a devserver to use.
 
-        We first try to pick a devserver with the least load. In case all
-        devservers' load are higher than threshold, fall back to
-        the old behavior by picking a devserver based on the payload URI,
-        with which ImageServer.resolve will return a random devserver based on
-        the hash of the URI. The picked devserver needs to respect the
-        location of the host if 'prefer_local_devserver' is set to True or
-        'restricted_subnets' is  set.
+        We use the payload URI as the hash for ImageServer.resolve. The chosen
+        devserver needs to respect the location of the host if
+        'prefer_local_devserver' is set to True or 'restricted_subnets' is set.
 
         @param test_conf: a dictionary of test settings.
+
         """
-        # TODO(dhaddock): Change back to using least loaded when
-        # crbug.com/1010226 is resolved.
         autotest_devserver = dev_server.ImageServer.resolve(
             test_conf['target_payload_uri'], self._host.hostname)
         devserver_hostname = urlparse.urlparse(
             autotest_devserver.url()).hostname
-
         logging.info('Devserver chosen for this run: %s', devserver_hostname)
         return autotest_devserver
 
@@ -426,21 +396,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             raise error.TestFail('Could not find payload for %s', build)
         logging.debug('Payloads found: %s', payloads)
         return payloads[0]
-
-
-    def _get_partial_path_from_url(self, url):
-        """
-        Strip partial path to payload from GS Url.
-
-        Example: gs://chromeos-image-archive/samus-release/R77-112.0.0/bla.bin
-        returns samus-release/R77-112.0.0/bla.bin.
-
-        @param url: The Google Storage url.
-
-        """
-        gs = dev_server._get_image_storage_server()
-        staged_path = url.partition(gs)
-        return staged_path[2]
 
 
     @staticmethod
@@ -479,6 +434,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             return staged_uri, staged_stateful
 
         return None, None
+
 
     def _payload_to_stateful_uri(self, payload_uri):
         """Given a payload GS URI, returns the corresponding stateful URI."""

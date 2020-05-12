@@ -21,7 +21,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._host.run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
 
         # Get the last two update_engine logs: before and after reboot.
-        self._save_extra_update_engine_logs()
+        self._save_extra_update_engine_logs(number_of_logs=2)
         self._change_cellular_setting_in_update_engine(False)
 
         # Cancel any update still in progress.
@@ -113,11 +113,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param moblab: True if we are running on moblab.
 
         """
-        # veyron_rialto is a medical device with a different OOBE that auto
-        # completes so this test is not valid on that device.
-        if 'veyron_rialto' in self._host.get_board():
-            raise error.TestNAError('Rialto has a custom OOBE. Skipping test.')
-
         tpm_utils.ClearTPMOwnerRequest(self._host)
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=full_payload,

@@ -133,7 +133,7 @@ class firmware_PDPowerSwap(FirmwareTest):
 
         self.set_ap_off_power_mode('suspend')
 
-        new_state = self.dut_pd_utils.get_pd_state(self.pdtester_port)
+        new_state = self.dut_pd_utils.get_pd_state(pd_port)
         if new_state != self.SRC:
             raise error.TestFail('DUT power role changed to %s '
                     'during S0-to-S3 transition!' % new_state)

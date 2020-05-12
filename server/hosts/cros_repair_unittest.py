@@ -18,7 +18,6 @@ from autotest_lib.server.hosts import repair_utils
 
 CROS_VERIFY_DAG = (
     (repair_utils.SshVerifier, 'ssh', ()),
-    (cros_repair.ServoTypeVerifier, 'servo_type', ()),
     (cros_repair.DevDefaultBootVerifier, 'dev_default_boot', ('ssh',)),
     (cros_repair.DevModeVerifier, 'devmode', ('ssh',)),
     (cros_repair.EnrollmentStateVerifier, 'enrollment_state', ('ssh',)),
@@ -78,7 +77,6 @@ MOBLAB_REPAIR_ACTIONS = (
 
 JETSTREAM_VERIFY_DAG = (
     (repair_utils.SshVerifier, 'ssh', ()),
-    (cros_repair.ServoTypeVerifier, 'servo_type', ()),
     (cros_repair.DevDefaultBootVerifier, 'dev_default_boot', ('ssh',)),
     (cros_repair.DevModeVerifier, 'devmode', ('ssh',)),
     (cros_repair.EnrollmentStateVerifier, 'enrollment_state', ('ssh',)),

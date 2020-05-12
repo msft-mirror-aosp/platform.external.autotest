@@ -221,8 +221,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         ~~~~~~~~
             args_dict = utils.args_to_dict(args)
             btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)
-            host = hosts.create_host(machine)
-            host.initialize_btpeer(btpeer_args)
+            host = hosts.create_host(machine, btpeer_args=btpeer_args)
         ~~~~~~~~
 
         @param args_dict: Dictionary from which to extract the btpeer
@@ -290,7 +289,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def _initialize(self, hostname, chameleon_args=None, servo_args=None,
                     pdtester_args=None, try_lab_servo=False,
-                    try_servo_repair=False,
+                    try_servo_repair=False, btpeer_args=[],
                     ssh_verbosity_flag='', ssh_options='',
                     *args, **dargs):
         """Initialize superclasses, |self.chameleon|, and |self.servo|.
@@ -346,10 +345,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         else:
             self.chameleon = None
 
-        # Bluetooth peers. These will be initialized by test if required.
-        self._btpeer_host_list = []
-        self.btpeer_list = []
-        self.btpeer = None
+        # Initialize Bluetooth peers.
+        try:
+            self.initialize_btpeer(btpeer_args)
+        except Exception as e:
+            logging.error('Exception %s in initialize_btpeer', str(e))
 
         # Add pdtester host if pdtester args were added on command line
         self._pdtester_host = pdtester_host.create_pdtester_host(
@@ -374,26 +374,34 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                             a ChameleonHost. See chameleon_host for details.
 
         """
-
-        if type(btpeer_args) is list:
-            btpeer_args_list = btpeer_args
-        else:
-            btpeer_args_list = [btpeer_args]
-
-        self._btpeer_host_list = chameleon_host.create_btpeer_host(
-                dut=self.hostname, btpeer_args_list=btpeer_args_list)
-        logging.debug('Bluetooth peer hosts are  %s', self._btpeer_host_list)
-        self.btpeer_list = [_host.create_chameleon_board() for _host in
-                               self._btpeer_host_list if _host is not None]
-
-        if len(self.btpeer_list) > 0:
-            self.btpeer = self.btpeer_list[0]
-        else:
+        #TODO (b:142486063) Remove the try..except
+        try:
+            self._btpeer_host_list = []
+            self.btpeer_list = []
             self.btpeer = None
 
-        logging.debug('After initialize_btpeer btpeer_list %s btpeer_host_list'
-                      'is %s and btpeer is %s',self.btpeer_list,
-                      self._btpeer_host_list, self.btpeer)
+            if type(btpeer_args) is list:
+                btpeer_args_list = btpeer_args
+            else:
+                btpeer_args_list = [btpeer_args]
+
+            self._btpeer_host_list = chameleon_host.create_btpeer_host(
+                dut=self.hostname, btpeer_args_list=btpeer_args_list)
+            logging.debug('Bluetooth peer hosts are  %s',
+                          self._btpeer_host_list)
+            self.btpeer_list = [_host.create_chameleon_board() for _host in
+                                self._btpeer_host_list if _host is not None]
+
+            if len(self.btpeer_list) > 0:
+                self.btpeer = self.btpeer_list[0]
+
+            logging.debug('After initialize_btpeer btpeer_list %s '
+                          'btpeer_host_list is %s and btpeer is %s',
+                          self.btpeer_list, self._btpeer_host_list,
+                          self.btpeer)
+        except Exception as e:
+            logging.error('Exception %s in initialize_btpeer', str(e))
+
 
 
     def get_cros_repair_image_name(self):
@@ -996,7 +1004,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             servo_state = self._servo_host.get_servo_state()
         else:
             self.servo = None
-
+        self.set_servo_type()
         self.set_servo_state(servo_state)
 
 
@@ -1023,6 +1031,30 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.set_servo_host(self._servo_host)
 
 
+    def set_servo_type(self):
+        """Set servo info labels to dut host_info"""
+        if not self.servo:
+            logging.warning('Servo is not initialized to get servo_type.')
+            return
+        servo_type = self.servo.get_servo_type()
+        if not servo_type:
+            logging.warning('Cannot collect servo_type from servo'
+                ' by `dut-control servo_type`! Please file a bug'
+                ' and inform infra team as we are not expected '
+                ' to reach this point.')
+            return
+        host_info = self.host_info_store.get()
+        prefix = servo_constants.SERVO_TYPE_LABEL_PREFIX
+        old_type = host_info.get_label_value(prefix)
+        if old_type == servo_type:
+            # do not need update
+            return
+        host_info.set_version_label(prefix, servo_type)
+        self.host_info_store.commit(host_info)
+        logging.info('ServoHost: servo_type updated to %s '
+                    '(previous: %s)', servo_type, old_type)
+
+
     def set_servo_state(self, servo_state):
         """Set servo info labels to dut host_info"""
         if servo_state is not None:
@@ -1042,6 +1074,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         host_info = self.host_info_store.get()
         servo_state_prefix = servo_constants.SERVO_STATE_LABEL_PREFIX
         return host_info.get_label_value(servo_state_prefix)
+
 
     def repair(self):
         """Attempt to get the DUT to pass `self.verify()`.

@@ -725,25 +725,8 @@ class BluetoothAdapterTests(test.test):
                 return False
 
             for btpeer in self.btpeer_group[device_type][:number]:
-                logging.info("getting emulated %s",device_type)
-                device = get_bluetooth_emulated_device(btpeer, device_type)
-
-                # Re-fresh device to clean state if test is starting
-                if on_start:
-                    self.clear_raspi_device(device)
-
-                try:
-                    # Tell generic btpeer to bind to this device type
-                    device.SpecifyDeviceType(device_type)
-
-                # Catch generic Fault exception by rpc server, ignore method not
-                # available as it indicates platform didn't support method and
-                # that's ok
-                except Exception, e:
-                    logging.info("got exception %s",str(e))
-                    if not (e.__class__.__name__ == 'Fault' and
-                        'is not supported' in str(e)):
-                        raise
+                logging.info("getting emulated %s", device_type)
+                device = self.reset_device(btpeer, device_type, on_start)
 
                 self.devices[device_type].append(device)
 
@@ -767,26 +750,43 @@ class BluetoothAdapterTests(test.test):
         @returns: the bluetooth device object
 
         """
-        self.devices[device_type].append(get_bluetooth_emulated_device(\
-                                    self.host.btpeer, device_type))
+
+        self.devices[device_type].append(
+                self.reset_device(self.host.btpeer, device_type, on_start))
+
+        return self.devices[device_type][-1]
+
+
+    def reset_device(self, peer, device_type, clear_device=True):
+        """Reset the peer device in order to be used as a different type.
+
+        @param peer: the peer device to reset with new device type
+        @param device_type : the new bluetooth device type, e.g., 'MOUSE'
+        @param clear_device: whether to clear the device state
+
+        @returns: the bluetooth device object
+
+        """
+        device = get_bluetooth_emulated_device(peer, device_type)
 
         # Re-fresh device to clean state if test is starting
-        if on_start:
-            self.clear_raspi_device(self.devices[device_type][-1])
+        if clear_device:
+            self.clear_raspi_device(device)
 
         try:
             # Tell generic chameleon to bind to this device type
-            self.devices[device_type][-1].SpecifyDeviceType(device_type)
+            device.SpecifyDeviceType(device_type)
 
         # Catch generic Fault exception by rpc server, ignore method not
         # available as it indicates platform didn't support method and that's
         # ok
         except Exception, e:
+            logging.info("got exception %s", str(e))
             if not (e.__class__.__name__ == 'Fault' and
-                'is not supported' in str(e)):
+                    'is not supported' in str(e)):
                 raise
 
-        return self.devices[device_type][-1]
+        return device
 
 
     def is_device_available(self, btpeer, device_type):
@@ -3546,6 +3546,7 @@ class BluetoothAdapterTests(test.test):
 
         # Some tests may instantiate a peripheral device for testing.
         self.devices = dict()
+        self.shared_peers = []
         for device_type in SUPPORTED_DEVICE_TYPES:
             self.devices[device_type] = list()
 

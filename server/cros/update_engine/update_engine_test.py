@@ -324,33 +324,38 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return info.attributes.get(self._host.job_repo_url_attribute, '')
 
 
-    def _stage_payloads(self, payload_uri, archive_uri, payload_type='full'):
-        """Stages a payload and its associated stateful on devserver."""
-        if payload_uri:
-            staged_uri, _ = self._stage_payload_by_uri(payload_uri)
-            logging.info('Staged %s payload from %s at %s.', payload_type,
-                         payload_uri, staged_uri)
+    def _stage_payloads(self, payload_uri, archive_uri):
+        """
+        Stages payloads on the devserver.
 
-            # Figure out where to get the matching stateful payload.
-            if archive_uri:
-                stateful_uri = self._get_stateful_uri(archive_uri)
-            else:
-                stateful_uri = self._payload_to_stateful_uri(payload_uri)
-            staged_stateful = self._stage_payload_by_uri(
-                stateful_uri, properties_file=False)
+        @param payload_uri: URI for a GS payload to stage.
+        @param archive_uri: URI for GS folder containing payloads. This is used
+                            to find the related stateful payload.
 
-            logging.info('Staged stateful from %s at %s.', stateful_uri,
-                         staged_stateful)
-            return staged_uri, staged_stateful
+        @returns URI of staged payload, URI of staged stateful.
 
-        return None, None
+        """
+        if not payload_uri:
+            return None, None
+        staged_uri, _ = self._stage_payload_by_uri(payload_uri)
+        logging.info('Staged %s at %s.', payload_uri, staged_uri)
+
+        # Figure out where to get the matching stateful payload.
+        if archive_uri:
+            stateful_uri = self._get_stateful_uri(archive_uri)
+        else:
+            stateful_uri = self._payload_to_stateful_uri(payload_uri)
+        staged_stateful = self._stage_payload_by_uri(stateful_uri,
+                                                     properties_file=False)
+        logging.info('Staged stateful from %s at %s.', stateful_uri,
+                     staged_stateful)
+        return staged_uri, staged_stateful
+
 
 
     def _payload_to_stateful_uri(self, payload_uri):
         """Given a payload GS URI, returns the corresponding stateful URI."""
-        build_uri = payload_uri.rpartition('/')[0]
-        if build_uri.endswith('payloads'):
-            build_uri = build_uri.rpartition('/')[0]
+        build_uri = payload_uri.rpartition('/payloads/')[0]
         return self._get_stateful_uri(build_uri)
 
 

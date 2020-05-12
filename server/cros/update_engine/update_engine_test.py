@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import itertools
 import json
 import logging
 import os
@@ -76,9 +77,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                       we will use hosts instead of host.
 
         """
-        self._hostlog_filename = None
-        self._hostlog_events = []
-        self._num_consumed_events = 0
         self._current_timestamp = None
         self._host = host
         # Some AU tests use multiple DUTs
@@ -145,47 +143,18 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         ]
 
 
-    def _read_hostlog_events(self):
-        """Read the list of events from the hostlog json file."""
-        if len(self._hostlog_events) <= self._num_consumed_events:
-            try:
-                with open(self._hostlog_filename, 'r') as out_log:
-                    self._hostlog_events = json.loads(out_log.read())
-            except Exception as e:
-                raise error.TestFail('Error while reading the hostlogs '
-                                     'from devserver: %s' % e)
-
-
-    def _get_next_hostlog_event(self):
-        """Returns the next event from the hostlog json file.
-
-        @return The next new event in the host log
-                None if no such event was found or an error occurred.
-        """
-        self._read_hostlog_events()
-        # Return next new event, if one is found.
-        if len(self._hostlog_events) > self._num_consumed_events:
-            new_event = {
-                key: str(val) for key, val
-                in self._hostlog_events[self._num_consumed_events].iteritems()
-            }
-            self._num_consumed_events += 1
-            logging.info('Consumed new event: %s', new_event)
-            return new_event
-
-
-    def _verify_event_with_timeout(self, expected_event):
+    def _verify_event_with_timeout(self, expected_event, actual_event):
         """Verify an expected event occurs before its timeout.
 
-        @param expected_event: an expected event
+        @param expected_event: an expected event.
+        @param actual_event: an actual event from the hostlog.
 
         @return None if event complies, an error string otherwise.
         """
-        actual_event = self._get_next_hostlog_event()
         if not actual_event:
             return ('No entry found for %s event.' % uee.get_event_type
                 (expected_event._expected_attrs['event_type']))
-
+        logging.info('Consumed new event: %s', actual_event)
         # If this is the first event, set it as the current time
         if self._current_timestamp is None:
             self._current_timestamp = datetime.strptime(
@@ -463,12 +432,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
             result.append({
                 'version': app.attrib.get('version'),
-                'track': app.attrib.get('track'),
-                'board': app.attrib.get('board'),
-                'event_type': (event.attrib.get('eventtype')
-                               if event is not None else None),
-                'event_result': (event.attrib.get('eventresult')
-                                 if event is not None else None),
+                'event_type': (int(event.attrib.get('eventtype'))
+                              if event is not None else None),
+                'event_result': (int(event.attrib.get('eventresult'))
+                                if event is not None else None),
                 'timestamp': timestamp.strftime(self._TIMESTAMP_FORMAT),
             })
 
@@ -580,24 +547,25 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param target_release: The target build version.
 
         """
-        self._hostlog_events = []
-        self._num_consumed_events = 0
-        self._current_timestamp = None
         if target_release is not None:
             expected_events = self._get_expected_event_for_post_reboot_check(
                 source_release, target_release)
         else:
             expected_events = self._get_expected_events_for_rootfs_update(
                 source_release)
+        logging.info('Checking update against hostlog file: %s',
+                     hostlog_filename)
+        try:
+            with open(hostlog_filename, 'r') as fp:
+                hostlog_events = json.load(fp)
+        except Exception as e:
+            raise error.TestFail('Error reading the hostlog file: %s' % e)
 
-        self._hostlog_filename = hostlog_filename
-        logging.info('Checking update steps with hostlog file: %s',
-                     self._hostlog_filename)
-
-        for expected_event in expected_events:
-            logging.info('Expecting %s within %s seconds', expected_event,
-                         expected_event._timeout)
-            err_msg = self._verify_event_with_timeout(expected_event)
+        for expected, actual in itertools.izip_longest(expected_events,
+                                                       hostlog_events):
+            logging.info('Expecting %s within %s seconds', expected,
+                         expected._timeout)
+            err_msg = self._verify_event_with_timeout(expected, actual)
             if err_msg is not None:
                 raise error.TestFail(('Hostlog verification failed: %s ' %
                                      err_msg))

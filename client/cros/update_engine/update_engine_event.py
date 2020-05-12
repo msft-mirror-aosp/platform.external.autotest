@@ -23,7 +23,8 @@ EVENT_TYPE_DICT = {
     EVENT_TYPE_UPDATE_COMPLETE: 'update_complete',
     EVENT_TYPE_DOWNLOAD_STARTED: 'download_started',
     EVENT_TYPE_DOWNLOAD_FINISHED: 'download_finished',
-    EVENT_TYPE_REBOOTED_AFTER_UPDATE: 'rebooted_after_update'
+    EVENT_TYPE_REBOOTED_AFTER_UPDATE: 'rebooted_after_update',
+    None: 'initial_check'
 }
 
 EVENT_RESULT_DICT = {
@@ -51,14 +52,15 @@ class UpdateEngineEvent(object):
     """
 
     def __init__(self, event_type=None, event_result=None, version=None,
-                 previous_version=None, on_error=None):
+                 previous_version=None, timeout=None):
         """Initializes an event.
 
         @param event_type: Expected event type.
         @param event_result: Expected event result code.
         @param version: Expected reported image version.
         @param previous_version: Expected reported previous image version.
-        @param on_error: a function to call when the event's data is invalid.
+        @param timeout: How many seconds max should it take to reach this event
+                        from the previous one.
         """
         self._expected_attrs = {
             'event_type': event_type,
@@ -66,7 +68,7 @@ class UpdateEngineEvent(object):
             'version': version,
             'previous_version': previous_version,
         }
-        self._on_error = on_error
+        self._timeout = timeout
 
 
     def _verify_event_attribute(self, attr_name, expected_attr_val,
@@ -102,7 +104,7 @@ class UpdateEngineEvent(object):
 
         @param actual_event: a dictionary containing event attributes.
 
-        @return An error message, or None if all attributes as expected.
+        @return A list of mismatched attributes or None if events match.
         """
         mismatched_attrs = [
             attr_name for attr_name, expected_attr_val
@@ -110,9 +112,5 @@ class UpdateEngineEvent(object):
             if (expected_attr_val and
                 not self._verify_event_attribute(attr_name, expected_attr_val,
                                                  actual_event.get(attr_name)))]
+        return mismatched_attrs if mismatched_attrs else None
 
-        if not mismatched_attrs:
-            return None
-
-        return self._on_error(self._expected_attrs, actual_event,
-                              mismatched_attrs)

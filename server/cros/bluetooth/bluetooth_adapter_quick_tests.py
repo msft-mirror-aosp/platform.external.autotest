@@ -567,17 +567,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     timeout_mins * 60, self.mtbf_timeout)
                 mtbf_timer.start()
                 start_time = time.time()
+                board = self.host.get_board().split(':')[1]
+                build = self.host.get_release_version()
+                milestone = 'M' + self.host.get_chromeos_release_milestone()
+                in_lab = site_utils.host_in_lab(self.host.hostname)
                 while True:
                     with self.mtbf_end_lock:
                         # The test ran the full duration without failure
                         if self.mtbf_end:
-                            self.report_mtbf_result(True, start_time, test_name)
+                            self.report_mtbf_result(
+                                True, start_time, test_name, board, build,
+                                milestone, in_lab)
                             break
                     try:
                         batch_method(self, *args, **kwargs)
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
-                        self.report_mtbf_result(False, start_time, test_name)
+                        self.report_mtbf_result(
+                            False, start_time, test_name, board, build,
+                            milestone, in_lab)
                         # Don't report the test run as failed for MTBF
                         self.fails = []
                         break
@@ -595,7 +603,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.mtbf_end = True
 
 
-    def report_mtbf_result(self, success, start_time, test_name):
+    def report_mtbf_result(self, success, start_time, test_name, board, build,
+        milestone, in_lab):
         """Report MTBF result by uploading it to GCS"""
         duration_secs = int(time.time() - start_time)
         start_time = int(start_time)
@@ -603,9 +612,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         output_file_name = self.GCS_MTBF_BUCKET + \
                            time.strftime('%Y-%m-%d/', gm_time_struct) + \
                            time.strftime('%H-%M-%S.csv', gm_time_struct)
-        board = self.host.get_board().split(':')[1]
-        build = self.host.get_release_version()
-        milestone = 'M' + self.host.get_chromeos_release_milestone()
+
         mtbf_result = '{0},{1},{2},{3},{4},{5},{6}'.format(
             board, build, milestone, start_time * 1000000, duration_secs,
             success, test_name)
@@ -615,6 +622,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             cmd = 'gsutil cp {0} {1}'.format(tmp_file.name, output_file_name)
             logging.info('Result to upload %s %s', mtbf_result, cmd)
             # Only upload the result when running in the lab.
-            if site_utils.host_in_lab(self.host.hostname):
+            if in_lab:
                 logging.info('Uploading result')
                 utils.run(cmd)

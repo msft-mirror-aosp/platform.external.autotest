@@ -13,7 +13,7 @@ class autoupdate_DataPreserved(update_engine_test.UpdateEngineTest):
 
 
     def cleanup(self):
-        self._save_extra_update_engine_logs()
+        self._save_extra_update_engine_logs(number_of_logs=2)
         super(autoupdate_DataPreserved, self).cleanup()
 
 

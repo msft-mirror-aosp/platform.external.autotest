@@ -50,13 +50,18 @@ def _define_client_test(
              "Please add to test_common.star or check spelling.")
 
     dep_strs = dep_expressions + [_COMMON_DEPS[dep] for dep in common_deps]
-    deps = [metadata_pb.DUTCondition(expression = " && ".join(dep_strs))]
+    expression = " && ".join(dep_strs)
+    deps = [metadata_pb.DUTCondition(expression = expression)]
 
     return metadata_pb.Test(
                 name = _TEST_NAME_PREFIX + test_name,
                 attributes = attrs,
                 informational = info,
-                conditions = deps,
+                dut_constraint = metadata_pb.DUTConstraint(
+                    config = metadata_pb.DUTConfigConstraint(
+                        expression = expression,
+                    )
+                ),
     )
 
 

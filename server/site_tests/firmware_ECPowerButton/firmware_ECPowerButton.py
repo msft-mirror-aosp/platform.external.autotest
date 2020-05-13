@@ -89,7 +89,7 @@ class firmware_ECPowerButton(FirmwareTest):
         time.sleep(self.POWER_BUTTON_IGNORE_PRESS_DELAY)
         power_state = self.get_power_state()
         new_boot_id = self.get_bootid(retry=1)
-        if power_state != "S0" or new_boot_id != old_boot_id:
+        if power_state != self.POWER_STATE_S0 or new_boot_id != old_boot_id:
             self._reset_client()
             raise error.TestFail("DUT shutdown from short power button press")
 

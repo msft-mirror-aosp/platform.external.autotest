@@ -69,13 +69,13 @@ class firmware_ECLidSwitch(FirmwareTest):
         Confirm the device is in G3, wait for WAKE_DELAY, and then wake DUT
         with lid switch.
         """
-        self.check_shutdown_power_state("G3", pwr_retries=10)
+        self.check_shutdown_power_state(self.POWER_STATE_G3, pwr_retries=10)
         time.sleep(self.WAKE_DELAY)
         self._wake_by_lid_switch()
 
     def immediate_wake(self):
         """Confirm the device is in G3 and then wake DUT with lid switch."""
-        self.check_shutdown_power_state("G3", pwr_retries=10)
+        self.check_shutdown_power_state(self.POWER_STATE_G3, pwr_retries=10)
         self._wake_by_lid_switch()
 
     def shutdown_and_wake(self, shutdown_func, wake_func):

@@ -80,7 +80,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._hostlog_events = []
         self._num_consumed_events = 0
         self._current_timestamp = None
-        self._expected_events = []
         self._host = host
         # Some AU tests use multiple DUTs
         self._hosts = hosts
@@ -100,70 +99,49 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         """Creates a list of expected events fired during a rootfs update.
 
         There are 4 events fired during a rootfs update. We will create these
-        in the correct order with the correct data, timeout, and error
-        condition function.
+        in the correct order.
+
+        @param source_release: The source build version.
+
         """
-        initial_check = uee.UpdateEngineEvent(
-            version=source_release,
-            on_error=self._error_initial_check)
-        download_started = uee.UpdateEngineEvent(
-            event_type=uee.EVENT_TYPE_DOWNLOAD_STARTED,
-            event_result=uee.EVENT_RESULT_SUCCESS,
-            version=source_release,
-            on_error=self._error_incorrect_event)
-        download_finished = uee.UpdateEngineEvent(
-            event_type=uee.EVENT_TYPE_DOWNLOAD_FINISHED,
-            event_result=uee.EVENT_RESULT_SUCCESS,
-            version=source_release,
-            on_error=self._error_incorrect_event)
-        update_complete = uee.UpdateEngineEvent(
-            event_type=uee.EVENT_TYPE_UPDATE_COMPLETE,
-            event_result=uee.EVENT_RESULT_SUCCESS,
-            version=source_release,
-            on_error=self._error_incorrect_event)
-
-        # There is an error message if any of them take too long to fire.
-        initial_error = self._timeout_error_message('an initial update check',
-                                                    self._INITIAL_CHECK_TIMEOUT)
-        dls_error = self._timeout_error_message('a download started '
-                                                'notification',
-                                                self._DOWNLOAD_STARTED_TIMEOUT,
-                                                uee.EVENT_TYPE_DOWNLOAD_STARTED)
-        dlf_error = self._timeout_error_message('a download finished '
-                                                'notification',
-                                                self._DOWNLOAD_FINISHED_TIMEOUT,
-                                                uee.EVENT_TYPE_DOWNLOAD_FINISHED
-                                                )
-        uc_error = self._timeout_error_message('an update complete '
-                                               'notification',
-                                               self._UPDATE_COMPLETED_TIMEOUT,
-                                               uee.EVENT_TYPE_UPDATE_COMPLETE)
-
-        # Build an array of tuples (event, timeout, timeout_error_message)
-        self._expected_events = [
-            (initial_check, self._INITIAL_CHECK_TIMEOUT, initial_error),
-            (download_started, self._DOWNLOAD_STARTED_TIMEOUT, dls_error),
-            (download_finished, self._DOWNLOAD_FINISHED_TIMEOUT, dlf_error),
-            (update_complete, self._UPDATE_COMPLETED_TIMEOUT, uc_error)
+        return [
+            uee.UpdateEngineEvent(
+                version=source_release,
+                timeout=self._INITIAL_CHECK_TIMEOUT),
+            uee.UpdateEngineEvent(
+                event_type=uee.EVENT_TYPE_DOWNLOAD_STARTED,
+                event_result=uee.EVENT_RESULT_SUCCESS,
+                version=source_release,
+                timeout=self._DOWNLOAD_STARTED_TIMEOUT),
+            uee.UpdateEngineEvent(
+                event_type=uee.EVENT_TYPE_DOWNLOAD_FINISHED,
+                event_result=uee.EVENT_RESULT_SUCCESS,
+                version=source_release,
+                timeout=self._DOWNLOAD_FINISHED_TIMEOUT),
+            uee.UpdateEngineEvent(
+                event_type=uee.EVENT_TYPE_UPDATE_COMPLETE,
+                event_result=uee.EVENT_RESULT_SUCCESS,
+                version=source_release,
+                timeout=self._UPDATE_COMPLETED_TIMEOUT)
         ]
 
 
     def _get_expected_event_for_post_reboot_check(self, source_release,
                                                   target_release):
-        """Creates the expected event fired during post-reboot update check."""
-        post_reboot_check = uee.UpdateEngineEvent(
-            event_type=uee.EVENT_TYPE_REBOOTED_AFTER_UPDATE,
-            event_result=uee.EVENT_RESULT_SUCCESS,
-            version=target_release,
-            previous_version=source_release,
-            on_error=self._error_reboot_after_update)
-        err = self._timeout_error_message('a successful reboot '
-                                          'notification',
-                                          self._POST_REBOOT_TIMEOUT,
-                                          uee.EVENT_TYPE_REBOOTED_AFTER_UPDATE)
+        """
+        Creates the expected event fired during post-reboot update check.
 
-        self._expected_events = [
-            (post_reboot_check, self._POST_REBOOT_TIMEOUT, err)
+        @param source_release: The source build version.
+        @param target_release: The target build version.
+
+        """
+        return [
+            uee.UpdateEngineEvent(
+                event_type=uee.EVENT_TYPE_REBOOTED_AFTER_UPDATE,
+                event_result=uee.EVENT_RESULT_SUCCESS,
+                version=target_release,
+                previous_version=source_release,
+                timeout = self._POST_REBOOT_TIMEOUT)
         ]
 
 
@@ -196,125 +174,57 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             return new_event
 
 
-    def _verify_event_with_timeout(self, expected_event, timeout, on_timeout):
-        """Verify an expected event occurs within a given timeout.
+    def _verify_event_with_timeout(self, expected_event):
+        """Verify an expected event occurs before its timeout.
 
         @param expected_event: an expected event
-        @param timeout: specified in seconds
-        @param on_timeout: A string to return if timeout occurs, or None.
 
         @return None if event complies, an error string otherwise.
         """
         actual_event = self._get_next_hostlog_event()
-        if actual_event:
-            # If this is the first event, set it as the current time
-            if self._current_timestamp is None:
-                self._current_timestamp = datetime.strptime(
-                    actual_event['timestamp'], self._TIMESTAMP_FORMAT)
+        if not actual_event:
+            return ('No entry found for %s event.' % uee.get_event_type
+                (expected_event._expected_attrs['event_type']))
 
-            # Get the time stamp for the current event and convert to datetime
-            timestamp = actual_event['timestamp']
-            event_timestamp = datetime.strptime(timestamp,
-                                                self._TIMESTAMP_FORMAT)
+        # If this is the first event, set it as the current time
+        if self._current_timestamp is None:
+            self._current_timestamp = datetime.strptime(
+                actual_event['timestamp'], self._TIMESTAMP_FORMAT)
 
-            # Add the timeout onto the timestamp to get its expiry
-            event_timeout = self._current_timestamp + timedelta(seconds=timeout)
+        # Get the time stamp for the current event and convert to datetime
+        timestamp = actual_event['timestamp']
+        event_timestamp = datetime.strptime(timestamp,
+                                            self._TIMESTAMP_FORMAT)
 
-            # If the event happened before the timeout
-            if event_timestamp < event_timeout:
-                difference = event_timestamp - self._current_timestamp
-                logging.info('Event took %s seconds to fire during the '
-                             'update', difference.seconds)
-                result = expected_event.equals(actual_event)
-                self._current_timestamp = event_timestamp
-                return result
-
-        logging.error('The expected event was not found in the hostlog: %s',
-                      expected_event)
-        return on_timeout
-
-
-    def _error_initial_check(self, expected, actual, mismatched_attrs):
-        """Error message for when update fails at initial update check."""
-        err_msg = ('The update test appears to have completed successfully but '
-                   'we found a problem while verifying the hostlog of events '
-                   'returned from the update. Some attributes reported for '
-                   'the initial update check event are not what we expected: '
-                   '%s. ' % mismatched_attrs)
-        if 'version' in mismatched_attrs:
-            err_msg += ('The expected version is (%s) but reported version was '
-                        '(%s). ' % (expected['version'], actual['version']))
-            err_msg += ('If reported version = target version, it is likely '
-                        'we retried the update because the test thought the '
-                        'first attempt failed but it actually succeeded '
-                        '(e.g due to SSH disconnect, DUT not reachable by '
-                        'hostname, applying stateful failed after rootfs '
-                        'succeeded). This second update attempt is then started'
-                        ' from the target version instead of the source '
-                        'version, so our hostlog verification is invalid.')
-        err_msg += ('Check the full hostlog for this update in the %s file in '
-                    'the %s directory.' % (self._DEVSERVER_HOSTLOG_ROOTFS,
-                                           dev_server.AUTO_UPDATE_LOG_DIR))
-        return err_msg
+        # If the event happened before the timeout
+        difference = event_timestamp - self._current_timestamp
+        if difference < timedelta(seconds=expected_event._timeout):
+            logging.info('Event took %s seconds to fire during the '
+                         'update', difference.seconds)
+            self._current_timestamp = event_timestamp
+            mismatched_attrs = expected_event.equals(actual_event)
+            if mismatched_attrs is None:
+                return None
+            else:
+                return self._error_incorrect_event(
+                    expected_event, actual_event, mismatched_attrs)
+        else:
+            return self._timeout_error_message(expected_event,
+                                               difference.seconds)
 
 
     def _error_incorrect_event(self, expected, actual, mismatched_attrs):
         """Error message for when an event is not what we expect."""
-        return ('The update appears to have completed successfully but '
-                'when analysing the update events in the hostlog we have '
-                'found that one of the events is incorrect. This should '
-                'never happen. The mismatched attributes are: %s. We expected '
-                '%s, but got %s.' % (mismatched_attrs, expected, actual))
+        et = uee.get_event_type(expected._expected_attrs['event_type'])
+        return ('Event %s had mismatched attributes: %s. We expected %s, but '
+                'got %s.' % (et, mismatched_attrs, expected, actual))
 
 
-    def _error_reboot_after_update(self, expected, actual, mismatched_attrs):
-        """Error message for problems in the post-reboot update check."""
-        err_msg = ('The update completed successfully but there was a problem '
-                   'with the post-reboot update check. After a successful '
-                   'update, we do a final update check to parse a unique '
-                   'omaha request. The mistmatched attributes for this update '
-                   'check were %s. ' % mismatched_attrs)
-        if 'event_result' in mismatched_attrs:
-            err_msg += ('The event_result was expected to be (%s:%s) but '
-                        'reported (%s:%s). ' %
-                        (expected['event_result'],
-                         uee.get_event_result(expected['event_result']),
-                         actual.get('event_result'),
-                         uee.get_event_result(actual.get('event_result'))))
-        if 'event_type' in mismatched_attrs:
-            err_msg += ('The event_type was expeted to be (%s:%s) but '
-                        'reported (%s:%s). ' %
-                        (expected['event_type'],
-                         uee.get_event_type(expected['event_type']),
-                         actual.get('event_type'),
-                         uee.get_event_type(actual.get('event_type'))))
-        if 'version' in mismatched_attrs:
-            err_msg += ('The version was expected to be (%s) but '
-                        'reported (%s). This probably means that the payload '
-                        'we applied was incorrect or corrupt. ' %
-                        (expected['version'], actual['version']))
-        if 'previous_version' in mismatched_attrs:
-            err_msg += ('The previous version is expected to be (%s) but '
-                        'reported (%s). This can happen if we retried the '
-                        'update after rootfs update completed on the first '
-                        'attempt then we failed. Or if stateful got wiped and '
-                        '/var/lib/update_engine/prefs/previous-version was '
-                        'deleted. ' % (expected['previous_version'],
-                                       actual['previous_version']))
-        err_msg += ('You can see the full hostlog for this update check in '
-                    'the %s file within the %s directory. ' %
-                    (self._DEVSERVER_HOSTLOG_REBOOT,
-                     dev_server.AUTO_UPDATE_LOG_DIR))
-        return err_msg
-
-
-    def _timeout_error_message(self, desc, timeout, event_type=None):
+    def _timeout_error_message(self, expected, time_taken):
         """Error message for when an event takes too long to fire."""
-        if event_type is not None:
-            desc += ' (%s)' % uee.get_event_type(event_type)
-        return ('The update completed successfully but one of the steps of '
-                'the update took longer than we would like. We failed to '
-                'receive %s within %d seconds.' % (desc, timeout))
+        et = uee.get_event_type(expected._expected_attrs['event_type'])
+        return ('Event %s should take less than %ds. It took %ds.'
+                % (et, expected._timeout, time_taken))
 
 
     def _stage_payload_by_uri(self, payload_uri, properties_file=True):
@@ -414,33 +324,38 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return info.attributes.get(self._host.job_repo_url_attribute, '')
 
 
-    def _stage_payloads(self, payload_uri, archive_uri, payload_type='full'):
-        """Stages a payload and its associated stateful on devserver."""
-        if payload_uri:
-            staged_uri, _ = self._stage_payload_by_uri(payload_uri)
-            logging.info('Staged %s payload from %s at %s.', payload_type,
-                         payload_uri, staged_uri)
+    def _stage_payloads(self, payload_uri, archive_uri):
+        """
+        Stages payloads on the devserver.
 
-            # Figure out where to get the matching stateful payload.
-            if archive_uri:
-                stateful_uri = self._get_stateful_uri(archive_uri)
-            else:
-                stateful_uri = self._payload_to_stateful_uri(payload_uri)
-            staged_stateful = self._stage_payload_by_uri(
-                stateful_uri, properties_file=False)
+        @param payload_uri: URI for a GS payload to stage.
+        @param archive_uri: URI for GS folder containing payloads. This is used
+                            to find the related stateful payload.
 
-            logging.info('Staged stateful from %s at %s.', stateful_uri,
-                         staged_stateful)
-            return staged_uri, staged_stateful
+        @returns URI of staged payload, URI of staged stateful.
 
-        return None, None
+        """
+        if not payload_uri:
+            return None, None
+        staged_uri, _ = self._stage_payload_by_uri(payload_uri)
+        logging.info('Staged %s at %s.', payload_uri, staged_uri)
+
+        # Figure out where to get the matching stateful payload.
+        if archive_uri:
+            stateful_uri = self._get_stateful_uri(archive_uri)
+        else:
+            stateful_uri = self._payload_to_stateful_uri(payload_uri)
+        staged_stateful = self._stage_payload_by_uri(stateful_uri,
+                                                     properties_file=False)
+        logging.info('Staged stateful from %s at %s.', stateful_uri,
+                     staged_stateful)
+        return staged_uri, staged_stateful
+
 
 
     def _payload_to_stateful_uri(self, payload_uri):
         """Given a payload GS URI, returns the corresponding stateful URI."""
-        build_uri = payload_uri.rpartition('/')[0]
-        if build_uri.endswith('payloads'):
-            build_uri = build_uri.rpartition('/')[0]
+        build_uri = payload_uri.rpartition('/payloads/')[0]
         return self._get_stateful_uri(build_uri)
 
 
@@ -660,32 +575,32 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                              target_release=None):
         """Compares a hostlog file against a set of expected events.
 
-        This is the main function of this class. It takes in an expected
-        source and target version along with a hostlog file location. It will
-        then generate the expected events based on the data and compare it
-        against the events listed in the hostlog json file.
+        @param source_release: The source build version.
+        @param hostlog_filename: The path to a hotlog returned from nebraska.
+        @param target_release: The target build version.
+
         """
         self._hostlog_events = []
         self._num_consumed_events = 0
         self._current_timestamp = None
         if target_release is not None:
-            self._get_expected_event_for_post_reboot_check(source_release,
-                                                           target_release)
+            expected_events = self._get_expected_event_for_post_reboot_check(
+                source_release, target_release)
         else:
-            self._get_expected_events_for_rootfs_update(source_release)
+            expected_events = self._get_expected_events_for_rootfs_update(
+                source_release)
 
         self._hostlog_filename = hostlog_filename
         logging.info('Checking update steps with hostlog file: %s',
                      self._hostlog_filename)
 
-        for expected_event, timeout, on_timeout in self._expected_events:
+        for expected_event in expected_events:
             logging.info('Expecting %s within %s seconds', expected_event,
-                         timeout)
-            err_msg = self._verify_event_with_timeout(
-                expected_event, timeout, on_timeout)
+                         expected_event._timeout)
+            err_msg = self._verify_event_with_timeout(expected_event)
             if err_msg is not None:
-                logging.error('Failed expected event: %s', err_msg)
-                raise UpdateEngineEventMissing(err_msg)
+                raise error.TestFail(('Hostlog verification failed: %s ' %
+                                     err_msg))
 
 
     def get_update_url_for_test(self, job_repo_url, full_payload=True,
@@ -748,6 +663,3 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Update URL: %s', url)
         return url
 
-
-class UpdateEngineEventMissing(error.TestFail):
-    """Raised if the hostlog is missing an expected event."""

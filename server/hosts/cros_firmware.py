@@ -171,7 +171,7 @@ class FirmwareRepair(hosts.RepairAction):
         if not build:
             raise hosts.AutoservRepairError(
                   'Failed to find stable firmware build for %s.',
-                   self.hostname, 'cannot find firmware stable_version')
+                   host.hostname, 'cannot find firmware stable_version')
         host.firmware_install(build)
 
 

@@ -71,11 +71,13 @@ class firmware_ECWakeSource(FirmwareTest):
         """
         suspend_func()
         self.switcher.wait_for_client_offline()
-        if not self.wait_power_state('S0ix|S3', self.POWER_STATE_RETRY_COUNT):
+        if not self.wait_power_state(self.POWER_STATE_SUSPEND,
+                                     self.POWER_STATE_RETRY_COUNT):
             raise error.TestFail('Platform failed to reach S0ix or S3 state.')
         time.sleep(self.SUSPEND_WAIT_TIME_SECONDS);
         wake_func()
-        if not self.wait_power_state('S0', self.POWER_STATE_RETRY_COUNT):
+        if not self.wait_power_state(self.POWER_STATE_S0,
+                                     self.POWER_STATE_RETRY_COUNT):
             raise error.TestFail('Platform failed to reach S0 state.')
         self.switcher.wait_for_client(timeout=self.RESUME_TIMEOUT)
 

@@ -1002,6 +1002,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if self._servo_host is not None:
             self.servo = self._servo_host.get_servo()
             servo_state = self._servo_host.get_servo_state()
+            self._set_smart_usbhub_label(self._servo_host.smart_usbhub)
         else:
             self.servo = None
         self.set_servo_type()
@@ -1074,6 +1075,29 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         host_info = self.host_info_store.get()
         servo_state_prefix = servo_constants.SERVO_STATE_LABEL_PREFIX
         return host_info.get_label_value(servo_state_prefix)
+
+
+    def _set_smart_usbhub_label(self, smart_usbhub_detected):
+        if smart_usbhub_detected is None:
+            # skip the label update here as this indicate we wasn't able
+            # to confirm usbhub type.
+            return
+        host_info = self.host_info_store.get()
+        if (smart_usbhub_detected ==
+                (servo_constants.SMART_USBHUB_LABEL in host_info.labels)):
+            # skip label update if current label match the truth.
+            return
+        if smart_usbhub_detected:
+            logging.info('Adding %s label to host %s',
+                         servo_constants.SMART_USBHUB_LABEL,
+                         self.hostname)
+            host_info.labels.append(servo_constants.SMART_USBHUB_LABEL)
+        else:
+            logging.info('Removing %s label from host %s',
+                         servo_constants.SMART_USBHUB_LABEL,
+                         self.hostname)
+            host_info.labels.remove(servo_constants.SMART_USBHUB_LABEL)
+        self.host_info_store.commit(host_info)
 
 
     def repair(self):

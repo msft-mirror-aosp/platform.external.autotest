@@ -119,6 +119,10 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_board = None
         self.servo_model = None
         self.servo_serial = None
+        # The flag that indicate if a servo is connected to a smart usbhub.
+        # TODO(xianuowang@) remove this flag once all usbhubs in the lab
+        # get replaced.
+        self.smart_usbhub = None
         self._servo = None
         self._servod_server_proxy = None
         self._initial_instance_ts = None
@@ -545,6 +549,8 @@ class ServoHost(base_servohost.BaseServoHost):
                      response.stderr):
             logging.error('The servo is not plugged on a usb hub that supports'
                           ' power-cycle!')
+            # change the flag so we can update this label in later process.
+            self.smart_usbhub = False
             return
 
         if re.search(servo_constants.ERROR_MESSAGE_DEVICE_NOT_FOUND %
@@ -586,6 +592,8 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.debug('Wait %s seconds for servo to come back from reset.',
                       servo_constants.SERVO_RESET_TIMEOUT_SECONDS)
         time.sleep(servo_constants.SERVO_RESET_TIMEOUT_SECONDS)
+        # change the flag so we can update this label in later process.
+        self.smart_usbhub = True
         return True
 
 

@@ -46,6 +46,7 @@ class MockHost(cros_host.CrosHost):
 
     def __init__(self, *args):
         self._mock_cmds = {c.cmd: c for c in args}
+        self.hostname = 'MockHost'
 
     def run(self, command, **kwargs):
         """Finds the matching result by command value"""

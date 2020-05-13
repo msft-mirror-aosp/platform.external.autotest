@@ -188,9 +188,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         ec_uart_enabled = 'UARTEC' in flags
         ap_uart_tx_enabled = 'UARTAP+TX' in flags
         ec_uart_tx_enabled = 'UARTEC+TX' in flags
-        # TODO(mruthven): reenable USB bridge logic once it's back in the image.
-        # ec_usb_tx_enabled = 'USBEC+TX' in flags
-        ec_usb_tx_enabled = ec_uart_tx_enabled
+        ec_usb_tx_enabled = 'USBEC+TX' in flags
 
         ccd_ec_uart_enabled = ec_uart_tx_enabled and ec_usb_tx_enabled
         ccd_enabled = ap_uart_enabled or ec_usb_tx_enabled

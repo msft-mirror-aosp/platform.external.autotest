@@ -1035,11 +1035,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def set_servo_type(self):
         """Set servo info labels to dut host_info"""
         if not self.servo:
-            logging.warning('Servo is not initialized to get servo_type.')
+            logging.debug('Servo is not initialized to get servo_type.')
             return
         servo_type = self.servo.get_servo_type()
         if not servo_type:
-            logging.warning('Cannot collect servo_type from servo'
+            logging.debug('Cannot collect servo_type from servo'
                 ' by `dut-control servo_type`! Please file a bug'
                 ' and inform infra team as we are not expected '
                 ' to reach this point.')

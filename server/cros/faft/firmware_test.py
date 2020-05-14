@@ -875,9 +875,14 @@ class FirmwareTest(FAFTBase):
         update_cmd = self.faft_client.updater.get_firmwareupdate_command(
                 mode, append, options)
         try:
-            return self._client.run(
+            result = self._client.run(
                     update_cmd, timeout=300, ignore_status=ignore_status)
+            if result.exit_status == 255:
+                self.faft_client.disconnect()
+            return result
         except error.AutoservRunError as e:
+            if e.result_obj.exit_status == 255:
+                self.faft_client.disconnect()
             if ignore_status:
                 return e.result_obj
             raise
@@ -1744,6 +1749,7 @@ class FirmwareTest(FAFTBase):
                 self._client.run(ec_cmd, timeout=300)
             except error.AutoservSSHTimeout:
                 logging.warn("DUT connection died during EC restore")
+                self.faft_client.disconnect()
 
             except error.GenericHostRunError:
                 logging.warn("DUT command failed during EC restore")

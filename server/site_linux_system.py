@@ -41,6 +41,7 @@ class LinuxSystem(object):
     CAPABILITY_SME = 'sme'
     CAPABILITY_SUPPLICANT_ROAMING = "supplicant_roaming"
     BRIDGE_INTERFACE_NAME = 'br0'
+    HOSTAP_BRIDGE_INTERFACE_PREFIX = 'hostapbr'
     IFB_INTERFACE_PREFIX = 'ifb'
     MIN_SPATIAL_STREAMS = 2
     MAC_BIT_LOCAL = 0x2  # Locally administered.
@@ -135,6 +136,19 @@ class LinuxSystem(object):
         if self.host.path_exists(self._UMA_EVENTS):
             self.host.run('truncate -s 0 %s' % self._UMA_EVENTS,
                           ignore_status=True)
+
+        # Tear down hostapbr bridge and intermediate functional block
+        # interfaces. Run this even for pcaps, because pcap devices sometimes
+        # are run as APs too.
+        # TODO(crbug.com/1005443): drop the ifb hack when we deploy an AP OS
+        # image that has fixes for crbug.com/960551.
+        result = self.host.run('ls -d /sys/class/net/%s* /sys/class/net/%s*'
+                               ' 2>/dev/null' %
+                               (self.HOSTAP_BRIDGE_INTERFACE_PREFIX,
+                                self.IFB_INTERFACE_PREFIX),
+                               ignore_status=True)
+        for path in result.stdout.splitlines():
+            self.delete_link(path.split('/')[-1])
 
 
     @property
@@ -265,6 +279,16 @@ class LinuxSystem(object):
             if net_dev.if_name == interface:
                 self._interfaces.remove(net_dev)
                 break
+
+
+    def delete_link(self, name):
+        """Delete link using the `ip` command.
+
+        @param name string link name.
+
+        """
+        self.host.run('%s link del %s' % (self.cmd_ip, name),
+                      ignore_status=True)
 
 
     def close(self):

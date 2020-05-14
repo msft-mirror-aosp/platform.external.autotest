@@ -134,7 +134,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
                                         'target')
         reboot = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
-                                          'target')
+                                        'target')
+
         self.verify_update_events(source_release, rootfs)
         self.verify_update_events(source_release, reboot, target_release)
 

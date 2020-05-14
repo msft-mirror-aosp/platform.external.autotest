@@ -1066,29 +1066,28 @@ class Cr50Test(FirmwareTest):
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
         self.cr50.send_command('ccd testlab open')
-        if self.cr50.get_ccd_level() == 'open':
-            return
+        if self.cr50.get_ccd_level() != 'open':
+            if self.servo.has_control('chassis_open'):
+                self.servo.set('chassis_open', 'yes')
+            pw = '' if self.cr50.password_is_reset() else self.PASSWORD
+            # Use the console to open cr50 without entering dev mode if
+            # possible. It takes longer and relies on more systems to enter dev
+            #  mode and ssh into the AP. Skip the steps that aren't required.
+            if not (pw or self.cr50.get_cap(
+                            'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
+                self.enter_mode_after_checking_tpm_state('dev')
 
-        if self.servo.has_control('chassis_open'):
-            self.servo.set('chassis_open', 'yes')
-        pw = '' if self.cr50.password_is_reset() else self.PASSWORD
-        # Use the console to open cr50 without entering dev mode if possible. It
-        # takes longer and relies on more systems to enter dev mode and ssh into
-        # the AP. Skip the steps that aren't required.
-        if not (pw or self.cr50.get_cap(
-                        'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
-            self.enter_mode_after_checking_tpm_state('dev')
+            if pw or self.cr50.get_cap(
+                            'OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
+                self.cr50.set_ccd_level(self.cr50.OPEN, pw)
+            else:
+                self.ccd_open_from_ap()
 
-        if pw or self.cr50.get_cap('OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
-            self.cr50.set_ccd_level(self.cr50.OPEN, pw)
-        else:
-            self.ccd_open_from_ap()
+            if self.servo.has_control('chassis_open'):
+                self.servo.set('chassis_open', 'no')
 
-        if self.servo.has_control('chassis_open'):
-            self.servo.set('chassis_open', 'no')
-
-        if enable_testlab:
-            self.cr50.set_ccd_testlab('on')
+            if enable_testlab:
+                self.cr50.set_ccd_testlab('on')
 
         if reset_ccd:
             self.cr50.send_command('ccd reset')

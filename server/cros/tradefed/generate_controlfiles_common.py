@@ -545,7 +545,7 @@ def get_authkey(is_public):
     return CONFIG['AUTHKEY']
 
 
-def _format_collect_cmd(is_public, retry):
+def _format_collect_cmd(is_public, abi_to_run, retry):
     """Returns a list specifying tokens for tradefed to list all tests."""
     if retry:
         return None
@@ -558,6 +558,8 @@ def _format_collect_cmd(is_public, retry):
     if (not is_public and
             not CONFIG.get('NEEDS_DYNAMIC_CONFIG_ON_COLLECTION', True)):
         cmd.append('--dynamic-config-url=')
+    if abi_to_run:
+        cmd += ['--abi', abi_to_run]
     return cmd
 
 
@@ -569,7 +571,7 @@ def _get_special_command_line(modules, _is_public):
     return cmd
 
 
-def _format_modules_cmd(is_public, modules=None, retry=False):
+def _format_modules_cmd(is_public, abi_to_run, modules=None, retry=False):
     """Returns list of command tokens for tradefed."""
     if retry:
         assert(CONFIG['TRADEFED_RETRY_COMMAND'] == 'cts' or
@@ -612,6 +614,8 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
         not (modules.intersection(CONFIG['BVT_ARC'] + CONFIG['SMOKE'] +
              CONFIG['NEEDS_DEVICE_INFO']))):
         cmd.append('--skip-device-info')
+    if abi_to_run:
+        cmd += ['--abi', abi_to_run]
     # If NEEDS_DYNAMIC_CONFIG is set, disable the feature except on the modules
     # that explicitly set as needed.
     if (not is_public and CONFIG.get('NEEDS_DYNAMIC_CONFIG') and
@@ -621,16 +625,17 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
     return cmd
 
 
-def get_run_template(modules, is_public, retry=False):
+def get_run_template(modules, is_public, retry=False, abi_to_run=None):
     """Command to run the modules specified by a control file."""
     cmd = None
     if modules.intersection(get_collect_modules(is_public)):
         if _COLLECT in modules or _PUBLIC_COLLECT in modules:
-            cmd = _format_collect_cmd(is_public, retry=retry)
+            cmd = _format_collect_cmd(is_public, abi_to_run, retry=retry)
         elif _ALL in modules:
-            cmd = _format_modules_cmd(is_public, modules, retry=retry)
+            cmd = _format_modules_cmd(is_public, abi_to_run,
+                                      modules, retry=retry)
     else:
-        cmd = _format_modules_cmd(is_public, modules, retry=retry)
+        cmd = _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
     return cmd
 
 
@@ -785,7 +790,10 @@ def get_controlfile_content(combined,
         servo_support_needed = servo_support_needed(modules, is_public),
         max_retries=get_max_retries(modules, abi, suites, is_public),
         timeout=calculate_timeout(modules, suites),
-        run_template=get_run_template(modules, is_public),
+        run_template=get_run_template(modules, is_public,
+                                      abi_to_run=CONFIG
+                                      .get('REPRESENTATIVE_ABI',{})
+                                      .get(abi, None)),
         retry_template=get_retry_template(modules, is_public),
         target_module=target_module,
         target_plan=None,

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""bluetooth audio test dat for a2dp, hfp nbs, and hfp wbs."""
+"""bluetooth audio test dat for A2DP, AVRCP, and HFP."""
 
 import os
 
@@ -11,6 +11,7 @@ audio_test_dir = '/usr/local/autotest/cros/audio/test_data'
 audio_record_dir = '/tmp'
 
 A2DP = 'a2dp'
+AVRCP = 'avrcp'
 HFP_NBS = 'hfp_nbs'
 HFP_WBS = 'hfp_wbs'
 

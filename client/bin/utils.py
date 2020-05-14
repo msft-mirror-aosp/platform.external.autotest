@@ -2395,7 +2395,7 @@ def get_other_device():
     Will return a list of other block devices, that are not the root device.
     """
 
-    cmd = 'lsblk -dpn -o NAME | grep -v loop | grep -v zram'
+    cmd = 'lsblk -dpn -o NAME | grep -v -E "(loop|zram|boot|rpmb)"'
     devs = utils.system_output(cmd).splitlines()
 
     for dev in devs[:]:

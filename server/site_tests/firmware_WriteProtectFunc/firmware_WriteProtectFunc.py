@@ -142,8 +142,10 @@ class firmware_WriteProtectFunc(FirmwareTest):
         reboots = (('shutdown cmd', lambda:self.run_shutdown_process(
                                         lambda:self.run_shutdown_cmd())),
                    ('reboot cmd', lambda:self.run_cmd('reboot')),
-                   ('power button', lambda:self.full_power_off_and_on()),
-                   ('ec reboot', lambda:self.sync_and_ec_reboot('hard')))
+                   ('power button', lambda:self.full_power_off_and_on()))
+
+        if self.faft_config.chrome_ec:
+            reboots += (('ec reboot', lambda:self.sync_and_ec_reboot('hard')), )
 
         for (reboot_name, reboot_method) in reboots:
             self.switcher.mode_aware_reboot('custom', reboot_method)

@@ -612,7 +612,7 @@ class UpdateEngineUtil(object):
             search = re.search(MATCH_STR, requests[i])
             if (not search or
                 (search.group(1) ==
-                 update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE)):
+                 str(update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE))):
                 return requests[i]
 
         return None

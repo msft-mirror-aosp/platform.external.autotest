@@ -107,7 +107,6 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     HOSTAPD_STDERR_LOG_FILE_PATTERN = 'hostapd-stderr-test-%s.log'
     HOSTAPD_CONTROL_INTERFACE_PATTERN = 'hostapd-test-%s.ctrl'
     HOSTAPD_DRIVER_NAME = 'nl80211'
-    HOSTAP_BRIDGE_INTERFACE_PREFIX = 'hostapbr'
 
     MGMT_FRAME_SENDER_LOG_FILE = 'send_management_frame-test.log'
 
@@ -217,16 +216,6 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.station_instances = []
         self.dhcp_low = 1
         self.dhcp_high = 128
-
-        # Tear down hostapbr bridge and intermediate functional block
-        # interfaces.
-        result = self.host.run('ls -d /sys/class/net/%s* /sys/class/net/%s*'
-                               ' 2>/dev/null' %
-                               (self.HOSTAP_BRIDGE_INTERFACE_PREFIX,
-                                self.IFB_INTERFACE_PREFIX),
-                               ignore_status=True)
-        for path in result.stdout.splitlines():
-            self.delete_link(path.split('/')[-1])
 
         # Kill hostapd and dhcp server if already running.
         self._kill_process_instance('hostapd', timeout_seconds=30)
@@ -904,16 +893,6 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         for brif in range(self._brif_index):
             self.delete_link('%s%d' %
                              (self.HOSTAP_BRIDGE_INTERFACE_PREFIX, brif))
-
-
-    def delete_link(self, name):
-        """Delete link using the `ip` command.
-
-        @param name string link name.
-
-        """
-        self.host.run('%s link del %s' % (self.cmd_ip, name),
-                      ignore_status=True)
 
 
     def set_ap_interface_down(self, instance=0):

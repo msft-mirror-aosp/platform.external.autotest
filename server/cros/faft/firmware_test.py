@@ -1383,8 +1383,9 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        self.check_shutdown_power_state(self.POWER_STATE_G3,
-                                        orig_boot_id=boot_id)
+        if self.faft_config.chrome_ec:
+            self.check_shutdown_power_state(self.POWER_STATE_G3,
+                                            orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 

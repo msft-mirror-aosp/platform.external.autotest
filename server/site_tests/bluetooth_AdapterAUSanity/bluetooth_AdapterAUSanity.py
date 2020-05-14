@@ -6,7 +6,7 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, HFP_WBS, HFP_NBS)
+        A2DP, AVRCP, HFP_WBS, HFP_NBS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
@@ -133,36 +133,38 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_NBS)
 
 
+
+    def au_run_avrcp_method(self, device, test_method):
+        """avrcp procedure of running a specified test method.
+
+        @param device: the bt peer device
+        @param test_method: the avrcp test method to run
+        """
+        def wrapped_test_method(device):
+            """A wrapper method to initialize and cleanup avrcp tests.
+
+            @param device: the bt peer device
+            """
+            self.initialize_bluetooth_player(device)
+            test_method(device)
+            self.cleanup_bluetooth_player(device)
+
+        self.au_run_method(
+                device, lambda: wrapped_test_method(device), AVRCP)
+
+
     @test_wrapper('avrcp command test', devices={'BLUETOOTH_AUDIO':1})
     def au_avrcp_command_test(self):
         """AVRCP test to examine commands reception."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, A2DP)
-        self.initialize_bluetooth_audio(device, A2DP)
-        self.test_power_on_adapter()
-        self.test_bluetoothd_running()
-        self.test_connection_by_adapter(device.address)
-        self.initialize_bluetooth_player(device)
-        self.test_avrcp_commands(device)
-        self.cleanup_bluetooth_player(device)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, A2DP)
+        self.au_run_avrcp_method(device, self.test_avrcp_commands)
 
 
     @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1})
     def au_avrcp_media_info_test(self):
         """AVRCP test to examine metadata propgation."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, A2DP)
-        self.initialize_bluetooth_audio(device, A2DP)
-        self.test_power_on_adapter()
-        self.test_bluetoothd_running()
-        self.test_connection_by_adapter(device.address)
-        self.initialize_bluetooth_player(device)
-        self.test_avrcp_media_info(device)
-        self.cleanup_bluetooth_player(device)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, A2DP)
+        self.au_run_avrcp_method(device, self.test_avrcp_media_info)
 
 
     @batch_wrapper('Bluetooth Audio Batch Sanity Tests')

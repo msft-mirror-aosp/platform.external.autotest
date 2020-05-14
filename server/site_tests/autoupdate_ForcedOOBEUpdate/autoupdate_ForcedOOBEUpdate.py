@@ -31,7 +31,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
 
 
-    def _wait_for_reboot_after_update(self, timeout_minutes=10):
+    def _wait_for_reboot_after_update(self, timeout_minutes=15):
         """
         Waits for the OOBE update to finish and autoreboot.
 
@@ -43,6 +43,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         2) Checking that the two recent statuses were FINALIZING and IDLE.
 
         @param timeout_minutes: How long to wait for the update to finish.
+                                See crbug/1073855 for context on this default.
 
         """
         timeout = time.time() + 60 * timeout_minutes

@@ -33,7 +33,8 @@ class firmware_ECWakeSource(FirmwareTest):
 
     def cleanup(self):
         # Restore the lid_open switch in case the test failed in the middle.
-        self.servo.set('lid_open', 'yes')
+        if self.check_ec_capability(['lid']):
+          self.servo.set('lid_open', 'yes')
         super(firmware_ECWakeSource, self).cleanup()
 
     def hibernate_and_wake_by_power_button(self):

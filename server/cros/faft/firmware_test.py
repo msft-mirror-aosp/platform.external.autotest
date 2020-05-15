@@ -875,9 +875,14 @@ class FirmwareTest(FAFTBase):
         update_cmd = self.faft_client.updater.get_firmwareupdate_command(
                 mode, append, options)
         try:
-            return self._client.run(
+            result = self._client.run(
                     update_cmd, timeout=300, ignore_status=ignore_status)
+            if result.exit_status == 255:
+                self.faft_client.disconnect()
+            return result
         except error.AutoservRunError as e:
+            if e.result_obj.exit_status == 255:
+                self.faft_client.disconnect()
             if ignore_status:
                 return e.result_obj
             raise
@@ -1378,8 +1383,9 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        self.check_shutdown_power_state(self.POWER_STATE_G3,
-                                        orig_boot_id=boot_id)
+        if self.faft_config.chrome_ec:
+            self.check_shutdown_power_state(self.POWER_STATE_G3,
+                                            orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 
@@ -1744,6 +1750,7 @@ class FirmwareTest(FAFTBase):
                 self._client.run(ec_cmd, timeout=300)
             except error.AutoservSSHTimeout:
                 logging.warn("DUT connection died during EC restore")
+                self.faft_client.disconnect()
 
             except error.GenericHostRunError:
                 logging.warn("DUT command failed during EC restore")

@@ -10,6 +10,7 @@ import unittest
 
 import common
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server.cros import autoupdater
 
 
@@ -356,9 +357,9 @@ class TestAutoUpdater2(unittest.TestCase):
                                                 use_quick_provision=True)
         updater.check_update_status = mock.MagicMock()
         updater.check_update_status.return_value = autoupdater.UPDATER_IDLE
-        updater._verify_kernel_state = mock.MagicMock()
-        updater._verify_kernel_state.return_value = 3
-        updater.verify_boot_expectations = mock.MagicMock()
+        kernel_utils.verify_kernel_state_after_update = mock.MagicMock()
+        kernel_utils.verify_kernel_state_after_update.return_value = 3
+        kernel_utils.verify_boot_expectations = mock.MagicMock()
 
         updater.run_update()
         host.run.assert_any_call(

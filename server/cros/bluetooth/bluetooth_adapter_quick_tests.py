@@ -200,7 +200,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     @staticmethod
     def quick_test_test_decorator(test_name, devices={}, flags=['All'],
                                   model_testNA=[],
-                                  model_testWarn=[]):
+                                  model_testWarn=[],
+                                  shared_devices_count=0):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -235,6 +236,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     return False
                 return True
 
+
             def _is_enough_peers_present(self):
                 """Check if enough peer devices are available."""
 
@@ -247,7 +249,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         return False
 
                 # Check if there are enough peers
-                total_num_devices = sum(devices.values())
+                total_num_devices = sum(devices.values()) + shared_devices_count
                 if total_num_devices > len(self.host.peer_list):
                     logging.info('SKIPPING TEST %s', test_name)
                     logging.info('Number of devices required %s is greater'
@@ -265,7 +267,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     return
                 if not _is_enough_peers_present(self):
                     raise error.TestNAError('Not enough peer available')
-                self.quick_test_test_start(test_name, devices)
+                self.quick_test_test_start(
+                    test_name, devices, shared_devices_count)
                 test_method(self)
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn)
@@ -274,7 +277,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         return decorator
 
 
-    def quick_test_test_start(self, test_name=None, devices={}):
+    def quick_test_test_start(
+            self, test_name=None, devices={}, shared_devices_count=0):
         """Start a quick test. The method clears and restarts adapter on DUT
            as well as peer devices. In addition the methods prints test start
            traces.
@@ -292,6 +296,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.initialize()
         # Start and peer HID devices
         self.start_peers(devices)
+        self.shared_peers = self.host.peer_list[-shared_devices_count:]
 
         if test_name is not None:
             time.sleep(self.TEST_SLEEP_SECS)

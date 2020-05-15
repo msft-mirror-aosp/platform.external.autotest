@@ -1958,6 +1958,8 @@ class FirmwareTest(FAFTBase):
 
         For expected_written, the dict should be keyed by flash type only:
         {'bios': ['ro'], 'ec': ['ro', 'rw']}
+        To expect the contents completely unchanged, give only the keys:
+        {'bios': [], 'ec': []} or {'bios': None, 'ec': None}
 
         @param before_fwids: dict of versions from before the update
         @param image_fwids: dict of versions in the update
@@ -1966,12 +1968,15 @@ class FirmwareTest(FAFTBase):
         @return: list of error lines for mismatches
 
         @type before_fwids: dict
-        @type image_fwids: dict
+        @type image_fwids: dict | None
         @type after_fwids: dict
         @type expected_written: dict
         @rtype: list
         """
         errors = []
+
+        if image_fwids is None:
+            image_fwids = {}
 
         for target in sorted(expected_written.keys()):
             # target is BIOS or EC
@@ -1996,7 +2001,7 @@ class FirmwareTest(FAFTBase):
                 # section is RO, RW, A, or B
 
                 before_fwid = before_fwids[target][section]
-                image_fwid = image_fwids[target][section]
+                image_fwid = image_fwids.get(target, {}).get(section, None)
                 actual_fwid = after_fwids[target][section]
 
                 if section in written_sections:

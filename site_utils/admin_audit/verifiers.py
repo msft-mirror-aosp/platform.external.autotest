@@ -3,16 +3,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 import common
 import base
+from autotest_lib.server.cros.storage import storage_validate as storage
 
 
 DUT_STORAGE_STATE_PREFIX = 'storage_state'
 SERVO_USB_STATE_PREFIX = 'servo_usb_state'
-VERYFY_STATE_NORMAL = 'NORMAL'
-VERYFY_STATE_ACCEPTABLE = 'ACCEPTABLE'
-VERYFY_STATE_NEED_REPLACEMENT = 'NEED_REPLACEMENT'
-VERYFY_STATE_UNKNOWN = 'UNKNOWN'
+VERIFY_STATE_NORMAL = 'NORMAL'
+VERIFY_STATE_ACCEPTABLE = 'ACCEPTABLE'
+VERIFY_STATE_NEED_REPLACEMENT = 'NEED_REPLACEMENT'
+VERIFY_STATE_UNKNOWN = 'UNKNOWN'
 
 
 class VerifyDutStorage(base._BaseDUTVerifier):
@@ -35,9 +38,28 @@ class VerifyDutStorage(base._BaseDUTVerifier):
                 flakiness on the tests. (supported by all types)
     """
     def _verify(self):
-        state = VERYFY_STATE_UNKNOWN
-        # implementation will come later
-        self._set_host_info_state(DUT_STORAGE_STATE_PREFIX, state)
+        try:
+            validator = storage.StorageStateValidator(self.get_host())
+            storage_type = validator.get_type()
+            logging.debug('Detected storage type: %s', storage_type)
+            storage_state = validator.get_state()
+            logging.debug('Detected storage state: %s', storage_state)
+            state  = self.convert_state(storage_state)
+            if state:
+                self._set_host_info_state(DUT_STORAGE_STATE_PREFIX, state)
+        except Exception as e:
+            raise base.AuditError('Exception during getting state of'
+                                  ' storage %s' % str(e))
+
+    def convert_state(self, state):
+        """Mapping state from validator to verifier"""
+        if state == storage.STORAGE_STATE_NORMAL:
+            return VERIFY_STATE_NORMAL
+        if state == storage.STORAGE_STATE_WARNING:
+            return VERIFY_STATE_ACCEPTABLE
+        if state == storage.STORAGE_STATE_CRITICAL:
+            return VERIFY_STATE_NEED_REPLACEMENT
+        return None
 
 
 class VerifyServoUsb(base._BaseServoVerifier):
@@ -56,6 +78,6 @@ class VerifyServoUsb(base._BaseServoVerifier):
 
     """
     def _verify(self):
-        state = VERYFY_STATE_UNKNOWN
+        state = VERIFY_STATE_UNKNOWN
         # implementation will come later
         self._set_host_info_state(SERVO_USB_STATE_PREFIX, state)

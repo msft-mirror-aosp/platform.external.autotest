@@ -1116,7 +1116,11 @@ class FirmwareTest(FAFTBase):
         @return: the line and the match, if the output matched.
         @raise error.TestFail: if output didn't match after the delay.
         """
-        return self.ec.send_command_get_output("powerinfo", [power_state])
+        if not isinstance(power_state, str):
+            raise error.TestError('%s is not a string while it should be.' %
+                                  power_state)
+        return self.ec.send_command_get_output("powerinfo",
+            ['\\b' + power_state + '\\b'])
 
     def wait_power_state(self, power_state, retries):
         """

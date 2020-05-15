@@ -102,7 +102,9 @@ def _verify(action, host):
         _log("START", action)
         verifier = VERIFIER_MAP[action]
         if verifier:
-            verifier().verify(host)
+            verifier(host).verify()
+        else:
+            logging.info('Verifier is not specified')
         _log("END_GOOD", action)
     except Exception as err:
         _log("END_FAIL", action, err)
@@ -145,7 +147,7 @@ def _parse_args():
   parser.add_argument(
       '--hostname',
       required=True,
-      help='Hostname of the DUT to audiit.',
+      help='Hostname of the DUT to audit.',
   )
   parser.add_argument(
       '--host-info-file',

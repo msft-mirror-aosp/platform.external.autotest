@@ -1219,10 +1219,11 @@ class TradefedTest(test.test):
                         current_login.need_reboot()
                     continue
 
-                waived = len(waived_tests)
-                last_session_id, passed, failed, all_done = result
+                last_waived = len(waived_tests)
+                last_session_id, last_passed, last_failed, last_all_done =\
+                    result
 
-                if failed > waived or not utils.is_in_container():
+                if last_failed > last_waived or not utils.is_in_container():
                     for host in self._hosts:
                         dir_name = "%s-step%02d" % (host.hostname, steps)
                         output_dir = os.path.join(
@@ -1232,7 +1233,7 @@ class TradefedTest(test.test):
                         self._copy_extra_artifacts_host(
                             extra_artifacts_host, host, output_dir)
 
-                if passed + failed > 0:
+                if last_passed + last_failed > 0:
                     # At least one test had run, which means the media push step
                     # of tradefed didn't fail. To free up the storage earlier,
                     # delete the copy on the server side. See crbug.com/970881
@@ -1241,14 +1242,15 @@ class TradefedTest(test.test):
                 # If the result is |acc|urate according to the log, or the
                 # inaccuracy is recognized by tradefed (not all_done), then
                 # it is fine.
-                accurate.append(acc or not all_done)
-                if failed < waived:
+                accurate.append(acc or not last_all_done)
+                if last_failed < last_waived:
                     logging.error(
                         'Error: Internal waiver bookkeeping has become '
-                        'inconsistent (f=%d, w=%d)', failed, waived)
+                        'inconsistent (f=%d, w=%d)', last_failed, last_waived)
 
                 msg = 'run' if session_id == None else ' retry'
-                msg += '(p=%s, f=%s, w=%s)' % (passed, failed, waived)
+                msg += '(p=%s, f=%s, w=%s)' % (last_passed, last_failed,
+                                               last_waived)
                 self.summary += msg
                 logging.info('RESULT: %s %s', msg, result)
 
@@ -1256,7 +1258,7 @@ class TradefedTest(test.test):
                 # provided by list_results to decide if there are outstanding
                 # modules to iterate over (similar to missing tests just on a
                 # per-module basis).
-                notest = (passed + failed == 0 and all_done)
+                notest = (last_passed + last_failed == 0 and last_all_done)
                 if target_module in self._notest_modules:
                     if notest:
                         logging.info('Package has no tests as expected.')
@@ -1274,7 +1276,8 @@ class TradefedTest(test.test):
                         current_login.need_reboot()
                     continue
 
-                session_id = last_session_id
+                waived = last_waived
+                session_id, passed, failed, all_done  = result
                 if (not all_done and executable_test_count != None and
                         (passed + failed ==
                          executable_test_count * self._test_count_factor)):

@@ -25,7 +25,7 @@ args_dict = utils.args_to_dict(args)
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test(
-        'rlz_CheckPing', host=host, logged_in=False,
+        'rlz_CheckPing', host=host, pre_login='lock',
         rlz_embargo_end_date=(
             datetime.date.today() - datetime.timedelta(days=2)),
         **args_dict)

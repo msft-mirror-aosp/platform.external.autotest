@@ -294,53 +294,6 @@ class TestAutoUpdater(mox.MoxTestBase):
                 '%s %s' % (fake_shell, tmp_script))
         self.mox.VerifyAll()
 
-    def testRollbackRootfs(self):
-        """Tests that we correctly rollback the rootfs when requested."""
-        self.mox.StubOutWithMock(autoupdater.ChromiumOSUpdater, '_run')
-        self.mox.StubOutWithMock(autoupdater.ChromiumOSUpdater,
-                                 '_verify_update_completed')
-        host = self.mox.CreateMockAnything()
-        update_url = 'http://server/test/url'
-        host.hostname = 'test_host'
-
-        can_rollback_cmd = ('/usr/bin/update_engine_client --can_rollback')
-        rollback_cmd = ('/usr/bin/update_engine_client --rollback '
-                        '--follow')
-
-        updater = autoupdater.ChromiumOSUpdater(update_url, host=host)
-
-        # Return an old build which shouldn't call can_rollback.
-        updater.host.get_release_version().AndReturn('1234.0.0')
-        autoupdater.ChromiumOSUpdater._run(rollback_cmd)
-        autoupdater.ChromiumOSUpdater._verify_update_completed()
-
-        self.mox.ReplayAll()
-        updater.rollback_rootfs(powerwash=True)
-        self.mox.VerifyAll()
-
-        self.mox.ResetAll()
-        cmd_result_1 = self.mox.CreateMockAnything()
-        cmd_result_1.exit_status = 1
-
-        # Rollback but can_rollback says we can't -- return an error.
-        updater.host.get_release_version().AndReturn('5775.0.0')
-        autoupdater.ChromiumOSUpdater._run(can_rollback_cmd).AndRaise(
-                error.AutoservRunError('can_rollback failed', cmd_result_1))
-        self.mox.ReplayAll()
-        self.assertRaises(autoupdater.RootFSUpdateError,
-                          updater.rollback_rootfs, True)
-        self.mox.VerifyAll()
-
-        self.mox.ResetAll()
-        # Rollback >= version blacklisted.
-        updater.host.get_release_version().AndReturn('5775.0.0')
-        autoupdater.ChromiumOSUpdater._run(can_rollback_cmd)
-        autoupdater.ChromiumOSUpdater._run(rollback_cmd)
-        autoupdater.ChromiumOSUpdater._verify_update_completed()
-        self.mox.ReplayAll()
-        updater.rollback_rootfs(powerwash=True)
-        self.mox.VerifyAll()
-
 
 class TestAutoUpdater2(unittest.TestCase):
     """Another test for autoupdater module that using mock."""

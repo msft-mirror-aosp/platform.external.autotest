@@ -31,10 +31,11 @@ class firmware_DevDefaultBoot(FirmwareTest):
 
     def cleanup(self):
         """Cleanup the test"""
-        try:
-            self.ensure_dev_internal_boot(self.orig_boot_usb)
-        except Exception as e:
-            logging.error("Caught exception: %s", str(e))
+        if hasattr(self, 'orig_boot_usb'):
+            try:
+                self.ensure_dev_internal_boot(self.orig_boot_usb)
+            except Exception as e:
+                logging.error("Error while restoring dev_boot_usb: %s", str(e))
         super(firmware_DevDefaultBoot, self).cleanup()
 
     def try_timeout_default_internal(self):

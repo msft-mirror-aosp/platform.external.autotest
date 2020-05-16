@@ -12,7 +12,13 @@ from autotest_lib.server import test
 
 
 class rlz_CheckPing(test.test):
-    """ Tests we are sending the CAF and CAI RLZ pings for first user."""
+    """
+    Tests if we are sending RLZ install (CAI) and first-use (CAF) pings in a
+    variety of different circumstances. Refer to the TestTracker RLZ test plan
+    for more information:
+    https://testtracker.googleplex.com/testplans/details/25301
+
+    """
     version = 1
 
     _CLIENT_TEST = 'desktopui_CheckRlzPingSent'
@@ -87,8 +93,9 @@ class rlz_CheckPing(test.test):
                                  ' %s' % check_should_send_ping)
 
 
-    def run_once(self, host, ping_timeout=30, logged_in=True,
-                 rlz_embargo_end_date=None, should_send_rlz_ping=1):
+    def run_once(self, host, ping_timeout=30, pre_login=None,
+                 rlz_embargo_end_date=None, should_send_rlz_ping=1,
+                 check_ping_not_resent=False):
         """
         Configures the DUT to send RLZ pings. Checks for the RLZ client
         install (CAI) and first-use (CAF) pings.
@@ -96,7 +103,16 @@ class rlz_CheckPing(test.test):
         @param host: Host to run test on.
         @param ping_timeout: Delay time (seconds) before both CAI and CAF
                              pings are sent.
-        @param logged_in: True for real login or False for guest mode.
+        @param pre_login: Whether or not to login before the main RLZ ping
+                          test, and for how long. Should be one of
+                          ['lock', 'no_lock', None]. 'lock' is meant for guest
+                          mode testing, where a non-guest user must login to
+                          'lock' the device for RLZ before the ping can be
+                          sent in guest mode. 'no_lock' is to log in with a
+                          different user account and log out immediately to
+                          ensure no ping is sent. Used to verify that the ping
+                          can be sent from subsequent user logins if it has
+                          not already been sent.
         @param rlz_embargo_end_date: Date for rlz_embargo_end_date VPD
                                      setting. If None, no value will be set
                                      for rlz_embargo_end_date, and any
@@ -112,12 +128,18 @@ class rlz_CheckPing(test.test):
                                      the CAF ping has been sent. It is set to
                                      0 after the CAF ping to ensure it is not
                                      sent again in the device's lifetime.
+        @param check_ping_not_resent: True to perform a second RLZ check with
+                                      a different user account for tests that
+                                      confirm the first-use (CAF) ping is not
+                                      resent. The second check assumes the CAF
+                                      ping was sent successfully, so the
+                                      should_send_rlz_ping and
+                                      rlz_embargo_end_date parameters should
+                                      be a combination that ensures it was
+                                      sent.
 
         """
         self._host = host
-        if 'veyron_rialto' in self._host.get_board():
-            raise error.TestNAError('Skipping test on rialto device.')
-
         self._check_rlz_brand_code()
 
         # Clear TPM owner so we have no users on DUT.
@@ -131,18 +153,16 @@ class rlz_CheckPing(test.test):
         # We expect CAF ping to be sent when:
         # 1. should_send_rlz_ping is 1
         # 2. rlz_embargo_end_date is missing or in the past
+        expect_caf = bool(should_send_rlz_ping)
         if rlz_embargo_end_date:
-            expect_caf = (bool(should_send_rlz_ping) and
-                          (datetime.date.today() - rlz_embargo_end_date).days
-                          > 0)
-        else:
-            expect_caf = bool(should_send_rlz_ping)
+            expect_caf = (expect_caf and
+                (datetime.date.today() - rlz_embargo_end_date).days > 0)
 
         # Login, do a Google search, verify events in RLZ Data file.
         client_at = autotest.Autotest(self._host)
         client_at.run_test(self._CLIENT_TEST, ping_timeout=ping_timeout,
-                           logged_in=logged_in,
-                           expect_caf_ping=expect_caf)
+                           expect_caf_ping=expect_caf, pre_login=pre_login,
+                           pre_login_username='rlz_user')
         client_at._check_client_test_result(self._host, self._CLIENT_TEST)
 
         if expect_caf:
@@ -152,3 +172,15 @@ class rlz_CheckPing(test.test):
             self._check_rlz_vpd_settings_post_ping(
                 should_send_rlz_ping=should_send_rlz_ping,
                 rlz_embargo_end_date=rlz_embargo_end_date)
+
+        # Log in with another user and verify CAF ping is not resent. This
+        # portion of the test assumes a successful run above where expect_caf
+        # was True.
+        if check_ping_not_resent:
+            client_at.run_test(self._CLIENT_TEST, ping_timeout=ping_timeout,
+                               expect_caf_ping=False, username='rlz_user',
+                               tag="check_ping_not_resent")
+
+            # Confirm VPD settings are also unchanged
+            self._check_rlz_vpd_settings_post_ping(
+                should_send_rlz_ping=0, rlz_embargo_end_date=None)

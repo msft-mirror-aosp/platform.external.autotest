@@ -594,45 +594,6 @@ class ChromiumOSUpdater(object):
         return script_command
 
 
-    def rollback_rootfs(self, powerwash):
-        """Triggers rollback and waits for it to complete.
-
-        @param powerwash: If true, powerwash as part of rollback.
-
-        @raise RootFSUpdateError if anything went wrong.
-        """
-        version = self.host.get_release_version()
-        # Introduced can_rollback in M36 (build 5772). # etc/lsb-release matches
-        # X.Y.Z. This version split just pulls the first part out.
-        try:
-            build_number = int(version.split('.')[0])
-        except ValueError:
-            logging.error('Could not parse build number.')
-            build_number = 0
-
-        if build_number >= 5772:
-            can_rollback_cmd = '%s --can_rollback' % _UPDATER_BIN
-            logging.info('Checking for rollback.')
-            try:
-                self._run(can_rollback_cmd)
-            except error.AutoservRunError as e:
-                raise RootFSUpdateError("Rollback isn't possible on %s: %s" %
-                                        (self.host.hostname, str(e)))
-
-        rollback_cmd = '%s --rollback --follow' % _UPDATER_BIN
-        if not powerwash:
-            rollback_cmd += ' --nopowerwash'
-
-        logging.info('Performing rollback.')
-        try:
-            self._run(rollback_cmd)
-        except error.AutoservRunError as e:
-            raise RootFSUpdateError('Rollback failed on %s: %s' %
-                                    (self.host.hostname, str(e)))
-
-        self._verify_update_completed()
-
-
     def update_stateful(self, clobber=True):
         """Updates the stateful partition.
 

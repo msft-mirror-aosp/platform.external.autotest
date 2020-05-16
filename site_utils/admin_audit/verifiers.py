@@ -78,6 +78,22 @@ class VerifyServoUsb(base._BaseServoVerifier):
 
     """
     def _verify(self):
-        state = VERIFY_STATE_UNKNOWN
-        # implementation will come later
+        servo = self.get_host().get_servo()
+        usb = servo.probe_host_usb_dev()
+        if not usb:
+            logging.error('Usb not detected')
+            return
+
+        state = VERIFY_STATE_NORMAL
+
+        # The USB will be format during checking to the bad blocks.
+        command = 'badblocks -sw -e 1 -t 0xff %s' % usb
+        logging.info('Running command: %s', command)
+
+        # The response is the list of bad block on USB.
+        result = servo.system_output(command, ignore_status=True)
+        logging.info("Check result: '%s'", result)
+        if result:
+            # So has result is Bad and empty is Good.
+            state = VERIFY_STATE_NEED_REPLACEMENT
         self._set_host_info_state(SERVO_USB_STATE_PREFIX, state)

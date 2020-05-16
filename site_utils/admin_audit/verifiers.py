@@ -6,21 +6,19 @@
 import logging
 
 import common
+import base
+from autotest_lib.server.cros.storage import storage_validate as storage
 
 
 DUT_STORAGE_STATE_PREFIX = 'storage_state'
 SERVO_USB_STATE_PREFIX = 'servo_usb_state'
-VERYFY_STATE_NORMAL = 'NORMAL'
-VERYFY_STATE_ACCEPTABLE = 'ACCEPTABLE'
-VERYFY_STATE_NEED_REPLACEMENT = 'NEED_REPLACEMENT'
-VERYFY_STATE_UNKNOWN = 'UNKNOWN'
+VERIFY_STATE_NORMAL = 'NORMAL'
+VERIFY_STATE_ACCEPTABLE = 'ACCEPTABLE'
+VERIFY_STATE_NEED_REPLACEMENT = 'NEED_REPLACEMENT'
+VERIFY_STATE_UNKNOWN = 'UNKNOWN'
 
 
-class AuditError(Exception):
-  """Generic error raised during audit."""
-
-
-class VerifyDutStorage:
+class VerifyDutStorage(base._BaseDUTVerifier):
     """Verify the state of the storage on the DUT
 
     The process to determine the type of storage and read metrics
@@ -39,17 +37,32 @@ class VerifyDutStorage:
                 device can work by not stable and can cause the
                 flakiness on the tests. (supported by all types)
     """
-    def verify(self, host):
-        # pylint: disable=missing-docstring
-        if not host:
-            raise AuditError('host is not present')
+    def _verify(self):
+        try:
+            validator = storage.StorageStateValidator(self.get_host())
+            storage_type = validator.get_type()
+            logging.debug('Detected storage type: %s', storage_type)
+            storage_state = validator.get_state()
+            logging.debug('Detected storage state: %s', storage_state)
+            state  = self.convert_state(storage_state)
+            if state:
+                self._set_host_info_state(DUT_STORAGE_STATE_PREFIX, state)
+        except Exception as e:
+            raise base.AuditError('Exception during getting state of'
+                                  ' storage %s' % str(e))
 
-        state = VERYFY_STATE_UNKNOWN
-        # implementation will come later
-        _set_host_info_state(host, DUT_STORAGE_STATE_PREFIX, state)
+    def convert_state(self, state):
+        """Mapping state from validator to verifier"""
+        if state == storage.STORAGE_STATE_NORMAL:
+            return VERIFY_STATE_NORMAL
+        if state == storage.STORAGE_STATE_WARNING:
+            return VERIFY_STATE_ACCEPTABLE
+        if state == storage.STORAGE_STATE_CRITICAL:
+            return VERIFY_STATE_NEED_REPLACEMENT
+        return None
 
 
-class VerifyServoUsb:
+class VerifyServoUsb(base._BaseServoVerifier):
     """Verify the state of the USB-drive on the Servo
 
     The process to determine by checking the USB-drive on having any
@@ -64,29 +77,7 @@ class VerifyServoUsb:
                 work but cause flakiness in the tests or repair process.
 
     """
-    def verify(self, host):
-        # pylint: disable=missing-docstring
-        if not host:
-            raise AuditError('host is not present')
-        if not host.servo:
-            raise AuditError('servo is not initilized')
-
-        state = VERYFY_STATE_UNKNOWN
+    def _verify(self):
+        state = VERIFY_STATE_UNKNOWN
         # implementation will come later
-        _set_host_info_state(host, SERVO_USB_STATE_PREFIX, state)
-
-
-def _set_host_info_state(host, prefix, state):
-    """Update state value to the label in the host_info
-
-    @param host: dut host presentation to provide access to host_info
-    @param prefix: label prefix. (ex. label_prefix:value)
-    @param state: new state value for the label
-    """
-    if host and prefix:
-        host_info = host.host_info_store.get()
-        old_state = host_info.get_label_value(prefix)
-        host_info.set_version_label(prefix, state)
-        logging.info('Set %s as `%s` (previous: `%s`)',
-                     prefix, state, old_state)
-        host.host_info_store.commit(host_info)
+        self._set_host_info_state(SERVO_USB_STATE_PREFIX, state)

@@ -37,6 +37,7 @@ ENABLE_DEVSERVER_TRIGGER_AUTO_UPDATE = _CONFIG.get_config_value(
         'CROS', 'enable_devserver_trigger_auto_update', type=bool,
         default=False)
 
+DEVICE_BASE_DIR = '/usr/local/tmp/au-provision'
 
 def _host_in_lab(host):
     """Check if the host is in the lab and an object the AFE knows.
@@ -190,7 +191,8 @@ def _provision_with_au(host, update_url, staging_server):
         # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
         # update_url.
         image_name = '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
-        with remote_access.ChromiumOSDeviceHandler(host.ip) as device:
+        with remote_access.ChromiumOSDeviceHandler(
+              host.ip, base_dir=DEVICE_BASE_DIR) as device:
             updater = auto_updater.ChromiumOSUpdater(
                 device, build_name=None, payload_dir=image_name,
                 staging_server=staging_server.url(), reboot=False,

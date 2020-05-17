@@ -6,7 +6,7 @@ import logging
 import os
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros import autoupdater
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 POWERWASH_COMMAND = 'safe fast keepimg'
@@ -62,30 +62,32 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
 
         """
         update_url = self.get_update_url_for_test(job_repo_url)
-        updater = autoupdater.ChromiumOSUpdater(update_url, self._host)
-
-        initial_kernel, updated_kernel = updater.get_kernel_state()
+        initial_kernel, updated_kernel = kernel_utils.get_kernel_state(
+            self._host)
         logging.info('Initial device state: active kernel %s, '
                      'inactive kernel %s.', initial_kernel, updated_kernel)
 
         logging.info('Performing an update.')
-        updater.update_image()
+        self._check_for_update(update_url, wait_for_completion=True)
+        kernel_utils.verify_kernel_state_after_update(self._host)
         self._host.reboot()
 
         # We should be booting from the new partition.
         error_message = 'Failed to set up test by updating DUT.'
-        updater.verify_boot_expectations(updated_kernel, error_message)
+        kernel_utils.verify_boot_expectations(self._host, updated_kernel,
+                                              error_message)
 
         if powerwash_before_rollback:
             self._powerwash()
 
         logging.info('Update verified, initiating rollback.')
         # Powerwash is tested separately from rollback.
-        updater.rollback_rootfs(powerwash=False)
+        self._rollback(powerwash=False)
         self._host.reboot()
 
         # We should be back on our initial partition.
         error_message = ('Autoupdate reported that rollback succeeded but we '
                          'did not boot into the correct partition.')
-        updater.verify_boot_expectations(initial_kernel, error_message)
+        kernel_utils.verify_boot_expectations(self._host, initial_kernel,
+                                              error_message)
         logging.info('We successfully rolled back to initial kernel.')

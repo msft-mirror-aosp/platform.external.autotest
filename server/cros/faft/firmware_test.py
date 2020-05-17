@@ -1116,7 +1116,11 @@ class FirmwareTest(FAFTBase):
         @return: the line and the match, if the output matched.
         @raise error.TestFail: if output didn't match after the delay.
         """
-        return self.ec.send_command_get_output("powerinfo", [power_state])
+        if not isinstance(power_state, str):
+            raise error.TestError('%s is not a string while it should be.' %
+                                  power_state)
+        return self.ec.send_command_get_output("powerinfo",
+            ['\\b' + power_state + '\\b'])
 
     def wait_power_state(self, power_state, retries):
         """
@@ -1383,8 +1387,9 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        self.check_shutdown_power_state(self.POWER_STATE_G3,
-                                        orig_boot_id=boot_id)
+        if self.faft_config.chrome_ec:
+            self.check_shutdown_power_state(self.POWER_STATE_G3,
+                                            orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 
@@ -1957,6 +1962,8 @@ class FirmwareTest(FAFTBase):
 
         For expected_written, the dict should be keyed by flash type only:
         {'bios': ['ro'], 'ec': ['ro', 'rw']}
+        To expect the contents completely unchanged, give only the keys:
+        {'bios': [], 'ec': []} or {'bios': None, 'ec': None}
 
         @param before_fwids: dict of versions from before the update
         @param image_fwids: dict of versions in the update
@@ -1965,12 +1972,15 @@ class FirmwareTest(FAFTBase):
         @return: list of error lines for mismatches
 
         @type before_fwids: dict
-        @type image_fwids: dict
+        @type image_fwids: dict | None
         @type after_fwids: dict
         @type expected_written: dict
         @rtype: list
         """
         errors = []
+
+        if image_fwids is None:
+            image_fwids = {}
 
         for target in sorted(expected_written.keys()):
             # target is BIOS or EC
@@ -1995,7 +2005,7 @@ class FirmwareTest(FAFTBase):
                 # section is RO, RW, A, or B
 
                 before_fwid = before_fwids[target][section]
-                image_fwid = image_fwids[target][section]
+                image_fwid = image_fwids.get(target, {}).get(section, None)
                 actual_fwid = after_fwids[target][section]
 
                 if section in written_sections:

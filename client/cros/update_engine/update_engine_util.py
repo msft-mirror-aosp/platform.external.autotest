@@ -14,6 +14,7 @@ import urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros.update_engine import update_engine_event
 
 _DEFAULT_RUN = utils.run
@@ -25,6 +26,9 @@ class UpdateEngineUtil(object):
     # Update engine status lines.
     _PROGRESS = 'PROGRESS'
     _CURRENT_OP = 'CURRENT_OP'
+
+    # update_engine_client command
+    _UPDATE_ENGINE_CLIENT_CMD = 'update_engine_client'
 
     # Update engine statuses.
     _UPDATE_STATUS_IDLE = 'UPDATE_STATUS_IDLE'
@@ -188,8 +192,9 @@ class UpdateEngineUtil(object):
         @raise: error.AutoservError if command times out
 
         """
-        status = self._run('update_engine_client --status', timeout=timeout,
-                           ignore_status=True, ignore_timeout=ignore_timeout)
+        status = self._run([self._UPDATE_ENGINE_CLIENT_CMD, '--status'],
+                           timeout=timeout, ignore_status=True,
+                           ignore_timeout=ignore_timeout)
 
         if status is None:
             return None
@@ -422,13 +427,28 @@ class UpdateEngineUtil(object):
 
         """
         update_url = self._append_query_to_url(update_url, kwargs)
-        cmd = ['update_engine_client',
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD,
                '--update' if wait_for_completion else '--check_for_update',
                '--omaha_url=%s' % update_url]
 
         if not interactive:
-          cmd.append('--interactive=false')
+            cmd.append('--interactive=false')
         self._run(cmd, ignore_status=ignore_status)
+
+
+    def _rollback(self, powerwash=False):
+        """
+        Perform a rollback of rootfs.
+
+        @param powerwash: True to powerwash along with the rollback.
+
+        """
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD, '--rollback', '--follow']
+        if not powerwash:
+            cmd.append('--nopowerwash')
+        logging.info('Performing rollback with cmd: %s.', cmd)
+        self._run(cmd)
+        kernel_utils.verify_kernel_state_after_update(self._host)
 
 
     def _save_extra_update_engine_logs(self, number_of_logs):
@@ -612,7 +632,7 @@ class UpdateEngineUtil(object):
             search = re.search(MATCH_STR, requests[i])
             if (not search or
                 (search.group(1) ==
-                 update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE)):
+                 str(update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE))):
                 return requests[i]
 
         return None

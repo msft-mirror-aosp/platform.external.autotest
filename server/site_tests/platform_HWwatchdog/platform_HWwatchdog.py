@@ -33,7 +33,8 @@ class platform_HWwatchdog(test.test):
         tester = WatchdogTester(host)
         # If watchdog not present, just skip this test
         if not tester.is_supported():
-            logging.info("INFO: %s not present. Skipping test." % tester.WD_DEV)
+            error.TestNAError('%s or %s not present. Skipping test.' %
+                              (tester.WD_DEV, tester.DAISYDOG_PATH))
             return
 
         with tester:

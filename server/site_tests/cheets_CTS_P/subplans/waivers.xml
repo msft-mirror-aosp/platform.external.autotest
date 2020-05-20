@@ -6,18 +6,5 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
-  <Entry include="CtsBionicTestCases pthread_leak#detach" />
-  <Entry include="CtsIncidentHostTestCases com.android.server.cts.GraphicsStatsValidationTest#testBasicDrawFrame"/>
-  <Entry include="CtsIncidentHostTestCases com.android.server.cts.GraphicsStatsValidationTest#testDaveyDrawFrame"/>
-  <Entry include="CtsIncidentHostTestCases com.android.server.cts.GraphicsStatsValidationTest#testJankyDrawFrame"/>
-  <Entry include="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLContextTest#test_SSLContext_defaultConfiguration"/>
-  <Entry include="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLContextTest#test_SSLContext_x509AndPskConfiguration_defaultProviderOnly"/>
-  <Entry include="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLSocketTest#test_SSLSocket_ClientHello_cipherSuites"/>
-  <Entry include="CtsLibcoreTestCases org.apache.harmony.tests.javax.net.ssl.SSLSessionTest#test_getCipherSuite"/>
-  <Entry include="CtsBatterySavingTestCases android.os.cts.batterysaving.BatterySaverAlarmTest#testAllowWhileIdleThrottled"/>
-  <Entry include="CtsViewTestCases android.view.cts.PixelCopyTest#testDialogProducer" />
-  <Entry include="CtsViewTestCases android.view.cts.PixelCopyTest#testDialogProducerCopyToRGBA16F" />
-  <Entry include="CtsViewTestCases android.view.cts.PixelCopyTest#testWindowProducer" />
-  <Entry include="CtsViewTestCases android.view.cts.PixelCopyTest#testWindowProducerCopyToRGBA16F" />
-  <Entry include="CtsViewTestCases android.view.cts.ViewTest#testTouchMode" />
+  <Entry include="CtsKeystoreTestCases android.keystore.cts.CipherTest#testEmptyPlaintextEncryptsAndDecryptsWhenUnlockedRequired" />
 </SubPlan>

@@ -89,7 +89,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
 
     def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
-                                          clobber_stateful=False):
+                                          clobber_stateful=False, tag='source'):
         """Updates the device.
 
         @param cros_device: The device to be updated.
@@ -97,19 +97,20 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         @param clobber_stateful: Boolean that determines whether the stateful
                                  of the device should be force updated. By
                                  default, set to False
+        @param tag: An identifier string added to each log filename.
 
         @raise error.TestFail if anything goes wrong with the update.
 
-        @return Path to directory where generated hostlog files and nebraska
-                logfiles are stored.
         """
         try:
-            logs_dir = cros_device.install_version_without_cros_au_rpc(
+            cros_device.install_version_without_cros_au_rpc(
                 payload_uri, clobber_stateful=clobber_stateful)
         except Exception as e:
-            logging.error('ERROR: Failed to update device.')
+            logging.exception('ERROR: Failed to update device.')
             raise error.TestFail(str(e))
-        return logs_dir
+        finally:
+            self._copy_generated_nebraska_logs(
+                cros_device.cros_updater.request_logs_dir, tag)
 
 
     def run_update_test(self, cros_device, test_conf):
@@ -126,9 +127,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
 
-        logs_dir = self.update_device_without_cros_au_rpc(
-            cros_device, test_conf['target_payload_uri'])
-        self._copy_generated_nebraska_logs(logs_dir, 'target')
+        self.update_device_without_cros_au_rpc(
+            cros_device, test_conf['target_payload_uri'], tag='target')
 
         # Compare hostlog events from the update to the expected ones.
         rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
@@ -168,12 +168,10 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         # Install source image
         source_payload_uri = test_conf['source_payload_uri']
         if source_payload_uri is not None:
-            logs_dir = self.update_device_without_cros_au_rpc(
+            self.update_device_without_cros_au_rpc(
                 cros_device, source_payload_uri, clobber_stateful=True)
-            self._copy_generated_nebraska_logs(logs_dir, 'source')
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
-
         # Start the update to the target image.
         self.run_update_test(cros_device, test_conf)
 

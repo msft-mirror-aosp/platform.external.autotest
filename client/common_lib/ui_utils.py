@@ -175,13 +175,14 @@ class UI_Handler(object):
             {name: %s, role: %s}}).map(node => node.%s)""" % (name, role, attr)
         return self.ext.EvaluateJavaScript(new_promise, promise=True)
 
-    def get_name_role_list(self):
+    def get_name_role_list(self, name=None, role=None):
         """
         Return [{}, {}] containing the name/role of everything on screen.
 
         """
-        name = self.REGEX_ALL
-        role = self.REGEX_ALL
+        name = self.REGEX_ALL if name is None else name
+        role = self.REGEX_ALL if role is None else self._format_obj(role,
+                                                                    False)
 
         new_promise = self.PROMISE_TEMPLATE % """root.findAll({attributes:
             {name: %s, role: %s}}).map(node =>

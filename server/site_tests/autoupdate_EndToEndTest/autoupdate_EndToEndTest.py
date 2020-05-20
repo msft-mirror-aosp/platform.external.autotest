@@ -7,6 +7,7 @@ import os
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros import constants
 from autotest_lib.server.cros.update_engine import chromiumos_test_platform
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -38,6 +39,17 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     version = 1
 
     _LOGIN_TEST = 'login_LoginSuccess'
+
+
+    def cleanup(self):
+        """Save the logs from stateful_partition's preserved/log dir."""
+        stateful_preserved_logs = os.path.join(self.resultsdir,
+                                               'stateful_preserved_logs')
+        os.makedirs(stateful_preserved_logs)
+        self._host.get_file(constants.AUTOUPDATE_PRESERVE_LOG,
+                            stateful_preserved_logs, safe_symlinks=True,
+                            preserve_perm=False)
+        super(autoupdate_EndToEndTest, self).cleanup()
 
 
     def _get_hostlog_file(self, filename, identifier):

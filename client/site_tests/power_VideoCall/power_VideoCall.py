@@ -12,7 +12,6 @@ from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
 
-
 class power_VideoCall(power_test.power_Test):
     """class for power_VideoCall test."""
     version = 1
@@ -97,7 +96,8 @@ class power_VideoCall(power_test.power_Test):
                     logging.info(
                         'Low battery, stop test early after %.0f minutes',
                         (time.time() - self._start_time) / 60)
-                    return
+                    break
+            self.collect_keypress_latency(cr)
 
     def _get_camera_preset(self):
         """Return camera preset appropriate to hw spec.

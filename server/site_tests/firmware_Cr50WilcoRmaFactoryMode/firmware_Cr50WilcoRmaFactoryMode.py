@@ -66,7 +66,7 @@ class firmware_Cr50WilcoRmaFactoryMode(Cr50Test):
             True if Cr50 is in the requested state, False otherwise
         """
         if state not in ('enable', 'disable'):
-            raise error.TestError('Invalid factory mode state %s', state)
+            raise error.TestError('Invalid factory mode state %s' % state)
         enable = state == 'enable'
 
         if self._in_factory_mode == enable:

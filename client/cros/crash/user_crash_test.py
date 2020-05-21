@@ -223,7 +223,9 @@ class UserCrashTest(crash_test.CrashTest):
 
             utils.system('cp -a "%s" "%s"' % (self._crasher_path, dest))
 
-        self.enable_crash_filtering(os.path.basename(crasher_path))
+        # Limit to the first 15 characters of the crasher binary name because
+        # that's what the kernel invokes crash_reporter with.
+        self.enable_crash_filtering(os.path.basename(crasher_path)[:15])
 
         crasher_command = []
 

@@ -367,13 +367,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         for device_list in self.devices.values():
             for device in device_list:
                 if device is not None:
-                    logging.info('Clear device %s', device.name)
+                    logging.info('Clear device %s from DUT', device.name)
                     self.bluetooth_facade.disconnect_device(device.address)
                     device_is_paired = self.bluetooth_facade.device_is_paired(
                             device.address)
                     if device_is_paired:
                         self.bluetooth_facade.remove_device_object(
                                 device.address)
+
+                    # Also remove pairing on Peer
+                    logging.info('Clearing DUT from %s', device.name)
+                    try:
+                        device.RemoveDevice(self.bluetooth_facade.address)
+                    except Exception as e:
+                        # If peer doesn't expose RemoveDevice, ignore failure
+                        if not (e.__class__.__name__ == 'Fault' and
+                                'is not supported' in str(e)):
+                            logging.info('Couldn\'t Remove: {}'.format(e))
+                            raise
+
 
         # Repopulate btpeer_group for next tests
         # Clear previous tets's leftover entries. Don't delete the

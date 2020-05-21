@@ -231,7 +231,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
             TestError if any of the states are not correct
         """
         if run not in self.EXPECTED_RESULTS:
-            raise error.TestError('Add results for %s to EXPECTED_RESULTS', run)
+            raise error.TestError('Add results for %s to EXPECTED_RESULTS' % run)
         expected_states = self.EXPECTED_RESULTS[run]
 
         # Wait a short time for the ccd state to settle

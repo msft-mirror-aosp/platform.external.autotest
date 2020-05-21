@@ -1118,7 +1118,7 @@ class Cr50Test(FirmwareTest):
                 stderr_tee=utils.TEE_TO_LOGS,
                 stdin=subprocess.PIPE)
         if gsctool_job == None:
-            raise error.TestFail('could not start gsctool command %r', cmd)
+            raise error.TestFail('could not start gsctool command %r' % cmd)
 
         try:
             # Wait for enter prompt

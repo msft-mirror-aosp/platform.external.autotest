@@ -1296,7 +1296,7 @@ class Servo(object):
 
             return os.path.join(dest_dir, ec_image)
         else:
-            raise error.TestError('Failed to extract EC image from %s',
+            raise error.TestError('Failed to extract EC image from %s' %
                                   tarball_path)
 
 
@@ -1334,7 +1334,7 @@ class Servo(object):
         if bios_image:
             return os.path.join(dest_dir, bios_image)
         else:
-            raise error.TestError('Failed to extract BIOS image from %s',
+            raise error.TestError('Failed to extract BIOS image from %s' %
                                   tarball_path)
 
 

@@ -60,7 +60,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         value = host.get_latest_release_version(self.faft_config.platform,
                                                 parent)
         if not value:
-            raise error.TestError('Cannot locate the latest release for %s',
+            raise error.TestError('Cannot locate the latest release for %s' %
                                   self.faft_config.platform)
 
         # Fast open cr50 and check if testlab is enabled.

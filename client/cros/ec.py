@@ -441,7 +441,7 @@ class EC_USBPD_Port(EC_Common):
             self._amodes = self._get_amodes()
 
         if svid not in self._amodes.keys():
-            raise error.TestError("SVID %s not supported", svid)
+            raise error.TestError("SVID %s not supported" % svid)
 
         if opos > len(self._amodes[svid]['configs']):
             raise error.TestError("opos > available configs")

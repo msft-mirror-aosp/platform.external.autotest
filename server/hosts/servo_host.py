@@ -546,7 +546,7 @@ class ServoHost(base_servohost.BaseServoHost):
         """Helper function to handle non-zero servodtool response.
         """
         if re.search(servo_constants.ERROR_MESSAGE_USB_HUB_NOT_COMPATIBLE,
-                     response.stderr):
+                     response.stdout):
             logging.error('The servo is not plugged on a usb hub that supports'
                           ' power-cycle!')
             # change the flag so we can update this label in later process.

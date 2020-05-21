@@ -57,7 +57,7 @@ class ChromiumOSTestPlatform(object):
         build_name, payload_file = self._get_update_parameters_from_uri(
             payload_uri)
         logging.info('Installing %s on the DUT', payload_uri)
-        cros_updater = cros_update.CrOSUpdateTrigger(
+        self.cros_updater = cros_update.CrOSUpdateTrigger(
             host_name=self._host.hostname,
             build_name=build_name,
             static_dir='',
@@ -67,8 +67,8 @@ class ChromiumOSTestPlatform(object):
             clobber_stateful=clobber_stateful,
             staging_server=self._autotest_devserver.url(),
             transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
-        cros_updater.TriggerAU()
-        return cros_updater.request_logs_dir
+        self.cros_updater.TriggerAU()
+
 
     def _install_version(self, payload_uri, clobber_stateful=False):
         """Install the specified payload.

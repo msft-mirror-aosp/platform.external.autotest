@@ -13,11 +13,12 @@ class WatchdogTester(object):
     """Helper class to perform various watchdog tests."""
 
     WD_DEV = '/dev/watchdog'
-
+    DAISYDOG_PATH='/usr/sbin/daisydog'
     def _exists_on_client(self):
         return self._client.run('test -c "%s"' % self.WD_DEV,
+                                ignore_status=True).exit_status == 0 and \
+               self._client.run('test -x "%s"' % self.DAISYDOG_PATH,
                                 ignore_status=True).exit_status == 0
-
     # If daisydog is running, stop it so we can use /dev/watchdog
     def _stop_daemon(self):
         """If running, stop daisydog so we can use /dev/watchdog."""

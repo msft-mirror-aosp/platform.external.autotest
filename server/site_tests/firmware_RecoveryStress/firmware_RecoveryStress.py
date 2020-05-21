@@ -19,7 +19,6 @@ class firmware_RecoveryStress(FirmwareTest):
     REBUILD_CACHE_MSG = "MRC: cache data 'RECOVERY_MRC_CACHE' needs update."
     FIRMWARE_LOG_CMD = 'cbmem -1' + ' | grep ' + REBUILD_CACHE_MSG[:3]
     RECOVERY_CACHE_SECTION = 'RECOVERY_MRC_CACHE'
-    FMAP_CMD = 'mosys eeprom map'
 
     def initialize(self, host, mode, cmdline_args):
         super(firmware_RecoveryStress, self).initialize(
@@ -48,8 +47,11 @@ class firmware_RecoveryStress(FirmwareTest):
         """
         logging.info("Checking if device has RECOVERY_MRC_CACHE")
 
+        # If flashrom can read the section, this means it exists.
+        command = ('flashrom -p host -r -i %s:/dev/null'
+                   % self.RECOVERY_CACHE_SECTION)
         return self.faft_client.system.run_shell_command_check_output(
-                self.FMAP_CMD, self.RECOVERY_CACHE_SECTION)
+            command, 'SUCCESS')
 
     def run_once(self, reboot_iterations=1):
         """Running recovery boot cycles to ensure booting through

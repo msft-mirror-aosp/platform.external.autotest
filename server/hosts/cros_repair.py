@@ -373,7 +373,8 @@ class EnrollmentStateVerifier(hosts.Verifier):
 
     def _get_enrollment_state(self, host):
         logging.debug('checking enrollment state from VPD cache...')
-        response = host.run('grep "check_enrollment" %s' % self.VPD_CACHE)
+        response = host.run('grep "check_enrollment" %s' % self.VPD_CACHE,
+                            ignore_status=True)
         if response.exit_status == 0:
             result = response.stdout.strip()
             logging.info('Enrollment state in VPD cache: %s', result)
@@ -381,7 +382,7 @@ class EnrollmentStateVerifier(hosts.Verifier):
 
         logging.error('Unexpected error occured during verify enrollment state'
                       ' in VPD cache, skipping verify process.')
-        return True
+        return False
 
     def _is_applicable(self, host):
         info = host.host_info_store.get()

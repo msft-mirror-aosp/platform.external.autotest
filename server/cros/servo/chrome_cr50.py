@@ -1060,7 +1060,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         elif ap_state == 'off':
             return False
         else:
-            raise error.TestFail('Read unusable AP state from ccdstate: "%s"',
+            raise error.TestFail('Read unusable AP state from ccdstate: %r' %
                                  ap_state)
 
 

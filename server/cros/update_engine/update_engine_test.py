@@ -22,7 +22,6 @@ from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
-from chromite.lib import osutils
 from chromite.lib import retry_util
 
 
@@ -523,9 +522,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                            saved so that multiple files with the same name can
                            be differentiated.
         """
-        results_dir = os.path.join(self.job.resultdir,
-                                   dev_server.AUTO_UPDATE_LOG_DIR)
-        osutils.SafeMakedirs(results_dir)
         partial_filename = '%s_%s_%s' % ('%s', self._host.hostname, identifier)
         src_files = [
             self._DEVSERVER_HOSTLOG_ROOTFS,
@@ -536,7 +532,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         for src_fname in src_files:
             source = os.path.join(logs_dir, src_fname)
-            dest = os.path.join(results_dir, partial_filename % src_fname)
+            dest = os.path.join(self.resultsdir, partial_filename % src_fname)
             logging.debug('Copying logs from %s to %s', source, dest)
             try:
                 shutil.copyfile(source, dest)

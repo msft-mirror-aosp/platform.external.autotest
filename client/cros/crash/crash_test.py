@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import contextlib
-import fcntl
 import glob
 import logging
 import os
@@ -645,17 +643,6 @@ class CrashTest(test.test):
         Next time the crash reporter is invoked (due to a crash) it will not
         receive a --filter_in paramter."""
         self._replace_crash_reporter_filter_in('')
-
-
-    @contextlib.contextmanager
-    def hold_crash_lock(self):
-        """A context manager to hold the crash sender lock."""
-        with open(self._CRASH_SENDER_LOCK_PATH, 'w+') as f:
-            fcntl.lockf(f.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.lockf(f.fileno(), fcntl.LOCK_UN)
 
 
     def initialize(self):

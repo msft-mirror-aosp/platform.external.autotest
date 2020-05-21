@@ -1270,12 +1270,20 @@ class bluetooth_AdapterLEAdvertising(
             self.test_case_SI200_RA3_CD_RS()
             self.test_case_SI200_RA3_CD_UA1_CD_RS()
             self.test_case_SI200_RA3_CD_UA1_CD_RA2_CD_UA4()
-            self.test_case_SI200_RA5_CD_FRA1_CD_UA5()
+
+            # TODO b/155925590 : Bluez 5.54 has a known issue where the failure
+            # on 6th adv isn't communicated back to the caller properly.
+            # Disabling test until a fix is applied
+            # self.test_case_SI200_RA5_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_RS()
             self.test_case_RA3_CD_SI200_CD_UA1_CD_RS()
             self.test_case_RA3_CD_SI200_CD_SI2000_CD_UA3()
-            self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
+
+            # TODO b/155925590 : Bluez 5.54 has a known issue where the failure
+            # on 6th adv isn't communicated back to the caller properly.
+            # Disabling test until a fix is applied
+            # self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_FSI10_CD_FSI20000_CD_UA3()
             self.test_case_SI200_RA3_CD_SR_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()

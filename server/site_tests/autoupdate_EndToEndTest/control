@@ -3,10 +3,8 @@
 # found in the LICENSE file.
 
 import logging
-from autotest_lib.client.bin import sysinfo
-from autotest_lib.client.common_lib import error, utils
-from autotest_lib.client.cros import constants
-from autotest_lib.server import host_attributes
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 
 AUTHOR = "dhaddock@, ahassani@"
 NAME = "autoupdate_EndToEndTest"
@@ -167,9 +165,6 @@ for key in TEST_CONF_KEYS:
 def run_test(machine):
     """Execute a test configuration on a given machine."""
     host = hosts.create_host(machine)
-    # Save preserved log after autoupdate is completed.
-    job.sysinfo.add_logdir(
-        sysinfo.logdir(constants.AUTOUPDATE_PRESERVE_LOG))
     try:
         job.run_test(
                 "autoupdate_EndToEndTest",
@@ -180,7 +175,6 @@ def run_test(machine):
             error_msg = 'Received test error: %s' % e
             logging.error(error_msg)
             raise error.TestError(error_msg)
-
         raise
 
 

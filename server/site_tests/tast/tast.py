@@ -257,7 +257,11 @@ class tast(test.test):
         WiFiManager = wifi_test_context_manager.WiFiTestContextManager
         # TODO(crbug.com/1065601): plumb other WiFi test specific arguments,
         #     e.g. pcap address. See: WiFiTestContextManager's constants.
-        for key, var_arg in [(WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s')]:
+        forward_args = [
+            (WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s'),
+            (WiFiManager.CMDLINE_PCAP_ADDR, 'pcap=%s'),
+        ]
+        for key, var_arg in forward_args:
             if key in args_dict:
                 args += ['-var=' + var_arg % args_dict[key]]
         logging.info('Autotest wificell-related args: %s', args)

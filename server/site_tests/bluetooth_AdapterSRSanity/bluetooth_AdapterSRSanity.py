@@ -120,9 +120,13 @@ class bluetooth_AdapterSRSanity(
                 if 'BLE' in device_type:
                     # LE can't reconnect without advertising/discoverable
                     self.test_device_set_discoverable(device, True)
+                    # Make sure we're actually connected
+                    self.test_device_is_connected(device.address)
+                else:
+                    # Classic requires peer to initiate a connection to wake up
+                    # the dut
+                    self.test_connection_by_device(device)
 
-                # Test that host sees connection complete
-                self.test_connection_by_device(device)
                 if device_test is not None:
                     device_test(device)
 

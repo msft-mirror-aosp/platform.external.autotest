@@ -9,7 +9,6 @@ from autotest_lib.client.cros.crash import crash_test
 
 
 _25_HOURS_AGO = -25 * 60 * 60
-_CRASH_SENDER_CRON_PATH = '/etc/cron.hourly/crash_sender.hourly'
 _DAILY_RATE_LIMIT = 32
 _MIN_UNIQUE_TIMES = 4
 _SECONDS_SEND_SPREAD = 3600
@@ -185,45 +184,12 @@ class logging_CrashSender(crash_test.CrashTest):
             raise error.TestFail('Crash not sent even after 25hrs pass')
 
 
-    def _test_sender_single_instance(self):
-        """Test the sender fails to start when another instance is running."""
-        with self.hold_crash_lock():
-            result = self._call_sender_one_crash(should_fail=True)
-            if (not 'Failed to acquire a lock' in result['output'] or
-                result['send_attempt'] or not result['report_exists']):
-                raise error.TestFail('Allowed instance to run while lock held')
-
-
-    def _test_sender_send_fails(self):
-        """Test that when the send fails we try again later."""
-        result = self._call_sender_one_crash(send_success=False)
-        if not result['send_attempt'] or result['send_success']:
-            raise error.TestError('Did not properly cause a send failure')
-        if result['rate_count'] != 1:
-            raise error.TestFail('Did not count a failed send against rate '
-                                 'limiting')
-        if not result['report_exists']:
-            raise error.TestFail('Expected minidump to be saved for later '
-                                 'sending')
-
-        # Also test "Image type" field.  For testing purposes, we set it upon
-        # mock failure.  Note that it will not be "dev" even on a dev build
-        # because crash-test-in-progress will exist.
-        if not result['image_type']:
-            raise error.TestFail('Missing image type on mock failure')
-        if result['image_type'] != 'mock-fail':
-            raise error.TestFail('Incorrect image type on mock failure '
-                                 '("%s" != "mock-fail")' %
-                                 result['image_type'])
-
-
     def run_once(self):
+        """ Run all tests once """
         self.run_crash_tests([
             'sender_simple_minidump',
             'sender_simple_old_minidump',
             'sender_simple_kernel_crash',
             'sender_pausing',
             'sender_reports_disabled',
-            'sender_rate_limiting',
-            'sender_single_instance',
-            'sender_send_fails']);
+            'sender_rate_limiting']);

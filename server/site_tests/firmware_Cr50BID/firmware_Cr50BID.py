@@ -439,4 +439,4 @@ class firmware_Cr50BID(Cr50Test):
                     logging.info('FAILED %s with "%s"', message, e)
                     errors.append('%s with "%s"' % (message, e))
         if len(errors):
-            raise error.TestFail('failed tests: %s', errors)
+            raise error.TestFail('failed tests: %s' % errors)

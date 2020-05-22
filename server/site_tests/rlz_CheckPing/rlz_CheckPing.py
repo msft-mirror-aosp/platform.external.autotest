@@ -39,21 +39,28 @@ class rlz_CheckPing(test.test):
         Sets the required vpd values for the test.
 
         @param should_send_rlz_ping: Value to set should_send_rlz_ping. 1 to
-                                     send the ping, 0 to not send it.
+                                     send the ping, 0 to not send it, None to
+                                     clear it from the VPD.
         @param embargo_date: Date for rlz_embargo_end_date value. This should
                              be a datetime.date object with the desired date
                              for rlz_embargo_end_date, or None to clear it and
                              proceed with rlz_embargo_end_date not set.
 
         """
-        to_set = {self._PING_VPD: should_send_rlz_ping}
+        to_set = {}
+        if should_send_rlz_ping is not None:
+            to_set[self._PING_VPD] = should_send_rlz_ping
+        else:
+            vpd_utils.vpd_delete(host=self._host, key=self._PING_VPD)
+
         if rlz_embargo_end_date:
             to_set[self._DATE_VPD] = rlz_embargo_end_date.isoformat()
         else:
             vpd_utils.vpd_delete(host=self._host, key=self._DATE_VPD)
 
-        vpd_utils.vpd_set(host=self._host, vpd_dict=to_set, dump=True,
-                          force_dump=True)
+        if to_set:
+            vpd_utils.vpd_set(host=self._host, vpd_dict=to_set, dump=True,
+                              force_dump=True)
 
 
     def _check_rlz_vpd_settings_post_ping(self, should_send_rlz_ping,
@@ -67,7 +74,8 @@ class rlz_CheckPing(test.test):
 
         @param should_send_rlz_ping: Expected value for the
                                      should_send_rlz_ping VPD setting
-                                     (0 or 1).
+                                     (0 or 1). If None, we expect no setting
+                                     to be present.
         @param rlz_embargo_end_date: Expected value of the
                                      rlz_embargo_end_date VPD setting.
                                      This argument should be None if expecting
@@ -76,8 +84,11 @@ class rlz_CheckPing(test.test):
                                      expected date otherwise.
 
         """
-        check_should_send_ping = int(
-            vpd_utils.vpd_get(host=self._host, key=self._PING_VPD))
+        check_should_send_ping = vpd_utils.vpd_get(host=self._host,
+                                                   key=self._PING_VPD)
+        if check_should_send_ping is not None:
+            check_should_send_ping = int(check_should_send_ping)
+
         check_date = vpd_utils.vpd_get(host=self._host,
                                        key=self._DATE_VPD)
 
@@ -95,7 +106,7 @@ class rlz_CheckPing(test.test):
 
     def run_once(self, host, ping_timeout=30, pre_login=None,
                  rlz_embargo_end_date=None, should_send_rlz_ping=1,
-                 check_ping_not_resent=False):
+                 check_ping_not_resent=False, reboot=False):
         """
         Configures the DUT to send RLZ pings. Checks for the RLZ client
         install (CAI) and first-use (CAF) pings.
@@ -128,6 +139,10 @@ class rlz_CheckPing(test.test):
                                      the CAF ping has been sent. It is set to
                                      0 after the CAF ping to ensure it is not
                                      sent again in the device's lifetime.
+                                     This argument can also be None, in which
+                                     case the should_send_rlz_ping VPD setting
+                                     will be cleared. No CAF ping should be
+                                     sent in this case, either.
         @param check_ping_not_resent: True to perform a second RLZ check with
                                       a different user account for tests that
                                       confirm the first-use (CAF) ping is not
@@ -137,6 +152,7 @@ class rlz_CheckPing(test.test):
                                       rlz_embargo_end_date parameters should
                                       be a combination that ensures it was
                                       sent.
+        @param reboot: True to reboot after the first RLZ check.
 
         """
         self._host = host
@@ -145,13 +161,13 @@ class rlz_CheckPing(test.test):
         # Clear TPM owner so we have no users on DUT.
         tpm_utils.ClearTPMOwnerRequest(self._host)
 
-        # Setup DUT to send rlz pings after a short timeout.
+        # Set VPD settings that control if the DUT will send a first-use ping.
         self._set_vpd_values(should_send_rlz_ping=should_send_rlz_ping,
                              rlz_embargo_end_date=rlz_embargo_end_date)
         self._host.reboot()
 
-        # We expect CAF ping to be sent when:
-        # 1. should_send_rlz_ping is 1
+        # We expect first-use (CAF) ping to be sent when:
+        # 1. should_send_rlz_ping exists and is 1
         # 2. rlz_embargo_end_date is missing or in the past
         expect_caf = bool(should_send_rlz_ping)
         if rlz_embargo_end_date:
@@ -172,6 +188,9 @@ class rlz_CheckPing(test.test):
             self._check_rlz_vpd_settings_post_ping(
                 should_send_rlz_ping=should_send_rlz_ping,
                 rlz_embargo_end_date=rlz_embargo_end_date)
+
+        if reboot:
+            self._host.reboot()
 
         # Log in with another user and verify CAF ping is not resent. This
         # portion of the test assumes a successful run above where expect_caf

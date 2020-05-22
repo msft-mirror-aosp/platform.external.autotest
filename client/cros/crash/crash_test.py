@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import contextlib
-import fcntl
 import glob
 import logging
 import os
@@ -83,6 +81,7 @@ class CrashTest(test.test):
     _CRASH_RUN_STATE_DIR = '/run/crash_reporter'
     _CRASH_TEST_IN_PROGRESS = _CRASH_RUN_STATE_DIR + '/crash-test-in-progress'
     _MOCK_CRASH_SENDING = _CRASH_RUN_STATE_DIR + '/mock-crash-sending'
+    _FILTER_IN = _CRASH_RUN_STATE_DIR + '/filter-in'
     _PAUSE_FILE = '/var/lib/crash_sender_paused'
     _SYSTEM_CRASH_DIR = '/var/spool/crash'
     _FALLBACK_USER_CRASH_DIR = '/home/chronos/crash'
@@ -608,54 +607,21 @@ class CrashTest(test.test):
         return result
 
 
-    def _replace_crash_reporter_filter_in(self, new_parameter):
-        """Replaces the --filter_in= parameter of the crash reporter.
-
-        The kernel is set up to call the crash reporter with the core dump
-        as stdin when a process dies. This function adds a filter to the
-        command line used to call the crash reporter. This is used to ignore
-        crashes in which we have no interest.
-
-        This removes any --filter_in= parameter and optionally replaces it
-        with a new one.
-
-        @param new_parameter: This is parameter to add to the command line
-                instead of the --filter_in=... that was there.
-        """
-        core_pattern = utils.read_file(self._CORE_PATTERN)[:-1]
-        core_pattern = re.sub('--filter_in=\S*\s*', '',
-                              core_pattern).rstrip()
-        if new_parameter:
-            core_pattern += ' ' + new_parameter
-        utils.system('echo "%s" > %s' % (core_pattern, self._CORE_PATTERN))
-
-
     def enable_crash_filtering(self, name):
-        """Add a --filter_in argument to the kernel core dump cmdline.
+        """Writes the given parameter to the filter-in file.
 
-        @param name: Filter text to use. This is passed as a --filter_in
-                argument to the crash reporter.
+        This is used to ignore crashes in which we have no interest.
+
+        @param new_parameter: The filter to write to the file, if any.
         """
-        self._replace_crash_reporter_filter_in('--filter_in=' + name)
+        utils.open_write_close(self._FILTER_IN, name)
 
 
     def disable_crash_filtering(self):
-        """Remove the --filter_in argument from the kernel core dump cmdline.
+        """Remove the filter-in file.
 
-        Next time the crash reporter is invoked (due to a crash) it will not
-        receive a --filter_in paramter."""
-        self._replace_crash_reporter_filter_in('')
-
-
-    @contextlib.contextmanager
-    def hold_crash_lock(self):
-        """A context manager to hold the crash sender lock."""
-        with open(self._CRASH_SENDER_LOCK_PATH, 'w+') as f:
-            fcntl.lockf(f.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.lockf(f.fileno(), fcntl.LOCK_UN)
+        Next time the crash reporter is invoked, it will not filter crashes."""
+        os.remove(self._FILTER_IN)
 
 
     def initialize(self):
@@ -690,6 +656,8 @@ class CrashTest(test.test):
         # Re-initialize crash reporter to clear any state left over
         # (e.g. core_pattern)
         self._initialize_crash_reporter(True)
+
+        self.disable_crash_filtering()
 
         test.test.cleanup(self)
 

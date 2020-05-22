@@ -6,7 +6,7 @@ import logging
 import os
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros import constants
 from autotest_lib.server.cros.update_engine import chromiumos_test_platform
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -40,6 +40,17 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     _LOGIN_TEST = 'login_LoginSuccess'
 
 
+    def cleanup(self):
+        """Save the logs from stateful_partition's preserved/log dir."""
+        stateful_preserved_logs = os.path.join(self.resultsdir,
+                                               'stateful_preserved_logs')
+        os.makedirs(stateful_preserved_logs)
+        self._host.get_file(constants.AUTOUPDATE_PRESERVE_LOG,
+                            stateful_preserved_logs, safe_symlinks=True,
+                            preserve_perm=False)
+        super(autoupdate_EndToEndTest, self).cleanup()
+
+
     def _get_hostlog_file(self, filename, identifier):
         """Return the hostlog file location.
 
@@ -53,8 +64,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         hostlog = '%s_%s_%s' % (filename, self._host.hostname, identifier)
-        file_url = os.path.join(self.job.resultdir,
-                                dev_server.AUTO_UPDATE_LOG_DIR,
+        file_url = os.path.join(self.resultsdir,
                                 hostlog)
         if os.path.exists(file_url):
             logging.info('Hostlog file to be used for checking update '

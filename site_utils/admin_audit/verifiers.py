@@ -7,15 +7,8 @@ import logging
 
 import common
 import base
+import constants
 from autotest_lib.server.cros.storage import storage_validate as storage
-
-
-DUT_STORAGE_STATE_PREFIX = 'storage_state'
-SERVO_USB_STATE_PREFIX = 'servo_usb_state'
-VERIFY_STATE_NORMAL = 'NORMAL'
-VERIFY_STATE_ACCEPTABLE = 'ACCEPTABLE'
-VERIFY_STATE_NEED_REPLACEMENT = 'NEED_REPLACEMENT'
-VERIFY_STATE_UNKNOWN = 'UNKNOWN'
 
 
 class VerifyDutStorage(base._BaseDUTVerifier):
@@ -46,7 +39,8 @@ class VerifyDutStorage(base._BaseDUTVerifier):
             logging.debug('Detected storage state: %s', storage_state)
             state  = self.convert_state(storage_state)
             if state:
-                self._set_host_info_state(DUT_STORAGE_STATE_PREFIX, state)
+                self._set_host_info_state(constants.DUT_STORAGE_STATE_PREFIX,
+                                          state)
         except Exception as e:
             raise base.AuditError('Exception during getting state of'
                                   ' storage %s' % str(e))
@@ -54,11 +48,11 @@ class VerifyDutStorage(base._BaseDUTVerifier):
     def convert_state(self, state):
         """Mapping state from validator to verifier"""
         if state == storage.STORAGE_STATE_NORMAL:
-            return VERIFY_STATE_NORMAL
+            return constants.HW_STATE_NORMAL
         if state == storage.STORAGE_STATE_WARNING:
-            return VERIFY_STATE_ACCEPTABLE
+            return constants.HW_STATE_ACCEPTABLE
         if state == storage.STORAGE_STATE_CRITICAL:
-            return VERIFY_STATE_NEED_REPLACEMENT
+            return constants.HW_STATE_NEED_REPLACEMENT
         return None
 
 
@@ -84,7 +78,7 @@ class VerifyServoUsb(base._BaseServoVerifier):
             logging.error('Usb not detected')
             return
 
-        state = VERIFY_STATE_NORMAL
+        state = constants.HW_STATE_NORMAL
 
         # The USB will be format during checking to the bad blocks.
         command = 'badblocks -sw -e 1 -t 0xff %s' % usb
@@ -95,5 +89,5 @@ class VerifyServoUsb(base._BaseServoVerifier):
         logging.info("Check result: '%s'", result)
         if result:
             # So has result is Bad and empty is Good.
-            state = VERIFY_STATE_NEED_REPLACEMENT
-        self._set_host_info_state(SERVO_USB_STATE_PREFIX, state)
+            state = constants.HW_STATE_NEED_REPLACEMENT
+        self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)

@@ -1049,6 +1049,7 @@ def unload_module(module_name):
 
     @param module_name: Name of the module we want to remove.
     """
+    module_name = module_name.replace('-', '_')
     l_raw = utils.system_output("/bin/lsmod").splitlines()
     lsmod = [x for x in l_raw if x.split()[0] == module_name]
     if len(lsmod) > 0:

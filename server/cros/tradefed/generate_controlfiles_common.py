@@ -841,8 +841,7 @@ def get_tradefed_data(path, is_public, abi):
         elif line.startswith('arm') or line.startswith('x86'):
             # Newer CTS shows ABI-module pairs like "arm64-v8a CtsNetTestCases"
             line = line.split()[1]
-            if (CONFIG['TEST_NAME'] != 'cheets_VTS_R' or
-                line.startswith('Vts') or line.startswith('tradefed')):
+            if line not in CONFIG.get('EXCLUDE_MODULES', []):
                 modules.add(line)
         elif line.startswith('Cts'):
             modules.add(line)

@@ -17,7 +17,6 @@ class firmware_Mosys(FirmwareTest):
     Execute
     * mosys -k ec info
     * mosys platform name
-    * mosys eeprom map
     * mosys -k pd info
 
     """
@@ -158,34 +157,6 @@ class firmware_Mosys(FirmwareTest):
         command = 'mosys platform name'
         output = self.run_cmd(command)
         self.check_for_errors(output, command)
-
-        # mosys eeprom map
-        command = 'mosys eeprom map|egrep "RW_SHARED|RW_SECTION_[AB]"'
-        lines = self.run_cmd(command)
-        self.check_for_errors(lines, command)
-        if len(lines) != 3:
-          logging.error('Expect RW_SHARED|RW_SECTION_[AB] got "%s"', lines)
-          self._tag_failure(command)
-        emap = {'RW_SECTION_A': 0, 'RW_SECTION_B': 0, 'RW_SHARED': 0}
-        for line in lines:
-            row = line.split(' | ')
-            # no need to check if we don't have enough items in the list
-            if len(row) < 4:
-                 continue
-            if row[1] in emap:
-                emap[row[1]] += 1
-            if row[2] == '0x00000000':
-                logging.error('Expect non zero but got %s instead (%s)',
-                              row[2], line)
-                self._tag_failure(command)
-            if row[3] == '0x00000000':
-                logging.error('Expect non zero but got %s instead (%s)',
-                              row[3], line)
-                self._tag_failure(command)
-        # Check that there are one A and one B.
-        if emap['RW_SECTION_A'] != 1 or emap['RW_SECTION_B'] != 1:
-            logging.error('Missing RW_SECTION A or B, %s', lines)
-            self._tag_failure(command)
 
         # mosys -k pd info
         command = 'mosys -k pd info'

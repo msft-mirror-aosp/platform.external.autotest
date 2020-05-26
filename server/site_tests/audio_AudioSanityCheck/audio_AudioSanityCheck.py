@@ -7,7 +7,6 @@ This is a server side audio sanity test testing assumptions other audio tests
 rely on.
 """
 
-from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
@@ -19,8 +18,6 @@ class audio_AudioSanityCheck(test.test):
     other audio tests rely on still work after a suspension.
     """
     version = 1
-    SUSPEND_SECONDS = 30
-    RPC_RECONNECT_TIMEOUT = 60
 
     def verify_chrome_audio(self, audio_facade):
         """"Verify if chrome.audio API is available"""
@@ -29,12 +26,10 @@ class audio_AudioSanityCheck(test.test):
 
     def verify_suspend(self, host, factory):
         """"Verify and trigger a suspension"""
-        audio_test_utils.suspend_resume(host, self.SUSPEND_SECONDS)
-        utils.poll_for_condition(condition=factory.ready,
-                                 timeout=self.RPC_RECONNECT_TIMEOUT,
-                                 desc='multimedia server reconnect')
+        audio_test_utils.suspend_resume_and_verify(self.host, self.factory)
 
     def run_once(self, host, suspend_only=False):
+        """Runs Audio sanity test to make sure chrome api works. """
         factory = remote_facade_factory.RemoteFacadeFactory(
                 host, results_dir=self.resultsdir)
         audio_facade = factory.create_audio_facade()

@@ -497,6 +497,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         device.SendMediaPlayerCommand('play')
 
+        name = device.name
+        device.name = device.address.lower()
+
         result_pause = self.test_avrcp_event(device,
             device.SendMediaPlayerCommand, 'pause')
         result_play = self.test_avrcp_event(device,
@@ -508,6 +511,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         result_previous = self.test_avrcp_event(device,
             device.SendMediaPlayerCommand, 'previous')
 
+        device.name = name
         self.results = {'pause': result_pause, 'play': result_play,
                         'stop': result_stop, 'next': result_next,
                         'previous': result_previous}

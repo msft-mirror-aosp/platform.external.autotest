@@ -74,6 +74,7 @@ class DUTFixture:
     TEST_CONFIG_PATH = '/var/cache/camera/test_config.json'
     CAMERA_PROFILE_PATH = ('/mnt/stateful_partition/encrypted/var/cache/camera'
                            '/media_profiles.xml')
+    CAMERA_SCENE_LOG = '/tmp/scene.jpg'
 
     def __init__(self, test, host, facing):
         self.test = test
@@ -163,6 +164,30 @@ class DUTFixture:
         new_profile = self._filter_camera_profile(profile, self.facing)
         self._write_file(self.CAMERA_PROFILE_PATH, new_profile)
         self.host.run('restart ui')
+
+    @contextlib.contextmanager
+    def _stop_camera_service(self):
+        self.host.run('stop cros-camera')
+        yield
+        self.host.run('start cros-camera')
+
+    def log_camera_scene(self):
+        """Capture an image from camera as the log for debugging scene related
+        problem."""
+
+        gtest_filter = (
+                'Camera3StillCaptureTest/'
+                'Camera3DumpSimpleStillCaptureTest.DumpCaptureResult/0')
+        with self._stop_camera_service():
+            self.host.run(
+                    'sudo',
+                    args=('--user=arc-camera', 'cros_camera_test',
+                          '--gtest_filter=' + gtest_filter,
+                          '--camera_facing=' + self.facing,
+                          '--dump_still_capture_path=' +
+                          self.CAMERA_SCENE_LOG))
+
+        self.host.get_file(self.CAMERA_SCENE_LOG, '.')
 
     def cleanup(self):
         """Cleanup camera filter."""

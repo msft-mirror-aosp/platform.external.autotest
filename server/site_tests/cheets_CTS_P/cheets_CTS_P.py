@@ -107,6 +107,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             chart.initialize()
 
         for dut in self.dut_fixtures:
+            dut.log_camera_scene()
             dut.initialize()
 
         for host in self._hosts:

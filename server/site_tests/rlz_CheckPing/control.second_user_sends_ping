@@ -18,17 +18,11 @@ the ping is not resent when the first user logs in again after the ping.
 
 import datetime
 
-from autotest_lib.client.common_lib import utils
-
-args_dict = utils.args_to_dict(args)
-
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test(
-        'rlz_CheckPing', host=host, pre_login='no_lock',
-        rlz_embargo_end_date=(
-            datetime.date.today() - datetime.timedelta(days=2)),
-        check_ping_not_resent=True,
-        **args_dict)
+    rlz_embargo_end_date = (datetime.date.today() - datetime.timedelta(days=2))
+    job.run_test('rlz_CheckPing', host=host, pre_login='no_lock',
+                 rlz_embargo_end_date=rlz_embargo_end_date,
+                 check_ping_not_resent=True)
 
 job.parallel_simple(run, machines)

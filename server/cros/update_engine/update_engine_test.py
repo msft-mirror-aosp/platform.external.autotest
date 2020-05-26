@@ -356,26 +356,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return lsbrelease_utils.get_chromeos_release_version(lsb)
 
 
-    def _check_for_cellular_entries_in_update_log(self, update_engine_log=None):
-        """
-        Check update_engine.log for log entries about cellular.
-
-        @param update_engine_log: The text of an update_engine.log file.
-
-        """
-        logging.info('Making sure we have cellular entries in update_engine '
-                     'log.')
-        line1 = "Allowing updates over cellular as permission preference is " \
-                "set to true."
-        line2 = "We are connected via cellular, Updates allowed: Yes"
-        for line in [line1, line2]:
-            self._check_update_engine_log_for_entry(line, raise_error=True,
-                                                    update_engine_log=
-                                                    update_engine_log)
-
-
     def _suspend_then_resume(self):
-        """Susepends and resumes the host DUT."""
+        """Suspends and resumes the host DUT."""
         try:
             self._host.suspend(suspend_time=30)
         except error.AutoservSuspendError:

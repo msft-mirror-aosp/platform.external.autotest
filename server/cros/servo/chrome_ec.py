@@ -110,15 +110,14 @@ class ChromeConsole(object):
         self.uart_multicmd = self.name + self.MULTICMD
 
         self._servo = servo
-        self._cached_uart_regexp = None
 
 
     def set_uart_regexp(self, regexp):
-        if self._cached_uart_regexp == regexp:
-            return
-        self._cached_uart_regexp = regexp
         self._servo.set(self.uart_regexp, regexp)
 
+    def clear_uart_regex(self):
+        """Clear uart_regexp"""
+        self.set_uart_regexp('None')
 
     def send_command(self, commands):
         """Send command through UART.
@@ -129,7 +128,7 @@ class ChromeConsole(object):
         Args:
           commands: The commands to send, either a list or a string.
         """
-        self.set_uart_regexp('None')
+        self.clear_uart_regex()
         if isinstance(commands, list):
             try:
                 self._servo.set_nocheck(self.uart_multicmd, ';'.join(commands))
@@ -140,6 +139,7 @@ class ChromeConsole(object):
                     self._servo.set_nocheck(self.uart_cmd, command)
         else:
             self._servo.set_nocheck(self.uart_cmd, commands)
+        self.clear_uart_regex()
 
     def has_command(self, command):
         """Check whether EC console supports |command|.
@@ -191,7 +191,10 @@ class ChromeConsole(object):
 
         self.set_uart_regexp(str(regexp_list))
         self._servo.set_nocheck(self.uart_cmd, command)
-        return ast.literal_eval(self._servo.get(self.uart_cmd))
+        rv = ast.literal_eval(self._servo.get(self.uart_cmd))
+        self.clear_uart_regex()
+
+        return rv
 
 
 class ChromeEC(ChromeConsole):

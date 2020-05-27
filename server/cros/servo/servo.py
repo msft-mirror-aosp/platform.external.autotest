@@ -1373,7 +1373,7 @@ class Servo(object):
         self.set('image_usbkey_direction', mux_direction)
         # As servod makes no guarantees when switching to the dut side,
         # add a detection delay here when facing the dut.
-        if mux_direction == 'dut':
+        if mux_direction == 'dut_sees_usbkey':
             time.sleep(self.USB_DETECTION_DELAY)
 
     def get_usbkey_state(self):

@@ -1151,7 +1151,8 @@ class TradefedTest(test.test):
         session_id = None
 
         self._setup_result_directories()
-        self._prepare_media(media_asset)
+        if media_asset:
+            self._prepare_media(media_asset)
 
         # This loop retries failures. For this reason please do not raise
         # TestFail in this loop if you suspect the failure might be fixed
@@ -1211,7 +1212,8 @@ class TradefedTest(test.test):
                     # TODO(b/137917339): ditto
                     if media_asset and media_asset.uri:
                         self._restore_powerd_prefs()
-                self._fail_on_unexpected_media_download(media_asset)
+                if media_asset:
+                    self._fail_on_unexpected_media_download(media_asset)
                 result = self._run_tradefed_list_results()
                 if not result:
                     logging.error('Did not find any test results. Retry.')
@@ -1237,7 +1239,8 @@ class TradefedTest(test.test):
                     # At least one test had run, which means the media push step
                     # of tradefed didn't fail. To free up the storage earlier,
                     # delete the copy on the server side. See crbug.com/970881
-                    self._cleanup_media(media_asset)
+                    if media_asset:
+                        self._cleanup_media(media_asset)
 
                 # If the result is |acc|urate according to the log, or the
                 # inaccuracy is recognized by tradefed (not all_done), then

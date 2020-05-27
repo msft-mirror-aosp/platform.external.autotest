@@ -32,7 +32,9 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
 
 
     def cleanup(self):
-        """Clean up states."""
+        """Clean up test state."""
+        # Save update_engine logs for the update, rollback, and post-reboot.
+        self._save_extra_update_engine_logs(number_of_logs=3)
         # Delete rollback-version and rollback-happened pref which are
         # generated during Rollback and Enterprise Rollback.
         # rollback-version is written when update_engine Rollback D-Bus API is
@@ -62,20 +64,19 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
 
         """
         update_url = self.get_update_url_for_test(job_repo_url)
-        initial_kernel, updated_kernel = kernel_utils.get_kernel_state(
-            self._host)
+        active, inactive = kernel_utils.get_kernel_state(self._host)
         logging.info('Initial device state: active kernel %s, '
-                     'inactive kernel %s.', initial_kernel, updated_kernel)
+                     'inactive kernel %s.', active, inactive)
 
         logging.info('Performing an update.')
         self._check_for_update(update_url, wait_for_completion=True)
-        kernel_utils.verify_kernel_state_after_update(self._host)
         self._host.reboot()
-
+        # Ensure the update completed successfully.
+        rootfs_hostlog, _ = self._create_hostlog_files()
+        self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
         # We should be booting from the new partition.
-        error_message = 'Failed to set up test by updating DUT.'
-        kernel_utils.verify_boot_expectations(self._host, updated_kernel,
-                                              error_message)
+        error_msg = 'Failed to set up test by updating DUT.'
+        kernel_utils.verify_boot_expectations(inactive, error_msg, self._host)
 
         if powerwash_before_rollback:
             self._powerwash()
@@ -86,8 +87,7 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         self._host.reboot()
 
         # We should be back on our initial partition.
-        error_message = ('Autoupdate reported that rollback succeeded but we '
+        error_msg = ('Autoupdate reported that rollback succeeded but we '
                          'did not boot into the correct partition.')
-        kernel_utils.verify_boot_expectations(self._host, initial_kernel,
-                                              error_message)
+        kernel_utils.verify_boot_expectations(active, error_msg, self._host)
         logging.info('We successfully rolled back to initial kernel.')

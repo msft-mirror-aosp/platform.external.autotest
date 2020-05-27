@@ -16,26 +16,42 @@ _KERNEL_B = {'name': 'KERN-B', 'kernel': 4, 'root': 5}
 _KERNEL_UPDATE_TIMEOUT = 120
 
 
-def _cgpt(host, flag, kernel):
+def _run(cmd, host=None):
+    """
+    Function to execue commands.
+
+    This allows the util to be used by client and server tests.
+
+    @param cmd: The command to execute
+    @param host: The host to use in a server test. None to use utils.run.
+
+    """
+    if host is not None:
+        return host.run(cmd)
+    else:
+        return utils.run(cmd)
+
+def _cgpt(flag, kernel, host=None):
     """
     Helper function to return numeric cgpt value.
 
-    @param host: The DUT to execute the command on.
     @param flag: Additional flag to pass to cgpt
     @param kernel: The kernel we want to interact with.
+    @param host: The DUT to execute the command on. None to execute locally.
 
     """
-    return int(host.run(['cgpt', 'show', '-n', '-i', str(kernel['kernel']),
-                         flag, '$(rootdev -s -d)']).stdout.strip())
+    rootdev = _run(['rootdev','-s', '-d'], host).stdout.strip()
+    return int(_run(['cgpt', 'show', '-n', '-i', str(kernel['kernel']), flag,
+                     rootdev], host).stdout.strip())
 
-def get_kernel_state(host):
+def get_kernel_state(host=None):
     """
     Returns the (<active>, <inactive>) kernel state as a pair.
 
-    @param host: The DUT to execute the command on.
+    @param host: The DUT to execute the command on. None to execute locally.
 
     """
-    rootdev = host.run(['rootdev','-s']).stdout.strip()
+    rootdev = _run(['rootdev','-s'], host).stdout.strip()
     active_root = int(re.findall('\d+\Z', rootdev)[0])
     if active_root == _KERNEL_A['root']:
         return _KERNEL_A, _KERNEL_B
@@ -44,45 +60,45 @@ def get_kernel_state(host):
     else:
         raise Exception('Encountered unknown root partition: %s' % active_root)
 
-def get_next_kernel(host):
+def get_next_kernel(host=None):
     """
     Return the kernel that has priority for the next boot.
 
-    @param host: The DUT to execute the command on.
+    @param host: The DUT to execute the command on. None to execute locally.
 
     """
-    priority_a = _cgpt(host, '-P', _KERNEL_A)
-    priority_b = _cgpt(host, '-P', _KERNEL_B)
+    priority_a = _cgpt('-P', _KERNEL_A, host)
+    priority_b = _cgpt('-P', _KERNEL_B, host)
     return _KERNEL_A if priority_a > priority_b else _KERNEL_B
 
-def get_kernel_success(host, kernel):
+def get_kernel_success(kernel, host=None):
     """
     Return boolean success flag for the specified kernel.
 
-    @param host: The DUT to execute the command on.
     @param kernel: Information of the given kernel, either _KERNEL_A
                    or _KERNEL_B.
+    @param host: The DUT to execute the command on. None to execute locally.
 
     """
-    return _cgpt(host, '-S', kernel) != 0
+    return _cgpt('-S', kernel, host) != 0
 
-def get_kernel_tries(host, kernel):
+def get_kernel_tries(kernel, host=None):
     """Return tries count for the specified kernel.
 
-    @param host: The DUT to execute the command on.
     @param kernel: Information of the given kernel, either _KERNEL_A
                    or _KERNEL_B.
+    @param host: The DUT to execute the command on. None to execute locally.
 
     """
-    return _cgpt(host, '-T', kernel)
+    return _cgpt('-T', kernel, host)
 
-def verify_kernel_state_after_update(host):
+def verify_kernel_state_after_update(host=None):
     """
     Ensure the next kernel to boot is the currently inactive kernel.
 
     This is useful for checking after completing an update.
 
-    @param host: The DUT to execute the command on.
+    @param host: The DUT to execute the command on. None to execute locally.
     @returns the inactive kernel.
 
     """
@@ -93,7 +109,7 @@ def verify_kernel_state_after_update(host):
                         % (next_kernel['name'], inactive_kernel['name']))
     return inactive_kernel
 
-def verify_boot_expectations(host, expected_kernel, error_message):
+def verify_boot_expectations(expected_kernel, error_message, host=None):
     """Verifies that we fully booted into the expected kernel state.
 
     This method both verifies that we booted using the correct kernel
@@ -103,6 +119,7 @@ def verify_boot_expectations(host, expected_kernel, error_message):
                             eg I expect to be booted onto partition 4.
     @param error_message: string include in except message text
                           if we booted with the wrong partition.
+    @param host: The DUT to execute the command on. None to execute locally.
 
     """
     # Figure out the newly active kernel.
@@ -128,19 +145,19 @@ def verify_boot_expectations(host, expected_kernel, error_message):
         # Print out some information to make it easier to debug
         # the rollback.
         logging.debug('Dumping partition table.')
-        host.run('cgpt show $(rootdev -s -d)')
+        _run('cgpt show $(rootdev -s -d)', host)
         logging.debug('Dumping crossystem for firmware debugging.')
-        host.run('crossystem --all')
+        _run('crossystem --all', host)
         raise Exception(error_message)
 
     # Make sure chromeos-setgoodkernel runs.
     try:
         utils.poll_for_condition(
-            lambda: (get_kernel_tries(host, active_kernel) == 0
-                     and get_kernel_success(host, active_kernel)),
+            lambda: (get_kernel_tries(active_kernel, host) == 0
+                     and get_kernel_success(active_kernel, host)),
             timeout=_KERNEL_UPDATE_TIMEOUT, sleep_interval=5)
     except Exception:
-        services_status = host.run(['status', 'system-services']).stdout
+        services_status = _run(['status', 'system-services'], host).stdout
         if services_status != 'system-services start/running\n':
             raise Exception('Chrome failed to reach login screen')
         else:

@@ -27,6 +27,9 @@ class UpdateEngineUtil(object):
     _PROGRESS = 'PROGRESS'
     _CURRENT_OP = 'CURRENT_OP'
 
+    # Source version when we force an update.
+    _FORCED_UPDATE = 'ForcedUpdate'
+
     # update_engine_client command
     _UPDATE_ENGINE_CLIENT_CMD = 'update_engine_client'
 

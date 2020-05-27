@@ -155,7 +155,6 @@ suite:faft_smoke
 suite:faft_stress
 suite:faft_wilco
 suite:fingerprint
-suite:gpu_hang
 suite:graphics
 suite:graphics_browser
 suite:graphics_per-build
@@ -208,6 +207,7 @@ suite:power_requirements
 suite:power_sanity
 suite:powerplay
 suite:push_to_prod
+suite:reboot_stress
 suite:regression
 suite:rlz
 suite:runtime_probe_perbuild

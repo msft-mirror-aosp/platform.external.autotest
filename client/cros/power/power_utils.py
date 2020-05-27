@@ -78,7 +78,8 @@ def has_rapl_support():
         Boolean, True if RAPL supported, False otherwise.
     """
     rapl_set = set(["Haswell", "Haswell-E", "Broadwell", "Skylake", "Goldmont",
-                    "Kaby Lake", "Comet Lake", "Ice Lake", "Tiger Lake"])
+                    "Kaby Lake", "Comet Lake", "Ice Lake", "Tiger Lake",
+                    "Tremont"])
     cpu_uarch = utils.get_intel_cpu_uarch()
     if (cpu_uarch in rapl_set):
         return True
@@ -1030,15 +1031,13 @@ class BaseActivitySimulator(object):
             with open(self._BASE_INIT_FILE, 'r') as init_file:
                 init_file_content = init_file.read()
                 try:
-                    bus = re.search('env USB_BUS=([0-9]+)',
-                                    init_file_content).group(1)
-                    port = re.search('env USB_PORT=([0-9]+)',
+                    # The string can be like: env USB_PATH="1-1.1"
+                    path = re.search(r'env USB_PATH=\"?([0-9.-]+)\"?',
                                      init_file_content).group(1)
                 except AttributeError:
                     raise BaseActivityException("Failed to read usb bus "
                                                 "or port from hammerd file.")
-                base_power_path = ('/sys/bus/usb/devices/%s-%s/power/'
-                                   % (bus, port))
+                base_power_path = ('/sys/bus/usb/devices/%s/power/' % path)
                 if not os.path.exists(base_power_path):
                     logging.warn("Device has hammerd file, but base usb device"
                                  " not found.")

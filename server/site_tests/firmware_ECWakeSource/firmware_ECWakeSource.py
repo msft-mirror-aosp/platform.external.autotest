@@ -18,6 +18,10 @@ class firmware_ECWakeSource(FirmwareTest):
     """
     version = 1
 
+    # After suspending the device, wait this long before waking it again.
+    SUSPEND_WAIT_TIME_SECONDS = 5
+    # Retries allowed for reaching S0ix|S3 after suspend and S0 after wake.
+    POWER_STATE_RETRY_COUNT = 10
     # The timeout (in seconds) to confirm the device is woken up from
     # suspend mode.
     RESUME_TIMEOUT = 60
@@ -29,13 +33,13 @@ class firmware_ECWakeSource(FirmwareTest):
 
     def cleanup(self):
         # Restore the lid_open switch in case the test failed in the middle.
-        self.servo.set('lid_open', 'yes')
+        if self.check_ec_capability(['lid']):
+          self.servo.set('lid_open', 'yes')
         super(firmware_ECWakeSource, self).cleanup()
 
     def hibernate_and_wake_by_power_button(self):
         """Shutdown to G3/S5, hibernate EC, and then wake by power button."""
         self.run_shutdown_cmd()
-        self.switcher.wait_for_client_offline()
         self.ec.send_command('hibernate 1000')
         time.sleep(self.WAKE_DELAY)
         # If the DUT enters hibernate mode successfully, EC console shouldn't
@@ -68,7 +72,14 @@ class firmware_ECWakeSource(FirmwareTest):
         """
         suspend_func()
         self.switcher.wait_for_client_offline()
+        if not self.wait_power_state(self.POWER_STATE_SUSPEND,
+                                     self.POWER_STATE_RETRY_COUNT):
+            raise error.TestFail('Platform failed to reach S0ix or S3 state.')
+        time.sleep(self.SUSPEND_WAIT_TIME_SECONDS);
         wake_func()
+        if not self.wait_power_state(self.POWER_STATE_S0,
+                                     self.POWER_STATE_RETRY_COUNT):
+            raise error.TestFail('Platform failed to reach S0 state.')
         self.switcher.wait_for_client(timeout=self.RESUME_TIMEOUT)
 
     def run_once(self, host):

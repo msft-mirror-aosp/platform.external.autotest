@@ -4,9 +4,11 @@
 
 import logging
 import random
+import os
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -19,7 +21,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._host.run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
 
         # Get the last two update_engine logs: before and after reboot.
-        self._save_extra_update_engine_logs()
+        self._save_extra_update_engine_logs(number_of_logs=2)
         self._change_cellular_setting_in_update_engine(False)
 
         # Cancel any update still in progress.
@@ -29,54 +31,71 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
 
 
-    def _wait_for_oobe_update_to_complete(self):
-        """Wait for the update that started to complete.
-
-        Repeated check status of update. It should move from DOWNLOADING to
-        FINALIZING to COMPLETE (then reboot) to IDLE.
+    def _wait_for_reboot_after_update(self, timeout_minutes=15):
         """
-        timeout_minutes = 10
+        Waits for the OOBE update to finish and autoreboot.
+
+        The update goes through the following statuses: DOWNLOADING to
+        FINALIZING to NEED_REBOOT. It then automatically reboots back to the
+        same screen of OOBE. Detecting the reboot is done by:
+
+        1) Checking the number of logs in /var/log/update_engine/ increased.
+        2) Checking that the two recent statuses were FINALIZING and IDLE.
+
+        @param timeout_minutes: How long to wait for the update to finish.
+                                See crbug/1073855 for context on this default.
+
+        """
         timeout = time.time() + 60 * timeout_minutes
-        boot_id = self._host.get_boot_id()
-        seen_reboot = False
+        last_status = None
+        logs_before = len(self._get_update_engine_logs())
 
         while True:
-            if not seen_reboot:
-                try:
-                    status = self._get_update_engine_status(
-                        timeout=10, ignore_timeout=False)
-                    if status is not None:
-                        if (status[self._CURRENT_OP] ==
-                            self._UPDATE_STATUS_REPORTING_ERROR_EVENT):
-                            err_str = self._get_last_error_string()
-                            raise error.TestFail('Update status reported error'
-                                                 'during OOBE update: %s' %
-                                                 err_str)
-                except error.AutoservRunError as e:
-                    # Check if command timed out because update-engine was
-                    # taking a while or if the command didn't even start.
-                    query = 'Querying Update Engine status...'
-                    if query not in e.result_obj.stderr:
-                        # Command did not start. DUT rebooted at end of update.
-                        self._host.test_wait_for_boot(boot_id)
-                        seen_reboot = True
-            else:
-                # Now that the device is rebooted, we have to make sure the
-                # update_engine is up and running and new update check has been
-                # perfromed.
-                try:
-                    self._get_update_engine_status(timeout=10,
-                                                   ignore_timeout=False)
-                    if self._check_update_engine_log_for_entry(
-                        'Omaha request response:'):
-                        break;
-                except (error.TestFail, error.AutoservRunError):
-                    pass
+            # Use timeout so if called during reboot we fail early and retry.
+            status = self._get_update_engine_status(timeout=10,
+                                                    ignore_timeout=True)
+
+            # Check that the status is not reporting an error.
+            if status is not None:
+                if self._is_checking_for_update(status):
+                    continue
+                if self._is_update_engine_reporting_error(status):
+                    err_str = self._get_last_error_string()
+                    raise error.TestFail('Update status reported error '
+                                         'during OOBE update: %s' % err_str)
+                # if status is IDLE we need to figure out if an error occurred
+                # or the DUT autorebooted.
+                elif self._is_update_engine_idle(status):
+                    if self._is_update_finished_downloading(last_status):
+                        if len(self._get_update_engine_logs()) > logs_before:
+                            return
+                    err_str = self._get_last_error_string()
+                    raise error.TestFail('Update status was IDLE during '
+                                         'update: %s' % err_str)
+                last_status = status
 
             time.sleep(1)
             if time.time() > timeout:
-                raise error.TestFail('OOBE update did not finish in %d '
-                                     'minutes.' % timeout_minutes)
+                raise error.TestFail(
+                    'OOBE update did not finish in %d minutes. Last status: %s,'
+                    ' Last Progress: %s' % (timeout_minutes,
+                    status[self._CURRENT_OP], status[self._PROGRESS]))
+
+
+    def _wait_for_oobe_update_to_complete(self):
+        """Wait for the update that started to complete."""
+        self._wait_for_reboot_after_update()
+        def found_post_reboot_event():
+            """
+            Now that the device is rebooted, we have to make sure update_engine
+            is up and running and post reboot update check has been performed.
+
+            """
+            self._get_update_engine_status(timeout=10, ignore_timeout=False)
+            return self._check_update_engine_log_for_entry(
+                  'Omaha request response:')
+        utils.poll_for_condition(found_post_reboot_event, timeout=60,
+                                 desc='post-reboot event to fire after reboot')
 
 
     def run_once(self, full_payload=True, cellular=False,
@@ -95,11 +114,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param moblab: True if we are running on moblab.
 
         """
-        # veyron_rialto is a medical device with a different OOBE that auto
-        # completes so this test is not valid on that device.
-        if 'veyron_rialto' in self._host.get_board():
-            raise error.TestNAError('Rialto has a custom OOBE. Skipping test.')
-
         tpm_utils.ClearTPMOwnerRequest(self._host)
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=full_payload,
@@ -109,6 +123,12 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         payload_info = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
+
+        # Clear any previously started updates.
+        pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
+                                 self._UPDATE_CHECK_RESPONSE_HASH)
+        self._host.run(['rm', pref_file], ignore_status=True)
+        self._host.run(['restart', 'update-engine'], ignore_status=True)
 
         progress = None
         if interrupt is not None:
@@ -143,7 +163,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
             if self._is_update_engine_idle():
                 raise error.TestFail('The update was IDLE after interrupt.')
-            if not self._update_continued_where_it_left_off(completed):
+            if not self._update_continued_where_it_left_off(
+                completed, reboot_interrupt=interrupt is 'reboot'):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
         elif interrupt not in ['network', None]:

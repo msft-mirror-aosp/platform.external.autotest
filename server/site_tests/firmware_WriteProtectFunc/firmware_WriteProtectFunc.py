@@ -135,6 +135,27 @@ class firmware_WriteProtectFunc(FirmwareTest):
 
     def run_once(self):
         """Runs a single iteration of the test."""
+        # Check if enabled SW WP can stay preserved across reboots.
+        for target in self._targets:
+            self._set_write_protect(target, True)
+
+        reboots = (('shutdown cmd', lambda:self.run_shutdown_process(
+                                        lambda:self.run_shutdown_cmd())),
+                   ('reboot cmd', lambda:self.run_cmd('reboot')),
+                   ('power button', lambda:self.full_power_off_and_on()))
+
+        if self.faft_config.chrome_ec:
+            reboots += (('ec reboot', lambda:self.sync_and_ec_reboot('hard')), )
+
+        for (reboot_name, reboot_method) in reboots:
+            self.switcher.mode_aware_reboot('custom', reboot_method)
+            for target in self._targets:
+                sw_wp_dict = self._rpcs[target].get_write_protect_status()
+                if not sw_wp_dict['enabled']:
+                    raise error.TestFail('%s SW WP can not stay preserved '
+                                         'accross %s' %
+                                         (target.upper(), reboot_name))
+
         work_path = self.faft_client.updater.get_work_path()
 
         for target in self._targets:
@@ -153,7 +174,6 @@ class firmware_WriteProtectFunc(FirmwareTest):
             self.get_wp_ro_firmware_section(test, ro_test)
 
             # Check if RO FW really can't be overwritten when WP is enabled.
-            self._set_write_protect(target, True)
             self.run_cmd('flashrom -p %s -r -i WP_RO:%s' %
                     (self._flashrom_targets[target], ro_before),
                     'SUCCESS')

@@ -10,7 +10,7 @@ NAME = 'bluetooth_AdapterLESanity.le_role_slave_before_master'
 PURPOSE = ('Tests controller can handle slave role in connection and then'
            ' create a new connection as master')
 CRITERIA = 'Pass the test'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = ''
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

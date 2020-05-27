@@ -173,15 +173,7 @@ class TradefedTest(test.test):
 
     def cleanup(self):
         """Cleans up any dirtied state."""
-        # Kill any lingering adb servers.
-        for host in self._hosts:
-            try:
-                self._run_adb_cmd(host, verbose=True, args=('kill-server',),
-                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
-            except error.CmdTimeoutError as e:
-                logging.warn(e)
-            except (error.CmdError, AttributeError):
-                pass
+        self._kill_adb_server()
 
         if hasattr(self, '_tradefed_install'):
             logging.info('Cleaning up %s.', self._tradefed_install)
@@ -189,6 +181,27 @@ class TradefedTest(test.test):
                 shutil.rmtree(self._tradefed_install)
             except IOError:
                 pass
+
+    def _kill_adb_server(self):
+        # Kill any lingering adb servers.
+        try:
+            self._run_adb_cmd(verbose=True, args=('kill-server',),
+                timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+        except error.CmdTimeoutError as e:
+            logging.warn(e)
+            # `adb kill-server` sometimes hangs up. Kill it more brutally.
+            try:
+                client_utils.system(
+                    'killall adb',
+                    ignore_status=True,
+                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+            except error.CmdTimeoutError as e:
+                # The timeout is ignored, since the only known failure pattern
+                # b/142828365 is due to a zombie process that does not prevent
+                # starting a new server with a new adb key.
+                logging.warn(e)
+        except (error.CmdError, AttributeError):
+            pass
 
     def _verify_hosts(self):
         """Verify all hosts' ChromeOS consistency."""
@@ -389,15 +402,7 @@ class TradefedTest(test.test):
             try:
                 # Kill existing adb server to ensure that the env var is picked
                 # up, and reset any previous bad state.
-                #
-                # The timeout is ignored, since the only known failure pattern
-                # b/142828365 is due to a zombie process that does not prevent
-                # starting a new server is new adb key.
-                try:
-                    self._run_adb_cmd(verbose=True, args=('kill-server',),
-                        timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
-                except error.CmdTimeoutError as e:
-                    logging.warn(e)
+                self._kill_adb_server()
 
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.
@@ -1146,7 +1151,8 @@ class TradefedTest(test.test):
         session_id = None
 
         self._setup_result_directories()
-        self._prepare_media(media_asset)
+        if media_asset:
+            self._prepare_media(media_asset)
 
         # This loop retries failures. For this reason please do not raise
         # TestFail in this loop if you suspect the failure might be fixed
@@ -1206,7 +1212,8 @@ class TradefedTest(test.test):
                     # TODO(b/137917339): ditto
                     if media_asset and media_asset.uri:
                         self._restore_powerd_prefs()
-                self._fail_on_unexpected_media_download(media_asset)
+                if media_asset:
+                    self._fail_on_unexpected_media_download(media_asset)
                 result = self._run_tradefed_list_results()
                 if not result:
                     logging.error('Did not find any test results. Retry.')
@@ -1214,10 +1221,11 @@ class TradefedTest(test.test):
                         current_login.need_reboot()
                     continue
 
-                waived = len(waived_tests)
-                last_session_id, passed, failed, all_done = result
+                last_waived = len(waived_tests)
+                last_session_id, last_passed, last_failed, last_all_done =\
+                    result
 
-                if failed > waived or not utils.is_in_container():
+                if last_failed > last_waived or not utils.is_in_container():
                     for host in self._hosts:
                         dir_name = "%s-step%02d" % (host.hostname, steps)
                         output_dir = os.path.join(
@@ -1227,23 +1235,25 @@ class TradefedTest(test.test):
                         self._copy_extra_artifacts_host(
                             extra_artifacts_host, host, output_dir)
 
-                if passed + failed > 0:
+                if last_passed + last_failed > 0:
                     # At least one test had run, which means the media push step
                     # of tradefed didn't fail. To free up the storage earlier,
                     # delete the copy on the server side. See crbug.com/970881
-                    self._cleanup_media(media_asset)
+                    if media_asset:
+                        self._cleanup_media(media_asset)
 
                 # If the result is |acc|urate according to the log, or the
                 # inaccuracy is recognized by tradefed (not all_done), then
                 # it is fine.
-                accurate.append(acc or not all_done)
-                if failed < waived:
+                accurate.append(acc or not last_all_done)
+                if last_failed < last_waived:
                     logging.error(
                         'Error: Internal waiver bookkeeping has become '
-                        'inconsistent (f=%d, w=%d)', failed, waived)
+                        'inconsistent (f=%d, w=%d)', last_failed, last_waived)
 
                 msg = 'run' if session_id == None else ' retry'
-                msg += '(p=%s, f=%s, w=%s)' % (passed, failed, waived)
+                msg += '(p=%s, f=%s, w=%s)' % (last_passed, last_failed,
+                                               last_waived)
                 self.summary += msg
                 logging.info('RESULT: %s %s', msg, result)
 
@@ -1251,7 +1261,7 @@ class TradefedTest(test.test):
                 # provided by list_results to decide if there are outstanding
                 # modules to iterate over (similar to missing tests just on a
                 # per-module basis).
-                notest = (passed + failed == 0 and all_done)
+                notest = (last_passed + last_failed == 0 and last_all_done)
                 if target_module in self._notest_modules:
                     if notest:
                         logging.info('Package has no tests as expected.')
@@ -1269,7 +1279,8 @@ class TradefedTest(test.test):
                         current_login.need_reboot()
                     continue
 
-                session_id = last_session_id
+                waived = last_waived
+                session_id, passed, failed, all_done  = result
                 if (not all_done and executable_test_count != None and
                         (passed + failed ==
                          executable_test_count * self._test_count_factor)):

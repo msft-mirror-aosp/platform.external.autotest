@@ -34,11 +34,6 @@ class autoupdate_NonBlockingOOBEUpdate(update_engine_test.UpdateEngineTest):
                              when run in the lab.
 
         """
-        # veyron_rialto is a medical device with a different OOBE that auto
-        # completes so this test is not valid on that device.
-        if 'veyron_rialto' in self._host.get_board():
-            raise error.TestNAError('Rialto has a custom OOBE. Skipping test.')
-
         tpm_utils.ClearTPMOwnerRequest(self._host)
 
         # Get an update url that will return non critical update responses.

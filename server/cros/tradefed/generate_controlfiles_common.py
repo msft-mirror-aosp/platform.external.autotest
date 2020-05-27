@@ -19,6 +19,20 @@ import zipfile
 from jinja2 import Template
 
 
+class CameraTestConfig:
+    """ Configuration for camera test."""
+
+    def __init__(self, facing, need_dependency):
+        """Initializes the CameraTestConfig object.
+
+        @param facing: string indicating camera facing to be tested.
+        @param need_dependency: bool variable indicating whether the test
+                                require dependency of specific camerabox facing.
+        """
+        self.facing = facing
+        self.need_dependency = need_dependency
+
+
 # TODO(ihf): Assign better TIME to control files. Scheduling uses this to run
 # LENGTHY first, then LONG, MEDIUM etc. But we need LENGTHY for the collect
 # job, downgrade all others. Make sure this still works in CQ/smoke suite.
@@ -78,8 +92,8 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- endif %}
         job.run_test(
             '{{base_name}}',
-    {%- if camera_facing %}
-            camera_facing='{{camera_facing}}',
+    {%- if camera_test_config %}
+            camera_facing='{{camera_test_config.facing}}',
             cmdline_args=args,
     {%- endif %}
             hosts=host_list,
@@ -205,7 +219,11 @@ def get_bundle_abi(filename):
     return ''
 
 
-def get_extension(module, abi, revision, is_public=False, camera_facing=None):
+def get_extension(module,
+                  abi,
+                  revision,
+                  is_public=False,
+                  camera_test_config=None):
     """Defines a unique string.
 
     Notice we chose module revision first, then abi, as the module revision
@@ -214,8 +232,8 @@ def get_extension(module, abi, revision, is_public=False, camera_facing=None):
                    is specified, the control file will runs all the tests.
     @param public: boolean variable to specify whether or not the bundle is from
                    public source or not.
-    @param camera_facing: string or None indicate whether it's camerabox tests
-                          for specific camera facing or not.
+    @param camera_test_config: configuration for camerabox test. Set to None for
+                               non-camerabox test.
     @return string: unique string for specific tests. If public=True then the
                     string is "<abi>.<module>", otherwise, the unique string is
                     "<revision>.<abi>.<module>". Note that if abi is empty, the
@@ -227,8 +245,10 @@ def get_extension(module, abi, revision, is_public=False, camera_facing=None):
     if abi:
         ext_parts += [abi]
     ext_parts += [module]
-    if camera_facing:
-        ext_parts += ['camerabox', camera_facing]
+    if camera_test_config:
+        ext_parts += ['camerabox', camera_test_config.facing]
+        if camera_test_config.need_dependency:
+            ext_parts += ['experimental']
     return '.'.join(ext_parts)
 
 
@@ -257,29 +277,29 @@ def get_controlfile_name(module,
                          abi,
                          revision,
                          is_public=False,
-                         camera_facing=None):
+                         camera_test_config=None):
     """Defines the control file name.
 
     @param module: CTS module which will be tested in the control file. If 'all'
                    is specified, the control file will runs all the tests.
     @param public: boolean variable to specify whether or not the bundle is from
                    public source or not.
-    @param camera_facing: string or None indicate whether it's camerabox tests
-                          for specific camera facing or not.
+    @param camera_test_config: configuration for camerabox test. Set to None for
+                               non-camerabox test.
     @return string: control file for specific tests. If public=True or
                     module=all, then the name will be "control.<abi>.<module>",
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
     return 'control.%s' % get_extension(module, abi, revision, is_public,
-                                        camera_facing)
+                                        camera_test_config)
 
 
 def get_sync_count(_modules, _abi, _is_public):
     return 1
 
 
-def get_suites(modules, abi, is_public, camera_facing=None):
+def get_suites(modules, abi, is_public, camera_test_config=None):
     """Defines the suites associated with a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -327,13 +347,13 @@ def get_suites(modules, abi, is_public, camera_facing=None):
         elif module in CONFIG['BVT_PERBUILD'] and (abi == 'arm' or abi == ''):
             suites.add('suite:bvt-perbuild')
 
-    if camera_facing != None:
+    if camera_test_config != None:
         suites.add('suite:arc-cts-camera')
 
     return sorted(list(suites))
 
 
-def get_dependencies(modules, abi, is_public, is_camerabox_test):
+def get_dependencies(modules, abi, is_public, camera_test_config):
     """Defines lab dependencies needed to schedule a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -342,15 +362,17 @@ def get_dependencies(modules, abi, is_public, is_camerabox_test):
                 current test.
     @param is_public: boolean variable to specify whether or not the bundle is
                       from public source or not.
-    @param is_camerabox_test: boolean variable to specify whether it's camerabox
-                              related test.
+    @param camera_test_config: configuration for camerabox test. Set to None for
+                               non-camerabox test.
     """
     dependencies = ['arc']
     if abi in CONFIG['LAB_DEPENDENCY']:
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
 
-    if is_camerabox_test:
-        dependencies.append('camerabox')
+    if camera_test_config:
+        dependencies.append((
+                'camerabox_facing:' + camera_test_config.facing
+        ) if camera_test_config.need_dependency else 'camerabox')
 
     for module in modules:
         if is_public and module in CONFIG['PUBLIC_DEPENDENCIES']:
@@ -408,7 +430,10 @@ def get_max_retries(modules, abi, suites, is_public):
 
     # Ugly overrides.
     # In bvt we don't want to hold the CQ/PFQ too long.
-    if 'suite:bvt-arc' in suites or 'suite:bvt-perbuild' in suites:
+    if 'suite:bvt-arc' in suites:
+        retry = 3
+    # Not strict as CQ for bvt-perbuild. Let per-module config take priority.
+    if retry == -1 and 'suite:bvt-perbuild' in suites:
         retry = 3
     # During qualification we want at least 9 retries, possibly more.
     # TODO(kinaba&yoshiki): do not abuse suite names
@@ -542,7 +567,7 @@ def get_authkey(is_public):
     return CONFIG['AUTHKEY']
 
 
-def _format_collect_cmd(is_public, retry):
+def _format_collect_cmd(is_public, abi_to_run, retry):
     """Returns a list specifying tokens for tradefed to list all tests."""
     if retry:
         return None
@@ -555,6 +580,8 @@ def _format_collect_cmd(is_public, retry):
     if (not is_public and
             not CONFIG.get('NEEDS_DYNAMIC_CONFIG_ON_COLLECTION', True)):
         cmd.append('--dynamic-config-url=')
+    if abi_to_run:
+        cmd += ['--abi', abi_to_run]
     return cmd
 
 
@@ -566,7 +593,7 @@ def _get_special_command_line(modules, _is_public):
     return cmd
 
 
-def _format_modules_cmd(is_public, modules=None, retry=False):
+def _format_modules_cmd(is_public, abi_to_run, modules=None, retry=False):
     """Returns list of command tokens for tradefed."""
     if retry:
         assert(CONFIG['TRADEFED_RETRY_COMMAND'] == 'cts' or
@@ -609,6 +636,8 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
         not (modules.intersection(CONFIG['BVT_ARC'] + CONFIG['SMOKE'] +
              CONFIG['NEEDS_DEVICE_INFO']))):
         cmd.append('--skip-device-info')
+    if abi_to_run:
+        cmd += ['--abi', abi_to_run]
     # If NEEDS_DYNAMIC_CONFIG is set, disable the feature except on the modules
     # that explicitly set as needed.
     if (not is_public and CONFIG.get('NEEDS_DYNAMIC_CONFIG') and
@@ -618,16 +647,17 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
     return cmd
 
 
-def get_run_template(modules, is_public, retry=False):
+def get_run_template(modules, is_public, retry=False, abi_to_run=None):
     """Command to run the modules specified by a control file."""
     cmd = None
     if modules.intersection(get_collect_modules(is_public)):
         if _COLLECT in modules or _PUBLIC_COLLECT in modules:
-            cmd = _format_collect_cmd(is_public, retry=retry)
+            cmd = _format_collect_cmd(is_public, abi_to_run, retry=retry)
         elif _ALL in modules:
-            cmd = _format_modules_cmd(is_public, modules, retry=retry)
+            cmd = _format_modules_cmd(is_public, abi_to_run,
+                                      modules, retry=retry)
     else:
-        cmd = _format_modules_cmd(is_public, modules, retry=retry)
+        cmd = _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
     return cmd
 
 
@@ -730,7 +760,7 @@ def get_controlfile_content(combined,
                             uri,
                             suites=None,
                             is_public=False,
-                            camera_facing=None):
+                            camera_test_config=None):
     """Returns the text inside of a control file.
 
     @param combined: name to use for this combination of modules.
@@ -741,13 +771,13 @@ def get_controlfile_content(combined,
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
     tag = '%s' % get_extension(combined, abi, revision, is_public,
-                               camera_facing)
+                               camera_test_config)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
-        suites = get_suites(modules, abi, is_public, camera_facing)
+        suites = get_suites(modules, abi, is_public, camera_test_config)
     attributes = ', '.join(suites)
     uri = None if is_public else uri
     target_module = None
@@ -757,41 +787,42 @@ def get_controlfile_content(combined,
         if combined in config['SUBMODULES']:
             target_module = target
     return _CONTROLFILE_TEMPLATE.render(
-        year=CONFIG['COPYRIGHT_YEAR'],
-        name=name,
-        base_name=CONFIG['TEST_NAME'],
-        test_func_name=CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'],
-        attributes=attributes,
-        dependencies=get_dependencies(
-            modules,
-            abi,
-            is_public,
-            is_camerabox_test=(camera_facing is not None)),
-        extra_artifacts=get_extra_artifacts(modules),
-        extra_artifacts_host=get_extra_artifacts_host(modules),
-        job_retries=get_job_retries(modules, is_public, suites),
-        max_result_size_kb=get_max_result_size_kb(modules, is_public),
-        revision=revision,
-        build=build,
-        abi=abi,
-        needs_push_media=needs_push_media(modules),
-        enable_default_apps=enable_default_apps(modules),
-        tag=tag,
-        uri=uri,
-        DOC=get_doc(modules, abi, is_public),
-        servo_support_needed = servo_support_needed(modules, is_public),
-        max_retries=get_max_retries(modules, abi, suites, is_public),
-        timeout=calculate_timeout(modules, suites),
-        run_template=get_run_template(modules, is_public),
-        retry_template=get_retry_template(modules, is_public),
-        target_module=target_module,
-        target_plan=None,
-        test_length=get_test_length(modules),
-        priority=get_test_priority(modules, is_public),
-        extra_args=get_extra_args(modules, is_public),
-        authkey=get_authkey(is_public),
-        sync_count=get_sync_count(modules, abi, is_public),
-        camera_facing=camera_facing)
+            year=CONFIG['COPYRIGHT_YEAR'],
+            name=name,
+            base_name=CONFIG['TEST_NAME'],
+            test_func_name=CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'],
+            attributes=attributes,
+            dependencies=get_dependencies(modules, abi, is_public,
+                                          camera_test_config),
+            extra_artifacts=get_extra_artifacts(modules),
+            extra_artifacts_host=get_extra_artifacts_host(modules),
+            job_retries=get_job_retries(modules, is_public, suites),
+            max_result_size_kb=get_max_result_size_kb(modules, is_public),
+            revision=revision,
+            build=build,
+            abi=abi,
+            needs_push_media=needs_push_media(modules),
+            enable_default_apps=enable_default_apps(modules),
+            tag=tag,
+            uri=uri,
+            DOC=get_doc(modules, abi, is_public),
+            servo_support_needed=servo_support_needed(modules, is_public),
+            max_retries=get_max_retries(modules, abi, suites, is_public),
+            timeout=calculate_timeout(modules, suites),
+            run_template=get_run_template(
+                    modules,
+                    is_public,
+                    abi_to_run=CONFIG.get('REPRESENTATIVE_ABI', {}).get(
+                            abi, None)),
+            retry_template=get_retry_template(modules, is_public),
+            target_module=target_module,
+            target_plan=None,
+            test_length=get_test_length(modules),
+            priority=get_test_priority(modules, is_public),
+            extra_args=get_extra_args(modules, is_public),
+            authkey=get_authkey(is_public),
+            sync_count=get_sync_count(modules, abi, is_public),
+            camera_test_config=camera_test_config)
 
 
 def get_tradefed_data(path, is_public, abi):
@@ -830,8 +861,7 @@ def get_tradefed_data(path, is_public, abi):
         elif line.startswith('arm') or line.startswith('x86'):
             # Newer CTS shows ABI-module pairs like "arm64-v8a CtsNetTestCases"
             line = line.split()[1]
-            if (CONFIG['TEST_NAME'] != 'cheets_VTS_R' or
-                line.startswith('Vts') or line.startswith('tradefed')):
+            if line not in CONFIG.get('EXCLUDE_MODULES', []):
                 modules.add(line)
         elif line.startswith('Cts'):
             modules.add(line)
@@ -1106,13 +1136,15 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
     """Control files for CtsCameraTestCases.camerabox.*"""
     module = 'CtsCameraTestCases'
     for facing in ['back', 'front']:
-        name = get_controlfile_name(module, abi,
-                                    revision, is_public, facing)
-        content = get_controlfile_content(module, set([module]), abi,
-                                          revision, build, uri,
-                                          None, is_public, facing)
-        with open(name, 'w') as f:
-            f.write(content)
+        for need_dependency in [False, True]:
+            config = CameraTestConfig(facing, need_dependency)
+            name = get_controlfile_name(module, abi, revision, is_public,
+                                        config)
+            content = get_controlfile_content(module, {module}, abi, revision,
+                                              build, uri, None, is_public,
+                                              config)
+            with open(name, 'w') as f:
+                f.write(content)
 
 
 def run(uris, is_public, cache_dir):

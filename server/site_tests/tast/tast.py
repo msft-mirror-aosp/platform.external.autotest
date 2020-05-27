@@ -87,7 +87,7 @@ class tast(test.test):
     _SSP_REMOTE_BUNDLE_DIR = os.path.join(_SSP_ROOT, 'bundles/remote')
     _SSP_REMOTE_DATA_DIR = os.path.join(_SSP_ROOT, 'data')
     _SSP_REMOTE_TEST_RUNNER_PATH = os.path.join(_SSP_ROOT, 'remote_test_runner')
-    _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars')
+    _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars/private')
 
     # Prefix added to Tast test names when writing their results to TKO
     # status.log files.
@@ -257,7 +257,11 @@ class tast(test.test):
         WiFiManager = wifi_test_context_manager.WiFiTestContextManager
         # TODO(crbug.com/1065601): plumb other WiFi test specific arguments,
         #     e.g. pcap address. See: WiFiTestContextManager's constants.
-        for key, var_arg in [(WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s')]:
+        forward_args = [
+            (WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s'),
+            (WiFiManager.CMDLINE_PCAP_ADDR, 'pcap=%s'),
+        ]
+        for key, var_arg in forward_args:
             if key in args_dict:
                 args += ['-var=' + var_arg % args_dict[key]]
         logging.info('Autotest wificell-related args: %s', args)

@@ -4,11 +4,13 @@
 
 """Server side bluetooth adapter subtests."""
 
+from datetime import datetime, timedelta
 import errno
 import functools
 import httplib
 import inspect
 import logging
+import multiprocessing
 import os
 import re
 from socket import error as SocketError
@@ -36,6 +38,8 @@ Event = recorder.Event
 # Location of data traces relative to this (bluetooth_adapter_tests.py) file
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
+
+RESUME_DELTA = 5
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
@@ -552,8 +556,8 @@ class BluetoothAdapterTests(test.test):
     CLASS_OF_DEVICE_MASK = 0x001FFF
 
     # Constants about advertising.
-    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 1280
-    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 1280
+    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 181.25
+    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 181.25
     ADVERTISING_INTERVAL_UNIT = 0.625
 
     # Error messages about advertising dbus methods.
@@ -721,25 +725,8 @@ class BluetoothAdapterTests(test.test):
                 return False
 
             for btpeer in self.btpeer_group[device_type][:number]:
-                logging.info("getting emulated %s",device_type)
-                device = get_bluetooth_emulated_device(btpeer, device_type)
-
-                # Re-fresh device to clean state if test is starting
-                if on_start:
-                    self.clear_raspi_device(device)
-
-                try:
-                    # Tell generic btpeer to bind to this device type
-                    device.SpecifyDeviceType(device_type)
-
-                # Catch generic Fault exception by rpc server, ignore method not
-                # available as it indicates platform didn't support method and
-                # that's ok
-                except Exception, e:
-                    logging.info("got exception %s",str(e))
-                    if not (e.__class__.__name__ == 'Fault' and
-                        'is not supported' in str(e)):
-                        raise
+                logging.info("getting emulated %s", device_type)
+                device = self.reset_device(btpeer, device_type, on_start)
 
                 self.devices[device_type].append(device)
 
@@ -763,26 +750,43 @@ class BluetoothAdapterTests(test.test):
         @returns: the bluetooth device object
 
         """
-        self.devices[device_type].append(get_bluetooth_emulated_device(\
-                                    self.host.btpeer, device_type))
+
+        self.devices[device_type].append(
+                self.reset_device(self.host.btpeer, device_type, on_start))
+
+        return self.devices[device_type][-1]
+
+
+    def reset_device(self, peer, device_type, clear_device=True):
+        """Reset the peer device in order to be used as a different type.
+
+        @param peer: the peer device to reset with new device type
+        @param device_type : the new bluetooth device type, e.g., 'MOUSE'
+        @param clear_device: whether to clear the device state
+
+        @returns: the bluetooth device object
+
+        """
+        device = get_bluetooth_emulated_device(peer, device_type)
 
         # Re-fresh device to clean state if test is starting
-        if on_start:
-            self.clear_raspi_device(self.devices[device_type][-1])
+        if clear_device:
+            self.clear_raspi_device(device)
 
         try:
             # Tell generic chameleon to bind to this device type
-            self.devices[device_type][-1].SpecifyDeviceType(device_type)
+            device.SpecifyDeviceType(device_type)
 
         # Catch generic Fault exception by rpc server, ignore method not
         # available as it indicates platform didn't support method and that's
         # ok
         except Exception, e:
+            logging.info("got exception %s", str(e))
             if not (e.__class__.__name__ == 'Fault' and
-                'is not supported' in str(e)):
+                    'is not supported' in str(e)):
                 raise
 
-        return self.devices[device_type][-1]
+        return device
 
 
     def is_device_available(self, btpeer, device_type):
@@ -1082,6 +1086,14 @@ class BluetoothAdapterTests(test.test):
         self.results = { 'wake_enabled': wake_enabled }
         return any(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_adapter_set_wake_disabled(self):
+      """Disable wake and verify it was written.
+      """
+      success = self.bluetooth_facade.set_wake_enabled(False)
+      self.results = { 'disable_wake': success }
+      return all(self.results.values())
+
     @test_retry_and_log
     def test_power_on_adapter(self):
         """Test that the adapter could be powered on successfully."""
@@ -1137,6 +1149,24 @@ class BluetoothAdapterTests(test.test):
         self.results = {
                 'reset_off': reset_off,
                 'is_powered_off': is_powered_off}
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_is_facade_valid(self):
+        """Checks whether the bluetooth facade is in a good state.
+
+        If bluetoothd restarts (i.e. due to a crash), the object proxies will no
+        longer be valid (because the session will be closed). Check whether the
+        session failed and wait for a new session if it did.
+        """
+        initially_ok = self.bluetooth_facade.is_bluetoothd_valid()
+        bluez_started = initially_ok or self.bluetooth_facade.start_bluetoothd()
+
+        self.results = {
+                'initially_ok': initially_ok,
+                'bluez_started': bluez_started
+        }
         return all(self.results.values())
 
 
@@ -1608,9 +1638,16 @@ class BluetoothAdapterTests(test.test):
             return (self.bluetooth_facade.get_connection_info(device_address)
                     is not None)
 
+        def _verify_connected():
+            """Verify the device is connected.
+
+            @returns: True if the device is connected, False otherwise.
+            """
+            return self.bluetooth_facade.device_is_connected(device_address)
 
         has_device = False
         paired = False
+        connected = False
         connection_info_retrievable = False
         if self.bluetooth_facade.has_device(device_address):
             has_device = True
@@ -1627,10 +1664,12 @@ class BluetoothAdapterTests(test.test):
                 logging.error('test_pairing: unexpected error')
 
             connection_info_retrievable = _verify_connection_info()
+            connected = _verify_connected()
 
         self.results = {
                 'has_device': has_device,
                 'paired': paired,
+                'connected': connected,
                 'connection_info_retrievable': connection_info_retrievable}
         return all(self.results.values())
 
@@ -2887,6 +2926,23 @@ class BluetoothAdapterTests(test.test):
                 if pattern.search(diff_str):
                     diff.remove(diff_str)
 
+        # Remove any difference in Includes [] versus None
+        # TODO(b:155596705) Cleanup these code when we switch to bluez 5.54
+        pattern = re.compile('^Service .* is different in Includes: \[\] vs '
+                             'None')
+        for diff_str in diff[::]:
+            if pattern.search(diff_str):
+                diff.remove(diff_str)
+
+        # Remove any difference in Battery Service
+        # TODO(b:155596705) Cleanup these code until b:155505162 is solved.
+        pattern = re.compile('^Service %s is not included in both Applications:'
+                             'False vs True' % GATT_HIDApplication.\
+                                                            BatteryServiceUUID)
+        for diff_str in diff[::]:
+            if pattern.search(diff_str):
+                diff.remove(diff_str)
+
         if len(diff) != 0:
             logging.error('Application Diff: %s', diff)
             return False
@@ -3397,6 +3453,82 @@ class BluetoothAdapterTests(test.test):
                 is not None)
 
 
+    @test_retry_and_log(False)
+    def test_suspend_and_wait_for_sleep(self, suspend, sleep_timeout):
+        """ Suspend the device and wait until it is sleeping.
+
+        @param suspend: Sub-process that does the actual suspend call.
+        @param sleep_timeout time limit in seconds to allow the host sleep.
+
+        @return True if host is asleep within a short timeout, False otherwise.
+        """
+        suspend.start()
+        try:
+            self.host.test_wait_for_sleep(sleep_timeout)
+        except:
+            suspend.join()
+            return False
+
+        return True
+
+
+    @test_retry_and_log(False)
+    def test_wait_for_resume(
+        self, boot_id, suspend, resume_timeout, fail_on_timeout=False):
+        """ Wait for device to resume from suspend.
+
+        @param boot_id: Current boot id
+        @param suspend: Sub-process that does actual suspend call.
+        @param resume_timeout: Expect device to resume in given timeout.
+        @param fail_on_timeout: Fails if timeout is reached
+
+        @return True if suspend sub-process completed without error.
+        """
+        success = True
+
+        # Sometimes it takes longer to resume from suspend; give some leeway
+        resume_timeout = resume_timeout + RESUME_DELTA
+        try:
+            start = datetime.now()
+            self.host.test_wait_for_resume(
+                boot_id, resume_timeout=resume_timeout)
+
+            # As of now, a timeout in test_wait_for_resume doesn't raise. Force
+            # a failure here instead by checking against the start time.
+            delta = datetime.now() - start
+            if delta > timedelta(seconds=resume_timeout):
+                success = False if fail_on_timeout else True
+        except Exception as e:
+            success = False
+            logging.error("wait_for_resume: %s", e)
+        finally:
+            suspend.join()
+            self.results = {
+                "resume_success": success,
+                "suspend_result": suspend.exitcode == 0
+            }
+
+            return all(self.results.values())
+
+
+    def suspend_async(self, suspend_time, allow_early_resume=False):
+        """ Suspend asynchronously and return process for joining
+
+        @param suspend_time: how long to stay in suspend
+        @param allow_early_resume: are we expecting to wake up earlier
+        @returns multiprocessing.Process object with suspend task
+        """
+
+        def _action_suspend():
+            self.host.suspend(
+                suspend_time=suspend_time,
+                allow_early_resume=allow_early_resume)
+
+        proc = multiprocessing.Process(target=_action_suspend)
+        proc.daemon = True
+        return proc
+
+
     # -------------------------------------------------------------------
     # Autotest methods
     # -------------------------------------------------------------------
@@ -3414,6 +3546,7 @@ class BluetoothAdapterTests(test.test):
 
         # Some tests may instantiate a peripheral device for testing.
         self.devices = dict()
+        self.shared_peers = []
         for device_type in SUPPORTED_DEVICE_TYPES:
             self.devices[device_type] = list()
 

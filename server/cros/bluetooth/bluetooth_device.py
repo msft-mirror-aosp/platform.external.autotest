@@ -134,6 +134,15 @@ class BluetoothDevice(object):
         """
         return self._proxy.is_bluetoothd_running()
 
+    def is_bluetoothd_valid(self):
+        """Checks whether the current bluetoothd session is ok.
+
+        Returns:
+            True if the current bluetoothd session is ok. False if bluetoothd is
+            not running or it is a new session.
+        """
+        return self._proxy.is_bluetoothd_proxy_valid()
+
 
     def reset_on(self):
         """Reset the adapter and settings and power up the adapter.
@@ -160,6 +169,15 @@ class BluetoothDevice(object):
     def is_wake_enabled(self):
         """@return True if adapter is wake enabled, False if not."""
         return self._proxy.is_wake_enabled()
+
+    def set_wake_enabled(self, value):
+        """ Sets the power/wakeup value for the adapter.
+
+        Args:
+            value: Whether the adapter can wake from suspend
+
+        @return True if able to set it to value, False if not."""
+        return self._proxy.set_wake_enabled(value)
 
     def set_powered(self, powered):
         """Set the adapter power state.

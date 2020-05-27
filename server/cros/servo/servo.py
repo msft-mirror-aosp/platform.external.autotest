@@ -611,6 +611,15 @@ class Servo(object):
         self.set_nocheck('ctrl_d', press_secs)
 
 
+    def ctrl_s(self, press_secs='tab'):
+        """Simulate Ctrl-s simultaneous button presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'
+        """
+        self.set_nocheck('ctrl_s', press_secs)
+
+
     def ctrl_u(self, press_secs='tab'):
         """Simulate Ctrl-u simultaneous button presses.
 
@@ -1037,7 +1046,11 @@ class Servo(object):
         # This call has a built-in delay to ensure that we wait a timeout
         # for the stick to enumerate and settle on the DUT side.
         self.switch_usbkey('dut')
-        self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+        try:
+            self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+        except error.TestFail as e:
+            logging.error('Failed to boot DUT in recovery mode. %s.', str(e))
+            raise error.AutotestError('Failed to boot DUT in recovery mode.')
 
     def install_recovery_image(self, image_path=None,
                                make_image_noninteractive=False):
@@ -1136,6 +1149,10 @@ class Servo(object):
         logging.warn("%s is active even though it's not in servo type",
                      active_device)
         return servo_type
+
+
+    def get_servo_type(self):
+        return self._servo_type
 
 
     def get_main_servo_device(self):
@@ -1279,9 +1296,16 @@ class Servo(object):
 
         # Check if EC image was found and return path or raise error
         if ec_image:
+            # Extract subsidiary binaries for EC
+            # Find a monitor binary for NPCX_UUT chip type, if any.
+            mon_candidates = [candidate.replace('ec.bin', 'npcx_monitor.bin')
+                              for candidate in ec_image_candidates]
+            _extract_image_from_tarball(tarball_path, dest_dir, mon_candidates,
+                                        self.EXTRACT_TIMEOUT_SECS)
+
             return os.path.join(dest_dir, ec_image)
         else:
-            raise error.TestError('Failed to extract EC image from %s',
+            raise error.TestError('Failed to extract EC image from %s' %
                                   tarball_path)
 
 
@@ -1319,7 +1343,7 @@ class Servo(object):
         if bios_image:
             return os.path.join(dest_dir, bios_image)
         else:
-            raise error.TestError('Failed to extract BIOS image from %s',
+            raise error.TestError('Failed to extract BIOS image from %s' %
                                   tarball_path)
 
 
@@ -1358,7 +1382,7 @@ class Servo(object):
         self.set('image_usbkey_direction', mux_direction)
         # As servod makes no guarantees when switching to the dut side,
         # add a detection delay here when facing the dut.
-        if mux_direction == 'dut':
+        if mux_direction == 'dut_sees_usbkey':
             time.sleep(self.USB_DETECTION_DELAY)
 
     def get_usbkey_state(self):

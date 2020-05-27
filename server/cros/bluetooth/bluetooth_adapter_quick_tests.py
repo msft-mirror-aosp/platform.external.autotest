@@ -168,6 +168,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Delete files created in previous run
         self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
                                                     self.BTMON_DIR_LOG_PATH))
+        self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
+                                                    self.USBMON_DIR_LOG_PATH))
+
         self.start_new_btmon()
         self.start_new_usbmon()
 
@@ -197,7 +200,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     @staticmethod
     def quick_test_test_decorator(test_name, devices={}, flags=['All'],
                                   model_testNA=[],
-                                  model_testWarn=[]):
+                                  model_testWarn=[],
+                                  shared_devices_count=0):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -232,6 +236,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     return False
                 return True
 
+
             def _is_enough_peers_present(self):
                 """Check if enough peer devices are available."""
 
@@ -244,7 +249,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         return False
 
                 # Check if there are enough peers
-                total_num_devices = sum(devices.values())
+                total_num_devices = sum(devices.values()) + shared_devices_count
                 if total_num_devices > len(self.host.peer_list):
                     logging.info('SKIPPING TEST %s', test_name)
                     logging.info('Number of devices required %s is greater'
@@ -262,7 +267,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     return
                 if not _is_enough_peers_present(self):
                     raise error.TestNAError('Not enough peer available')
-                self.quick_test_test_start(test_name, devices)
+                self.quick_test_test_start(
+                    test_name, devices, shared_devices_count)
                 test_method(self)
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn)
@@ -271,7 +277,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         return decorator
 
 
-    def quick_test_test_start(self, test_name=None, devices={}):
+    def quick_test_test_start(
+            self, test_name=None, devices={}, shared_devices_count=0):
         """Start a quick test. The method clears and restarts adapter on DUT
            as well as peer devices. In addition the methods prints test start
            traces.
@@ -279,12 +286,17 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         self.test_name = test_name
 
+        # Bluetoothd could have crashed behind the scenes; check to see if
+        # everything is still ok and recover if needed.
+        self.test_is_facade_valid()
+
         # Reset the adapter
         self.test_reset_on_adapter()
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
         self.initialize()
         # Start and peer HID devices
         self.start_peers(devices)
+        self.shared_peers = self.host.peer_list[-shared_devices_count:]
 
         if test_name is not None:
             time.sleep(self.TEST_SLEEP_SECS)
@@ -340,6 +352,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         if self.test_name is not None:
             logging.info('Cleanning up and restarting towards next test...')
 
+
+        # Bluetoothd could have crashed behind the scenes; check if everything
+        # is ok and recover if needed. This is done as part of clean-up as well
+        # to make sure we can fully remove pairing info between tests
+        self.test_is_facade_valid()
+
         self.bluetooth_facade.stop_discovery()
 
         # Store a copy of active devices for raspi reset in the final step
@@ -349,13 +367,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         for device_list in self.devices.values():
             for device in device_list:
                 if device is not None:
-                    logging.info('Clear device %s', device.name)
+                    logging.info('Clear device %s from DUT', device.name)
                     self.bluetooth_facade.disconnect_device(device.address)
                     device_is_paired = self.bluetooth_facade.device_is_paired(
                             device.address)
                     if device_is_paired:
                         self.bluetooth_facade.remove_device_object(
                                 device.address)
+
+                    # Also remove pairing on Peer
+                    logging.info('Clearing DUT from %s', device.name)
+                    try:
+                        device.RemoveDevice(self.bluetooth_facade.address)
+                    except Exception as e:
+                        # If peer doesn't expose RemoveDevice, ignore failure
+                        if not (e.__class__.__name__ == 'Fault' and
+                                'is not supported' in str(e)):
+                            logging.info('Couldn\'t Remove: {}'.format(e))
+                            raise
+
 
         # Repopulate btpeer_group for next tests
         # Clear previous tets's leftover entries. Don't delete the
@@ -530,13 +560,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     @staticmethod
-    def quick_test_mtbf_decorator(timeout_mins):
+    def quick_test_mtbf_decorator(timeout_mins, test_name):
         """A decorator enabling a test to be run as a MTBF test, it will run
            the underlying test in a infinite loop until it fails or timeout is
            reached, in both cases the time elapsed time will be reported.
 
            @param timeout_mins: the max execution time of the test, once the
                                 time is up the test will report success and exit
+           @param test_name: the MTBF test name to be output to the dashboard
         """
 
         def decorator(batch_method):
@@ -553,18 +584,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     timeout_mins * 60, self.mtbf_timeout)
                 mtbf_timer.start()
                 start_time = time.time()
+                board = self.host.get_board().split(':')[1]
+                build = self.host.get_release_version()
+                milestone = 'M' + self.host.get_chromeos_release_milestone()
+                in_lab = site_utils.host_in_lab(self.host.hostname)
                 while True:
                     with self.mtbf_end_lock:
                         # The test ran the full duration without failure
                         if self.mtbf_end:
                             self.report_mtbf_result(
-                                True, start_time)
+                                True, start_time, test_name, board, build,
+                                milestone, in_lab)
                             break
                     try:
                         batch_method(self, *args, **kwargs)
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
-                        self.report_mtbf_result(False, start_time)
+                        self.report_mtbf_result(
+                            False, start_time, test_name, board, build,
+                            milestone, in_lab)
                         # Don't report the test run as failed for MTBF
                         self.fails = []
                         break
@@ -582,7 +620,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.mtbf_end = True
 
 
-    def report_mtbf_result(self, success, start_time):
+    def report_mtbf_result(self, success, start_time, test_name, board, build,
+        milestone, in_lab):
         """Report MTBF result by uploading it to GCS"""
         duration_secs = int(time.time() - start_time)
         start_time = int(start_time)
@@ -590,18 +629,16 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         output_file_name = self.GCS_MTBF_BUCKET + \
                            time.strftime('%Y-%m-%d/', gm_time_struct) + \
                            time.strftime('%H-%M-%S.csv', gm_time_struct)
-        board = self.host.get_board().split(':')[1]
-        build = self.host.get_release_version()
-        milestone = 'M' + self.host.get_chromeos_release_milestone()
-        mtbf_result = '{0},{1},{2},{3},{4},{5}'.format(
+
+        mtbf_result = '{0},{1},{2},{3},{4},{5},{6}'.format(
             board, build, milestone, start_time * 1000000, duration_secs,
-            success)
+            success, test_name)
         with tempfile.NamedTemporaryFile() as tmp_file:
             tmp_file.write(mtbf_result)
             tmp_file.flush()
             cmd = 'gsutil cp {0} {1}'.format(tmp_file.name, output_file_name)
             logging.info('Result to upload %s %s', mtbf_result, cmd)
             # Only upload the result when running in the lab.
-            if site_utils.host_in_lab(self.host.hostname):
+            if in_lab:
                 logging.info('Uploading result')
                 utils.run(cmd)

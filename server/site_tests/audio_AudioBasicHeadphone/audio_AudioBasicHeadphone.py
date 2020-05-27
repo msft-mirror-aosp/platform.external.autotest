@@ -36,8 +36,10 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
         if not audio_test_utils.has_audio_jack(self.host):
             raise error.TestNAError(
                     'No audio jack for the DUT.'
-                    'Please check label of the host and control file.'
-                    'Please check the host label and test dependency.')
+                    ' Confirm swarming bot dimension and control file'
+                    ' dependency for audio jack is matching.'
+                    ' For new boards, has_audio_jack might need to be updated.'
+            )
 
         golden_file = audio_test_data.GenerateAudioTestData(
                 path=os.path.join(self.bindir, 'fix_1k_440_16.wav'),

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import os
 import random
 
 from autotest_lib.client.common_lib import error
@@ -14,7 +15,7 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
     version = 1
 
     def cleanup(self):
-        self._save_extra_update_engine_logs(4)
+        self._save_extra_update_engine_logs(number_of_logs=2)
         super(autoupdate_Interruptions, self).cleanup()
 
 
@@ -30,6 +31,11 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
                              when run in the lab.
 
         """
+        # Clear any previously started updates.
+        pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
+                                 self._UPDATE_CHECK_RESPONSE_HASH)
+        self._host.run(['rm', pref_file], ignore_status=True)
+        self._host.run(['restart', 'update-engine'], ignore_status=True)
 
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=full_payload)
@@ -62,7 +68,8 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
 
             if self._is_update_engine_idle():
                 raise error.TestFail('The update was IDLE after interrupt.')
-            if not self._update_continued_where_it_left_off(completed):
+            if not self._update_continued_where_it_left_off(
+                completed, reboot_interrupt=interrupt is 'reboot'):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
         elif interrupt not in ['network', None]:

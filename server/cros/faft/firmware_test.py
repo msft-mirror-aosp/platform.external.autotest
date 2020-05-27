@@ -67,6 +67,14 @@ class FirmwareTest(FAFTBase):
     CHROMEOS_MAGIC = "CHROMEOS"
     CORRUPTED_MAGIC = "CORRUPTD"
 
+    # System power states
+    POWER_STATE_S0 = 'S0'
+    POWER_STATE_S0IX = 'S0ix'
+    POWER_STATE_S3 = 'S3'
+    POWER_STATE_S5 = 'S5'
+    POWER_STATE_G3 = 'G3'
+    POWER_STATE_SUSPEND = '|'.join([POWER_STATE_S0IX, POWER_STATE_S3])
+
     # Delay for waiting client to return before EC suspend
     EC_SUSPEND_DELAY = 5
 
@@ -521,8 +529,9 @@ class FirmwareTest(FAFTBase):
         @raise TestError: If Servo v4 not setup properly.
         """
 
-        # PD FAFT is only tested with servo V4 with servo micro.
-        if pd_faft and self.pdtester.servo_type != 'servo_v4_with_servo_micro':
+        # PD FAFT is only tested with a least a servo V4 with servo micro.
+        if pd_faft and (
+                'servo_v4_with_servo_micro' not in self.pdtester.servo_type):
             raise error.TestError('servo_v4_with_servo_micro is a mandatory '
                                   'setup for PD FAFT. Got %s.'
                                   % self.pdtester.servo_type)
@@ -866,9 +875,14 @@ class FirmwareTest(FAFTBase):
         update_cmd = self.faft_client.updater.get_firmwareupdate_command(
                 mode, append, options)
         try:
-            return self._client.run(
+            result = self._client.run(
                     update_cmd, timeout=300, ignore_status=ignore_status)
+            if result.exit_status == 255:
+                self.faft_client.disconnect()
+            return result
         except error.AutoservRunError as e:
+            if e.result_obj.exit_status == 255:
+                self.faft_client.disconnect()
             if ignore_status:
                 return e.result_obj
             raise
@@ -1030,22 +1044,22 @@ class FirmwareTest(FAFTBase):
                            'suspend' or 'shutdown'.
         """
         if power_mode == 'suspend':
-                target_power_state = 'S0ix|S3'
+            target_power_state = self.POWER_STATE_SUSPEND
         elif power_mode == 'shutdown':
-                target_power_state = 'G3'
+            target_power_state = self.POWER_STATE_G3
         else:
             raise error.TestError('%s is not a valid ap-off power mode.' %
                                   power_mode)
 
-        if self.get_power_state() != 'S0':
+        if self.get_power_state() != self.POWER_STATE_S0:
             raise error.TestError('The DUT is not in S0.')
 
         self._restore_power_mode = True
 
-        if target_power_state == 'G3':
+        if target_power_state == self.POWER_STATE_G3:
             self.run_shutdown_cmd()
             time.sleep(self.faft_config.shutdown)
-        elif target_power_state == 'S0ix|S3':
+        elif target_power_state == self.POWER_STATE_SUSPEND:
             self.suspend()
 
         if self.wait_power_state(target_power_state, self.DEFAULT_PWR_RETRIES):
@@ -1061,7 +1075,7 @@ class FirmwareTest(FAFTBase):
         Wake up the DUT to S0. If the DUT was not set to suspend or
         shutdown mode by set_ap_off_power_mode(), raise an error.
         """
-        if self.get_power_state() != 'S0':
+        if self.get_power_state() != self.POWER_STATE_S0:
             logging.info('Wake up the DUT to S0.')
             self.servo.power_normal_press()
             # If the DUT is ping-able, it must be in S0.
@@ -1102,7 +1116,11 @@ class FirmwareTest(FAFTBase):
         @return: the line and the match, if the output matched.
         @raise error.TestFail: if output didn't match after the delay.
         """
-        return self.ec.send_command_get_output("powerinfo", [power_state])
+        if not isinstance(power_state, str):
+            raise error.TestError('%s is not a string while it should be.' %
+                                  power_state)
+        return self.ec.send_command_get_output("powerinfo",
+            ['\\b' + power_state + '\\b'])
 
     def wait_power_state(self, power_state, retries):
         """
@@ -1140,6 +1158,7 @@ class FirmwareTest(FAFTBase):
                 logging.warn("Ignoring error from ssh: %s", e)
             else:
                 raise
+        self.switcher.wait_for_client_offline()
 
     def suspend(self):
         """Suspends the DUT."""
@@ -1368,7 +1387,9 @@ class FirmwareTest(FAFTBase):
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
         time.sleep(self.faft_config.shutdown)
-        self.check_shutdown_power_state("G3", orig_boot_id=boot_id)
+        if self.faft_config.chrome_ec:
+            self.check_shutdown_power_state(self.POWER_STATE_G3,
+                                            orig_boot_id=boot_id)
         # Short press power button to boot DUT again.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
 
@@ -1387,7 +1408,7 @@ class FirmwareTest(FAFTBase):
         """
         if not self.wait_power_state(power_state, pwr_retries):
             current_state = self.get_power_state()
-            if current_state == 'S0' and self._client.wait_up():
+            if current_state == self.POWER_STATE_S0 and self._client.wait_up():
                 # DUT is unexpectedly up, so check whether it rebooted instead.
                 new_boot_id = self.get_bootid()
                 logging.debug('orig_boot_id=%s, new_boot_id=%s',
@@ -1565,7 +1586,7 @@ class FirmwareTest(FAFTBase):
                     shutdown_action.__name__)
         except ConnectionError:
             if self.faft_config.chrome_ec:
-                self.check_shutdown_power_state("G3")
+                self.check_shutdown_power_state(self.POWER_STATE_G3)
             logging.info(
                 'DUT is surely shutdown. We are going to power it on again...')
 
@@ -1718,17 +1739,26 @@ class FirmwareTest(FAFTBase):
 
         # Restore firmware.
         remote_temp_dir = self.faft_client.system.create_temp_dir()
-        self._client.send_file(os.path.join(self.resultsdir, 'bios' + suffix),
-                               os.path.join(remote_temp_dir, 'bios'))
 
-        self.faft_client.bios.write_whole(
-            os.path.join(remote_temp_dir, 'bios'))
+        bios_local = os.path.join(self.resultsdir, 'bios%s' % suffix)
+        bios_remote = os.path.join(remote_temp_dir, 'bios%s' % suffix)
+        self._client.send_file(bios_local, bios_remote)
+        self.faft_client.bios.write_whole(bios_remote)
 
         if self.faft_config.chrome_ec and restore_ec:
-            self._client.send_file(os.path.join(self.resultsdir, 'ec' + suffix),
-                os.path.join(remote_temp_dir, 'ec'))
-            self.faft_client.ec.write_whole(
-                os.path.join(remote_temp_dir, 'ec'))
+            ec_local = os.path.join(self.resultsdir, 'ec%s' % suffix)
+            ec_remote = os.path.join(remote_temp_dir, 'ec%s' % suffix)
+            self._client.send_file(ec_local, ec_remote)
+            ec_cmd = self.faft_client.ec.get_write_cmd(ec_remote)
+            try:
+                self._client.run(ec_cmd, timeout=300)
+            except error.AutoservSSHTimeout:
+                logging.warn("DUT connection died during EC restore")
+                self.faft_client.disconnect()
+
+            except error.GenericHostRunError:
+                logging.warn("DUT command failed during EC restore")
+                logging.debug("Full exception:", exc_info=True)
 
         self.switcher.mode_aware_reboot()
         logging.info('Successfully restored firmware.')
@@ -1932,6 +1962,8 @@ class FirmwareTest(FAFTBase):
 
         For expected_written, the dict should be keyed by flash type only:
         {'bios': ['ro'], 'ec': ['ro', 'rw']}
+        To expect the contents completely unchanged, give only the keys:
+        {'bios': [], 'ec': []} or {'bios': None, 'ec': None}
 
         @param before_fwids: dict of versions from before the update
         @param image_fwids: dict of versions in the update
@@ -1940,12 +1972,15 @@ class FirmwareTest(FAFTBase):
         @return: list of error lines for mismatches
 
         @type before_fwids: dict
-        @type image_fwids: dict
+        @type image_fwids: dict | None
         @type after_fwids: dict
         @type expected_written: dict
         @rtype: list
         """
         errors = []
+
+        if image_fwids is None:
+            image_fwids = {}
 
         for target in sorted(expected_written.keys()):
             # target is BIOS or EC
@@ -1970,7 +2005,7 @@ class FirmwareTest(FAFTBase):
                 # section is RO, RW, A, or B
 
                 before_fwid = before_fwids[target][section]
-                image_fwid = image_fwids[target][section]
+                image_fwid = image_fwids.get(target, {}).get(section, None)
                 actual_fwid = after_fwids[target][section]
 
                 if section in written_sections:

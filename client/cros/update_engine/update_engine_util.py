@@ -14,6 +14,7 @@ import urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros.update_engine import update_engine_event
 
 _DEFAULT_RUN = utils.run
@@ -23,16 +24,21 @@ class UpdateEngineUtil(object):
     """Utility code shared between client and server update_engine autotests"""
 
     # Update engine status lines.
-    _LAST_CHECKED_TIME = 'LAST_CHECKED_TIME'
     _PROGRESS = 'PROGRESS'
     _CURRENT_OP = 'CURRENT_OP'
-    _NEW_VERSION = 'NEW VERSION'
-    _NEW_SIZE = 'NEW_SIZE'
+
+    # Source version when we force an update.
+    _FORCED_UPDATE = 'ForcedUpdate'
+
+    # update_engine_client command
+    _UPDATE_ENGINE_CLIENT_CMD = 'update_engine_client'
 
     # Update engine statuses.
     _UPDATE_STATUS_IDLE = 'UPDATE_STATUS_IDLE'
-    _UPDATE_ENGINE_DOWNLOADING = 'UPDATE_STATUS_DOWNLOADING'
-    _UPDATE_ENGINE_FINALIZING = 'UPDATE_STATUS_FINALIZING'
+    _UPDATE_STATUS_CHECKING_FOR_UPDATE = 'UPDATE_STATUS_CHECKING_FOR_UPDATE'
+    _UPDATE_STATUS_UPDATE_AVAILABLE = 'UPDATE_STATUS_UPDATE_AVAILABLE'
+    _UPDATE_STATUS_DOWNLOADING = 'UPDATE_STATUS_DOWNLOADING'
+    _UPDATE_STATUS_FINALIZING = 'UPDATE_STATUS_FINALIZING'
     _UPDATE_STATUS_UPDATED_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
     _UPDATE_STATUS_REPORTING_ERROR_EVENT = 'UPDATE_STATUS_REPORTING_ERROR_EVENT'
 
@@ -41,6 +47,9 @@ class UpdateEngineUtil(object):
     _UPDATE_ENGINE_LOG_DIR = '/var/log/update_engine/'
     _CUSTOM_LSB_RELEASE = '/mnt/stateful_partition/etc/lsb-release'
     _UPDATE_ENGINE_PREFS_DIR = '/var/lib/update_engine/prefs/'
+
+    # Update engine prefs
+    _UPDATE_CHECK_RESPONSE_HASH = 'update-check-response-hash'
 
     # Public key used to force update_engine to verify omaha response data on
     # test images.
@@ -89,8 +98,8 @@ class UpdateEngineUtil(object):
         status = self._get_update_engine_status()
         if status is None:
             return False
-        return any(arg == status[self._CURRENT_OP] for arg in
-            [self._UPDATE_ENGINE_DOWNLOADING, self._UPDATE_ENGINE_FINALIZING])
+        return status[self._CURRENT_OP] in (
+            self._UPDATE_STATUS_DOWNLOADING, self._UPDATE_STATUS_FINALIZING)
 
 
     def _has_progress_stopped(self):
@@ -109,24 +118,21 @@ class UpdateEngineUtil(object):
             status = self._get_update_engine_status()
             if not status:
                 continue
-            if self._UPDATE_STATUS_IDLE == status[self._CURRENT_OP]:
+            if self._is_update_engine_idle(status):
                 err_str = self._get_last_error_string()
                 raise error.TestFail('Update status was idle while trying to '
                                      'get download status. Last error: %s' %
                                      err_str)
-            if self._UPDATE_STATUS_REPORTING_ERROR_EVENT == status[
-                self._CURRENT_OP]:
+            if self._is_update_engine_reporting_error(status):
                 err_str = self._get_last_error_string()
                 raise error.TestFail('Update status reported error: %s' %
                                      err_str)
             # When the update has moved to the final stages, update engine
             # displays progress as 0.0  but for our needs we will return 1.0
-            if status[self._CURRENT_OP] in [
-                self._UPDATE_STATUS_UPDATED_NEED_REBOOT,
-                self._UPDATE_ENGINE_FINALIZING]:
+            if self._is_update_finished_downloading(status):
                 return 1.0
             # If we call this right after reboot it may not be downloading yet.
-            if self._UPDATE_ENGINE_DOWNLOADING != status[self._CURRENT_OP]:
+            if status[self._CURRENT_OP] != self._UPDATE_STATUS_DOWNLOADING:
                 time.sleep(1)
                 continue
             return float(status[self._PROGRESS])
@@ -158,23 +164,22 @@ class UpdateEngineUtil(object):
         """
         statuses = [self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
         if finalizing_ok:
-            statuses.append(self._UPDATE_ENGINE_FINALIZING)
+            statuses.append(self._UPDATE_STATUS_FINALIZING)
         while True:
             status = self._get_update_engine_status()
 
             # During reboot, status will be None
             if status is not None:
-                if self._UPDATE_STATUS_REPORTING_ERROR_EVENT == status[
-                    self._CURRENT_OP]:
+                if self._is_update_engine_reporting_error(status):
                     err_str = self._get_last_error_string()
                     raise error.TestFail('Update status reported error: %s' %
                                          err_str)
-                if status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE:
+                if self._is_update_engine_idle(status):
                     err_str = self._get_last_error_string()
                     raise error.TestFail('Update status was unexpectedly '
                                          'IDLE when we were waiting for the '
                                          'update to complete: %s' % err_str)
-                if any(arg in status[self._CURRENT_OP] for arg in statuses):
+                if status[self._CURRENT_OP] in statuses:
                     break
             time.sleep(1)
 
@@ -190,8 +195,9 @@ class UpdateEngineUtil(object):
         @raise: error.AutoservError if command times out
 
         """
-        status = self._run('update_engine_client --status', timeout=timeout,
-                           ignore_status=True, ignore_timeout=ignore_timeout)
+        status = self._run([self._UPDATE_ENGINE_CLIENT_CMD, '--status'],
+                           timeout=timeout, ignore_status=True,
+                           ignore_timeout=ignore_timeout)
 
         if status is None:
             return None
@@ -211,7 +217,7 @@ class UpdateEngineUtil(object):
         """
         Checks for entries in the update_engine log.
 
-        @param entry: The line to search for.
+        @param entry: String or tuple of strings to search for.
         @param raise_error: Fails tests if log doesn't contain entry.
         @param err_str: The error string to raise if we cannot find entry.
         @param update_engine_log: Update engine log string you want to
@@ -222,7 +228,7 @@ class UpdateEngineUtil(object):
 
         """
         if isinstance(entry, str):
-            # Create a tuple of strings so we can itarete over it.
+            # Create a tuple of strings so we can iterate over it.
             entry = (entry,)
 
         if not update_engine_log:
@@ -241,31 +247,107 @@ class UpdateEngineUtil(object):
         raise error.TestFail(err_str if err_str else error_str)
 
 
-    def _is_update_finished_downloading(self):
-        """Checks if the update has moved to the final stages."""
-        s = self._get_update_engine_status()
-        return s[self._CURRENT_OP] in [self._UPDATE_ENGINE_FINALIZING,
-                                       self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
+    def _is_update_finished_downloading(self, status=None):
+        """
+        Checks if the update has moved to the final stages.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
+        return status[self._CURRENT_OP] in [
+            self._UPDATE_STATUS_FINALIZING,
+            self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
 
 
-    def _is_update_engine_idle(self):
-        """Checks if the update engine is idle."""
-        status = self._get_update_engine_status()
+    def _is_update_engine_idle(self, status=None):
+        """
+        Checks if the update engine is idle.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
         return status[self._CURRENT_OP] == self._UPDATE_STATUS_IDLE
 
 
-    def _update_continued_where_it_left_off(self, progress):
+    def _is_checking_for_update(self, status=None):
+        """
+        Checks if the update status is still checking for an update.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
+        return status[self._CURRENT_OP] in (
+            self._UPDATE_STATUS_CHECKING_FOR_UPDATE,
+            self._UPDATE_STATUS_UPDATE_AVAILABLE)
+
+
+    def _is_update_engine_reporting_error(self, status=None):
+        """
+        Checks if the update engine status reported an error.
+
+        @param status: Output of _get_update_engine_status(). If None that
+                       function will be called here first.
+
+        """
+        if status is None:
+            status = self._get_update_engine_status()
+        return (status[self._CURRENT_OP] ==
+                self._UPDATE_STATUS_REPORTING_ERROR_EVENT)
+
+
+    def _update_continued_where_it_left_off(self, progress,
+                                            reboot_interrupt=False):
         """
         Checks that the update did not restart after an interruption.
 
+        When testing a reboot interrupt we can do additional checks on the
+        logs before and after reboot to see if the update resumed.
+
         @param progress: The progress the last time we checked.
+        @param reboot_interrupt: True if we are doing a reboot interrupt test.
 
         @returns True if update continued. False if update restarted.
 
         """
         completed = self._get_update_progress()
         logging.info('New value: %f, old value: %f', completed, progress)
-        return completed >= progress
+        if completed >= progress:
+            return True
+
+        # Sometimes update_engine will continue an update but the first reported
+        # progress won't be correct. So check the logs for resume info.
+        if not reboot_interrupt or not self._check_update_engine_log_for_entry(
+            'Resuming an update that was previously started'):
+            return False
+
+        # Find the reported Completed and Resumed progress.
+        pattern = ('(.*)/(.*) operations \((.*)%\), (.*)/(.*) bytes downloaded'
+                   ' \((.*)%\), overall progress (.*)%')
+        before_pattern = 'Completed %s' % pattern
+        before_log = self._get_update_engine_log(r_index=1)
+        before_match = re.findall(before_pattern, before_log)[-1]
+        after_pattern = 'Resuming after %s' % pattern
+        after_log = self._get_update_engine_log(r_index=0)
+        after_match = re.findall(after_pattern, after_log)[0]
+        logging.debug('Progress before interrupt: %s', before_match)
+        logging.debug('Progress after interrupt: %s', after_match)
+
+        # Check the Resuming progress is greater than Completed progress.
+        for i in range(0, len(before_match)):
+            logging.debug('Comparing %d and %d', int(before_match[i]),
+                          int(after_match[i]))
+            if int(before_match[i]) > int(after_match[i]):
+              return False
+        return True
 
 
     def _get_payload_properties_file(self, payload_url, target_dir, **kwargs):
@@ -329,7 +411,7 @@ class UpdateEngineUtil(object):
 
     def _check_for_update(self, update_url, interactive=True,
                           ignore_status=False, wait_for_completion=False,
-                          **kwargs):
+                          check_kernel_after_update=True, **kwargs):
         """
         Starts a background update check.
 
@@ -338,6 +420,9 @@ class UpdateEngineUtil(object):
         @param ignore_status: True if we should ignore exceptions thrown.
         @param wait_for_completion: True for --update, False for
                 --check_for_update.
+        @param check_kernel_after_update: True to check kernel state after a
+                successful update. False to skip. wait_for_completion must also
+                be True.
         @param kwargs: The dictionary to be converted to a query string and
                 appended to the end of the update URL. e.g:
                 {'critical_update': True, 'foo': 'bar'} ->
@@ -348,24 +433,41 @@ class UpdateEngineUtil(object):
 
         """
         update_url = self._append_query_to_url(update_url, kwargs)
-        cmd = ['update_engine_client',
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD,
                '--update' if wait_for_completion else '--check_for_update',
                '--omaha_url=%s' % update_url]
 
         if not interactive:
-          cmd.append('--interactive=false')
+            cmd.append('--interactive=false')
         self._run(cmd, ignore_status=ignore_status)
+        if wait_for_completion and check_kernel_after_update:
+            kernel_utils.verify_kernel_state_after_update(
+                self._host if hasattr(self, '_host') else None)
 
 
-    def _save_extra_update_engine_logs(self, number_of_logs=2):
+    def _rollback(self, powerwash=False):
+        """
+        Perform a rollback of rootfs.
+
+        @param powerwash: True to powerwash along with the rollback.
+
+        """
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD, '--rollback', '--follow']
+        if not powerwash:
+            cmd.append('--nopowerwash')
+        logging.info('Performing rollback with cmd: %s.', cmd)
+        self._run(cmd)
+        kernel_utils.verify_kernel_state_after_update(self._host)
+
+
+    def _save_extra_update_engine_logs(self, number_of_logs):
         """
         Get the last X number of update_engine logs on the DUT.
 
         @param number_of_logs: The number of logs to save.
 
         """
-        files = self._run('ls -t -1 %s' %
-                          self._UPDATE_ENGINE_LOG_DIR).stdout.splitlines()
+        files = self._get_update_engine_logs()
 
         for i in range(number_of_logs if number_of_logs <= len(files) else
                        len(files)):
@@ -373,7 +475,21 @@ class UpdateEngineUtil(object):
             self._get_file(file, self.resultsdir)
 
 
-    def _get_update_engine_log(self, r_index=0):
+    def _get_update_engine_logs(self, timeout=3600, ignore_timeout=True):
+        """
+        Helper function to return the list of files in /var/log/update_engine/.
+
+        @param timeout: How many seconds to wait for command to complete.
+        @param ignore_timeout: True if we should not throw an error on timeout.
+
+        """
+        cmd = ['ls', '-t', '-1', self._UPDATE_ENGINE_LOG_DIR]
+        return self._run(cmd, timeout=timeout,
+                         ignore_timeout=ignore_timeout).stdout.splitlines()
+
+
+    def _get_update_engine_log(self, r_index=0, timeout=3600,
+                               ignore_timeout=True):
         """
         Returns the last r_index'th update_engine log.
 
@@ -381,10 +497,11 @@ class UpdateEngineUtil(object):
                 in order they were created. For example:
                   0 -> last one.
                   1 -> second to last one.
+        @param timeout: How many seconds to wait for command to complete.
+        @param ignore_timeout: True if we should not throw an error on timeout.
 
         """
-        files = self._run('ls -t -1 %s' %
-                          self._UPDATE_ENGINE_LOG_DIR).stdout.splitlines()
+        files = self._get_update_engine_logs()
         return self._run('cat %s' % os.path.join(self._UPDATE_ENGINE_LOG_DIR,
                                                  files[r_index])).stdout
 
@@ -432,8 +549,7 @@ class UpdateEngineUtil(object):
         @returns: a sequential list of <request> xml blocks or None if none.
 
         """
-        update_log = self._run('cat %s' %
-                               self._UPDATE_ENGINE_LOG).stdout
+        update_log = self._get_update_engine_log()
 
         # Matches <request ... /request>.  The match can be on multiple
         # lines and the search is not greedy so it only matches one block.
@@ -448,9 +564,7 @@ class UpdateEngineUtil(object):
                   (second accuracy), or None if no such timestamp exists.
 
         """
-        update_log = ''
-        with open(self._UPDATE_ENGINE_LOG) as fh:
-            update_log = fh.read()
+        update_log = self._get_update_engine_log()
 
         # Matches any single line with "MMDD/HHMMSS ... Request ... xml", e.g.
         # "[0723/133526:INFO:omaha_request_action.cc(794)] Request: <?xml".
@@ -481,7 +595,7 @@ class UpdateEngineUtil(object):
             file_location = os.path.join('/tmp', filename)
             self._run('screenshot %s' % file_location)
             self._get_file(file_location, self.resultsdir)
-        except error.AutoservRunError:
+        except (error.AutoservRunError, error.CmdError):
             logging.exception('Failed to take screenshot.')
 
 
@@ -493,7 +607,7 @@ class UpdateEngineUtil(object):
 
         """
         err_str = 'Updating payload state for error code: '
-        log = self._run('cat %s' % self._UPDATE_ENGINE_LOG).stdout.splitlines()
+        log = self._get_update_engine_log().splitlines()
         targets = [line for line in log if err_str in line]
         logging.debug('Error lines found: %s', targets)
         if not targets:
@@ -527,7 +641,7 @@ class UpdateEngineUtil(object):
             search = re.search(MATCH_STR, requests[i])
             if (not search or
                 (search.group(1) ==
-                 update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE)):
+                 str(update_engine_event.EVENT_TYPE_REBOOTED_AFTER_UPDATE))):
                 return requests[i]
 
         return None

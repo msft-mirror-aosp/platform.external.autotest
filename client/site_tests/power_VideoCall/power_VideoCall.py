@@ -12,7 +12,6 @@ from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
 
-
 class power_VideoCall(power_test.power_Test):
     """class for power_VideoCall test."""
     version = 1
@@ -60,10 +59,18 @@ class power_VideoCall(power_test.power_Test):
             logging.info('Navigating left window to %s', self.video_url)
             tab_left.Navigate(self.video_url)
             tab_left.WaitForDocumentReadyStateToBeComplete()
-            tab_left.EvaluateJavaScript('setPreset("%s")' % preset)
+
+            # We need to make sure that default camera preset was init properly
+            # before changing preset or else MediaRecorder won't get torn down
+            # properly. So capture the init time with the default preset and
+            # then switch to appropriate preset later.
             video_init_time = power_status.VideoFpsLogger.time_until_ready(
                               tab_left, num_video=5)
             self.keyvals['video_init_time'] = video_init_time
+            tab_left.EvaluateJavaScript('setPreset("%s")' % preset)
+
+            # Wait for camera to init for the new preset.
+            power_status.VideoFpsLogger.time_until_ready(tab_left, num_video=5)
 
             # Open Google Doc on right half
             logging.info('Navigating right window to %s', self.doc_url)
@@ -89,7 +96,8 @@ class power_VideoCall(power_test.power_Test):
                     logging.info(
                         'Low battery, stop test early after %.0f minutes',
                         (time.time() - self._start_time) / 60)
-                    return
+                    break
+            self.collect_keypress_latency(cr)
 
     def _get_camera_preset(self):
         """Return camera preset appropriate to hw spec.

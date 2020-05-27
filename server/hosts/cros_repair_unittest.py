@@ -18,9 +18,9 @@ from autotest_lib.server.hosts import repair_utils
 
 CROS_VERIFY_DAG = (
     (repair_utils.SshVerifier, 'ssh', ()),
-    (cros_repair.ServoTypeVerifier, 'servo_type', ()),
     (cros_repair.DevDefaultBootVerifier, 'dev_default_boot', ('ssh',)),
     (cros_repair.DevModeVerifier, 'devmode', ('ssh',)),
+    (cros_repair.EnrollmentStateVerifier, 'enrollment_state', ('ssh',)),
     (cros_repair.HWIDVerifier,    'hwid',    ('ssh',)),
     (cros_repair.ACPowerVerifier, 'power', ('ssh',)),
     (cros_repair.EXT4fsErrorVerifier, 'ext4', ('ssh',)),
@@ -45,6 +45,8 @@ CROS_REPAIR_ACTIONS = (
      'set_default_boot', ('ssh',), ('dev_default_boot',)),
     (cros_repair.CrosRebootRepair,
      'reboot', ('ssh',), ('devmode', 'writable',)),
+    (cros_repair.EnrollmentCleanupRepair,
+     'cleanup_enrollment', ('ssh',), ('enrollment_state',)),
     (cros_repair.AutoUpdateRepair,
      'au',
      ('ssh', 'writable', 'stop_start_ui', 'tpm', 'good_au', 'ext4'),
@@ -75,9 +77,9 @@ MOBLAB_REPAIR_ACTIONS = (
 
 JETSTREAM_VERIFY_DAG = (
     (repair_utils.SshVerifier, 'ssh', ()),
-    (cros_repair.ServoTypeVerifier, 'servo_type', ()),
     (cros_repair.DevDefaultBootVerifier, 'dev_default_boot', ('ssh',)),
     (cros_repair.DevModeVerifier, 'devmode', ('ssh',)),
+    (cros_repair.EnrollmentStateVerifier, 'enrollment_state', ('ssh',)),
     (cros_repair.HWIDVerifier,    'hwid',    ('ssh',)),
     (cros_repair.ACPowerVerifier, 'power', ('ssh',)),
     (cros_repair.EXT4fsErrorVerifier, 'ext4', ('ssh',)),
@@ -105,6 +107,8 @@ JETSTREAM_REPAIR_ACTIONS = (
      'set_default_boot', ('ssh',), ('dev_default_boot',)),
     (cros_repair.CrosRebootRepair,
      'reboot', ('ssh',), ('devmode', 'writable',)),
+    (cros_repair.EnrollmentCleanupRepair,
+     'cleanup_enrollment', ('ssh',), ('enrollment_state',)),
     (cros_repair.JetstreamTpmRepair,
      'jetstream_tpm_repair',
      ('ssh', 'writable', 'tpm', 'good_au', 'ext4'),

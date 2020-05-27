@@ -2,28 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
 import os
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros import constants
 from autotest_lib.server.cros.update_engine import chromiumos_test_platform
 from autotest_lib.server.cros.update_engine import update_engine_test
-
-
-def snippet(text):
-    """Returns the text with start/end snip markers around it.
-
-    @param text: The snippet text.
-
-    @return The text with start/end snip markers around it.
-    """
-    snip = '---8<---' * 10
-    start = '-- START -'
-    end = '-- END -'
-    return ('%s%s\n%s\n%s%s' %
-            (start, snip[len(start):], text, end, snip[len(end):]))
 
 
 class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
@@ -32,18 +17,14 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     Performs an end-to-end test of updating a ChromeOS device from one version
     to another. The test performs the following steps:
 
-      1. Stages the source (full) and target update payload on the central
-         devserver.
-      2. Installs a source image on the DUT (if provided) and reboots to it.
-      3. Then starts the target update by calling cros_au RPC on the devserver.
-      4. This call copies the devserver code and all payloads to the DUT.
-      5. Starts a devserver on the DUT.
-      6. Starts an update pointing to this localhost devserver.
-      7. Watches as the DUT applies the update to rootfs and stateful.
-      8. Reboots and repeats steps 5-6, ensuring that the next update check
-         shows the new image version.
-      9. Returns the hostlogs collected during each update check for
-         verification against expected update events.
+      - Stages the source (full) and target update payloads on a devserver.
+      - Installs source image on the DUT (if provided) and reboots to it.
+      - Verifies that sign in works correctly on the source image.
+      - Installs target image on the DUT and reboots.
+      - Does a final update check.
+      - Verifies that sign in works correctly on the target image.
+      - Returns the hostlogs collected during each update check for
+        verification against expected update events.
 
     This class interacts with several others:
     UpdateEngineTest: base class for comparing expected update events against
@@ -53,57 +34,21 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                             updating. It has functions for things the DUT can
                             do: get logs, reboot, start update etc
 
-    The flow is like this: this class stages the payloads on
-    the devserver and then controls the flow of the test. It tells
-    ChromiumOSTestPlatform to start the update. When that is done updating, it
-    asks UpdateEngineTest to compare the update that just completed with an
-    expected update.
-
-    Some notes on naming:
-      devserver: Refers to a machine running the Chrome OS Update Devserver.
-      autotest_devserver: An autotest wrapper to interact with a devserver.
-                          Can be used to stage artifacts to a devserver. We
-                          will also class cros_au RPC on this devserver to
-                          start the update.
-      staged_url's: In this case staged refers to the fact that these items
-                     are available to be downloaded statically from these urls
-                     e.g. 'localhost:8080/static/my_file.gz'. These are usually
-                     given after staging an artifact using a autotest_devserver
-                     though they can be re-created given enough assumptions.
     """
     version = 1
 
-    # Timeout periods, given in seconds.
-    _WAIT_FOR_INITIAL_UPDATE_CHECK_SECONDS = 12 * 60
-    # TODO(sosa): Investigate why this needs to be so long (this used to be
-    # 120 and regressed).
-    _WAIT_FOR_DOWNLOAD_STARTED_SECONDS = 4 * 60
-    # See https://crbug.com/731214 before changing WAIT_FOR_DOWNLOAD
-    _WAIT_FOR_DOWNLOAD_COMPLETED_SECONDS = 20 * 60
-    _WAIT_FOR_UPDATE_COMPLETED_SECONDS = 4 * 60
-    _WAIT_FOR_UPDATE_CHECK_AFTER_REBOOT_SECONDS = 15 * 60
+    _LOGIN_TEST = 'login_LoginSuccess'
 
-    def initialize(self):
-        """Sets up variables that will be used by test."""
-        super(autoupdate_EndToEndTest, self).initialize()
-        self._host = None
-        self._autotest_devserver = None
 
-    def _stage_payloads_onto_devserver(self, test_conf):
-        """Stages payloads that will be used by the test onto the devserver.
-
-        @param test_conf: a dictionary containing payload urls to stage.
-
-        """
-        logging.info('Staging images onto autotest devserver (%s)',
-                     self._autotest_devserver.url())
-
-        self._stage_payloads(test_conf['source_payload_uri'],
-                             test_conf['source_archive_uri'])
-
-        self._stage_payloads(test_conf['target_payload_uri'],
-                             test_conf['target_archive_uri'],
-                             test_conf['update_type'])
+    def cleanup(self):
+        """Save the logs from stateful_partition's preserved/log dir."""
+        stateful_preserved_logs = os.path.join(self.resultsdir,
+                                               'stateful_preserved_logs')
+        os.makedirs(stateful_preserved_logs)
+        self._host.get_file(constants.AUTOUPDATE_PRESERVE_LOG,
+                            stateful_preserved_logs, safe_symlinks=True,
+                            preserve_perm=False)
+        super(autoupdate_EndToEndTest, self).cleanup()
 
 
     def _get_hostlog_file(self, filename, identifier):
@@ -119,64 +64,13 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         hostlog = '%s_%s_%s' % (filename, self._host.hostname, identifier)
-        file_url = os.path.join(self.job.resultdir,
-                                dev_server.AUTO_UPDATE_LOG_DIR,
+        file_url = os.path.join(self.resultsdir,
                                 hostlog)
         if os.path.exists(file_url):
             logging.info('Hostlog file to be used for checking update '
                          'steps: %s', file_url)
             return file_url
         raise error.TestFail('Could not find %s' % filename)
-
-
-    def _dump_update_engine_log(self, test_platform):
-        """Dumps relevant AU error log."""
-        try:
-            error_log = test_platform.get_update_log(80)
-            logging.error('Dumping snippet of update_engine log:\n%s',
-                          snippet(error_log))
-        except Exception:
-            # Mute any exceptions we get printing debug logs.
-            pass
-
-
-    def _report_perf_data(self, perf_file):
-        """Reports performance and resource data.
-
-        Currently, performance attributes are expected to include 'rss_peak'
-        (peak memory usage in bytes).
-
-        @param perf_file: A file with performance metrics.
-        """
-        logging.debug('Reading perf results from %s.', perf_file)
-        try:
-            with open(perf_file, 'r') as perf_file_handle:
-                perf_data = json.load(perf_file_handle)
-        except Exception as e:
-            logging.warning('Error while reading the perf data file: %s', e)
-            return
-
-        rss_peak = perf_data.get('rss_peak')
-        if rss_peak:
-            rss_peak_kib = rss_peak / 1024
-            logging.info('Peak memory (RSS) usage on DUT: %d KiB', rss_peak_kib)
-            self.output_perf_value(description='mem_usage_peak',
-                                   value=int(rss_peak_kib),
-                                   units='KiB',
-                                   higher_is_better=False)
-        else:
-            logging.warning('No rss_peak key in JSON returned by update '
-                            'engine perf script.')
-
-        update_time = perf_data.get('update_length')
-        if update_time:
-            logging.info('Time it took to update: %s seconds', update_time)
-            self.output_perf_value(description='update_length',
-                                   value=int(update_time), units='sec',
-                                   higher_is_better=False)
-        else:
-            logging.warning('No data about how long it took to update was '
-                            'found.')
 
 
     def _verify_active_slot_changed(self, source_active_slot,
@@ -192,10 +86,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                     'corrupt.')
             elif source_release == target_release:
                 err_msg += (' Given that the source and target versions are '
-                            'identical, either it (1) rebooted into the '
-                            'old image due to a bad payload or (2) we retried '
-                            'the update after it failed once and the second '
-                            'attempt was written to the original slot.')
+                            'identical, we rebooted into the old image due to '
+                            'a bad payload.')
             else:
                 err_msg += (' This is strange since the DUT reported the '
                             'correct target version. This is probably a system '
@@ -206,17 +98,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                      target_active_slot)
 
 
-    def _verify_version(self, expected, actual):
-        """Compares actual and expected versions."""
-        if expected != actual:
-            err_msg = 'Failed to verify OS version. Expected %s, was %s' % (
-                expected, actual)
-            logging.error(err_msg)
-            raise error.TestFail(err_msg)
-
-
     def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
-                                          clobber_stateful=False):
+                                          clobber_stateful=False, tag='source'):
         """Updates the device.
 
         @param cros_device: The device to be updated.
@@ -224,101 +107,69 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         @param clobber_stateful: Boolean that determines whether the stateful
                                  of the device should be force updated. By
                                  default, set to False
+        @param tag: An identifier string added to each log filename.
 
         @raise error.TestFail if anything goes wrong with the update.
 
-        @return Path to directory where generated hostlog files and nebraska
-                logfiles are stored.
         """
         try:
-            logs_dir = cros_device.install_version_without_cros_au_rpc(
+            cros_device.install_version_without_cros_au_rpc(
                 payload_uri, clobber_stateful=clobber_stateful)
         except Exception as e:
-            logging.error('ERROR: Failed to update device.')
+            logging.exception('ERROR: Failed to update device.')
             raise error.TestFail(str(e))
-        return logs_dir
+        finally:
+            self._copy_generated_nebraska_logs(
+                cros_device.cros_updater.request_logs_dir, tag)
 
 
     def run_update_test(self, cros_device, test_conf):
-        """Runs the update test, collects perf stats, checks expected version.
+        """Runs the update test and checks it succeeded.
 
         @param cros_device: The device under test.
         @param test_conf: A dictionary containing test configuration values.
 
         """
         # Record the active root partition.
-        source_active_slot = cros_device.get_active_slot()
+        source_active_slot = self._host.get_active_boot_slot()
         logging.info('Source active slot: %s', source_active_slot)
 
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
 
-        cros_device.copy_perf_script_to_device(self.bindir)
+        self.update_device_without_cros_au_rpc(
+            cros_device, test_conf['target_payload_uri'], tag='target')
 
-        logs_dir = self.update_device_without_cros_au_rpc(
-            cros_device, test_conf['target_payload_uri'])
-        self._copy_generated_nebraska_logs(logs_dir, 'target')
+        # Compare hostlog events from the update to the expected ones.
+        rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
+                                        'target')
+        reboot = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
+                                        'target')
 
-        file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
-                                          'target')
+        self.verify_update_events(source_release, rootfs)
+        self.verify_update_events(source_release, reboot, target_release)
 
-        try:
-            # Call into base class to compare expected events against hostlog.
-            self.verify_update_events(source_release, file_url)
-        except update_engine_test.UpdateEngineEventMissing:
-            self._dump_update_engine_log(cros_device)
-            raise
-
-        # Collect perf stats about this update run.
-        perf_file = cros_device.get_perf_stats_for_update(
-            self.job.resultdir)
-        if perf_file is not None:
-            self._report_perf_data(perf_file)
-
-        # Device is updated. Check that we are running the expected version.
-        if cros_device.oobe_triggers_update():
-            # If DUT automatically checks for update during OOBE (e.g
-            # rialto), this update check fires before the test can get the
-            # post-reboot update check. So we just check the version from
-            # lsb-release.
-            logging.info('Skipping post reboot update check.')
-            self._verify_version(target_release,
-                                 cros_device.get_cros_version())
-        else:
-            # Verify we have a hostlog for the post-reboot update check.
-            file_url = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
-                                              'target')
-
-            try:
-                # Compare expected events against hostlog.
-                self.verify_update_events(source_release, file_url,
-                                          target_release)
-            except update_engine_test.UpdateEngineEventMissing:
-                self._dump_update_engine_log(cros_device)
-                raise
-
-
+        target_active_slot = self._host.get_active_boot_slot()
         self._verify_active_slot_changed(source_active_slot,
-                                         cros_device.get_active_slot(),
+                                         target_active_slot,
                                          source_release, target_release)
 
         logging.info('Update successful, test completed')
 
 
-    def run_once(self, host, test_conf):
+    def run_once(self, test_conf):
         """Performs a complete auto update test.
 
-        @param host: a host object representing the DUT.
         @param test_conf: a dictionary containing test configuration values.
 
-        @raise error.TestError if anything went wrong with setting up the test;
-               error.TestFail if any part of the test has failed.
         """
-        self._host = host
         logging.debug('The test configuration supplied: %s', test_conf)
+        self._autotest_devserver = self._get_devserver_for_test(test_conf)
+        self._stage_payloads(test_conf['source_payload_uri'],
+                             test_conf['source_archive_uri'])
 
-        self._autotest_devserver = self._get_least_loaded_devserver(test_conf)
-        self._stage_payloads_onto_devserver(test_conf)
+        self._stage_payloads(test_conf['target_payload_uri'],
+                             test_conf['target_archive_uri'])
 
         # Get an object representing the CrOS DUT.
         cros_device = chromiumos_test_platform.ChromiumOSTestPlatform(
@@ -327,13 +178,12 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         # Install source image
         source_payload_uri = test_conf['source_payload_uri']
         if source_payload_uri is not None:
-            logs_dir = self.update_device_without_cros_au_rpc(
+            self.update_device_without_cros_au_rpc(
                 cros_device, source_payload_uri, clobber_stateful=True)
-            self._copy_generated_nebraska_logs(logs_dir, 'source')
-            cros_device.check_login_after_source_update()
-
+            self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                                   tag='source')
         # Start the update to the target image.
         self.run_update_test(cros_device, test_conf)
 
         # Check we can login after the update.
-        cros_device.check_login_after_target_update()
+        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

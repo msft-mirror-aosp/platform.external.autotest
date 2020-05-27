@@ -611,6 +611,15 @@ class Servo(object):
         self.set_nocheck('ctrl_d', press_secs)
 
 
+    def ctrl_s(self, press_secs='tab'):
+        """Simulate Ctrl-s simultaneous button presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'
+        """
+        self.set_nocheck('ctrl_s', press_secs)
+
+
     def ctrl_u(self, press_secs='tab'):
         """Simulate Ctrl-u simultaneous button presses.
 

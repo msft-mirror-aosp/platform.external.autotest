@@ -174,7 +174,8 @@ class WiFiTestContextManager(object):
         router = self.router
         if configure_pcap:
             router = self.pcap_host
-        ap_config.security_config.install_router_credentials(router.host)
+        ap_config.security_config.install_router_credentials(router.host,
+                                                             router.logdir)
         if is_ibss:
             if multi_interface:
                 raise error.TestFail('IBSS mode does not support multiple '

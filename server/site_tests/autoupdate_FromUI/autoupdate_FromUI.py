@@ -4,6 +4,7 @@
 
 import logging
 
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -41,6 +42,7 @@ class autoupdate_FromUI(update_engine_test.UpdateEngineTest):
             logging.info('We are running from a workstation. Putting URL on a'
                          ' public location: %s', image_url)
 
+        active, inactive = kernel_utils.get_kernel_state(self._host)
         # Login and click 'Check for update' in the Settings app.
         self._run_client_test_and_check_result(self._UI_TEST,
                                                image_url=image_url)
@@ -48,7 +50,9 @@ class autoupdate_FromUI(update_engine_test.UpdateEngineTest):
         self._host.reboot()
 
         # Check that the update completed successfully
-        before_reboot_file = self._get_update_engine_log(1)
-        success = 'Update successfully applied, waiting to reboot.'
-        self._check_update_engine_log_for_entry(
-            success, raise_error=True, update_engine_log=before_reboot_file)
+        rootfs_hostlog, _ = self._create_hostlog_files()
+        self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
+        kernel_utils.verify_boot_expectations(
+            inactive,
+            'The active image slot did not change after the update.',
+            self._host)

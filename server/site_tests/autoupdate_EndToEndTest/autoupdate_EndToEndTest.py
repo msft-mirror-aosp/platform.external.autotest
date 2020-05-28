@@ -6,6 +6,7 @@ import logging
 import os
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server.cros.update_engine import chromiumos_test_platform
 from autotest_lib.server.cros.update_engine import update_engine_test
@@ -73,31 +74,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         raise error.TestFail('Could not find %s' % filename)
 
 
-    def _verify_active_slot_changed(self, source_active_slot,
-                                    target_active_slot, source_release,
-                                    target_release):
-        """Make sure we're using a different slot after the update."""
-        if target_active_slot == source_active_slot:
-            err_msg = 'The active image slot did not change after the update.'
-            if source_release is None:
-                err_msg += (
-                    ' The DUT likely rebooted into the old image, which '
-                    'probably means that the payload we applied was '
-                    'corrupt.')
-            elif source_release == target_release:
-                err_msg += (' Given that the source and target versions are '
-                            'identical, we rebooted into the old image due to '
-                            'a bad payload.')
-            else:
-                err_msg += (' This is strange since the DUT reported the '
-                            'correct target version. This is probably a system '
-                            'bug; check the DUT system log.')
-            raise error.TestFail(err_msg)
-
-        logging.info('Target active slot changed as expected: %s',
-                     target_active_slot)
-
-
     def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
                                           clobber_stateful=False, tag='source'):
         """Updates the device.
@@ -131,8 +107,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         # Record the active root partition.
-        source_active_slot = self._host.get_active_boot_slot()
-        logging.info('Source active slot: %s', source_active_slot)
+        active, inactive = kernel_utils.get_kernel_state(self._host)
+        logging.info('Source active slot: %s', active)
 
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
@@ -148,12 +124,10 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         self.verify_update_events(source_release, rootfs)
         self.verify_update_events(source_release, reboot, target_release)
-
-        target_active_slot = self._host.get_active_boot_slot()
-        self._verify_active_slot_changed(source_active_slot,
-                                         target_active_slot,
-                                         source_release, target_release)
-
+        kernel_utils.verify_boot_expectations(
+            inactive,
+            'The active image slot did not change after the update.',
+            self._host)
         logging.info('Update successful, test completed')
 
 

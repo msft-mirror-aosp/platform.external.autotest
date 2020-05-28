@@ -611,6 +611,15 @@ class Servo(object):
         self.set_nocheck('ctrl_d', press_secs)
 
 
+    def ctrl_s(self, press_secs='tab'):
+        """Simulate Ctrl-s simultaneous button presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'
+        """
+        self.set_nocheck('ctrl_s', press_secs)
+
+
     def ctrl_u(self, press_secs='tab'):
         """Simulate Ctrl-u simultaneous button presses.
 
@@ -1373,7 +1382,7 @@ class Servo(object):
         self.set('image_usbkey_direction', mux_direction)
         # As servod makes no guarantees when switching to the dut side,
         # add a detection delay here when facing the dut.
-        if mux_direction == 'dut':
+        if mux_direction == 'dut_sees_usbkey':
             time.sleep(self.USB_DETECTION_DELAY)
 
     def get_usbkey_state(self):

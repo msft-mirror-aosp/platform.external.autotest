@@ -812,8 +812,8 @@ class ChromiumOSUpdater(object):
         autoreboot_cmd = ('FILE="%s" ; [ -f "$FILE" ] || '
                           '( touch "$FILE" ; start autoreboot )')
         self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
-        kernel_utils.verify_boot_expectations(self.host,
-            expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE)
+        kernel_utils.verify_boot_expectations(
+            expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE, self.host)
 
         logging.debug('Cleaning up old autotest directories.')
         try:

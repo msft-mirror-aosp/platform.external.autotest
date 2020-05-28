@@ -30,17 +30,22 @@ class VerifyDutStorage(base._BaseDUTVerifier):
                 device can work by not stable and can cause the
                 flakiness on the tests. (supported by all types)
     """
-    def _verify(self):
+    def __init__(self, dut_host):
+        super(VerifyDutStorage, self).__init__(dut_host)
+        self._state = None
+
+    def _verify(self, set_label=True):
         try:
             validator = storage.StorageStateValidator(self.get_host())
             storage_type = validator.get_type()
             logging.debug('Detected storage type: %s', storage_type)
             storage_state = validator.get_state()
             logging.debug('Detected storage state: %s', storage_state)
-            state  = self.convert_state(storage_state)
-            if state:
+            state = self.convert_state(storage_state)
+            if state and set_label:
                 self._set_host_info_state(constants.DUT_STORAGE_STATE_PREFIX,
                                           state)
+            self._state = state
         except Exception as e:
             raise base.AuditError('Exception during getting state of'
                                   ' storage %s' % str(e))
@@ -54,6 +59,9 @@ class VerifyDutStorage(base._BaseDUTVerifier):
         if state == storage.STORAGE_STATE_CRITICAL:
             return constants.HW_STATE_NEED_REPLACEMENT
         return None
+
+    def get_state(self):
+        return self._state
 
 
 class VerifyServoUsb(base._BaseServoVerifier):

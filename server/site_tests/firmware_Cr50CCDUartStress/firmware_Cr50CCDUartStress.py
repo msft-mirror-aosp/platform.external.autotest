@@ -36,6 +36,10 @@ class firmware_Cr50CCDUartStress(Cr50Test):
         super(firmware_Cr50CCDUartStress,
               self).initialize(host, cmdline_args, full_args)
 
+        # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
+        if not self.check_ec_capability():
+            raise error.TestNAError('Nothing needs to be tested on this device')
+
         # Check EC chargen is available.
         if not self.ec.has_command(CHARGEN_CMD):
             raise error.TestNAError('chargen command is not available in EC.')

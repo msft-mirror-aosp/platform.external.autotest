@@ -188,6 +188,9 @@ class FirmwareTest(FAFTBase):
         if not self.faft_client.system.dev_tpm_present():
             raise error.TestError('/dev/tpm0 does not exist on the client')
 
+        # Initialize servo role to src
+        self.servo.set_servo_v4_role('src')
+
         # Create the BaseEC object. None if not available.
         self.base_ec = chrome_base_ec.create_base_ec(self.servo)
 

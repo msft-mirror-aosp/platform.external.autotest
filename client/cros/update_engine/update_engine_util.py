@@ -27,6 +27,9 @@ class UpdateEngineUtil(object):
     _PROGRESS = 'PROGRESS'
     _CURRENT_OP = 'CURRENT_OP'
 
+    # Source version when we force an update.
+    _FORCED_UPDATE = 'ForcedUpdate'
+
     # update_engine_client command
     _UPDATE_ENGINE_CLIENT_CMD = 'update_engine_client'
 
@@ -214,7 +217,7 @@ class UpdateEngineUtil(object):
         """
         Checks for entries in the update_engine log.
 
-        @param entry: The line to search for.
+        @param entry: String or tuple of strings to search for.
         @param raise_error: Fails tests if log doesn't contain entry.
         @param err_str: The error string to raise if we cannot find entry.
         @param update_engine_log: Update engine log string you want to
@@ -225,7 +228,7 @@ class UpdateEngineUtil(object):
 
         """
         if isinstance(entry, str):
-            # Create a tuple of strings so we can itarete over it.
+            # Create a tuple of strings so we can iterate over it.
             entry = (entry,)
 
         if not update_engine_log:
@@ -408,7 +411,7 @@ class UpdateEngineUtil(object):
 
     def _check_for_update(self, update_url, interactive=True,
                           ignore_status=False, wait_for_completion=False,
-                          **kwargs):
+                          check_kernel_after_update=True, **kwargs):
         """
         Starts a background update check.
 
@@ -417,6 +420,9 @@ class UpdateEngineUtil(object):
         @param ignore_status: True if we should ignore exceptions thrown.
         @param wait_for_completion: True for --update, False for
                 --check_for_update.
+        @param check_kernel_after_update: True to check kernel state after a
+                successful update. False to skip. wait_for_completion must also
+                be True.
         @param kwargs: The dictionary to be converted to a query string and
                 appended to the end of the update URL. e.g:
                 {'critical_update': True, 'foo': 'bar'} ->
@@ -434,6 +440,9 @@ class UpdateEngineUtil(object):
         if not interactive:
             cmd.append('--interactive=false')
         self._run(cmd, ignore_status=ignore_status)
+        if wait_for_completion and check_kernel_after_update:
+            kernel_utils.verify_kernel_state_after_update(
+                self._host if hasattr(self, '_host') else None)
 
 
     def _rollback(self, powerwash=False):

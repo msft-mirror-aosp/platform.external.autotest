@@ -486,8 +486,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         The peer device name is required to monitor the event reception on the
         DUT. However, as the peer device itself already registered with the
         kernel as an udev input device. The AVRCP profile will register as an
-        separate input device with the Bluetooth device as its name.
-        Temporarily substitute the device name with its Bluetooth address.
+        separate input device with the name pattern: name + (AVRCP), e.g.
+        RASPI_AUDIO (AVRCP). Using 'AVRCP' as device name to help search for
+        the device.
 
         @param device: the Bluetooth peer device
 
@@ -496,6 +497,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         """
         device.SendMediaPlayerCommand('play')
+
+        name = device.name
+        device.name = 'AVRCP'
 
         result_pause = self.test_avrcp_event(device,
             device.SendMediaPlayerCommand, 'pause')
@@ -508,6 +512,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         result_previous = self.test_avrcp_event(device,
             device.SendMediaPlayerCommand, 'previous')
 
+        device.name = name
         self.results = {'pause': result_pause, 'play': result_play,
                         'stop': result_stop, 'next': result_next,
                         'previous': result_previous}

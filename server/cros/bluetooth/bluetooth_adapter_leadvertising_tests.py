@@ -336,6 +336,9 @@ class bluetooth_AdapterLEAdvertising(
         @param peer: handle to peer used in test
         """
 
+        self.kernel_version = self.get_kernel_version(self.host)
+        self.check_kernel_version()
+
         self.bluetooth_le_facade = self.bluetooth_facade
 
         # Register some advertisements

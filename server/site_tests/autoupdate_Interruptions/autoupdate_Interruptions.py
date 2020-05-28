@@ -55,8 +55,10 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
 
         if interrupt in ['reboot', 'suspend']:
             if self._is_update_finished_downloading():
-                raise error.TestFail('Update finished before %s '
-                                     'interrupt started.' % interrupt)
+                raise error.TestFail(
+                    'Update finished before %s interrupt started. Interrupt '
+                    'was supposed to be at %f' % (interrupt, progress))
+            self._wait_for_progress(progress)
             completed = self._get_update_progress()
             if interrupt is 'reboot':
                 self._host.reboot()
@@ -68,7 +70,9 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
                 self._suspend_then_resume()
 
             if self._is_update_engine_idle():
-                raise error.TestFail('The update was IDLE after interrupt.')
+                raise error.TestFail(
+                    'The update was IDLE after interrupt. Last error: %s' %
+                    self._get_last_error_string())
             if not self._update_continued_where_it_left_off(
                 completed, reboot_interrupt=interrupt is 'reboot'):
                 raise error.TestFail('The update did not continue where it '

@@ -215,6 +215,7 @@ suite:sanity
 suite:sb65-presubmit
 suite:security
 suite:security_weekly
+suite:servo_lab
 suite:skylab_staging_test
 suite:smoke
 suite:something_else

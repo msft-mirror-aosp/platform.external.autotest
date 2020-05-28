@@ -22,10 +22,7 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
 
     """
     version = 2
-    CONNECT_TIMEOUT_SEC = 30
     RECORDING_DURATION = 6
-    SUSPEND_SEC = 15
-    WAIT_TO_REBIND_SEC = 15
     WEB_PLAYBACK_SEC = 15
 
     def cleanup(self):
@@ -54,12 +51,7 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
             browser_facade = self.factory.create_browser_facade()
             tab_descriptor = browser_facade.new_tab(file_url)
             time.sleep(self.WEB_PLAYBACK_SEC)
-        logging.info('Suspending...')
-        boot_id = self.host.get_boot_id()
-        self.host.suspend(suspend_time=self.SUSPEND_SEC)
-        self.host.test_wait_for_resume(boot_id, self.CONNECT_TIMEOUT_SEC)
-        logging.info('Resumed and back online.')
-        time.sleep(self.WAIT_TO_REBIND_SEC)
+        audio_test_utils.suspend_resume_and_verify(self.host, self.factory)
 
         # Stop audio playback by closing the browser tab.
         if while_playback:

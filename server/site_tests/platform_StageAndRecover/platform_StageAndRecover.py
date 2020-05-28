@@ -13,7 +13,7 @@ class platform_StageAndRecover(test.test):
     version = 1
 
     _INSTALL_DELAY_TIMEOUT = 540
-    _TEST_IMAGE_BOOT_DELAY = 120
+    _TEST_IMAGE_BOOT_DELAY = 180
     _USB_PARTITION = '/dev/sda1'
     _MOUNT_PATH = '/media/removable'
     _VERIFY_STR = 'ChromeosChrootPostinst complete'

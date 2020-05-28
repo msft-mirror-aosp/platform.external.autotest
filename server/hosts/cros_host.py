@@ -2342,11 +2342,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return removable == 1
 
 
-    def get_active_boot_slot(self):
-        """Returns the active boot slot."""
-        return self.run(('rootdev', '-s')).stdout.strip()
-
-
     def read_from_meminfo(self, key):
         """Return the memory info from /proc/meminfo
 

@@ -72,5 +72,9 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
                 raise error.TestNAError('cannot change active_v4_device: %s' %
                                         str(e))
 
+        # If it is ITE EC, then ccd reset factory.
+        if self.servo.get('ec_chip') == 'it83xx':
+            self.cr50.set_cap('I2C', 'Always')
+
         host.firmware_install(build=value, rw_only=rw_only,
                               dest=self.resultsdir, verify_version=True)

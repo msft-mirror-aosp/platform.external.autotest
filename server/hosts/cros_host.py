@@ -816,17 +816,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if not local_tarball:
             logging.info('Will install firmware from build %s.', build)
 
-            ds = dev_server.ImageServer.resolve(build, self.hostname)
-            ds.stage_artifacts(build, ['firmware'])
+            try:
+                ds = dev_server.ImageServer.resolve(build, self.hostname)
+                ds.stage_artifacts(build, ['firmware'])
 
-            if not dest:
-                tmpd = autotemp.tempdir(unique_id='fwimage')
-                dest = tmpd.name
+                if not dest:
+                    tmpd = autotemp.tempdir(unique_id='fwimage')
+                    dest = tmpd.name
 
-            # Download firmware image
-            fwurl = self._FW_IMAGE_URL_PATTERN % (ds.url(), build)
-            local_tarball = os.path.join(dest, os.path.basename(fwurl))
-            ds.download_file(fwurl, local_tarball)
+                # Download firmware image
+                fwurl = self._FW_IMAGE_URL_PATTERN % (ds.url(), build)
+                local_tarball = os.path.join(dest, os.path.basename(fwurl))
+                ds.download_file(fwurl, local_tarball)
+            except Exception as e:
+                raise error.TestError('Failed to download firmware package: %s'
+                                      % str(e))
 
         # Extract EC image from tarball
         logging.info('Extracting EC image.')

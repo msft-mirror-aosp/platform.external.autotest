@@ -384,23 +384,8 @@ class servo_LabstationVerification(test.test):
     def run_once(self, local=False):
         """Run through the test sequence.
 
-        This test currently runs through:
-        -// ServoLabControlVerification where |host| is treated as a DUT.
-        Subsequently, all tests use |host| as a servo host to a generated
-        DUT host that's hanging on the servo device.
-        - servo_LogGrab
-        - platform_ServoPowerStateController without usb
-        - servo_USBMuxVerification
-        - platform_InstallTestImage
-        - platform_ServoPowerStateController with usb as a test image should
-          be on the stick now
-
         @param local: whether a test image is already on the usb stick.
         """
-        success = True
-        success &= self.runsubtest('servo_LabControlVerification',
-                                   host=self.labstation_host,
-                                   disable_sysinfo=True)
         # Servod came up successfully - build a ServoHost and CrosHost for
         # later testing to verfiy servo functionality. Since we only need
         # one CrosHost so we just pick the first one in the dut list.
@@ -430,33 +415,9 @@ class servo_LabstationVerification(test.test):
         # propagate DUT's stable_version to the test.
         self._set_dut_stable_version(dut_host)
 
-        success &= self.runsubtest('servo_LogGrab',
-                                   host=dut_host, disable_sysinfo=True)
-        success &= self.runsubtest('platform_ServoPowerStateController',
-                                   host=dut_host, usb_available=False,
-                                   subdir_tag='no_usb', disable_sysinfo=True)
-        success &= self.runsubtest('servo_USBMuxVerification', host=dut_host,
-                                   disable_sysinfo=True)
-        # This test needs to run before the power state controller test that
-        # uses the USB stick as this test downloads the image onto the stick.
-        try:
-            # Passing |local| here indicates whether the test should stage and
-            # download the test image itself (through a dev server) or whether
-            # a test image is already on the usb stick.
-            success &= self.runsubtest('platform_InstallTestImage',
-                                       host=dut_host, local=local,
-                                       disable_sysinfo=True)
-        except error.TestBaseException as e:
-            # Something went wrong with platform_InstallTestImage.
-            # Remove this catch once crbug.com/953113 is fixed.
-            raise error.TestNAError('Issue running platform_InstallTestImage: '
-                                    '%s', str(e))
-        success &= self.runsubtest('platform_ServoPowerStateController',
-                                   host=dut_host, usb_available=True,
-                                   subdir_tag='usb', disable_sysinfo=True)
-        if not success:
-            raise error.TestFail('At least one verification test failed. '
-                                 'Check the logs.')
+        if not self.job.run_test('servo_Verification', host=dut_host,
+                                 local=local, subdir_tag=servo_port):
+            raise error.TestFail('At least one test failed.')
 
     def cleanup(self):
         """Clean up by stopping the servod instance again."""

@@ -20,6 +20,7 @@ from autotest_lib.server.hosts.cros_label import ChameleonConnectionLabel
 from autotest_lib.server.hosts.cros_label import ChameleonLabel
 from autotest_lib.server.hosts.cros_label import ChameleonPeripheralsLabel
 from autotest_lib.server.hosts.cros_label import ServoTypeLabel
+from autotest_lib.server.hosts.cros_label import DutStorageLabel
 from autotest_lib.server.hosts import host_info
 
 # pylint: disable=missing-docstring
@@ -139,6 +140,9 @@ class MockHost(object):
     def run(self, command, **kwargs):
         """Finds the matching result by command value"""
         return self.mock_cmds[command]
+
+    def is_up(self, **args):
+        return True
 
 
 class MockHostWithoutAFE(MockHost):
@@ -326,6 +330,32 @@ class ServoTypeLabelTests(unittest.TestCase):
         self.assertEqual(servo.get(host), ['servo_type:servo_v3'])
         self.assertEqual(servo.generate_labels(host), ['servo_v3'])
         host.servo.get_servo_version.assert_called()
+
+
+class DutStorageLabelTests(unittest.TestCase):
+    """Unit tests for DutStorageLabel"""
+    def test_update_for_task(self):
+        self.assertTrue(DutStorageLabel().update_for_task(''))
+        self.assertFalse(DutStorageLabel().update_for_task('repair'))
+        self.assertTrue(DutStorageLabel().update_for_task('deploy'))
+
+    @mock.patch('autotest_lib.server.cros.storage.'
+                'storage_validate.StorageStateValidator')
+    def test_return_state_labels_when_has_servo(self, validator):
+        storage_validator = mock.Mock()
+        storage_validator.get_type.return_value = 'some_servo'
+        storage_validator.get_state.return_value = 'warming'
+        validator.return_value = storage_validator
+        host = MockHost([])
+        host.servo = mock.Mock()
+        label = DutStorageLabel()
+        self.assertEqual(label.get(host), ['storage_state:ACCEPTABLE'])
+
+    def test_no_labels_when_no_servo(self):
+        host = MockHost([])
+        host.servo = None
+        label = DutStorageLabel()
+        self.assertEqual(label.get(host), [])
 
 
 if __name__ == '__main__':

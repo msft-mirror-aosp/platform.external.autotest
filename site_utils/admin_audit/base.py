@@ -65,7 +65,7 @@ class _BaseDUTVerifier(_BaseVerifier):
         """Return CrosHost"""
         return self._dut_host
 
-    def verify(self):
+    def verify(self, **args):
         """Vallidate the host reachable by SSH and run verifier"""
         if not self._dut_host:
             raise AuditError('host is not present')
@@ -73,7 +73,7 @@ class _BaseDUTVerifier(_BaseVerifier):
             # for failed DUTs will add logic to try to load them from USB
             # need more analysis to confirm it
             raise AuditError('host is not ssh-able')
-        self._verify()
+        self._verify(**args)
 
 
 class _BaseServoVerifier(_BaseVerifier):

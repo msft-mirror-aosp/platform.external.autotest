@@ -369,7 +369,9 @@ class EnrollmentStateVerifier(hosts.Verifier):
     def verify(self, host):
         # pylint: disable=missing-docstring
         if self._get_enrollment_state(host):
-            raise hosts.AutoservVerifyError('The device is enrolled.')
+            raise hosts.AutoservNonCriticalVerifyError('The device is enrolled,'
+                                                       ' it may interfere with'
+                                                       ' some tests.')
 
     def _get_enrollment_state(self, host):
         logging.debug('checking enrollment state from VPD cache...')

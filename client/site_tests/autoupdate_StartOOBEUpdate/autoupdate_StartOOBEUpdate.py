@@ -144,17 +144,15 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                     # after we reboot it will no longer be running.
                     self._clear_custom_lsb_release()
 
-                    # We need to return from the client test before OOBE reboots
-                    # or the server side test will hang. But we cannot return
-                    # right away when the OOBE update starts because all of the
-                    # code from using a cellular connection is in client side
-                    # and we will switch back to ethernet. So we need to wait
-                    # for the update to get as close to the end as possible so
-                    # that we are done downloading the payload via cellular and
-                    # don't need to ping omaha again. When the DUT reboots it
-                    # will send a final update ping to production omaha and then
-                    # move to the sign in screen.
-                    self._wait_for_update_to_complete(finalizing_ok=True)
+                    # Need to return from this client test before OOBE reboots
+                    # or the server test will hang. Cannot return immediately
+                    # when the OOBE update starts because all code for cellular
+                    # connections is client side and the test will switch to
+                    # ethernet. So wait for FINALIZING so payload is downloaded
+                    # via cellular and won't ping omaha again. After reboot,
+                    # there is a final ping to omaha and login screen is shown.
+                    self._wait_for_update_status(
+                        self._UPDATE_STATUS_FINALIZING)
             except error.TestError as e:
                 logging.error('Failure setting up sim card.')
                 raise error.TestFail(e)

@@ -421,14 +421,13 @@ class UpdateEngineUtil(object):
 
 
     def _check_for_update(self, update_url, interactive=True,
-                          ignore_status=False, wait_for_completion=False,
+                          wait_for_completion=False,
                           check_kernel_after_update=True, **kwargs):
         """
         Starts a background update check.
 
         @param update_url: The URL to get an update from.
         @param interactive: True if we are doing an interactive update.
-        @param ignore_status: True if we should ignore exceptions thrown.
         @param wait_for_completion: True for --update, False for
                 --check_for_update.
         @param check_kernel_after_update: True to check kernel state after a
@@ -450,7 +449,7 @@ class UpdateEngineUtil(object):
 
         if not interactive:
             cmd.append('--interactive=false')
-        self._run(cmd, ignore_status=ignore_status)
+        self._run(cmd, ignore_status=False)
         if wait_for_completion and check_kernel_after_update:
             kernel_utils.verify_kernel_state_after_update(
                 self._host if hasattr(self, '_host') else None)

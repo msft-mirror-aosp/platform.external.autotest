@@ -9,6 +9,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -140,6 +141,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             progress = random.uniform(0.1, progress_limit)
             logging.info('Progress when we will interrupt: %f', progress)
 
+        active, inactive = kernel_utils.get_kernel_state(self._host)
+
         # Call client test to start the forced OOBE update.
         self._run_client_test_and_check_result(
             'autoupdate_StartOOBEUpdate', image_url=update_url,
@@ -181,6 +184,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
         self.verify_update_events(self._CUSTOM_LSB_VERSION, reboot_hostlog,
                                   self._CUSTOM_LSB_VERSION)
-
+        kernel_utils.verify_boot_expectations(
+            inactive,
+            'The active image slot did not change after the update.',
+            self._host)
         after = self._get_chromeos_version()
         logging.info('Successfully force updated from %s to %s.', before, after)

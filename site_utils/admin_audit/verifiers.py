@@ -84,27 +84,47 @@ class VerifyServoUsb(base._BaseServoVerifier):
                 some bad sectors were found on it. The device can
                 work but cause flakiness in the tests or repair process.
 
+    badblocks errors:
+    No such device or address while trying to determine device size
     """
     def _verify(self):
         servo = self.get_host().get_servo()
         usb = servo.probe_host_usb_dev()
         if not usb:
             logging.error('Usb not detected')
+            self._set_state(constants.HW_STATE_NEED_REPLACEMENT)
             return
 
-        state = constants.HW_STATE_NORMAL
+        state = None
+        try:
+            # The USB will be format during checking to the bad blocks.
+            command = 'badblocks -sw -e 1 -t 0xff %s' % usb
+            logging.info('Running command: %s', command)
+            # The response is the list of bad block on USB.
+            result = servo.system_output(command)
+            logging.info("Check result: '%s'", result)
+            if result:
+                # So has result is Bad and empty is Good.
+                state = constants.HW_STATE_NEED_REPLACEMENT
+            else:
+                state = constants.HW_STATE_NORMAL
+        except Exception as e:
+            if 'Timeout encountered:' in str(e):
+                logging.info('Timeout during running action. Ignore')
+                metrics.Counter(
+                    'chromeos/autotest/audit/servo/usb/timeout'
+                    ).increment(fields={'host': self._dut_host.hostname})
+            else:
+                # badblocks generate errors when device not reachable or
+                # cannot read system information to execute process
+                state = constants.HW_STATE_NEED_REPLACEMENT
+            logging.debug(str(e))
 
-        # The USB will be format during checking to the bad blocks.
-        command = 'badblocks -sw -e 1 -t 0xff %s' % usb
-        logging.info('Running command: %s', command)
+        self._set_state(state)
 
-        # The response is the list of bad block on USB.
-        result = servo.system_output(command, ignore_status=True)
-        logging.info("Check result: '%s'", result)
-        if result:
-            # So has result is Bad and empty is Good.
-            state = constants.HW_STATE_NEED_REPLACEMENT
-        self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)
+    def _set_state(self, state):
+        if state:
+            self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)
 
 
 class VerifyServoFw(base._BaseServoVerifier):

@@ -71,7 +71,8 @@ class firmware_FwScreenPressPower(FirmwareTest):
     def run_once(self):
         """Main test logic"""
         if self.faft_config.mode_switcher_type not in (
-                'keyboard_dev_switcher', 'tablet_detachable_switcher'):
+                'keyboard_dev_switcher', 'tablet_detachable_switcher',
+                'menu_switcher'):
             raise error.TestNAError("This test is only valid on devices with "
                                     "screens.")
         if not self.faft_config.has_powerbutton:

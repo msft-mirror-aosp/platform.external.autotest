@@ -51,7 +51,7 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
         active, inactive = kernel_utils.get_kernel_state(self._host)
         self._change_cellular_setting_in_update_engine(True)
         self._run_client_test_and_check_result('autoupdate_CannedOmahaUpdate',
-                                               image_url=update_url,
+                                               payload_url=update_url,
                                                use_cellular=True)
         self._check_for_cellular_entries_in_update_log()
         self._host.reboot()

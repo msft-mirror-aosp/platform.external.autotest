@@ -8,8 +8,14 @@ import logging
 import common
 import base
 import constants
+import servo_updater
 from autotest_lib.server.cros.storage import storage_validate as storage
+from autotest_lib.client.common_lib import utils as client_utils
 
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = client_utils.metrics_mock
 
 class VerifyDutStorage(base._BaseDUTVerifier):
     """Verify the state of the storage on the DUT
@@ -78,24 +84,84 @@ class VerifyServoUsb(base._BaseServoVerifier):
                 some bad sectors were found on it. The device can
                 work but cause flakiness in the tests or repair process.
 
+    badblocks errors:
+    No such device or address while trying to determine device size
     """
     def _verify(self):
         servo = self.get_host().get_servo()
         usb = servo.probe_host_usb_dev()
         if not usb:
             logging.error('Usb not detected')
+            self._set_state(constants.HW_STATE_NEED_REPLACEMENT)
             return
 
-        state = constants.HW_STATE_NORMAL
+        state = None
+        try:
+            # The USB will be format during checking to the bad blocks.
+            command = 'badblocks -sw -e 1 -t 0xff %s' % usb
+            logging.info('Running command: %s', command)
+            # The response is the list of bad block on USB.
+            result = servo.system_output(command)
+            logging.info("Check result: '%s'", result)
+            if result:
+                # So has result is Bad and empty is Good.
+                state = constants.HW_STATE_NEED_REPLACEMENT
+            else:
+                state = constants.HW_STATE_NORMAL
+        except Exception as e:
+            if 'Timeout encountered:' in str(e):
+                logging.info('Timeout during running action. Ignore')
+                metrics.Counter(
+                    'chromeos/autotest/audit/servo/usb/timeout'
+                    ).increment(fields={'host': self._dut_host.hostname})
+            else:
+                # badblocks generate errors when device not reachable or
+                # cannot read system information to execute process
+                state = constants.HW_STATE_NEED_REPLACEMENT
+            logging.debug(str(e))
 
-        # The USB will be format during checking to the bad blocks.
-        command = 'badblocks -sw -e 1 -t 0xff %s' % usb
-        logging.info('Running command: %s', command)
+        self._set_state(state)
 
-        # The response is the list of bad block on USB.
-        result = servo.system_output(command, ignore_status=True)
-        logging.info("Check result: '%s'", result)
-        if result:
-            # So has result is Bad and empty is Good.
-            state = constants.HW_STATE_NEED_REPLACEMENT
-        self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)
+    def _set_state(self, state):
+        if state:
+            self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)
+
+
+class VerifyServoFw(base._BaseServoVerifier):
+    """Force update Servo firmware if it not up-to-date.
+
+    This is rarely case when servo firmware was not updated by labstation
+    when servod started. This should ensure that the servo_v4 and
+    servo_micro is up-to-date.
+    """
+
+    UPDATERS = [
+        servo_updater.UpdateServoV4Fw,
+        servo_updater.UpdateServoMicroFw,
+    ]
+
+    def _verify(self):
+        host = self.get_host()
+        # create all updater
+        updaters = [updater(host) for updater in self.UPDATERS]
+        # run checker for all updaters
+        for updater in updaters:
+            supported = updater.check_needs()
+            logging.debug('The board %s is supported: %s',
+                          updater.get_board(), supported)
+        # to run updater we need stop servod
+        host.stop_servod()
+        #  run update
+        for updater in updaters:
+            try:
+                updater.update()
+            except Exception as e:
+                metrics.Counter(
+                    'chromeos/autotest/audit/servo/fw/update/error'
+                    ).increment(fields={'host': self._dut_host.hostname})
+                logging.info('Fail update firmware for %s',
+                             updater.get_board())
+                logging.debug('Fail update firmware for %s: %s',
+                              updater.get_board(), str(e))
+        # starting servod to restore previous state
+        host.start_servod()

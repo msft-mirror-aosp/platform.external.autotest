@@ -45,13 +45,12 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
         @param full_payload: Whether the payload should be full or delta.
 
         """
-        update_url = self.get_update_url_for_test(job_repo_url,
-                                                  full_payload=full_payload,
-                                                  public=True)
+        payload_url = self.get_payload_for_nebraska(
+            job_repo_url, full_payload=full_payload, public_bucket=True)
         active, inactive = kernel_utils.get_kernel_state(self._host)
         self._set_update_over_cellular_setting(True)
         self._run_client_test_and_check_result('autoupdate_CannedOmahaUpdate',
-                                               payload_url=update_url,
+                                               payload_url=payload_url,
                                                use_cellular=True)
         self._check_for_cellular_entries_in_update_log()
         self._host.reboot()

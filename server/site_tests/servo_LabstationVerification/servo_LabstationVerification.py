@@ -349,12 +349,57 @@ class servo_LabstationVerification(test.test):
             except error.AutoservRunError:
                 raise error.TestFail('Servod did not come up on labstation.')
 
-    def initialize(self, host, config=None):
+    def setup_hosts(self):
+        """Prepare all cros and servo hosts that need to run."""
+        # Servod came up successfully at this point - build a ServoHost and
+        # CrosHost for later testing to verfiy servo functionality.
+
+        for dut_info in self.dut_list:
+            dut_hostname = dut_info.get('hostname')
+            servo_port = dut_info.get('servo_port')
+            servo_serial = dut_info.get('servo_serial')
+            servo_args = {
+                servo_constants.SERVO_HOST_ATTR: self.labstation_host.hostname,
+                servo_constants.SERVO_PORT_ATTR: servo_port,
+                servo_constants.SERVO_SERIAL_ATTR: servo_serial,
+                'is_in_lab': False,
+            }
+            labstation_host, servo_state = servo_host.create_servo_host(
+                None, servo_args)
+            labstation_host.connect_servo()
+            servo_proxy = labstation_host.get_servo()
+            if not dut_hostname:
+                # TODO(coconutruben@): remove this statement once the inferring
+                # is the default.
+                logging.info('hostname not specified for DUT, through '
+                             'static config or command-line. Will attempt '
+                             'to infer through hardware address.')
+                dut_hostname = self.get_dut_on_servo_ip(labstation_host)
+            logging.info('Running the DUT side on DUT %r', dut_hostname)
+            dut_host = factory.create_host(dut_hostname)
+            dut_host.set_servo_host(labstation_host)
+
+            # Copy labstation's stable_version to dut_host for later test
+            # consume.
+            # TODO(xianuowang@): remove this logic once we figured out how to
+            # propagate DUT's stable_version to the test.
+            self._set_dut_stable_version(dut_host)
+            # Store |dut_host| in |machine_dict| so that parallel running can
+            # find the host.
+            self.machine_dict[dut_host.hostname] = dut_host
+
+    def initialize(self, host, config=None, local=False):
         """Setup servod on |host| to run subsequent tests.
 
         @param host: LabstationHost object representing the servohost.
         @param config: the args argument from test_that in a dict.
+        @param local: whether a test image is already on the usb stick.
         """
+        # Cache whether this is a local run or not.
+        self.local = local
+        # This dict houses a mapping of |dut| hostnames to initialized cros_host
+        # objects for the tests to run.
+        self.machine_dict = {}
         # Save the host.
         self.labstation_host = host
         # Make sure recovery is quick in case of failure.
@@ -370,54 +415,54 @@ class servo_LabstationVerification(test.test):
         self.cros_version = (
             self.labstation_host.host_info_store.get().cros_stable_version)
 
-        # collect user input args that used for local testing.
-        self.dut_ip = None
         if config:
             if 'dut_ip' in config:
                 # Retrieve DUT ip from args if caller specified it.
-                self.dut_ip = config['dut_ip']
+                # |dut_ip| is special in that it can be used for (quick) setup
+                # testing if the setup is not in the configuration file.
+                # This has two implications:
+                # - the user can only test one dut/servo pair
+                # - the config has to be empty.
+                # TODO(coconutruben): remove this logic for a more holistic
+                # command-line overwrite solution.
+                if len(self.dut_list) == 1 and not self.dut_list[0]['hostname']:
+                    self.dut_list[0]['hostname'] = config['dut_ip']
+                    logging.info('Setting the hostname of the only dut to %s.',
+                                 self.dut_list[0]['hostname'])
+                else:
+                    logging.info('dut_ip %s will be ignored. The target '
+                                 'labstation is to be part of static config.')
             if 'cros_version' in config:
                 # We allow user to override a cros image build.
                 self.cros_version = config['cros_version']
+        # Lastly, setup the hosts so that testing can occur in parallel.
+        self.setup_hosts()
 
+    def _run_on_machine(self, machine):
+        """Thin wrapper to run 'servo_Verification' on all machines.
 
-    def run_once(self, local=False):
-        """Run through the test sequence.
+        @param machine: hostname of the dut to run 'servo_Verification' against.
 
-        @param local: whether a test image is already on the usb stick.
+        @raises error.TestFail: 'servo_Verification' fails
+        @raises error.TestFail: |machine| unknown (not in |self.machine_dict|)
         """
-        # Servod came up successfully - build a ServoHost and CrosHost for
-        # later testing to verfiy servo functionality. Since we only need
-        # one CrosHost so we just pick the first one in the dut list.
-        dut_hostname = self.dut_list[0].get('hostname') or self.dut_ip
-        servo_port = self.dut_list[0].get('servo_port')
-        servo_serial = self.dut_list[0].get('servo_serial')
-        servo_args = {
-            servo_constants.SERVO_HOST_ATTR: self.labstation_host.hostname,
-            servo_constants.SERVO_PORT_ATTR: servo_port,
-            servo_constants.SERVO_SERIAL_ATTR: servo_serial,
-            'is_in_lab': False,
-        }
-        # Close out this host as the test will restart it as a servo host.
-        self.labstation_host.close()
-        self.labstation_host, servo_state = servo_host.create_servo_host(
-            None, servo_args)
-        self.labstation_host.connect_servo()
-        servo_proxy = self.labstation_host.get_servo()
-        if not dut_hostname:
-            dut_hostname = self.get_dut_on_servo_ip(self.labstation_host)
-        logging.info('Running the DUT side on DUT %r', dut_hostname)
-        dut_host = factory.create_host(dut_hostname)
-        dut_host.set_servo_host(self.labstation_host)
-
-        # Copy labstation's stable_version to dut_host for later test consume.
-        # TODO(xianuowang@): remove this logic once we figured out how to
-        # propagate DUT's stable_version to the test.
-        self._set_dut_stable_version(dut_host)
-
+        dut_host = self.machine_dict.get(machine, None)
+        if dut_host is None:
+            raise error.TestFail('dut machine %r not known to suite. Known '
+                                 'machines: %r', machine,
+                                 ', '.join(self.machine_dict.keys()))
+        logging.info('About to run on machine %s', machine)
         if not self.job.run_test('servo_Verification', host=dut_host,
-                                 local=local, subdir_tag=servo_port):
+                                 local=self.local):
             raise error.TestFail('At least one test failed.')
+
+    def run_once(self):
+        """Run through all hosts in |self.machine_dict|."""
+        self.job.parallel_simple(self._run_on_machine,
+                                 list(self.machine_dict.keys()))
+        # TODO(coconutruben): at this point, you can print a report what kind of
+        # servod setups failed and which succeeded. Build that out so that
+        # debugging failures is cleaner given multiple setups.
 
     def cleanup(self):
         """Clean up by stopping the servod instance again."""

@@ -35,6 +35,7 @@ from autotest_lib.server.hosts import pdtester_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.site_utils.rpm_control_system import rpm_client
+from autotest_lib.site_utils.admin_audit import constants as audit_const
 
 # In case cros_host is being ran via SSP on an older Moblab version with an
 # older chromite version.
@@ -997,6 +998,33 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             try:
                 self.run('chromeos-install --yes',timeout=install_timeout)
                 self.halt()
+            except Exception as e:
+                storage_errors = [
+                   'No space left on device',
+                   'I/O error when trying to write primary GPT',
+                   'Input/output error while writing out',
+                   'cannot read GPT header',
+                   'can not determine destination device'
+                ]
+                has_error = [msg for msg in storage_errors if(msg in str(e))]
+                if has_error:
+                    info = self.host_info_store.get()
+                    info.set_version_label(
+                        audit_const.DUT_STORAGE_STATE_PREFIX,
+                        audit_const.HW_STATE_NEED_REPLACEMENT)
+                    self.host_info_store.commit(info)
+                    logging.debug(
+                        'Fail install image from USB; Storage error; %s', e)
+                    raise error.AutoservError(
+                        'Failed to install image from USB due to a suspect '
+                        'disk failure, DUT storage state changed to '
+                        'need_replacement, please check debug log '
+                        'for details.')
+                else:
+                    logging.debug('Fail install image from USB; %s', e)
+                    raise error.AutoservError(
+                        'Failed to install image from USB due to unexpected '
+                        'error, please check debug log for details.')
             finally:
                 # We need reset the DUT no matter re-install success or not,
                 # as we don't want leave the DUT in boot from usb state.

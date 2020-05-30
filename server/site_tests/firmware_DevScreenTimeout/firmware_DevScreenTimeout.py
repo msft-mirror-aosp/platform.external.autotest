@@ -81,7 +81,8 @@ class firmware_DevScreenTimeout(FirmwareTest):
         super(firmware_DevScreenTimeout, self).initialize(host, cmdline_args)
         # NA error check point for this test
         if self.faft_config.mode_switcher_type not in (
-                'keyboard_dev_switcher', 'tablet_detachable_switcher'):
+                'keyboard_dev_switcher', 'tablet_detachable_switcher',
+                'menu_switcher'):
             raise error.TestNAError("This test is only valid on devices with "
                                     "screens.")
         # This test is run on developer mode only.

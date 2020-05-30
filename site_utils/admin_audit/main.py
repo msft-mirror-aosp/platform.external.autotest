@@ -33,13 +33,20 @@ RETURN_CODES = enum.Enum(
 
 ACTION_VERIFY_DUT_STORAGE = 'verify-dut-storage'
 ACTION_VERIFY_SERVO_USB = 'verify-servo-usb-drive'
+ACTION_VERIFY_SERVO_FW = 'verify-servo-fw'
 
 _LOG_FILE = 'audit.log'
 
 VERIFIER_MAP = {
     ACTION_VERIFY_DUT_STORAGE: verifiers.VerifyDutStorage,
-    ACTION_VERIFY_SERVO_USB: verifiers.VerifyServoUsb
+    ACTION_VERIFY_SERVO_USB: verifiers.VerifyServoUsb,
+    ACTION_VERIFY_SERVO_FW: verifiers.VerifyServoFw
 }
+
+ACTIONS_REQUIRED_SERVO = set([
+    ACTION_VERIFY_SERVO_USB,
+    ACTION_VERIFY_SERVO_FW
+])
 
 
 class DutAuditError(Exception):
@@ -84,7 +91,7 @@ def main():
 
 
 def _need_servo(actions=[]):
-    need_servo = ACTION_VERIFY_SERVO_USB in actions
+    need_servo = bool(set(actions) & ACTIONS_REQUIRED_SERVO)
     if need_servo:
         logging.debug('The servo required by the process!')
     else:
@@ -129,6 +136,7 @@ def _parse_args():
       choices=[
           ACTION_VERIFY_DUT_STORAGE,
           ACTION_VERIFY_SERVO_USB,
+          ACTION_VERIFY_SERVO_FW,
       ],
       help='DUT audit actions to execute.',
   )

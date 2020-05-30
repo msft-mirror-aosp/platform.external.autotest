@@ -8,8 +8,14 @@ import logging
 import common
 import base
 import constants
+import servo_updater
 from autotest_lib.server.cros.storage import storage_validate as storage
+from autotest_lib.client.common_lib import utils as client_utils
 
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = client_utils.metrics_mock
 
 class VerifyDutStorage(base._BaseDUTVerifier):
     """Verify the state of the storage on the DUT
@@ -99,3 +105,43 @@ class VerifyServoUsb(base._BaseServoVerifier):
             # So has result is Bad and empty is Good.
             state = constants.HW_STATE_NEED_REPLACEMENT
         self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)
+
+
+class VerifyServoFw(base._BaseServoVerifier):
+    """Force update Servo firmware if it not up-to-date.
+
+    This is rarely case when servo firmware was not updated by labstation
+    when servod started. This should ensure that the servo_v4 and
+    servo_micro is up-to-date.
+    """
+
+    UPDATERS = [
+        servo_updater.UpdateServoV4Fw,
+        servo_updater.UpdateServoMicroFw,
+    ]
+
+    def _verify(self):
+        host = self.get_host()
+        # create all updater
+        updaters = [updater(host) for updater in self.UPDATERS]
+        # run checker for all updaters
+        for updater in updaters:
+            supported = updater.check_needs()
+            logging.debug('The board %s is supported: %s',
+                          updater.get_board(), supported)
+        # to run updater we need stop servod
+        host.stop_servod()
+        #  run update
+        for updater in updaters:
+            try:
+                updater.update()
+            except Exception as e:
+                metrics.Counter(
+                    'chromeos/autotest/audit/servo/fw/update/error'
+                    ).increment(fields={'host': self._dut_host.hostname})
+                logging.info('Fail update firmware for %s',
+                             updater.get_board())
+                logging.debug('Fail update firmware for %s: %s',
+                              updater.get_board(), str(e))
+        # starting servod to restore previous state
+        host.start_servod()

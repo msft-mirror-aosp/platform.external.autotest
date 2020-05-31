@@ -40,7 +40,7 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
 
         update_url = self.get_update_url_for_test(job_repo_url,
                                                   full_payload=full_payload)
-        chromeos_version = self._get_chromeos_version()
+        chromeos_version = self._host.get_release_version()
         active, inactive = kernel_utils.get_kernel_state(self._host)
         # Choose a random downloaded progress to interrupt the update.
         progress = random.uniform(0.1, 0.6)

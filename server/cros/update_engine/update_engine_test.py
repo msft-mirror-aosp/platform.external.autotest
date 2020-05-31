@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.cros.update_engine import update_engine_event as uee
@@ -344,16 +343,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         payload_filename = payload_url.rpartition('/')[2]
-        utils.run('gsutil cp %s* %s' % (payload_url, self._CELLULAR_BUCKET))
+        utils.run(['gsutil', 'cp', '%s*' % payload_url, self._CELLULAR_BUCKET])
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
-        utils.run('gsutil acl ch -u AllUsers:R %s*' % new_gs_url)
+        utils.run(['gsutil', 'acl', 'ch', '-u', 'AllUsers:R',
+                   '%s*' % new_gs_url])
         return new_gs_url.replace('gs://', 'https://storage.googleapis.com/')
-
-
-    def _get_chromeos_version(self):
-        """Read the ChromeOS version from /etc/lsb-release."""
-        lsb = self._host.run('cat /etc/lsb-release').stdout
-        return lsbrelease_utils.get_chromeos_release_version(lsb)
 
 
     def _suspend_then_resume(self):
@@ -472,7 +466,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param host: The host to run commands on.
 
         """
-        self._create_update_engine_variables(host.run, host.get_file)
+        self._set_util_functions(host.run, host.get_file)
 
 
     def _change_cellular_setting_in_update_engine(self,

@@ -19,16 +19,17 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
 
     def cleanup(self):
-        self._host.run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
-
         # Get the last two update_engine logs: before and after reboot.
         self._save_extra_update_engine_logs(number_of_logs=2)
+
+        self._clear_custom_lsb_release()
+
         self._change_cellular_setting_in_update_engine(False)
 
         # Cancel any update still in progress.
         if not self._is_update_engine_idle():
             logging.debug('Canceling the in-progress update.')
-            self._host.run('restart update-engine')
+            self._restart_update_engine()
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
 
 
@@ -120,7 +121,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                                                   full_payload=full_payload,
                                                   public=cellular,
                                                   moblab=moblab)
-        before = self._get_chromeos_version()
+        before = self._host.get_release_version()
         payload_info = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
@@ -129,7 +130,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
                                  self._UPDATE_CHECK_RESPONSE_HASH)
         self._host.run(['rm', pref_file], ignore_status=True)
-        self._host.run(['restart', 'update-engine'], ignore_status=True)
+        self._restart_update_engine(ignore_status=True)
 
         progress = None
         if interrupt is not None:
@@ -188,5 +189,5 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             inactive,
             'The active image slot did not change after the update.',
             self._host)
-        after = self._get_chromeos_version()
+        after = self._host.get_release_version()
         logging.info('Successfully force updated from %s to %s.', before, after)

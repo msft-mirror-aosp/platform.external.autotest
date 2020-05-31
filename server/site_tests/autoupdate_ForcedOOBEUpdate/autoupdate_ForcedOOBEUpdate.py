@@ -120,7 +120,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                                                   full_payload=full_payload,
                                                   public=cellular,
                                                   moblab=moblab)
-        before = self._get_chromeos_version()
+        before = self._host.get_release_version()
         payload_info = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
@@ -188,5 +188,5 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             inactive,
             'The active image slot did not change after the update.',
             self._host)
-        after = self._get_chromeos_version()
+        after = self._host.get_release_version()
         logging.info('Successfully force updated from %s to %s.', before, after)

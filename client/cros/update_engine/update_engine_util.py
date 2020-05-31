@@ -243,8 +243,7 @@ class UpdateEngineUtil(object):
             entry = (entry,)
 
         if not update_engine_log:
-            update_engine_log = self._run(
-                'cat %s' % self._UPDATE_ENGINE_LOG).stdout
+            update_engine_log = self._get_update_engine_log()
 
         if all(msg in update_engine_log for msg in entry):
             return True
@@ -522,8 +521,8 @@ class UpdateEngineUtil(object):
 
         """
         files = self._get_update_engine_logs()
-        return self._run('cat %s' % os.path.join(self._UPDATE_ENGINE_LOG_DIR,
-                                                 files[r_index])).stdout
+        log_file = os.path.join(self._UPDATE_ENGINE_LOG_DIR, files[r_index])
+        return self._run(['cat', log_file]).stdout
 
 
     def _create_custom_lsb_release(self, update_url, build='0.0.0.0', **kwargs):
@@ -543,13 +542,13 @@ class UpdateEngineUtil(object):
         """
         update_url = self._append_query_to_url(update_url, kwargs)
 
-        self._run('mkdir %s' % os.path.dirname(self._CUSTOM_LSB_RELEASE),
+        self._run(['mkdir', os.path.dirname(self._CUSTOM_LSB_RELEASE)],
                   ignore_status=True)
-        self._run('touch %s' % self._CUSTOM_LSB_RELEASE)
-        self._run('echo "CHROMEOS_RELEASE_VERSION=%s" > %s' %
-                  (build, self._CUSTOM_LSB_RELEASE))
-        self._run('echo "CHROMEOS_AUSERVER=%s" >> %s' %
-                  (update_url, self._CUSTOM_LSB_RELEASE))
+        self._run(['touch', self._CUSTOM_LSB_RELEASE])
+        self._run(['echo', 'CHROMEOS_RELEASE_VERSION=%s' % build, '>',
+                   self._CUSTOM_LSB_RELEASE])
+        self._run(['echo', 'CHROMEOS_AUSERVER=%s' % update_url, '>>',
+                   self._CUSTOM_LSB_RELEASE])
 
 
     def _clear_custom_lsb_release(self):
@@ -559,7 +558,7 @@ class UpdateEngineUtil(object):
         Intended to clear work done by _create_custom_lsb_release().
 
         """
-        self._run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
+        self._run(['rm', self._CUSTOM_LSB_RELEASE], ignore_status=True)
 
 
     def _get_update_requests(self):
@@ -613,7 +612,7 @@ class UpdateEngineUtil(object):
         """
         try:
             file_location = os.path.join('/tmp', filename)
-            self._run('screenshot %s' % file_location)
+            self._run(['screenshot', file_location])
             self._get_file(file_location, self.resultsdir)
         except (error.AutoservRunError, error.CmdError):
             logging.exception('Failed to take screenshot.')

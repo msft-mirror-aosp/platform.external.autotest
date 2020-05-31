@@ -49,7 +49,7 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
                        os.path.join(preserved_prefs_path, 'rollback-happened')),
                       ignore_status=True)
         # Restart update-engine to pick up new prefs.
-        self._host.run('restart update-engine', ignore_status=True)
+        self._restart_update_engine(ignore_status=True)
 
 
     def run_once(self, job_repo_url=None, powerwash_before_rollback=False):

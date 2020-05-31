@@ -470,6 +470,16 @@ class UpdateEngineUtil(object):
         kernel_utils.verify_kernel_state_after_update(self._host)
 
 
+    def _restart_update_engine(self, ignore_status=False):
+        """
+        Restarts update-engine.
+
+        @param ignore_status: True to not raise exception on command failure.
+
+        """
+        self._run(['restart', 'update-engine'], ignore_status=ignore_status)
+
+
     def _save_extra_update_engine_logs(self, number_of_logs):
         """
         Get the last X number of update_engine logs on the DUT.

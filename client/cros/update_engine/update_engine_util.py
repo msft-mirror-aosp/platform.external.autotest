@@ -155,16 +155,27 @@ class UpdateEngineUtil(object):
                                      ': %d minutes.' % timeout_minutes)
 
 
-    def _wait_for_update_to_complete(self, finalizing_ok=False):
+    def _wait_for_update_to_complete(self, check_kernel_after_update=True):
         """
-        Checks if the update has completed.
+        Wait for update status to reach NEED_REBOOT.
 
-        @param finalizing_ok: FINALIZING status counts as complete.
+        @param check_kernel_after_update: True to also check kernel state after
+                                          the update.
 
         """
-        statuses = [self._UPDATE_STATUS_UPDATED_NEED_REBOOT]
-        if finalizing_ok:
-            statuses.append(self._UPDATE_STATUS_FINALIZING)
+        self._wait_for_update_status(self._UPDATE_STATUS_UPDATED_NEED_REBOOT)
+        if check_kernel_after_update:
+          kernel_utils.verify_kernel_state_after_update(
+              self._host if hasattr(self, '_host') else None)
+
+
+    def _wait_for_update_status(self, status_to_wait_for):
+        """
+        Wait for the update to reach a certain status.
+
+        @param status_to_wait_for: a string of the update status to wait for.
+
+        """
         while True:
             status = self._get_update_engine_status()
 
@@ -179,7 +190,7 @@ class UpdateEngineUtil(object):
                     raise error.TestFail('Update status was unexpectedly '
                                          'IDLE when we were waiting for the '
                                          'update to complete: %s' % err_str)
-                if status[self._CURRENT_OP] in statuses:
+                if status[self._CURRENT_OP] == status_to_wait_for:
                     break
             time.sleep(1)
 
@@ -410,14 +421,13 @@ class UpdateEngineUtil(object):
 
 
     def _check_for_update(self, update_url, interactive=True,
-                          ignore_status=False, wait_for_completion=False,
+                          wait_for_completion=False,
                           check_kernel_after_update=True, **kwargs):
         """
         Starts a background update check.
 
         @param update_url: The URL to get an update from.
         @param interactive: True if we are doing an interactive update.
-        @param ignore_status: True if we should ignore exceptions thrown.
         @param wait_for_completion: True for --update, False for
                 --check_for_update.
         @param check_kernel_after_update: True to check kernel state after a
@@ -439,7 +449,7 @@ class UpdateEngineUtil(object):
 
         if not interactive:
             cmd.append('--interactive=false')
-        self._run(cmd, ignore_status=ignore_status)
+        self._run(cmd, ignore_status=False)
         if wait_for_completion and check_kernel_after_update:
             kernel_utils.verify_kernel_state_after_update(
                 self._host if hasattr(self, '_host') else None)

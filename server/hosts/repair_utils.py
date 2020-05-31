@@ -111,10 +111,6 @@ class RPMCycleRepair(hosts.RepairAction):
                     '%s has no RPM connection.' % host.hostname,
                     'no_working_rpm')
         host.power_cycle()
-        if not host.wait_up(timeout=host.BOOT_TIMEOUT):
-            raise hosts.AutoservRepairError(
-                    '%s is still offline after powercycling' %
-                    host.hostname, 'failed_to_boot_after_rpm_power_cycle')
 
 
     @property

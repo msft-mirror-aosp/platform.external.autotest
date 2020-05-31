@@ -127,13 +127,8 @@ class servo_Verification(test.test):
         if not local:
             # Pre-download the usb image onto the stick so that tests that
             # need it can use it.
-            try:
-                image_name = host.get_cros_repair_image_name()
-            except error.AutoservError as e:
-                raise error.TestFail('Failed to find image in host info. '
-                                     'Fix host info or rerun as .local. %s',
-                                     str(e))
-            host.servo.image_to_servo_usb(image_name)
+            _, image_url = host.stage_image_for_servo()
+            host.servo.image_to_servo_usb(image_url)
 
 
     def run_once(self, host):

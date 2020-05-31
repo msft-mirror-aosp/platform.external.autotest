@@ -28,7 +28,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         # Cancel any update still in progress.
         if not self._is_update_engine_idle():
             logging.debug('Canceling the in-progress update.')
-            self._host.run('restart update-engine')
+            self._restart_update_engine()
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
 
 
@@ -129,7 +129,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
                                  self._UPDATE_CHECK_RESPONSE_HASH)
         self._host.run(['rm', pref_file], ignore_status=True)
-        self._host.run(['restart', 'update-engine'], ignore_status=True)
+        self._restart_update_engine(ignore_status=True)
 
         progress = None
         if interrupt is not None:

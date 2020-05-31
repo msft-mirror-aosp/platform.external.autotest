@@ -15,7 +15,7 @@ class autoupdate_NonBlockingOOBEUpdate(update_engine_test.UpdateEngineTest):
 
     def cleanup(self):
         """Remove the custom lsb-release used by the test."""
-        self._host.run('rm %s' % self._CUSTOM_LSB_RELEASE, ignore_status=True)
+        self._clear_custom_lsb_release()
         super(autoupdate_NonBlockingOOBEUpdate, self).cleanup()
 
 

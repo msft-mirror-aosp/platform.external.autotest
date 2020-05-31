@@ -466,7 +466,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param host: The host to run commands on.
 
         """
-        self._create_update_engine_variables(host.run, host.get_file)
+        self._set_util_functions(host.run, host.get_file)
 
 
     def _change_cellular_setting_in_update_engine(self,

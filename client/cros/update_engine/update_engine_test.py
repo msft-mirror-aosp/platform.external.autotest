@@ -19,7 +19,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def initialize(self):
         """Initialize for this test."""
-        self._create_update_engine_variables()
+        self._set_util_functions(utils.run, shutil.copy)
         self._internet_was_disabled = False
 
 

@@ -21,7 +21,21 @@ _DEFAULT_RUN = utils.run
 _DEFAULT_COPY = shutil.copy
 
 class UpdateEngineUtil(object):
-    """Utility code shared between client and server update_engine autotests"""
+    """
+    Utility code shared between client and server update_engine autotests.
+
+    All update_engine autotests inherit from either the client or server
+    version of update_engine_test:
+    client/cros/update_engine/update_engine_test.py
+    server/cros/update_engine/update_engine_test.py
+
+    These update_engine_test classes inherit from test and update_engine_util.
+    For update_engine_util to work seamlessly, we need the client and server
+    update_engine_tests to define _run() and _get_file() functions:
+    server side: host.run and host.get_file
+    client side: utils.run and shutil.copy
+
+    """
 
     # Update engine status lines.
     _PROGRESS = 'PROGRESS'
@@ -58,7 +72,7 @@ class UpdateEngineUtil(object):
 
     def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
         """
-        Initialize this class.
+        Initialize this class with _run() and _get_file() functions.
 
         @param run_func: the function to use to run commands on the client.
                          Defaults for use by client tests, but can be
@@ -68,11 +82,11 @@ class UpdateEngineUtil(object):
                          (file, destination) syntax.
 
         """
-        self._create_update_engine_variables(run_func, get_file)
+        self._set_util_functions(run_func, get_file)
 
 
-    def _create_update_engine_variables(self, run_func=_DEFAULT_RUN,
-                                        get_file=_DEFAULT_COPY):
+    def _set_util_functions(self, run_func=_DEFAULT_RUN,
+                            get_file=_DEFAULT_COPY):
         """See __init__()."""
         self._run = run_func
         self._get_file = get_file

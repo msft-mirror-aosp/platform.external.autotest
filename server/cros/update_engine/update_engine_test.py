@@ -478,7 +478,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         answer = 'yes' if update_over_cellular else 'no'
-        cmd = 'update_engine_client --update_over_cellular=%s' % answer
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD,
+               '--update_over_cellular=%s' % answer]
         retry_util.RetryException(error.AutoservRunError, 2, self._run, cmd)
 
 

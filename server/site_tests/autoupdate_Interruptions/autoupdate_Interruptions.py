@@ -97,7 +97,4 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         self.verify_update_events(chromeos_version, rootfs_hostlog)
         self.verify_update_events(chromeos_version, reboot_hostlog,
                                   chromeos_version)
-        kernel_utils.verify_boot_expectations(
-            inactive,
-            'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)

@@ -65,6 +65,13 @@ class UpdateEngineUtil(object):
     # Update engine prefs
     _UPDATE_CHECK_RESPONSE_HASH = 'update-check-response-hash'
 
+    # Interrupt types supported in AU tests.
+    _REBOOT_INTERRUPT = 'reboot'
+    _SUSPEND_INTERRUPT = 'suspend'
+    _NETWORK_INTERRUPT = 'network'
+    _SUPPORTED_INTERRUPTS = [_REBOOT_INTERRUPT, _SUSPEND_INTERRUPT,
+                             _NETWORK_INTERRUPT]
+
     # Public key used to force update_engine to verify omaha response data on
     # test images.
     _IMAGE_PUBLIC_KEY = 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFxZE03Z25kNDNjV2ZRenlydDE2UQpESEUrVDB5eGcxOE9aTys5c2M4aldwakMxekZ0b01Gb2tFU2l1OVRMVXArS1VDMjc0ZitEeElnQWZTQ082VTVECkpGUlBYVXp2ZTF2YVhZZnFsalVCeGMrSlljR2RkNlBDVWw0QXA5ZjAyRGhrckduZi9ya0hPQ0VoRk5wbTUzZG8Kdlo5QTZRNUtCZmNnMUhlUTA4OG9wVmNlUUd0VW1MK2JPTnE1dEx2TkZMVVUwUnUwQW00QURKOFhtdzRycHZxdgptWEphRm1WdWYvR3g3K1RPbmFKdlpUZU9POUFKSzZxNlY4RTcrWlppTUljNUY0RU9zNUFYL2xaZk5PM1JWZ0cyCk83RGh6emErbk96SjNaSkdLNVI0V3daZHVobjlRUllvZ1lQQjBjNjI4NzhxWHBmMkJuM05wVVBpOENmL1JMTU0KbVFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=='
@@ -573,6 +580,17 @@ class UpdateEngineUtil(object):
 
         """
         self._run(['rm', self._CUSTOM_LSB_RELEASE], ignore_status=True)
+
+
+    def _remove_update_engine_pref(self, pref):
+        """
+        Delete an update_engine pref file.
+
+        @param pref: The pref file to delete
+
+        """
+        pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR, pref)
+        self._run(['rm', pref_file], ignore_status=True)
 
 
     def _get_update_requests(self):

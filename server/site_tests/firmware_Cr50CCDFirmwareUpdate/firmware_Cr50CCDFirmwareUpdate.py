@@ -24,6 +24,10 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         super(firmware_Cr50CCDFirmwareUpdate,
               self).initialize(host, cmdline_args, full_args)
 
+        # Don't bother if there is no Chrome EC.
+        if not self.check_ec_capability():
+            raise error.TestNAError('Nothing needs to be tested on this device')
+
         servo_type = self.servo.get_servo_version()
         if 'ccd_cr50' not in servo_type:
             raise error.TestNAError('unsupported servo type: %s' % servo_type)

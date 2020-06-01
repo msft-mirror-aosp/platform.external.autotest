@@ -117,14 +117,14 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         """
         tpm_utils.ClearTPMOwnerRequest(self._host)
-        update_url = self.get_update_url_for_test(job_repo_url,
-                                                  full_payload=full_payload,
-                                                  public=cellular,
-                                                  moblab=moblab)
-        before = self._host.get_release_version()
-        payload_info = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
+            update_url = self.get_payload_url_on_public_bucket(
+                job_repo_url, full_payload=full_payload)
+        else:
+            update_url = self.get_update_url_for_test(
+                job_repo_url, full_payload=full_payload)
+        before_version = self._host.get_release_version()
 
         # Clear any previously started updates.
         pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
@@ -189,5 +189,5 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             inactive,
             'The active image slot did not change after the update.',
             self._host)
-        after = self._host.get_release_version()
-        logging.info('Successfully force updated from %s to %s.', before, after)
+        logging.info('Successfully force updated from %s to %s.',
+                     before_version, self._host.get_release_version())

@@ -6,7 +6,6 @@ import logging
 import os
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.client.cros.update_engine import update_engine_test
@@ -55,15 +54,8 @@ class autoupdate_Backoff(update_engine_test.UpdateEngineTest):
                                 self._NO_IGNORE_BACKOFF_PREF)],
                   ignore_status=True)
 
-        metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(payload_url,
-                                          metadata_dir.name)
-        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir,
-                update_metadata_dir=metadata_dir.name,
-                update_payloads_address=base_url) as nebraska:
-
+            log_dir=self.resultsdir, payload_url=payload_url) as nebraska:
             # Only set one URL in the Nebraska response so we can test the
             # backoff functionality quicker.
             response_props = {'disable_payload_backoff': not backoff,

@@ -84,6 +84,9 @@ class FirmwareTest(FAFTBase):
     # Delay between closing and opening lid
     LID_DELAY = 1
 
+    # Delay for establishing state after changing PD settings
+    PD_RESYNC_DELAY = 1
+
     # The default number of power state check retries (each try takes 3 secs)
     DEFAULT_PWR_RETRIES = 5
 
@@ -556,6 +559,8 @@ class FirmwareTest(FAFTBase):
         self.pdtester.set('usbc_polarity', 'cc2' if flip_cc else 'cc1')
         # Make it sourcing max voltage.
         self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
+
+        time.sleep(self.PD_RESYNC_DELAY)
 
         # Servo v4 requires an external charger to source power. Make sure
         # this setup is correct.

@@ -27,7 +27,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         logging.info('Disabling p2p_update on hosts.')
         for host in self._hosts:
             try:
-                cmd = 'update_engine_client --p2p_update=no'
+                cmd = [self._UPDATE_ENGINE_CLIENT_CMD, '--p2p_update=no']
                 retry_util.RetryException(error.AutoservRunError, 2, host.run,
                                           cmd)
             except Exception:
@@ -40,7 +40,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         logging.info('Enabling p2p_update on hosts.')
         for host in self._hosts:
             try:
-                cmd = 'update_engine_client --p2p_update=yes'
+                cmd = [self._UPDATE_ENGINE_CLIENT_CMD, '--p2p_update=yes']
                 retry_util.RetryException(error.AutoservRunError, 2, host.run,
                                           cmd)
             except Exception:
@@ -136,8 +136,8 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         """
         logging.info('Checking that p2p is still enabled after update.')
         def _is_p2p_enabled():
-            p2p = host.run('update_engine_client --show_p2p_update',
-                           ignore_status=True)
+            p2p = host.run([self._UPDATE_ENGINE_CLIENT_CMD,
+                            '--show_p2p_update'], ignore_status=True)
             if p2p.stderr is not None and 'ENABLED' in p2p.stderr:
                 return True
             else:

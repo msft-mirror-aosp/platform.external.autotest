@@ -124,10 +124,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         self.verify_update_events(source_release, rootfs)
         self.verify_update_events(source_release, reboot, target_release)
-        kernel_utils.verify_boot_expectations(
-            inactive,
-            'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)
         logging.info('Update successful, test completed')
 
 

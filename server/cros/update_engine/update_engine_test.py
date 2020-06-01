@@ -554,25 +554,17 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                      err_msg))
 
 
-    def get_update_url_for_test(self, job_repo_url, full_payload=True,
-                                public=False, moblab=False):
+    def get_update_url_for_test(self, job_repo_url=None, full_payload=True):
         """
-        Get the correct update URL for autoupdate tests to use.
+        Returns a devserver update URL for tests that cannot use a Nebraska
+        instance on the DUT for updating.
 
-        There are bunch of different update configurations that are required
-        by AU tests. Some tests need a full payload, some need a delta payload.
-        Some require the omaha response to be critical or be able to handle
-        multiple DUTs etc. This function returns the correct update URL to the
-        test based on the inputs parameters.
-
-        This tests expects the test to set self._host or self._hosts.
+        This expects the test to set self._host or self._hosts.
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
-        @param public: url needs to be publicly accessible.
-        @param moblab: True if we are running on moblab.
 
-        @returns an update url string.
+        @returns a valid devserver update URL.
 
         """
         if job_repo_url is None:
@@ -588,16 +580,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # The lab devserver assigned to this test.
         lab_devserver = dev_server.ImageServer(ds_url)
 
-        if public:
-            # Get the google storage url of the payload. We will be copying
-            # the payload to a public google storage bucket (similar location
-            # to updates via autest command).
-            payload_url = self._get_payload_url(build,
-                                                full_payload=full_payload)
-            url = self._copy_payload_to_public_bucket(payload_url)
-            logging.info('Public update URL: %s', url)
-            return url
-
         # Stage payloads on the lab devserver.
         self._autotest_devserver = lab_devserver
         artifact = 'full_payload' if full_payload else 'delta_payload'
@@ -612,5 +594,27 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if not full_payload:
             url += '/au_nton'
         logging.info('Update URL: %s', url)
+        return url
+
+
+    def get_payload_url_on_public_bucket(self, job_repo_url=None,
+                                         full_payload=True):
+        """
+        Get the google storage url of the payload in a public bucket.
+
+        We will be copying the payload to a public google storage bucket
+        (similar location to updates via autest command).
+
+        @param job_repo_url: string url containing the current build.
+        @param full_payload: True for full, False for delta.
+
+        """
+        if job_repo_url is None:
+            self._job_repo_url = self._get_job_repo_url()
+        else:
+            self._job_repo_url = job_repo_url
+        payload_url = self._get_payload_url(full_payload=full_payload)
+        url = self._copy_payload_to_public_bucket(payload_url)
+        logging.info('Public update URL: %s', url)
         return url
 

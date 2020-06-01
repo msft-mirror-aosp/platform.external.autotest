@@ -4,7 +4,6 @@
 
 import logging
 import random
-import os
 import time
 
 from autotest_lib.client.common_lib import error
@@ -108,7 +107,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param full_payload: True for a full payload. False for delta.
         @param cellular: True to do the update over a cellualar connection.
                          Requires that the DUT have a sim card slot.
-        @param interrupt: Type of interrupt to try: [reboot, network, suspend]
+        @param interrupt: Type of interrupt to try. See _SUPPORTED_INTERRUPTS.
         @param job_repo_url: Used for debugging locally. This is used to figure
                              out the current build and the devserver to use.
                              The test will read this from a host argument
@@ -116,6 +115,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param moblab: True if we are running on moblab.
 
         """
+        if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
+            raise error.TestFail('Unknown interrupt type: %s' % interrupt)
         tpm_utils.ClearTPMOwnerRequest(self._host)
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
@@ -127,42 +128,38 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         before_version = self._host.get_release_version()
 
         # Clear any previously started updates.
-        pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR,
-                                 self._UPDATE_CHECK_RESPONSE_HASH)
-        self._host.run(['rm', pref_file], ignore_status=True)
+        self._remove_update_engine_pref(self._UPDATE_CHECK_RESPONSE_HASH)
         self._restart_update_engine(ignore_status=True)
 
         progress = None
         if interrupt is not None:
             # Choose a random downloaded progress to interrupt the update.
             # Moblab may have higher download speeds and take longer to return
-            # from the client test, so we'll use a reduced progress range if
-            # we're interrupting the update on moblab.
+            # from the client test, so use a reduced progress range there.
             progress_limit = 0.3 if moblab else 0.6
             progress = random.uniform(0.1, progress_limit)
             logging.info('Progress when we will interrupt: %f', progress)
 
         active, inactive = kernel_utils.get_kernel_state(self._host)
-
         # Call client test to start the forced OOBE update.
         self._run_client_test_and_check_result(
             'autoupdate_StartOOBEUpdate', image_url=update_url,
             full_payload=full_payload, cellular=cellular,
-            critical_update=True, interrupt_network=interrupt is 'network',
+            critical_update=True,
+            interrupt_network=interrupt == self._NETWORK_INTERRUPT,
             interrupt_progress=progress)
 
-        if interrupt in ['reboot', 'suspend']:
+        if interrupt in [self._REBOOT_INTERRUPT, self._SUSPEND_INTERRUPT]:
             logging.info('Waiting to interrupt update.')
             self._wait_for_progress(progress)
-            logging.info('We will now start interrupting the update.')
-            self._take_screenshot('before_interrupt.png')
+            logging.info('The update will be interrupted now...')
             completed = self._get_update_progress()
 
-            if interrupt is 'reboot':
+            self._take_screenshot('before_interrupt.png')
+            if interrupt == self._REBOOT_INTERRUPT:
                 self._host.reboot()
-            elif interrupt is 'suspend':
+            elif interrupt == self._SUSPEND_INTERRUPT:
                 self._suspend_then_resume()
-            # Screenshot to check that OOBE was not skipped by interruption.
             self._take_screenshot('after_interrupt.png')
 
             if self._is_update_engine_idle():
@@ -171,16 +168,12 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 completed, reboot_interrupt=interrupt is 'reboot'):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
-        elif interrupt not in ['network', None]:
-            raise error.TestFail('Unknown interrupt type: %s' % interrupt)
 
-        # We create a new lsb-release file with no_update=True so there won't be
-        # any more actual updates happen.
+        # Create lsb-release file with no_update=True to get post-reboot event.
         self._create_custom_lsb_release(update_url, no_update=True)
-
         self._wait_for_oobe_update_to_complete()
 
-        # Verify that the update completed successfully by checking hostlog.
+        # Verify the update was successful by checking hostlog and kernel.
         rootfs_hostlog, reboot_hostlog = self._create_hostlog_files()
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
         self.verify_update_events(self._CUSTOM_LSB_VERSION, reboot_hostlog,

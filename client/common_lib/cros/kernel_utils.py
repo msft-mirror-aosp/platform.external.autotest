@@ -15,6 +15,7 @@ _KERNEL_B = {'name': 'KERN-B', 'kernel': 4, 'root': 5}
 # Time to wait for new kernel to be marked successful after auto update.
 _KERNEL_UPDATE_TIMEOUT = 120
 
+_BOOT_ERR_MSG = 'The active image slot did not change after the update.'
 
 def _run(cmd, host=None):
     """
@@ -109,7 +110,8 @@ def verify_kernel_state_after_update(host=None):
                         % (next_kernel['name'], inactive_kernel['name']))
     return inactive_kernel
 
-def verify_boot_expectations(expected_kernel, error_message, host=None):
+def verify_boot_expectations(expected_kernel, error_message=_BOOT_ERR_MSG,
+                             host=None):
     """Verifies that we fully booted into the expected kernel state.
 
     This method both verifies that we booted using the correct kernel

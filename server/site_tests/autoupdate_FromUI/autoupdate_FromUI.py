@@ -52,7 +52,4 @@ class autoupdate_FromUI(update_engine_test.UpdateEngineTest):
         # Check that the update completed successfully
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
-        kernel_utils.verify_boot_expectations(
-            inactive,
-            'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)

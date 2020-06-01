@@ -185,9 +185,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
         self.verify_update_events(self._CUSTOM_LSB_VERSION, reboot_hostlog,
                                   self._CUSTOM_LSB_VERSION)
-        kernel_utils.verify_boot_expectations(
-            inactive,
-            'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)
         logging.info('Successfully force updated from %s to %s.',
                      before_version, self._host.get_release_version())

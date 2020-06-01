@@ -30,7 +30,8 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
 
     def _check_eol_info(self):
         """Checks update_engines eol status."""
-        result = utils.run('update_engine_client --eol_status').stdout.strip()
+        result = utils.run(
+            [self._UPDATE_ENGINE_CLIENT_CMD, '--eol_status']).stdout.strip()
         if self._EXPECTED_EOL_DATE not in result:
             raise error.TestFail('Expected date %s. Actual: %s' %
                                  (self._EXPECTED_EOL_DATE, result))

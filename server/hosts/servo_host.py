@@ -565,8 +565,17 @@ class ServoHost(base_servohost.BaseServoHost):
     def _get_servo_usb_devnum(self):
         """Helper function to collect current usb devnum of servo.
         """
-        resp = self.run('servodtool device -s %s usb-path' % self.servo_serial,
-                        ignore_status=True)
+        # TODO remove try-except when fix crbug.com/1087964
+        try:
+            cmd = 'servodtool device -s %s usb-path' % self.servo_serial
+            resp = self.run(cmd, ignore_status=True, timeout=30)
+        except Exception as e:
+            # Here we catch only timeout errors.
+            # Other errors is filtered by ignore_status=True
+            logging.debug('Attempt to get servo usb-path failed due to '
+                          'timeout; %s', e)
+            return ''
+
         if resp.exit_status != 0:
             self._process_servodtool_error(resp)
             return ''
@@ -583,10 +592,19 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def _reset_servo(self):
         logging.info('Resetting servo through smart usbhub.')
-        resp = self.run('servodtool device -s %s power-cycle' %
-                        self.servo_serial, ignore_status=True)
-        if resp.exit_status != 0:
-            self._process_servodtool_error(resp)
+        # TODO remove try-except when fix crbug.com/1087964
+        try:
+            resp = self.run('servodtool device -s %s power-cycle' %
+                            self.servo_serial, ignore_status=True,
+                            timeout=30)
+            if resp.exit_status != 0:
+                self._process_servodtool_error(resp)
+                return False
+        except Exception as e:
+            # Here we catch only timeout errors.
+            # Other errors is filtered by ignore_status=True
+            logging.debug('Attempt to reset servo failed due to timeout;'
+                          ' %s', e)
             return False
 
         logging.debug('Wait %s seconds for servo to come back from reset.',

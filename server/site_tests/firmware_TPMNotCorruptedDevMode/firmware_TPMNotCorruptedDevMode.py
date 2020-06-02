@@ -89,7 +89,7 @@ class firmware_TPMNotCorruptedDevMode(FirmwareTest):
         self.faft_client.tpm.restart_daemon()
 
         logging.info('===== TPMC OUTPUT: %s =====', kernel_rollback_space)
-        if self.check_tpmc(kernel_rollback_space):
+        if not self.check_tpmc(kernel_rollback_space):
             raise error.TestFail(
                     'Kernel anti-rollback info looks unexpected. Actual: %s '
                     'Expected one of: %s' % (kernel_rollback_space,

@@ -56,10 +56,11 @@ class SecurityConfig(xmlrpc_types.XmlRpcStruct):
         return {'key_mgmt': 'NONE'}
 
 
-    def install_router_credentials(self, host):
+    def install_router_credentials(self, host, install_dir):
         """Install the necessary credentials on the router.
 
         @param host host object representing the router.
+        @param install_dir the directory on host to install the files.
 
         """
         pass  # Many authentication methods have no special router credentials.
@@ -325,6 +326,11 @@ class EAPConfig(SecurityConfig):
 
     last_tpm_id = 8800
 
+    # Credential file prefixes.
+    SERVER_CA_CERT_FILE_PREFIX = 'hostapd_ca_cert_file.'
+    SERVER_CERT_FILE_PREFIX = 'hostapd_cert_file.'
+    SERVER_KEY_FILE_PREFIX = 'hostapd_key_file.'
+    SERVER_EAP_USER_FILE_PREFIX = 'hostapd_eap_user_file.'
 
     @staticmethod
     def reserve_TPM_id():
@@ -374,10 +380,11 @@ class EAPConfig(SecurityConfig):
             file_suffix = ''.join(random.choice(suffix_letters)
                                   for x in range(10))
             logging.debug('Choosing unique file_suffix %s.', file_suffix)
-        self.server_ca_cert_file = '/tmp/hostapd_ca_cert_file.' + file_suffix
-        self.server_cert_file = '/tmp/hostapd_cert_file.' + file_suffix
-        self.server_key_file = '/tmp/hostapd_key_file.' + file_suffix
-        self.server_eap_user_file = '/tmp/hostapd_eap_user_file.' + file_suffix
+        # The key paths will be determined in install_router_credentials.
+        self.server_ca_cert_file = None
+        self.server_cert_file = None
+        self.server_key_file = None
+        self.server_eap_user_file = None
         # While these paths won't make it across the network, the suffix will.
         self.file_suffix = file_suffix
         self.client_cert_id = client_cert_id or self.reserve_TPM_id()
@@ -392,12 +399,21 @@ class EAPConfig(SecurityConfig):
         self.altsubject_match = altsubject_match
 
 
-    def install_router_credentials(self, host):
+    def install_router_credentials(self, host, install_dir):
         """Install the necessary credentials on the router.
 
         @param host host object representing the router.
 
         """
+        self.server_ca_cert_file = os.path.join(
+            install_dir, self.SERVER_CA_CERT_FILE_PREFIX + self.file_suffix)
+        self.server_cert_file = os.path.join(
+            install_dir, self.SERVER_CERT_FILE_PREFIX + self.file_suffix)
+        self.server_key_file = os.path.join(
+            install_dir, self.SERVER_KEY_FILE_PREFIX + self.file_suffix)
+        self.server_eap_user_file = os.path.join(
+            install_dir, self.SERVER_EAP_USER_FILE_PREFIX + self.file_suffix)
+
         files = [(self.server_ca_cert, self.server_ca_cert_file),
                  (self.server_cert, self.server_cert_file),
                  (self.server_key, self.server_key_file),

@@ -118,9 +118,15 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
             raise error.TestFail('Unknown interrupt type: %s' % interrupt)
         tpm_utils.ClearTPMOwnerRequest(self._host)
+
+        # This test can be used with Nebraska (cellular tests) or a devserver
+        # (non-cellular) tests. Each passes a different value to the client:
+        # An update_url for a devserver or a payload_url for Nebraska.
+        payload_url = None
+        update_url = None
         if cellular:
             self._change_cellular_setting_in_update_engine(True)
-            update_url = self.get_payload_url_on_public_bucket(
+            payload_url = self.get_payload_url_on_public_bucket(
                 job_repo_url, full_payload=full_payload)
         else:
             update_url = self.get_update_url_for_test(
@@ -143,9 +149,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         active, inactive = kernel_utils.get_kernel_state(self._host)
         # Call client test to start the forced OOBE update.
         self._run_client_test_and_check_result(
-            'autoupdate_StartOOBEUpdate', image_url=update_url,
-            full_payload=full_payload, cellular=cellular,
-            critical_update=True,
+            'autoupdate_StartOOBEUpdate', update_url=update_url,
+            payload_url=payload_url, full_payload=full_payload,
+            cellular=cellular, critical_update=True,
             interrupt_network=interrupt == self._NETWORK_INTERRUPT,
             interrupt_progress=progress)
 

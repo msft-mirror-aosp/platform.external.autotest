@@ -57,6 +57,4 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
         self._host.reboot()
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
-        kernel_utils.verify_boot_expectations(
-            inactive, 'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)

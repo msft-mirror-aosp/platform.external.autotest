@@ -72,14 +72,15 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                     raise e
 
 
-    def run_once(self, image_url, cellular=False, critical_update=True,
-                 full_payload=None, interrupt_network=False,
-                 interrupt_progress=0.0):
+    def run_once(self, update_url=None, payload_url=None, cellular=False,
+                 critical_update=True, full_payload=None,
+                 interrupt_network=False, interrupt_progress=0.0):
         """
         Test that will start a forced update at OOBE.
 
-        @param image_url: The omaha URL to call. It contains the payload url
-                          for cellular tests.
+        @param update_url: The omaha URL to call from the OOBE update screen.
+        @param payload_url: Payload url to pass to Nebraska for non-critical
+                            and cellular tests.
         @param cellular: True if we should run this test using a sim card.
         @param critical_update: True if we should have deadline:now in omaha
                                 response.
@@ -96,12 +97,12 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         """
 
         if critical_update:
-            self._start_oobe_update(image_url, critical_update, full_payload)
+            self._start_oobe_update(update_url, critical_update, full_payload)
             if interrupt_network:
                 self._wait_for_progress(interrupt_progress)
                 self._take_screenshot('before_interrupt.png')
                 completed = self._get_update_progress()
-                self._disconnect_reconnect_network_test(image_url)
+                self._disconnect_reconnect_network_test(update_url)
                 self._take_screenshot('after_interrupt.png')
 
                 if self._is_update_engine_idle():
@@ -113,11 +114,11 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
             return
 
         metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(image_url, metadata_dir.name)
+        self._get_payload_properties_file(payload_url, metadata_dir.name)
         # Setup a Nebraska instance on the DUT because we can't reach devservers
         # over cellular. Same for non-critical updates which allow better
         # debugging.
-        base_url = ''.join(image_url.rpartition('/')[0:2])
+        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
                 log_dir=self.resultsdir,
                 update_metadata_dir=metadata_dir.name,

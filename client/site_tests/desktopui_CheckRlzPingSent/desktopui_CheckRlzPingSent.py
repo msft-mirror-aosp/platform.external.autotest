@@ -20,18 +20,30 @@ class desktopui_CheckRlzPingSent(test.test):
 
     _RLZ_DATA_FILE = "/home/chronos/user/RLZ Data"
 
-    def _verify_rlz_data(self, expect_caf_ping=True):
+    def _verify_rlz_data(self, expect_caf_ping=True, guest=False):
         """
         Checks the RLZ data file for CAI and CAF ping events.
 
         @param expect_caf_ping: True if expecting the CAF event to be in the
                                 RLZ data file, False if not expecting it.
+        @param guest: True if checking in guest mode. The guest mode user
+                      mount may not be in the root mount namespace, so the RLZ
+                      data file path must be adjusted accordingly.
 
         """
+        rlz_data_cmd = []
+        if guest:
+            mounter_pid = utils.run(
+                ['pgrep', '-f', '/usr/sbin/cryptohome-namespace-mount']).stdout
+            if mounter_pid is not None:
+                ns_path = '/proc/%s/ns/mnt' % mounter_pid.rstrip()
+                rlz_data_cmd.extend(['nsenter', '--mount=%s' % ns_path])
+
+        rlz_data_cmd.extend(['cat', self._RLZ_DATA_FILE])
+
         def rlz_data_exists():
             """Check rlz data exists."""
-            rlz_data = json.loads(utils.run('cat "%s"' %
-                                            self._RLZ_DATA_FILE).stdout)
+            rlz_data = json.loads(utils.run(rlz_data_cmd).stdout)
             logging.debug('rlz data: %s', rlz_data)
             if 'stateful_events' in rlz_data:
                 cai_present = 'CAI' in rlz_data['stateful_events']['C']['_']
@@ -149,4 +161,5 @@ class desktopui_CheckRlzPingSent(test.test):
                            extra_browser_args=rlz_flag,
                            username=username, dont_override_profile=True) as cr:
             self._check_url_for_rlz(cr)
-            self._verify_rlz_data(expect_caf_ping=expect_caf_ping)
+            self._verify_rlz_data(expect_caf_ping=expect_caf_ping,
+                                  guest=pre_login is 'lock')

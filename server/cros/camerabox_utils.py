@@ -8,8 +8,9 @@ import logging
 from lxml import etree
 import os
 import StringIO
+import time
 
-from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib import error, utils
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 
 
@@ -38,8 +39,21 @@ class ChartFixture:
                         script=self.DISPLAY_SCRIPT,
                         scene=scene_path,
                         log=self.OUTPUT_LOG))
-        # TODO(inker): Suppose chart should be displayed very soon. Or require
-        # of waiting until chart actually displayed.
+
+        logging.info(
+                'Poll for "is ready" message for ensuring chart is ready.')
+        timeout = 30
+        poll_time_step = 0.1
+        while timeout > 0:
+            if self.host.run(
+                    'grep',
+                    args=('-q', 'Chart is ready.', self.OUTPUT_LOG),
+                    ignore_status=True).exit_status == 0:
+                break
+            time.sleep(poll_time_step)
+            timeout -= poll_time_step
+        else:
+            raise error.TestError('Timeout waiting for chart ready')
 
     def cleanup(self):
         """Cleanup display script."""

@@ -469,8 +469,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._set_util_functions(host.run, host.get_file)
 
 
-    def _change_cellular_setting_in_update_engine(self,
-                                                  update_over_cellular=True):
+    def _set_update_over_cellular_setting(self, update_over_cellular=True):
         """
         Toggles the update_over_cellular setting in update_engine.
 

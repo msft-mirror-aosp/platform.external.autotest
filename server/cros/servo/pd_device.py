@@ -395,7 +395,7 @@ class PDConsoleDevice(PDDevice):
         @returns True if the device has swapped power roles, False otherwise.
         """
         # Get starting state
-        if not self.is_drp() and not self.drp_set('on'):
+        if not self.is_drp():
             logging.warn('Dualrole Mode not enabled!')
             return False
         if self.is_connected() == False:

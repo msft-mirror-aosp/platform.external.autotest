@@ -870,7 +870,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 dest_folder = '/tmp/firmware'
                 self.run('mkdir -p ' + dest_folder)
 
-                fw_cmd = self._FW_UPDATE_CMD % '--wp=1' if rw_only else ''
+                fw_cmd = self._FW_UPDATE_CMD % ('--wp=1' if rw_only else '')
 
                 if bios_image:
                     # Send BIOS firmware image to DUT

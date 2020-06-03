@@ -548,6 +548,8 @@ class BluetoothAdapterTests(test.test):
 
     # Default suspend time in seconds for suspend resume.
     SUSPEND_TIME_SECS=10
+    SUSPEND_ENTER_SECS=10
+    RESUME_TIME_SECS=30
 
     # hci0 is the default hci device if there is no external bluetooth dongle.
     EXPECTED_HCI = 'hci0'
@@ -831,16 +833,22 @@ class BluetoothAdapterTests(test.test):
         """Suspend the DUT for a while and then resume.
 
         @param suspend_time: the suspend time in secs
+        @raises errors.TestFail if the device reboots during suspend
 
         """
-        logging.info('The DUT suspends for %d seconds...', suspend_time)
-        try:
-            self.host.suspend(suspend_time=suspend_time)
-        except error.AutoservSuspendError:
-            logging.error('The DUT did not suspend for %d seconds', suspend_time)
-            pass
-        logging.info('The DUT is waken up.')
+        boot_id = self.host.get_boot_id()
+        suspend = self.suspend_async(suspend_time=suspend_time,
+                                     allow_early_resume=True)
 
+        # Give the system some time to enter suspend
+        self.test_suspend_and_wait_for_sleep(
+                suspend, sleep_timeout=self.SUSPEND_ENTER_SECS)
+
+        # Wait for resume - since we're not testing suspend itself, we are
+        # lenient with the resume time here
+        self.test_wait_for_resume(boot_id,
+                                  suspend,
+                                  resume_timeout=self.RESUME_TIME_SECS)
 
     def reboot(self):
         """Reboot the DUT and recreate necessary processes and variables"""

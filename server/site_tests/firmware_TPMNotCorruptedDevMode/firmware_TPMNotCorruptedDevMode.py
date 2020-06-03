@@ -84,12 +84,12 @@ class firmware_TPMNotCorruptedDevMode(FirmwareTest):
         kernel_rollback_space = (
                 self.faft_client.system.run_shell_command_get_output(
                         'tpmc read %s %s' %
-                        (self.KERNEL_NV_INDEX,
-                         self.KERNEL_ANTIROLLBACK_SPACE_BYTES)))
+                        (hex(self.KERNEL_NV_INDEX),
+                         hex(self.KERNEL_ANTIROLLBACK_SPACE_BYTES))))
         self.faft_client.tpm.restart_daemon()
 
         logging.info('===== TPMC OUTPUT: %s =====', kernel_rollback_space)
-        if self.check_tpmc(kernel_rollback_space):
+        if not self.check_tpmc(kernel_rollback_space):
             raise error.TestFail(
                     'Kernel anti-rollback info looks unexpected. Actual: %s '
                     'Expected one of: %s' % (kernel_rollback_space,
@@ -116,9 +116,7 @@ class firmware_TPMNotCorruptedDevMode(FirmwareTest):
         if len(tpmc_output) != 1:
             return False
 
-        kernel_antirollback_data = set(tpmc_output)
-
-        return (kernel_antirollback_data in self.TPM_NVRAM_EXPECTED_VALUES)
+        return (tpmc_output[0] in self.TPM_NVRAM_EXPECTED_VALUES)
 
     def run_once(self):
         """Runs a single iteration of the test."""

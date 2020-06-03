@@ -32,7 +32,8 @@ class autoupdate_UrlSwitch(update_engine_test.UpdateEngineTest):
             # Start the update that will return two Urls. This matches what test
             # and production omaha does today.
             self._check_for_update(
-                nebraska.get_update_url(num_urls=2, critical_update=True))
+                nebraska.get_update_url(failures_per_url=1, num_urls=2,
+                                        critical_update=True))
             self._wait_for_progress(0.2)
 
             # Pull the network cable so the update fails.
@@ -44,11 +45,13 @@ class autoupdate_UrlSwitch(update_engine_test.UpdateEngineTest):
             # Check that we are moving to the next Url.
             self._enable_internet()
             self._check_update_engine_log_for_entry(
-                'Reached max number of failures for Url')
+                'Reached max number of failures for Url',
+                raise_error=True)
 
             # The next update attempt should resume and finish successfully.
             self._check_for_update(
                 nebraska.get_update_url(critical_update=True))
             self._wait_for_update_to_complete()
             self._check_update_engine_log_for_entry(
-                'Resuming an update that was previously started.')
+                'Resuming an update that was previously started.',
+                raise_error=True)

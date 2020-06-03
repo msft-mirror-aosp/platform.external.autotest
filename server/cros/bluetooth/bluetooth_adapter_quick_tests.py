@@ -267,7 +267,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     raise error.TestNAError('Not enough peer available')
                 self.quick_test_test_start(
                     test_name, devices, shared_devices_count)
-                test_method(self)
+
+                try:
+                    test_method(self)
+                except error.TestFail as e:
+                    if not bool(self.fails):
+                        self.fails.append('[--- failed {} ({})]'.format(
+                                test_method.__name__, str(e)))
+
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn)
             return wrapper
@@ -427,7 +434,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     single_test_method = getattr(self,  test_name)
                     for iter in xrange(1,num_iterations+1):
                         self.test_iter = iter
-                        single_test_method()
+                        try:
+                            single_test_method()
+                        except error.TestFail as e:
+                            if not bool(self.fails):
+                                self.fails.append('[--- failed {} ({})]'.format(
+                                        single_test_method.__name__, str(e)))
 
                     if self.fails:
                         # If failure is marked as TESTNA, prioritize that over
@@ -441,7 +453,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 else:
                     for iter in xrange(1,num_iterations+1):
                         self.quick_test_batch_start(batch_name, iter)
-                        batch_method(self, num_iterations, test_name)
+                        try:
+                            batch_method(self, num_iterations, test_name)
+                        except error.TestFail as e:
+                            if not bool(self.fails):
+                                self.fails.append('[--- failed {} ({})]'.format(
+                                        batch_method.__name__, str(e)))
                         self.quick_test_batch_end()
             return wrapper
 

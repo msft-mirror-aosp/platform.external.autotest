@@ -290,10 +290,15 @@ class _CCDTestlabVerifier(hosts.Verifier):
                     'board': host.servo_board or ''}
             metrics.Counter(
                 'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
-            raise hosts.AutoservNonCriticalVerifyError(
-                'The ccd testlab is off (not enabled);'
-                ' required the rework to enable it (go/ccd-setup)',
-                'ccd_testlab_disabled')
+            # TODO enable when lab will finished rework on all DUTs
+            # or new servo_state will come to the stage
+            # raise hosts.AutoservNonCriticalVerifyError(
+            #     'The ccd testlab is off (not enabled);'
+            #     ' required the rework to enable it (go/ccd-setup)',
+            #     'ccd_testlab_disabled')
+            host.record('INFO', None, 'ccd_testlab_disabled',
+                        'The ccd testlab is off (not enabled);'
+                        ' required the rework to enable it (go/ccd-setup)')
 
     def _is_applicable(self, host):
         if host.get_servo():

@@ -33,7 +33,7 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
 
     def cleanup(self):
         """Clean up the test state."""
-        self._change_cellular_setting_in_update_engine(False)
+        self._set_update_over_cellular_setting(False)
         super(autoupdate_Cellular, self).cleanup()
 
 
@@ -49,7 +49,7 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
                                                   full_payload=full_payload,
                                                   public=True)
         active, inactive = kernel_utils.get_kernel_state(self._host)
-        self._change_cellular_setting_in_update_engine(True)
+        self._set_update_over_cellular_setting(True)
         self._run_client_test_and_check_result('autoupdate_CannedOmahaUpdate',
                                                payload_url=update_url,
                                                use_cellular=True)

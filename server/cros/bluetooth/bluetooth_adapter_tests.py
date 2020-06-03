@@ -464,23 +464,39 @@ def test_retry_and_log(test_method_or_retry_flag):
 
             """
             instance.results = None
-            if callable(test_method_or_retry_flag) or test_method_or_retry_flag:
-                test_result = retry(test_method, instance, *args, **kwargs)
-            else:
-                test_result = test_method(instance, *args, **kwargs)
+            fail_msg = None
+            test_result = False
+            should_raise = hasattr(instance, 'fail_fast') and instance.fail_fast
 
-            if test_result:
-                logging.info('[*** passed: %s]', test_method.__name__)
-            else:
-                fail_msg = '[--- failed: %s (%s)]' % (test_method.__name__,
-                                                      str(instance.results))
+            try:
+                if callable(test_method_or_retry_flag
+                            ) or test_method_or_retry_flag:
+                    test_result = retry(test_method, instance, *args, **kwargs)
+                else:
+                    test_result = test_method(instance, *args, **kwargs)
+
+                if test_result:
+                    logging.info('[*** passed: {}]'.format(
+                            test_method.__name__))
+                else:
+                    fail_msg = '[--- failed: {} ({})]'.format(
+                            test_method.__name__, str(instance.results))
+                    logging.error(fail_msg)
+                    instance.fails.append(fail_msg)
+            except error.TestFail as e:
+                fail_msg = '[--- failed {} ({})]'.format(
+                        test_method.__name__, str(e))
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
-                if hasattr(instance, 'fail_fast') and instance.fail_fast:
-                    logging.info('Fail fast')
-                    raise error.TestFail(instance.fails)
+                should_raise = True
+
+            # Check whether we should fail fast
+            if fail_msg and should_raise:
+                logging.info('Fail fast')
+                raise error.TestFail(instance.fails)
 
             return test_result
+
         return wrapper
 
     if callable(test_method_or_retry_flag):
@@ -3504,17 +3520,23 @@ class BluetoothAdapterTests(test.test):
             delta = datetime.now() - start
             if delta > timedelta(seconds=resume_timeout):
                 success = False if fail_on_timeout else True
-        except Exception as e:
+        except error.TestFail as e:
             success = False
-            logging.error("wait_for_resume: %s", e)
+            logging.error('wait_for_resume: %s', e)
+
+            # If the resume failed due to a reboot, raise the testFail and exit
+            # early from the test
+            if 'client rebooted' in str(e):
+                raise
         finally:
             suspend.join()
-            self.results = {
-                "resume_success": success,
-                "suspend_result": suspend.exitcode == 0
-            }
 
-            return all(self.results.values())
+        self.results = {
+            'resume_success': success,
+            'suspend_result': suspend.exitcode == 0
+        }
+
+        return all(self.results.values())
 
 
     def suspend_async(self, suspend_time, allow_early_resume=False):

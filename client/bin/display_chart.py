@@ -9,6 +9,7 @@ import contextlib
 import logging
 import os
 import signal
+import sys
 import time
 
 # Set chart process preferred logging format before overridden by importing
@@ -71,6 +72,11 @@ def display(filepath):
         kb.close()
 
         logging.info('Chart is ready.')
+
+        # Flush the 'is ready' message for server test to sync with ready state.
+        sys.stdout.flush()
+        sys.stderr.flush()
+
         while displaying:
             time.sleep(1)
 

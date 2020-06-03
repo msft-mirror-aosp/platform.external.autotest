@@ -120,7 +120,7 @@ class autoupdate_UserData(update_engine_test.UpdateEngineTest):
                     update_payloads_address=base_url) as nebraska:
                 with chrome.Chrome(autotest_ext=True) as cr:
                     self._cr = cr
-                    utils.run('echo hello > %s' % self._TEST_FILE)
+                    utils.run(['echo', 'hello', '>', self._TEST_FILE])
                     self._modify_input_methods()
                     self._modify_time_zone()
                     self._check_for_update(

@@ -2,9 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import division
+
 import logging
 import random
 import string
+import time
 
 from autotest_lib.server.cros.network import frame_sender
 from autotest_lib.server.cros.network import hostap_config
@@ -27,6 +30,7 @@ class network_WiFi_ChannelScanDwellTime(wifi_cell_test_base.WiFiCellTestBase):
     MISSING_BEACON_THRESHOLD = 2
     FREQUENCY_MHZ = 2412
     MSEC_PER_SEC = 1000
+    SCAN_START_DELAY_MS = 200
 
     def _build_ssid_prefix(self):
         """Build ssid prefix."""
@@ -141,6 +145,10 @@ class network_WiFi_ChannelScanDwellTime(wifi_cell_test_base.WiFiCellTestBase):
                 frequencies = [self.FREQUENCY_MHZ]
             else:
                 frequencies = []
+            # Don't immediately start the scan, wait a bit so the AP has enough
+            # time to start actually sending beacon frames before the scan
+            # starts.
+            time.sleep(self.SCAN_START_DELAY_MS / self.MSEC_PER_SEC)
             # Perform scan
             try:
                 utils.poll_for_condition(

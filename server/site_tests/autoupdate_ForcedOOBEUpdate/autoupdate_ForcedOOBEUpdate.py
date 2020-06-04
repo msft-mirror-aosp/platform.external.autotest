@@ -23,7 +23,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         self._clear_custom_lsb_release()
 
-        self._change_cellular_setting_in_update_engine(False)
+        self._set_update_over_cellular_setting(False)
 
         # Cancel any update still in progress.
         if not self._is_update_engine_idle():
@@ -125,7 +125,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         payload_url = None
         update_url = None
         if cellular:
-            self._change_cellular_setting_in_update_engine(True)
+            self._set_update_over_cellular_setting(True)
             payload_url = self.get_payload_url_on_public_bucket(
                 job_repo_url, full_payload=full_payload)
         else:

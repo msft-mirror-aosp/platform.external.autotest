@@ -11,7 +11,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "enterprise"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:hotrod-remora"
-DEPENDENCIES = "atrus, meet_app"
+DEPENDENCIES = "atrus"
 JOB_RETRIES = 3
 
 DOC = """

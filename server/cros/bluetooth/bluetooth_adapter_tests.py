@@ -464,23 +464,39 @@ def test_retry_and_log(test_method_or_retry_flag):
 
             """
             instance.results = None
-            if callable(test_method_or_retry_flag) or test_method_or_retry_flag:
-                test_result = retry(test_method, instance, *args, **kwargs)
-            else:
-                test_result = test_method(instance, *args, **kwargs)
+            fail_msg = None
+            test_result = False
+            should_raise = hasattr(instance, 'fail_fast') and instance.fail_fast
 
-            if test_result:
-                logging.info('[*** passed: %s]', test_method.__name__)
-            else:
-                fail_msg = '[--- failed: %s (%s)]' % (test_method.__name__,
-                                                      str(instance.results))
+            try:
+                if callable(test_method_or_retry_flag
+                            ) or test_method_or_retry_flag:
+                    test_result = retry(test_method, instance, *args, **kwargs)
+                else:
+                    test_result = test_method(instance, *args, **kwargs)
+
+                if test_result:
+                    logging.info('[*** passed: {}]'.format(
+                            test_method.__name__))
+                else:
+                    fail_msg = '[--- failed: {} ({})]'.format(
+                            test_method.__name__, str(instance.results))
+                    logging.error(fail_msg)
+                    instance.fails.append(fail_msg)
+            except error.TestFail as e:
+                fail_msg = '[--- failed {} ({})]'.format(
+                        test_method.__name__, str(e))
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
-                if hasattr(instance, 'fail_fast') and instance.fail_fast:
-                    logging.info('Fail fast')
-                    raise error.TestFail(instance.fails)
+                should_raise = True
+
+            # Check whether we should fail fast
+            if fail_msg and should_raise:
+                logging.info('Fail fast')
+                raise error.TestFail(instance.fails)
 
             return test_result
+
         return wrapper
 
     if callable(test_method_or_retry_flag):
@@ -548,6 +564,8 @@ class BluetoothAdapterTests(test.test):
 
     # Default suspend time in seconds for suspend resume.
     SUSPEND_TIME_SECS=10
+    SUSPEND_ENTER_SECS=10
+    RESUME_TIME_SECS=30
 
     # hci0 is the default hci device if there is no external bluetooth dongle.
     EXPECTED_HCI = 'hci0'
@@ -831,16 +849,22 @@ class BluetoothAdapterTests(test.test):
         """Suspend the DUT for a while and then resume.
 
         @param suspend_time: the suspend time in secs
+        @raises errors.TestFail if the device reboots during suspend
 
         """
-        logging.info('The DUT suspends for %d seconds...', suspend_time)
-        try:
-            self.host.suspend(suspend_time=suspend_time)
-        except error.AutoservSuspendError:
-            logging.error('The DUT did not suspend for %d seconds', suspend_time)
-            pass
-        logging.info('The DUT is waken up.')
+        boot_id = self.host.get_boot_id()
+        suspend = self.suspend_async(suspend_time=suspend_time,
+                                     allow_early_resume=True)
 
+        # Give the system some time to enter suspend
+        self.test_suspend_and_wait_for_sleep(
+                suspend, sleep_timeout=self.SUSPEND_ENTER_SECS)
+
+        # Wait for resume - since we're not testing suspend itself, we are
+        # lenient with the resume time here
+        self.test_wait_for_resume(boot_id,
+                                  suspend,
+                                  resume_timeout=self.RESUME_TIME_SECS)
 
     def reboot(self):
         """Reboot the DUT and recreate necessary processes and variables"""
@@ -855,10 +879,8 @@ class BluetoothAdapterTests(test.test):
             del self.bluetooth_facade
         if hasattr(self, 'input_facade'):
             del self.input_facade
-
-        browser_args = ['--enable-features=BluetoothKernelSuspendNotifier']
-        self.factory = remote_facade_factory.RemoteFacadeFactory(
-                self.host, extra_browser_args=browser_args, disable_arc=True)
+        self.factory = remote_facade_factory.RemoteFacadeFactory(self.host,
+                       disable_arc=True)
         self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
         self.input_facade = self.factory.create_input_facade()
 
@@ -3498,17 +3520,23 @@ class BluetoothAdapterTests(test.test):
             delta = datetime.now() - start
             if delta > timedelta(seconds=resume_timeout):
                 success = False if fail_on_timeout else True
-        except Exception as e:
+        except error.TestFail as e:
             success = False
-            logging.error("wait_for_resume: %s", e)
+            logging.error('wait_for_resume: %s', e)
+
+            # If the resume failed due to a reboot, raise the testFail and exit
+            # early from the test
+            if 'client rebooted' in str(e):
+                raise
         finally:
             suspend.join()
-            self.results = {
-                "resume_success": success,
-                "suspend_result": suspend.exitcode == 0
-            }
 
-            return all(self.results.values())
+        self.results = {
+            'resume_success': success,
+            'suspend_result': suspend.exitcode == 0
+        }
+
+        return all(self.results.values())
 
 
     def suspend_async(self, suspend_time, allow_early_resume=False):

@@ -602,6 +602,32 @@ class Servo(object):
             time_left = time_left - self.SHORT_DELAY
         raise error.TestFail("Failed setting volume_down to no")
 
+    def arrow_up(self, press_secs='tab'):
+        """Simulate arrow up key presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'.
+        """
+        # TODO: Remove this check after a lab update to include CL:1913684
+        if not self.has_control('arrow_up'):
+            logging.warning('Control arrow_up ignored. '
+                            'Please update hdctools')
+            return
+        self.set_nocheck('arrow_up', press_secs)
+
+    def arrow_down(self, press_secs='tab'):
+        """Simulate arrow down key presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'.
+        """
+        # TODO: Remove this check after a lab update to include CL:1913684
+        if not self.has_control('arrow_down'):
+            logging.warning('Control arrow_down ignored. '
+                            'Please update hdctools')
+            return
+        self.set_nocheck('arrow_down', press_secs)
+
     def ctrl_d(self, press_secs='tab'):
         """Simulate Ctrl-d simultaneous button presses.
 

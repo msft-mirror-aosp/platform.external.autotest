@@ -544,6 +544,8 @@ class BluetoothAdapterTests(test.test):
     ADAPTER_ACTION_SLEEP_SECS = 1
     ADAPTER_PAIRING_TIMEOUT_SECS = 60
     ADAPTER_CONNECTION_TIMEOUT_SECS = 30
+    # Wait after connect for input device to be ready for use
+    ADAPTER_HID_INPUT_DELAY = 5
     ADAPTER_DISCONNECTION_TIMEOUT_SECS = 30
     ADAPTER_PAIRING_POLLING_SLEEP_SECS = 3
     ADAPTER_DISCOVER_TIMEOUT_SECS = 60          # 30 seconds too short sometimes
@@ -1856,6 +1858,10 @@ class BluetoothAdapterTests(test.test):
                     timeout=self.ADAPTER_CONNECTION_TIMEOUT_SECS,
                     desc=('Waiting for connection from %s' % device_address))
             connection_seen_by_adapter = True
+
+            # Although the connect may be complete, it can take a few
+            # seconds for the input device to be ready for use
+            time.sleep(self.ADAPTER_HID_INPUT_DELAY)
         except utils.TimeoutError as e:
             logging.error('%s (adapter): %s', method_name, e)
         except:
@@ -1880,6 +1886,11 @@ class BluetoothAdapterTests(test.test):
       @returns: True if the connection was established by the device or False.
       """
       connected = device.ConnectToRemoteAddress(adapter_address)
+      if connected:
+        # Although the connect may be complete, it can take a few
+        # seconds for the input device to be ready for use
+        time.sleep(self.ADAPTER_HID_INPUT_DELAY)
+
       self.results = {
           'connection_by_device': connected
       }

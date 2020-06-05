@@ -130,6 +130,7 @@ class AutoservVerifyDependencyError(error.AutoservError):
             logging.debug('    %s', failure.dependency)
 
     def is_critical(self, silent=False):
+        """Check if the error is considered to be critical to repair process."""
         for error in self.failures:
             if isinstance(error, _NonCriticalDependencyFailure):
                 if not silent:
@@ -310,6 +311,16 @@ class _DependencyNode(object):
         return ('Class %s fails to implement description().' %
                 type(self).__name__)
 
+    def _get_node_by_tag(self, tag):
+        """Find verifier by tag, recursive."""
+        if self._tag == tag:
+            return self
+        for child in self._dependency_list:
+            node = child._get_node_by_tag(tag)
+            if node is not None:
+                return node
+        return None
+
 
 class Verifier(_DependencyNode):
     """
@@ -349,6 +360,9 @@ class Verifier(_DependencyNode):
 
     The base class manages the following private data:
       * `_result`:  The cached result of verification.
+                    None - did not run
+                    True - successful pass
+                    Exception - fail during execution
       * `_dependency_list`:  The list of dependencies.
     Subclasses should not use these attributes.
 
@@ -366,10 +380,9 @@ class Verifier(_DependencyNode):
         Reset the cached verification result for this node, and for the
         transitive closure of all dependencies.
         """
-        if self._result is not None:
-            self._result = None
-            for v in self._dependency_list:
-                v._reverify()
+        self._result = None
+        for v in self._dependency_list:
+            v._reverify()
 
     def _verify_host(self, host, silent):
         """
@@ -396,7 +409,7 @@ class Verifier(_DependencyNode):
                 raise self._result  # cached failure
             elif self._result:
                 return              # cached success
-        self._result = False
+
         self._verify_dependencies(host, silent)
         logging.info('Verifying this condition: %s', self.description)
         try:
@@ -452,6 +465,21 @@ class Verifier(_DependencyNode):
         """
         raise NotImplementedError('Class %s does not implement '
                                   'verify()' % type(self).__name__)
+
+    def _is_good(self):
+        """Provide result of the verifier
+
+        @returns: a boolean or None value:
+            True - verifier passed
+            False - verifier did not pass
+            None - verifier did not run because it is not applicable
+                   or blocked due to dependency failure
+        """
+        if type(self._result) == type(True):
+            return self._result
+        elif isinstance(self._result, Exception):
+            return False
+        return None
 
 
 class RepairAction(_DependencyNode):
@@ -937,6 +965,32 @@ class RepairStrategy(object):
             raise
         finally:
             self._send_strategy_metrics(host, result)
+
+    def verifier_is_good(self, tag):
+        """Find and return result of a verifier.
+
+        @param tag: key to be associated with verifier
+
+        @returns: a boolean or None value:
+            True - verifier passed
+            False - verifier did not pass
+            None - verifier did not run because it is not applicable
+                   or blocked due to dependency failure
+        """
+        verifier = self._verify_root._get_node_by_tag(tag)
+        if verifier is not None:
+            result = verifier._is_good()
+            logging.debug('Verifier with associated tag: %s found', tag)
+            if result is None:
+                logging.debug('%s did not run; it is not applicable to run '
+                              'or blocked due to dependency failure', tag)
+            elif result == True:
+                logging.debug('Cached result of %s verifier is pass', tag)
+            else:
+                logging.debug('Cached result of %s verifier is fail', tag)
+            return result
+        logging.debug('Verifier with associated tag: %s not found', tag)
+        return None
 
 
 def _filter_metrics_hostname(host):

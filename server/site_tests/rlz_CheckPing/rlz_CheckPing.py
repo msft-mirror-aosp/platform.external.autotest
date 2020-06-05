@@ -51,12 +51,14 @@ class rlz_CheckPing(test.test):
         if should_send_rlz_ping is not None:
             to_set[self._PING_VPD] = should_send_rlz_ping
         else:
-            vpd_utils.vpd_delete(host=self._host, key=self._PING_VPD)
+            vpd_utils.vpd_delete(host=self._host, key=self._PING_VPD,
+                                 dump=True, force_dump=True)
 
         if rlz_embargo_end_date:
             to_set[self._DATE_VPD] = rlz_embargo_end_date.isoformat()
         else:
-            vpd_utils.vpd_delete(host=self._host, key=self._DATE_VPD)
+            vpd_utils.vpd_delete(host=self._host, key=self._DATE_VPD,
+                                 dump=True, force_dump=True)
 
         if to_set:
             vpd_utils.vpd_set(host=self._host, vpd_dict=to_set, dump=True,

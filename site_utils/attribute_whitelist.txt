@@ -53,6 +53,8 @@ suite:bvt-tast-android-pfq
 suite:bvt-tast-chrome-pfq
 suite:bvt-tast-cq
 suite:bvt-tast-informational
+suite:camerabox_facing-back
+suite:camerabox_facing-front
 suite:cell_emulator
 suite:cellular_au
 suite:cellular_au_nightly

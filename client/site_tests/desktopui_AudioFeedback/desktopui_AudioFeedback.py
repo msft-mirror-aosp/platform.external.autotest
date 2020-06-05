@@ -33,8 +33,6 @@ class desktopui_AudioFeedback(audio_helper.chrome_rms_test):
             condition=player_is_ready,
             exception=error.TestError('Failed to load the Youtube player'))
 
-        # Seek to 60 seconds to skip the silence in the beginning.
-        tab.ExecuteJavaScript('player.seekTo(60, true)')
         tab.ExecuteJavaScript('player.playVideo()')
 
         # Make sure the video is playing

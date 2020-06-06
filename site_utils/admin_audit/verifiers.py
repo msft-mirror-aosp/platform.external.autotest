@@ -92,6 +92,9 @@ class VerifyServoUsb(base._BaseServoVerifier):
         usb = servo.probe_host_usb_dev()
         if not usb:
             logging.error('Usb not detected')
+            metrics.Counter(
+                'chromeos/autotest/servo/usb/not_detected'
+                ).increment(fields={'host': self._dut_host.hostname})
             self._set_state(constants.HW_STATE_NEED_REPLACEMENT)
             return
 
@@ -110,7 +113,7 @@ class VerifyServoUsb(base._BaseServoVerifier):
                 state = constants.HW_STATE_NORMAL
         except Exception as e:
             if 'Timeout encountered:' in str(e):
-                logging.info('Timeout during running action. Ignore')
+                logging.info('Timeout during running action')
                 metrics.Counter(
                     'chromeos/autotest/audit/servo/usb/timeout'
                     ).increment(fields={'host': self._dut_host.hostname})
@@ -121,6 +124,19 @@ class VerifyServoUsb(base._BaseServoVerifier):
             logging.debug(str(e))
 
         self._set_state(state)
+
+        # install fresh image to the USB because badblocks formats it
+        # https://crbug.com/1091406
+        try:
+            logging.debug('Started to install test image to USB-drive')
+            _, image_path = self._dut_host.stage_image_for_servo()
+            servo.image_to_servo_usb(image_path, power_off_dut=False)
+            logging.debug('Finished installing test image to USB-drive')
+        except:
+            # ignore any error which happined during install image
+            # it not relative to the main goal
+            logging.debug('Fail to install test image to USB-drive')
+            pass
 
     def _set_state(self, state):
         if state:

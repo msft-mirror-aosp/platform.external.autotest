@@ -8,6 +8,7 @@ PURPOSE = 'Test bluetooth adapter advertising.'
 CRITERIA = 'Adapter should advertise with correct parameters.'
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'LONG'  # It takes about 15 minutes on Eve.
+MAX_RESULT_SIZE_KB = 512000
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'

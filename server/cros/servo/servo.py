@@ -1016,7 +1016,8 @@ class Servo(object):
 
 
     def image_to_servo_usb(self, image_path=None,
-                           make_image_noninteractive=False):
+                           make_image_noninteractive=False,
+                           power_off_dut=True):
         """Install an image to the USB key plugged into the servo.
 
         This method may copy any image to the servo USB key including a
@@ -1024,17 +1025,19 @@ class Servo(object):
         for test purposes such as restoring a corrupted image or conducting
         an upgrade of ec/fw/kernel as part of a test of a specific image part.
 
-        @param image_path Path on the host to the recovery image.
-        @param make_image_noninteractive Make the recovery image
+        @param image_path: Path on the host to the recovery image.
+        @param make_image_noninteractive: Make the recovery image
                                    noninteractive, therefore the DUT
                                    will reboot automatically after
                                    installation.
+        @param power_off_dut: To put the DUT in power off mode.
         """
         # We're about to start plugging/unplugging the USB key.  We
         # don't know the state of the DUT, or what it might choose
         # to do to the device after hotplug.  To avoid surprises,
         # force the DUT to be off.
-        self._power_state.power_off()
+        if power_off_dut:
+            self._power_state.power_off()
 
         if image_path:
             logging.info('Searching for usb device and copying image to it. '

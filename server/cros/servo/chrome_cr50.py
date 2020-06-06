@@ -799,14 +799,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         else:
             self.set_ccd_level('open')
 
+        ap_is_on = self.ap_is_on()
         # Set testlab mode
         rv = self.send_command_get_output('ccd testlab %s' % request_str,
                 ['ccd.*>'])[0]
         if 'Access Denied' in rv:
             raise error.TestFail("'ccd %s' %s" % (request_str, rv))
 
-        # Press the power button once a second for 15 seconds.
-        self.run_pp(self.PP_SHORT)
+        # Press the power button once a second for 15 seconds. If the AP is
+        # currently on, make sure it's on at the end of the open process.
+        self.run_pp(self.PP_SHORT, ensure_ap_on=ap_is_on)
 
         self.set_ccd_level(original_level)
         if request_on != self.testlab_is_on():
@@ -864,6 +866,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                          self.CCD_PASSWORD_RATE_LIMIT)
             time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
 
+        ap_is_on = self.ap_is_on()
         try:
             cmd = 'ccd %s%s' % (level, (' ' + password) if password else '')
             # ccd command outputs on the rbox, ccd, and console channels,
@@ -886,8 +889,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         # Press the power button once a second, if we need physical presence.
         if req_pp and batt_is_disconnected:
-            # DBG images have shorter unlock processes
-            self.run_pp(self.PP_SHORT if dbg_en else self.PP_LONG)
+            # DBG images have shorter unlock processes. If the AP is currently
+            # on, make sure it's on at the end of the open process.
+            self.run_pp(self.PP_SHORT if dbg_en else self.PP_LONG,
+                        ensure_ap_on=ap_is_on)
 
         if level != self.get_ccd_level():
             raise error.TestFail('Could not set privilege level to %s' % level)
@@ -895,7 +900,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         logging.info('Successfully set CCD privelege level to %s', level)
 
 
-    def run_pp(self, unlock_timeout):
+    def run_pp(self, unlock_timeout, ensure_ap_on=False):
         """Press the power button a for unlock_timeout seconds.
 
         This will press the power button many more times than it needs to be
@@ -911,9 +916,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         For testlab enable/disable you must press the power button 5 times
         spaced between 100msec and 5 seconds apart.
-        """
-        ap_on_before = self.ap_is_on()
 
+        @param unlock_timeout: time to press the power button in seconds.
+        @param ensure_ap_on: If true, press the power to turn on the AP.
+        """
         end_time = time.time() + unlock_timeout
 
         logging.info('Pressing power button for %ds to unlock the console.',
@@ -928,11 +934,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # If the last power button press left the AP powered off, and it was on
         # before, turn it back on.
         time.sleep(self.faft_config.shutdown)
-        ap_on_after = self.ap_is_on()
-        logging.debug('During run_pp, AP %s -> %s',
-                'on' if ap_on_before else 'off',
-                'on' if ap_on_after else 'off')
-        if ap_on_before and not ap_on_after:
+        if ensure_ap_on and not self.ap_is_on():
+            logging.info('AP is off. Pressing the power button to turn it on')
             self._servo.power_short_press()
             logging.debug('Pressing PP to turn back on')
 

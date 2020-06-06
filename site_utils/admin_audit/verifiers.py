@@ -122,6 +122,19 @@ class VerifyServoUsb(base._BaseServoVerifier):
 
         self._set_state(state)
 
+        # install fresh image to the USB because badblocks formats it
+        # https://crbug.com/1091406
+        try:
+            logging.debug('Started to install test image to USB-drive')
+            _, image_path = self._dut_host.stage_image_for_servo()
+            servo.image_to_servo_usb(image_path, power_off_dut=False)
+            logging.debug('Finished installing test image to USB-drive')
+        except:
+            # ignore any error which happined during install image
+            # it not relative to the main goal
+            logging.debug('Fail to install test image to USB-drive')
+            pass
+
     def _set_state(self, state):
         if state:
             self._set_host_info_state(constants.SERVO_USB_STATE_PREFIX, state)

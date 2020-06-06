@@ -92,6 +92,9 @@ class VerifyServoUsb(base._BaseServoVerifier):
         usb = servo.probe_host_usb_dev()
         if not usb:
             logging.error('Usb not detected')
+            metrics.Counter(
+                'chromeos/autotest/servo/usb/not_detected'
+                ).increment(fields={'host': self._dut_host.hostname})
             self._set_state(constants.HW_STATE_NEED_REPLACEMENT)
             return
 
@@ -110,7 +113,7 @@ class VerifyServoUsb(base._BaseServoVerifier):
                 state = constants.HW_STATE_NORMAL
         except Exception as e:
             if 'Timeout encountered:' in str(e):
-                logging.info('Timeout during running action. Ignore')
+                logging.info('Timeout during running action')
                 metrics.Counter(
                     'chromeos/autotest/audit/servo/usb/timeout'
                     ).increment(fields={'host': self._dut_host.hostname})

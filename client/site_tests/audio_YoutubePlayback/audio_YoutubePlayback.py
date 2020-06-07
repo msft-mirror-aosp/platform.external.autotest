@@ -5,17 +5,15 @@
 import logging
 import os
 
-from autotest_lib.client.bin import test, utils
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import cmd_utils
 from autotest_lib.client.cros.audio import cras_utils
-from autotest_lib.client.cros.audio import sox_utils
 
 TEST_DURATION = 15
 
-class desktopui_AudioFeedback(audio_helper.chrome_rms_test):
+class audio_YoutubePlayback(audio_helper.chrome_rms_test):
     """Verifies if youtube playback can be captured."""
     version = 1
 
@@ -27,18 +25,18 @@ class desktopui_AudioFeedback(audio_helper.chrome_rms_test):
         tab.Navigate(video_url)
 
         def player_is_ready():
+            """Returns whether the player is ready."""
             return tab.EvaluateJavaScript('typeof player != "undefined"')
 
         utils.poll_for_condition(
             condition=player_is_ready,
             exception=error.TestError('Failed to load the Youtube player'))
 
-        # Seek to 60 seconds to skip the silence in the beginning.
-        tab.ExecuteJavaScript('player.seekTo(60, true)')
         tab.ExecuteJavaScript('player.playVideo()')
 
         # Make sure the video is playing
         def get_current_time():
+            """Returns current time."""
             return tab.EvaluateJavaScript('player.getCurrentTime()')
 
         old_time = get_current_time()

@@ -32,10 +32,7 @@ def run(machine):
     # TODO(crbug.com/992303): Fix android condition.
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['('
-                             '!disabled && '
-                             '"group:arc-data-collector"'
-                             ')'],
+                 test_exprs=['("group:arc-data-collector")'],
                  ignore_test_failures=False, max_run_sec=1200,
                  command_args=args)
 

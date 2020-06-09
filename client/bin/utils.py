@@ -2315,10 +2315,9 @@ def get_gpu_family():
         wflinfo = utils.system_output(cmd,
                                       retain_output=True,
                                       ignore_status=False)
-        version = re.findall(r'OpenGL renderer string: '
-                             r'Mali-T([0-9]+)', wflinfo)
-        if version:
-            return 'mali-t%s' % version[0]
+        m = re.findall(r'OpenGL renderer string: (Mali-\w+)', wflinfo)
+        if m:
+            return m[0].lower()
         return 'mali-unrecognized'
     if socfamily == 'tegra':
         return 'tegra'

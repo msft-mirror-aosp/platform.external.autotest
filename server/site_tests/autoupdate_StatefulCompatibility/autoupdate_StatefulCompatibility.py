@@ -17,6 +17,8 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
     """Tests autoupdating to/from kernel-next images."""
     version = 1
 
+    _LOGIN_TEST = 'login_LoginSuccess'
+
     def _get_target_uri(self, target_board, version_regex, max_image_checks):
         """Checks through all valid builds for the latest green build
 
@@ -277,9 +279,10 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
         if self._source_payload_uri is not None:
             logging.debug('Going to install source image on DUT.')
             cros_device.install_source_image(self._source_payload_uri)
-            cros_device.check_login_after_source_update()
+            self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                                   tag='source')
 
         logging.debug('Going to install target image on DUT.')
         cros_device.install_target_image(self._target_payload_uri)
 
-        cros_device.check_login_after_target_update()
+        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

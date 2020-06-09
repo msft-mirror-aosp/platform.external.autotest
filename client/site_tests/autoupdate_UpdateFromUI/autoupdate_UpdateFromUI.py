@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
@@ -33,13 +32,8 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
         @param payload_url: The payload url to use.
 
         """
-        metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(payload_url, metadata_dir.name)
-        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir,
-                update_metadata_dir=metadata_dir.name,
-                update_payloads_address=base_url) as nebraska:
+            log_dir=self.resultsdir, payload_url=payload_url) as nebraska:
             with chrome.Chrome(autotest_ext=True) as cr:
                 # Need to create a custom lsb-release file to point the UI
                 # update button to Nebraska instead of the default update

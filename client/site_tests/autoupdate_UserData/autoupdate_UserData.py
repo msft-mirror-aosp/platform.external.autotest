@@ -103,17 +103,17 @@ class autoupdate_UserData(update_engine_test.UpdateEngineTest):
                                      'automatic.')
 
 
-    def run_once(self, image_url=None):
+    def run_once(self, payload_url=None):
         """
         Tests that user settings are not reset by update.
 
-        @param image_url: The payload url to use.
+        @param payload_url: The payload url to use.
 
         """
-        if image_url:
+        if payload_url:
             metadata_dir = autotemp.tempdir()
-            self._get_payload_properties_file(image_url, metadata_dir.name)
-            base_url = ''.join(image_url.rpartition('/')[0:2])
+            self._get_payload_properties_file(payload_url, metadata_dir.name)
+            base_url = ''.join(payload_url.rpartition('/')[0:2])
             with nebraska_wrapper.NebraskaWrapper(
                     log_dir=self.resultsdir,
                     update_metadata_dir=metadata_dir.name,

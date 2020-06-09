@@ -503,14 +503,6 @@ def create_servo_repair_strategy():
         (_LidVerifier,               'lid_open',    ['servod']),
         (_EcBoardVerifier,           'ec_board',    ['servod']),
         (_CCDTestlabVerifier,        'ccd_testlab', ['job']),
-        # TODO(jrbarnette):  We want a verifier for whether there's
-        # a working USB stick plugged into the servo.  However,
-        # although we always want to log USB stick problems, we don't
-        # want to fail the servo because we don't want a missing USB
-        # stick to prevent, say, power cycling the DUT.
-        #
-        # So, it may be that the right fix is to put diagnosis into
-        # ServoInstallRepair rather than add a verifier.
     ]
 
     servod_deps = ['job', 'servod', 'pwr_button']

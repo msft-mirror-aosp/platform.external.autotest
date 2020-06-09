@@ -2077,3 +2077,28 @@ class FirmwareTest(FAFTBase):
             raise error.TestError('Unable to own tpm while clearing fwmp.')
         self.host.run('cryptohome '
                       '--action=remove_firmware_management_parameters')
+
+    def wait_for(self, cfg_field, action_msg=None, extra_time=0):
+        """Waits for time specified in a config.
+
+        @ivar cfg_field: The name of the config field that specifies the
+                            time to wait.
+        @ivar action_msg: Optional log message describing the action that
+                            will occur after the wait.
+        @ivar extra_time: Additional time to be added to time from config.
+        """
+        wait_time = self.faft_config.__getattr__(cfg_field) + extra_time
+        if extra_time:
+            wait_src = "%s + %s" % (cfg_field, extra_time)
+        else:
+            wait_src = cfg_field
+
+        units = 'second' if wait_time==1 else 'seconds'
+        start_msg = "Waiting %s(%s) %s" % (wait_time, wait_src, units)
+        if action_msg:
+            start_msg += ", before '%s'" % action_msg
+        start_msg += "."
+
+        logging.info(start_msg)
+        time.sleep(wait_time)
+        logging.info("Done waiting.")

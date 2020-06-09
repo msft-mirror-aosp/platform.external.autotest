@@ -288,8 +288,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return '/'.join([build_uri.rstrip('/'), 'stateful.tgz'])
 
 
-    def _get_job_repo_url(self):
+    def _get_job_repo_url(self, job_repo_url=None):
         """Gets the job_repo_url argument supplied to the test by the lab."""
+        if job_repo_url is not None:
+            return job_repo_url
         if self._hosts is not None:
             self._host = self._hosts[0]
         if self._host is None:
@@ -566,10 +568,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @returns a valid devserver update URL.
 
         """
-        if job_repo_url is None:
-            self._job_repo_url = self._get_job_repo_url()
-        else:
-            self._job_repo_url = job_repo_url
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
         if not self._job_repo_url:
             raise error.TestFail('There was no job_repo_url so we cannot get '
                                  'a payload to use.')
@@ -608,12 +607,32 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param full_payload: True for full, False for delta.
 
         """
-        if job_repo_url is None:
-            self._job_repo_url = self._get_job_repo_url()
-        else:
-            self._job_repo_url = job_repo_url
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
         payload_url = self._get_payload_url(full_payload=full_payload)
         url = self._copy_payload_to_public_bucket(payload_url)
         logging.info('Public update URL: %s', url)
         return url
+
+
+    def get_payload_for_nebraska(self, job_repo_url=None, full_payload=True,
+                                 public_bucket=False):
+        """
+        Gets a payload URL to be used with a nebraska instance on the DUT.
+
+        @param job_repo_url: string url containing the current build.
+        @param full_payload: bool whether we want a full payload.
+        @param public_bucket: True to return a payload on a public bucket.
+
+        @returns string URL of a payload staged on a lab devserver.
+
+        """
+        if public_bucket:
+            return self.get_payload_url_on_public_bucket(
+                job_repo_url, full_payload=full_payload)
+
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
+        payload = self._get_payload_url(full_payload=full_payload)
+        payload_url, _ = self._stage_payload_by_uri(payload)
+        logging.info('Payload URL for Nebraska: %s', payload_url)
+        return payload_url
 

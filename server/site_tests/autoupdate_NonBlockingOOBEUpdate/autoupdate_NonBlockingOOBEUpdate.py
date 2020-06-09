@@ -35,14 +35,10 @@ class autoupdate_NonBlockingOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         """
         tpm_utils.ClearTPMOwnerRequest(self._host)
-
-        # Get an update url that will return non critical update responses.
-        self._job_repo_url = job_repo_url
-        payload = self._get_payload_url(full_payload=full_payload)
-        image_url, _ = self._stage_payload_by_uri(payload)
-
+        payload_url = self.get_payload_for_nebraska(job_repo_url,
+                                                    full_payload=full_payload)
         self._run_client_test_and_check_result('autoupdate_StartOOBEUpdate',
-                                               payload_url=image_url,
+                                               payload_url=payload_url,
                                                full_payload=full_payload,
                                                critical_update=False)
 

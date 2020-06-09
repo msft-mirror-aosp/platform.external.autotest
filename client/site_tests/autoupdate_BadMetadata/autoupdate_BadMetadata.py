@@ -19,11 +19,11 @@ class autoupdate_BadMetadata(update_engine_test.UpdateEngineTest):
                            'ErrorCode::kDownloadInvalidMetadataSize)'
 
 
-    def run_once(self, image_url, bad_metadata_size=False, bad_sha256=False):
+    def run_once(self, payload_url, bad_metadata_size=False, bad_sha256=False):
         """
         Tests update_engine can deal with invalid data in the omaha response.
 
-        @param image_url: The payload url.
+        @param payload_url: The payload url.
         @param bad_metadata_size: True if we want to test bad metadata size.
         @param bad_sha256: True if we want to test bad sha256.
 
@@ -40,10 +40,10 @@ class autoupdate_BadMetadata(update_engine_test.UpdateEngineTest):
             error_string = self._METADATA_SIZE_ERROR
 
         metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(image_url,
+        self._get_payload_properties_file(payload_url,
                                           metadata_dir.name,
                                           **props_to_override)
-        base_url = ''.join(image_url.rpartition('/')[0:2])
+        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
                 log_dir=self.resultsdir,
                 update_metadata_dir=metadata_dir.name,

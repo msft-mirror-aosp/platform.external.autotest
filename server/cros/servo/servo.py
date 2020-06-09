@@ -1111,17 +1111,18 @@ class Servo(object):
         servo is controlled by a remote host, in this case the image needs to
         be transferred to the remote host. This adds the servod port number, to
         make sure tests for different DUTs don't trample on each other's files.
+        Along with the firmware image, any subsidiary files in the same
+        directory shall be copied to the host as well.
 
         @param image_path: a string, name of the firmware image file to be
                transferred.
         @return: a string, full path name of the copied file on the remote.
         """
-        name = os.path.basename(image_path)
-        remote_name = 'dut_%s.%s' % (self._servo_host.servo_port, name)
-        dest_path = os.path.join('/tmp', remote_name)
-        logging.info('Copying %s to %s', name, dest_path)
-        self._servo_host.send_file(image_path, dest_path)
-        return dest_path
+        src_path = os.path.dirname(image_path)
+        dest_path = os.path.join('/tmp', 'dut_%d' % self._servo_host.servo_port)
+        logging.info('Copying %s to %s', src_path, dest_path)
+        self._servo_host.send_file(src_path, dest_path, delete_dest=True)
+        return os.path.join(dest_path, os.path.basename(image_path))
 
 
     def system(self, command, timeout=3600):

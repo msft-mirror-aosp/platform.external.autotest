@@ -636,3 +636,31 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Payload URL for Nebraska: %s', payload_url)
         return payload_url
 
+
+    def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
+                                          clobber_stateful=False, tag='source'):
+        """
+        Updates the device.
+
+        Used by autoupdate_EndToEndTest and autoupdate_StatefulCompatibility,
+        which use auto_updater to perform updates.
+
+        @param cros_device: The device to be updated.
+        @param payload_uri: The payload with which the device should be updated.
+        @param clobber_stateful: Boolean that determines whether the stateful
+                                 of the device should be force updated. By
+                                 default, set to False
+        @param tag: An identifier string added to each log filename.
+
+        @raise error.TestFail if anything goes wrong with the update.
+
+        """
+        try:
+            cros_device.install_version_without_cros_au_rpc(
+                payload_uri, clobber_stateful=clobber_stateful)
+        except Exception as e:
+            logging.exception('ERROR: Failed to update device.')
+            raise error.TestFail(str(e))
+        finally:
+            self._copy_generated_nebraska_logs(
+                cros_device.cros_updater.request_logs_dir, tag)

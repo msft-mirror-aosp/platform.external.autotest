@@ -4,7 +4,6 @@
 
 import logging
 
-from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cellular import test_environment
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
@@ -48,15 +47,9 @@ class autoupdate_CannedOmahaUpdate(update_engine_test.UpdateEngineTest):
 
         """
 
-        metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(payload_url,
-                                          metadata_dir.name,
-                                          public_key=public_key)
-        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir,
-                update_metadata_dir=metadata_dir.name,
-                update_payloads_address=base_url) as nebraska:
+            log_dir=self.resultsdir, payload_url=payload_url,
+            public_key=public_key) as nebraska:
 
             if not use_cellular:
                 self.run_canned_update(allow_failure, nebraska.get_update_url())

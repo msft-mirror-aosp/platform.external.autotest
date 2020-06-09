@@ -10,20 +10,18 @@ class autoupdate_UrlSwitch(update_engine_test.UpdateEngineTest):
     """Tests that we can continue with the second url when the first fails."""
     version = 1
 
-    def run_once(self, image_url):
+    def run_once(self, payload_url):
         """
-        Runs the URL switch test.
-
-        Test to see whether the update_engine can successfully switch to a
+        Tests to see whether the update_engine can successfully switch to a
         different URL if one fails.
 
         @param image_url: The URL of the update payload.
-        """
 
+        """
         # Get payload properties file so we can run Nebraska with it.
         metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(image_url, metadata_dir.name)
-        base_url = ''.join(image_url.rpartition('/')[0:2])
+        self._get_payload_properties_file(payload_url, metadata_dir.name)
+        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
                 log_dir=self.resultsdir,
                 update_metadata_dir=metadata_dir.name,

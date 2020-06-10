@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.client.cros.update_engine import update_engine_test
 
@@ -18,14 +17,8 @@ class autoupdate_UrlSwitch(update_engine_test.UpdateEngineTest):
         @param image_url: The URL of the update payload.
 
         """
-        # Get payload properties file so we can run Nebraska with it.
-        metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(payload_url, metadata_dir.name)
-        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir,
-                update_metadata_dir=metadata_dir.name,
-                update_payloads_address=base_url) as nebraska:
+            log_dir=self.resultsdir, payload_url=payload_url) as nebraska:
 
             # Start the update that will return two Urls. This matches what test
             # and production omaha does today.

@@ -27,9 +27,6 @@ Multiple chameleon tests:
     - Two classic LE
 """
 
-import threading
-import time
-
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
      BluetoothAdapterTests, TABLET_MODELS
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
@@ -46,34 +43,6 @@ LONG_SUSPEND = 30
 class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                 BluetoothAdapterTests):
     """Server side bluetooth adapter suspend resume test with peer."""
-
-    def _device_connect_async(self, device_type, device, adapter_address):
-        """ Connects peer device asynchronously with DUT.
-
-        This function uses a thread instead of a subprocess so that the test
-        result is stored for the test. Otherwise, the test connection was
-        sometimes failing but the test itself was passing.
-
-        @param device_type: The device type (used to check if it's LE)
-        @param device: the meta device with the peer device
-        @param adapter_address: the address of the adapter
-
-        @returns threading.Thread object with device connect task
-        """
-
-        def _action_device_connect():
-            time.sleep(1)
-            if 'BLE' in device_type:
-                # LE reconnects by advertising (dut controller will create LE
-                # connection, not the peer device)
-                self.test_device_set_discoverable(device, True)
-            else:
-                # Classic requires peer to initiate a connection to wake up the
-                # dut
-                self.test_connection_by_device_only(device, adapter_address)
-
-        thread = threading.Thread(target=_action_device_connect)
-        return thread
 
 
     def test_discover_and_pair(self, device):
@@ -231,7 +200,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                 suspend, sleep_timeout=SHORT_SUSPEND)
 
             # Trigger peer wakeup
-            peer_wake = self._device_connect_async(device_type, device,
+            peer_wake = self.device_connect_async(device_type, device,
                                                    adapter_address)
             peer_wake.start()
 

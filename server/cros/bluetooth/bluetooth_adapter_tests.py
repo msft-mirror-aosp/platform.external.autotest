@@ -14,6 +14,7 @@ import multiprocessing
 import os
 import re
 from socket import error as SocketError
+import threading
 import time
 
 import bluetooth_test_utils
@@ -3567,6 +3568,35 @@ class BluetoothAdapterTests(test.test):
         proc = multiprocessing.Process(target=_action_suspend)
         proc.daemon = True
         return proc
+
+
+    def device_connect_async(self, device_type, device, adapter_address):
+        """ Connects peer device asynchronously with DUT.
+
+        This function uses a thread instead of a subprocess so that the test
+        result is stored for the test. Otherwise, the test connection was
+        sometimes failing but the test itself was passing.
+
+        @param device_type: The device type (used to check if it's LE)
+        @param device: the meta device with the peer device
+        @param adapter_address: the address of the adapter
+
+        @returns threading.Thread object with device connect task
+        """
+
+        def _action_device_connect():
+            time.sleep(1)
+            if 'BLE' in device_type:
+                # LE reconnects by advertising (dut controller will create LE
+                # connection, not the peer device)
+                self.test_device_set_discoverable(device, True)
+            else:
+                # Classic requires peer to initiate a connection to wake up the
+                # dut
+                self.test_connection_by_device_only(device, adapter_address)
+
+        thread = threading.Thread(target=_action_device_connect)
+        return thread
 
 
     # -------------------------------------------------------------------

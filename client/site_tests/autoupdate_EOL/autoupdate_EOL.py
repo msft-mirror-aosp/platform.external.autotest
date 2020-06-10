@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import logging
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -104,10 +105,14 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
 
         # Start a Nebraska server to return a response with eol entry.
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir) as nebraska:
+            log_dir=self.resultsdir) as nebraska:
             # Try to update. It should fail with noupdate.
-            self._check_for_update(
-                nebraska.get_update_url(eol_date=eol_date, no_update=True))
+            try:
+                self._check_for_update(
+                    nebraska.get_update_url(eol_date=eol_date, no_update=True),
+                    wait_for_completion=True)
+            except error.CmdError:
+                logging.info('Update failed as expected.')
 
             self._check_eol_info()
             with chrome.Chrome(autotest_ext=True, logged_in=True) as cr:

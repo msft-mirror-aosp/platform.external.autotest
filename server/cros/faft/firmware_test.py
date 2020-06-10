@@ -25,6 +25,7 @@ from autotest_lib.server.cros.servo import chrome_base_ec
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.server.cros.servo import servo
+from autotest_lib.server.cros.faft import telemetry
 
 ConnectionError = mode_switcher.ConnectionError
 
@@ -496,12 +497,20 @@ class FirmwareTest(FAFTBase):
             usb_dev = self.servo.probe_host_usb_dev()
             if not usb_dev:
                 raise error.TestError(
-                        'An USB disk should be plugged in the servo board.')
+                    'An USB disk should be plugged in the servo board. %s' %
+                    telemetry.collect_usb_state(self.servo))
 
         rootfs = '%s%s' % (usb_dev, self._ROOTFS_PARTITION_NUMBER)
         logging.info('usb dev is %s', usb_dev)
         tmpd = self.servo.system_output('mktemp -d -t usbcheck.XXXX')
-        self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
+        try:
+            self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
+        except error.AutoservRunError as e:
+            raise error.TestError(
+                ('Could not mount the partition on USB device. ' +
+                    'Exception: %s\nMore telemetry: %s') %
+                (e,
+                    telemetry.collect_usb_state(self.servo)))
 
         try:
             usb_lsb = self.servo.system_output('cat %s' %

@@ -30,22 +30,21 @@ Multiple chameleon tests:
 import threading
 import time
 
-from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+     BluetoothAdapterTests, TABLET_MODELS
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
 
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
-test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
 
 SHORT_SUSPEND = 10
 MED_SUSPEND = 20
 LONG_SUSPEND = 30
 
 
-class bluetooth_AdapterSRSanity(
-        BluetoothAdapterQuickTests,
-        bluetooth_adapter_tests.BluetoothAdapterTests):
+class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
+                                BluetoothAdapterTests):
     """Server side bluetooth adapter suspend resume test with peer."""
 
     def _device_connect_async(self, device_type, device, adapter_address):
@@ -257,7 +256,9 @@ class bluetooth_AdapterSRSanity(
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID', devices={'MOUSE': 1},
-                  model_testNA=['bob', 'dru'])
+                  model_testNA=['bob', 'dru'],
+                  skip_models=TABLET_MODELS,
+                  )
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
@@ -267,7 +268,9 @@ class bluetooth_AdapterSRSanity(
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID', devices={'BLE_MOUSE': 1},
-                  model_testNA=['bob', 'dru'])
+                  model_testNA=['bob', 'dru'],
+                  skip_models=TABLET_MODELS,
+                  )
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]

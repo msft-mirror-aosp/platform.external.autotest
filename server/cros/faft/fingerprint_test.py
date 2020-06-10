@@ -65,11 +65,13 @@ class FingerprintTest(test.test):
         # bloonchipper
         '61382804da86b4156d666cc9a976088f8b647d44': _KEY_TYPE_DEV,
         '07b1af57220c196e363e68d73a5966047c77011e': _KEY_TYPE_PRE_MP,
+        '1c590ef36399f6a2b2ef87079c135b69ef89eb60': _KEY_TYPE_MP,
 
         # dartmonkey
         '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799': _KEY_TYPE_MP,
 
         # nocturne
+        '8a8fc039a9463271995392f079b83ce33832d07d': _KEY_TYPE_DEV,
         '6f38c866182bd9bf7a4462c06ac04fa6a0074351': _KEY_TYPE_MP,
         'f6f7d96c48bd154dbae7e3fe3a3b4c6268a10934': _KEY_TYPE_PRE_MP,
 
@@ -82,7 +84,7 @@ class FingerprintTest(test.test):
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.3455-bc55b4ae',  # not yet finalized
+        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4277-9f652bb3',  # not yet finalized
         _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
         _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
         _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
@@ -107,6 +109,30 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.3455-bc55b4ae',
                 _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
             },
+            'bloonchipper_v2.0.3504-f45c30a9.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '6f5fe59909097287c95ddd879832e30790926c307e203c617ba7d04bd007dcea',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.3504-f45c30a9',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.3504-f45c30a9',
+                _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+            'bloonchipper_v2.0.4019-265ce611.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'c66ee09d60e4ad8c6afd00d4982cc7681a0bd37306bb156d3817aca4802d91e7',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4019-265ce611',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4019-265ce611',
+                _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+            'bloonchipper_v2.0.4274-a9ed1089.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '3ae000ad5b31687f2fb6d0dc9926ec46e8262007d7bbaf0beeb2ace167761bc7',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4274-a9ed1089',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4274-a9ed1089',
+                _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+            'bloonchipper_v2.0.4277-9f652bb3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '7d9b788a908bee5c83e27450258b2bbf110d7253d49faa4804562ae27e42cb3b',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
+                _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
+            },
         },
         _FP_BOARD_NAME_NOCTURNE: {
             'nocturne_fp_v2.2.110-b936c0a3c.bin': {
@@ -125,6 +151,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_SHA256SUM: '73d822071518cf1b6e705d9c5903c2bcf37bae536784b275b96d916c44d3b6b7',
                 _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
                 _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.3266-99b5e2c98',
+                _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
+            },
+            'nocturne_fp_v2.0.4017-9c45fb4b3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '16c405eeaff75dcbc76dbc9f368f66e3fabc47e2ebcf13bd2b64b8b133bbff97',
+                _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
+                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.4017-9c45fb4b3',
                 _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
             },
         },
@@ -147,6 +179,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.3266-99b5e2c98',
                 _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
             },
+            'nami_fp_v2.0.4017-9c45fb4b3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '7965ea4c4371ee6d21dc462b9ed7c99078d17f4b772bec51441ca9af7d8f3a80',
+                _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
+                _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.4017-9c45fb4b3',
+                _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
+            },
         },
         _FP_BOARD_NAME_DARTMONKEY: {
             'dartmonkey_v2.0.2887-311310808.bin': {
@@ -159,6 +197,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_SHA256SUM: 'ac1c74b5d2676923f041ee1a27bf5b9892fab1d4f82fe924550a9b55917606ae',
                 _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
                 _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.3266-99b5e2c98',
+                _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
+            },
+            'dartmonkey_v2.0.4017-9c45fb4b3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'b84914c70e93c28e2221f48be338dbf0ad0cfb12b7877baaf6b47f7bfd2aa958',
+                _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
+                _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.4017-9c45fb4b3',
                 _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
             }
         }
@@ -211,7 +255,7 @@ class FingerprintTest(test.test):
                                  % ectool_output)
         return ret
 
-    def initialize(self, host, test_dir, use_dev_signed_fw=False,
+    def setup_test(self, host, test_dir, use_dev_signed_fw=False,
                    enable_hardware_write_protect=True,
                    enable_software_write_protect=True,
                    force_firmware_flashing=False, init_entropy=True):

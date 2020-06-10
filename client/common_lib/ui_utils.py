@@ -173,25 +173,22 @@ class UI_Handler(object):
 
         new_promise = self.PROMISE_TEMPLATE % """root.findAll({attributes:
             {name: %s, role: %s}}).map(node => node.%s)""" % (name, role, attr)
-
         return self.ext.EvaluateJavaScript(new_promise, promise=True)
 
-    def get_name_role_list(self):
+    def get_name_role_list(self, name=None, role=None):
         """
         Return [{}, {}] containing the name/role of everything on screen.
 
         """
-        combined = []
-        names = self.list_screen_items(attr='name')
-        roles = self.list_screen_items(attr='role')
+        name = self.REGEX_ALL if name is None else name
+        role = self.REGEX_ALL if role is None else self._format_obj(role,
+                                                                    False)
 
-        if len(names) != len(roles):
-            raise error.TestError('Number of items in names and roles !=')
+        new_promise = self.PROMISE_TEMPLATE % """root.findAll({attributes:
+            {name: %s, role: %s}}).map(node =>
+            {return {name: node.name, role: node.role} })""" % (name, role)
 
-        for name, role in zip(names, roles):
-            temp_d = {'name': name, 'role': role}
-            combined.append(temp_d)
-        return combined
+        return self.ext.EvaluateJavaScript(new_promise, promise=True)
 
     def _format_obj(self, name, isRegex):
         """

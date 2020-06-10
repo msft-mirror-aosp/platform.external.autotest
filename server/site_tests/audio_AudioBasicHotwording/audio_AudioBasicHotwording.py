@@ -8,6 +8,7 @@ import os
 import time
 import threading
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
@@ -39,10 +40,19 @@ class audio_AudioBasicHotwording(audio_test.AudioTest):
 
         """
         if (not audio_test_utils.has_hotwording(self.host)):
-            return
+            raise error.TestNAError(
+                    'No hotwording device for the DUT.'
+                    ' Confirm swarming bot dimension and control file'
+                    ' dependency for hot-wording is matching.'
+                    ' For new boards, please update the BORADS_WITH_HOTWORDING.'
+            )
 
         hotword_file = audio_test_data.HOTWORD_TEST_FILE
-        golden_file = audio_test_data.SIMPLE_FREQUENCY_TEST_1330_FILE
+        golden_file = audio_test_data.GenerateAudioTestData(
+                path=os.path.join(self.bindir, 'fix_1330_16.raw'),
+                duration_secs=10,
+                frequencies=[1330, 1330],
+                volume_scale=0.1)
 
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.ChameleonIds.LINEOUT)

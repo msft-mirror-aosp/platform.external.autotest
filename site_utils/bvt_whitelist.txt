@@ -11,7 +11,6 @@ logging_CrashSender
 logging_UdevCrash
 logging_UserCrash
 login_LoginSuccess
-network_WlanDriver
 platform_DMVerityBitCorruption
 platform_DMVerityCorruption
 platform_MemCheck

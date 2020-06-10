@@ -48,10 +48,6 @@ class firmware_ECLidSwitch(FirmwareTest):
         """Close lid by servo."""
         self.servo.set('lid_open', 'no')
 
-    def run_shutdown_cmd(self):
-        """Shut down by command"""
-        self.faft_client.system.run_shell_command('shutdown -P now', False)
-
     @delayed(RPC_DELAY)
     def delayed_open_lid(self):
         """Delay by RPC_DELAY and then open lid by servo."""
@@ -73,13 +69,13 @@ class firmware_ECLidSwitch(FirmwareTest):
         Confirm the device is in G3, wait for WAKE_DELAY, and then wake DUT
         with lid switch.
         """
-        self.check_shutdown_power_state("G3", pwr_retries=10)
+        self.check_shutdown_power_state(self.POWER_STATE_G3, pwr_retries=10)
         time.sleep(self.WAKE_DELAY)
         self._wake_by_lid_switch()
 
     def immediate_wake(self):
         """Confirm the device is in G3 and then wake DUT with lid switch."""
-        self.check_shutdown_power_state("G3", pwr_retries=10)
+        self.check_shutdown_power_state(self.POWER_STATE_G3, pwr_retries=10)
         self._wake_by_lid_switch()
 
     def shutdown_and_wake(self, shutdown_func, wake_func):

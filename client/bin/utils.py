@@ -1049,6 +1049,7 @@ def unload_module(module_name):
 
     @param module_name: Name of the module we want to remove.
     """
+    module_name = module_name.replace('-', '_')
     l_raw = utils.system_output("/bin/lsmod").splitlines()
     lsmod = [x for x in l_raw if x.split()[0] == module_name]
     if len(lsmod) > 0:
@@ -2314,10 +2315,9 @@ def get_gpu_family():
         wflinfo = utils.system_output(cmd,
                                       retain_output=True,
                                       ignore_status=False)
-        version = re.findall(r'OpenGL renderer string: '
-                             r'Mali-T([0-9]+)', wflinfo)
-        if version:
-            return 'mali-t%s' % version[0]
+        m = re.findall(r'OpenGL renderer string: (Mali-\w+)', wflinfo)
+        if m:
+            return m[0].lower()
         return 'mali-unrecognized'
     if socfamily == 'tegra':
         return 'tegra'
@@ -2395,7 +2395,7 @@ def get_other_device():
     Will return a list of other block devices, that are not the root device.
     """
 
-    cmd = 'lsblk -dpn -o NAME | grep -v loop | grep -v zram'
+    cmd = 'lsblk -dpn -o NAME | grep -v -E "(loop|zram|boot|rpmb)"'
     devs = utils.system_output(cmd).splitlines()
 
     for dev in devs[:]:

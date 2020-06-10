@@ -333,7 +333,7 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     return sorted(list(suites))
 
 
-def get_dependencies(modules, abi, is_public, is_camerabox_test):
+def get_dependencies(modules, abi, is_public, camera_facing):
     """Defines lab dependencies needed to schedule a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -342,15 +342,16 @@ def get_dependencies(modules, abi, is_public, is_camerabox_test):
                 current test.
     @param is_public: boolean variable to specify whether or not the bundle is
                       from public source or not.
-    @param is_camerabox_test: boolean variable to specify whether it's camerabox
-                              related test.
+    @param camera_facing: specify requirement of camerabox setup with target
+                          test camera facing. Set to None if it's not camerabox
+                          related test.
     """
     dependencies = ['arc']
     if abi in CONFIG['LAB_DEPENDENCY']:
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
 
-    if is_camerabox_test:
-        dependencies.append('camerabox')
+    if camera_facing is not None:
+        dependencies.append('camerabox_facing:'+camera_facing)
 
     for module in modules:
         if is_public and module in CONFIG['PUBLIC_DEPENDENCIES']:
@@ -408,7 +409,10 @@ def get_max_retries(modules, abi, suites, is_public):
 
     # Ugly overrides.
     # In bvt we don't want to hold the CQ/PFQ too long.
-    if 'suite:bvt-arc' in suites or 'suite:bvt-perbuild' in suites:
+    if 'suite:bvt-arc' in suites:
+        retry = 3
+    # Not strict as CQ for bvt-perbuild. Let per-module config take priority.
+    if retry == -1 and 'suite:bvt-perbuild' in suites:
         retry = 3
     # During qualification we want at least 9 retries, possibly more.
     # TODO(kinaba&yoshiki): do not abuse suite names
@@ -542,7 +546,7 @@ def get_authkey(is_public):
     return CONFIG['AUTHKEY']
 
 
-def _format_collect_cmd(is_public, retry):
+def _format_collect_cmd(is_public, abi_to_run, retry):
     """Returns a list specifying tokens for tradefed to list all tests."""
     if retry:
         return None
@@ -555,6 +559,8 @@ def _format_collect_cmd(is_public, retry):
     if (not is_public and
             not CONFIG.get('NEEDS_DYNAMIC_CONFIG_ON_COLLECTION', True)):
         cmd.append('--dynamic-config-url=')
+    if abi_to_run:
+        cmd += ['--abi', abi_to_run]
     return cmd
 
 
@@ -566,7 +572,7 @@ def _get_special_command_line(modules, _is_public):
     return cmd
 
 
-def _format_modules_cmd(is_public, modules=None, retry=False):
+def _format_modules_cmd(is_public, abi_to_run, modules=None, retry=False):
     """Returns list of command tokens for tradefed."""
     if retry:
         assert(CONFIG['TRADEFED_RETRY_COMMAND'] == 'cts' or
@@ -609,6 +615,8 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
         not (modules.intersection(CONFIG['BVT_ARC'] + CONFIG['SMOKE'] +
              CONFIG['NEEDS_DEVICE_INFO']))):
         cmd.append('--skip-device-info')
+    if abi_to_run:
+        cmd += ['--abi', abi_to_run]
     # If NEEDS_DYNAMIC_CONFIG is set, disable the feature except on the modules
     # that explicitly set as needed.
     if (not is_public and CONFIG.get('NEEDS_DYNAMIC_CONFIG') and
@@ -618,16 +626,17 @@ def _format_modules_cmd(is_public, modules=None, retry=False):
     return cmd
 
 
-def get_run_template(modules, is_public, retry=False):
+def get_run_template(modules, is_public, retry=False, abi_to_run=None):
     """Command to run the modules specified by a control file."""
     cmd = None
     if modules.intersection(get_collect_modules(is_public)):
         if _COLLECT in modules or _PUBLIC_COLLECT in modules:
-            cmd = _format_collect_cmd(is_public, retry=retry)
+            cmd = _format_collect_cmd(is_public, abi_to_run, retry=retry)
         elif _ALL in modules:
-            cmd = _format_modules_cmd(is_public, modules, retry=retry)
+            cmd = _format_modules_cmd(is_public, abi_to_run,
+                                      modules, retry=retry)
     else:
-        cmd = _format_modules_cmd(is_public, modules, retry=retry)
+        cmd = _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
     return cmd
 
 
@@ -766,7 +775,7 @@ def get_controlfile_content(combined,
             modules,
             abi,
             is_public,
-            is_camerabox_test=(camera_facing is not None)),
+            camera_facing),
         extra_artifacts=get_extra_artifacts(modules),
         extra_artifacts_host=get_extra_artifacts_host(modules),
         job_retries=get_job_retries(modules, is_public, suites),
@@ -782,7 +791,10 @@ def get_controlfile_content(combined,
         servo_support_needed = servo_support_needed(modules, is_public),
         max_retries=get_max_retries(modules, abi, suites, is_public),
         timeout=calculate_timeout(modules, suites),
-        run_template=get_run_template(modules, is_public),
+        run_template=get_run_template(modules, is_public,
+                                      abi_to_run=CONFIG
+                                      .get('REPRESENTATIVE_ABI',{})
+                                      .get(abi, None)),
         retry_template=get_retry_template(modules, is_public),
         target_module=target_module,
         target_plan=None,
@@ -830,8 +842,7 @@ def get_tradefed_data(path, is_public, abi):
         elif line.startswith('arm') or line.startswith('x86'):
             # Newer CTS shows ABI-module pairs like "arm64-v8a CtsNetTestCases"
             line = line.split()[1]
-            if (CONFIG['TEST_NAME'] != 'cheets_VTS_R' or
-                line.startswith('Vts') or line.startswith('tradefed')):
+            if line not in CONFIG.get('EXCLUDE_MODULES', []):
                 modules.add(line)
         elif line.startswith('Cts'):
             modules.add(line)

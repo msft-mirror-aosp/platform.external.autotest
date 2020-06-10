@@ -12,6 +12,7 @@ import time
 from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import cras_utils
 
@@ -40,6 +41,10 @@ class audio_CrasDevSwitchStress(test.test):
     _INPUT_BUFFER_DRIFT_CRITERIA = 3 * _STREAM_BLOCK_SIZE
     _OUTPUT_BUFFER_DRIFT_CRITERIA = 3 * _STREAM_BLOCK_SIZE
 
+    def initialize(self):
+        """Initialize the test"""
+        upstart.stop_job('ui')
+
     def cleanup(self):
         """Remove all streams for testing."""
         if self._streams:
@@ -47,7 +52,7 @@ class audio_CrasDevSwitchStress(test.test):
             while len(self._streams) > 0:
                 self._streams[0].kill()
                 self._streams.remove(self._streams[0])
-
+        upstart.restart_job('ui')
         super(audio_CrasDevSwitchStress, self).cleanup()
 
     def _new_stream(self, stream_type, node_pinned):

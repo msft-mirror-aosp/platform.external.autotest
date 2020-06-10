@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import logging
+import re
 import time
 
 from autotest_lib.client.bin import test
@@ -12,11 +13,15 @@ from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_telemetry_utils
 from autotest_lib.client.cros.power import power_utils
-
+from autotest_lib.client.cros.video import histogram_verifier
 
 class power_Test(test.test):
     """Optional base class power related tests."""
     version = 1
+
+    keypress_histogram = 'Event.Latency.EndToEnd.KeyPress'
+    histogram_re = 'Histogram: %s recorded (\d+) samples, mean = (\d+\.\d+)'
+    hist_percentile_re = '^(\d+).+\{(\d+)\.\d+\%\}'
 
     def initialize(self, seconds_period=20., pdash_note='',
                    force_discharge=False):
@@ -108,6 +113,56 @@ class power_Test(test.test):
         self.status.refresh()
         self._checkpoint_logger.checkpoint(name, start_time)
         self._psr.refresh()
+
+    def collect_keypress_latency(self, cr):
+        """Collect keypress latency information from Histograms.
+
+        @param cr: object, the Chrome instance
+        """
+
+        keypress_histogram_end = histogram_verifier.get_histogram(
+            cr, self.keypress_histogram)
+        logger = power_dashboard.KeyvalLogger(self._start_time, time.time())
+        matches = re.search((self.histogram_re % self.keypress_histogram),
+                            keypress_histogram_end)
+
+        if matches:
+            count = int(matches.group(1))
+            mean_latency = float(matches.group(2))
+            logging.info('latency count %d mean %f', count, mean_latency)
+            self.keyvals['keypress_cnt'] = count
+            self.keyvals['keypress_latency_us_avg'] = mean_latency
+            self.output_perf_value(description='keypress_cnt', value=count,
+                                   higher_is_better=True)
+            self.output_perf_value(description='keypress_latency_us_avg',
+                                   value=mean_latency,
+                                   higher_is_better=False)
+            logger.add_item('keypress_cnt', count, 'point', 'keypress')
+            logger.add_item('keypress_latency_us_avg', mean_latency, 'point',
+                            'keypress')
+
+        # Capture the first bucket >= 90th percentile
+        for s in keypress_histogram_end.splitlines():
+            matches = re.search((self.hist_percentile_re), s)
+            if matches:
+                lat = int(matches.group(1))
+                perc = int(matches.group(2))
+                if perc >= 90:
+                    self.keyvals['keypress_latency_us_high'] = lat
+                    self.keyvals['keypress_high_percentile'] = perc
+                    self.output_perf_value(
+                        description='keypress_latency_us_high', value=lat,
+                        higher_is_better=False)
+                    self.output_perf_value(
+                        description='keypress_high_percentile', value=perc,
+                        higher_is_better=False)
+                    logger.add_item('keypress_latency_us_high', lat, 'point',
+                                    'keypress')
+                    logger.add_item('keypress_high_percentile', perc, 'point',
+                                    'keypress')
+                    break
+
+        self._meas_logs.append(logger)
 
     def publish_keyvals(self):
         """Publish power result keyvals."""

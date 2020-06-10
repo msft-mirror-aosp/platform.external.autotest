@@ -164,7 +164,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         # Disable CCD so Cr50 can enter deep sleep
         rv = self.wait_for_client_after_changing_ccd(False)
         if rv:
-            raise error.TestFail('Network connection issue %s', rv)
+            raise error.TestFail('Network connection issue %s' % rv)
         self.cr50.clear_deep_sleep_count()
         rv = self.check_cr50_deep_sleep(0)
         if rv:

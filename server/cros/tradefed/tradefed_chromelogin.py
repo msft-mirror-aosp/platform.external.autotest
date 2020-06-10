@@ -21,7 +21,7 @@ class ChromeLogin(object):
             self._hard_reboot_on_failure = True
 
     def __init__(self, host, board=None, dont_override_profile=False,
-                 enable_default_apps=False, enable_arcvm=False):
+                 enable_default_apps=False):
         """Initializes the ChromeLogin object.
 
         @param board: optional parameter to extend timeout for login for slow
@@ -36,7 +36,6 @@ class ChromeLogin(object):
         self._enable_default_apps = enable_default_apps
         self._need_reboot = False
         self._hard_reboot_on_failure = False
-        self._enable_arcvm = enable_arcvm
 
     def _cmd_builder(self, verbose=False):
         """Gets remote command to start browser with ARC enabled."""
@@ -44,12 +43,6 @@ class ChromeLogin(object):
         # getting the autodir will raise an exception.
         cmd = autotest.Autotest.get_installed_autodir(self._host)
         cmd += '/bin/autologin.py --arc'
-
-        if self._enable_arcvm:
-            logging.info('Booting with ARCVM.')
-            cmd += ' --arcvm'
-        else:
-            logging.info('Booting with ARC++.')
 
         # We want to suppress the Google doodle as it is not part of the image
         # and can be different content every day interacting with testing.
@@ -97,7 +90,10 @@ class ChromeLogin(object):
         # installed on the DUT was partially broken, the script may succeed
         # without actually logging into Chrome/Android. See b/129382439.
         self._host.run(
-            'android-sh -c "ls /data/misc/adb"', ignore_status=False, timeout=9)
+            # "/data/anr" is an arbitrary directory accessible only after
+            # proper login and data mount.
+            'android-sh -c "ls /data/anr"',
+            ignore_status=False, timeout=9)
 
     def enter(self):
         """Logs into Chrome with retry."""

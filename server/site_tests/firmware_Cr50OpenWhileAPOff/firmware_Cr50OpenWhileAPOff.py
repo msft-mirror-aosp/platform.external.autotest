@@ -24,7 +24,6 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
     SLEEP_DELAY = 20
     SHORT_DELAY = 2
     CCD_PASSWORD_RATE_LIMIT = 3
-    PASSWORD = 'Password'
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test"""

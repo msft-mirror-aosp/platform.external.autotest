@@ -86,9 +86,13 @@ BoardInfo = collections.namedtuple('BoardInfo', ['board', 'model', 'sku'])
 
 BORADS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('coral', 'nasher360', ''),
+        BoardInfo('hatch', 'kohaku', ''),
         BoardInfo('octopus', 'bobba360', '9'),
         BoardInfo('octopus', 'bobba360', '10'),
         BoardInfo('snappy', 'snappy', '8'),
+        BoardInfo('zork', 'dalboz', ''),
+        BoardInfo('zork', 'ezkinil', ''),
+        BoardInfo('zork', 'morphius', ''),
 ]
 
 

@@ -8,9 +8,14 @@ import logging
 
 import common
 from autotest_lib.client.common_lib import hosts
+from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import repair_utils
 
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
 
 def ignore_exception_for_non_cros_host(func):
     """
@@ -263,6 +268,49 @@ class _ServodConnectionVerifier(hosts.Verifier):
         return 'servod service is taking calls'
 
 
+class _CCDTestlabVerifier(hosts.Verifier):
+    """
+    Verifier to check that ccd testlab is anabled.
+
+    ALl DUT connected by ccd has to supported cr50 with enabled testlab
+    to allow manipulation by servo. The flag testlab is sticky and will
+    stay enabled if was set up. To enable testlab ccd has to be open.
+    """
+    @ignore_exception_for_non_cros_host
+    def verify(self, host):
+        if not host.get_servo().has_control('cr50_testlab'):
+            raise hosts.AutoservVerifyError(
+                'cr50 has to be supported when use servo with'
+                ' ccd_cr50/type-c connection')
+
+        status = host.get_servo().get('cr50_testlab')
+        if status != 'on':
+            data = {'port': host.servo_port,
+                    'host': host.hostname,
+                    'board': host.servo_board or ''}
+            metrics.Counter(
+                'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
+            # TODO enable when lab will finished rework on all DUTs
+            # or new servo_state will come to the stage
+            # raise hosts.AutoservNonCriticalVerifyError(
+            #     'The ccd testlab is off (not enabled);'
+            #     ' required the rework to enable it (go/ccd-setup)',
+            #     'ccd_testlab_disabled')
+            host.record('INFO', None, 'ccd_testlab_disabled',
+                        'The ccd testlab is off (not enabled);'
+                        ' required the rework to enable it (go/ccd-setup)')
+
+    def _is_applicable(self, host):
+        if host.get_servo():
+            # Only when DUT connect by type-c.
+            return host.get_servo().get_main_servo_device() == 'ccd_cr50'
+        return False
+
+    @property
+    def description(self):
+        return 'ccd testlab enabled'
+
+
 class _PowerButtonVerifier(hosts.Verifier):
     """
     Verifier to check sanity of the `pwr_button` signal.
@@ -313,6 +361,30 @@ class _LidVerifier(hosts.Verifier):
     @property
     def description(self):
         return 'lid_open control is normal'
+
+
+class _EcBoardVerifier(hosts.Verifier):
+    """
+    Verifier response from the 'ec_board' control.
+    """
+
+    @ignore_exception_for_non_cros_host
+    def verify(self, host):
+        if host.is_ec_supported():
+            ec_board_name = ''
+            try:
+                ec_board_name = host.get_servo().get_ec_board()
+                logging.debug('EC board: %s', ec_board_name)
+            except Exception as e:
+                raise hosts.AutoservNonCriticalVerifyError(
+                        '`ec_board` control is not responding; '
+                        'may be caused of broken EC firmware')
+        else:
+            logging.info('The board not support EC')
+
+    @property
+    def description(self):
+        return 'Check EC by get `ec_board` control'
 
 
 class _RestartServod(hosts.RepairAction):
@@ -429,14 +501,8 @@ def create_servo_repair_strategy():
         (_ServodConnectionVerifier,  'servod',      ['job']),
         (_PowerButtonVerifier,       'pwr_button',  ['servod']),
         (_LidVerifier,               'lid_open',    ['servod']),
-        # TODO(jrbarnette):  We want a verifier for whether there's
-        # a working USB stick plugged into the servo.  However,
-        # although we always want to log USB stick problems, we don't
-        # want to fail the servo because we don't want a missing USB
-        # stick to prevent, say, power cycling the DUT.
-        #
-        # So, it may be that the right fix is to put diagnosis into
-        # ServoInstallRepair rather than add a verifier.
+        (_EcBoardVerifier,           'ec_board',    ['servod']),
+        (_CCDTestlabVerifier,        'ccd_testlab', ['job']),
     ]
 
     servod_deps = ['job', 'servod', 'pwr_button']
@@ -444,6 +510,6 @@ def create_servo_repair_strategy():
         (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space']),
         (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
-        (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open']),
+        (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open', 'ec_board']),
     ]
     return hosts.RepairStrategy(verify_dag, repair_actions, 'servo')

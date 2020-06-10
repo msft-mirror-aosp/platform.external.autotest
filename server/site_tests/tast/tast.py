@@ -87,7 +87,7 @@ class tast(test.test):
     _SSP_REMOTE_BUNDLE_DIR = os.path.join(_SSP_ROOT, 'bundles/remote')
     _SSP_REMOTE_DATA_DIR = os.path.join(_SSP_ROOT, 'data')
     _SSP_REMOTE_TEST_RUNNER_PATH = os.path.join(_SSP_ROOT, 'remote_test_runner')
-    _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars')
+    _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars/private')
 
     # Prefix added to Tast test names when writing their results to TKO
     # status.log files.
@@ -187,11 +187,14 @@ class tast(test.test):
         """Runs a single iteration of the test."""
 
         if self._clear_tpm:
-            tpm_utils.ClearTPMOwnerRequest(self._host)
+            tpm_utils.ClearTPMOwnerRequest(self._host, wait_for_ready=True)
 
         self._log_version()
         self._find_devservers()
-        self._get_tests_to_run()
+
+        # Shortcut if no test belongs to the specified test_exprs.
+        if not self._get_tests_to_run():
+          return
 
         run_failed = False
         try:
@@ -257,7 +260,11 @@ class tast(test.test):
         WiFiManager = wifi_test_context_manager.WiFiTestContextManager
         # TODO(crbug.com/1065601): plumb other WiFi test specific arguments,
         #     e.g. pcap address. See: WiFiTestContextManager's constants.
-        for key, var_arg in [(WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s')]:
+        forward_args = [
+            (WiFiManager.CMDLINE_ROUTER_ADDR, 'router=%s'),
+            (WiFiManager.CMDLINE_PCAP_ADDR, 'pcap=%s'),
+        ]
+        for key, var_arg in forward_args:
             if key in args_dict:
                 args += ['-var=' + var_arg % args_dict[key]]
         logging.info('Autotest wificell-related args: %s', args)
@@ -369,6 +376,8 @@ class tast(test.test):
     def _get_tests_to_run(self):
         """Runs the tast command to update the list of tests that will be run.
 
+        @returns False if no tests matched by test_exprs; True otherwise
+
         @raises error.TestFail if the tast command fails or times out.
         """
         logging.info('Getting list of tests that will be run')
@@ -381,9 +390,11 @@ class tast(test.test):
             raise error.TestFail('Failed to parse tests: %s' % str(e))
         if len(self._tests_to_run) == 0:
             expr = ' '.join([utils.sh_quote_word(a) for a in self._test_exprs])
-            raise error.TestFail('No tests matched by %s' % expr)
+            logging.warning('No tests matched by %s', expr)
+            return False
 
         logging.info('Expect to run %d test(s)', len(self._tests_to_run))
+        return True
 
     def _run_tests(self):
         """Runs the tast command to perform testing.

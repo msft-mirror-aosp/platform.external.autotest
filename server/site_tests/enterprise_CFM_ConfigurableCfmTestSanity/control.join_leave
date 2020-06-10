@@ -12,7 +12,6 @@ ATTRIBUTES = "suite:hotrod-remora, suite:bluestreak-pre-cq"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
-DEPENDENCIES="meet_app"
 
 DOC = """
 Verifies that we can specify and run a configurable cfm test.

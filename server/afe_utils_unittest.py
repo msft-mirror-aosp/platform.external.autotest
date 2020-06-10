@@ -9,13 +9,6 @@ import common
 from autotest_lib.server import afe_utils
 
 
-class FakeConfigFromHost(object):
-    def get_config_value(self, _namespace, item, **kargs):
-        return {
-            "stable_version_config_repo_enable": True,
-            "stable_version_config_repo_opt_in_boards": ":all",
-        }[item]
-
 class FakeHostInfo(object):
     def __init__(self, board, cros_stable_version, servo_cros_stable_version):
         self._board = board
@@ -44,8 +37,7 @@ class AfeUtilsTestCase(unittest.TestCase):
             cros_stable_version="R1-2.3.4"
         )
         expected = "xxx-board-release/R1-2.3.4"
-        config = FakeConfigFromHost()
-        out = afe_utils.get_stable_cros_image_name_v2(info=host_info, _config_override=config)
+        out = afe_utils.get_stable_cros_image_name_v2(host_info=host_info)
         self.assertEqual(out, expected)
 
 

@@ -7,7 +7,6 @@ import logging
 import os
 import time
 
-from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
@@ -24,8 +23,6 @@ class audio_AudioBasicUSBRecord(audio_test.AudioTest):
     """
     version = 1
     RECORD_SECONDS = 5
-    SUSPEND_SECONDS = 30
-    RPC_RECONNECT_TIMEOUT = 60
 
     def run_once(self, suspend=False):
         """Runs Basic Audio USB recording test.
@@ -34,7 +31,10 @@ class audio_AudioBasicUSBRecord(audio_test.AudioTest):
                         False for not suspend.
 
         """
-        golden_file = audio_test_data.SWEEP_TEST_FILE
+        golden_file = audio_test_data.GenerateAudioTestData(
+                path=os.path.join(self.bindir, 'fix_1k_440_16.wav'),
+                duration_secs=6,
+                frequencies=[1000, 440])
 
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.ChameleonIds.USBOUT)
@@ -60,12 +60,8 @@ class audio_AudioBasicUSBRecord(audio_test.AudioTest):
             source.set_playback_data(golden_file)
 
             if suspend:
-                audio_test_utils.suspend_resume(self.host,
-                                                self.SUSPEND_SECONDS)
-                utils.poll_for_condition(
-                        condition=self.factory.ready,
-                        timeout=self.RPC_RECONNECT_TIMEOUT,
-                        desc='multimedia server reconnect')
+                audio_test_utils.suspend_resume_and_verify(
+                        self.host, self.factory)
 
                 audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
                                                       self.resultsdir,
@@ -107,4 +103,4 @@ class audio_AudioBasicUSBRecord(audio_test.AudioTest):
         logging.info('Saving recorded data to %s', recorded_file)
         recorder.save_file(recorded_file)
 
-        audio_test_utils.compare_recorded_correlation(golden_file, recorder)
+        audio_test_utils.check_recorded_frequency(golden_file, recorder)

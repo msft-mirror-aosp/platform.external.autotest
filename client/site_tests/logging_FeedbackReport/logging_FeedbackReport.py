@@ -112,6 +112,7 @@ class logging_FeedbackReport(test.test):
         with chrome.Chrome(disable_default_apps=False) as self.cr:
             # Open and confirm feedback app is working.
             self._open_feedback()
+            time.sleep(self._WAIT)
             cr_exts = self.cr.browser.extensions
             self.feedback_app = None
             for extension in cr_exts.GetByExtensionId(self._FEEDBACK_ID):

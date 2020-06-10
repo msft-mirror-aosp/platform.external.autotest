@@ -19,8 +19,8 @@ from autotest_lib.server.hosts.cros_label import AudioLoopbackDongleLabel
 from autotest_lib.server.hosts.cros_label import ChameleonConnectionLabel
 from autotest_lib.server.hosts.cros_label import ChameleonLabel
 from autotest_lib.server.hosts.cros_label import ChameleonPeripheralsLabel
-from autotest_lib.server.hosts.cros_label import ServoLabel
 from autotest_lib.server.hosts.cros_label import ServoTypeLabel
+from autotest_lib.server.hosts.cros_label import DutStorageLabel
 from autotest_lib.server.hosts import host_info
 
 # pylint: disable=missing-docstring
@@ -140,6 +140,9 @@ class MockHost(object):
     def run(self, command, **kwargs):
         """Finds the matching result by command value"""
         return self.mock_cmds[command]
+
+    def is_up(self, **args):
+        return True
 
 
 class MockHostWithoutAFE(MockHost):
@@ -271,56 +274,6 @@ class HWIDLabelTests(unittest.TestCase):
         self.assertEqual(item._hwid_label_names(), cros_label.HWID_LABELS_FALLBACK)
 
 
-class ServoLabelTests(unittest.TestCase):
-    """Unit tests for ServoLabel"""
-
-    def test_servo_working_and_in_cache(self):
-        host = MockHost(['servo_state:WORKING'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo', 'servo_state:WORKING'])
-
-    def test_servo_working_and_in_cache_but_not_connected(self):
-        host = MockHost(['servo_state:NOT_CONNECTED'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
-
-    def test_servo_working_and_in_cache_but_broken(self):
-        host = MockHost(['servo_state:BROKEN'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo', 'servo_state:BROKEN'])
-
-    def test_servo_not_in_cache_and_not_working(self):
-        host = MockHostWithoutAFE(['not_servo_state:WORKING'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
-
-    def test_old_servo_in_cache_and_not_working(self):
-        host = MockHostWithoutAFE(['servo'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo', 'servo_state:WORKING'])
-
-    def test_old_servo_not_in_cache_and_not_working(self):
-        host = MockHostWithoutAFE(['not_servo'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
-
-    def test_old_servo_not_in_cache_and_not_working_2(self):
-        host = MockHostWithoutAFE(['servo1'])
-        servo = ServoLabel()
-        self.assertEqual(servo.get(host), ['servo_state:NOT_CONNECTED'])
-
-    def test_get_all_labels_lists_of_generating_labels(self):
-          servo = ServoLabel()
-          prefix_labels, full_labels = servo.get_all_labels()
-          self.assertEqual(prefix_labels, set(['servo_state']))
-          self.assertEqual(full_labels, set(['servo']))
-
-    def test_update_for_task(self):
-        self.assertTrue(ServoLabel().update_for_task(''))
-        self.assertTrue(ServoLabel().update_for_task('repair'))
-        self.assertFalse(ServoLabel().update_for_task('deploy'))
-
-
 class AudioLoopbackDongleLabelTests(unittest.TestCase):
     def test_update_for_task(self):
         self.assertTrue(AudioLoopbackDongleLabel().update_for_task(''))
@@ -353,8 +306,7 @@ class ServoTypeLabelTests(unittest.TestCase):
     """Unit tests for ServoTypeLabel"""
     def test_update_for_task(self):
         self.assertTrue(ServoTypeLabel().update_for_task(''))
-        # make false when all DUT has servo_type
-        self.assertTrue(ServoTypeLabel().update_for_task('repair'))
+        self.assertFalse(ServoTypeLabel().update_for_task('repair'))
         self.assertTrue(ServoTypeLabel().update_for_task('deploy'))
 
     def test_generate_labels_return_value_from_labels(self):
@@ -378,6 +330,32 @@ class ServoTypeLabelTests(unittest.TestCase):
         self.assertEqual(servo.get(host), ['servo_type:servo_v3'])
         self.assertEqual(servo.generate_labels(host), ['servo_v3'])
         host.servo.get_servo_version.assert_called()
+
+
+class DutStorageLabelTests(unittest.TestCase):
+    """Unit tests for DutStorageLabel"""
+    def test_update_for_task(self):
+        self.assertTrue(DutStorageLabel().update_for_task(''))
+        self.assertFalse(DutStorageLabel().update_for_task('repair'))
+        self.assertTrue(DutStorageLabel().update_for_task('deploy'))
+
+    @mock.patch('autotest_lib.server.cros.storage.'
+                'storage_validate.StorageStateValidator')
+    def test_return_state_labels_when_has_servo(self, validator):
+        storage_validator = mock.Mock()
+        storage_validator.get_type.return_value = 'some_servo'
+        storage_validator.get_state.return_value = 'warming'
+        validator.return_value = storage_validator
+        host = MockHost([])
+        host.servo = mock.Mock()
+        label = DutStorageLabel()
+        self.assertEqual(label.get(host), ['storage_state:ACCEPTABLE'])
+
+    def test_no_labels_when_no_servo(self):
+        host = MockHost([])
+        host.servo = None
+        label = DutStorageLabel()
+        self.assertEqual(label.get(host), [])
 
 
 if __name__ == '__main__':

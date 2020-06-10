@@ -6,6 +6,7 @@ import unittest
 
 import common
 
+from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.hosts import host_info
@@ -45,6 +46,7 @@ class MockHost(cros_host.CrosHost):
 
     def __init__(self, *args):
         self._mock_cmds = {c.cmd: c for c in args}
+        self.hostname = 'MockHost'
 
     def run(self, command, **kwargs):
         """Finds the matching result by command value"""
@@ -124,7 +126,9 @@ class DictFilteringTestCase(unittest.TestCase):
         host = MockHost()
         host.servo = None
         host._servo_host = mock.Mock()
-        host._servo_host.get_servo.return_value = 'Not Empty'
+        servo = mock.Mock()
+        servo.get_servo_type.return_value = None
+        host._servo_host.get_servo.return_value = servo
         host._servo_host.get_servo_state.return_value = 'SOME_STATE'
         host.host_info_store = host_info.InMemoryHostInfoStore()
         return host
@@ -168,7 +172,9 @@ class DictFilteringTestCase(unittest.TestCase):
     def test_set_servo_host_update_servo_state_when_host_exist(self):
         host = self.create_host()
         host._servo_host = mock.Mock()
-        host._servo_host.get_servo.return_value = 'Not Empty'
+        servo = mock.Mock()
+        servo.get_servo_type.return_value = None
+        host._servo_host.get_servo.return_value = servo
         host._servo_host.get_servo_state.return_value = 'SOME_STATE'
         self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), '')
 
@@ -189,7 +195,9 @@ class DictFilteringTestCase(unittest.TestCase):
     def test_set_servo_host_use_servo_state_from_host_when_host_is_passed(self):
         host = self.create_host()
         servo_host = mock.Mock()
-        servo_host.get_servo.return_value = 'Not Empty'
+        servo = mock.Mock()
+        servo.get_servo_type.return_value = None
+        servo_host.get_servo.return_value = servo
         servo_host.get_servo_state.return_value = 'state_of_host'
 
         host.set_servo_host(servo_host)
@@ -199,6 +207,25 @@ class DictFilteringTestCase(unittest.TestCase):
         host.set_servo_host(servo_host, 'passed_State')
         self.assertEqual(host.host_info_store.get().get_label_value(SERVO_STATE_PREFIX), 'state_of_host2')
 
+class CrosHostTestCase(unittest.TestCase):
+    """Tests to verify CrosHost."""
+
+    class TestCrosHost(cros_host.CrosHost):
+        def __init__(self, *args, **kwargs):
+            self.hostname = 'hostname'
+            self.servo = mock.create_autospec(servo.Servo)
+
+    @mock.patch('autotest_lib.server.hosts.cros_host.dev_server')
+    def test_stage_build_to_usb(self, devserver_mock):
+        host = self.TestCrosHost()
+        image_server = mock.MagicMock()
+        devserver_mock.ImageServer.resolve.return_value = image_server
+        image_server.get_test_image_url.return_value = 'image_url'
+
+        host.stage_build_to_usb('board/version')
+
+        image_server.stage_artifacts.assert_called_with('board/version', ['test_image'])
+        host.servo.image_to_servo_usb.assert_called_with('image_url')
+
 if __name__ == "__main__":
     unittest.main()
-

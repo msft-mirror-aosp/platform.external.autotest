@@ -8,8 +8,9 @@ import logging
 from lxml import etree
 import os
 import StringIO
+import time
 
-from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib import error, utils
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 
 
@@ -38,8 +39,21 @@ class ChartFixture:
                         script=self.DISPLAY_SCRIPT,
                         scene=scene_path,
                         log=self.OUTPUT_LOG))
-        # TODO(inker): Suppose chart should be displayed very soon. Or require
-        # of waiting until chart actually displayed.
+
+        logging.info(
+                'Poll for "is ready" message for ensuring chart is ready.')
+        timeout = 30
+        poll_time_step = 0.1
+        while timeout > 0:
+            if self.host.run(
+                    'grep',
+                    args=('-q', 'Chart is ready.', self.OUTPUT_LOG),
+                    ignore_status=True).exit_status == 0:
+                break
+            time.sleep(poll_time_step)
+            timeout -= poll_time_step
+        else:
+            raise error.TestError('Timeout waiting for chart ready')
 
     def cleanup(self):
         """Cleanup display script."""
@@ -74,6 +88,7 @@ class DUTFixture:
     TEST_CONFIG_PATH = '/var/cache/camera/test_config.json'
     CAMERA_PROFILE_PATH = ('/mnt/stateful_partition/encrypted/var/cache/camera'
                            '/media_profiles.xml')
+    CAMERA_SCENE_LOG = '/tmp/scene.jpg'
 
     def __init__(self, test, host, facing):
         self.test = test
@@ -163,6 +178,30 @@ class DUTFixture:
         new_profile = self._filter_camera_profile(profile, self.facing)
         self._write_file(self.CAMERA_PROFILE_PATH, new_profile)
         self.host.run('restart ui')
+
+    @contextlib.contextmanager
+    def _stop_camera_service(self):
+        self.host.run('stop cros-camera')
+        yield
+        self.host.run('start cros-camera')
+
+    def log_camera_scene(self):
+        """Capture an image from camera as the log for debugging scene related
+        problem."""
+
+        gtest_filter = (
+                'Camera3StillCaptureTest/'
+                'Camera3DumpSimpleStillCaptureTest.DumpCaptureResult/0')
+        with self._stop_camera_service():
+            self.host.run(
+                    'sudo',
+                    args=('--user=arc-camera', 'cros_camera_test',
+                          '--gtest_filter=' + gtest_filter,
+                          '--camera_facing=' + self.facing,
+                          '--dump_still_capture_path=' +
+                          self.CAMERA_SCENE_LOG))
+
+        self.host.get_file(self.CAMERA_SCENE_LOG, '.')
 
     def cleanup(self):
         """Cleanup camera filter."""

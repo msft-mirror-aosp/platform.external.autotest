@@ -16,9 +16,9 @@ TEST_TYPE = "server"
 
 DOC = """
 This test checks:
-  - PD Dual role mode is operational in the DUT
-  - Ability to initiate new PD contract with 5/12/20 VBUS value.
-  - Receive Source capabilty messages from PDTester
+  - PD Dual role mode is operational in the DUT.
+  - Ability to initiate new PD contract with various VBUS values.
+  - Receive Source capabilty messages from PDTester.
 
 This subtest is testing the other CC pin.
 """

@@ -26,8 +26,9 @@ class bluetooth_AdapterLEBetterTogether(BluetoothAdapterBetterTogether):
     def smart_unlock_test(self):
         """Run the smart unlock test"""
 
-        address = self.devices['BLE_PHONE'][0].address
-        self.test_smart_unlock(address=address)
+        device = self.devices['BLE_PHONE'][0]
+        device.RemoveDevice(self.bluetooth_facade.address)
+        self.test_smart_unlock(address=device.address)
 
 
     @batch_wrapper('Better Together')

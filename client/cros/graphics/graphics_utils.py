@@ -1273,6 +1273,7 @@ class GraphicsApiHelper(object):
 # Possible paths of the kernel DRI debug text file.
 _DRI_DEBUG_FILE_PATH_0 = "/sys/kernel/debug/dri/0/state"
 _DRI_DEBUG_FILE_PATH_1 = "/sys/kernel/debug/dri/1/state"
+_DRI_DEBUG_FILE_PATH_2 = "/sys/kernel/debug/dri/2/state"
 
 # The DRI debug file will have a lot of information, including the position and
 # sizes of each plane. Some planes might be disabled but have some lingering
@@ -1295,6 +1296,8 @@ def get_num_hardware_overlays():
         file_path = _DRI_DEBUG_FILE_PATH_0;
     elif os.path.exists(_DRI_DEBUG_FILE_PATH_1):
         file_path = _DRI_DEBUG_FILE_PATH_1;
+    elif os.path.exists(_DRI_DEBUG_FILE_PATH_2):
+        file_path = _DRI_DEBUG_FILE_PATH_2;
     else:
         raise RuntimeError('No DRI debug file exists (%s, %s)' %
             (_DRI_DEBUG_FILE_PATH_0, _DRI_DEBUG_FILE_PATH_1))
@@ -1322,7 +1325,8 @@ def is_drm_debug_supported():
     @returns true if either of the DRI debug files are present.
     """
     return (os.path.exists(_DRI_DEBUG_FILE_PATH_0) or
-            os.path.exists(_DRI_DEBUG_FILE_PATH_1))
+            os.path.exists(_DRI_DEBUG_FILE_PATH_1) or
+            os.path.exists(_DRI_DEBUG_FILE_PATH_2))
 
 # Path and file name regex defining the filesystem location for DRI devices.
 _DEV_DRI_FOLDER_PATH = '/dev/dri'

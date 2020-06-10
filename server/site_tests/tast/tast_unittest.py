@@ -370,10 +370,9 @@ class TastTest(unittest.TestCase):
                          {'tast_missing_test.0': 'pkg.Test3'})
 
     def testNoTestsMatched(self):
-        """Tests that an error is raised if no tests are matched."""
+        """Tests that no error is raised if no tests are matched."""
         self._init_tast_commands([])
-        with self.assertRaises(error.TestFail) as _:
-            self._run_test()
+        self._run_test()
 
     def testListCommandFails(self):
         """Tests that an error is raised if the list command fails."""
@@ -568,12 +567,20 @@ class TastTest(unittest.TestCase):
     def testWificellArgs(self):
         """Tests passing Wificell specific args into Tast runner."""
         ROUTER_IP = '192.168.1.2:1234'
-        wificell_var = 'router=%s' % ROUTER_IP
+        PCAP_IP = '192.168.1.3:2345'
+        wificell_var = [
+            'router=%s' % ROUTER_IP,
+            'pcap=%s' % PCAP_IP,
+        ]
         self._init_tast_commands([TestInfo('pkg.Test', 0, 0)],
-                                 run_vars=[wificell_var])
+                                 run_vars=wificell_var)
 
         WiFiManager = wifi_test_context_manager.WiFiTestContextManager
-        args = ["%s=%s" % (WiFiManager.CMDLINE_ROUTER_ADDR, ROUTER_IP)]
+        arg_list = [
+            (WiFiManager.CMDLINE_ROUTER_ADDR, ROUTER_IP),
+            (WiFiManager.CMDLINE_PCAP_ADDR, PCAP_IP),
+        ]
+        args = map(lambda x: ("%s=%s" % x), arg_list)
         self._run_test(command_args=args)
 
     def testVarsfileOption(self):

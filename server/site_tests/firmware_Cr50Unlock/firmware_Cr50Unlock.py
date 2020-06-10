@@ -12,7 +12,6 @@ from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 class firmware_Cr50Unlock(Cr50Test):
     """Verify cr50 unlock."""
     version = 1
-    PASSWORD = 'Password'
 
 
     def run_once(self):

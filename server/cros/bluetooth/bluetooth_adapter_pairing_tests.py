@@ -46,7 +46,6 @@ class BluetoothAdapterPairingTests(
         self.test_discover_device(device.address)
 
         # Test if the discovery could be stopped.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_stop_discovery()
 
         # Test if the discovered device class of service is correct.
@@ -59,19 +58,14 @@ class BluetoothAdapterPairingTests(
 
         # Verify that the adapter could pair with the device.
         # Also set the device trusted when pairing is done.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+        # Device will be connected at the end of pairing.
         self.test_pairing(device.address, device.pin, trusted=True)
-
-        # Verify that the adapter could connect to the device.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(device.address)
 
         # Test if the discovered device name is correct.
         # Sometimes, it takes quite a long time after discovering
         # the device (more than 60 seconds) to resolve the device name.
         # Hence, it is safer to test the device name after pairing and
         # connection is done.
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_device_name(device.address, device.name)
 
         # Test if the device is still connected after suspend/resume.
@@ -120,6 +114,11 @@ class BluetoothAdapterPairingTests(
         if device.can_init_connection:
             # Verify that the device could initiate the connection.
             self.test_connection_by_device(device)
+
+            # With raspberry pi peer, it takes a moment before the device is
+            # registered as an input device. Without delay, the input recorder
+            # doesn't find the device
+            time.sleep(1)
             check_connected_method(device)
         else:
             # Reconnect so that we can test disconnection from the kit
@@ -220,6 +219,11 @@ class BluetoothAdapterPairingTests(
 
             # Verify that the device is reconnecting
             self.test_device_is_connected(device.address)
+
+            # With raspberry pi peer, it takes a moment before the device is
+            # registered as an input device. Without delay, the input recorder
+            # doesn't find the device
+            time.sleep(1)
             check_connected_method(device)
             end_time = time.time()
             time_diff = end_time - start_time

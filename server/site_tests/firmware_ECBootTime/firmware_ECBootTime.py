@@ -36,7 +36,8 @@ class firmware_ECBootTime(FirmwareTest):
         # platforms. http://crosbug.com/p/21628 has been opened to track this
         # issue.
         if self._x86:
-            boot_anchors = ["\[([0-9\.]+) PB", "\[([0-9\.]+) .*(HC 0x|Port 80|ACPI query)"]
+            boot_anchors = ["\[([0-9\.]+) PB",
+                            "\[([0-9\.]+) [^\r\n]*(HC 0x|Port 80|ACPI query)"]
         elif self._arm_legacy:
             boot_anchors = ["\[([0-9\.]+) AP running ...",
                             "\[([0-9\.]+) XPSHOLD seen"]
@@ -90,6 +91,10 @@ class firmware_ECBootTime(FirmwareTest):
 
         # Wait until the ap enter the G3
         time.sleep(self.faft_config.ec_reboot_to_g3_delay)
+
+        # Enable printing host commands. Some boards have it disabled by default
+        # After reboot it will be restored to default
+        self.ec.send_command("hcdebug normal")
 
         # Switch on the AP
         power_press = self.ec.send_command_get_output(

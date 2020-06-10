@@ -45,3 +45,11 @@ SERVO_STATE_BROKEN = 'BROKEN'
 SERVO_STATE_NOT_CONNECTED = 'NOT_CONNECTED'
 SERVO_STATE_WRONG_CONFIG = 'WRONG_CONFIG'
 SERVO_STATE_UNKNOWN = 'UNKNOWN'
+
+# constants to support reset servo via smart usbhub.
+SMART_USBHUB_LABEL = 'smart_usbhub'
+SERVO_RESET_TIMEOUT_SECONDS = 20
+ERROR_MESSAGE_USB_HUB_NOT_COMPATIBLE = ('Be sure the hub is a supported'
+                                        ' smart hub')
+# a servo serial number should be fed to this constant
+ERROR_MESSAGE_DEVICE_NOT_FOUND = 'Device with serial \'%s\' not found.'

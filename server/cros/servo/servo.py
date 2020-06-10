@@ -23,15 +23,25 @@ from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 # Regex to match XMLRPC errors due to a servod control not existing.
 NO_CONTROL_RE = re.compile(r'No control named (\w*\.?\w*)')
 
+# Please see servo/drv/pty_driver.py for error messages to match.
+
+# This common prefix can apply to all subtypes of console errors.
+                     # The first portion is an optional qualifier of the type
+                     # of error that occurred. Each error is or'd.
+CONSOLE_COMMON_RE = (r'((Timeout waiting for response|'
+                     r'Known error [\w\'\".\s]+). )?'
+                     # The second portion is an optional name for the console
+                     # source
+                     r'(\w+\: )?')
 
 # Regex to match XMLRPC errors due to a console being unresponsive.
-NO_CONSOLE_OUTPUT_RE = re.compile(r'No data was sent from the pty\.')
+NO_CONSOLE_OUTPUT_RE = re.compile(r'%sNo data was sent from the pty\.' %
+                                  CONSOLE_COMMON_RE)
 
 
 # Regex to match XMLRPC errors due to a console control failing, but the
 # underlying Console being responsive.
-CONSOLE_MISMATCH_RE = re.compile(r'Timeout waiting for response. '
-                                 r'There was output')
+CONSOLE_MISMATCH_RE = re.compile(r'%sThere was output:' % CONSOLE_COMMON_RE)
 
 
 # The minimum voltage on the charger port on servo v4 that is expected. This is
@@ -151,6 +161,18 @@ class _PowerStateController(object):
         """
         self._check_supported()
         self._servo.set_nocheck('power_state', 'reset')
+
+    def cr50_reset(self):
+        """Force the DUT to reset.
+
+        The DUT is guaranteed to be on at the end of this call,
+        regardless of its previous state, provided that there is
+        working OS software. This also guarantees that the EC has
+        been restarted. Works only for ccd connections.
+
+        """
+        self._check_supported()
+        self._servo.set_nocheck('power_state', 'cr50_reset')
 
     def warm_reset(self):
         """Apply warm reset to the DUT.
@@ -467,11 +489,24 @@ class Servo(object):
 
     def get_servod_version(self):
         """Returns the servod version."""
-        result = self._servo_host.run('servod --version')
-        # TODO: use system_output once servod --version prints to stdout
-        stdout = result.stdout.strip()
-        return stdout if stdout else result.stderr.strip()
-
+        # TODO: use system_output once servod --sversion prints to stdout
+        try:
+            result = self._servo_host.run('servod --sversion')
+        except error.AutoservRunError as e:
+            if 'command execution error' in str(e):
+                # Fall back to version if sversion is not supported yet.
+                result = self._servo_host.run('servod --version')
+                return result.stdout.strip() or result.stderr.strip()
+            # An actually unexpected error occurred, just raise.
+            raise e
+        sversion = result.stdout or result.stderr
+        # The sversion output contains 3 lines:
+        # servod v1.0.816-ff8e966 // the extended version with git hash
+        # 2020-04-08 01:10:29 // the time of the latest commit
+        # chromeos-ci-legacy-us-central1-b-x32-55-u8zc // builder information
+        # For debugging purposes, we mainly care about the version, and the
+        # timestamp.
+        return ' '.join(sversion.split()[1:4])
 
     def power_long_press(self):
         """Simulate a long power button press."""
@@ -567,6 +602,32 @@ class Servo(object):
             time_left = time_left - self.SHORT_DELAY
         raise error.TestFail("Failed setting volume_down to no")
 
+    def arrow_up(self, press_secs='tab'):
+        """Simulate arrow up key presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'.
+        """
+        # TODO: Remove this check after a lab update to include CL:1913684
+        if not self.has_control('arrow_up'):
+            logging.warning('Control arrow_up ignored. '
+                            'Please update hdctools')
+            return
+        self.set_nocheck('arrow_up', press_secs)
+
+    def arrow_down(self, press_secs='tab'):
+        """Simulate arrow down key presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'.
+        """
+        # TODO: Remove this check after a lab update to include CL:1913684
+        if not self.has_control('arrow_down'):
+            logging.warning('Control arrow_down ignored. '
+                            'Please update hdctools')
+            return
+        self.set_nocheck('arrow_down', press_secs)
+
     def ctrl_d(self, press_secs='tab'):
         """Simulate Ctrl-d simultaneous button presses.
 
@@ -574,6 +635,15 @@ class Servo(object):
                            known shorthand: 'tab' 'press' 'long_press'
         """
         self.set_nocheck('ctrl_d', press_secs)
+
+
+    def ctrl_s(self, press_secs='tab'):
+        """Simulate Ctrl-s simultaneous button presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'
+        """
+        self.set_nocheck('ctrl_s', press_secs)
 
 
     def ctrl_u(self, press_secs='tab'):
@@ -811,20 +881,24 @@ class Servo(object):
         err_str = self._get_xmlrpclib_exception(e)
         # Prefix for error parsing
         prefix = 'Getting' if get else 'Setting'
-        err_msg = "%s '%s' :: %s" % (prefix, ctrl_name, err_str)
-        unknown_ctrl = re.findall(NO_CONTROL_RE, err_str)
+        err_summary = '%s %r' % (prefix, ctrl_name)
+        err_msg = '%s :: %s' % (err_summary, err_str)
+        unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
         if unknown_ctrl:
+            unknown_ctrl_name = unknown_ctrl.group(1)
             logging.error('%s %r :: No control named %r', prefix, ctrl_name,
-                          unknown_ctrl[0])
+                          unknown_ctrl_name)
             raise ControlUnavailableError('No control named %r' %
-                                          unknown_ctrl[0])
+                                          unknown_ctrl_name)
         # The error message for unavailble controls is huge as it prints
         # all available controls. Do not log it explicitly.
         logging.error(err_msg)
-        if re.findall(NO_CONSOLE_OUTPUT_RE, err_str):
-            raise UnresponsiveConsoleError('Console not printing output.')
-        elif re.findall(CONSOLE_MISMATCH_RE, err_str):
-            raise ResponsiveConsoleError('Control failed but console alive.')
+        if re.search(NO_CONSOLE_OUTPUT_RE, err_str):
+            raise UnresponsiveConsoleError('Console not printing output. %s.' %
+                                           err_summary)
+        elif re.search(CONSOLE_MISMATCH_RE, err_str):
+            raise ResponsiveConsoleError('Control failed but console alive. %s.'
+                                         % err_summary)
         raise error.TestFail(err_msg)
 
     def get(self, ctrl_name, prefix=''):
@@ -942,7 +1016,8 @@ class Servo(object):
 
 
     def image_to_servo_usb(self, image_path=None,
-                           make_image_noninteractive=False):
+                           make_image_noninteractive=False,
+                           power_off_dut=True):
         """Install an image to the USB key plugged into the servo.
 
         This method may copy any image to the servo USB key including a
@@ -950,17 +1025,19 @@ class Servo(object):
         for test purposes such as restoring a corrupted image or conducting
         an upgrade of ec/fw/kernel as part of a test of a specific image part.
 
-        @param image_path Path on the host to the recovery image.
-        @param make_image_noninteractive Make the recovery image
+        @param image_path: Path on the host to the recovery image.
+        @param make_image_noninteractive: Make the recovery image
                                    noninteractive, therefore the DUT
                                    will reboot automatically after
                                    installation.
+        @param power_off_dut: To put the DUT in power off mode.
         """
         # We're about to start plugging/unplugging the USB key.  We
         # don't know the state of the DUT, or what it might choose
         # to do to the device after hotplug.  To avoid surprises,
         # force the DUT to be off.
-        self._power_state.power_off()
+        if power_off_dut:
+            self._power_state.power_off()
 
         if image_path:
             logging.info('Searching for usb device and copying image to it. '
@@ -998,7 +1075,11 @@ class Servo(object):
         # This call has a built-in delay to ensure that we wait a timeout
         # for the stick to enumerate and settle on the DUT side.
         self.switch_usbkey('dut')
-        self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+        try:
+            self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+        except error.TestFail as e:
+            logging.error('Failed to boot DUT in recovery mode. %s.', str(e))
+            raise error.AutotestError('Failed to boot DUT in recovery mode.')
 
     def install_recovery_image(self, image_path=None,
                                make_image_noninteractive=False):
@@ -1030,17 +1111,18 @@ class Servo(object):
         servo is controlled by a remote host, in this case the image needs to
         be transferred to the remote host. This adds the servod port number, to
         make sure tests for different DUTs don't trample on each other's files.
+        Along with the firmware image, any subsidiary files in the same
+        directory shall be copied to the host as well.
 
         @param image_path: a string, name of the firmware image file to be
                transferred.
         @return: a string, full path name of the copied file on the remote.
         """
-        name = os.path.basename(image_path)
-        remote_name = 'dut_%s.%s' % (self._servo_host.servo_port, name)
-        dest_path = os.path.join('/tmp', remote_name)
-        logging.info('Copying %s to %s', name, dest_path)
-        self._servo_host.send_file(image_path, dest_path)
-        return dest_path
+        src_path = os.path.dirname(image_path)
+        dest_path = os.path.join('/tmp', 'dut_%d' % self._servo_host.servo_port)
+        logging.info('Copying %s to %s', src_path, dest_path)
+        self._servo_host.send_file(src_path, dest_path, delete_dest=True)
+        return os.path.join(dest_path, os.path.basename(image_path))
 
 
     def system(self, command, timeout=3600):
@@ -1097,6 +1179,10 @@ class Servo(object):
         logging.warn("%s is active even though it's not in servo type",
                      active_device)
         return servo_type
+
+
+    def get_servo_type(self):
+        return self._servo_type
 
 
     def get_main_servo_device(self):
@@ -1240,9 +1326,16 @@ class Servo(object):
 
         # Check if EC image was found and return path or raise error
         if ec_image:
+            # Extract subsidiary binaries for EC
+            # Find a monitor binary for NPCX_UUT chip type, if any.
+            mon_candidates = [candidate.replace('ec.bin', 'npcx_monitor.bin')
+                              for candidate in ec_image_candidates]
+            _extract_image_from_tarball(tarball_path, dest_dir, mon_candidates,
+                                        self.EXTRACT_TIMEOUT_SECS)
+
             return os.path.join(dest_dir, ec_image)
         else:
-            raise error.TestError('Failed to extract EC image from %s',
+            raise error.TestError('Failed to extract EC image from %s' %
                                   tarball_path)
 
 
@@ -1280,7 +1373,7 @@ class Servo(object):
         if bios_image:
             return os.path.join(dest_dir, bios_image)
         else:
-            raise error.TestError('Failed to extract BIOS image from %s',
+            raise error.TestError('Failed to extract BIOS image from %s' %
                                   tarball_path)
 
 
@@ -1319,7 +1412,7 @@ class Servo(object):
         self.set('image_usbkey_direction', mux_direction)
         # As servod makes no guarantees when switching to the dut side,
         # add a detection delay here when facing the dut.
-        if mux_direction == 'dut':
+        if mux_direction == 'dut_sees_usbkey':
             time.sleep(self.USB_DETECTION_DELAY)
 
     def get_usbkey_state(self):

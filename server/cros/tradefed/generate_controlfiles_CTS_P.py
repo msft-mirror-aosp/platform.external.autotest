@@ -57,6 +57,7 @@ CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 1
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {
     'CtsDeqpTestCases':         15,  # TODO(b/126787654)
+    'CtsGraphicsTestCases':      5,  # TODO(b/155056869)
     'CtsIncidentHostTestCases': 30,  # TODO(b/128695132)
     'CtsSensorTestCases':       30,  # TODO(b/124528412)
     'CtsUiAutomationTestCases':  9,  # TODO(b/145270500)

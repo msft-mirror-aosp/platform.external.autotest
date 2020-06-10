@@ -6,7 +6,7 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, HFP_WBS, HFP_NBS)
+        A2DP, AVRCP, HFP_WBS, HFP_NBS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
@@ -41,18 +41,34 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.cleanup_bluetooth_audio(device, test_profile)
 
 
+    def au_run_method(self, device, test_method, test_profile):
+        """audio procedure of running a specified test method.
+
+        @param device: the bt peer device
+        @param test_method: the audio test method to run
+        @param test_profile: which test profile is used,
+                             A2DP, HFP_WBS or HFP_NBS
+        """
+        self.test_reset_on_adapter()
+        self.test_bluetoothd_running()
+        self.initialize_bluetooth_audio(device, test_profile)
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
+        self.test_stop_discovery()
+        self.test_pairing(device.address, device.pin, trusted=True)
+        device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
+        self.test_connection_by_adapter(device.address)
+        test_method()
+        self.test_disconnection_by_adapter(device.address)
+        self.cleanup_bluetooth_audio(device, test_profile)
+
+
     @test_wrapper('A2DP sinewave test', devices={'BLUETOOTH_AUDIO':1})
     def au_a2dp_test(self):
         """A2DP test with sinewaves on the two channels."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, A2DP)
-        self.initialize_bluetooth_audio(device, A2DP)
-        self.test_power_on_adapter()
-        self.test_bluetoothd_running()
-        self.test_connection_by_adapter(device.address)
-        self.test_a2dp_sinewaves(device)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, A2DP)
+        self.au_run_method(
+                device, lambda: self.test_a2dp_sinewaves(device), A2DP)
 
 
     def check_wbs_capability(self):
@@ -79,11 +95,8 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
             raise error.TestError('failed to %s wbs',
                                   'enable' if wbs_flag else 'disable')
 
-        self.initialize_bluetooth_audio(device, test_profile)
-        self.test_connection_by_device(device)
-        test_method(device, test_profile)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, test_profile)
+        self.au_run_method(
+                device, lambda: test_method(device, test_profile), test_profile)
 
 
     @test_wrapper('HFP WBS sinewave test with dut as source',
@@ -91,9 +104,7 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_source_test(self):
         """HFP WBS test with sinewave streaming from dut to peer."""
         self.check_wbs_capability()
-
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, HFP_WBS)
         self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_WBS)
 
 
@@ -102,9 +113,7 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""
         self.check_wbs_capability()
-
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, HFP_WBS)
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_WBS)
 
 
@@ -113,7 +122,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_source_test(self):
         """HFP NBS test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, HFP_NBS)
         self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_NBS)
 
 
@@ -122,24 +130,41 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_sink_test(self):
         """HFP NBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, HFP_NBS)
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_NBS)
+
+
+
+    def au_run_avrcp_method(self, device, test_method):
+        """avrcp procedure of running a specified test method.
+
+        @param device: the bt peer device
+        @param test_method: the avrcp test method to run
+        """
+        def wrapped_test_method(device):
+            """A wrapper method to initialize and cleanup avrcp tests.
+
+            @param device: the bt peer device
+            """
+            self.initialize_bluetooth_player(device)
+            test_method(device)
+            self.cleanup_bluetooth_player(device)
+
+        self.au_run_method(
+                device, lambda: wrapped_test_method(device), AVRCP)
 
 
     @test_wrapper('avrcp command test', devices={'BLUETOOTH_AUDIO':1})
     def au_avrcp_command_test(self):
         """AVRCP test to examine commands reception."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_pairing(device, A2DP)
-        self.initialize_bluetooth_audio(device, A2DP)
-        self.test_power_on_adapter()
-        self.test_bluetoothd_running()
-        self.test_connection_by_adapter(device.address)
-        self.initialize_bluetooth_player(device)
-        self.test_avrcp_commands(device)
-        self.cleanup_bluetooth_player(device)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, A2DP)
+        self.au_run_avrcp_method(device, self.test_avrcp_commands)
+
+
+    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1})
+    def au_avrcp_media_info_test(self):
+        """AVRCP test to examine metadata propgation."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_run_avrcp_method(device, self.test_avrcp_media_info)
 
 
     @batch_wrapper('Bluetooth Audio Batch Sanity Tests')
@@ -156,6 +181,7 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_wbs_dut_as_source_test()
         self.au_hfp_wbs_dut_as_sink_test()
         self.au_avrcp_command_test()
+        self.au_avrcp_media_info_test()
 
 
     def run_once(self, host, num_iterations=1, test_name=None,

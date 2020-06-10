@@ -27,6 +27,7 @@ from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import base_servohost
 from autotest_lib.server.hosts import servo_constants
+from autotest_lib.server.cros.faft.utils import config
 from autotest_lib.client.common_lib import global_config
 
 _CONFIG = global_config.global_config
@@ -118,6 +119,10 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_board = None
         self.servo_model = None
         self.servo_serial = None
+        # The flag that indicate if a servo is connected to a smart usbhub.
+        # TODO(xianuowang@) remove this flag once all usbhubs in the lab
+        # get replaced.
+        self.smart_usbhub = None
         self._servo = None
         self._servod_server_proxy = None
         self._initial_instance_ts = None
@@ -353,6 +358,17 @@ class ServoHost(base_servohost.BaseServoHost):
               'missing usbkey')
 
 
+    def is_ec_supported(self):
+        """Check if ec is supported on the servo_board"""
+        if self.servo_board:
+            try:
+                frm_config = config.Config(self.servo_board, self.servo_model)
+                return frm_config.chrome_ec
+            except Exception as e:
+                logging.error('Unexpected error when read from firmware'
+                    ' configs; %s', str(e))
+        return False
+
     def validate_image_usbkey(self):
         """This method first validate if there is a recover usbkey on servo
         that accessible to servohost, and second check if a ChromeOS image is
@@ -524,6 +540,111 @@ class ServoHost(base_servohost.BaseServoHost):
         """
         self.stop_servod()
         self.start_servod(quick_startup)
+
+
+    def _process_servodtool_error(self, response):
+        """Helper function to handle non-zero servodtool response.
+        """
+        if re.search(servo_constants.ERROR_MESSAGE_USB_HUB_NOT_COMPATIBLE,
+                     response.stdout):
+            logging.error('The servo is not plugged on a usb hub that supports'
+                          ' power-cycle!')
+            # change the flag so we can update this label in later process.
+            self.smart_usbhub = False
+            return
+
+        if re.search(servo_constants.ERROR_MESSAGE_DEVICE_NOT_FOUND %
+                     self.servo_serial, response.stdout):
+            logging.error('No servo with serial %s found!', self.servo_serial)
+            return
+
+        logging.error('Unexpected error occurred from usbhub control, please'
+                      ' file a bug and inform chrome-fleet-software@ team!')
+
+
+    def _get_servo_usb_devnum(self):
+        """Helper function to collect current usb devnum of servo.
+        """
+        # TODO remove try-except when fix crbug.com/1087964
+        try:
+            cmd = 'servodtool device -s %s usb-path' % self.servo_serial
+            resp = self.run(cmd, ignore_status=True, timeout=30)
+        except Exception as e:
+            # Here we catch only timeout errors.
+            # Other errors is filtered by ignore_status=True
+            logging.debug('Attempt to get servo usb-path failed due to '
+                          'timeout; %s', e)
+            return ''
+
+        if resp.exit_status != 0:
+            self._process_servodtool_error(resp)
+            return ''
+        usb_path = resp.stdout.strip()
+        logging.info('Usb path of servo %s is %s', self.servo_serial, usb_path)
+
+        resp = self.run('cat %s/devnum' % usb_path,
+                        ignore_status=True)
+        if resp.exit_status != 0:
+            self._process_servodtool_error(resp)
+            return ''
+        return resp.stdout.strip()
+
+
+    def _reset_servo(self):
+        logging.info('Resetting servo through smart usbhub.')
+        # TODO remove try-except when fix crbug.com/1087964
+        try:
+            resp = self.run('servodtool device -s %s power-cycle' %
+                            self.servo_serial, ignore_status=True,
+                            timeout=30)
+            if resp.exit_status != 0:
+                self._process_servodtool_error(resp)
+                return False
+        except Exception as e:
+            # Here we catch only timeout errors.
+            # Other errors is filtered by ignore_status=True
+            logging.debug('Attempt to reset servo failed due to timeout;'
+                          ' %s', e)
+            return False
+
+        logging.debug('Wait %s seconds for servo to come back from reset.',
+                      servo_constants.SERVO_RESET_TIMEOUT_SECONDS)
+        time.sleep(servo_constants.SERVO_RESET_TIMEOUT_SECONDS)
+        # change the flag so we can update this label in later process.
+        self.smart_usbhub = True
+        return True
+
+
+    def reset_servo(self):
+        """Reset(power-cycle) the servo via smart usbhub.
+        """
+        if not self.is_labstation():
+            logging.info('Servo reset is not applicable to servo_v3.')
+            return
+
+        pre_reset_devnum = self._get_servo_usb_devnum()
+        logging.info('Servo usb devnum before reset: %s', pre_reset_devnum)
+        result = self._reset_servo()
+        if not result:
+            message = ('Failed to reset servo with serial: %s. (Please ignore'
+                       ' this error if the DUT is not connected to a smart'
+                       ' usbhub).' % self.servo_serial)
+            logging.warning(message)
+            self.record('INFO', None, None, message)
+            return
+
+        post_reset_devnum = self._get_servo_usb_devnum()
+        logging.info('Servo usb devnum after reset: %s', post_reset_devnum)
+        if not (pre_reset_devnum and post_reset_devnum):
+            message = ('Servo reset completed but unable to verify'
+                       ' devnum change!')
+        elif pre_reset_devnum != post_reset_devnum:
+            message = ('Reset servo with serial %s completed successfully!'
+                       % self.servo_serial)
+        else:
+            message = 'Servo reset completed but devnum is still not changed!'
+        logging.info(message)
+        self.record('INFO', None, None, message)
 
 
     def _extract_compressed_logs(self, logdir, relevant_files):
@@ -1087,6 +1208,14 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         return None, servo_constants.SERVO_STATE_BROKEN
 
     newhost = ServoHost(**servo_args)
+
+    # Reset servo if the servo is locked, as we check if the servohost is up,
+    # if the servohost is labstation and if the servohost is in lab inside the
+    # locking logic. Also check try_servo_repair to make sure we only do this
+    # in AdminRepair tasks.
+    if newhost._is_locked and try_servo_repair:
+        newhost.reset_servo()
+
     try:
         newhost.restart_servod(quick_startup=True)
     except error.AutoservSSHTimeout:
@@ -1147,6 +1276,13 @@ def _is_servo_host_information_exist(hostname, port):
 
 
 def is_servo_host_information_valid(hostname, port):
+    """Check if provided servo attributes are valid.
+
+    @param hostname Hostname of the servohost.
+    @param port     servo port number.
+
+    @returns: A bool value to indicate if provided servo attribute valid.
+    """
     if not _is_servo_host_information_exist(hostname, port):
         return False
     # checking range and correct of the port

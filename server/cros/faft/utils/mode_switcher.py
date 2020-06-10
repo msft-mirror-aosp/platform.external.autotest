@@ -55,8 +55,8 @@ class _BaseFwBypasser(object):
         raise NotImplementedError
 
 
-class _CtrlDBypasser(_BaseFwBypasser):
-    """Controls bypass logic via Ctrl-D combo."""
+class _KeyboardBypasser(_BaseFwBypasser):
+    """Controls bypass logic via keyboard shortcuts for menu UI."""
 
     def bypass_dev_mode(self):
         """Bypass the dev mode firmware logic to boot internal image.
@@ -96,9 +96,9 @@ class _CtrlDBypasser(_BaseFwBypasser):
 
 
     def trigger_dev_to_rec(self):
-        """Trigger to the rec mode from the dev screen."""
+        """Trigger to the to-norm screen from the dev screen."""
         time.sleep(self.faft_config.firmware_screen)
-        self.servo.enter_key()
+        self.servo.ctrl_s()
 
 
     def trigger_rec_to_dev(self):
@@ -116,6 +116,24 @@ class _CtrlDBypasser(_BaseFwBypasser):
             logging.info('ENTER pressed to switch to dev mode')
             self.servo.enter_key()
 
+
+    def trigger_dev_to_normal(self):
+        """Trigger to the normal mode from the dev screen."""
+        # Navigate to to-norm screen
+        time.sleep(self.faft_config.firmware_screen)
+        self.servo.ctrl_s()
+        # Select "Confirm"
+        time.sleep(self.faft_config.confirm_screen)
+        self.servo.enter_key()
+
+
+class _LegacyKeyboardBypasser(_KeyboardBypasser):
+    """Controls bypass logic via keyboard shortcuts for legacy clamshell UI."""
+
+    def trigger_dev_to_rec(self):
+        """Trigger to the to-norm screen from the dev screen."""
+        time.sleep(self.faft_config.firmware_screen)
+        self.servo.enter_key()
 
     def trigger_dev_to_normal(self):
         """Trigger to the normal mode from the dev screen."""
@@ -413,7 +431,7 @@ class _BaseModeSwitcher(object):
     def _create_fw_bypasser(self):
         """Creates a proper firmware bypasser.
 
-        @rtype: _TabletDetachableBypasser | _CtrlDBypasser | _JetstreamBypasser
+        @rtype: _BaseFwBypasser
         """
         return self.FW_BYPASSER_CLASS(self.faft_framework)
 
@@ -456,6 +474,41 @@ class _BaseModeSwitcher(object):
     def reboot_to_mode(self, to_mode, from_mode=None, sync_before_boot=True,
                        wait_for_dut_up=True):
         """Reboot and execute the mode switching sequence.
+
+        This method simulates what a user would do to switch between different
+        modes of ChromeOS.  Note that the modes are end-states where the OS is
+        booted up to the Welcome screen, so it takes care of navigating through
+        intermediate steps such as various boot confirmation screens.
+
+        From the user perspective, these are the states (note that there's also
+        a rec_force_mrc mode which is like rec mode but forces MRC retraining):
+
+        normal <-----> dev <------ rec
+          ^                         ^
+          |                         |
+          +-------------------------+
+
+        This is the implementation, note that "from_mode" is only used for
+        logging purposes.
+
+        Normal <-----> Dev:
+          _enable_dev_mode_and_reboot()
+
+        Rec,normal -----> Dev:
+          _disable_rec_mode_and_reboot()
+
+        Any -----> normal:
+          _enable_normal_mode_and_reboot()
+
+        Normal <-----> rec:
+          enable_rec_mode_and_reboot(usb_state='dut')
+
+        Normal <-----> rec_force_mrc:
+          _enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
+
+        Note that one shouldn't transition to dev again without going through the
+        normal mode.  This is because trying to disable os_verification when it's
+        already off is not supported by reboot_to_mode.
 
         @param to_mode: The target mode, one of 'normal', 'dev', or 'rec'.
         @param from_mode: The original mode, optional, one of 'normal, 'dev',
@@ -735,10 +788,10 @@ class _BaseModeSwitcher(object):
             raise ConnectionError('DUT is still up unexpectedly')
 
 
-class _KeyboardDevSwitcher(_BaseModeSwitcher):
-    """Class that switches firmware mode via keyboard combo."""
+class _MenuSwitcher(_BaseModeSwitcher):
+    """Mode switcher via keyboard shortcuts for menu UI."""
 
-    FW_BYPASSER_CLASS = _CtrlDBypasser
+    FW_BYPASSER_CLASS = _KeyboardBypasser
 
     def _enable_dev_mode_and_reboot(self):
         """Switch to developer mode and reboot."""
@@ -749,7 +802,6 @@ class _KeyboardDevSwitcher(_BaseModeSwitcher):
         self.wait_for_client_offline()
         self.bypasser.trigger_rec_to_dev()
 
-
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot."""
         logging.info("Disabling keyboard controlled developer mode")
@@ -758,8 +810,14 @@ class _KeyboardDevSwitcher(_BaseModeSwitcher):
         self.bypasser.trigger_dev_to_normal()
 
 
+class _KeyboardDevSwitcher(_MenuSwitcher):
+    """Mode switcher via keyboard shortcuts for legacy clamshell UI."""
+
+    FW_BYPASSER_CLASS = _LegacyKeyboardBypasser
+
+
 class _JetstreamSwitcher(_BaseModeSwitcher):
-    """Class that switches firmware mode in Jetstream devices."""
+    """Mode switcher for Jetstream devices."""
 
     FW_BYPASSER_CLASS = _JetstreamBypasser
 
@@ -769,7 +827,6 @@ class _JetstreamSwitcher(_BaseModeSwitcher):
         self.enable_rec_mode_and_reboot(usb_state='host')
         self.wait_for_client_offline()
         self.bypasser.trigger_rec_to_dev()
-
 
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot."""
@@ -781,7 +838,7 @@ class _JetstreamSwitcher(_BaseModeSwitcher):
 
 
 class _TabletDetachableSwitcher(_BaseModeSwitcher):
-    """Class that switches fw mode in tablets/detachables with fw menu UI."""
+    """Mode switcher for legacy menu UI."""
 
     FW_BYPASSER_CLASS = _TabletDetachableBypasser
 
@@ -800,7 +857,6 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
         self.enable_rec_mode_and_reboot(usb_state='host')
         self.wait_for_client_offline()
         self.bypasser.trigger_rec_to_dev()
-
 
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot.
@@ -829,9 +885,11 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
 
 
 _SWITCHER_CLASSES = {
+    'menu_switcher': _MenuSwitcher,
     'keyboard_dev_switcher': _KeyboardDevSwitcher,
     'jetstream_switcher': _JetstreamSwitcher,
-    'tablet_detachable_switcher': _TabletDetachableSwitcher}
+    'tablet_detachable_switcher': _TabletDetachableSwitcher,
+}
 
 
 def create_mode_switcher(faft_framework):

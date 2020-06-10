@@ -39,11 +39,16 @@ class _MockConfigTestCaseBaseClass(unittest.TestCase):
         """Set up a tempfile containing the test data"""
         if self.mock_configs is None:
             return
-        self.original_config_dir = config.CONFIG_DIR
-        config.CONFIG_DIR = tempfile.mkdtemp()
+
+        # Setup mock config._get_config_dir(), but remember the original.
+        self.mock_config_dir = tempfile.mkdtemp()
+        self.original_get_config_dir = config._get_config_dir
+        config._get_config_dir = lambda: self.mock_config_dir
+
+        # Write mock config files.
         self.mock_config_files = []
         for platform in self.mock_configs:
-            mock_config_file = os.path.join(config.CONFIG_DIR,
+            mock_config_file = os.path.join(self.mock_config_dir,
                                             '%s.json' % platform)
             with open(mock_config_file, 'w') as f:
                 json.dump(self.mock_configs[platform], f)
@@ -55,8 +60,8 @@ class _MockConfigTestCaseBaseClass(unittest.TestCase):
             return
         for tf in self.mock_config_files:
             os.remove(tf)
-        os.rmdir(config.CONFIG_DIR)
-        config.CONFIG_DIR = self.original_config_dir
+        os.rmdir(self.mock_config_dir)
+        config._get_config_dir = self.original_get_config_dir
 
 
 class InheritanceTestCase(_MockConfigTestCaseBaseClass):
@@ -173,8 +178,8 @@ class PlatformNamesTestCase(unittest.TestCase):
         attribute 'platform' whose value exactly matches the file's basename.
         For example, rambi.json should contain {'platform': 'rambi'}
         """
-        for filename in os.listdir(config.CONFIG_DIR):
-            filepath = os.path.join(config.CONFIG_DIR, filename)
+        for filename in os.listdir(config._CONFIG_DIR):
+            filepath = os.path.join(config._CONFIG_DIR, filename)
             platform_name, ext = os.path.splitext(filename)
             if ext != '.json' or platform_name == 'DEFAULTS':
                 continue

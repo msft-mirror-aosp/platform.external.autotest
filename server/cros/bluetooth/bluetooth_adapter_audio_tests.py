@@ -27,17 +27,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     }
     WAIT_DAEMONS_READY_SECS = 1
 
-    def _get_pulseaudio_bluez_source(self, get_source_method, device):
+    def _get_pulseaudio_bluez_source(self, get_source_method, device,
+                                     test_profile):
         """Get the specified bluez device number in the pulseaudio source list.
 
         @param get_source_method: the method to get distinct bluez source
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified bluez source is derived
         """
-        sources = device.ListSources()
+        sources = device.ListSources(test_profile)
         logging.debug('ListSources()\n%s', sources)
-        self.bluez_source = get_source_method()
+        self.bluez_source = get_source_method(test_profile)
         result = bool(self.bluez_source)
         if result:
             logging.debug('bluez_source device number: %s', self.bluez_source)
@@ -46,17 +48,18 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return result
 
 
-    def _get_pulseaudio_bluez_sink(self, get_sink_method, device):
+    def _get_pulseaudio_bluez_sink(self, get_sink_method, device, test_profile):
         """Get the specified bluez device number in the pulseaudio sink list.
 
         @param get_sink_method: the method to get distinct bluez sink
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified bluez sink is derived
         """
-        sinks = device.ListSinks()
+        sinks = device.ListSinks(test_profile)
         logging.debug('ListSinks()\n%s', sinks)
-        self.bluez_sink = get_sink_method()
+        self.bluez_sink = get_sink_method(test_profile)
         result = bool(self.bluez_sink)
         if result:
             logging.debug('bluez_sink device number: %s', self.bluez_sink)
@@ -65,37 +68,40 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return result
 
 
-    def _get_pulseaudio_bluez_source_a2dp(self, device):
+    def _get_pulseaudio_bluez_source_a2dp(self, device, test_profile):
         """Get the a2dp bluez source device number.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified a2dp bluez source is derived
         """
         return self._get_pulseaudio_bluez_source(
-                device.GetBluezSourceA2DPDevice, device)
+                device.GetBluezSourceA2DPDevice, device, test_profile)
 
 
-    def _get_pulseaudio_bluez_source_hfp(self, device):
+    def _get_pulseaudio_bluez_source_hfp(self, device, test_profile):
         """Get the hfp bluez source device number.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified hfp bluez source is derived
         """
         return self._get_pulseaudio_bluez_source(
-                device.GetBluezSourceHFPDevice, device)
+                device.GetBluezSourceHFPDevice, device, test_profile)
 
 
-    def _get_pulseaudio_bluez_sink_hfp(self, device):
+    def _get_pulseaudio_bluez_sink_hfp(self, device, test_profile):
         """Get the hfp bluez sink device number.
 
         @param device: the bluetooth peer device
+        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         @returns: True if the specified hfp bluez sink is derived
         """
         return self._get_pulseaudio_bluez_sink(
-                device.GetBluezSinkHFPDevice, device)
+                device.GetBluezSinkHFPDevice, device, test_profile)
 
 
     def _check_audio_frames_legitimacy(self, audio_test_data, recording_device):
@@ -199,7 +205,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         """
-        if not device.StartPulseaudio():
+        if not device.StartPulseaudio(test_profile):
             raise error.TestError('Failed to start pulseaudio.')
         logging.debug('pulseaudio is started.')
 
@@ -277,16 +283,16 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         a2dp_test_data = audio_test_data[A2DP]
 
-        # Wait for pulseaudio bluez hfp source
+        # Wait for pulseaudio a2dp bluez source
         desc='waiting for pulseaudio a2dp bluez source'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_a2dp(device),
+                lambda: self._get_pulseaudio_bluez_source_a2dp(device, A2DP),
                 desc=desc)
 
         # Start recording audio on the peer Bluetooth audio device.
         logging.debug('Start recording a2dp')
-        if not device.StartRecordingAudioSubprocess('a2dp'):
+        if not device.StartRecordingAudioSubprocess(A2DP):
             raise error.TestError(
                     'Failed to record on the peer Bluetooth audio device.')
 
@@ -347,7 +353,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         desc='waiting for pulseaudio bluez hfp source'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_hfp(device),
+                lambda: self._get_pulseaudio_bluez_source_hfp(device,
+                                                              test_profile),
                 desc=desc)
 
         logging.debug('Start recording audio on Pi')
@@ -428,7 +435,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         desc='waiting for pulseaudio bluez hfp sink'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_sink_hfp(device), desc=desc)
+                lambda: self._get_pulseaudio_bluez_sink_hfp(device,
+                                                            test_profile),
+                desc=desc)
 
         # Select audio input device.
         logging.debug('Select input device')
@@ -477,8 +486,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         The peer device name is required to monitor the event reception on the
         DUT. However, as the peer device itself already registered with the
         kernel as an udev input device. The AVRCP profile will register as an
-        separate input device with the Bluetooth device as its name.
-        Temporarily substitute the device name with its Bluetooth address.
+        separate input device with the name pattern: name + (AVRCP), e.g.
+        RASPI_AUDIO (AVRCP). Using 'AVRCP' as device name to help search for
+        the device.
 
         @param device: the Bluetooth peer device
 
@@ -489,7 +499,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.SendMediaPlayerCommand('play')
 
         name = device.name
-        device.name = device.address.lower()
+        device.name = 'AVRCP'
 
         result_pause = self.test_avrcp_event(device,
             device.SendMediaPlayerCommand, 'pause')
@@ -506,4 +516,71 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.results = {'pause': result_pause, 'play': result_play,
                         'stop': result_stop, 'next': result_next,
                         'previous': result_previous}
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_avrcp_media_info(self, device):
+        """Test Case: Test AVRCP media info sent by DUT can be received by peer
+
+        The test update all media information twice to prevent previous
+        leftover data affect the current iteration of test. Then compare the
+        expected results against the information received on the peer device.
+
+        This test verifies media information including: playback status,
+        length, title, artist, and album. Position of the media is not
+        currently support as playerctl on the peer side cannot correctly
+        retrieve such information.
+
+        Length and position information are transmitted in the unit of
+        microsecond. However, BlueZ process those time data in the resolution
+        of millisecond. Discard microsecond detail when comparing those media
+        information.
+
+        @param device: the Bluetooth peer device
+
+        @returns: True if the all AVRCP media info received by DUT, false
+                  otherwise
+
+        """
+        # First round of updating media information to overwrite all leftovers.
+        init_status = 'stopped'
+        init_length = 20200414
+        init_position = 8686868
+        init_metadata = {'album': 'metadata_album_init',
+                         'artist': 'metadata_artist_init',
+                         'title': 'metadata_title_init'}
+        self.bluetooth_facade.set_player_playback_status(init_status)
+        self.bluetooth_facade.set_player_length(init_length)
+        self.bluetooth_facade.set_player_position(init_position)
+        self.bluetooth_facade.set_player_metadata(init_metadata)
+
+        # Second round of updating for actual testing.
+        expected_status = 'playing'
+        expected_length = 68686868
+        expected_position = 20200414
+        expected_metadata = {'album': 'metadata_album_expected',
+                             'artist': 'metadata_artist_expected',
+                             'title': 'metadata_title_expected'}
+        self.bluetooth_facade.set_player_playback_status(expected_status)
+        self.bluetooth_facade.set_player_length(expected_length)
+        self.bluetooth_facade.set_player_position(expected_position)
+        self.bluetooth_facade.set_player_metadata(expected_metadata)
+
+        received_media_info = device.GetMediaPlayerMediaInfo()
+        logging.debug(received_media_info)
+        result_status = bool(expected_status ==
+            received_media_info.get('status').lower())
+        result_album = bool(expected_metadata['album'] ==
+            received_media_info.get('album'))
+        result_artist = bool(expected_metadata['artist'] ==
+            received_media_info.get('artist'))
+        result_title = bool(expected_metadata['title'] ==
+            received_media_info.get('title'))
+        result_length = bool(expected_length / 1000 ==
+            int(received_media_info.get('length')) / 1000)
+
+        self.results = {'status': result_status, 'album': result_album,
+                        'artist': result_artist, 'title': result_title,
+                        'length': result_length}
         return all(self.results.values())

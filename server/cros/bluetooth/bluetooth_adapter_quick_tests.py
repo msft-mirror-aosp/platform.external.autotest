@@ -199,6 +199,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def quick_test_test_decorator(test_name, devices={}, flags=['All'],
                                   model_testNA=[],
                                   model_testWarn=[],
+                                  skip_models=[],
                                   shared_devices_count=0):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
@@ -215,6 +216,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                 failures are emitted as TestNAError.
            @param model_testWarn: If the current platform is in this list,
                                   failures are emitted as TestWarn.
+           @param skip_models: Raises TestNA on these models and doesn't attempt
+                               to run the tests.
         """
 
         def decorator(test_method):
@@ -265,15 +268,23 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     return
                 if not _is_enough_peers_present(self):
                     raise error.TestNAError('Not enough peer available')
-                self.quick_test_test_start(
-                    test_name, devices, shared_devices_count)
 
                 try:
+                    self.quick_test_test_start(test_name, devices,
+                                               shared_devices_count)
+                    model = self.host.get_platform()
+                    if model in skip_models:
+                        logging.info('SKIPPING TEST %s', test_name)
+                        raise error.TestNAError(
+                                'Test not supported on this model')
+
                     test_method(self)
                 except error.TestFail as e:
                     if not bool(self.fails):
                         self.fails.append('[--- failed {} ({})]'.format(
                                 test_method.__name__, str(e)))
+                except error.TestNAError as e:
+                    self.fails.append('[--- SKIPPED: {}]'.format(str(e)))
 
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn)
@@ -335,7 +346,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             result_msg = 'PASSED | ' + result_msg
             self.bat_pass_count += 1
             self.pkg_pass_count += 1
-        elif model in model_testNA:
+        # Mark testNA if all failures are "skips" or any failures should testNA
+        # the whole test
+        elif model in model_testNA or all(['SKIPPED' in x for x in self.fails]):
             result_msg = 'TESTNA | ' + result_msg
             self.bat_testna_count += 1
             self.pkg_testna_count += 1
@@ -434,12 +447,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     single_test_method = getattr(self,  test_name)
                     for iter in xrange(1,num_iterations+1):
                         self.test_iter = iter
-                        try:
-                            single_test_method()
-                        except error.TestFail as e:
-                            if not bool(self.fails):
-                                self.fails.append('[--- failed {} ({})]'.format(
-                                        single_test_method.__name__, str(e)))
+                        single_test_method()
 
                     if self.fails:
                         # If failure is marked as TESTNA, prioritize that over
@@ -453,12 +461,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 else:
                     for iter in xrange(1,num_iterations+1):
                         self.quick_test_batch_start(batch_name, iter)
-                        try:
-                            batch_method(self, num_iterations, test_name)
-                        except error.TestFail as e:
-                            if not bool(self.fails):
-                                self.fails.append('[--- failed {} ({})]'.format(
-                                        batch_method.__name__, str(e)))
+                        batch_method(self, num_iterations, test_name)
                         self.quick_test_batch_end()
             return wrapper
 

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 import os
 import requests
@@ -9,6 +10,7 @@ import subprocess
 import urlparse
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
 
 
@@ -28,22 +30,29 @@ class NebraskaWrapper(object):
 
     """
 
-    def __init__(self, log_dir=None, update_metadata_dir=None,
-                 update_payloads_address=None):
+    def __init__(self, log_dir=None, payload_url=None, **props_to_override):
         """
         Initializes the NebraskaWrapper module.
 
         @param log_dir: The directory to write nebraska.log into.
-        @param update_metadata_dir: The directory containing payload properties
-                files. Look at nebraska.py
-        @param update_payloads_address: The base URL for the update payload.
+        @param payload_url: The payload that will returned in responses.
+        @param props_to_override: Dictionary of key/values to use in responses
+                instead of the default values in payload_url's properties file.
 
         """
         self._nebraska_server = None
         self._port = None
         self._log_dir = log_dir
-        self._update_metadata_dir = update_metadata_dir
-        self._update_payloads_address = update_payloads_address
+        self._update_metadata_dir = None
+        self._update_payloads_address = None
+
+        if payload_url:
+            self._update_metadata_dir = autotemp.tempdir()
+            self._update_payloads_address = ''.join(
+                payload_url.rpartition('/')[0:2])
+            self.get_payload_properties_file(
+                payload_url, self._update_metadata_dir.name,
+                **props_to_override)
 
     def __enter__(self):
         """So that NebraskaWrapper can be used as a Context Manager."""
@@ -74,7 +83,7 @@ class NebraskaWrapper(object):
         if self._log_dir:
             cmd += ['--log-file', os.path.join(self._log_dir, 'nebraska.log')]
         if self._update_metadata_dir:
-            cmd += ['--update-metadata', self._update_metadata_dir]
+            cmd += ['--update-metadata', self._update_metadata_dir.name]
         if self._update_payloads_address:
             cmd += ['--update-payloads-address', self._update_payloads_address]
 
@@ -129,3 +138,33 @@ class NebraskaWrapper(object):
                                    query=query,
                                    fragment='')
         return urlparse.urlunsplit(url)
+
+    def get_payload_properties_file(self, payload_url, target_dir, **kwargs):
+        """
+        Downloads the payload properties file into a directory.
+
+        @param payload_url: The URL to the update payload file.
+        @param target_dir: The directory to download the file into.
+        @param kwargs: A dictionary of key/values that needs to be overridden on
+                the payload properties file.
+
+        """
+        payload_props_url = payload_url + '.json'
+        _, _, file_name = payload_props_url.rpartition('/')
+        try:
+            response = json.loads(requests.get(payload_props_url).text)
+            # Override existing keys if any.
+            for k, v in kwargs.iteritems():
+                # Don't set default None values. We don't want to override good
+                # values to None.
+                if v is not None:
+                    response[k] = v
+            with open(os.path.join(target_dir, file_name), 'w') as fp:
+                json.dump(response, fp)
+
+        except (requests.exceptions.RequestException,
+                IOError,
+                ValueError) as err:
+            raise error.TestError(
+                'Failed to get update payload properties: %s with error: %s' %
+                (payload_props_url, err))

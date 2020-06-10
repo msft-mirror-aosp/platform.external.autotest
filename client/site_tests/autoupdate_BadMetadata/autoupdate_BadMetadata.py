@@ -4,7 +4,6 @@
 
 import logging
 
-from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.client.cros.update_engine import update_engine_test
@@ -39,15 +38,9 @@ class autoupdate_BadMetadata(update_engine_test.UpdateEngineTest):
                 nebraska_wrapper.KEY_PUBLIC_KEY] = self._IMAGE_PUBLIC_KEY
             error_string = self._METADATA_SIZE_ERROR
 
-        metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(payload_url,
-                                          metadata_dir.name,
-                                          **props_to_override)
-        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir,
-                update_metadata_dir=metadata_dir.name,
-                update_payloads_address=base_url) as nebraska:
+            log_dir=self.resultsdir, payload_url=payload_url,
+            **props_to_override) as nebraska:
 
             try:
                 self._check_for_update(

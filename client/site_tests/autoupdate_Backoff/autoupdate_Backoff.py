@@ -42,11 +42,11 @@ class autoupdate_Backoff(update_engine_test.UpdateEngineTest):
         super(autoupdate_Backoff, self).cleanup()
 
 
-    def run_once(self, image_url, backoff):
+    def run_once(self, payload_url, backoff):
         """
         Tests update_engine can do backoff.
 
-        @param image_url: The payload url.
+        @param payload_url: The payload url.
         @param backoff: True if backoff is enabled.
 
         """
@@ -56,9 +56,9 @@ class autoupdate_Backoff(update_engine_test.UpdateEngineTest):
                   ignore_status=True)
 
         metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(image_url,
+        self._get_payload_properties_file(payload_url,
                                           metadata_dir.name)
-        base_url = ''.join(image_url.rpartition('/')[0:2])
+        base_url = ''.join(payload_url.rpartition('/')[0:2])
         with nebraska_wrapper.NebraskaWrapper(
                 log_dir=self.resultsdir,
                 update_metadata_dir=metadata_dir.name,

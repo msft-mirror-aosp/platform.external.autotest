@@ -626,8 +626,9 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.info('Servo usb devnum before reset: %s', pre_reset_devnum)
         result = self._reset_servo()
         if not result:
-            message = ('Failed to reset servo with serial: %s'
-                       % self.servo_serial)
+            message = ('Failed to reset servo with serial: %s. (Please ignore'
+                       ' this error if the DUT is not connected to a smart'
+                       ' usbhub).' % self.servo_serial)
             logging.warning(message)
             self.record('INFO', None, None, message)
             return

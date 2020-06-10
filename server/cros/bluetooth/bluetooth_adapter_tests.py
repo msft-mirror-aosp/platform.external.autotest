@@ -1470,9 +1470,6 @@ class BluetoothAdapterTests(test.test):
         @returns True if adapter ID follows expected format, False otherwise
         """
 
-        # Boards which only support bluetooth version 3 and below
-        BLUETOOTH_3_BOARDS = ['x86-mario', 'x86-zgb']
-
         device = self.host.get_platform()
         adapter_info = self.get_adapter_properties()
 
@@ -1483,10 +1480,9 @@ class BluetoothAdapterTests(test.test):
         modalias = adapter_info['Modalias']
         logging.debug('Saw Bluetooth ID of: %s', modalias)
 
-        if device in BLUETOOTH_3_BOARDS:
-            bt_format = 'bluetooth:v00E0p24..d0300'
-        else:
-            bt_format = 'bluetooth:v00E0p24..d0400'
+        # Valid Device ID is:
+        # <00E0(Google)>/<C405(Chrome OS)>/<non-zero versionNumber>
+        bt_format = 'bluetooth:v00E0pC405d(?!0000)'
 
         if not re.match(bt_format, modalias):
             return False

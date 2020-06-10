@@ -17,6 +17,8 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
     """Tests autoupdating to/from kernel-next images."""
     version = 1
 
+    _LOGIN_TEST = 'login_LoginSuccess'
+
     def _get_target_uri(self, target_board, version_regex, max_image_checks):
         """Checks through all valid builds for the latest green build
 
@@ -239,15 +241,6 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
         return metadata['tags']['status'] == 'pass'
 
 
-    def _stage_payloads_onto_devserver(self):
-        """Stages payloads that will be used by the test onto the devserver."""
-        logging.info('Staging images onto autotest devserver (%s)',
-                     self._autotest_devserver.url())
-
-        self._stage_payloads(self._source_payload_uri, None)
-        self._stage_payloads(self._target_payload_uri, None)
-
-
     def run_once(self, test_conf, max_image_checks):
         """Main entry point of the test."""
         logging.debug("Using test_conf: %s", test_conf)
@@ -268,7 +261,8 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
         self._autotest_devserver = self._get_devserver_for_test(
             {'target_payload_uri': self._target_payload_uri})
 
-        self._stage_payloads_onto_devserver()
+        self._stage_payloads(self._source_payload_uri, None)
+        self._stage_payloads(self._target_payload_uri, None)
 
         # Get an object representing the CrOS DUT.
         cros_device = chromiumos_test_platform.ChromiumOSTestPlatform(
@@ -276,10 +270,13 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
 
         if self._source_payload_uri is not None:
             logging.debug('Going to install source image on DUT.')
-            cros_device.install_source_image(self._source_payload_uri)
-            cros_device.check_login_after_source_update()
+            self.update_device_without_cros_au_rpc(
+                cros_device, self._source_payload_uri, clobber_stateful=True)
+            self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                                   tag='source')
 
         logging.debug('Going to install target image on DUT.')
-        cros_device.install_target_image(self._target_payload_uri)
+        self.update_device_without_cros_au_rpc(
+            cros_device, self._target_payload_uri, tag='target')
 
-        cros_device.check_login_after_target_update()
+        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

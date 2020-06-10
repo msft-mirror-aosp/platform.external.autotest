@@ -5,7 +5,6 @@
 import logging
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.cellular import test_environment
@@ -113,16 +112,11 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                                          'it left off after interruption.')
             return
 
-        metadata_dir = autotemp.tempdir()
-        self._get_payload_properties_file(payload_url, metadata_dir.name)
-        # Setup a Nebraska instance on the DUT because we can't reach devservers
-        # over cellular. Same for non-critical updates which allow better
-        # debugging.
-        base_url = ''.join(payload_url.rpartition('/')[0:2])
+        # Setup a Nebraska instance on the DUT for cellular tests and
+        # non-critical updates. Ceullar tests cannot reach devservers.
+        # Non-critical tests don't need a devserver.
         with nebraska_wrapper.NebraskaWrapper(
-                log_dir=self.resultsdir,
-                update_metadata_dir=metadata_dir.name,
-                update_payloads_address=base_url) as nebraska:
+            log_dir=self.resultsdir, payload_url=payload_url) as nebraska:
 
             update_url = nebraska.get_update_url(
                 critical_update=critical_update)

@@ -2251,7 +2251,7 @@ class FirmwareTest(FAFTBase):
             self._try_to_bring_dut_up()
         logging.info(self.cr50.get_ccd_info())
 
-    def enter_mode_after_checking_tpm_state(self, mode):
+    def enter_mode_after_checking_cr50_state(self, mode):
         """Reboot to mode if cr50 doesn't already match the state"""
         if not hasattr(self, 'cr50'):
             raise error.TestNAError('Test can only be run on devices with '
@@ -2304,7 +2304,7 @@ class FirmwareTest(FAFTBase):
             # mode and ssh into the AP. Skip the steps that aren't required.
             if not (pw or self.cr50.get_cap(
                             'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
-                self.enter_mode_after_checking_tpm_state('dev')
+                self.enter_mode_after_checking_cr50_state('dev')
 
             if pw or self.cr50.get_cap(
                             'OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
@@ -2324,5 +2324,5 @@ class FirmwareTest(FAFTBase):
         # In default, the device should be in normal mode. After opening cr50,
         # the TPM should be cleared and the device should automatically reset to
         # normal mode. However, some tests might want the device in 'dev' mode.
-        self.enter_mode_after_checking_tpm_state('dev' if dev_mode else
+        self.enter_mode_after_checking_cr50_state('dev' if dev_mode else
                                                  'normal')

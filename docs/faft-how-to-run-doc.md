@@ -170,10 +170,14 @@ prepare and install a test Chromium OS image:
 
 ### Setup Confirmation {#setup-confirmation}
 
-To run FAFT you use the test_that tool, which does not automatically start a
-servod process for communicating with the servo board. Before running any tests, go into chroot:
+To run FAFT you use the `test_that` tool, which does not automatically start a
+`servod` process for communicating with the servo board. Running FAFT is easiest
+with `servod` and `test_that` running in separate terminals inside the SDK,
+using either multiple SDK instances (`cros_sdk --enter --no-ns-pid`) or a tool
+such as `screen` inside an SDK instance. Before running any tests, go into
+chroot:
 
-1.  (chroot 1) Run `$ sudo servod --board=$BOARD --no-ns-pid` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
+1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
 1.  Go into a second chroot
 1.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
 1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --board=$BOARD $DUT_IP firmware_FAFTSetup`

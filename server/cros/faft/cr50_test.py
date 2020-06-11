@@ -542,7 +542,7 @@ class Cr50Test(FirmwareTest):
         if not self.cr50.ccd_is_reset():
             # Try to open cr50 and enable testlab mode if it isn't enabled.
             try:
-                self.fast_open(True)
+                self.fast_ccd_open(True)
             except:
                 # Even if we can't open cr50, do our best to reset the rest of
                 # the system state. Log a warning here.
@@ -556,12 +556,12 @@ class Cr50Test(FirmwareTest):
             if not self.can_set_ccd_level:
                 raise error.TestError("CCD state has changed, but we can't "
                                       "restore it")
-            self.fast_open(True)
+            self.fast_ccd_open(True)
             self.cr50.set_caps(self.original_ccd_settings)
 
         # First try using testlab open to open the device
         if self.original_ccd_level == 'open':
-            self.fast_open(True)
+            self.fast_ccd_open(True)
         elif self.original_ccd_level != self.cr50.get_ccd_level():
             self.cr50.set_ccd_level(self.original_ccd_level)
 

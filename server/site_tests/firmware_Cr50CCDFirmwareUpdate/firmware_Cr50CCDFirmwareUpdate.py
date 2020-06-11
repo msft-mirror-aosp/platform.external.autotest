@@ -68,7 +68,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
                                   self.faft_config.platform)
 
         # Fast open cr50 and check if testlab is enabled.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         if self.servo.has_control('active_v4_device'):
             try:
                 self.servo.set('active_v4_device', 'ccd_cr50')

@@ -45,7 +45,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
             raise error.TestNAError('Plug in servo v4 type c cable into ccd '
                     'port')
 
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         # make sure password is cleared.
         self.cr50.send_command('ccd reset')
         # Set GscFullConsole to Always, so we can always use gpioset.

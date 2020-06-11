@@ -21,7 +21,7 @@ class firmware_FWMPDisableCCD(Cr50Test):
         """Initialize servo check if cr50 exists"""
         super(firmware_FWMPDisableCCD, self).initialize(host, cmdline_args,
                 full_args)
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
 
 
     def try_set_ccd_level(self, level, fwmp_disabled_ccd):

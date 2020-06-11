@@ -2267,7 +2267,8 @@ class FirmwareTest(FAFTBase):
         if (mode == 'dev') != self.cr50.in_dev_mode():
             raise error.TestError('Unable to enter %r mode' % mode)
 
-    def fast_open(self, enable_testlab=False, reset_ccd=True, dev_mode=False):
+    def fast_ccd_open(self, enable_testlab=False, reset_ccd=True,
+                      dev_mode=False):
         """Try to use ccd testlab open. If that fails, do regular ap open.
 
         Args:

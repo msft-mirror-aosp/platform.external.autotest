@@ -22,7 +22,7 @@ class firmware_Cr50Unlock(Cr50Test):
             raise error.TestNAError('Can not run test without power button')
             return
 
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         self.cr50.send_command('ccd reset')
         # Set the password
         self.set_ccd_password(self.PASSWORD)

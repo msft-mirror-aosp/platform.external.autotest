@@ -1121,8 +1121,15 @@ class Servo(object):
         src_path = os.path.dirname(image_path)
         dest_path = os.path.join('/tmp', 'dut_%d' % self._servo_host.servo_port)
         logging.info('Copying %s to %s', src_path, dest_path)
+        # Copy a directory, src_path to dest_path. send_file() will create a
+        # directory named basename(src_path) under dest_path, and copy all files
+        # in src_path to the destination.
         self._servo_host.send_file(src_path, dest_path, delete_dest=True)
-        return os.path.join(dest_path, os.path.basename(image_path))
+
+        # Make a image path of the destination.
+        # e.g. /tmp/dut_9999/EC/ec.bin
+        rv = os.path.join(dest_path, os.path.basename(src_path))
+        return os.path.join(rv, os.path.basename(image_path))
 
 
     def system(self, command, timeout=3600):

@@ -185,24 +185,40 @@ class ServoHost(base_servohost.BaseServoHost):
                 type(self).__name__, self.hostname, self.servo_port)
 
     def connect_servo(self):
+        """ Initialize and setup servo for later use.
+        """
+        self.initilize_servo()
+        self.initialize_dut_for_servo()
+
+
+    def initilize_servo(self):
         """Establish a connection to the servod server on this host.
 
         Initializes `self._servo` and then verifies that all network
         connections are working.  This will create an ssh tunnel if
         it's required.
+        """
+        self._servo = servo.Servo(servo_host=self,
+                                  servo_serial=self.servo_serial)
 
-        As a side effect of testing the connection, all signals on the
-        target servo are reset to default values, and the USB stick is
+
+    def initialize_dut_for_servo(self):
+        """This method will do some setup for dut control, e.g. setup
+        main servo_v4 device, and also testing the connection between servo
+        and DUT. As a side effect of testing the connection, all signals on
+        the target servo are reset to default values, and the USB stick is
         set to the neutral (off) position.
         """
-        servo_obj = servo.Servo(servo_host=self, servo_serial=self.servo_serial)
-        self._servo = servo_obj
+        if not self._servo:
+            raise hosts.AutoservVerifyError('Servo object needs to be'
+                                            ' initialized before initialize'
+                                            ' DUT.')
         timeout, _ = retry.timeout(
-                servo_obj.initialize_dut,
-                timeout_sec=self.INITIALIZE_SERVO_TIMEOUT_SECS)
+            self._servo.initialize_dut,
+            timeout_sec=self.INITIALIZE_SERVO_TIMEOUT_SECS)
         if timeout:
-            raise hosts.AutoservVerifyError(
-                    'Servo initialize timed out.')
+            raise hosts.AutoservVerifyError('Initialize dut for servo timed'
+                                            ' out.')
 
 
     def disconnect_servo(self):

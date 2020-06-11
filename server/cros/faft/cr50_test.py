@@ -685,7 +685,7 @@ class Cr50Test(FirmwareTest):
         self.cr50.ccd_enable()
 
         # reboot to normal mode if the device is in dev mode.
-        self.enter_mode_after_checking_tpm_state('normal')
+        self.enter_mode_after_checking_cr50_state('normal')
 
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
         self.clear_fwmp()

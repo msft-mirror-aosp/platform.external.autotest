@@ -66,7 +66,7 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
 # the 'cros' verifier; it's listed as an AU trigger as a
 # simplification.  The ultimate fix is to split the 'cros' verifier
 # into smaller individual verifiers.
-_CROS_AU_TRIGGERS = ('power', 'rwfw', 'python', 'cros',)
+_CROS_AU_TRIGGERS = ('power', 'rwfw', 'python', 'cros', 'dev_default_boot',)
 _CROS_POWERWASH_TRIGGERS = ('tpm', 'good_au', 'ext4',)
 _CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
 _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)

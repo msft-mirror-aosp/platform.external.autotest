@@ -16,7 +16,7 @@ class firmware_Cr50Password(Cr50Test):
         """Check we can set the cr50 password."""
         # Make sure to enable testlab mode, so we can guarantee the password
         # can be cleared.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         self.cr50.send_command('ccd reset')
 
         # Set the password

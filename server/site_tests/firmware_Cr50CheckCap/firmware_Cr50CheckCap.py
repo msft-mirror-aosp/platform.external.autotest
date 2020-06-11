@@ -97,7 +97,7 @@ class firmware_Cr50CheckCap(Cr50Test):
 
     def run_once(self, ccd_open_restricted=False):
         """Check cr50 capabilities work correctly."""
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
 
         self._ec_prefix = '' if self.servo.main_device_is_ccd() else 'ccd_cr50'
         self.check_ec_uart = (

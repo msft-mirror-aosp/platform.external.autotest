@@ -254,9 +254,34 @@ Q: I got an error while running FAFT: `AutoservRunError: command execution error
 
 - A: Run `sudo emerge chromeos-ec` inside your chroot.
 
+Q: All tests are failing to run, saying that python was not found.
+   What's wrong?
+
+- A: This happens when the stateful partition that holds Python is wiped by a
+  powerwash.
+
+  It is usually caused by the stateful filesystem becoming corrupted, since
+  Chrome OS performs a powerwash instead of running `fsck` like a standard
+  Linux distribution would.
+
+Q: What causes filesystem corruption?
+
+- A1: Most cases of corruption are triggered by a test performing an EC reset,
+  because the current sync logic in Autotest doesn't fully guarantee that all
+  writes have been completed, especially on USB storage devices.
+
+- A2: If the outer stateful partition (`/mnt/stateful_partition`) becomes full,
+  the inner loop-mounted DM device (`/mnt/stateful_partition/encrypted`)
+  will encounter write errors, likely corrupting the filesystem.
+
+  Note: Running out of space only tends to happens when running FAFT tests that
+  leave the DUT running from the USB disk, and only if the image's
+  [stateful partition is too small].
+
 [FAFT suite]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/master/server/site_tests/
 [servo]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/README.md#Power-Measurement
 [servo v2]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_v2.md
 [servo v4]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_v4.md
 [servo micro]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_micro.md
 [servo v4 Type-C]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_v4.md#Type_C-Version
+[stateful partition is too small]: https://crrev.com/c/1935408

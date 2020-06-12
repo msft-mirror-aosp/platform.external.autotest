@@ -8,6 +8,7 @@ import logging
 import os
 import pprint
 import re
+import StringIO
 import time
 import uuid
 
@@ -115,6 +116,9 @@ class FirmwareTest(FAFTBase):
         'reimage': False,
         'usb_check': False,
     }
+
+    # CCD password used by tests.
+    CCD_PASSWORD = 'Password'
 
     @classmethod
     def check_setup_done(cls, label):
@@ -2111,3 +2115,214 @@ class FirmwareTest(FAFTBase):
         logging.info(start_msg)
         time.sleep(wait_time)
         logging.info("Done waiting.")
+
+    def _try_to_bring_dut_up(self):
+        """Try to quickly get the dut in a pingable state"""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        logging.info('checking dut state')
+
+        self.servo.set_nocheck('cold_reset', 'off')
+        self.servo.set_nocheck('warm_reset', 'off')
+        time.sleep(self.cr50.SHORT_WAIT)
+        if not self.cr50.ap_is_on():
+            logging.info('Pressing power button to turn on AP')
+            self.servo.power_short_press()
+
+        end_time = time.time() + self.RESPONSE_TIMEOUT
+        while not self.host.ping_wait_up(
+                self.faft_config.delay_reboot_to_ping * 2):
+            if time.time() > end_time:
+                logging.warn('DUT is unresponsive after trying to bring it up')
+                return
+            self.servo.get_power_state_controller().reset()
+            logging.info('DUT did not respond. Resetting it.')
+
+    def _check_open_and_press_power_button(self):
+        """Check stdout and press the power button if prompted.
+
+        Returns:
+            True if the process is still running.
+        """
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        logging.info(self._get_ccd_open_output())
+        self.servo.power_short_press()
+        logging.info('long int power button press')
+        # power button press cr50 erases nvmem and resets the dut before setting
+        # the state to open. Wait a bit so we don't check the ccd state in the
+        # middle of this reset process. Power button requests happen once a
+        # minute, so waiting 10 seconds isn't a big deal.
+        time.sleep(10)
+        return ('Open' in self.cr50.get_ccd_info()['State'] or
+                self._ccd_open_job.sp.poll() is not None)
+
+    def _get_ccd_open_output(self):
+        """Read the new output."""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        self._ccd_open_job.process_output()
+        self._ccd_open_stdout.seek(self._ccd_open_last_len)
+        output = self._ccd_open_stdout.read()
+        self._ccd_open_last_len = self._ccd_open_stdout.len
+        return output
+
+    def _close_ccd_open_job(self):
+        """Terminate the process and check the results."""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        exit_status = utils.nuke_subprocess(self._ccd_open_job.sp)
+        stdout = self._ccd_open_stdout.getvalue().strip()
+        delattr(self, '_ccd_open_job')
+        if stdout:
+            logging.info('stdout of ccd open:\n%s', stdout)
+        if exit_status:
+            logging.info('exit status: %d', exit_status)
+        if 'Error' in stdout:
+            raise error.TestFail('ccd open Error %s' %
+                                 stdout.split('Error')[-1])
+        if self.cr50.OPEN != self.cr50.get_ccd_level():
+            raise error.TestFail('unable to open cr50: %s' % stdout)
+        else:
+            logging.info('Opened Cr50')
+
+    def ccd_open_from_ap(self):
+        """Start the open process and press the power button."""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        # Opening CCD requires power button presses. If those presses would
+        # power off the AP and prevent CCD open from completing, ignore them.
+        if self.faft_config.ec_forwards_short_pp_press:
+            self.stop_powerd()
+
+        self._ccd_open_last_len = 0
+
+        self._ccd_open_stdout = StringIO.StringIO()
+
+        ccd_open_cmd = utils.sh_escape('gsctool -a -o')
+        full_ssh_cmd = '%s "%s"' % (self.host.ssh_command(options='-tt'),
+                                    ccd_open_cmd)
+        # Start running the Cr50 Open process in the background.
+        self._ccd_open_job = utils.BgJob(full_ssh_cmd,
+                                         nickname='ccd_open',
+                                         stdout_tee=self._ccd_open_stdout,
+                                         stderr_tee=utils.TEE_TO_LOGS)
+        if self._ccd_open_job == None:
+            raise error.TestFail('could not start ccd open')
+
+        try:
+            # Wait for the first gsctool power button prompt before starting the
+            # open process.
+            logging.info(self._get_ccd_open_output())
+            # Cr50 starts out by requesting 5 quick presses then 4 longer
+            # power button presses. Run the quick presses without looking at the
+            # command output, because getting the output can take some time. For
+            # the presses that require a 1 minute wait check the output between
+            # presses, so we can catch errors
+            #
+            # run quick presses for 30 seconds. It may take a couple of seconds
+            # for open to start. 10 seconds should be enough. 30 is just used
+            # because it will definitely be enough, and this process takes 300
+            # seconds, so doing quick presses for 30 seconds won't matter.
+            end_time = time.time() + 30
+            while time.time() < end_time:
+                self.servo.power_short_press()
+                logging.info('short int power button press')
+                time.sleep(self.PP_SHORT_INTERVAL)
+            # Poll the output and press the power button for the longer presses.
+            utils.wait_for_value(self._check_open_and_press_power_button,
+                                 expected_value=True,
+                                 timeout_sec=self.cr50.PP_LONG)
+        except Exception, e:
+            logging.info(e)
+            raise
+        finally:
+            self._close_ccd_open_job()
+            self._try_to_bring_dut_up()
+        logging.info(self.cr50.get_ccd_info())
+
+    def enter_mode_after_checking_cr50_state(self, mode):
+        """Reboot to mode if cr50 doesn't already match the state"""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        # If the device is already in the correct mode, don't do anything
+        if (mode == 'dev') == self.cr50.in_dev_mode():
+            logging.info('already in %r mode', mode)
+            return
+
+        self.switcher.reboot_to_mode(to_mode=mode)
+
+        if (mode == 'dev') != self.cr50.in_dev_mode():
+            raise error.TestError('Unable to enter %r mode' % mode)
+
+    def fast_ccd_open(self, enable_testlab=False, reset_ccd=True,
+                      dev_mode=False):
+        """Try to use ccd testlab open. If that fails, do regular ap open.
+
+        Args:
+            enable_testlab: If True, enable testlab mode after cr50 is open.
+            reset_ccd: If True, reset ccd after open.
+            dev_mode: True if the device should be in dev mode after ccd is
+                      is opened.
+        """
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        if self.servo.main_device_is_ccd():
+            error_txt = 'because the main servo device is CCD.'
+            if enable_testlab:
+                raise error.TestNAError('Cannot enable testlab: %s' % error_txt)
+            elif reset_ccd:
+                raise error.TestNAError('CCD reset not allowed: %s' % error_txt)
+
+        if not self.faft_config.has_powerbutton:
+            logging.warning('No power button', exc_info=True)
+            enable_testlab = False
+
+        # Try to use testlab open first, so we don't have to wait for the
+        # physical presence check.
+        self.cr50.send_command('ccd testlab open')
+        if self.cr50.get_ccd_level() != 'open':
+            if self.servo.has_control('chassis_open'):
+                self.servo.set('chassis_open', 'yes')
+            pw = '' if self.cr50.password_is_reset() else self.CCD_PASSWORD
+            # Use the console to open cr50 without entering dev mode if
+            # possible. Ittakes longer and relies on more systems to enter dev
+            # mode and ssh into the AP. Skip the steps that aren't required.
+            if not (pw or self.cr50.get_cap(
+                            'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
+                self.enter_mode_after_checking_cr50_state('dev')
+
+            if pw or self.cr50.get_cap(
+                            'OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
+                self.cr50.set_ccd_level(self.cr50.OPEN, pw)
+            else:
+                self.ccd_open_from_ap()
+
+            if self.servo.has_control('chassis_open'):
+                self.servo.set('chassis_open', 'no')
+
+            if enable_testlab:
+                self.cr50.set_ccd_testlab('on')
+
+        if reset_ccd:
+            self.cr50.send_command('ccd reset')
+
+        # In default, the device should be in normal mode. After opening cr50,
+        # the TPM should be cleared and the device should automatically reset to
+        # normal mode. However, some tests might want the device in 'dev' mode.
+        self.enter_mode_after_checking_cr50_state('dev' if dev_mode else
+                                                 'normal')

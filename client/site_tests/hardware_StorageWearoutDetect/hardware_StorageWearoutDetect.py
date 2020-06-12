@@ -47,9 +47,10 @@ class hardware_StorageWearoutDetect(test.test):
     # Ex "0x07  0x008  1          100  ---  Percentage Used Endurance Indicator"
     SATA_FAIL = r".*\s{3,}(?P<param>(99|\d{3}))\s+.*Percentage Used Endurance.*"
 
-    # Ex "Device life time estimation type A [DEVICE_LIFE_TIME_EST_TYP_A: 0x01]"
-    # 0x0a means 90-100% band, 0x0b means over 100% band -> find not digit
-    MMC_FAIL = r".*(?P<param>DEVICE_LIFE_TIME_EST_TYP_.)]?: 0x0\D"
+    # Ex "Pre EOL information [PRE_EOL_INFO: 0x02]"
+    # 0x02 means Warning, consumed 80% of reserved blocks
+    # 0x03 means Urgent
+    MMC_FAIL = r".*(?P<param>PRE_EOL_INFO]?: 0x0[23])"
 
     # Ex "Percentage Used:         100%"
     NVME_FAIL = r"Percentage Used:\s+(?P<param>(99|\d{3}))%"

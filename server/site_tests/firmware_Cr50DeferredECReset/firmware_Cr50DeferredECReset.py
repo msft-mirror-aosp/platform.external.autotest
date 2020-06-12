@@ -88,7 +88,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         self.dts_restore = self.servo.get_dts_mode()
 
         # Fast open cr50 and check if testlab is enabled.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         if not self.cr50.testlab_is_on():
             raise error.TestNAError('Cr50 testlab mode is not enabled')
 

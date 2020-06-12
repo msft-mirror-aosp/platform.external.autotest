@@ -34,6 +34,6 @@ def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
     host.initialize_btpeer(btpeer_args)
     job.run_test('bluetooth_AdapterQuickSanity', host=host,
-                  num_iterations=1, flag='AVL')
+                  num_iterations=5, flag='AVL')
 
 parallel_simple(run, machines)

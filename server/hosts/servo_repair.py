@@ -249,7 +249,24 @@ class _DiskSpaceVerifier(hosts.Verifier):
 
 class _ServodConnectionVerifier(hosts.Verifier):
     """
-    Verifier to check that we can connect to `servod`.
+    Verifier to check that we can connect to servod server.
+
+    If this verifier failed, it most likely servod was crashed or in a
+    crashing loop. For servo_v4 it's usually caused by not able to detect
+    CCD or servo_micro.
+    """
+
+    def verify(self, host):
+        host.initilize_servo()
+
+    @property
+    def description(self):
+        return 'servod service is taking calls'
+
+
+class _ServodControlVerifier(hosts.Verifier):
+    """
+    Verifier to check basic servo control functionality.
 
     This tests the connection to the target servod service with a simple
     method call.  As a side-effect, all servo signals are initialized to
@@ -261,11 +278,14 @@ class _ServodConnectionVerifier(hosts.Verifier):
     """
 
     def verify(self, host):
-        host.connect_servo()
+        try:
+            host.initialize_dut_for_servo()
+        except Exception as e:
+            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
 
     @property
     def description(self):
-        return 'servod service is taking calls'
+        return 'Basic servod control is working'
 
 
 class _CCDTestlabVerifier(hosts.Verifier):
@@ -497,19 +517,24 @@ def create_servo_repair_strategy():
         (_UpdateVerifier,            'update',      ['servo_ssh']),
         (_BoardConfigVerifier,       'brd_config',  ['servo_ssh']),
         (_SerialConfigVerifier,      'ser_config',  ['servo_ssh']),
-        (_ServodJobVerifier,         'job',         config + ['disk_space']),
-        (_ServodConnectionVerifier,  'servod',      ['job']),
-        (_PowerButtonVerifier,       'pwr_button',  ['servod']),
-        (_LidVerifier,               'lid_open',    ['servod']),
-        (_EcBoardVerifier,           'ec_board',    ['servod']),
-        (_CCDTestlabVerifier,        'ccd_testlab', ['job']),
+        (_ServodJobVerifier,         'servod_job',   config + ['disk_space']),
+        (_ServodConnectionVerifier,  'servod_connection', ['servod_job']),
+        (_ServodControlVerifier,     'servod_control', ['servod_connection']),
+        (_PowerButtonVerifier,       'pwr_button',  ['servod_connection']),
+        (_LidVerifier,               'lid_open',    ['servod_connection']),
+        (_EcBoardVerifier,           'ec_board',    ['servod_connection']),
+        (_CCDTestlabVerifier,        'ccd_testlab', ['servod_connection']),
     ]
 
-    servod_deps = ['job', 'servod', 'pwr_button']
+    servod_deps = ['servod_job', 'servod_connection', 'servod_control',
+                   'pwr_button']
     repair_actions = [
         (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space']),
         (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
-        (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open', 'ec_board']),
+        (
+            _DutRebootRepair, 'dut_reboot', ['servod_connection'],
+            ['servod_control', 'lid_open', 'ec_board']
+        ),
     ]
     return hosts.RepairStrategy(verify_dag, repair_actions, 'servo')

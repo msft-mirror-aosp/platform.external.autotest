@@ -149,7 +149,7 @@ class firmware_Cr50ECReset(Cr50Test):
         failed_wake = []
 
         # Open cr50 so the test has access to ecrst
-        self.fast_open(True)
+        self.fast_ccd_open(True)
 
         self.check_basic_ecrst()
 

@@ -67,7 +67,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         # Make sure the console is restricted
         if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_REQ] == 'Always':
             logging.info('Restricting console')
-            self.fast_open(enable_testlab=True)
+            self.fast_ccd_open(enable_testlab=True)
             self.cr50.set_cap('GscFullConsole', 'IfOpened')
             time.sleep(self.CCD_HOOK_WAIT)
             self.cr50.set_ccd_level('lock')

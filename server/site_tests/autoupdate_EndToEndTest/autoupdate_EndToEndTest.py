@@ -88,8 +88,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
 
-        self.update_device_without_cros_au_rpc(
-            cros_device, test_conf['target_payload_uri'], tag='target')
+        self.update_device(cros_device, test_conf['target_payload_uri'],
+                           tag='target')
 
         # Compare hostlog events from the update to the expected ones.
         rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
@@ -124,8 +124,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         # Install source image
         source_payload_uri = test_conf['source_payload_uri']
         if source_payload_uri is not None:
-            self.update_device_without_cros_au_rpc(
-                cros_device, source_payload_uri, clobber_stateful=True)
+            self.update_device(cros_device, source_payload_uri,
+                               clobber_stateful=True)
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
         # Start the update to the target image.

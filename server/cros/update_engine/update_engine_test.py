@@ -637,8 +637,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return payload_url
 
 
-    def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
-                                          clobber_stateful=False, tag='source'):
+    def update_device(self, cros_device, payload_uri, clobber_stateful=False,
+                      tag='source'):
         """
         Updates the device.
 
@@ -656,8 +656,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         try:
-            cros_device.install_version_without_cros_au_rpc(
-                payload_uri, clobber_stateful=clobber_stateful)
+            cros_device.install_version(payload_uri,
+                                        clobber_stateful=clobber_stateful)
         except Exception as e:
             logging.exception('ERROR: Failed to update device.')
             raise error.TestFail(str(e))

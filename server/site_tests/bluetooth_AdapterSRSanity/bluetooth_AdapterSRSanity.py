@@ -197,16 +197,20 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
             # Trigger suspend, asynchronously trigger wake and wait for resume
             self.test_suspend_and_wait_for_sleep(
-                suspend, sleep_timeout=SHORT_SUSPEND)
+                suspend, sleep_timeout=5)
 
             # Trigger peer wakeup
-            peer_wake = self.device_connect_async(device_type, device,
-                                                   adapter_address)
+            peer_wake = self.device_connect_async(device_type,
+                                                  device,
+                                                  adapter_address,
+                                                  delay_wake=5)
             peer_wake.start()
 
-            # Expect a quick resume. If a timeout occurs, test fails.
+            # Expect a quick resume. If a timeout occurs, test fails. Since we
+            # delay sending the wake signal, we should accomodate that in our
+            # expected timeout.
             self.test_wait_for_resume(
-                boot_id, suspend, resume_timeout=SHORT_SUSPEND,
+                boot_id, suspend, resume_timeout=SHORT_SUSPEND + 5,
                 fail_on_timeout=True)
 
             # Finish peer wake process

@@ -608,7 +608,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def get_version_info(self, regexp):
         """Get information from the version command"""
-        return self.send_command_retry_get_output('ver', [regexp],
+        return self.send_command_retry_get_output('version', [regexp],
                                                   safe=True)[0][1::]
 
 

@@ -28,8 +28,7 @@ class ChromiumOSTestPlatform(object):
         self._autotest_devserver = autotest_devserver
         self._results_dir = results_dir
 
-    def install_version_without_cros_au_rpc(self, payload_uri,
-                                            clobber_stateful=False):
+    def install_version(self, payload_uri, clobber_stateful=False):
         """Installs the specified payload onto the DUT.
 
         This method calls the cros_update.CrOSUpdateTrigger directly which in
@@ -70,37 +69,6 @@ class ChromiumOSTestPlatform(object):
         self.cros_updater.TriggerAU()
 
 
-    def _install_version(self, payload_uri, clobber_stateful=False):
-        """Install the specified payload.
-
-        This method calls the cros_au RPC on the devserver that in turn calls
-        the auto_updater.ChromiumOSUpdater via cros_update script.
-
-        TODO(crbug.com/1067394): Delete this method once all usages of
-        cros_AU RPC have been deprecated.
-
-        @param payload_uri: GS URI of the payload to install.
-        @param clobber_stateful: force a reinstall of the stateful image.
-        """
-        build_name, payload_file = self._get_update_parameters_from_uri(
-            payload_uri)
-        logging.info('Installing %s on the DUT', payload_uri)
-
-        try:
-            ds = self._autotest_devserver
-            _, pid = ds.auto_update(host_name=self._host.hostname,
-                                    build_name=build_name,
-                                    force_update=True,
-                                    full_update=True,
-                                    log_dir=self._results_dir,
-                                    payload_filename=payload_file,
-                                    clobber_stateful=clobber_stateful)
-        except:
-            logging.fatal('ERROR: Failed to install image on the DUT.')
-            raise
-        return pid
-
-
     @staticmethod
     def _get_update_parameters_from_uri(payload_uri):
         """Extract vars needed to update with a Google Storage payload URI.
@@ -124,23 +92,3 @@ class ChromiumOSTestPlatform(object):
         logging.debug('Extracted build_name: %s, payload_file: %s from %s.',
                       build_name, payload_file, payload_uri)
         return build_name, payload_file
-
-
-    def install_source_image(self, source_payload_uri):
-        """Install source payload on device.
-
-        TODO(crbug.com/1067394): Delete this method once all usages of
-        cros_AU RPC have been deprecated.
-        """
-        if source_payload_uri:
-            self._install_version(source_payload_uri, clobber_stateful=True)
-
-
-    def install_target_image(self, target_payload_uri):
-        """Install target payload on the device.
-
-        TODO(crbug.com/1067394): Delete this method once all usages of
-        cros_AU RPC have been deprecated.
-        """
-        logging.info('Updating device to target image.')
-        return self._install_version(target_payload_uri)

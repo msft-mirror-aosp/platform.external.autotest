@@ -46,15 +46,6 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
             @returns: A string for the recorded file path.
 
             """
-            def wait_for_active_stream_count(expected_count):
-                """Make sure the active stream is enabled/disabled"""
-                utils.poll_for_condition(
-                        lambda: (cras_utils.get_active_stream_count() ==
-                                expected_count),
-                        exception=error.TestError(
-                                'Timeout waiting stream count to become %d' %
-                                expected_count))
-
             # Sine raw file lasts 5 seconds
             raw_path = os.path.join(self.bindir, '5SEC.raw')
             raw_file = audio_test_data.GenerateAudioTestData(
@@ -66,10 +57,12 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
             recorded_file = os.path.join(self.resultsdir,
                                          'cras_recorded_%d.raw' % gain_level)
 
-            wait_for_active_stream_count(0)
+            # Note: we've found that a couple of seconds after Chrome is up,
+            #       there may be a ~30-second-long output stream sourced from
+            #       "What's New In Your Chromebook", and it plays no sound.
+            #       Just ignore it and continue testing.
             p = cmd_utils.popen(cras_utils.playback_cmd(raw_file.path))
             try:
-                wait_for_active_stream_count(1)
                 cras_utils.capture(recorded_file,
                                    duration=self.CAPTURE_DURATION)
                 # Make sure the audio is still playing.
@@ -99,6 +92,7 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
 
                 rms_value = []
                 for gain in [self.LOW_GAIN, self.HIGH_GAIN]:
+                    logging.debug('Start testing loopback with gain %d.', gain)
                     audio_facade.set_chrome_active_input_gain(gain)
                     recorded_file = cras_playback_record(gain)
                     args = CheckQualityArgsClass(filename=recorded_file,

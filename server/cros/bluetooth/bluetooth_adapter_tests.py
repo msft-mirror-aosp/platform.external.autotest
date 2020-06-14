@@ -2994,13 +2994,13 @@ class BluetoothAdapterTests(test.test):
 
         """
         self.input_facade.initialize_input_recorder(device.name)
-        self.input_facade.start_input_recorder()
+        self.input_facade.start_input_recorder(device.name)
         time.sleep(self.HID_REPORT_SLEEP_SECS)
         gesture()
         time.sleep(self.HID_REPORT_SLEEP_SECS)
-        self.input_facade.stop_input_recorder()
+        self.input_facade.stop_input_recorder(device.name)
         time.sleep(self.HID_REPORT_SLEEP_SECS)
-        event_values = self.input_facade.get_input_events()
+        event_values = self.input_facade.get_input_events(device.name)
         events = [Event(*ev) for ev in event_values]
         return events
 

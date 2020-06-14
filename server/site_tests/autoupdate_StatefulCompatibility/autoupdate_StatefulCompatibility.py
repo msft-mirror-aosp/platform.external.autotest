@@ -270,13 +270,12 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
 
         if self._source_payload_uri is not None:
             logging.debug('Going to install source image on DUT.')
-            self.update_device_without_cros_au_rpc(
-                cros_device, self._source_payload_uri, clobber_stateful=True)
+            self.update_device(cros_device, self._source_payload_uri,
+                               clobber_stateful=True)
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
 
         logging.debug('Going to install target image on DUT.')
-        self.update_device_without_cros_au_rpc(
-            cros_device, self._target_payload_uri, tag='target')
+        self.update_device(cros_device, self._target_payload_uri, tag='target')
 
         self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

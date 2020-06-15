@@ -95,7 +95,7 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         """
 
-        if critical_update:
+        if critical_update and not cellular:
             self._start_oobe_update(update_url, critical_update, full_payload)
             if interrupt_network:
                 self._wait_for_progress(interrupt_progress)

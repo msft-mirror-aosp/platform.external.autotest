@@ -198,6 +198,7 @@ def get_latest_commit():
 
     Download the file containing the latest commit and
     parse it contents, and cleanup.
+    @returns (True,commit) in case of success (False, None) in case of failure
     """
     try:
         commit = None
@@ -206,12 +207,14 @@ def get_latest_commit():
         with tempfile.NamedTemporaryFile(suffix='bt_commit') as tmp_file:
             tmp_filename = tmp_file.name
             cmd = 'gsutil cp {} {}'.format(src, tmp_filename)
-            utils.run(cmd)
+            result = utils.run(cmd)
+            if result.exit_status != 0:
+                logging.debug('Downloading commit file failed with %s', result.exit_status)
+                return (False, None)
             with open(tmp_filename) as f:
-                contents = f.read().split('\n')
-                for i in contents:
-                    if 'commit' in i:
-                        commit = i.split(':')[1].strip()
+                content = f.read()
+                logging.debug('content of the file is %s', content)
+                commit = content.strip('\n').strip()
 
         logging.info('latest commit is %s', commit)
         if commit is None:
@@ -232,9 +235,14 @@ def download_installation_files(host, commit):
 
     cmd = 'gsutil cp {} {}'.format(src_path, dest_path)
     try:
-        utils.run(cmd)
+        result = utils.run(cmd)
+        if result.exit_status != 0:
+            logging.debug('Downloading the chameleond bundle failed with %d',
+                          result.exit_status)
+            return False
         host.send_file(dest_path, dest_path)
         logging.debug('file send to %s %s',host, dest_path)
+        return True
     except Exception as e:
         logging.error('exception %s in download_installation_files', str(e))
         raise error.TestFail('Failed to copy the bundle file to the DUT')
@@ -244,8 +252,15 @@ def cleanup(host, commit):
     """ Cleanup the installation file from server."""
     try:
         dest_path = '/tmp/' + BUNDLE_TEMPLATE.format(commit)
-        os.remove(dest_path)
-        host.run('rm {}'.format(dest_path))
+        if os.path.exists(dest_path):
+            logging.debug('Remove file %s', dest_path)
+            os.remove(dest_path)
+        else:
+            logging.debug('File %s not found', dest_path)
+
+        result = host.run('rm {}'.format(dest_path))
+        if result.exit_status != 0:
+            logging.error('Unable to delete %s on dut', dest_path)
     except Exception as e:
         logging.error('Exception %s in cleanup', str(e))
         raise error.TestFail('Cleanup failed')
@@ -267,10 +282,12 @@ class bluetooth_PeerUpdate(test.test):
         """
         try:
             self.host = host
+            commit = None
             (status, commit) = get_latest_commit()
-            if not status:
-                raise error.TestFail('Unable to get current version and commit ')
-            download_installation_files(self.host, commit)
+            if commit is None:
+                raise error.TestFail('Unable to get current commit')
+            if not download_installation_files(self.host, commit):
+                raise error.TestFail('Unable to download installation files ')
             update_peers(self.host, commit)
         finally:
             cleanup(host, commit)

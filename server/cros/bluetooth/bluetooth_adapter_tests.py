@@ -3341,7 +3341,7 @@ class BluetoothAdapterTests(test.test):
             msg = 'Test not supported on this kernel version'
 
         if not self.is_newer_kernel_version(kernel_version, minimum_version):
-            logging.debug('Kernel version check failed. Exiting the test')
+            logging.info('Kernel version check failed: %s', msg)
             raise error.TestNAError(msg)
 
         logging.debug('Kernel version check passed')

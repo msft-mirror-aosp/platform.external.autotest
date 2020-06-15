@@ -111,6 +111,9 @@ class ChromeConsole(object):
 
         self._servo = servo
 
+    def __repr__(self):
+        """Return a string representation: <ChromeConsole 'foo_uart'>"""
+        return "<%s %r>" % (self.__class__.__name__, self.name)
 
     def set_uart_regexp(self, regexp):
         self._servo.set(self.uart_regexp, regexp)
@@ -208,6 +211,9 @@ class ChromeEC(ChromeConsole):
     def __init__(self, servo, name="ec_uart"):
         super(ChromeEC, self).__init__(servo, name)
 
+    def __repr__(self):
+        """Return a string representation of the object: <ChromeEC 'ec_uart'>"""
+        return "<%s %r>" % (self.__class__.__name__, self.name)
 
     def key_down(self, keyname):
         """Simulate pressing a key.

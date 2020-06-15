@@ -133,8 +133,13 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.controller_slave_test(kbd, kbd_test_func)
 
 
-    @test_wrapper('LE Master Before Slave Test', devices={'BLE_KEYBOARD':1,
-                                                          'BLE_MOUSE':1})
+    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
+    @test_wrapper('LE Master Before Slave Test',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=['auron_paine','auron_yuna','banjo',
+                        'buddy','candy','enguarde','gandof', 'gnawty',
+                        'guado','heli','kip','lulu','rikku','samus',
+                        'tidus'])
     def le_role_master_before_slave(self):
         """Tests connection as master and then as slave"""
 
@@ -178,8 +183,13 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.nearby_sender_role_test(kbd, kbd_test_func)
 
 
-    @test_wrapper('LE Sender Role Test During HID', devices={'BLE_KEYBOARD':1,
-                                                             'BLE_MOUSE':1})
+    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
+    @test_wrapper('LE Sender Role Test During HID',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=['auron_paine','auron_yuna','banjo',
+                        'buddy','candy','enguarde','gandof', 'gnawty',
+                        'guado','heli','kip','lulu','rikku','samus',
+                        'tidus'])
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
 
@@ -223,8 +233,13 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.nearby_receiver_role_test(kbd, kbd_test_func)
 
 
-    @test_wrapper('LE Receiver Role Test During HID', devices={'BLE_KEYBOARD':1,
-                                                             'BLE_MOUSE':1})
+    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
+    @test_wrapper('LE Receiver Role Test During HID',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=['auron_paine','auron_yuna','banjo',
+                        'buddy','candy','enguarde','gandof', 'gnawty',
+                        'guado','heli','kip','lulu','rikku','samus',
+                        'tidus'])
     def le_role_receiver_during_hid(self):
         """Tests Nearby Receiver role while already connected to HID device"""
 
@@ -240,8 +255,13 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, slave_info=hid_test_device)
 
 
+    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
     @test_wrapper('LE HID Test During Receiver Adv',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=['auron_paine','auron_yuna','banjo',
+                        'buddy','candy','enguarde','gandof', 'gnawty',
+                        'guado','heli','kip','lulu','rikku','samus',
+                        'tidus'])
     def le_role_hid_during_receiver_adv(self):
         """Tests HID device while already in Nearby Receiver role adv state"""
 

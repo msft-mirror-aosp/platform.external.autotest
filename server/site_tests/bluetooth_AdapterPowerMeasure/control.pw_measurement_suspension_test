@@ -10,7 +10,8 @@ AUTHOR = 'Chrome OS Team'
 NAME = 'bluetooth_AdapterPowerMeasure.pw_measurement_suspension_test'
 PURPOSE = 'Test power consumption of Bluetooth chip during system suspension.'
 CRITERIA = 'Bluetooth chip should consume power less than specified.'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+# Remove this test from the lab before it is fixed.
+ATTRIBUTES = ''
 TIME = 'SHORT'   # Takes about 2 mins
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

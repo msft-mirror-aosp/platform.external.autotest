@@ -30,7 +30,6 @@ control.storeage_qual_hardware_StorageStress_retention_soak_12
 import copy
 
 STORAGE_QUAL_VERSION = 1
-STORAGE_QUAL_EXTERNAL_VERSION = 1
 DAY_IN_HOURS = 24
 MINUTE_IN_SECS = 60
 HOUR_IN_SECS = MINUTE_IN_SECS * 60
@@ -259,20 +258,6 @@ SUITE_ATTRIBUTES = {
     'storage_qual_external': 'suite:storage_qual_external'
 }
 
-QUAL_VERSION_KEY = {
-    'storage_qual': "'storage_qual_version'",
-    'storage_qual_quick': "'storage_qual_version'",
-    'storage_qual_cq': "'storage_qual_version'",
-    'storage_qual_external': "'storage_qual_external_version'"
-}
-
-QUAL_VERSION = {
-    'storage_qual': STORAGE_QUAL_VERSION,
-    'storage_qual_quick': STORAGE_QUAL_VERSION,
-    'storage_qual_cq': STORAGE_QUAL_VERSION,
-    'storage_qual_external': STORAGE_QUAL_EXTERNAL_VERSION
-}
-
 TEMPLATE = """
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -299,7 +284,7 @@ JOB_RETRIES = 0
 DOC = "{name}"
 
 keyval = dict()
-keyval[{version_key}] = {version}
+keyval['storage_qual_version'] = {version}
 keyval['bug_id'] = bug_id
 keyval['part_id'] = part_id
 utils.write_keyval(job.resultdir, keyval)
@@ -352,8 +337,7 @@ for suite in SUITES:
                         test = test['test'],
                         length = test['length'],
                         attributes = SUITE_ATTRIBUTES[suite],
-                        version_key = QUAL_VERSION_KEY[suite],
-                        version = QUAL_VERSION[suite],
+                        version = STORAGE_QUAL_VERSION,
                     )
                     _write_control_file(_get_control_file_name(
                         suite, label, test, i), control_file)
@@ -367,8 +351,7 @@ for suite in SUITES:
                     test = test['test'],
                     length = test['length'],
                     attributes = SUITE_ATTRIBUTES[suite],
-                    version_key = QUAL_VERSION_KEY[suite],
-                    version = QUAL_VERSION[suite]
+                    version = STORAGE_QUAL_VERSION
                 )
                 _write_control_file(_get_control_file_name(suite, label, test),
                         control_file)

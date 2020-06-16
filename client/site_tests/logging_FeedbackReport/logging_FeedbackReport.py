@@ -18,6 +18,7 @@ class logging_FeedbackReport(test.test):
     _FEEDBACK_ID = 'gfdkimpbcpahaombhbimeihdjnejgicl'
     _FEEDBACK_STATE_TIMEOUT = 40
     _WAIT = 2
+    _WAIT_FOR_EXTENSION = 5
     _FEEDBACK_SENT_URL = 'support.google.com/chromebook/answer/3142217'
 
     def warmup(self):
@@ -111,6 +112,7 @@ class logging_FeedbackReport(test.test):
         """Run the test."""
         with chrome.Chrome(disable_default_apps=False) as self.cr:
             # Open and confirm feedback app is working.
+            time.sleep(self._WAIT_FOR_EXTENSION)
             self._open_feedback()
             time.sleep(self._WAIT)
             cr_exts = self.cr.browser.extensions

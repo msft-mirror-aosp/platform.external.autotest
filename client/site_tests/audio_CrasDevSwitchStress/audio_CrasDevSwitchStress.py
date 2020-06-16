@@ -169,6 +169,9 @@ class audio_CrasDevSwitchStress(test.test):
         node_pinned = None
         self._streams = []
 
+        """Store the selected nodes at the start of the test."""
+        (output_type, input_type) = cras_utils.get_selected_node_types()
+
         cras_pid = self._get_cras_pid()
 
         try:
@@ -226,3 +229,6 @@ class audio_CrasDevSwitchStress(test.test):
         except dbus.DBusException as e:
             logging.exception(e)
             raise error.TestFail("CRAS may have crashed.")
+        finally:
+            """Restore the nodes at the end of the test."""
+            cras_utils.set_selected_node_types(output_type, input_type)

@@ -19,12 +19,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     """Server side Bluetooth adapter audio test class."""
 
     DEVICE_TYPE = 'BLUETOOTH_AUDIO'
-    FREQUENCY_TOLERANCE_RATIO = {
-            A2DP: 0.01,
-            HFP_WBS: 0.01,
-            # NBS provides lower audio quality and thus has larger tolerance.
-            HFP_NBS: 0.05,
-    }
+    FREQUENCY_TOLERANCE_RATIO = 0.01
     WAIT_DAEMONS_READY_SECS = 1
 
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
@@ -138,7 +133,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @returns: True if the recoreded frequency falls within the tolerance of
                   the expected frequency
         """
-        tolerance = expected_freq * self.FREQUENCY_TOLERANCE_RATIO[test_profile]
+        tolerance = expected_freq * self.FREQUENCY_TOLERANCE_RATIO
         return abs(expected_freq - recorded_freq) <= tolerance
 
 

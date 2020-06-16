@@ -523,7 +523,7 @@ class _BaseModeSwitcher(object):
                      to_mode, from_mode, wait_for_dut_up)
 
         if sync_before_boot:
-            self.faft_framework.blocking_sync()
+            self.faft_framework.blocking_sync(True)
         if to_mode == 'rec':
             self.enable_rec_mode_and_reboot(usb_state='dut')
             if wait_for_dut_up:
@@ -586,7 +586,7 @@ class _BaseModeSwitcher(object):
                                       reboot_type)
         if sync_before_boot:
             boot_id = self.faft_framework.get_bootid()
-            self.faft_framework.blocking_sync()
+            self.faft_framework.blocking_sync(True)
         logging.info("-[ModeSwitcher]-[ start simple_reboot(%r) ]-",
                      reboot_type)
         reboot_method()
@@ -629,7 +629,8 @@ class _BaseModeSwitcher(object):
             is_devsw_boot = self.checkers.crossystem_checker(
                                                {'devsw_boot': '1'}, True)
             boot_id = self.faft_framework.get_bootid()
-            self.faft_framework.blocking_sync()
+
+            self.faft_framework.blocking_sync(reboot_type != 'custom')
         if is_rec:
             logging.info("-[mode_aware_reboot]-[ is_rec=%s is_dev_switch=%s ]-",
                          is_rec, is_devsw_boot)

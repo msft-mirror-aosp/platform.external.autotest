@@ -84,7 +84,7 @@ class FingerprintTest(test.test):
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4277-9f652bb3',  # not yet finalized
+        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4277-9f652bb3',
         _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
         _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
         _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',

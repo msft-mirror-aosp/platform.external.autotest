@@ -105,6 +105,17 @@ class bluetooth_AdapterControllerRoleTests(
                         'mid' - device should be connected during test
         """
 
+        #
+        # Due to crbug/946835, some messages does not reach btmon
+        # causing our tests to fails. This is seen on kernel 3.18 and lower.
+        # Remove this check when the issue is fixed
+        # TODO(crbug/946835)
+        #
+        self.is_supported_kernel_version(self.host.get_kernel_version(),
+                                         '3.19',
+                                         'Test cannnot proceed on this'
+                                         'kernel due to crbug/946835 ')
+
         self.bluetooth_le_facade = self.bluetooth_facade
 
         if slave_info is not None:
@@ -172,6 +183,17 @@ class bluetooth_AdapterControllerRoleTests(
             device_use: 'pre' - device should be connected before test runs - or
                         'mid' - device should be connected during test
         """
+
+        #
+        # Due to crbug/946835, some messages does not reach btmon
+        # causing our tests to fails. This is seen on kernel 3.18 and lower.
+        # Remove this check when the issue is fixed
+        # TODO(crbug/946835)
+        #
+        self.is_supported_kernel_version(self.host.get_kernel_version(),
+                                         '3.19',
+                                         'Test cannnot proceed on this'
+                                         'kernel due to crbug/946835 ')
 
         self.bluetooth_le_facade = self.bluetooth_facade
 
@@ -258,6 +280,17 @@ class bluetooth_AdapterControllerRoleTests(
                         'end' - device should be connected at end of test, when
                                 already connected to Nearby device
         """
+
+        #
+        # Due to crbug/946835, some messages does not reach btmon
+        # causing our tests to fails. This is seen on kernel 3.18 and lower.
+        # Remove this check when the issue is fixed
+        # TODO(crbug/946835)
+        #
+        self.is_supported_kernel_version(self.host.get_kernel_version(),
+                                         '3.19',
+                                         'Test cannnot proceed on this'
+                                         'kernel due to crbug/946835 ')
 
         self.bluetooth_le_facade = self.bluetooth_facade
 

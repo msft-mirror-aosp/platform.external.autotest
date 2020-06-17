@@ -1844,8 +1844,8 @@ class BluetoothAdapterTests(test.test):
         connection_by_device = False
         adapter_address = self.bluetooth_facade.address
         try:
-            device.ConnectToRemoteAddress(adapter_address)
-            connection_by_device = True
+            connection_by_device = device.ConnectToRemoteAddress(
+                adapter_address)
         except Exception as e:
             logging.error('%s (device): %s', method_name, e)
         except:

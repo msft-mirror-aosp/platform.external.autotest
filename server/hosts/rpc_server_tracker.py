@@ -241,7 +241,7 @@ class RpcServerTracker(object):
                                     exc.filename, log_lines[-1])
                         else:
                             exc.filename = 'Log tail: %r' % log_lines[-1]
-                else:
+                elif log_lines:
                     # Unusual failure: can't inject the last log line,
                     # so report it via logging.
                     logging.error('Log tail: %r', log_lines[-1])

@@ -21,8 +21,9 @@ from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
+from chromite.lib import auto_updater_transfer
 from chromite.lib import retry_util
-
+from chromite.scripts import cros_update
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     """Base class for all autoupdate_ server tests.
@@ -518,6 +519,30 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 logging.error('Could not copy logs from %s into %s due to '
                               'exception: %s', source, dest, e)
 
+    @staticmethod
+    def _get_update_parameters_from_uri(payload_uri):
+        """Extract vars needed to update with a Google Storage payload URI.
+
+        The two values we need are:
+        (1) A build_name string e.g dev-channel/samus/9583.0.0
+        (2) A filename of the exact payload file to use for the update. This
+        payload needs to have already been staged on the devserver.
+
+        @param payload_uri: Google Storage URI to extract values from
+
+        """
+
+        # gs://chromeos-releases/dev-channel/samus/9334.0.0/payloads/blah.bin
+        # build_name = dev-channel/samus/9334.0.0
+        # payload_file = payloads/blah.bin
+        build_name = payload_uri[:payload_uri.index('payloads/')]
+        build_name = urlparse.urlsplit(build_name).path.strip('/')
+        payload_file = payload_uri[payload_uri.index('payloads/'):]
+
+        logging.debug('Extracted build_name: %s, payload_file: %s from %s.',
+                      build_name, payload_file, payload_uri)
+        return build_name, payload_file
+
 
     def verify_update_events(self, source_release, hostlog_filename,
                              target_release=None):
@@ -637,15 +662,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return payload_url
 
 
-    def update_device(self, cros_device, payload_uri, clobber_stateful=False,
-                      tag='source'):
+    def update_device(self, payload_uri, clobber_stateful=False, tag='source'):
         """
         Updates the device.
 
         Used by autoupdate_EndToEndTest and autoupdate_StatefulCompatibility,
         which use auto_updater to perform updates.
 
-        @param cros_device: The device to be updated.
         @param payload_uri: The payload with which the device should be updated.
         @param clobber_stateful: Boolean that determines whether the stateful
                                  of the device should be force updated. By
@@ -655,12 +678,24 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @raise error.TestFail if anything goes wrong with the update.
 
         """
+        build_name, payload_file = self._get_update_parameters_from_uri(
+            payload_uri)
+        logging.info('Installing %s on the DUT', payload_uri)
+        cros_updater = cros_update.CrOSUpdateTrigger(
+            host_name=self._host.hostname,
+            build_name=build_name,
+            static_dir='',
+            force_update=True,
+            full_update=True,
+            payload_filename=payload_file,
+            clobber_stateful=clobber_stateful,
+            staging_server=self._autotest_devserver.url(),
+            transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
         try:
-            cros_device.install_version(payload_uri,
-                                        clobber_stateful=clobber_stateful)
+            cros_updater.TriggerAU()
         except Exception as e:
             logging.exception('ERROR: Failed to update device.')
             raise error.TestFail(str(e))
         finally:
             self._copy_generated_nebraska_logs(
-                cros_device.cros_updater.request_logs_dir, tag)
+                cros_updater.request_logs_dir, identifier=tag)

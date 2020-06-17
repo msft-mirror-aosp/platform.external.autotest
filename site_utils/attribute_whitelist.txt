@@ -1,6 +1,4 @@
 subsystem:default
-subsystem:network
-subsystem:wifi
 suite:AFDO_page_replay
 suite:AFDO_record
 suite:another_suite

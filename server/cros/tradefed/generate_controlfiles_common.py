@@ -935,10 +935,10 @@ def get_word_pattern(m, l=1):
     Break after l+1 CamelCase word.
     Example: CtsDebugTestCases -> CtsDebug.
     """
-    s = re.findall('^[a-z]+|[A-Z]*[^A-Z0-9]*', m)[0:l + 1]
+    s = re.findall('^[a-z-]+|[A-Z]*[^A-Z0-9]*', m)[0:l + 1]
     # Ignore Test or TestCases at the end as they don't add anything.
     if len(s) > l:
-        if s[l].startswith('Test'):
+        if s[l].startswith('Test') or s[l].startswith('['):
             return ''.join(s[0:l])
         if s[l - 1] == 'Test' and s[l].startswith('Cases'):
             return ''.join(s[0:l - 1])
@@ -979,8 +979,16 @@ def combine_modules_by_common_word(modules):
         # each module its own control file, even though this heuristic would
         # lump them together.
         if prefix.startswith('CtsMedia'):
-            for media in d[key]:
-                combined[media] = set([media])
+            # Separate each CtsMedia* modules, but group extra modules with
+            # optional parametrization (ex: secondary_user, instant) together.
+            prev = ' '
+            for media in sorted(d[key]):
+                if media.startswith(prev):
+                    combined[prev].add(media)
+                else:
+                    prev = media
+                    combined[media] = set([media])
+
         else:
             combined[prefix] = set(d[key])
     print 'Reduced number of control files from %d to %d.' % (len(modules),

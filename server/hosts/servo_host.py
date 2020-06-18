@@ -361,12 +361,19 @@ class ServoHost(base_servohost.BaseServoHost):
             # probe_host_usb_dev() sometimes return stale record,
             # so we need to make sure the path exists in fdisk.
             validate_cmd = 'fdisk -l | grep %s' % usb_dev
-            resp = self.run(validate_cmd, ignore_status=True)
-            if resp.exit_status == 0:
-                return usb_dev
+            try:
+                resp = self.run(validate_cmd, ignore_status=True, timeout=60)
+                if resp.exit_status == 0:
+                    return usb_dev
 
-            logging.error('%s is reported from "image_usbkey_dev" control but'
-                          ' not detected from fdisk!', usb_dev)
+                logging.error('%s is reported from "image_usbkey_dev" control'
+                              ' but not detected by fdisk!', usb_dev)
+            except error.AutoservRunError as e:
+                if 'Timeout encountered' in str(e):
+                    logging.warning('Timeout encountered during fdisk run,'
+                                    ' skipping usbkey validation.')
+                    return ''
+                raise
 
         raise hosts.AutoservRepairError(
               'No usbkey detected on servo, the usbkey may be either missing'

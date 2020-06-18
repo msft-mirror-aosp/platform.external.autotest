@@ -14,6 +14,7 @@ import uuid
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import vboot_constants as vboot
@@ -166,6 +167,11 @@ class FirmwareTest(FAFTBase):
             if 'true' in args['no_ec_sync'].lower():
                 self._no_ec_sync = True
 
+        self._use_sync_script = global_config.global_config.get_config_value(
+                'CROS', 'enable_fs_sync_script', type=bool, default=False)
+        self._use_fsfreeze = global_config.global_config.get_config_value(
+                'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
+
         self.faft_config = FAFTConfig(
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
@@ -236,7 +242,7 @@ class FirmwareTest(FAFTBase):
         self._create_old_faft_lockfile()
         self._setup_ec_write_protect(ec_wp)
         # See chromium:239034 regarding needing this sync.
-        self.blocking_sync()
+        self.blocking_sync(False)
         logging.info('FirmwareTest initialize done (id=%s)', self.run_id)
 
     def run_once(self, *args, **dargs):
@@ -1358,8 +1364,31 @@ class FirmwareTest(FAFTBase):
             # a device is ready for transfer operation.
             self.faft_client.system.run_shell_command('hdparm -f %s' % device)
 
-    def blocking_sync(self):
-        """Sync root device and internal device."""
+    def blocking_sync(self, for_reset=False):
+        """Sync root device and internal device, via script if possible.
+
+        The actual calls end up logged by the run() call, since they're printed
+        to stdout/stderr in the script.
+
+        @param for_reset: if True, prepare for reset
+                          (currently, just quits the RPC server)
+        """
+
+        if self._use_sync_script:
+            logging.info(
+                    'Blocking sync%s', ' before reset' if for_reset else '')
+            try:
+                # client/bin is installed on the DUT as /usr/local/autotest/bin
+                sync_cmd = '/usr/local/autotest/bin/fs_sync.py'
+                if self._use_fsfreeze and for_reset:
+                    sync_cmd += ' --freeze'
+                self.faft_client.quit()
+                self._client.run(sync_cmd)
+                return
+            except (AttributeError, ImportError, error.AutoservRunError) as e:
+                logging.warn(
+                        'Falling back to old sync method due to error: %s', e)
+
         # The double calls to sync fakes a blocking call
         # since the first call returns before the flush
         # is complete, but the second will wait for the
@@ -1385,7 +1414,7 @@ class FirmwareTest(FAFTBase):
                           default: EC soft reboot;
                           'hard': EC cold/hard reboot.
         """
-        self.blocking_sync()
+        self.blocking_sync(True)
         self.ec.reboot(flags)
         time.sleep(self.faft_config.ec_boot_to_console)
         self.check_lid_and_power_on()

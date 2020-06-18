@@ -6,5 +6,8 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="CtsDeqpTestCases dEQP-EGL.functional.robustness.reset_context.shaders.out_of_bounds.reset_status.writes.uniform_block#vertex" />
+  <Entry include="CtsDeqpTestCases dEQP-EGL.functional.robustness.reset_context.shaders.out_of_bounds.reset_status.writes.shader_storage_block#vertex" />
+  <Entry include="CtsDeqpTestCases dEQP-EGL.functional.robustness.reset_context.shaders.out_of_bounds.reset_status.writes.local_array#vertex" />
   <Entry include="CtsKeystoreTestCases android.keystore.cts.CipherTest#testEmptyPlaintextEncryptsAndDecryptsWhenUnlockedRequired" />
 </SubPlan>

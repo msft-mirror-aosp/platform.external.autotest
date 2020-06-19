@@ -80,7 +80,7 @@ class Cr50Test(FirmwareTest):
                                     'access to the Cr50 console')
         # TODO(b/149948314): remove when dual-v4 is sorted out.
         if 'ccd_cr50' in self.servo.get_servo_version():
-            self.servo.set_nocheck('watchdog_remove', 'ccd')
+            self.servo.disable_ccd_watchdog_for_test()
 
         logging.info('Test Args: %r', full_args)
 
@@ -583,6 +583,7 @@ class Cr50Test(FirmwareTest):
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
         self._get_cr50_stats_from_uart_capture()
+        self.servo.allow_ccd_watchdog_for_test()
 
     def _get_cr50_stats_from_uart_capture(self):
         """Check cr50 uart output for errors.

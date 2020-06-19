@@ -725,9 +725,9 @@ class PDPortPartner(object):
         port1_is_snk = port1.is_snk()
         port1_is_src = port1.is_src()
 
-        state2 = port1.get_pd_state()
-        port2_is_snk = port2.is_src()
-        port2_is_src = port2.is_snk()
+        state2 = port2.get_pd_state()
+        port2_is_snk = port2.is_snk()
+        port2_is_src = port2.is_src()
 
         # Must be SRC <--> SNK or SNK <--> SRC
         if (port1_is_src and port2_is_snk) or (port1_is_snk and port2_is_src):
@@ -815,8 +815,8 @@ class PDPortPartner(object):
                     if is_tester:
                         logging.info('PDTesterDevice on %s port %d',
                                      console.name, port)
-                        tester_utils =
-                            pd_console.create_pd_console_utils(console)
+                        tester_utils = pd_console.create_pd_console_utils(
+                                       console)
                         tester_devports.append(PDTesterDevice(console,
                                                     port, tester_utils))
                     else:

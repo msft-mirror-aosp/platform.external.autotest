@@ -449,7 +449,8 @@ class device_setup_utilsTest(unittest.TestCase):
         online = [0]
         mock_run_command.side_effect = [
                 (0,
-                 '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies\n',
+                 '/sys/devices/system/cpu/cpu0/cpufreq/'
+                 'scaling_available_frequencies\n',
                  ''),
                 (0, '1 2 3 4 5 6 7 8 9 10', ''),
                 (0, '', ''),
@@ -457,13 +458,21 @@ class device_setup_utilsTest(unittest.TestCase):
         cpu_frq_pct = 100
         device_setup_utils.setup_cpu_freq(self.dut, cpu_frq_pct, online)
         self.assertGreaterEqual(mock_run_command.call_count, 3)
-        self.assertEqual(
-                mock_run_command.call_args,
+        self.assertIn(
                 mock.call(
                         self.dut, 'echo 10 | tee '
                         '/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq '
                         '/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq'
-                ))
+                ),
+                mock_run_command.call_args_list)
+        # Check the fix of single core online.
+        # We expect to see cpu0 instead of cpu{0}.
+        self.assertIn(
+                mock.call(self.dut,
+                          'ls /sys/devices/system/cpu/cpu0/cpufreq/'
+                          'scaling_available_frequencies',
+                          ignore_status=True),
+                mock_run_command.call_args_list)
 
 
     @mock.patch.object(device_setup_utils, 'run_command_on_dut')
@@ -471,7 +480,8 @@ class device_setup_utilsTest(unittest.TestCase):
         online = [0]
         mock_run_command.side_effect = [
                 (0,
-                 '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies\n',
+                 '/sys/devices/system/cpu/cpu0/cpufreq/'
+                 'scaling_available_frequencies\n',
                  ''),
                 (0, '1 2 3 4 5 6 7 8 9 10', ''),
                 (0, '', ''),
@@ -493,7 +503,8 @@ class device_setup_utilsTest(unittest.TestCase):
         online = [0]
         mock_run_command.side_effect = [
                 (0,
-                 '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies\n',
+                 '/sys/devices/system/cpu/cpu0/cpufreq/'
+                 'scaling_available_frequencies\n',
                  ''),
                 (0, '1 2 3 4 5 6 7 8 9 10', ''),
                 (0, '', ''),
@@ -515,8 +526,10 @@ class device_setup_utilsTest(unittest.TestCase):
         online = [0, 1]
         mock_run_command.side_effect = [
                 (0,
-                 '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies\n'
-                 '/sys/devices/system/cpu/cpu1/cpufreq/scaling_available_frequencies\n',
+                 '/sys/devices/system/cpu/cpu0/cpufreq/'
+                 'scaling_available_frequencies\n'
+                 '/sys/devices/system/cpu/cpu1/cpufreq/'
+                 'scaling_available_frequencies\n',
                  ''),
                 (0, '1 2 3 4 5 6 7 8 9 10', ''),
                 (0, '', ''),
@@ -526,20 +539,27 @@ class device_setup_utilsTest(unittest.TestCase):
         cpu_frq_pct = 70
         device_setup_utils.setup_cpu_freq(self.dut, cpu_frq_pct, online)
         self.assertEqual(mock_run_command.call_count, 5)
-        self.assertEqual(
-                mock_run_command.call_args_list[2],
+        self.assertIn(
                 mock.call(
                         self.dut, 'echo 7 | tee '
                         '/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq '
                         '/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq'
-                ))
-        self.assertEqual(
-                mock_run_command.call_args_list[4],
+                ),
+                mock_run_command.call_args_list)
+        self.assertIn(
                 mock.call(
                         self.dut, 'echo 14 | tee '
                         '/sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq '
                         '/sys/devices/system/cpu/cpu1/cpufreq/scaling_min_freq'
-                ))
+                ),
+                mock_run_command.call_args_list)
+        # Check that setup_cpu_freq queries all online cores.
+        self.assertIn(
+                mock.call(self.dut,
+                          'ls /sys/devices/system/cpu/cpu{0,1}/cpufreq/'
+                          'scaling_available_frequencies',
+                          ignore_status=True),
+                mock_run_command.call_args_list)
 
 
     @mock.patch.object(device_setup_utils, 'run_command_on_dut')
@@ -558,8 +578,10 @@ class device_setup_utilsTest(unittest.TestCase):
         online = [0, 1]
         mock_run_command.side_effect = [
                 (0,
-                 '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies\n'
-                 '/sys/devices/system/cpu/cpu1/cpufreq/scaling_available_frequencies\n',
+                 '/sys/devices/system/cpu/cpu0/cpufreq/'
+                 'scaling_available_frequencies\n'
+                 '/sys/devices/system/cpu/cpu1/cpufreq/'
+                 'scaling_available_frequencies\n',
                  ''),
                 (0, '1 4 6 8 10 12 14 16 18 20', ''),
                 AssertionError(),

@@ -293,17 +293,22 @@ def setup_cpu_freq(dut, freq_percent, online_cores):
 
     @param dut: The autotest host object representing DUT.
     @param freq_percent: Frequency of online CPU cores to set.
-    @param online_cores: List of online cores.
+    @param online_cores: List of online cores (non-empty).
 
     """
-    list_all_avail_freq_cmd = ('ls /sys/devices/system/cpu/cpu{%s}/cpufreq/'
-                               'scaling_available_frequencies')
+    if len(online_cores) == 1:
+        cpu_list_shell_str = str(online_cores[0])
+    else:
+        cpu_list_shell_str = '{' + ','.join(str(core)
+                                            for core in online_cores) + '}'
+    list_all_avail_freq_cmd = ('ls /sys/devices/system/cpu/cpu' +
+                               cpu_list_shell_str +
+                               '/cpufreq/scaling_available_frequencies')
     # Ignore error to support general usage of frequency setup.
     # Not all platforms support scaling_available_frequencies.
-    ret, all_avail_freq_str, _ = run_command_on_dut(
-        dut,
-        list_all_avail_freq_cmd % ','.join(str(core) for core in online_cores),
-        ignore_status=True)
+    ret, all_avail_freq_str, _ = run_command_on_dut(dut,
+                                                    list_all_avail_freq_cmd,
+                                                    ignore_status=True)
     if ret or not all_avail_freq_str:
         # No scalable frequencies available for the core.
         return ret

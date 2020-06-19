@@ -391,6 +391,7 @@ class Servo(object):
         self._programmer = None
         self._prev_log_inode = None
         self._prev_log_size = 0
+        self._ccd_watchdog_disabled = False
 
     def __str__(self):
         """Description of this object and address, for use in errors"""
@@ -1518,6 +1519,26 @@ class Servo(object):
             return
         return self.get('servo_v4_dts_mode')
 
+    def ccd_watchdog_enable(self, enable):
+        """Control the ccd watchdog."""
+        if 'ccd' not in self._servo_type:
+            return
+        if self._ccd_watchdog_disabled and enable:
+            logging.info('CCD watchdog disabled for test')
+            return
+        control = 'watchdog_add' if enable else 'watchdog_remove'
+        self.set_nocheck(control, 'ccd')
+
+    def disable_ccd_watchdog_for_test(self):
+        """Prevent servo from enabling the watchdog."""
+        self._ccd_watchdog_disabled = True
+        self.ccd_watchdog_enable(False)
+
+    def allow_ccd_watchdog_for_test(self):
+        """Allow servo to enable the ccd watchdog."""
+        self._ccd_watchdog_disabled = False
+        self.ccd_watchdog_enable(True)
+
     def set_dts_mode(self, state):
         """Set servo dts mode to off or on.
 
@@ -1533,19 +1554,15 @@ class Servo(object):
                          state)
             return
 
-        # TODO(mruthven): remove watchdog check once the labstation has been
-        # updated to have support for modifying the watchdog.
-        set_watchdog = (self.has_control('watchdog') and
-                        'ccd' in self._servo_type)
         enable_watchdog = state == 'on'
 
-        if set_watchdog and not enable_watchdog:
-            self.set_nocheck('watchdog_remove', 'ccd')
+        if not enable_watchdog:
+            self.ccd_watchdog_enable(False)
 
         self.set_nocheck('servo_v4_dts_mode', state)
 
-        if set_watchdog and enable_watchdog:
-            self.set_nocheck('watchdog_add', 'ccd')
+        if enable_watchdog:
+            self.ccd_watchdog_enable(True)
 
 
     def _get_servo_type_fw_version(self, servo_type, prefix=''):

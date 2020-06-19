@@ -88,7 +88,7 @@ class FirmwareTest(FAFTBase):
     LID_DELAY = 1
 
     # Delay for establishing state after changing PD settings
-    PD_RESYNC_DELAY = 1
+    PD_RESYNC_DELAY = 2
 
     # The default number of power state check retries (each try takes 3 secs)
     DEFAULT_PWR_RETRIES = 5

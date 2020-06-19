@@ -27,13 +27,13 @@ SHORT_SUSPEND_SEC = 10
 # The timeout in seconds for resume and sleep actions
 ACTION_TIMEOUT_SEC = 10
 # Iterations to run the short mouse report test, this equals about 10 mins
-MOUSE_TEST_ITERATION_SHORT = 1
+MOUSE_TEST_ITERATION_SHORT = 15
 # Iterations to run the long mouse report test, this equals about 30 mins
-MOUSE_TEST_ITERATION_LONG = 1
+MOUSE_TEST_ITERATION_LONG = 50
 # Iterations to run the keyboard report test, this equals about 10 mins
-KEYBOARD_TEST_ITERATION = 4
+KEYBOARD_TEST_ITERATION = 60
 # Iterations to run the A2DP report test, this equals about 30 mins
-A2DP_TEST_ITERATION = 4
+A2DP_TEST_ITERATION = 225
 
 class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
                             BluetoothAdapterHIDReportTests,
@@ -47,7 +47,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
        specific test only
     """
 
-    MTBF_TIMEOUT_MINS = 1
+    MTBF_TIMEOUT_MINS = 300
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
     mtbf_wrapper = BluetoothAdapterQuickTests.quick_test_mtbf_decorator
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
@@ -73,7 +73,6 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
            6. Pair the keyboard
            7. Run concurrent mouse and keyboard report tests for 10 minutes
         """
-
         self.test_device_pairing(mouse)
 
         # Reuse the shared device as a phone
@@ -152,8 +151,13 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
            then verify the legitimacy of the frames recorded.
 
         """
+        device.RemoveDevice(self.bluetooth_facade.address)
+
         self.initialize_bluetooth_audio(device, A2DP)
-        self.test_device_pairing(device)
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
+        self.test_stop_discovery()
+        self.test_pairing(device.address, device.pin, trusted=True)
         device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
         self.test_connection_by_adapter(device.address)
         for i in range(A2DP_TEST_ITERATION):

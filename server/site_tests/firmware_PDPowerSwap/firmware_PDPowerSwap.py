@@ -198,8 +198,8 @@ class firmware_PDPowerSwap(FirmwareTest):
 
         # create objects for pd utilities
         self.dut_pd_utils = pd_console.create_pd_console_utils(self.usbpd)
-        self.pdtester_pd_utils =
-                            pd_console.create_pd_console_utils(self.pdtester)
+        self.pdtester_pd_utils = pd_console.create_pd_console_utils(
+                                 self.pdtester)
         self.connect_utils = pd_console.PDConnectionUtils(
             self.dut_pd_utils, self.pdtester_pd_utils)
 

@@ -234,12 +234,19 @@ class device_setup_utilsTest(unittest.TestCase):
         mock_run_command.return_value = (0, '', '')
         device_setup_utils.disable_turbo(self.dut)
         set_cpu_cmd = (
-                # Disable Turbo in Intel pstate driver
+                # Disable Turbo the in Intel pstate driver.
                 'if [[ -e /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then '
                 '  if grep -q 0 /sys/devices/system/cpu/intel_pstate/no_turbo;  then '
                 '    echo -n 1 > /sys/devices/system/cpu/intel_pstate/no_turbo; '
                 '  fi; '
-                'fi; ')
+                'fi; '
+                # Disable Boost on AMD.
+                'if [[ -e /sys/devices/system/cpu/cpufreq/boost ]]; then '
+                '  if grep -q 1 /sys/devices/system/cpu/cpufreq/boost;  then '
+                '    echo -n 0 > /sys/devices/system/cpu/cpufreq/boost; '
+                '  fi; '
+                'fi; '
+        )
         mock_run_command.assert_called_once_with(self.dut, set_cpu_cmd)
 
 
@@ -285,6 +292,27 @@ class device_setup_utilsTest(unittest.TestCase):
                         10: 1,
                         11: 1
                 })
+
+
+    @mock.patch.object(device_setup_utils, 'run_command_on_dut')
+    def test_get_cpu_online_core0_not_exposed(self, mock_run_command):
+        """Test that not exposed cpu0/online will still be in the list."""
+
+        def run_command(dut, cmd):
+          """Helper function."""
+          if '/sys/devices/system/cpu/cpu' in cmd:
+              # Cpu0 online is not exposed.
+              return (0, '/sys/devices/system/cpu/cpu1/online 1\n', '')
+          elif '/sys/devices/system/cpu/online' in cmd:
+              # All online cores shows cpu0.
+              return (0, '0-1', '')
+          else:
+              return (1, '', '')
+
+        mock_run_command.side_effect = run_command
+        cpu_online = device_setup_utils.get_cpu_online(self.dut)
+        # Make sure core0 in the online list.
+        self.assertEqual(cpu_online, {0: 1, 1: 1})
 
 
     @mock.patch.object(device_setup_utils, 'run_command_on_dut')

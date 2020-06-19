@@ -33,8 +33,7 @@ class firmware_PDVbusRequest(FirmwareTest):
 
     """
     version = 1
-
-    PD_SETTLE_DELAY = 4
+    PD_SETTLE_DELAY = 10
     USBC_SINK_VOLTAGE = 5
     VBUS_TOLERANCE = 0.12
 
@@ -92,8 +91,8 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.pdtester_port = 1 if 'servo_v4' in self.pdtester.servo_type else 0
 
         # create objects for pd utilities
-        pd_dut_utils = pd_console.PDConsoleUtils(self.usbpd)
-        pd_pdtester_utils = pd_console.PDConsoleUtils(self.pdtester)
+        pd_dut_utils = pd_console.create_pd_console_utils(self.usbpd)
+        pd_pdtester_utils = pd_console.create_pd_console_utils(self.pdtester)
 
         # Make sure PD support exists in the UART console
         if pd_dut_utils.verify_pd_console() == False:
@@ -159,12 +158,11 @@ class firmware_PDVbusRequest(FirmwareTest):
 
         # The DUT must be in SNK mode for the pd <port> dev <voltage>
         # command to have an effect.
-        if dut_state['role'] != pd_dut_utils.SNK_CONNECT:
+        if not pd_dut_utils.is_snk_connected(dut_state['port']):
             # DUT needs to be in SINK Mode, attempt to force change
             pd_dut_utils.set_pd_dualrole(dut_state['port'], 'snk')
             time.sleep(self.PD_SETTLE_DELAY)
-            if (pd_dut_utils.get_pd_state(dut_state['port']) !=
-                pd_dut_utils.SNK_CONNECT):
+            if not pd_dut_utils.is_snk_connected(dut_state['port']):
                 raise error.TestFail("DUT not able to connect in SINK mode")
 
         logging.info('Start of DUT initiated tests')

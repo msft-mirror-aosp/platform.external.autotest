@@ -46,7 +46,8 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest,
         logging.info("Internal display ID is %s", internal_display_id)
         display_facade.set_display_rotation(internal_display_id, rotation=0)
 
-    def run_once(self, html_file, data_file_url = None, is_video = False):
+    def run_once(self, html_file, data_file_url = None, is_video = False,
+                 use_skia_renderer = False):
         """Normalizes the environment, starts a Chrome environment, and
         executes the test in `html_file`.
         """
@@ -62,9 +63,14 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest,
             logging.info('Skipping test: platform does not support NV12 planes')
             return
 
+        extra_browser_args = EXTRA_BROWSER_ARGS
+        if use_skia_renderer:
+            # TODO(andrescj): remove when SkiaRenderer is enabled by default.
+            extra_browser_args.append('--enable-features=UseSkiaRenderer')
+
         logging.info('Starting test, navigating to %s', html_file)
 
-        with chrome.Chrome(extra_browser_args=EXTRA_BROWSER_ARGS,
+        with chrome.Chrome(extra_browser_args=extra_browser_args,
                            extension_paths=[constants.DISPLAY_TEST_EXTENSION],
                            autotest_ext=True,
                            init_network_controller=True) as cr:

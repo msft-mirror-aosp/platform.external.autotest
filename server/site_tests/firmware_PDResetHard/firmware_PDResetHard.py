@@ -9,7 +9,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.servo import pd_device
 
-
 class firmware_PDResetHard(FirmwareTest):
     """
     USB PD hard reset test.
@@ -20,9 +19,11 @@ class firmware_PDResetHard(FirmwareTest):
     criteria is that all attempted hard resets are successful.
 
     """
+
     version = 1
     RESET_ITERATIONS = 5
     DELAY_BETWEEN_ITERATIONS = 1
+    PD_CONNECT_DELAY = 10
 
     def _test_hard_reset(self, port_pair):
         """Tests hard reset initated by both ends of PD connection
@@ -32,6 +33,7 @@ class firmware_PDResetHard(FirmwareTest):
         for dev in port_pair:
             for _ in xrange(self.RESET_ITERATIONS):
                 try:
+                    time.sleep(self.PD_CONNECT_DELAY)
                     if dev.hard_reset() == False:
                         raise error.TestFail('Hard Reset Failed')
                     time.sleep(self.DELAY_BETWEEN_ITERATIONS)

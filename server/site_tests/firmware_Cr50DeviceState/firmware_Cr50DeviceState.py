@@ -68,7 +68,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     # catch extra wakeups.
     SLEEP_TIME = 60
     SHORT_WAIT = 5
-    CONSERVATIVE_WAIT_TIME = SLEEP_TIME + SHORT_WAIT + 10
+    CONSERVATIVE_WAIT_TIME = SLEEP_TIME * 2
     # Cr50 should wake up twice per second while in regular sleep
     SLEEP_RATE = 2
 

@@ -291,8 +291,8 @@ class firmware_PDDataSwap(FirmwareTest):
 
         # create objects for pd utilities
         self.dut_pd_utils = pd_console.create_pd_console_utils(self.usbpd)
-        self.pdtester_pd_utils =
-                            pd_console.create_pd_console_utils(self.pdtester)
+        self.pdtester_pd_utils = pd_console.create_pd_console_utils(
+                                 self.pdtester)
 
         # Make sure PD support exists in the UART console
         if self.dut_pd_utils.verify_pd_console() == False:

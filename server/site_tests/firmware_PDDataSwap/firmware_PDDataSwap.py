@@ -20,8 +20,8 @@ class firmware_PDDataSwap(FirmwareTest):
     cases where the swap does not complete.
 
     """
-    version = 1
 
+    version = 1
     PD_ROLE_DELAY = 0.5
     PD_CONNECT_DELAY = 4
     DATA_SWAP_ITERATIONS = 10
@@ -57,7 +57,7 @@ class firmware_PDDataSwap(FirmwareTest):
 
         @returns True if DUT to PDTester pd connection is verified
         """
-        DISCONNECT_TIME_SEC = 2
+        DISCONNECT_TIME_SEC = 6
         # pdtester console command to force PD disconnect
         disc_cmd = 'fakedisconnect 100 %d' % (DISCONNECT_TIME_SEC*1000)
         # Only check for PDTester if DUT has active PD connection
@@ -124,7 +124,7 @@ class firmware_PDDataSwap(FirmwareTest):
         PDTESTER_SRC_VOLTAGE = 5
         PDTESTER_SNK_VOLTAGE = 0
         pd_state = self.dut_pd_utils.get_pd_state(port)
-        if pd_state == self.dut_pd_utils.SRC_CONNECT:
+        if self.dut_pd_utils.is_src_connected(port):
             # DUT is currently a SRC, so change to SNK
             # Use PDTester method to ensure power role change
             self.pdtester.charge(PDTESTER_SRC_VOLTAGE)
@@ -290,8 +290,9 @@ class firmware_PDDataSwap(FirmwareTest):
         self.pdtester_port = 1 if 'servo_v4' in self.pdtester.servo_type else 0
 
         # create objects for pd utilities
-        self.dut_pd_utils = pd_console.PDConsoleUtils(self.usbpd)
-        self.pdtester_pd_utils = pd_console.PDConsoleUtils(self.pdtester)
+        self.dut_pd_utils = pd_console.create_pd_console_utils(self.usbpd)
+        self.pdtester_pd_utils =
+                            pd_console.create_pd_console_utils(self.pdtester)
 
         # Make sure PD support exists in the UART console
         if self.dut_pd_utils.verify_pd_console() == False:

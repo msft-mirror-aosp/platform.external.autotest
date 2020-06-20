@@ -19,16 +19,12 @@ class firmware_PDPowerSwap(FirmwareTest):
     the DUT sending a reject message in response to swap request.
 
     """
-    version = 1
 
-    PD_ROLE_DELAY = 0.5
-    PD_CONNECT_DELAY = 4
+    version = 1
+    PD_ROLE_DELAY = 1
+    PD_CONNECT_DELAY = 10
     # Should be an even number; back to the original state at the end
     POWER_SWAP_ITERATIONS = 10
-    # Source power role
-    SRC = 'SRC_READY'
-    # Sink power role
-    SNK = 'SNK_READY'
 
     def _set_pdtester_power_role_to_src(self):
         """Force PDTester to act as a source
@@ -41,7 +37,7 @@ class firmware_PDPowerSwap(FirmwareTest):
         time.sleep(self.PD_CONNECT_DELAY)
         pdtester_state = self.pdtester_pd_utils.get_pd_state(self.pdtester_port)
         # Current PDTester power role should be source
-        return bool(pdtester_state == self.SRC)
+        return self.pdtester_pd_utils.is_src_connected(self.pdtester_port)
 
     def _send_power_swap_get_reply(self, console, port):
         """Send power swap request, get PD control msg reply
@@ -87,8 +83,12 @@ class firmware_PDPowerSwap(FirmwareTest):
         self._send_power_swap_get_reply(console, port)
         time.sleep(self.PD_CONNECT_DELAY)
         # Get PDTester power role
-        pdtester_pr = self.pdtester_pd_utils.get_pd_state(self.pdtester_port)
-        return bool(dut_pr == pdtester_pr)
+        if self.pdtester_pd_utils.is_src_connected(port):
+            return True
+        elif self.pdtester_pd_utils.is_snk_connected(port):
+            return True
+        else:
+            return False
 
     def _test_power_swap_reject(self, pd_port):
         """Verify that a power swap request is rejected
@@ -126,15 +126,16 @@ class firmware_PDPowerSwap(FirmwareTest):
         @param pd_port: port for DUT pd connection
         """
         # Ensure DUT PD port is sourcing power.
-        if self.dut_pd_utils.get_pd_state(pd_port) != self.SRC:
+        time.sleep(self.PD_CONNECT_DELAY)
+        if not self.dut_pd_utils.is_src_connected(pd_port):
             if (self._attempt_power_swap(pd_port, 'rx') == False or
-                self.dut_pd_utils.get_pd_state(pd_port) != self.SRC):
+                not self.dut_pd_utils.is_src_connected(pd_port)):
                 raise error.TestFail('Fail to set DUT power role to source.')
 
         self.set_ap_off_power_mode('suspend')
 
         new_state = self.dut_pd_utils.get_pd_state(pd_port)
-        if new_state != self.SRC:
+        if not self.dut_pd_utils.is_src_connected(pd_port):
             raise error.TestFail('DUT power role changed to %s '
                     'during S0-to-S3 transition!' % new_state)
 
@@ -196,15 +197,17 @@ class firmware_PDPowerSwap(FirmwareTest):
         self.pdtester_port = 1 if 'servo_v4' in self.pdtester.servo_type else 0
 
         # create objects for pd utilities
-        self.dut_pd_utils = pd_console.PDConsoleUtils(self.usbpd)
-        self.pdtester_pd_utils = pd_console.PDConsoleUtils(self.pdtester)
+        self.dut_pd_utils = pd_console.create_pd_console_utils(self.usbpd)
+        self.pdtester_pd_utils =
+                            pd_console.create_pd_console_utils(self.pdtester)
         self.connect_utils = pd_console.PDConnectionUtils(
-                self.dut_pd_utils, self.pdtester_pd_utils)
+            self.dut_pd_utils, self.pdtester_pd_utils)
 
         # Make sure PD support exists in the UART console
         if self.dut_pd_utils.verify_pd_console() == False:
             raise error.TestFail("pd command not present on console!")
 
+        time.sleep(self.PD_CONNECT_DELAY)
         # Type C connection (PD contract) should exist at this point
         # For this test, the DUT must be connected to a PDTester.
         self.pd_port = self.connect_utils.find_dut_to_pdtester_connection()
@@ -247,10 +250,11 @@ class firmware_PDPowerSwap(FirmwareTest):
             self._test_one_way_power_swap_in_suspend(self.pd_port)
 
             # Force DUT to only support current power role
-            if new_state == self.SRC:
+            if new_state in self.dut_pd_utils.get_src_connect_states():
                 dual_mode = 'src'
             else:
                 dual_mode = 'snk'
+
             logging.info('Setting dualrole mode to %s', dual_mode)
             self.dut_pd_utils.set_pd_dualrole(self.pd_port, dual_mode)
             time.sleep(self.PD_ROLE_DELAY)

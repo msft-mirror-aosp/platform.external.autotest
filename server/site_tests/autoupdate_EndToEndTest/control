@@ -111,7 +111,7 @@ To run locally:
     You should now be able to ssh into DUTs in the lab without a password.
 
     Follow these instructions to setup the ssh access to lab devservers:
-    https://sites.google.com/a/google.com/chromeos/for-team-members/infrastructure/chromeos-admin/devserver-access
+    http://go/cros-sites-archive/for-team-members/infrastructure/chromeos-admin/devserver-access
         You'll need appropriate group membership to be able to access the
         Valentine secret for the devserver file.
 

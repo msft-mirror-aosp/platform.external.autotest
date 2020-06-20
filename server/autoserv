@@ -709,6 +709,16 @@ def main():
     else:
         use_ssp = False
 
+    # crbug.com/1054522 -- Help determine if we can force all tests to use SSP
+    # and simplify associated logic in this module.
+    metrics.Counter('chromeos/autotest/experimental/ssp_usage').increment(
+        fields={
+            'options_control_name': parser.options.control_name,
+            'options_require_ssp': parser.options.require_ssp,
+            'inferred_use_ssp': use_ssp,
+            'is_in_container': utils.is_in_container(),
+        },
+    )
 
     if use_ssp:
         log_dir = os.path.join(results, 'ssp_logs') if results else None

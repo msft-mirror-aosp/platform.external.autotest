@@ -88,7 +88,7 @@ class FirmwareTest(FAFTBase):
     LID_DELAY = 1
 
     # Delay for establishing state after changing PD settings
-    PD_RESYNC_DELAY = 1
+    PD_RESYNC_DELAY = 2
 
     # The default number of power state check retries (each try takes 3 secs)
     DEFAULT_PWR_RETRIES = 5
@@ -1009,17 +1009,18 @@ class FirmwareTest(FAFTBase):
         self.servo_v4_uart_file = None
         self.usbpd_uart_file = None
 
-        try:
-            # Check that the console works before declaring the cr50 console
-            # connection exists and enabling uart capture.
-            self.servo.get('cr50_version')
-            self.servo.set('cr50_uart_capture', 'on')
-            self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
-            self.cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
-        except servo.ControlUnavailableError:
-            logging.warn('cr50 console not supported.')
-        except error.TestFail as e:
-            logging.warn('Unknown cr50 uart capture error: %s', str(e))
+        if self.servo.has_control('cr50_version'):
+            try:
+                # Check that the console works before declaring the cr50 console
+                # connection exists and enabling uart capture.
+                cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                self.servo.set('cr50_uart_capture', 'on')
+                self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
+                self.cr50 = cr50
+            except servo.ControlUnavailableError:
+                logging.warn('cr50 console not supported.')
+            except Exception as e:
+                logging.warn('Unknown cr50 uart capture error: %s', str(e))
         if (self.faft_config.chrome_ec and
             self.servo.has_control('ec_uart_capture')):
             self.servo.set('ec_uart_capture', 'on')

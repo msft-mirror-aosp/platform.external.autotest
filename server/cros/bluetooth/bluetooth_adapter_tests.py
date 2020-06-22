@@ -2809,6 +2809,8 @@ class BluetoothAdapterTests(test.test):
         event_delimiter = '|'.join(['@ MGMT', '> HCI', '< HCI'])
         btmon_events = re.split(event_delimiter, btmon_log)
 
+        features_located = False
+
         for event_str in btmon_events:
             if 'LE Advertising Report' not in event_str:
                 continue
@@ -2818,9 +2820,12 @@ class BluetoothAdapterTests(test.test):
                     break
 
             else:
-                return True
+                features_located = True
 
-        return False
+        self.results = {
+                'features_located': features_located,
+        }
+        return all(self.results.values())
 
 
     def add_device(self, address, address_type, action):

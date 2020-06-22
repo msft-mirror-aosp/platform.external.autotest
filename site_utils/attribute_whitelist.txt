@@ -201,6 +201,7 @@ suite:storage_qual_quick
 suite:storage_qual_temp
 suite:storagequal
 suite:stress
+suite:syzkaller
 suite:telemetry_unit
 suite:telemetry_unit_server
 suite:tendo_experimental

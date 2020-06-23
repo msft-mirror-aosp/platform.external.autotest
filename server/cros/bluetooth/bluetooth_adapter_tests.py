@@ -3606,6 +3606,19 @@ class BluetoothAdapterTests(test.test):
         return thread
 
 
+    @test_retry_and_log(False)
+    def test_hid_device_created(self, device_address):
+        """ Tests that the hid device is created before using it for tests.
+
+        @param device_address: Address of peripheral device
+        """
+        device_found = self.bluetooth_facade.wait_for_uhid_device(device_address)
+        self.results = {
+                'device_found': device_found
+        }
+        return all(self.results.values())
+
+
     # -------------------------------------------------------------------
     # Autotest methods
     # -------------------------------------------------------------------

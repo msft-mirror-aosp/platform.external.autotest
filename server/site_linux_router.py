@@ -299,8 +299,11 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                      interface, phy_name, configuration.channel)
         self.router.run('rm %s' % log_file, ignore_status=True)
         self.router.run('stop wpasupplicant', ignore_status=True)
-        start_command = '%s -dd -t -K %s > %s 2> %s & echo $!' % (
-                self.cmd_hostapd, conf_file, log_file, stderr_log_file)
+        start_command = (
+            'OPENSSL_CONF=/etc/ssl/openssl.cnf.compat '
+            'OPENSSL_CHROMIUM_SKIP_TRUSTED_PURPOSE_CHECK=1 '
+            '%s -dd -t -K %s > %s 2> %s & echo $!' % (
+                self.cmd_hostapd, conf_file, log_file, stderr_log_file))
         pid = int(self.router.run(start_command).stdout.strip())
         self.hostapd_instances.append(HostapdInstance(
                 hostapd_conf_dict['ssid'],

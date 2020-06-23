@@ -16,6 +16,7 @@ from xml.etree import ElementTree
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros.update_engine import dlc_util
 from autotest_lib.client.cros.update_engine import update_engine_event as uee
 from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
@@ -73,6 +74,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Define functions used in update_engine_util.
         self._run = self._host.run if self._host else None
         self._get_file = self._host.get_file if self._host else None
+
+        # Utilities for DLC management
+        self._dlc_util = dlc_util.DLCUtil(self._run)
 
 
     def cleanup(self):

@@ -69,7 +69,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     BID_FORMAT = ':\s+[a-f0-9:]{26} '
     ACTIVE_BID = r'%s.*(\1%s|%s.*>)' % (ACTIVE_VERSION, BID_FORMAT,
             BID_ERROR)
-    WAKE_CHAR = '\n\n'
+    WAKE_CHAR = '\n\n\n\n'
     WAKE_RESPONSE = ['(>|Console is enabled)']
     START_UNLOCK_TIMEOUT = 20
     GETTIME = ['= (\S+)']

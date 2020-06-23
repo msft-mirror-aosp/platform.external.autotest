@@ -245,6 +245,34 @@ class FirmwareTest(FAFTBase):
         self.blocking_sync(False)
         logging.info('FirmwareTest initialize done (id=%s)', self.run_id)
 
+    def stage_build_to_usbkey(self):
+        """Downloads host's build to the USB key attached to servo.
+
+        @return: True if build is verified to be on USB key, False otherwise.
+        """
+        info = self._client.host_info_store.get()
+        if info.build:
+            current_build = self._client._servo_host.validate_image_usbkey()
+            if current_build != info.build:
+                logging.debug('Current build on USB: %s differs from test'
+                              ' build: %s, proceed with download.',
+                              current_build, info.build)
+                try:
+                    self._client.stage_build_to_usb(info.build)
+                    return True
+                except error.AutotestError as e:
+                    logging.warn('Stage build to USB failed, tests that require'
+                                 ' test image on Servo USB may fail: {}'.format(e))
+                    return False
+            else:
+                logging.debug('Current build on USB: %s is same as test'
+                              ' build, skip download.', current_build)
+                return True
+        else:
+            logging.warn('Failed to get build label from the DUT, will use'
+                         ' existing image in Servo USB.')
+            return False
+
     def run_once(self, *args, **dargs):
         """Delegates testing to a test method.
 

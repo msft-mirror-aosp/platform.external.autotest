@@ -1,21 +1,20 @@
-# Copyright (c) 2015 The Chromium OS Authors. All rights reserved.
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "cellular_DisableWhileConnecting.huawei-e303"
+NAME = "cellular_DisableWhileConnecting.sprint"
 PURPOSE = "Check that the 3G modem can handle a disconnect while connecting."
 CRITERIA = """
 This test will fail if a disconnect request while the modem is
 connecting is not promptly executed.
 """
-ATTRIBUTES = "suite:cellular_ota"
+ATTRIBUTES = "suite:cellular_ota_sprint"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "client"
-DEPENDENCIES = "carrier:tmobile"
-#The dongle used for this test contains T-Mobile SIM card.
+DEPENDENCIES = "carrier:sprint"
 
 DOC = """
 Check that the 3G modem can handle a disconnect while connecting.
@@ -31,7 +30,7 @@ job.run_test('cellular_DisableWhileConnecting',
              delay_before_disable_ms=0,
              disable_delay_per_iteration_ms=0,
              iterations=ITERATIONS_PER_TEST,
-             tag='instant_disable-huawei-e303')
+             tag='instant_disable-fibocom-l850gl')
 
 # Since dbus-python emits our calls asynchronously, it is sometimes
 # (often?) the case that the disable arrives before the connect.
@@ -42,4 +41,4 @@ job.run_test('cellular_DisableWhileConnecting',
              delay_before_disable_ms=0,
              disable_delay_per_iteration_ms=int(1000.0 / ITERATIONS_PER_TEST),
              iterations=ITERATIONS_PER_TEST,
-             tag='disable_delay_ramp-huawei-e303')
+             tag='disable_delay_ramp-fibocom-l850gl')

@@ -27,6 +27,8 @@ DOC = """
 
     Currently, the batch contains the following tests:
     - md_two_connections_test
+    - md_two_ble_hid_connections_test
+    - md_two_cl_hid_connections_test
     """
 
 args_dict = utils.args_to_dict(args)

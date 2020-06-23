@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros.bluetooth import bluetooth_test
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterMDSanity.md_two_connections_test'
+NAME = 'bluetooth_AdapterMDSanity.md_two_ble_hid_connections_test'
 PURPOSE = ('Verify DUT can connect to both devices')
 CRITERIA = 'DUT can connect to both devices'
 ATTRIBUTES = 'suite:bluetooth_flaky'
@@ -17,7 +17,7 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 
 DOC = """
-    This test is to verify that DUT can connect classic mouse and
+    This test is to verify that DUT can connect BLE keyboard and
     BLE mouse at the same time.
     """
 

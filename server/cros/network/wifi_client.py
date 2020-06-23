@@ -918,10 +918,12 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
         @param bssid: string MAC address of bss to roam to.
         @param iface: interface to use
+        @return True if the roam was initiated successfully. Note that this
+                does not guarantee the roam completed successfully.
 
         """
         self._assert_method_supported('request_roam_dbus')
-        self._shill_proxy.request_roam_dbus(bssid, iface)
+        return self._shill_proxy.request_roam_dbus(bssid, iface)
 
 
     def wait_for_roam(self, bssid, timeout_seconds=10.0):

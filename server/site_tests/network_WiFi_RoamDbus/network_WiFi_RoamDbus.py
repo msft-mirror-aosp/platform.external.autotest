@@ -8,6 +8,7 @@ from autotest_lib.client.common_lib.cros.network import iw_runner
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.network import hostap_config
 from autotest_lib.server.cros.network import wifi_cell_test_base
+import logging
 
 class network_WiFi_RoamDbus(wifi_cell_test_base.WiFiCellTestBase):
     """Tests an intentional client-driven roam between APs
@@ -76,9 +77,12 @@ class network_WiFi_RoamDbus(wifi_cell_test_base.WiFiCellTestBase):
             roam_to_bssid = bssid1
         else:
             roam_to_bssid = bssid0
+
+        logging.info('Requesting roam from %s to %s', current_bssid, roam_to_bssid)
         # Send roam command to shill,
         # and shill will send dbus roam command to wpa_supplicant
-        self.context.client.request_roam_dbus(roam_to_bssid, interface)
+        if not self.context.client.request_roam_dbus(roam_to_bssid, interface):
+            raise error.TestFail('Failed to send roam command')
 
         # Expect that the DUT will re-connect to the new AP.
         if not self.context.client.wait_for_roam(

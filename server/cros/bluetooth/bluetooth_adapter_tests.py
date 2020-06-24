@@ -2809,6 +2809,8 @@ class BluetoothAdapterTests(test.test):
         event_delimiter = '|'.join(['@ MGMT', '> HCI', '< HCI'])
         btmon_events = re.split(event_delimiter, btmon_log)
 
+        features_located = False
+
         for event_str in btmon_events:
             if 'LE Advertising Report' not in event_str:
                 continue
@@ -2818,9 +2820,12 @@ class BluetoothAdapterTests(test.test):
                     break
 
             else:
-                return True
+                features_located = True
 
-        return False
+        self.results = {
+                'features_located': features_located,
+        }
+        return all(self.results.values())
 
 
     def add_device(self, address, address_type, action):
@@ -3570,7 +3575,8 @@ class BluetoothAdapterTests(test.test):
         return proc
 
 
-    def device_connect_async(self, device_type, device, adapter_address):
+    def device_connect_async(self, device_type, device, adapter_address,
+                             delay_wake=1):
         """ Connects peer device asynchronously with DUT.
 
         This function uses a thread instead of a subprocess so that the test
@@ -3580,12 +3586,13 @@ class BluetoothAdapterTests(test.test):
         @param device_type: The device type (used to check if it's LE)
         @param device: the meta device with the peer device
         @param adapter_address: the address of the adapter
+        @param delay_wake: delay wakeup by this many seconds
 
         @returns threading.Thread object with device connect task
         """
 
         def _action_device_connect():
-            time.sleep(1)
+            time.sleep(delay_wake)
             if 'BLE' in device_type:
                 # LE reconnects by advertising (dut controller will create LE
                 # connection, not the peer device)

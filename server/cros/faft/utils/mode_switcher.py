@@ -496,7 +496,7 @@ class _BaseModeSwitcher(object):
           _enable_dev_mode_and_reboot()
 
         Rec,normal -----> Dev:
-          _disable_rec_mode_and_reboot()
+          disable_rec_mode_and_reboot()
 
         Any -----> normal:
           _enable_normal_mode_and_reboot()
@@ -684,7 +684,7 @@ class _BaseModeSwitcher(object):
             self.servo.switch_usbkey(usb_state)
         psc.power_on(psc.REC_ON_FORCE_MRC)
 
-    def _disable_rec_mode_and_reboot(self, usb_state=None):
+    def disable_rec_mode_and_reboot(self, usb_state=None):
         """Disable the rec mode and reboot.
 
         It is achieved by calling power state controller to do a normal
@@ -807,7 +807,7 @@ class _MenuSwitcher(_BaseModeSwitcher):
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot."""
         logging.info("Disabling keyboard controlled developer mode")
-        self._disable_rec_mode_and_reboot()
+        self.disable_rec_mode_and_reboot()
         self.wait_for_client_offline()
         self.bypasser.trigger_dev_to_normal()
 
@@ -836,7 +836,7 @@ class _JetstreamSwitcher(_BaseModeSwitcher):
         self.servo.disable_development_mode()
         self.enable_rec_mode_and_reboot(usb_state='host')
         self.faft_framework.wait_for('firmware_screen', 'Disabling rec and rebooting')
-        self._disable_rec_mode_and_reboot(usb_state='host')
+        self.disable_rec_mode_and_reboot(usb_state='host')
 
 
 class _TabletDetachableSwitcher(_BaseModeSwitcher):
@@ -877,7 +877,7 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
         Vol up button selects previous item, vol down button selects
         next item and pwr button selects current activated item.
         """
-        self._disable_rec_mode_and_reboot()
+        self.disable_rec_mode_and_reboot()
         self.wait_for_client_offline()
         self.bypasser.trigger_dev_to_normal()
 

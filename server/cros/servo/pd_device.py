@@ -167,6 +167,25 @@ class PDConsoleDevice(PDDevice):
         """Get the state of the PD port"""
         return self.utils.get_pd_state(self.port)
 
+    def get_pd_role(self):
+        """Get the current PD power role (source or sink)
+
+        @returns: current pd state
+        """
+        return self.utils.get_pd_role(self.port)
+
+    def is_pd_flag_set(self, key):
+        """Test a bit in PD protocol state flags
+
+        The flag word contains various PD protocol state information.
+        This method allows for a specific flag to be tested.
+
+        @param key: dict key to retrieve the flag bit mapping
+
+        @returns True if the bit to be tested is set
+        """
+        return self.utils.is_pd_flag_set(self.port, key)
+
     def is_src(self, state=None):
         """Checks if the port is connected as a source.
 

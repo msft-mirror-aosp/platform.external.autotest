@@ -26,7 +26,7 @@ class audio_AudioSanityCheck(test.test):
 
     def verify_suspend(self, host, factory):
         """"Verify and trigger a suspension"""
-        audio_test_utils.suspend_resume_and_verify(self.host, self.factory)
+        audio_test_utils.suspend_resume_and_verify(host, factory)
 
     def run_once(self, host, suspend_only=False):
         """Runs Audio sanity test to make sure chrome api works. """

@@ -1149,6 +1149,7 @@ class TradefedTest(test.test):
         accurate = []
         board = self._get_board_name()
         session_id = None
+        toggle_ndk = board == 'rammus-arc-r' # Toggle to ndk translation for this board
 
         self._setup_result_directories()
         if media_asset:
@@ -1165,7 +1166,8 @@ class TradefedTest(test.test):
                     hosts=self._hosts,
                     board=board,
                     dont_override_profile=keep_media,
-                    enable_default_apps=enable_default_apps) as current_logins:
+                    enable_default_apps=enable_default_apps,
+                    toggle_ndk=toggle_ndk) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

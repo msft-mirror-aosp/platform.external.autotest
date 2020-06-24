@@ -194,9 +194,8 @@ def _provision_with_au(host, update_url, staging_server):
         with remote_access.ChromiumOSDeviceHandler(
               host.ip, base_dir=DEVICE_BASE_DIR) as device:
             updater = auto_updater.ChromiumOSUpdater(
-                device, build_name=None, payload_dir=image_name,
-                staging_server=staging_server.url(), reboot=False,
-                transfer_class=auto_updater_transfer.LabTransfer)
+                device, None, image_name, auto_updater_transfer.LabTransfer,
+                staging_server=staging_server.url(), reboot=False)
             updater.CheckPayloads()
             updater.RunUpdate()
             updater.SetClearTpmOwnerRequest()

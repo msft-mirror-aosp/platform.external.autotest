@@ -12,6 +12,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.servo import chrome_ec
+from autotest_lib.server.cros.servo import servo
 
 
 def dts_control_command(func):
@@ -69,7 +70,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     BID_FORMAT = ':\s+[a-f0-9:]{26} '
     ACTIVE_BID = r'%s.*(\1%s|%s.*>)' % (ACTIVE_VERSION, BID_FORMAT,
             BID_ERROR)
-    WAKE_CHAR = '\n\n'
+    WAKE_CHAR = '\n\n\n\n'
     WAKE_RESPONSE = ['(>|Console is enabled)']
     START_UNLOCK_TIMEOUT = 20
     GETTIME = ['= (\S+)']
@@ -169,8 +170,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def wake_cr50(self):
         """Wake up cr50 by sending some linebreaks and wait for the response"""
-        logging.debug(super(ChromeCr50, self).send_command_get_output(
-                self.WAKE_CHAR, self.WAKE_RESPONSE))
+        for i in range(self.MAX_RETRY_COUNT):
+            try:
+                rv = super(ChromeCr50, self).send_command_get_output(
+                        self.WAKE_CHAR, self.WAKE_RESPONSE)
+                logging.debug('wake result %r', rv)
+                return
+            except servo.ResponsiveConsoleError as e:
+                logging.info("Console responsive, but couldn't match wake "
+                             "response %s", e)
+        raise servo.ResponsiveConsoleError('Unable to wake cr50')
 
 
     def send_command(self, commands):

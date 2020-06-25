@@ -215,18 +215,18 @@ def get_bluetooth_emulated_device(btpeer, device_type):
     device.class_of_service = _retry_device_method('GetClassOfService',
                                                    class_falsy_values)
     if device._is_le_only:
-      parsed_class_of_service = device.class_of_service
+        parsed_class_of_service = device.class_of_service
     else:
-      parsed_class_of_service = "0x%04X" % device.class_of_service
+        parsed_class_of_service = "0x%04X" % device.class_of_service
     logging.info('class of service: %s', parsed_class_of_service)
 
     device.class_of_device = _retry_device_method('GetClassOfDevice',
                                                   class_falsy_values)
     # Class of device is None for LE-only devices. Don't fail or parse it.
     if device._is_le_only:
-      parsed_class_of_device = device.class_of_device
+        parsed_class_of_device = device.class_of_device
     else:
-      parsed_class_of_device = "0x%04X" % device.class_of_device
+        parsed_class_of_device = "0x%04X" % device.class_of_device
     logging.info('class of device: %s', parsed_class_of_device)
 
     device.device_type = _retry_device_method('GetDeviceType')
@@ -234,8 +234,8 @@ def get_bluetooth_emulated_device(btpeer, device_type):
 
     device.authentication_mode = None
     if not device._is_le_only:
-      device.authentication_mode = _retry_device_method('GetAuthenticationMode')
-      logging.info('authentication mode: %s', device.authentication_mode)
+        device.authentication_mode = _retry_device_method('GetAuthenticationMode')
+        logging.info('authentication mode: %s', device.authentication_mode)
 
     device.port = _retry_device_method('GetPort')
     logging.info('serial port: %s\n', device.port)
@@ -736,11 +736,11 @@ class BluetoothAdapterTests(test.test):
         logging.info("in get_device_rasp %s onstart %s", device_num, on_start)
         total_num_devices = sum(device_num.values())
         if total_num_devices > len(self.host.peer_list):
-                logging.error('Total number of devices %s is greater than the'
-                              ' number of Bluetooth peers %s',
-                              total_num_devices,
-                              len(self.host.peer_list))
-                return False
+            logging.error('Total number of devices %s is greater than the'
+                          ' number of Bluetooth peers %s',
+                          total_num_devices,
+                          len(self.host.peer_list))
+            return False
 
         for device_type, number in device_num.items():
             total_num_devices += number
@@ -1118,11 +1118,10 @@ class BluetoothAdapterTests(test.test):
 
     @test_retry_and_log(False)
     def test_adapter_set_wake_disabled(self):
-      """Disable wake and verify it was written.
-      """
-      success = self.bluetooth_facade.set_wake_enabled(False)
-      self.results = { 'disable_wake': success }
-      return all(self.results.values())
+        """Disable wake and verify it was written. """
+        success = self.bluetooth_facade.set_wake_enabled(False)
+        self.results = { 'disable_wake': success }
+        return all(self.results.values())
 
     @test_retry_and_log
     def test_power_on_adapter(self):
@@ -1876,28 +1875,28 @@ class BluetoothAdapterTests(test.test):
 
     @test_retry_and_log
     def test_connection_by_device_only(self, device, adapter_address):
-      """Test that the device could connect to adapter successfully.
+        """Test that the device could connect to adapter successfully.
 
-      This is a modified version of test_connection_by_device that only
-      communicates with the peer device and not the host (in case the host is
-      suspended for example).
+        This is a modified version of test_connection_by_device that only
+        communicates with the peer device and not the host (in case the host is
+        suspended for example).
 
-      @param device: the bluetooth peer device
-      @param adapter_address: address of the adapter
+        @param device: the bluetooth peer device
+        @param adapter_address: address of the adapter
 
-      @returns: True if the connection was established by the device or False.
-      """
-      connected = device.ConnectToRemoteAddress(adapter_address)
-      if connected:
-        # Although the connect may be complete, it can take a few
-        # seconds for the input device to be ready for use
-        time.sleep(self.ADAPTER_HID_INPUT_DELAY)
+        @returns: True if the connection was established by the device or False.
+        """
+        connected = device.ConnectToRemoteAddress(adapter_address)
+        if connected:
+            # Although the connect may be complete, it can take a few
+            # seconds for the input device to be ready for use
+            time.sleep(self.ADAPTER_HID_INPUT_DELAY)
 
-      self.results = {
-          'connection_by_device': connected
-      }
+        self.results = {
+            'connection_by_device': connected
+        }
 
-      return all(self.results.values())
+        return all(self.results.values())
 
 
     @test_retry_and_log

@@ -167,6 +167,25 @@ class PDConsoleDevice(PDDevice):
         """Get the state of the PD port"""
         return self.utils.get_pd_state(self.port)
 
+    def get_pd_role(self):
+        """Get the current PD power role (source or sink)
+
+        @returns: current pd state
+        """
+        return self.utils.get_pd_role(self.port)
+
+    def is_pd_flag_set(self, key):
+        """Test a bit in PD protocol state flags
+
+        The flag word contains various PD protocol state information.
+        This method allows for a specific flag to be tested.
+
+        @param key: dict key to retrieve the flag bit mapping
+
+        @returns True if the bit to be tested is set
+        """
+        return self.utils.is_pd_flag_set(self.port, key)
+
     def is_src(self, state=None):
         """Checks if the port is connected as a source.
 
@@ -722,12 +741,12 @@ class PDPortPartner(object):
             return False
 
         state1 = port1.get_pd_state()
-        port1_is_snk = port1.is_snk()
-        port1_is_src = port1.is_src()
+        port1_is_snk = port1.is_snk(state1)
+        port1_is_src = port1.is_src(state1)
 
         state2 = port2.get_pd_state()
-        port2_is_snk = port2.is_snk()
-        port2_is_src = port2.is_src()
+        port2_is_snk = port2.is_snk(state2)
+        port2_is_src = port2.is_src(state2)
 
         # Must be SRC <--> SNK or SNK <--> SRC
         if (port1_is_src and port2_is_snk) or (port1_is_snk and port2_is_src):
@@ -773,18 +792,18 @@ class PDPortPartner(object):
         logging.debug("Recheck: %s (%s) <--> (%s) %s",
                       tester_port, tester_state, dut_state, dut_port)
 
-        if not (tester_port.is_disconnected() and
-                dut_port.is_disconnected()):
+        if not (tester_port.is_disconnected(tester_state) and
+                dut_port.is_disconnected(dut_state)):
             logging.info("Ports did not disconnect at the same time, so"
                          " they aren't considered a pair.")
             # Delay to allow non-pair devices to reconnect
-            time.sleep(DISC_WAIT_TIME + CONNECT_TIME)
+            time.sleep(DISC_WAIT_TIME - DISC_CHECK_TIME + CONNECT_TIME)
             return False
 
         logging.debug('Pair disconnected.  Waiting for reconnect...')
 
         # Allow enough time for reconnection
-        time.sleep(DISC_WAIT_TIME + CONNECT_TIME)
+        time.sleep(DISC_WAIT_TIME - DISC_CHECK_TIME + CONNECT_TIME)
         if self._check_port_pair(tester_port, dut_port):
             # Have verified a pd disconnect/reconnect sequence
             logging.info('PDTester <--> DUT pair found')

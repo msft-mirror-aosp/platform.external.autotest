@@ -450,9 +450,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                   self.hostname)
 
         _, update_url = self.stage_image_for_servo(build)
-        self.servo.image_to_servo_usb(update_url)
-        # servo.image_to_servo_usb turned the DUT off, so turn it back on
-        self.servo.get_power_state_controller().power_on()
+
+        try:
+            self.servo.image_to_servo_usb(update_url)
+        finally:
+            # servo.image_to_servo_usb turned the DUT off, so turn it back on
+            logging.debug('Turn DUT power back on.')
+            self.servo.get_power_state_controller().power_on()
+
         logging.debug('ChromeOS image %s is staged on the USB stick.',
                       build)
 

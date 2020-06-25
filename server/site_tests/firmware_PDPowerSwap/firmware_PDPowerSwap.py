@@ -83,9 +83,12 @@ class firmware_PDPowerSwap(FirmwareTest):
         self._send_power_swap_get_reply(console, port)
         time.sleep(self.PD_CONNECT_DELAY)
         # Get PDTester power role
-        if self.pdtester_pd_utils.is_src_connected(port):
+        pdtester_pr = self.pdtester_pd_utils.get_pd_state(self.pdtester_port)
+        if (self.dut_pd_utils.is_src_connected(pd_port, dut_pr) and
+            self.pdtester_pd_utils.is_src_connected(self.pdtester_port, pdtester_pr)):
             return True
-        elif self.pdtester_pd_utils.is_snk_connected(port):
+        elif (self.dut_pd_utils.is_snk_connected(pd_port, dut_pr) and
+            self.pdtester_pd_utils.is_snk_connected(self.pdtester_port, pdtester_pr)):
             return True
         else:
             return False

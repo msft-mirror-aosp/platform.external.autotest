@@ -95,6 +95,8 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                     # the dut
                     self.test_connection_by_device(device)
 
+                # Make sure hid device was created before using it
+                self.test_hid_device_created(device.address)
                 if device_test is not None:
                     device_test(device)
 
@@ -218,6 +220,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
             # Make sure we're actually connected
             self.test_device_is_connected(device.address)
+            self.test_hid_device_created(device.address)
 
             if device_test is not None:
                 device_test(device)

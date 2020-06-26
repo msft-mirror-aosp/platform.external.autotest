@@ -183,7 +183,7 @@ class CrashTest(test.test):
         """
         autotest_cros_dir = os.path.join(os.path.dirname(__file__), '..')
         if has_consent:
-            if os.path.isdir(constants.WHITELIST_DIR):
+            if os.path.isdir(constants.ALLOWLIST_DIR):
                 # Create policy file that enables metrics/consent.
                 shutil.copy('%s/mock_metrics_on.policy' % autotest_cros_dir,
                             constants.SIGNED_POLICY_FILE)
@@ -201,7 +201,7 @@ class CrashTest(test.test):
             shutil.move(temp_file, self._CONSENT_FILE)
             logging.info('Created %s', self._CONSENT_FILE)
         else:
-            if os.path.isdir(constants.WHITELIST_DIR):
+            if os.path.isdir(constants.ALLOWLIST_DIR):
                 # Create policy file that disables metrics/consent.
                 shutil.copy('%s/mock_metrics_off.policy' % autotest_cros_dir,
                             constants.SIGNED_POLICY_FILE)

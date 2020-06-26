@@ -254,12 +254,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return autotest_devserver
 
 
-    def _get_payload_url(self, build=None, full_payload=True):
+    def _get_payload_url(self, build=None, full_payload=True, is_dlc=False):
         """
-        Gets the GStorage URL of the full or delta payload for this build.
+        Gets the GStorage URL of the full or delta payload for this build, for
+        either platform or DLC payloads.
 
-        @param build: build string e.g samus-release/R65-10225.0.0.
+        @param build: build string e.g eve-release/R85-13265.0.0.
         @param full_payload: True for full payload. False for delta.
+        @param is_dlc: True to get the payload URL for dummy-dlc.
 
         @returns the payload URL.
 
@@ -272,12 +274,21 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             self._autotest_devserver = dev_server.ImageServer(ds_url)
 
         gs = dev_server._get_image_storage_server()
-        if full_payload:
-            # Example: chromeos_R65-10225.0.0_samus_full_dev.bin
-            regex = 'chromeos_%s*_full_*' % build.rpartition('/')[2]
+
+        # Example payload names (AU):
+        # chromeos_R85-13265.0.0_eve_full_dev.bin
+        # chromeos_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
+        # Example payload names (DLC):
+        # dlc_dummy-dlc_package_R85-13265.0.0_eve_full_dev.bin
+        # dlc_dummy-dlc_package_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
+        if is_dlc:
+            payload_prefix = 'dlc_*%s*_%s_*' % (build.rpartition('/')[2], '%s')
         else:
-            # Example: chromeos_R65-10225.0.0_R65-10225.0.0_samus_delta_dev.bin
-            regex = 'chromeos_%s*_delta_*' % build.rpartition('/')[2]
+            payload_prefix = 'chromeos_%s*_%s_*' % (build.rpartition('/')[2],
+                                                    '%s')
+
+        regex = payload_prefix % ('full' if full_payload else 'delta')
+
         payload_url_regex = gs + build + '/' + regex
         logging.debug('Trying to find payloads at %s', payload_url_regex)
         payloads = utils.gs_ls(payload_url_regex)
@@ -625,7 +636,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
 
     def get_payload_url_on_public_bucket(self, job_repo_url=None,
-                                         full_payload=True):
+                                         full_payload=True, is_dlc=False):
         """
         Get the google storage url of the payload in a public bucket.
 
@@ -634,33 +645,38 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: True for full, False for delta.
+        @param is_dlc: True to get the payload URL for dummy-dlc.
 
         """
         self._job_repo_url = self._get_job_repo_url(job_repo_url)
-        payload_url = self._get_payload_url(full_payload=full_payload)
+        payload_url = self._get_payload_url(full_payload=full_payload,
+                                            is_dlc=is_dlc)
         url = self._copy_payload_to_public_bucket(payload_url)
         logging.info('Public update URL: %s', url)
         return url
 
 
     def get_payload_for_nebraska(self, job_repo_url=None, full_payload=True,
-                                 public_bucket=False):
+                                 public_bucket=False, is_dlc=False):
         """
-        Gets a payload URL to be used with a nebraska instance on the DUT.
+        Gets a platform or DLC payload URL to be used with a nebraska instance
+        on the DUT.
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
         @param public_bucket: True to return a payload on a public bucket.
+        @param is_dlc: True to get the payload URL for dummy-dlc.
 
         @returns string URL of a payload staged on a lab devserver.
 
         """
         if public_bucket:
             return self.get_payload_url_on_public_bucket(
-                job_repo_url, full_payload=full_payload)
+                job_repo_url, full_payload=full_payload, is_dlc=is_dlc)
 
         self._job_repo_url = self._get_job_repo_url(job_repo_url)
-        payload = self._get_payload_url(full_payload=full_payload)
+        payload = self._get_payload_url(full_payload=full_payload,
+                                        is_dlc=is_dlc)
         payload_url, _ = self._stage_payload_by_uri(payload)
         logging.info('Payload URL for Nebraska: %s', payload_url)
         return payload_url

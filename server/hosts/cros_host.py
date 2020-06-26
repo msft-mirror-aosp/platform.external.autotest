@@ -15,6 +15,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
+from autotest_lib.client.common_lib import utils as common_utils
 from autotest_lib.client.common_lib.cros import cros_config
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
@@ -46,6 +47,11 @@ except ImportError:
 
 
 CONFIG = global_config.global_config
+
+# Device is not fixable due issues with hardware and has to be replaced
+DEVICE_STATE_NEEDS_REPLACEMENT = 'needs_replacement'
+# Device required manual attention to be fixed
+DEVICE_STATE_NEEDS_MANUAL_REPAIR = 'needs_manual_repair'
 
 
 class FactoryImageCheckerException(error.AutoservError):
@@ -320,6 +326,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         super(CrosHost, self)._initialize(hostname=hostname,
                                           *args, **dargs)
         self._repair_strategy = cros_repair.create_cros_repair_strategy()
+        # hold special dut_state for repair process
+        self._device_repair_state = None
         self.labels = base_label.LabelRetriever(cros_label.CROS_LABELS)
         # self.env is a dictionary of environment variable settings
         # to be exported for commands run on the host.
@@ -1018,6 +1026,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         audit_const.DUT_STORAGE_STATE_PREFIX,
                         audit_const.HW_STATE_NEED_REPLACEMENT)
                     self.host_info_store.commit(info)
+                    self.set_device_repair_state(
+                        DEVICE_STATE_NEEDS_REPLACEMENT)
                     logging.debug(
                         'Fail install image from USB; Storage error; %s', e)
                     raise error.AutoservError(
@@ -1179,6 +1189,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # We don't want flag a DUT as failed if only non-critical
             # verifier(s) failed during the repair.
             if e.is_critical():
+                self.try_set_device_need_manual_repair()
                 raise
 
 
@@ -2555,3 +2566,48 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             if security:
                 cmd += ' ' + security
         return self.run(cmd, ignore_status=True).exit_status == 0
+
+    def get_device_repair_state(self):
+        """Get device repair state"""
+        return self._device_repair_state
+
+    def set_device_repair_state(self, state):
+        """Set device repair state.
+
+        The special device state will be written to the 'dut_state.repair'
+        file in result directory. The file will be read by Lucifer.
+        """
+        if self.job:
+            target = os.path.join(self.job.resultdir, 'dut_state.repair')
+            common_utils.open_write_close(target, state)
+        else:
+            logging.debug('Cannot write the device state due missing info '
+                          'about result dir.')
+        self._device_repair_state = state
+
+    def try_set_device_need_manual_repair(self):
+        """Check if device require manual attention to be fixed.
+
+        The state 'needs_manual_repair' can be set when auto repair cannot
+        fix the device due hardware or cable issues.
+        """
+        # ignore the logic if state present
+        # state can be set by any cros repair actions
+        if self.get_device_repair_state():
+            return
+
+        # set need manual attention if servo has hardware issue
+        servo_state_required_manual_fix = [
+            servo_constants.SERVO_STATE_NOT_CONNECTED,
+            servo_constants.SERVO_STATE_NEED_REPLACEMENT,
+            servo_constants.SERVO_STATE_LID_OPEN_FAILED,
+            servo_constants.SERVO_STATE_BAD_RIBBON_CABLE,
+            servo_constants.SERVO_STATE_EC_BROKEN,
+        ]
+        if self.get_servo_state() in servo_state_required_manual_fix:
+            data = {'host': self.hostname, 'state': needs_manual_repair}
+            metrics.Counter(
+                'chromeos/autotest/repair/special_dut_state'
+                ).increment(fields=data)
+            # TODO (otabek) unblock when be sure that we do not have flakiness
+            # self.set_device_repair_state(DEVICE_STATE_NEEDS_MANUAL_REPAIR)

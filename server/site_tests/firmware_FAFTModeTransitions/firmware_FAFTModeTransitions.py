@@ -40,7 +40,6 @@ class firmware_FAFTModeTransitions(FirmwareTest):
         if 'rec' in mode_seq:
             logging.info("Mode sequence contains 'rec', setup USB stick with"
                          " image.")
-            self.stage_build_to_usbkey()
             self.setup_usbkey(usbkey=True)
 
         m1 = mode_seq[0]

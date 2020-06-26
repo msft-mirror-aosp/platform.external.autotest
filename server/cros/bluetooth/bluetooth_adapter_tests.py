@@ -2812,7 +2812,7 @@ class BluetoothAdapterTests(test.test):
         features_located = False
 
         for event_str in btmon_events:
-            if 'LE Advertising Report' not in event_str:
+            if 'Advertising Report' not in event_str:
                 continue
 
             for desired_str in desired_strs:

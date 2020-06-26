@@ -574,6 +574,7 @@ class BluetoothAdapterTests(test.test):
     SUSPEND_TIME_SECS=10
     SUSPEND_ENTER_SECS=10
     RESUME_TIME_SECS=30
+    RESUME_INTERNAL_TIMEOUT_SECS = 180
 
     # Minimum RSSI required for peer devices during testing
     MIN_RSSI = -70
@@ -3552,8 +3553,11 @@ class BluetoothAdapterTests(test.test):
         resume_timeout = resume_timeout + RESUME_DELTA
         try:
             start = datetime.now()
+
+            # Wait for resume needs to wait longer in case device rebooted.
+            # Otherwise, the test will fail with errno 111 (connection refused)
             self.host.test_wait_for_resume(
-                boot_id, resume_timeout=resume_timeout)
+                boot_id, resume_timeout=self.RESUME_INTERNAL_TIMEOUT_SECS)
 
             # As of now, a timeout in test_wait_for_resume doesn't raise. Force
             # a failure here instead by checking against the start time.

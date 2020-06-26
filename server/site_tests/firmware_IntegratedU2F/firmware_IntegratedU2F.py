@@ -9,6 +9,7 @@ import subprocess
 
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import tpm_utils
+from autotest_lib.client.cros import constants
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
@@ -50,9 +51,9 @@ class firmware_IntegratedU2F(FirmwareTest):
 
 
     def owner_key_exists(self):
-        """Return True if /var/lib/whitelist/owner.key exists."""
+        """Return True if constants.OWNER_KEY_FILE exists."""
         logging.info('checking for owner key')
-        return self.host.path_exists('/var/lib/whitelist/owner.key')
+        return self.host.path_exists(constants.OWNER_KEY_FILE)
 
 
     def wait_for_policy(self):

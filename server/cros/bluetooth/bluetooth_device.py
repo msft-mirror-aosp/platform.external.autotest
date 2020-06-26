@@ -1198,6 +1198,16 @@ class BluetoothDevice(object):
         """
         return self._proxy.set_le_connection_parameters(address, parameters)
 
+    def wait_for_uhid_device(self, device_address):
+        """Wait for uhid device with given device address.
+
+        Args:
+            device_address: Peripheral Address
+
+        Returns:
+            True if uhid device is found.
+        """
+        return self._proxy.wait_for_uhid_device(device_address)
 
     def close(self, close_host=True):
         """Tear down state associated with the client.

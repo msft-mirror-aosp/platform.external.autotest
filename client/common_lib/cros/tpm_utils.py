@@ -6,6 +6,7 @@ import logging, os
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import constants
 
 
 _PASSWD_FILE = '/var/tmp/tpm_password'
@@ -13,7 +14,7 @@ _RM_FILES = ['/home/chronos/.oobe_completed',
              '/home/chronos/Local\ State',
              '/var/cache/shill/default.profile']
 _RM_DIRS = ['/home/.shadow/*',
-            '/var/lib/whitelist/*',
+            os.path.join(constants.ALLOWLIST_DIR, '*'),
             '/var/cache/app_pack',
             '/var/lib/tpm']
 

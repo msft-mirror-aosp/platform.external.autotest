@@ -30,6 +30,11 @@ from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.cros.faft.utils import config
 from autotest_lib.client.common_lib import global_config
 
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
+
 _CONFIG = global_config.global_config
 
 
@@ -112,6 +117,14 @@ class ServoHost(base_servohost.BaseServoHost):
     # an instance (on purpose, or due to a bug) restarted in the middle of the
     # run.
     OLD_LOG_SUFFIX = 'old'
+
+    # States of verifiers
+    # True - verifier run and passed
+    # False - verifier run and failed
+    # None - verifier did not run or dependency failed
+    VERIFY_SUCCESS = True
+    VERIFY_FAILED = False
+    VERIFY_NOT_RUN = None
 
     def _init_attributes(self):
         self._servo_state = None
@@ -281,9 +294,10 @@ class ServoHost(base_servohost.BaseServoHost):
             self.record('INFO', None, None,
                         'ServoHost verify set servo_state as WORKING')
         except Exception as e:
-            self._servo_state = servo_constants.SERVO_STATE_BROKEN
+            self._servo_state = self.determine_servo_state()
             self.record('INFO', None, None,
-                        'ServoHost verify set servo_state as BROKEN')
+                        'ServoHost verify set servo_state as %s'
+                        % self._servo_state)
             if self._is_critical_error(e):
                 raise
 
@@ -434,9 +448,10 @@ class ServoHost(base_servohost.BaseServoHost):
             if self.is_labstation():
                 self.withdraw_reboot_request()
         except Exception as e:
-            self._servo_state = servo_constants.SERVO_STATE_BROKEN
+            self._servo_state = self.determine_servo_state()
             self.record('INFO', None, None,
-                        'ServoHost repair set servo_state as BROKEN')
+                        'ServoHost repair set servo_state as %s'
+                        % self._servo_state)
             if self._is_critical_error(e):
                 self.disconnect_servo()
                 self.stop_servod()
@@ -1042,6 +1057,56 @@ class ServoHost(base_servohost.BaseServoHost):
             return servo_constants.SERVO_STATE_UNKNOWN
         return self._servo_state
 
+    def get_verify_state(self, tag):
+        """Return the state of servo verifier.
+
+        @returns: bool or None
+        """
+        return self._repair_strategy.verifier_is_good(tag)
+
+    def determine_servo_state(self):
+        """Determine servo state based on the failed verifier.
+
+        @returns: servo state value
+        The state detecting based on first fail verifier or collecting of
+        them.
+        """
+        ssh = self.get_verify_state('servo_ssh')
+        disk_space = self.get_verify_state('disk_space')
+        start_servod = self.get_verify_state('servod_job')
+        create_servo = self.get_verify_state('servod_connection')
+        init_servo = self.get_verify_state('servod_control')
+        pwr_button = self.get_verify_state('pwr_button')
+        lid_open = self.get_verify_state('lid_open')
+        ec_board = self.get_verify_state('ec_board')
+        ccd_testlab = self.get_verify_state('ccd_testlab')
+
+        if not ssh:
+            return servo_constants.SERVO_STATE_NO_SSH
+
+        # one of the reason why servo can not initialized
+        if ccd_testlab == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_CCD_TESTLAB_ISSUE
+
+        if init_servo == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_SERVOD_ISSUE
+
+        if pwr_button == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_BAD_RIBBON_CABLE
+        if lid_open == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_LID_OPEN_FAILED
+        if ec_board == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_EC_BROKEN
+
+        data = {'port': self.servo_port,
+                'host': self.hostname,
+                'board': self.servo_board or ''}
+        metrics.Counter(
+            'chromeos/autotest/repair/unknown_servo_state'
+            ).increment(fields=data)
+        logging.info('We do not have special state for this failure yet :)')
+        return servo_constants.SERVO_STATE_BROKEN
+
 
 def make_servo_hostname(dut_hostname):
     """Given a DUT's hostname, return the hostname of its servo.
@@ -1208,7 +1273,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
     if servo_args is None:
         logging.debug('No servo_args provided, and failed to find overrides.')
         if try_lab_servo or servo_dependency:
-            return None, servo_constants.SERVO_STATE_NOT_CONNECTED
+            return None, servo_constants.SERVO_STATE_MISSING_CONFIG
         else:
             # For regular test case which not required the servo
             return None, None
@@ -1219,7 +1284,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         logging.debug(
             'Servo connection info missed hostname: %s , port: %s',
             servo_hostname, servo_port)
-        return None, servo_constants.SERVO_STATE_NOT_CONNECTED
+        return None, servo_constants.SERVO_STATE_MISSING_CONFIG
     if not is_servo_host_information_valid(servo_hostname, servo_port):
         logging.debug(
             'Servo connection info is incorrect hostname: %s , port: %s',
@@ -1228,7 +1293,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
     if (not servo_dependency and not try_servo_repair and
             not servo_host_is_up(servo_hostname)):
         logging.debug('ServoHost is not up.')
-        return None, servo_constants.SERVO_STATE_BROKEN
+        return None, servo_constants.SERVO_STATE_NO_SSH
 
     newhost = ServoHost(**servo_args)
 

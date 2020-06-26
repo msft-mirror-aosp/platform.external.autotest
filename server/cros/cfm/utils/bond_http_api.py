@@ -6,10 +6,19 @@ from __future__ import print_function
 
 import json
 import logging
-import requests
 
 from datetime import datetime
-from oauth2client.client import GoogleCredentials
+
+# google-auth isn't available in unit test environments
+try:
+  from google.oauth2 import service_account
+except ImportError:
+  logging.error('Failed to import from google.oauth2')
+
+try:
+  from google.auth.transport import requests
+except ImportError:
+  logging.error('Failed to import from google.auth.transport')
 
 
 _BOND_API_URL = 'https://bond-pa.sandbox.googleapis.com'
@@ -26,18 +35,12 @@ class BondHttpApi(object):
   """Utility class for sending requests to BonD for bots."""
 
   def __init__(self):
-    self._last_token_request_time = None
-    self._last_token = None
+    self._last_session_start_time = None
+    self._authed_session = None
 
   def GetAvailableWorkers(self):
     """Gets the number of available workers for a conference."""
-    token = self._GetAccessToken()
-    resp = requests.get(
-        '%s/v1/workers:count' % _BOND_API_URL,
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer %s' % token
-        })
+    resp = self._GetAuthorizedSession().get('%s/v1/workers:count' % _BOND_API_URL)
     return json.loads(resp.text)["numOfAvailableWorkers"]
 
   def CreateConference(self):
@@ -46,8 +49,6 @@ class BondHttpApi(object):
     Returns:
       The meeting code of the created conference.
     """
-    token = self._GetAccessToken()
-
     request_data = {
       'conference_type': 'THOR',
       'backend_options': {
@@ -56,12 +57,8 @@ class BondHttpApi(object):
       },
     }
 
-    resp = requests.post(
+    resp = self._GetAuthorizedSession().post(
         '%s/v1/conferences:create' % _BOND_API_URL,
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer %s' % token,
-        },
         data=json.dumps(request_data))
     json_response = json.loads(resp.text)
     logging.info("CreateConference response: %s", json_response)
@@ -77,7 +74,6 @@ class BondHttpApi(object):
     Returns:
       RunScriptRequest denoting failure or success of the request.
     """
-    token = self._GetAccessToken()
 
     request_data = {
       'script': script,
@@ -86,12 +82,8 @@ class BondHttpApi(object):
       }
      }
 
-    resp = requests.post(
+    resp = self._GetAuthorizedSession().post(
         '%s/v1/conference/%s/script' % (_BOND_API_URL, meeting_code),
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer %s' % token,
-        },
         data=json.dumps(request_data))
 
     json_response = json.loads(resp.text)
@@ -127,7 +119,6 @@ class BondHttpApi(object):
     """
     # Not allowing VP9, but sending it is an invalid combination.
     assert(allow_vp9 or not send_vp9)
-    token = self._GetAccessToken()
 
     request_data = {
       'num_of_bots': number_of_bots,
@@ -154,30 +145,30 @@ class BondHttpApi(object):
       'use_random_video_file_for_playback': True
     }
 
-    resp = requests.post(
+    resp = self._GetAuthorizedSession().post(
         '%s/v1/conference/%s/bots:add' % (_BOND_API_URL, meeting_code),
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer %s' % token
-        },
         data=json.dumps(request_data))
 
     json_response = json.loads(resp.text)
     logging.info("AddBotsRequest response: %s", json_response)
     return json_response["botIds"]
 
-  def _GetAccessToken(self):
-    if self._last_token is None or self._CheckTokenExpired():
+  def _GetAuthorizedSession(self):
+    """Gets a google.auth AuthorizedSession using BonD credentials."""
+    if self._authed_session is None or self._CheckSessionExpired():
       credentials = self._CreateApiCredentials()
       scope = 'https://www.googleapis.com/auth/meetings'
-      credentials = credentials.create_scoped(scope)
-      self._last_token_request_time = datetime.now()
-      self._last_token = credentials.get_access_token().access_token
-    return self._last_token
+      scoped_credentials = credentials.with_scopes([scope])
+      self._last_session_start_time = datetime.now()
+      self._authed_session = requests.AuthorizedSession(scoped_credentials)
+
+    return self._authed_session
 
   def _CreateApiCredentials(self):
-    return GoogleCredentials.from_stream(_SERVICE_CREDS_FILE)
+    """Reads BonD services account credentials from a local file."""
+    return service_account.Credentials.from_service_account_file(_SERVICE_CREDS_FILE)
 
-  def _CheckTokenExpired(self):
-    elapsed = datetime.now() - self._last_token_request_time
+  def _CheckSessionExpired(self):
+    """Checks if the current AuthorizedSession is older than the expected token TTL."""
+    elapsed = datetime.now() - self._last_session_start_time
     return elapsed.total_seconds() > _TOKEN_TTL_SECONDS

@@ -634,6 +634,7 @@ class FirmwareTest(FAFTBase):
                                   used for recovery boot, like Ctrl-U USB boot.
         """
         if usbkey:
+            self.stage_build_to_usbkey()
             self.assert_test_image_in_usb_disk()
         elif host is None:
             # USB disk is not required for the test. Better to mux it to host.

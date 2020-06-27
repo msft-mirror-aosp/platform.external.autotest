@@ -65,14 +65,14 @@ class bluetooth_AdapterMDSanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('One classic and one BLE connection',
-                  devices={'MOUSE':1, 'BLE_MOUSE':1})
+                  devices={'BLE_MOUSE':1, 'KEYBOARD':1})
     def md_two_connections_test(self):
-        """test whether DUT can connect to classic mouse and ble mouse at the
+        """test whether DUT can connect to classic keyboard and ble mouse at the
            same time
         """
         devices = [
-            (self.devices['MOUSE'][0], self.test_mouse_left_click),
-            (self.devices['BLE_MOUSE'][0], self.test_mouse_left_click)
+            (self.devices['BLE_MOUSE'][0], self.test_mouse_left_click),
+            (self.devices['KEYBOARD'][0], self.run_keyboard_tests)
         ]
 
         self.pair_and_test_connection(devices)

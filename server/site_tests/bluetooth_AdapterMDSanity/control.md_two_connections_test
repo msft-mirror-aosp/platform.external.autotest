@@ -17,7 +17,7 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 
 DOC = """
-    This test is to verify that DUT can connect classic mouse and
+    This test is to verify that DUT can connect classic keyboard and
     BLE mouse at the same time.
     """
 

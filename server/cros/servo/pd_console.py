@@ -343,6 +343,16 @@ class PDConsoleUtils(object):
         """
         return self.DISCONNECTED_STATES
 
+    def is_snk_discovery_state(self, port):
+        """Returns true if in snk discovery state, else false
+
+        @param port: Type C PD port 0/1
+
+        @return: True if in SNK Discovery state
+        """
+        raise NotImplementedError(
+            'should be implemented in derived class')
+
 class TCPMv1ConsoleUtils(PDConsoleUtils):
     """ Provides a set of methods common to USB PD TCPMv1 FAFT tests
 
@@ -542,6 +552,15 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
         """
         return self.SNK_CONNECT
 
+    def is_snk_discovery_state(self, port):
+        """Returns true if in snk discovery state, else false
+
+        @param port: Type C PD port 0/1
+
+        @return: True if in SNK Discovery state
+        """
+        state = self.get_pd_state(port)
+        return state == self.SNK_DISCOVERY
 
 class TCPMv2ConsoleUtils(PDConsoleUtils):
     """ Provides a set of methods common to USB PD TCPMv1 FAFT tests
@@ -559,6 +578,7 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
     SNK_DISC = 'Unattached.SNK'
     DRP_AUTO_TOGGLE = 'DRPAutoToggle'
     LOW_POWER_MODE = 'LowPowerMode'
+    SNK_DISCOVERY = 'PE_SNK_DISCOVERY'
     DISCONNECTED_STATES = (SRC_DISC, SNK_DISC, DRP_AUTO_TOGGLE, LOW_POWER_MODE)
 
     PD_MAX_PORTS = 2
@@ -579,6 +599,7 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
         'role': 'Role:\s+([\w]+-[\w]+)',
         'pd_state': 'State:\s+([\d\w()_.]+)',
         'flags': 'Flags:\s+([\w]+)',
+        'pe_state': 'State:\s+(PE_[\w]+)',
         'polarity': '(CC\d)'
     }
 
@@ -610,6 +631,16 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
         'data_swap_active': 1 << 3,
         'vconn_on': 1 << 12
     }
+
+    def get_pe_state(self, port):
+        """Get the current Policy Engine state
+
+        @param port: Type C PD port 0/1
+        @returns: current pe state
+        """
+
+        pd_dict = self.execute_pd_state_cmd(port)
+        return pd_dict['pe_state']
 
     def get_pd_state(self, port):
         """Get the current PD state
@@ -667,6 +698,16 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
         @returns: List of connected sink state names
         """
         return self.SNK_CONNECT
+
+    def is_snk_discovery_state(self, port):
+        """Returns true if in snk discovery state, else false
+
+        @param port: Type C PD port 0/1
+
+        @return: True if in SNK Discovery state
+        """
+        state = self.get_pe_state(port)
+        return state == self.SNK_DISCOVERY
 
 class PDConnectionUtils(PDConsoleUtils):
     """Provides a set of methods common to USB PD FAFT tests

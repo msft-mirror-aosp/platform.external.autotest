@@ -59,13 +59,13 @@ class NebraskaWrapper(object):
         self._install_metadata_dir = None
         self._install_payloads_address = None
 
-        # Normalize payload_url to be a list.
-        if isinstance(payload_url, str):
-            payload_url = [payload_url]
-
         # Create a temporary directory for the metadata and download the
         # metadata files.
         if payload_url:
+            # Normalize payload_url to be a list.
+            if not isinstance(payload_url, list):
+                payload_url = [payload_url]
+
             self._update_metadata_dir = autotemp.tempdir()
             self._update_payloads_address = ''.join(
                 payload_url[0].rpartition('/')[0:2])

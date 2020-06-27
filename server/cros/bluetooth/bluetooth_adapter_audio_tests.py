@@ -564,6 +564,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         received_media_info = device.GetMediaPlayerMediaInfo()
         logging.debug(received_media_info)
+
+        try:
+            actual_length = int(received_media_info.get('length'))
+        except:
+            actual_length = 0
+
         result_status = bool(expected_status ==
             received_media_info.get('status').lower())
         result_album = bool(expected_metadata['album'] ==
@@ -572,8 +578,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             received_media_info.get('artist'))
         result_title = bool(expected_metadata['title'] ==
             received_media_info.get('title'))
-        result_length = bool(expected_length / 1000 ==
-            int(received_media_info.get('length')) / 1000)
+        # The AVRCP time information is in the unit of microseconds but with
+        # milliseconds resolution. Convert both send and received length into
+        # milliseconds for comparison.
+        result_length = bool(expected_length / 1000 == actual_length / 1000)
 
         self.results = {'status': result_status, 'album': result_album,
                         'artist': result_artist, 'title': result_title,

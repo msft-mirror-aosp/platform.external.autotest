@@ -81,7 +81,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     def quick_test_init(self, host, use_btpeer=True, use_chameleon=False,
-                        flag='Quick Sanity'):
+                        flag='Quick Sanity', start_browser=True):
         """Inits the test batch"""
         self.host = host
         #factory can not be declared as local variable, otherwise
@@ -90,7 +90,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         try:
             self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                           disable_arc=True)
+                    no_chrome = not start_browser, disable_arc=True)
             self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
 
         # For b:142276989, catch 'object_path' fault and reboot to prevent

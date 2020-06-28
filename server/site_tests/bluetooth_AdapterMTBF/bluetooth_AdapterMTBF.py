@@ -183,8 +183,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     def test_suspend_resume(self, device):
         """Test the device can connect after suspending and resuming"""
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND_SEC, allow_early_resume=True)
+        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND_SEC)
 
         self.test_suspend_and_wait_for_sleep(
             suspend, sleep_timeout=ACTION_TIMEOUT_SEC)
@@ -199,8 +198,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     def test_suspend_and_mouse_wakeup(self, mouse):
         """Test the device can be waken up by the mouse"""
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND_SEC, allow_early_resume=True)
+        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND_SEC)
 
         self.test_adapter_wake_enabled()
         self.test_suspend_and_wait_for_sleep(

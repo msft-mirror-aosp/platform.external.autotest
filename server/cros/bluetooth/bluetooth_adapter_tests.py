@@ -2812,7 +2812,7 @@ class BluetoothAdapterTests(test.test):
         features_located = False
 
         for event_str in btmon_events:
-            if 'LE Advertising Report' not in event_str:
+            if 'Advertising Report' not in event_str:
                 continue
 
             for desired_str in desired_strs:
@@ -3604,6 +3604,19 @@ class BluetoothAdapterTests(test.test):
 
         thread = threading.Thread(target=_action_device_connect)
         return thread
+
+
+    @test_retry_and_log(False)
+    def test_hid_device_created(self, device_address):
+        """ Tests that the hid device is created before using it for tests.
+
+        @param device_address: Address of peripheral device
+        """
+        device_found = self.bluetooth_facade.wait_for_uhid_device(device_address)
+        self.results = {
+                'device_found': device_found
+        }
+        return all(self.results.values())
 
 
     # -------------------------------------------------------------------

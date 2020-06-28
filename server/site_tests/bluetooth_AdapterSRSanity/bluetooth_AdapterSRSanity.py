@@ -180,7 +180,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(
-            suspend_time=LONG_SUSPEND, allow_early_resume=True)
+            suspend_time=LONG_SUSPEND, expect_bt_wake=True)
 
         # Clear wake before testing
         self.test_adapter_set_wake_disabled()
@@ -269,8 +269,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND, allow_early_resume=False)
+        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
 
         # We don't pair to the peer device because we don't want it in the
         # whitelist. However, we want an advertising peer in this test
@@ -298,8 +297,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=MED_SUSPEND, allow_early_resume=False)
+        suspend = self.suspend_async(suspend_time=MED_SUSPEND)
 
         self.test_discoverable()
         self.test_suspend_and_wait_for_sleep(
@@ -325,8 +323,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Suspend while adapter is powered off. """
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND, allow_early_resume=False)
+        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
 
         # Pair device so we have something to do in suspend
         self.test_discover_and_pair(device)

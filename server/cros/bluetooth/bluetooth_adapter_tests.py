@@ -861,8 +861,7 @@ class BluetoothAdapterTests(test.test):
 
         """
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=suspend_time,
-                                     allow_early_resume=True)
+        suspend = self.suspend_async(suspend_time=suspend_time)
 
         # Give the system some time to enter suspend
         self.test_suspend_and_wait_for_sleep(
@@ -873,6 +872,7 @@ class BluetoothAdapterTests(test.test):
         self.test_wait_for_resume(boot_id,
                                   suspend,
                                   resume_timeout=self.RESUME_TIME_SECS)
+
 
     def reboot(self):
         """Reboot the DUT and recreate necessary processes and variables"""
@@ -3557,18 +3557,18 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
-    def suspend_async(self, suspend_time, allow_early_resume=False):
+    def suspend_async(self, suspend_time, expect_bt_wake=False):
         """ Suspend asynchronously and return process for joining
 
         @param suspend_time: how long to stay in suspend
-        @param allow_early_resume: are we expecting to wake up earlier
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+
         @returns multiprocessing.Process object with suspend task
         """
 
         def _action_suspend():
-            self.host.suspend(
-                suspend_time=suspend_time,
-                allow_early_resume=allow_early_resume)
+            self.bluetooth_facade.do_suspend(suspend_time, expect_bt_wake)
 
         proc = multiprocessing.Process(target=_action_suspend)
         proc.daemon = True

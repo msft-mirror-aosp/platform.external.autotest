@@ -23,6 +23,7 @@ import time
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.udev_helpers import UdevadmInfo, UdevadmTrigger
 from autotest_lib.client.cros import xmlrpc_server
@@ -30,6 +31,7 @@ from autotest_lib.client.cros.audio import check_quality
 from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import output_recorder
+from autotest_lib.client.cros.power import sys_power
 
 
 CheckQualityArgsClass = collections.namedtuple(
@@ -2807,6 +2809,86 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                     self.BLUEZ_SERVICE_NAME,
                     path),
                 self.BLUEZ_PLUGIN_DEVICE_IFACE)
+
+
+    def bt_caused_last_resume(self):
+        """Checks if last resume from suspend was caused by bluetooth
+
+        @return: True if BT wake path was cause of resume, False otherwise
+        """
+
+        # When the resume cause is printed to powerd log, it omits the
+        # /power/wakeup portion of wake path
+        bt_wake_path = self._get_wake_enabled_path().replace('/power/wakeup',
+                                                             '')
+
+        # If bluetooth does not have a valid wake path, it could not have caused
+        # the resume
+        if not bt_wake_path:
+            return False
+
+        event_file = '/var/log/power_manager/powerd.LATEST'
+
+        # Each powerd_suspend wakeup has a log "powerd_suspend returned 0",
+        # with the return code of the suspend. We search for the last
+        # occurrence in the log, and then find the collocated event_count log,
+        # indicating the wakeup cause
+        resume_indicator = 'powerd_suspend returned'
+        cmd = 'tac {} | grep -C 2 -m1 "{}"'.format(event_file, resume_indicator)
+
+        try:
+            last_resume_details = utils.run(cmd).stdout
+
+            # If BT caused wake, there will be a line describing the bt wake
+            # path's event_count before and after the resume
+            for line in last_resume_details.split('\n'):
+                if 'event_count' in line:
+                    if bt_wake_path in line:
+                        return True
+
+                    return False
+
+        except error.CmdError:
+            logging.error('Could not locate recent suspend')
+
+        return False
+
+
+    def do_suspend(self, seconds, expect_bt_wake):
+        """Suspend DUT using the power manager.
+
+        @param seconds: The number of seconds to suspend the device.
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+
+        @throws: SuspendFailure on resume with unexpected timing or wake source.
+            The raised exception will be handled as a non-zero retcode over the
+            RPC, signalling for the test to fail.
+        """
+        early_wake = False
+        try:
+            sys_power.do_suspend(seconds)
+
+        except sys_power.SpuriousWakeupError:
+            logging.info('Early resume detected...')
+            early_wake = True
+
+        # Handle error conditions based on test expectations, whether resume
+        # was early, and cause of the resume
+        bt_caused_wake = self.bt_caused_last_resume()
+        logging.info('Cause for resume: {}'.format(
+            'BT' if bt_caused_wake else 'Not BT'))
+
+        if not expect_bt_wake and bt_caused_wake:
+            raise sys_power.SuspendFailure('BT woke us unexpectedly')
+
+        if expect_bt_wake and not bt_caused_wake:
+            raise sys_power.SuspendFailure('BT should have woken us')
+
+        if bt_caused_wake and not early_wake:
+            raise sys_power.SuspendFailure('BT wake did not come early')
+
+        return True
 
 
 if __name__ == '__main__':

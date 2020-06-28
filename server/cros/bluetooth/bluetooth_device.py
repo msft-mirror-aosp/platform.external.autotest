@@ -1209,6 +1209,26 @@ class BluetoothDevice(object):
         """
         return self._proxy.wait_for_uhid_device(device_address)
 
+    def bt_caused_last_resume(self):
+        """Checks if last resume from suspend was caused by bluetooth
+
+        @return: True if BT wake path was cause of resume, False otherwise
+        """
+
+        return self._proxy.bt_caused_last_resume()
+
+
+    def do_suspend(self, seconds, expect_bt_wake):
+        """Suspend DUT using the power manager.
+
+        @param seconds: The number of seconds to suspend the device.
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+        """
+
+        return self._proxy.do_suspend(seconds, expect_bt_wake)
+
+
     def close(self, close_host=True):
         """Tear down state associated with the client.
 

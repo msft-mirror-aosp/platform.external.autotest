@@ -25,6 +25,8 @@ class firmware_ECWakeSource(FirmwareTest):
     # The timeout (in seconds) to confirm the device is woken up from
     # suspend mode.
     RESUME_TIMEOUT = 60
+    # Delay before the USB keyboard is seen by DUT after initialization
+    USB_PRESENT_DELAY = 1
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECWakeSource, self).initialize(host, cmdline_args)
@@ -103,6 +105,11 @@ class firmware_ECWakeSource(FirmwareTest):
                                   lambda:self.ec.key_press('<enter>'))
 
         logging.info('Suspend and wake by USB HID key press.')
+
+        logging.debug('Initializing HID keyboard emulator.')
+        self.servo.set_nocheck('init_usb_keyboard', 'on')
+        time.sleep(self.USB_PRESENT_DELAY)
+
         try:
             self.suspend_and_wake(self.suspend,
                     lambda:self.servo.set_nocheck('usb_keyboard_enter_key',

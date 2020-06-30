@@ -45,9 +45,6 @@ class BluetoothAdapterPairingTests(
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_discover_device(device.address)
 
-        # Test if the discovery could be stopped.
-        self.test_stop_discovery()
-
         # Test if the discovered device class of service is correct.
         self.test_device_class_of_service(device.address,
                                           device.class_of_service)
@@ -159,7 +156,6 @@ class BluetoothAdapterPairingTests(
         # self.bluetooth_facade.is_discovering() doesn't work as expected:
         # crbug:905374
         # self.test_stop_discovery()
-        self.bluetooth_facade.stop_discovery()
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
@@ -204,7 +200,6 @@ class BluetoothAdapterPairingTests(
         # self.bluetooth_facade.is_discovering() doesn't work as expected:
         # crbug:905374
         # self.test_stop_discovery()
-        self.bluetooth_facade.stop_discovery()
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.PAIR_TEST_SLEEP_SECS)

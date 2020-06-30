@@ -44,7 +44,7 @@ def _iterate_tests(client, machine):
     client_at.run_test('power_UiResume', tag=tag)
 
     # Tests that are only run on battery power here.
-    client_at.run_test('power_Backlight', tag=tag)
+    client_at.run_test('power_Display', tag=tag)
     client_at.run_test('power_Draw', tag=tag)
     client_at.run_test('power_Idle',tag=tag)
 

@@ -76,6 +76,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting peer devices...')
             self.get_device_rasp(devices)
 
+            # Make sure device RSSI is sufficient
+            for _ , device_list in self.devices.items():
+                for device in device_list:
+                    self.verify_device_rssi(device.address)
+
     def _print_delimiter(self):
         logging.info('=======================================================')
 

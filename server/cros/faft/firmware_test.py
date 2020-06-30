@@ -544,11 +544,10 @@ class FirmwareTest(FAFTBase):
         try:
             self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
         except error.AutoservRunError as e:
+            usb_info = telemetry.collect_usb_state(self.servo)
             raise error.TestError(
-                ('Could not mount the partition on USB device. ' +
-                    'Exception: %s\nMore telemetry: %s') %
-                (e,
-                    telemetry.collect_usb_state(self.servo)))
+                ('Could not mount the partition on USB device. %s: %s\n'
+                 'More telemetry: %s') % (type(e).__name__, e, usb_info))
 
         try:
             usb_lsb = self.servo.system_output('cat %s' %

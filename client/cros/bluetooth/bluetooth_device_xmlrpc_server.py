@@ -2819,22 +2819,25 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         # When the resume cause is printed to powerd log, it omits the
         # /power/wakeup portion of wake path
-        bt_wake_path = self._get_wake_enabled_path().replace('/power/wakeup',
-                                                             '')
+        bt_wake_path = self._get_wake_enabled_path()
 
         # If bluetooth does not have a valid wake path, it could not have caused
         # the resume
         if not bt_wake_path:
             return False
 
+        bt_wake_path = bt_wake_path.replace('/power/wakeup', '')
+
         event_file = '/var/log/power_manager/powerd.LATEST'
 
         # Each powerd_suspend wakeup has a log "powerd_suspend returned 0",
         # with the return code of the suspend. We search for the last
         # occurrence in the log, and then find the collocated event_count log,
-        # indicating the wakeup cause
+        # indicating the wakeup cause. -B option for grep will actually grab the
+        # *next* 5 logs in time, since we are piping the powerd file backwards
+        # with tac command
         resume_indicator = 'powerd_suspend returned'
-        cmd = 'tac {} | grep -C 2 -m1 "{}"'.format(event_file, resume_indicator)
+        cmd = 'tac {} | grep -B 5 -m1 "{}"'.format(event_file, resume_indicator)
 
         try:
             last_resume_details = utils.run(cmd).stdout
@@ -2843,10 +2846,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             # path's event_count before and after the resume
             for line in last_resume_details.split('\n'):
                 if 'event_count' in line:
+                    logging.info('Checking wake event: {}'.format(line))
                     if bt_wake_path in line:
                         return True
-
-                    return False
 
         except error.CmdError:
             logging.error('Could not locate recent suspend')

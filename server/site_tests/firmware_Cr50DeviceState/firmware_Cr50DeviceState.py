@@ -139,11 +139,13 @@ class firmware_Cr50DeviceState(Cr50Test):
     def log_sleep_debug_information(self):
         """Log some information used for debugging sleep issues"""
         logging.debug(
-            self.cr50.send_safe_command_get_output('sleepmask',
-                                                   ['sleepmask.*>'])[0])
+            self.cr50.send_command_retry_get_output('sleepmask',
+                                                    ['sleepmask.*>'],
+                                                    safe=True)[0])
         logging.debug(
-            self.cr50.send_safe_command_get_output('sysinfo',
-                                                   ['sysinfo.*>'])[0])
+            self.cr50.send_command_retry_get_output('sysinfo',
+                                                    ['sysinfo.*>'],
+                                                    safe=True)[0])
 
 
     def get_taskinfo_output(self):

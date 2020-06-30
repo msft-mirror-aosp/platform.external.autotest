@@ -175,8 +175,10 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
 
-        # Create lsb-release file with no_update=True to get post-reboot event.
-        self._create_custom_lsb_release(update_url, no_update=True)
+        # Create lsb-release with no_update=True to get post-reboot event.
+        lsb_url = payload_url if cellular else update_url
+        self._create_custom_lsb_release(lsb_url, no_update=True)
+
         self._wait_for_oobe_update_to_complete()
 
         # Verify the update was successful by checking hostlog and kernel.

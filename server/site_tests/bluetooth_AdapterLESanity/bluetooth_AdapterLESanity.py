@@ -64,10 +64,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         # Let the adapter pair, and connect to the target device.
         self.test_discover_device(device.address)
-        # self.bluetooth_facade.is_discovering() doesn't work as expected:
-        # crbug:905374
-        # self.test_stop_discovery()
-        self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
 
@@ -85,10 +81,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         device = self.devices['BLE_KEYBOARD'][0]
         # Let the adapter pair, and connect to the target device.
         self.test_discover_device(device.address)
-        # self.bluetooth_facade.is_discovering() doesn't work as expected:
-        # crbug:905374
-        # self.test_stop_discovery()
-        self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
 
@@ -116,7 +108,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         device = self.devices['BLE_KEYBOARD'][0]
         self.test_discover_device(device.address)
-        self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         self.test_service_resolved(device.address)

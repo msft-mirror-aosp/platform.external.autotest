@@ -575,6 +575,9 @@ class BluetoothAdapterTests(test.test):
     SUSPEND_ENTER_SECS=10
     RESUME_TIME_SECS=30
 
+    # Minimum RSSI required for peer devices during testing
+    MIN_RSSI = -70
+
     # hci0 is the default hci device if there is no external bluetooth dongle.
     EXPECTED_HCI = 'hci0'
 
@@ -3688,6 +3691,32 @@ class BluetoothAdapterTests(test.test):
         logging.debug('labels: %s', self.host.get_labels())
         if self.host.chameleon is None and self.host.btpeer_list == []:
             raise error.TestError('Have to specify a working Bluetooth peer')
+
+
+    def verify_device_rssi(self, device_address):
+        """ Test device rssi is over required threshold.
+
+        @param device_address: Peer address we're measuring rssi for
+
+        @raises error.TestNA if device isn't found or RSSI is too low
+        """
+        # The RSSI property is only maintained while discovery is enabled.
+        # Stopping discovery removes the property. Thus, look up the RSSI while
+        # still in discovery.
+        found = self.test_discover_device(device_address, stop_discovery=False)
+        rssi = self.bluetooth_facade.get_device_property(device_address, 'RSSI')
+        self.test_stop_discovery()
+
+        if not found:
+            raise error.TestNAError(
+                    'Peer {} not discovered'.format(device_address))
+
+        if not rssi or rssi < self.MIN_RSSI:
+            raise error.TestNAError('Peer {} RSSI is too low: {}'.format(
+                    device_address, rssi))
+
+        logging.info('Peer {} RSSI {}'.format(device_address, rssi))
+
 
     def set_fail_fast(self, args_dict, default=False):
         """Set whether the test should fail fast if running into any problem

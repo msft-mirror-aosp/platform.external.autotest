@@ -26,7 +26,6 @@ TESTS = [
   'power_Draw',
   'power_Idle',
   'power_StatsCPUFreq',
-  'power_StatsCPUIdle',
   'power_StatsUSB',
 ]
 

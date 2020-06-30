@@ -27,10 +27,10 @@ def collect_usb_state(servo):
        what partition scheme is assumed by the kernel;
      - `fdisk -l` for the partitioning as reported in GPT/MBR
     """
-    lsusb = servo.system_output('lsusb')
-    lsusb_t = servo.system_output('lsusb -t')
-    lssdx = servo.system_output('ls -l /dev/sd*')
-    fdisk = servo.system_output('fdisk -l')
+    lsusb = servo.system_output('lsusb', ignore_status=True)
+    lsusb_t = servo.system_output('lsusb -t', ignore_status=True)
+    lssdx = servo.system_output('ls -l /dev/sd*', ignore_status=True)
+    fdisk = servo.system_output('fdisk -l', ignore_status=True)
     return """lsusb:
         %s
 

@@ -86,7 +86,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     def quick_test_init(self, host, use_btpeer=True, use_chameleon=False,
-                        flag='Quick Sanity', start_browser=True):
+                        flag='Quick Sanity', start_browser=False):
         """Inits the test batch"""
         self.host = host
         #factory can not be declared as local variable, otherwise

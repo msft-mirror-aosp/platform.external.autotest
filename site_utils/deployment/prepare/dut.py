@@ -141,6 +141,11 @@ def verify_ccd_testlab_enable(host):
     @param host server.hosts.CrosHost object.
     """
 
+    host_info = host.host_info_store.get()
+    if host_info.os == 'labstation':
+        # skip labstation because they do not has servo
+        return
+
     # Only verify for ccd servo connection
     if host.servo and host.servo.get_main_servo_device() == 'ccd_cr50':
         if not host.servo.has_control('cr50_testlab'):

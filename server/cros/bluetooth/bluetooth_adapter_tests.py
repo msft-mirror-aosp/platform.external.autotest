@@ -1526,16 +1526,21 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_discover_device(self, device_address):
+    def test_discover_device(self, device_address, stop_discovery=True):
         """Test that the adapter could discover the specified device address.
 
         @param device_address: Address of the device.
+        @param stop_discovery: Whether to stop discovery at the end. If this is
+                               set to False, make sure to call
+                               test_stop_discovery afterwards.
 
         @returns: True if the device is found. False otherwise.
 
         """
         has_device_initially = False
         start_discovery = False
+        discovery_stopped = False
+        is_not_discovering = False
         device_discovered = False
         has_device = self.bluetooth_facade.has_device
 
@@ -1561,12 +1566,27 @@ class BluetoothAdapterTests(test.test):
                     logging.error(err)
                 except:
                     logging.error('test_discover_device: unexpected error')
+            if start_discovery and stop_discovery:
+                discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
+                is_not_discovering = self._wait_for_condition(
+                        lambda: not self.bluetooth_facade.is_discovering(),
+                        method_name())
 
         self.results = {
                 'has_device_initially': has_device_initially,
                 'start_discovery': start_discovery,
+                'should_stop_discovery': stop_discovery,
+                'stop_discovery': discovery_stopped,
+                'is_not_discovering': is_not_discovering,
                 'device_discovered': device_discovered}
-        return has_device_initially or device_discovered
+
+        # Make sure a discovered device properly started and stopped discovery
+        device_found = device_discovered and start_discovery and (
+                discovery_stopped and is_not_discovering
+                if stop_discovery else True)
+
+        return has_device_initially or device_found
+
 
     def _test_discover_by_device(self, device):
         return device.Discover(self.bluetooth_facade.address)

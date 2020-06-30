@@ -156,7 +156,6 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         self.initialize_bluetooth_audio(device, A2DP)
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.test_stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
         device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
         self.test_connection_by_adapter(device.address)
@@ -173,7 +172,6 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.test_stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.TEST_SLEEP_SECS)

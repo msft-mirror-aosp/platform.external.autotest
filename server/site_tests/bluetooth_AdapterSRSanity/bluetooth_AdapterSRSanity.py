@@ -49,7 +49,6 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Discovers and pairs given device. Automatically connects too."""
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.bluetooth_facade.stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
 
     def _test_keyboard_with_string(self, device):

@@ -3,19 +3,19 @@
 # found in the LICENSE file.
 
 AUTHOR = 'sbasi'
-NAME = 'brillo_WhitelistedGtests'
+NAME = 'brillo_AllowlistedGtests'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:brillo-bvt,suite:brillo-smoke,suite:brillo-presubmit,suite:brillo-postsubmit'
 
 DOC = """
-This test runs all the whitelisted native gTests found on a Brillo DUT.
+This test runs all the allowlisted native gTests found on a Brillo DUT.
 
 """
 
 def run(machine):
     job.run_test('brillo_Gtests', host=hosts.create_host(machine),
-                 use_whitelist=True)
+                 use_allowlist=True)
 
 
 parallel_simple(run, machines)

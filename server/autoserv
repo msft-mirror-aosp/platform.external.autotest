@@ -553,8 +553,14 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
     auto_start_servod = _CONFIG.get_config_value(
             'AUTOSERV', 'auto_start_servod', type=bool, default=False)
 
-    site_utils.SetupTsMonGlobalState('autoserv', indirect=False,
-                                     short_lived=True)
+    if not utils.is_in_container():
+        # crbug.com/1054522 -- ts_mon setup is broken inside the SSP container
+        # due to a problem in the installed python packages.
+        # Trying to clean up an incorrectly initialized ts_mon state adds a 5
+        # second overhead in process teardown, so avoid setting up ts_mon
+        # entirely inside the SSP container.
+        site_utils.SetupTsMonGlobalState('autoserv', indirect=False,
+                                         short_lived=True)
     try:
         try:
             if repair:

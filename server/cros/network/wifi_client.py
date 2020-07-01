@@ -608,6 +608,31 @@ class WiFiClient(site_linux_system.LinuxSystem):
             self.assert_bsses_include_ssids(bss_list, ssids)
 
 
+    def wait_for_bss(self, bssid, timeout_seconds=15):
+        """Wait for a specific BSS to appear in the scan results.
+
+        @param bssid: string bssid of AP we expect to see in scan results
+        @param timeout_seconds int seconds to wait for BSSes to be discovered
+
+        """
+        def dut_sees_bss():
+            """Check if a DUT can see a BSS in scan results.
+
+            @return True iff scan results from DUT include the specified BSS.
+
+            """
+            is_requested_bss = lambda iw_bss: iw_bss.bss == bssid
+            scan_results = self.iw_runner.scan(self.wifi_if)
+            return scan_results and filter(is_requested_bss, scan_results)
+        try:
+            utils.poll_for_condition(
+                condition=dut_sees_bss,
+                timeout=timeout_seconds,
+                sleep_interval=0.5)
+        except:
+            raise error.TestFail('Failed to discover BSS %s' % bssid)
+
+
     def wait_for_bsses(self, ssid, num_bss_expected, timeout_seconds=15):
       """Wait for all BSSes associated with given SSID to be discovered in the
       scan.

@@ -31,7 +31,6 @@ class bluetooth_AdapterMDSanity(BluetoothAdapterQuickTests,
         @param device: meta object for bt peer device
         """
         self.test_discover_device(device.address)
-        self.test_stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.TEST_SLEEP_SECS)

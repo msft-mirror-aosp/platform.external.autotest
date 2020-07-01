@@ -391,12 +391,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     # TODO(ahassani): Move this to chromite so it can be used by endtoend tests
     # too so we don't have to rely on request_log API on nebraska.
-    def _extract_request_logs(self, update_engine_log):
+    def _extract_request_logs(self, update_engine_log, is_dlc=False):
         """
         Extracts request logs from an update_engine log.
 
         @param update_engine_log: The update_engine log as a string.
-        @returns a list object representing the request logs.
+        @param is_dlc: True to return the request logs for the DLC updates
+                       instead of the platform update.
+        @returns a list object representing the platform (OS) request logs, or
+                 a dictionary of lists representing DLC request logs,
+                 keyed by DLC ID, if is_dlc is True.
 
         """
         # Looking for all request XML strings in the log.
@@ -424,28 +428,77 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                  'log file.')
 
         result = []
+        dlc_results = {}
         for timestamp, request in zip(timestamps, requests):
 
             root = ElementTree.fromstring(request)
-            app = root.find('app')
-            event = app.find('event')
 
-            result.append({
-                'version': app.attrib.get('version'),
-                'event_type': (int(event.attrib.get('eventtype'))
-                              if event is not None else None),
-                'event_result': (int(event.attrib.get('eventresult'))
-                                if event is not None else None),
-                'timestamp': timestamp.strftime(self._TIMESTAMP_FORMAT),
-            })
+            # There may be events for multiple apps if DLCs are installed.
+            # See below (trimmed) example request including DLC:
+            #
+            # <request requestid=...>
+            #   <os version="Indy" platform=...></os>
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}"
+            #       version="13265.0.0" track=...>
+            #     <event eventtype="13" eventresult="1"></event>
+            #   </app>
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_dummy-dlc"
+            #       version="0.0.0.0" track=...>
+            #     <event eventtype="13" eventresult="1"></event>
+            #   </app>
+            # </request>
+            #
+            # The first <app> section is for the platform update. The second
+            # is for the DLC update.
+            #
+            # Example without DLC:
+            # <request requestid=...>
+            #   <os version="Indy" platform=...></os>
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}"
+            #       version="13265.0.0" track=...>
+            #     <event eventtype="13" eventresult="1"></event>
+            #   </app>
+            # </request>
 
-            previous_version = (event.attrib.get('previousversion')
-                                if event is not None else None)
-            if previous_version:
-                result[-1]['previous_version'] = previous_version
+            apps = root.findall('app')
+            for app in apps:
+                event = app.find('event')
 
-        logging.info('Extracted Request log: %s', result)
-        return result
+                event_info = {
+                    'version': app.attrib.get('version'),
+                    'event_type': (int(event.attrib.get('eventtype'))
+                                  if event is not None else None),
+                    'event_result': (int(event.attrib.get('eventresult'))
+                                    if event is not None else None),
+                    'timestamp': timestamp.strftime(self._TIMESTAMP_FORMAT),
+                }
+
+                previous_version = (event.attrib.get('previousversion')
+                                    if event is not None else None)
+                if previous_version:
+                    event_info['previous_version'] = previous_version
+
+                # Check if the event is for the platform update or for a DLC
+                # by checking the appid. For platform, the appid looks like:
+                #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}
+                # For DLCs, it is the platform app ID + _ + the DLC ID:
+                #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_dummy-dlc
+                id_segments = app.attrib.get('appid').split('_')
+                if len(id_segments) > 1:
+                    dlc_id = id_segments[1]
+                    if dlc_id in dlc_results:
+                        dlc_results[dlc_id].append(event_info)
+                    else:
+                        dlc_results[dlc_id] = [event_info]
+                else:
+                    result.append(event_info)
+
+        if is_dlc:
+            logging.info('Extracted DLC request logs: %s', dlc_results)
+            return dlc_results
+        else:
+            logging.info('Extracted platform (OS) request log: %s', result)
+            return result
 
 
     def _create_hostlog_files(self):
@@ -472,6 +525,49 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 self._get_update_engine_log(0))[:1], fp)
 
         return rootfs_hostlog, reboot_hostlog
+
+
+    def _create_dlc_hostlog_files(self):
+        """Create the rootfs and reboot hostlog files for DLC updates.
+
+        Each DLC has its own set of update requests in the logs together with
+        the platform update requests. To ensure the DLC update was successful
+        we will compare the update events against the expected events, which
+        are the same expected events as for the platform update. There is a
+        hostlog for the rootfs update and the post-reboot update check for
+        each DLC.
+
+        @returns two dictionaries, one for the rootfs DLC update and one for
+                 the post-reboot check. The keys are DLC IDs and the values
+                 are the hostlog filenames.
+
+        """
+        dlc_rootfs_hostlogs = {}
+        dlc_reboot_hostlogs = {}
+
+        dlc_rootfs_request_logs = self._extract_request_logs(
+            self._get_update_engine_log(1), is_dlc=True)
+
+        for dlc_id in dlc_rootfs_request_logs:
+            dlc_rootfs_hostlog = os.path.join(self.resultsdir,
+                                              'hostlog_' + dlc_id)
+            dlc_rootfs_hostlogs[dlc_id] = dlc_rootfs_hostlog
+            with open(dlc_rootfs_hostlog, 'w') as fp:
+                # Same number of events for DLC updates as for platform
+                json.dump(dlc_rootfs_request_logs[dlc_id][-4:], fp)
+
+        dlc_reboot_request_logs = self._extract_request_logs(
+            self._get_update_engine_log(0), is_dlc=True)
+
+        for dlc_id in dlc_reboot_request_logs:
+            dlc_reboot_hostlog = os.path.join(self.resultsdir,
+                                              'hostlog_' + dlc_id + '_reboot')
+            dlc_reboot_hostlogs[dlc_id] = dlc_reboot_hostlog
+            with open(dlc_reboot_hostlog, 'w') as fp:
+                # Same number of events for DLC updates as for platform
+                json.dump(dlc_reboot_request_logs[dlc_id][:1], fp)
+
+        return dlc_rootfs_hostlogs, dlc_reboot_hostlogs
 
 
     def _set_active_p2p_host(self, host):

@@ -2605,7 +2605,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             servo_constants.SERVO_STATE_EC_BROKEN,
         ]
         if self.get_servo_state() in servo_state_required_manual_fix:
-            data = {'host': self.hostname, 'state': needs_manual_repair}
+            data = {'host': self.hostname,
+                    'state': DEVICE_STATE_NEEDS_MANUAL_REPAIR}
             metrics.Counter(
                 'chromeos/autotest/repair/special_dut_state'
                 ).increment(fields=data)

@@ -76,12 +76,17 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting peer devices...')
             self.get_device_rasp(devices)
 
+            # Make sure device RSSI is sufficient
+            for _ , device_list in self.devices.items():
+                for device in device_list:
+                    self.verify_device_rssi(device.address)
+
     def _print_delimiter(self):
         logging.info('=======================================================')
 
 
     def quick_test_init(self, host, use_btpeer=True, use_chameleon=False,
-                        flag='Quick Sanity', start_browser=True):
+                        flag='Quick Sanity', start_browser=False):
         """Inits the test batch"""
         self.host = host
         #factory can not be declared as local variable, otherwise

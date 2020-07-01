@@ -119,6 +119,9 @@ class firmware_ECWakeSource(FirmwareTest):
                     'update firmware for Atmel USB KB emulator by running '
                     'firmware_FlashServoKeyboardMap test and then try again?')
 
+        logging.debug('Turning off HID keyboard emulator.')
+        self.servo.set_nocheck('init_usb_keyboard', 'off')
+
         if not self.check_ec_capability(['lid']):
             logging.info('The device has no lid. '
                          'Skip testing suspend/resume by lid switch.')

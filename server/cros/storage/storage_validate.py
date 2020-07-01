@@ -235,7 +235,7 @@ class StorageStateValidator(object):
         logging.debug('Extraction metrics for NVMe storage')
         # Ex "Percentage Used:         100%"
         nvme_fail = r"Percentage Used:\s+(?P<param>(\d{1,3}))%"
-        used_value = 0
+        used_value = -1
         for line in self._info:
             m = re.match(nvme_fail, line)
             if m:
@@ -248,7 +248,7 @@ class StorageStateValidator(object):
                     logging.info('Could not cast: %s to int ', param)
                 break
 
-        if used_value == 0:
+        if used_value < 0:
             raise StorageError('Storage state cannot be detected')
         if used_value < 91:
             return STORAGE_STATE_NORMAL

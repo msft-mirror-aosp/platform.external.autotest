@@ -215,18 +215,18 @@ def get_bluetooth_emulated_device(btpeer, device_type):
     device.class_of_service = _retry_device_method('GetClassOfService',
                                                    class_falsy_values)
     if device._is_le_only:
-      parsed_class_of_service = device.class_of_service
+        parsed_class_of_service = device.class_of_service
     else:
-      parsed_class_of_service = "0x%04X" % device.class_of_service
+        parsed_class_of_service = "0x%04X" % device.class_of_service
     logging.info('class of service: %s', parsed_class_of_service)
 
     device.class_of_device = _retry_device_method('GetClassOfDevice',
                                                   class_falsy_values)
     # Class of device is None for LE-only devices. Don't fail or parse it.
     if device._is_le_only:
-      parsed_class_of_device = device.class_of_device
+        parsed_class_of_device = device.class_of_device
     else:
-      parsed_class_of_device = "0x%04X" % device.class_of_device
+        parsed_class_of_device = "0x%04X" % device.class_of_device
     logging.info('class of device: %s', parsed_class_of_device)
 
     device.device_type = _retry_device_method('GetDeviceType')
@@ -234,8 +234,8 @@ def get_bluetooth_emulated_device(btpeer, device_type):
 
     device.authentication_mode = None
     if not device._is_le_only:
-      device.authentication_mode = _retry_device_method('GetAuthenticationMode')
-      logging.info('authentication mode: %s', device.authentication_mode)
+        device.authentication_mode = _retry_device_method('GetAuthenticationMode')
+        logging.info('authentication mode: %s', device.authentication_mode)
 
     device.port = _retry_device_method('GetPort')
     logging.info('serial port: %s\n', device.port)
@@ -574,6 +574,10 @@ class BluetoothAdapterTests(test.test):
     SUSPEND_TIME_SECS=10
     SUSPEND_ENTER_SECS=10
     RESUME_TIME_SECS=30
+    RESUME_INTERNAL_TIMEOUT_SECS = 180
+
+    # Minimum RSSI required for peer devices during testing
+    MIN_RSSI = -70
 
     # hci0 is the default hci device if there is no external bluetooth dongle.
     EXPECTED_HCI = 'hci0'
@@ -736,11 +740,11 @@ class BluetoothAdapterTests(test.test):
         logging.info("in get_device_rasp %s onstart %s", device_num, on_start)
         total_num_devices = sum(device_num.values())
         if total_num_devices > len(self.host.peer_list):
-                logging.error('Total number of devices %s is greater than the'
-                              ' number of Bluetooth peers %s',
-                              total_num_devices,
-                              len(self.host.peer_list))
-                return False
+            logging.error('Total number of devices %s is greater than the'
+                          ' number of Bluetooth peers %s',
+                          total_num_devices,
+                          len(self.host.peer_list))
+            return False
 
         for device_type, number in device_num.items():
             total_num_devices += number
@@ -1118,11 +1122,10 @@ class BluetoothAdapterTests(test.test):
 
     @test_retry_and_log(False)
     def test_adapter_set_wake_disabled(self):
-      """Disable wake and verify it was written.
-      """
-      success = self.bluetooth_facade.set_wake_enabled(False)
-      self.results = { 'disable_wake': success }
-      return all(self.results.values())
+        """Disable wake and verify it was written. """
+        success = self.bluetooth_facade.set_wake_enabled(False)
+        self.results = { 'disable_wake': success }
+        return all(self.results.values())
 
     @test_retry_and_log
     def test_power_on_adapter(self):
@@ -1527,16 +1530,21 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_discover_device(self, device_address):
+    def test_discover_device(self, device_address, stop_discovery=True):
         """Test that the adapter could discover the specified device address.
 
         @param device_address: Address of the device.
+        @param stop_discovery: Whether to stop discovery at the end. If this is
+                               set to False, make sure to call
+                               test_stop_discovery afterwards.
 
         @returns: True if the device is found. False otherwise.
 
         """
         has_device_initially = False
         start_discovery = False
+        discovery_stopped = False
+        is_not_discovering = False
         device_discovered = False
         has_device = self.bluetooth_facade.has_device
 
@@ -1562,12 +1570,27 @@ class BluetoothAdapterTests(test.test):
                     logging.error(err)
                 except:
                     logging.error('test_discover_device: unexpected error')
+            if start_discovery and stop_discovery:
+                discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
+                is_not_discovering = self._wait_for_condition(
+                        lambda: not self.bluetooth_facade.is_discovering(),
+                        method_name())
 
         self.results = {
                 'has_device_initially': has_device_initially,
                 'start_discovery': start_discovery,
+                'should_stop_discovery': stop_discovery,
+                'stop_discovery': discovery_stopped,
+                'is_not_discovering': is_not_discovering,
                 'device_discovered': device_discovered}
-        return has_device_initially or device_discovered
+
+        # Make sure a discovered device properly started and stopped discovery
+        device_found = device_discovered and start_discovery and (
+                discovery_stopped and is_not_discovering
+                if stop_discovery else True)
+
+        return has_device_initially or device_found
+
 
     def _test_discover_by_device(self, device):
         return device.Discover(self.bluetooth_facade.address)
@@ -1876,28 +1899,28 @@ class BluetoothAdapterTests(test.test):
 
     @test_retry_and_log
     def test_connection_by_device_only(self, device, adapter_address):
-      """Test that the device could connect to adapter successfully.
+        """Test that the device could connect to adapter successfully.
 
-      This is a modified version of test_connection_by_device that only
-      communicates with the peer device and not the host (in case the host is
-      suspended for example).
+        This is a modified version of test_connection_by_device that only
+        communicates with the peer device and not the host (in case the host is
+        suspended for example).
 
-      @param device: the bluetooth peer device
-      @param adapter_address: address of the adapter
+        @param device: the bluetooth peer device
+        @param adapter_address: address of the adapter
 
-      @returns: True if the connection was established by the device or False.
-      """
-      connected = device.ConnectToRemoteAddress(adapter_address)
-      if connected:
-        # Although the connect may be complete, it can take a few
-        # seconds for the input device to be ready for use
-        time.sleep(self.ADAPTER_HID_INPUT_DELAY)
+        @returns: True if the connection was established by the device or False.
+        """
+        connected = device.ConnectToRemoteAddress(adapter_address)
+        if connected:
+            # Although the connect may be complete, it can take a few
+            # seconds for the input device to be ready for use
+            time.sleep(self.ADAPTER_HID_INPUT_DELAY)
 
-      self.results = {
-          'connection_by_device': connected
-      }
+        self.results = {
+            'connection_by_device': connected
+        }
 
-      return all(self.results.values())
+        return all(self.results.values())
 
 
     @test_retry_and_log
@@ -3530,8 +3553,11 @@ class BluetoothAdapterTests(test.test):
         resume_timeout = resume_timeout + RESUME_DELTA
         try:
             start = datetime.now()
+
+            # Wait for resume needs to wait longer in case device rebooted.
+            # Otherwise, the test will fail with errno 111 (connection refused)
             self.host.test_wait_for_resume(
-                boot_id, resume_timeout=resume_timeout)
+                boot_id, resume_timeout=self.RESUME_INTERNAL_TIMEOUT_SECS)
 
             # As of now, a timeout in test_wait_for_resume doesn't raise. Force
             # a failure here instead by checking against the start time.
@@ -3669,6 +3695,32 @@ class BluetoothAdapterTests(test.test):
         logging.debug('labels: %s', self.host.get_labels())
         if self.host.chameleon is None and self.host.btpeer_list == []:
             raise error.TestError('Have to specify a working Bluetooth peer')
+
+
+    def verify_device_rssi(self, device_address):
+        """ Test device rssi is over required threshold.
+
+        @param device_address: Peer address we're measuring rssi for
+
+        @raises error.TestNA if device isn't found or RSSI is too low
+        """
+        # The RSSI property is only maintained while discovery is enabled.
+        # Stopping discovery removes the property. Thus, look up the RSSI while
+        # still in discovery.
+        found = self.test_discover_device(device_address, stop_discovery=False)
+        rssi = self.bluetooth_facade.get_device_property(device_address, 'RSSI')
+        self.test_stop_discovery()
+
+        if not found:
+            raise error.TestNAError(
+                    'Peer {} not discovered'.format(device_address))
+
+        if not rssi or rssi < self.MIN_RSSI:
+            raise error.TestNAError('Peer {} RSSI is too low: {}'.format(
+                    device_address, rssi))
+
+        logging.info('Peer {} RSSI {}'.format(device_address, rssi))
+
 
     def set_fail_fast(self, args_dict, default=False):
         """Set whether the test should fail fast if running into any problem

@@ -9,6 +9,7 @@ import common
 import base
 import constants
 import servo_updater
+
 from autotest_lib.server.cros.storage import storage_validate as storage
 from autotest_lib.client.common_lib import utils as client_utils
 
@@ -41,6 +42,9 @@ class VerifyDutStorage(base._BaseDUTVerifier):
         self._state = None
 
     def _verify(self, set_label=True):
+        if not self.host_is_up():
+            logging.info('Host is down; Skipping the verification')
+            return
         try:
             validator = storage.StorageStateValidator(self.get_host())
             storage_type = validator.get_type()
@@ -88,6 +92,9 @@ class VerifyServoUsb(base._BaseServoVerifier):
     No such device or address while trying to determine device size
     """
     def _verify(self):
+        if not self.servo_is_up():
+            logging.info('Servo not initialized; Skipping the verification')
+            return
         servo = self.get_host().get_servo()
         usb = servo.probe_host_usb_dev()
         if not usb:
@@ -157,6 +164,9 @@ class VerifyServoFw(base._BaseServoVerifier):
     ]
 
     def _verify(self):
+        if not self.servo_host_is_up():
+            logging.info('Servo host is down; Skipping the verification')
+            return
         host = self.get_host()
         # create all updater
         updaters = [updater(host) for updater in self.UPDATERS]
@@ -165,7 +175,7 @@ class VerifyServoFw(base._BaseServoVerifier):
             supported = updater.check_needs()
             logging.debug('The board %s is supported: %s',
                           updater.get_board(), supported)
-        # to run updater we need stop servod
+        # to run updater we need make sure the servod is not running
         host.stop_servod()
         #  run update
         for updater in updaters:
@@ -179,5 +189,3 @@ class VerifyServoFw(base._BaseServoVerifier):
                              updater.get_board())
                 logging.debug('Fail update firmware for %s: %s',
                               updater.get_board(), str(e))
-        # starting servod to restore previous state
-        host.start_servod()

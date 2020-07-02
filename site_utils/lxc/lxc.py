@@ -77,7 +77,7 @@ def download_extract(url, target, extract_dir):
 
 # Make sure retries only happen in the non-timeout case.
 @retry.retry((error.CmdError),
-             blacklist=[error.CmdTimeoutError],
+             raiselist=[error.CmdTimeoutError],
              timeout_min=3*2,
              delay_sec=10)
 def _download_via_curl(url, target_file_path):
@@ -89,7 +89,7 @@ def _download_via_curl(url, target_file_path):
 
 # Make sure retries only happen in the non-timeout case.
 @retry.retry((error.CmdError),
-             blacklist=[error.CmdTimeoutError],
+             raiselist=[error.CmdTimeoutError],
              timeout_min=(constants.DEVSERVER_CALL_TIMEOUT *
                           constants.DEVSERVER_CALL_RETRY / 60),
              delay_sec=constants.DEVSERVER_CALL_DELAY)

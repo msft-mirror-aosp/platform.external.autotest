@@ -45,7 +45,7 @@ class ServoHostServoStateTestCase(unittest.TestCase):
 
     def test_verify_set_state_broken_if_raised_error(self):
         host = MockHost()
-        host._is_localhost = True
+        host._is_localhost = False
         host._repair_strategy = mock.Mock()
         host._repair_strategy.verify.side_effect = Exception('something_ex')
         try:
@@ -65,7 +65,7 @@ class ServoHostServoStateTestCase(unittest.TestCase):
 
     def test_repair_set_state_broken_if_raised_error(self):
         host = MockHost()
-        host._is_localhost = True
+        host._is_localhost = False
         host._repair_strategy = mock.Mock()
         host._repair_strategy.repair.side_effect = Exception('something_ex')
         try:

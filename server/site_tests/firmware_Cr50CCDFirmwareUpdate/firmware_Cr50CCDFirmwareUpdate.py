@@ -14,6 +14,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
     """A test that can provision a machine to the correct firmware version."""
 
     version = 1
+    should_restore_fw = False
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test and check if cr50 exists.
@@ -32,14 +33,30 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         servo_type = self.servo.get_servo_version()
         if 'ccd_cr50' not in servo_type:
             raise error.TestNAError('unsupported servo type: %s' % servo_type)
-        self.backup_firmware()
+
+        if eval(full_args.get('backup_fw', 'False')):
+            self.backup_firmware()
 
     def cleanup(self):
         try:
+            if not self.should_restore_fw:
+                return
+
+            self.cr50.reboot()
+            self.switcher.mode_aware_reboot(reboot_type='cold')
+
             if self.is_firmware_saved():
-                self.cr50.reboot()
-                self.switcher.mode_aware_reboot(reboot_type='cold')
+                logging.info('Restoring firmware')
                 self.restore_firmware()
+            else:
+                logging.info('chromeos-firmwareupdate --mode=recovery')
+                result = self._client.run('chromeos-firmwareupdate'
+                                          ' --mode=recovery',
+                                          ignore_status=True)
+                if result.exit_status != 0:
+                    logging.error('chromeos-firmwareupdate failed: %s',
+                                  result.stdout.strip())
+                self._client.reboot()
         except Exception as e:
             logging.error("Caught exception: %s", str(e))
         finally:
@@ -84,5 +101,6 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         if self.servo.get('ec_chip') == 'it83xx':
             self.cr50.set_cap('I2C', 'Always')
 
+        self.should_restore_fw = True
         host.firmware_install(build=value, rw_only=rw_only,
                               dest=self.resultsdir, verify_version=True)

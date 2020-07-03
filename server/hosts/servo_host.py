@@ -118,6 +118,14 @@ class ServoHost(base_servohost.BaseServoHost):
     # run.
     OLD_LOG_SUFFIX = 'old'
 
+    # Mapping servo board with their vid-pid
+    SERVO_VID_PID = {
+        'servo_v4':'18d1:501b',
+        'ccd_cr50':'18d1:5014',
+        'servo_micro':'18d1:501a',
+        'servo_v3':['18d1:5004', '0403:6014'],
+    }
+
     # States of verifiers
     # True - verifier run and passed
     # False - verifier run and failed
@@ -294,10 +302,11 @@ class ServoHost(base_servohost.BaseServoHost):
             self.record('INFO', None, None,
                         'ServoHost verify set servo_state as WORKING')
         except Exception as e:
-            self._servo_state = self.determine_servo_state()
-            self.record('INFO', None, None,
-                        'ServoHost verify set servo_state as %s'
-                        % self._servo_state)
+            if self.is_localhost():
+                self._servo_state = self.determine_servo_state()
+                self.record('INFO', None, None,
+                            'ServoHost verify set servo_state as %s'
+                            % self._servo_state)
             if self._is_critical_error(e):
                 raise
 
@@ -448,10 +457,11 @@ class ServoHost(base_servohost.BaseServoHost):
             if self.is_labstation():
                 self.withdraw_reboot_request()
         except Exception as e:
-            self._servo_state = self.determine_servo_state()
-            self.record('INFO', None, None,
-                        'ServoHost repair set servo_state as %s'
-                        % self._servo_state)
+            if self.is_localhost():
+                self._servo_state = self.determine_servo_state()
+                self.record('INFO', None, None,
+                            'ServoHost repair set servo_state as %s'
+                            % self._servo_state)
             if self._is_critical_error(e):
                 self.disconnect_servo()
                 self.stop_servod()
@@ -1057,6 +1067,66 @@ class ServoHost(base_servohost.BaseServoHost):
             return servo_constants.SERVO_STATE_UNKNOWN
         return self._servo_state
 
+    def _get_host_metrics_data(self):
+        return {'port': self.servo_port,
+                'host': self.hostname,
+                'board': self.servo_board or ''}
+
+    def _is_servo_device_connected(self, servo_type, serial):
+        """Check if device is connected to the labstation.
+
+        Works for all servo devices connected to the labstation.
+        For servo_v3 please use 'self._is_servo_board_present_on_servo_v3'
+
+        @param servo_type:  The type of servo device. Expecting value can be
+                            servo_v4 or servo_micro.
+        @param serial:      The serial number of the device to detect it.
+        """
+        vid_pid = self.SERVO_VID_PID.get(servo_type)
+        if not vid_pid or not serial:
+            # device cannot detected without VID/PID or serial number
+            return False
+        logging.debug('Started to detect %s', servo_type)
+        try:
+            cmd = 'lsusb -v -d %s |grep iSerial |grep %s' % (vid_pid, serial)
+            result = self.run(cmd, ignore_status=True, timeout=30)
+            if result.exit_status == 0 and result.stdout.strip():
+                logging.debug('The %s is plugged in to the host.', servo_type)
+                return True
+            logging.debug('%s device is not detected; %s', servo_type, result)
+            return False
+        except Exception as e:
+            # can be triggered by timeout issue due running the script
+            metrics.Counter(
+                'chromeos/autotest/repair/servo_detection/timeout'
+                ).increment(fields=self._get_host_metrics_data())
+            logging.error('%s device is not detected; %s', servo_type, str(e))
+        return None
+
+    def _is_servo_board_present_on_servo_v3(self):
+        """Check if servo board is detected on servo_v3"""
+        vid_pids = self.SERVO_VID_PID['servo_v3']
+        if not vid_pids or len(vid_pids) == 0:
+            # device cannot detected without VID/PID
+            return False
+        logging.debug('Started to detect servo board on servo_v3')
+        not_detected = 'The servo board is not detected on servo_v3'
+        try:
+            cmd = 'lsusb | grep "%s"' % "\|".join(vid_pids)
+            result = self.run(cmd, ignore_status=True, timeout=30)
+            if result.exit_status == 0 and result.stdout.strip():
+                logging.debug('The servo board is detected on servo_v3')
+                return True
+            logging.debug('%s; %s', not_detected, result)
+            return False
+        except Exception as e:
+            # can be triggered by timeout issue due running the script
+            metrics.Counter(
+                'chromeos/autotest/repair/servo_detection/timeout'
+                ).increment(fields=self._get_host_metrics_data())
+            logging.error('%s; %s', not_detected, str(e))
+        return None
+
     def get_verify_state(self, tag):
         """Return the state of servo verifier.
 
@@ -1084,6 +1154,19 @@ class ServoHost(base_servohost.BaseServoHost):
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH
 
+        if start_servod == self.VERIFY_FAILED:
+            # can be cause if device is not connected to the servo host
+            if self.is_labstation():
+                if not self.servo_serial:
+                    return servo_constants.SERVO_STATE_WRONG_CONFIG
+                if self._is_servo_device_connected(
+                    'servo_v4',
+                    self.servo_serial) == False:
+                    return servo_constants.SERVO_STATE_NOT_CONNECTED
+            elif self._is_servo_board_present_on_servo_v3() == False:
+                return servo_constants.SERVO_STATE_NOT_CONNECTED
+            return servo_constants.SERVO_STATE_SERVOD_ISSUE
+
         # one of the reason why servo can not initialized
         if ccd_testlab == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_CCD_TESTLAB_ISSUE
@@ -1098,12 +1181,9 @@ class ServoHost(base_servohost.BaseServoHost):
         if ec_board == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_EC_BROKEN
 
-        data = {'port': self.servo_port,
-                'host': self.hostname,
-                'board': self.servo_board or ''}
         metrics.Counter(
             'chromeos/autotest/repair/unknown_servo_state'
-            ).increment(fields=data)
+            ).increment(fields=self._get_host_metrics_data())
         logging.info('We do not have special state for this failure yet :)')
         return servo_constants.SERVO_STATE_BROKEN
 

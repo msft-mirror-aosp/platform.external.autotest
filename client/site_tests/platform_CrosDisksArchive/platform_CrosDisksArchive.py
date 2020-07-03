@@ -56,10 +56,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
         archive_name = os.path.basename(archive_path)
 
         # Mount archive file via CrosDisks.
-        #
-        # TODO(crbug.com/996549) Remove '.rar2fs' once old avfsd-based system
-        # is removed.
-        self.cros_disks.mount(archive_path, '.rar2fs')
+        self.cros_disks.mount(archive_path, '.rar')
         mount_result = self.cros_disks.expect_mount_completion({
                 'status':
                 0,
@@ -146,10 +143,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.info('Mounting archive %r', archive_path)
 
             # Mount archive file via CrosDisks.
-            #
-            # TODO(crbug.com/996549) Remove '.rar2fs' once old avfsd-based
-            # system is removed.
-            self.cros_disks.mount(archive_path, '.rar2fs')
+            self.cros_disks.mount(archive_path, '.rar')
             mount_result = self.cros_disks.expect_mount_completion({
                     'status':
                     12,
@@ -165,10 +159,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
         logging.info('Mounting archive %r', archive_path)
 
         # Mount archive file via CrosDisks.
-        #
-        # TODO(crbug.com/996549) Remove '.rar2fs' once old avfsd-based system
-        # is removed.
-        self.cros_disks.mount(archive_path, '.rar2fs')
+        self.cros_disks.mount(archive_path, '.rar')
         mount_result = self.cros_disks.expect_mount_completion({
                 'status':
                 0,

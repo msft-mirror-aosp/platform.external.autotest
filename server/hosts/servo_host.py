@@ -1063,8 +1063,6 @@ class ServoHost(base_servohost.BaseServoHost):
 
 
     def get_servo_state(self):
-        if self._servo_state is None:
-            return servo_constants.SERVO_STATE_UNKNOWN
         return self._servo_state
 
     def _get_host_metrics_data(self):

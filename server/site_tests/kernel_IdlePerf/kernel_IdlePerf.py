@@ -56,7 +56,8 @@ PAGESET_REPEAT = 7
 # regression.
 # The exact page set selected is a mix of real pages (e.g. blogspot_2018) and
 # synthetic (e.g. transform_transitions_js_block)
-PAGES = ['blogspot_2018', 'twitter_2018', 'wikipedia_2018', 'transform_transitions_js_block', 'throughput_scrolling_passive_handler']
+# For a longer test,'twitter_2018', 'wikipedia_2018' can be added to PAGES.
+PAGES = ['blogspot_2018', 'transform_transitions_js_block', 'throughput_scrolling_passive_handler']
 
 # Benchmark to run
 BENCHMARK = 'rendering.desktop'

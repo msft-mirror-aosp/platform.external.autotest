@@ -36,18 +36,16 @@ class MockHost(servo_host.ServoHost):
 
 class ServoHostServoStateTestCase(unittest.TestCase):
     """Tests to verify changing the servo_state"""
-    def test_return_broken_if_state_not_defined(self):
+    def test_return_none_if_state_not_defined(self):
         host = MockHost()
         self.assertIsNotNone(host)
         self.assertIsNone(host._servo_state)
-        self.assertIsNotNone(host.get_servo_state())
-        self.assertEqual(host.get_servo_state(),
-                         servo_constants.SERVO_STATE_UNKNOWN)
+        self.assertIsNone(host.get_servo_state())
         self.assertEqual(host._servo_state, None)
 
     def test_verify_set_state_broken_if_raised_error(self):
         host = MockHost()
-        host._is_localhost = True
+        host._is_localhost = False
         host._repair_strategy = mock.Mock()
         host._repair_strategy.verify.side_effect = Exception('something_ex')
         try:
@@ -67,7 +65,7 @@ class ServoHostServoStateTestCase(unittest.TestCase):
 
     def test_repair_set_state_broken_if_raised_error(self):
         host = MockHost()
-        host._is_localhost = True
+        host._is_localhost = False
         host._repair_strategy = mock.Mock()
         host._repair_strategy.repair.side_effect = Exception('something_ex')
         try:

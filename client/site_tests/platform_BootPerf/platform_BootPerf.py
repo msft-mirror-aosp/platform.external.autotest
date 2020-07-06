@@ -5,7 +5,6 @@
 import glob
 import logging
 import os
-import re
 import shutil
 import time
 import utils
@@ -198,20 +197,28 @@ class platform_BootPerf(test.test):
     def _gather_firmware_boot_time(self, results):
         """Read and report firmware startup time.
 
-        The boot process writes the firmware startup time to the
-        file named in `_FIRMWARE_TIME_FILE`.  Read the time from that
-        file, and record it in `results` as the keyval
-        seconds_power_on_to_kernel.
+        send-boot-metrics.cong writes the firmware startup time to the
+        file named in `_FIRMWARE_TIME_FILE`.  Read the time and record
+        it in `results` as the keyval seconds_power_on_to_kernel.
 
         @param results  Keyvals dictionary.
 
         """
-        try:
-            # If the firmware boot time is not available, the file
-            # will not exist.
-            data = utils.read_one_line(self._FIRMWARE_TIME_FILE)
-        except IOError:
-            return
+
+        # crbug.com/1098635 - don't race with send-boot-metrics.conf
+        # TODO(grundler): directly read the firmware_time instead of depending
+        # on send-boot-metrics to create _FIRMWARE_TIME_FILE.
+        cnt = 1
+        while cnt < 60:
+            if  os.path.exists(self._FIRMWARE_TIME_FILE):
+                break
+            time.sleep(1)
+            cnt += 1
+
+        # If the firmware boot time is not available, the file
+        # will not exist and we should throw an exception here.
+        data = utils.read_one_line(self._FIRMWARE_TIME_FILE)
+
         firmware_time = float(data)
         boot_time = results['seconds_kernel_to_login']
         results['seconds_power_on_to_kernel'] = firmware_time

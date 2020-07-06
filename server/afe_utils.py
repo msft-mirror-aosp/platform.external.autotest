@@ -195,11 +195,9 @@ def _provision_with_au(host, update_url, staging_server):
               host.ip, base_dir=DEVICE_BASE_DIR) as device:
             updater = auto_updater.ChromiumOSUpdater(
                 device, None, image_name, auto_updater_transfer.LabTransfer,
-                staging_server=staging_server.url(), reboot=False)
-            updater.CheckPayloads()
+                staging_server=staging_server.url(), reboot=True,
+                clear_tpm_owner=True)
             updater.RunUpdate()
-            updater.SetClearTpmOwnerRequest()
-            updater.RebootAndVerify()
         repo_url = tools.get_package_url(staging_server.url(), image_name)
         host_attributes = {ds_constants.JOB_REPO_URL: repo_url}
     except Exception as e:

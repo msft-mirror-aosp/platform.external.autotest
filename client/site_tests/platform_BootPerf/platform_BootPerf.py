@@ -152,6 +152,15 @@ class platform_BootPerf(test.test):
 
         """
         try:
+            # crbug.com/1098635: racing with chrome browser
+            #  See external/chromium_org/chrome/browser/chromeos/boot_times_loader.cc
+            cnt = 1
+            while cnt < 30:
+                if os.path.exists(filename):
+                    break
+                time.sleep(1)
+                cnt += 1
+
             with open(filename) as statfile:
                 values = map(lambda l: float(l.split()[fieldnum]),
                              statfile.readlines())

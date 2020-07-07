@@ -23,8 +23,8 @@ def collect_usb_state(servo):
 
     collects the DUT-side output of :
      - `lsusb` and `lsusb -t` output to learn about the topology;
-     - `ls -l /dev/sd*` to learn which storage devices are known to the OS and
-       what partition scheme is assumed by the kernel;
+     - `ls -lv /dev/sd*` to learn which storage devices are known to the OS and
+       what partition scheme is assumed by the kernel (-v to sort numerically);
      - `fdisk -l` for the partitioning as reported in GPT/MBR
 
     Note that the return value begins with a newline.
@@ -33,7 +33,7 @@ def collect_usb_state(servo):
     for cmd in [
             'lsusb',
             'lsusb -t',
-            'ls -l /dev/sd*',
+            'ls -lv /dev/sd*',
             'fdisk -l'
     ]:
         output = servo.system_output(cmd, ignore_status=True)

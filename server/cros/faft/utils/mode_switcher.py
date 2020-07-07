@@ -83,6 +83,12 @@ class _KeyboardBypasser(_BaseFwBypasser):
         self.servo.ctrl_u()
 
 
+    def bypass_dev_default_boot(self):
+        """Bypass the dev mode firmware logic to boot from default target."""
+        self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
+        self.servo.enter_key()
+
+
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
@@ -719,6 +725,12 @@ class _BaseModeSwitcher(object):
         self.bypasser.bypass_dev_boot_usb()
 
 
+    def bypass_dev_default_boot(self):
+        """Bypass the dev mode firmware logic to boot from default target."""
+        logging.info("-[bypass_dev_default_boot]-")
+        self.bypasser.bypass_dev_default_boot()
+
+
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
         logging.info("-[bypass_rec_mode]-")
@@ -880,10 +892,6 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
         self.disable_rec_mode_and_reboot()
         self.wait_for_client_offline()
         self.bypasser.trigger_dev_to_normal()
-
-    def bypass_dev_default_boot(self):
-        """Accept the default boot device from the Developer Options screen."""
-        self.bypasser.bypass_dev_default_boot()
 
 
 _SWITCHER_CLASSES = {

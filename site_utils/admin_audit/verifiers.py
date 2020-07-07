@@ -180,7 +180,7 @@ class VerifyServoFw(base._BaseServoVerifier):
         #  run update
         for updater in updaters:
             try:
-                updater.update()
+                updater.update(force_update=True)
             except Exception as e:
                 metrics.Counter(
                     'chromeos/autotest/audit/servo/fw/update/error'

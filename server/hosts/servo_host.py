@@ -1443,6 +1443,8 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
     # in AdminRepair tasks.
     if newhost._is_locked and try_servo_repair:
         newhost.reset_servo()
+    if dut:
+        newhost.set_dut_hostname(dut.hostname)
 
     try:
         newhost.restart_servod(quick_startup=True)

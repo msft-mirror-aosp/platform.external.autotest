@@ -236,3 +236,46 @@ class UpdateServoMicroFw(_BaseUpdateServoFw):
         if self._get_product() != 'Servo Micro':
             return False
         return True
+
+
+# List servo firmware updaters
+SERVO_UPDATERS = (
+    UpdateServoV4Fw,
+    UpdateServoMicroFw,
+)
+
+
+def update_servo_firmware(host, force_update=False):
+    """Update firmware on servo devices.
+
+    @params host: ServoHost instance to run all required commands
+    @params dut_hostname: hostname of the DUT for track errors
+    @params force_update: run updater with force option
+    """
+    # to run updater we need make sure the servod is not running
+    host.stop_servod()
+    # initialize all updaters
+    updaters = [updater(host) for updater in SERVO_UPDATERS]
+
+    for updater in updaters:
+        # check if we need update
+        need_update = updater.check_needs()
+        board = updater.get_board()
+        if not need_update:
+            # We do not need update when:
+            #  - the board is not present
+            #  - not configuration info for device to run updater
+            #  - device already has latest version
+            logging.info('The board %s does not need update.', board)
+            continue
+        logging.info('Updating board %s firmware.', board)
+        try:
+            updater.update(force_update)
+        except Exception as e:
+            data = {'host': host.get_dut_hostname() or '',
+                    'board': board}
+            metrics.Counter(
+                'chromeos/autotest/audit/servo/fw/update/error'
+                ).increment(fields=data)
+            logging.info('Fail update firmware for %s', board)
+            logging.debug('Fail update firmware for %s: %s', board, str(e))

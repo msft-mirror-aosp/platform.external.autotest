@@ -157,35 +157,10 @@ class VerifyServoFw(base._BaseServoVerifier):
     when servod started. This should ensure that the servo_v4 and
     servo_micro is up-to-date.
     """
-
-    UPDATERS = [
-        servo_updater.UpdateServoV4Fw,
-        servo_updater.UpdateServoMicroFw,
-    ]
-
     def _verify(self):
         if not self.servo_host_is_up():
             logging.info('Servo host is down; Skipping the verification')
             return
-        host = self.get_host()
-        # create all updater
-        updaters = [updater(host) for updater in self.UPDATERS]
-        # run checker for all updaters
-        for updater in updaters:
-            supported = updater.check_needs()
-            logging.debug('The board %s is supported: %s',
-                          updater.get_board(), supported)
-        # to run updater we need make sure the servod is not running
-        host.stop_servod()
-        #  run update
-        for updater in updaters:
-            try:
-                updater.update(force_update=True)
-            except Exception as e:
-                metrics.Counter(
-                    'chromeos/autotest/audit/servo/fw/update/error'
-                    ).increment(fields={'host': self._dut_host.hostname})
-                logging.info('Fail update firmware for %s',
-                             updater.get_board())
-                logging.debug('Fail update firmware for %s: %s',
-                              updater.get_board(), str(e))
+        servo_updater.update_servo_firmware(
+            self.get_host(),
+            force_update=True)

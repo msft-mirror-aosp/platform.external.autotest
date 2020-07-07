@@ -20,9 +20,9 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
     # wake.  If you  wish to enable on previous devices, see furquan@ doc
     # go/cros-trackpad-wake and/or consult chromeos-platform-power@ for more
     # details.
-    _NO_TOUCHPAD_WAKE = ['caroline', 'caroline-kernelnext', 'clapper', 'coral',
-                         'elm-kernelnext', 'glimmer', 'hana-kernelnext', 'kevin'
-                         'kukui', 'nami', 'pyro', 'veyron_minnie']
+    _NO_TOUCHPAD_WAKE = ['caroline', 'clapper', 'coral', 'elm', 'glimmer',
+                         'hana', 'kevin', 'kukui', 'nami', 'pyro',
+                         'veyron_minnie']
 
     # Devices with Synaptics touchpads that do not report wake source,
     # or reference platforms like Rambi which are broken but do not ship,
@@ -109,7 +109,8 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
         if source is None or source == 'touchpad':
             if (self._has_touchpad and
                 self._platform not in self._INVALID_TOUCHPADS):
-                if self._platform in self._NO_TOUCHPAD_WAKE:
+                if self._platform.replace('-kernelnext', '') in \
+                    self._NO_TOUCHPAD_WAKE:
                     if self._is_wake_source('touchpad'):
                         raise error.TestFail('Touchpad is a wake source!')
                 else:

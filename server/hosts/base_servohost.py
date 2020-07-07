@@ -78,6 +78,7 @@ class BaseServoHost(ssh_host.SSHHost):
 
         self._is_labstation = None
         self._dut_host_info = None
+        self._dut_hostname = None
 
 
     def get_board(self):
@@ -103,6 +104,21 @@ class BaseServoHost(ssh_host.SSHHost):
         @return A HostInfo object.
         """
         return self._dut_host_info
+
+
+    def set_dut_hostname(self, dut_hostname):
+        """
+        @param dut_hostname: hostname of the DUT that connected to this servo.
+        """
+        logging.info('setting dut_hostname as (%s)', dut_hostname)
+        self._dut_hostname = dut_hostname
+
+
+    def get_dut_hostname(self):
+        """
+        @returns hostname of the DUT that connected to this servo.
+        """
+        return self._dut_hostname
 
 
     def is_labstation(self):

@@ -18,10 +18,11 @@ except ImportError:
 class _BaseUpdateServoFw(object):
     """Base class to update firmware on servo"""
 
-    # Command to update servo with --force.
+    # Command to update servo device.
     # param 1: servo board (servo_v4|servo_micro)
     # param 2: serial number of main device on the board
-    UPDATER = 'servo_updater -b %s -s %s --force --reboot'
+    UPDATER = 'servo_updater -b %s -s %s --reboot'
+    UPDATER_FORCE = UPDATER + ' --force'
 
     # Command to read current version on the servo
     # param 1: serial number of main device on the board
@@ -60,14 +61,15 @@ class _BaseUpdateServoFw(object):
                 self._supported = self._is_outdated_version()
         return self._supported
 
-    def update(self):
+    def update(self, force_update=False):
         """Update firmware on the servo.
 
         Steps:
         1) Verify servo is not updated by checking the versions.
         2) Try to get serial number for the servo.
-        3) Updating firmware with --force. Standard update happens
-        during servod startup.
+        3) Updating firmware.
+
+        @params force_update: run updater with force option.
         """
         if not self.check_needs():
             return
@@ -75,7 +77,7 @@ class _BaseUpdateServoFw(object):
             logging.info('Serial number is not detected. It means no update'
                          ' will be performed on servo.')
             return
-        self._update_firmware()
+        self._update_firmware(force_update)
 
     def _check_needs(self):
         """Check is servo type supported"""
@@ -92,14 +94,26 @@ class _BaseUpdateServoFw(object):
         raise NotImplementedError('Please implement method to return'
                                   ' serial number')
 
-    def _update_firmware(self):
-        """Run servo_updater.
+    def _get_updater_cmd(self, force_update):
+        """Return command to run firmware updater for the servo device.
 
-        Method generate a metric to collect statistics of update.
+        @params force_update: run updater with force option.
         """
         board = self.get_board()
         serial_number = self.get_serial_number()
-        cmd = self.UPDATER % (board, serial_number)
+        if force_update:
+            cmd = self.UPDATER_FORCE
+        else:
+            cmd = self.UPDATER
+        return cmd % (board, serial_number)
+
+    def _update_firmware(self, force_update):
+        """Execute firmware updater command.
+
+        Method generate a metric to collect statistics of update.
+        @params force_update: run updater with force option.
+        """
+        cmd = self._get_updater_cmd(force_update)
         logging.info('Servo fw update: %s', cmd)
         result = self._host.run(cmd, ignore_status=True).stdout.strip()
         logging.debug('Servo fw update finished; %s', result)

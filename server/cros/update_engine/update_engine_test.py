@@ -22,9 +22,10 @@ from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
+from chromite.lib import auto_updater
 from chromite.lib import auto_updater_transfer
+from chromite.lib import remote_access
 from chromite.lib import retry_util
-from chromite.scripts import cros_update
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     """Base class for all autoupdate_ server tests.
@@ -794,24 +795,27 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @raise error.TestFail if anything goes wrong with the update.
 
         """
-        build_name, payload_file = self._get_update_parameters_from_uri(
+        cros_preserved_path = ('/mnt/stateful_partition/unencrypted/'
+                               'preserve/cros-update')
+        build_name, payload_filename = self._get_update_parameters_from_uri(
             payload_uri)
         logging.info('Installing %s on the DUT', payload_uri)
-        cros_updater = cros_update.CrOSUpdateTrigger(
-            host_name=self._host.hostname,
-            build_name=build_name,
-            static_dir='',
-            force_update=True,
-            full_update=True,
-            payload_filename=payload_file,
-            clobber_stateful=clobber_stateful,
-            staging_server=self._autotest_devserver.url(),
-            transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
-        try:
-            cros_updater.TriggerAU()
-        except Exception as e:
-            logging.exception('ERROR: Failed to update device.')
-            raise error.TestFail(str(e))
-        finally:
-            self._copy_generated_nebraska_logs(
-                cros_updater.request_logs_dir, identifier=tag)
+        with remote_access.ChromiumOSDeviceHandler(
+            self._host.hostname, base_dir=cros_preserved_path) as device:
+            updater = auto_updater.ChromiumOSUpdater(
+                device, build_name, build_name,
+                yes=True,
+                payload_filename=payload_filename,
+                clobber_stateful=clobber_stateful,
+                do_stateful_update=False,
+                staging_server=self._autotest_devserver.url(),
+                transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
+
+            try:
+                updater.RunUpdate()
+            except Exception as e:
+                logging.exception('ERROR: Failed to update device.')
+                raise error.TestFail(str(e))
+            finally:
+                self._copy_generated_nebraska_logs(
+                    updater.request_logs_dir, identifier=tag)

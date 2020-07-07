@@ -1530,10 +1530,15 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_discover_device(self, device_address, stop_discovery=True):
+    def test_discover_device(self,
+                             device_address,
+                             start_discovery=True,
+                             stop_discovery=True):
         """Test that the adapter could discover the specified device address.
 
         @param device_address: Address of the device.
+        @param start_discovery: Whether to start discovery. Set to False if you
+                                call start_discovery before calling this.
         @param stop_discovery: Whether to stop discovery at the end. If this is
                                set to False, make sure to call
                                test_stop_discovery afterwards.
@@ -1542,17 +1547,20 @@ class BluetoothAdapterTests(test.test):
 
         """
         has_device_initially = False
-        start_discovery = False
         discovery_stopped = False
         is_not_discovering = False
         device_discovered = False
+        # If start discovery is not set, discovery must already be started
+        discovery_started = not start_discovery
         has_device = self.bluetooth_facade.has_device
 
         if has_device(device_address):
             has_device_initially = True
         else:
-            start_discovery, _ = self.bluetooth_facade.start_discovery()
             if start_discovery:
+                discovery_started = self.bluetooth_facade.start_discovery()
+
+            if discovery_started:
                 try:
                     utils.poll_for_condition(
                             condition=(lambda: has_device(device_address)),
@@ -1570,6 +1578,7 @@ class BluetoothAdapterTests(test.test):
                     logging.error(err)
                 except:
                     logging.error('test_discover_device: unexpected error')
+
             if start_discovery and stop_discovery:
                 discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
                 is_not_discovering = self._wait_for_condition(
@@ -1578,14 +1587,15 @@ class BluetoothAdapterTests(test.test):
 
         self.results = {
                 'has_device_initially': has_device_initially,
-                'start_discovery': start_discovery,
+                'should_start_discovery': start_discovery,
                 'should_stop_discovery': stop_discovery,
+                'start_discovery': discovery_started,
                 'stop_discovery': discovery_stopped,
                 'is_not_discovering': is_not_discovering,
                 'device_discovered': device_discovered}
 
         # Make sure a discovered device properly started and stopped discovery
-        device_found = device_discovered and start_discovery and (
+        device_found = device_discovered and discovery_started and (
                 discovery_stopped and is_not_discovering
                 if stop_discovery else True)
 
@@ -3697,29 +3707,37 @@ class BluetoothAdapterTests(test.test):
             raise error.TestError('Have to specify a working Bluetooth peer')
 
 
-    def verify_device_rssi(self, device_address):
+    def verify_device_rssi(self, address_list):
         """ Test device rssi is over required threshold.
 
-        @param device_address: Peer address we're measuring rssi for
+        @param address_list: List of peer devices to verify address for
 
-        @raises error.TestNA if device isn't found or RSSI is too low
+        @raises error.TestNA if any device isn't found or RSSI is too low
         """
-        # The RSSI property is only maintained while discovery is enabled.
-        # Stopping discovery removes the property. Thus, look up the RSSI while
-        # still in discovery.
-        found = self.test_discover_device(device_address, stop_discovery=False)
-        rssi = self.bluetooth_facade.get_device_property(device_address, 'RSSI')
-        self.test_stop_discovery()
+        try:
+            self.test_start_discovery()
+            for device_address in address_list:
+                # The RSSI property is only maintained while discovery is
+                # enabled.  Stopping discovery removes the property. Thus, look
+                # up the RSSI without modifying discovery state.
+                found = self.test_discover_device(device_address,
+                                                  start_discovery=False,
+                                                  stop_discovery=False)
+                rssi = self.bluetooth_facade.get_device_property(
+                        device_address, 'RSSI')
 
-        if not found:
-            raise error.TestNAError(
-                    'Peer {} not discovered'.format(device_address))
+                if not found:
+                    raise error.TestNAError(
+                            'Peer {} not discovered'.format(device_address))
 
-        if not rssi or rssi < self.MIN_RSSI:
-            raise error.TestNAError('Peer {} RSSI is too low: {}'.format(
-                    device_address, rssi))
+                if not rssi or rssi < self.MIN_RSSI:
+                    raise error.TestNAError(
+                            'Peer {} RSSI is too low: {}'.format(
+                                    device_address, rssi))
 
-        logging.info('Peer {} RSSI {}'.format(device_address, rssi))
+                logging.info('Peer {} RSSI {}'.format(device_address, rssi))
+        finally:
+            self.test_stop_discovery()
 
 
     def set_fail_fast(self, args_dict, default=False):

@@ -13,7 +13,7 @@ from oauth2client.client import GoogleCredentials
 
 
 _BOND_API_URL = 'https://bond-pa.sandbox.googleapis.com'
-_HANGOUTS_API_URL = 'https://www.googleapis.com/hangouts/v1_meetings_preprod/'
+_HANGOUTS_API_URL = 'https://preprod-hangouts.googleapis.com/hangouts/v1_meetings/'
 _MEETINGS_API_URL = 'https://preprod-meetings.sandbox.googleapis.com'
 
 _TOKEN_TTL_SECONDS = 3500

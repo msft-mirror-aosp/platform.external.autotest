@@ -36,6 +36,10 @@ class firmware_Cr50CCDUartStress(Cr50Test):
         super(firmware_Cr50CCDUartStress,
               self).initialize(host, cmdline_args, full_args)
 
+        # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
+        if not self.check_ec_capability():
+            raise error.TestNAError('Nothing needs to be tested on this device')
+
         # Check EC chargen is available.
         if not self.ec.has_command(CHARGEN_CMD):
             raise error.TestNAError('chargen command is not available in EC.')
@@ -48,7 +52,7 @@ class firmware_Cr50CCDUartStress(Cr50Test):
         logging.info('Checked the servo type is %r.', servo_type)
 
         # Fast open cr50 and enable testlab.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         logging.info('CCD opened.')
 
         # Change active device as ccd_cr50.

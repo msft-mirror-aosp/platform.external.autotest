@@ -3,11 +3,11 @@
 # found in the LICENSE file.
 
 import logging
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.servo import pd_device
-
 
 class firmware_PDResetSoft(FirmwareTest):
     """
@@ -19,9 +19,10 @@ class firmware_PDResetSoft(FirmwareTest):
     criteria is that all attempted soft resets are successful.
 
     """
+
     version = 1
     RESET_ITERATIONS = 5
-
+    PD_CONNECT_DELAY = 10
 
     def _test_soft_reset(self, port_pair):
         """Tests soft reset initated by both PDTester and the DUT
@@ -31,6 +32,7 @@ class firmware_PDResetSoft(FirmwareTest):
         for dev in port_pair:
             for _ in xrange(self.RESET_ITERATIONS):
                 try:
+                    time.sleep(self.PD_CONNECT_DELAY)
                     if dev.soft_reset() == False:
                         raise error.TestFail('Soft Reset Failed')
                 except NotImplementedError:
@@ -69,6 +71,7 @@ class firmware_PDResetSoft(FirmwareTest):
         # Create list of available UART consoles
         consoles = [self.usbpd, self.pdtester]
         port_partner = pd_device.PDPortPartner(consoles)
+
         # Identify a valid test port pair
         port_pair = port_partner.identify_pd_devices()
         if not port_pair:

@@ -65,6 +65,7 @@ class FingerprintTest(test.test):
         # bloonchipper
         '61382804da86b4156d666cc9a976088f8b647d44': _KEY_TYPE_DEV,
         '07b1af57220c196e363e68d73a5966047c77011e': _KEY_TYPE_PRE_MP,
+        '1c590ef36399f6a2b2ef87079c135b69ef89eb60': _KEY_TYPE_MP,
 
         # dartmonkey
         '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799': _KEY_TYPE_MP,
@@ -83,7 +84,7 @@ class FingerprintTest(test.test):
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4019-265ce611',  # not yet finalized
+        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4277-9f652bb3',
         _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
         _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
         _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
@@ -119,6 +120,18 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4019-265ce611',
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4019-265ce611',
                 _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+            'bloonchipper_v2.0.4274-a9ed1089.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '3ae000ad5b31687f2fb6d0dc9926ec46e8262007d7bbaf0beeb2ace167761bc7',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4274-a9ed1089',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4274-a9ed1089',
+                _FIRMWARE_VERSION_KEY_ID: '07b1af57220c196e363e68d73a5966047c77011e',
+            },
+            'bloonchipper_v2.0.4277-9f652bb3.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '7d9b788a908bee5c83e27450258b2bbf110d7253d49faa4804562ae27e42cb3b',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
+                _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
         },
         _FP_BOARD_NAME_NOCTURNE: {

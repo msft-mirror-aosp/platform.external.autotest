@@ -2186,7 +2186,7 @@ class TempLogger(MeasurementLogger):
             domain = domain.replace(' ', '_')
             new_meas = TempMeasurement(domain, temp_path)
             measurements.append(new_meas)
-            return measurements
+        return measurements
 
     def save_results(self, resultsdir, fname_prefix=None):
         if not fname_prefix:

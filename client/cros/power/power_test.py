@@ -122,8 +122,10 @@ class power_Test(test.test):
 
         keypress_histogram_end = histogram_verifier.get_histogram(
             cr, self.keypress_histogram)
+        logger = power_dashboard.KeyvalLogger(self._start_time, time.time())
         matches = re.search((self.histogram_re % self.keypress_histogram),
                             keypress_histogram_end)
+
         if matches:
             count = int(matches.group(1))
             mean_latency = float(matches.group(2))
@@ -135,7 +137,9 @@ class power_Test(test.test):
             self.output_perf_value(description='keypress_latency_us_avg',
                                    value=mean_latency,
                                    higher_is_better=False)
-
+            logger.add_item('keypress_cnt', count, 'point', 'keypress')
+            logger.add_item('keypress_latency_us_avg', mean_latency, 'point',
+                            'keypress')
 
         # Capture the first bucket >= 90th percentile
         for s in keypress_histogram_end.splitlines():
@@ -152,8 +156,13 @@ class power_Test(test.test):
                     self.output_perf_value(
                         description='keypress_high_percentile', value=perc,
                         higher_is_better=False)
+                    logger.add_item('keypress_latency_us_high', lat, 'point',
+                                    'keypress')
+                    logger.add_item('keypress_high_percentile', perc, 'point',
+                                    'keypress')
                     break
 
+        self._meas_logs.append(logger)
 
     def publish_keyvals(self):
         """Publish power result keyvals."""

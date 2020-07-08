@@ -4,18 +4,19 @@
 
 AUTHOR = "Chrome OS Team"
 NAME = "firmware_FWupdateThenSleep.wp"
+ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 
 DOC = """
-RO+RW firmware update using chromeos-firmwareupdate --mode=recovery --wp=1, then
+RW firmware update using chromeos-firmwareupdate --mode=recovery --wp=1, then
 sleep and wake, then make sure the host responds and the flash contents
 don't change.
 
 Example:
-test_that --board=BOARD --args 'servo_host=SERVO_IP' DUT_IP firmware_FWupdateThenSleep
+test_that --board=BOARD --args 'servo_host=SERVO_IP' DUT_IP firmware_FWupdateThenSleep.wp
 """
 
 from autotest_lib.client.common_lib import utils

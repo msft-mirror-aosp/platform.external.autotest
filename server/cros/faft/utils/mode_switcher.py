@@ -20,6 +20,7 @@ class _BaseFwBypasser(object):
     HOLD_VOL_DOWN_BUTTON_BYPASS = 3
 
     def __init__(self, faft_framework):
+        self.faft_framework = faft_framework
         self.servo = faft_framework.servo
         self.faft_config = faft_framework.faft_config
         self.client_host = faft_framework._client
@@ -55,8 +56,8 @@ class _BaseFwBypasser(object):
         raise NotImplementedError
 
 
-class _CtrlDBypasser(_BaseFwBypasser):
-    """Controls bypass logic via Ctrl-D combo."""
+class _KeyboardBypasser(_BaseFwBypasser):
+    """Controls bypass logic via keyboard shortcuts for menu UI."""
 
     def bypass_dev_mode(self):
         """Bypass the dev mode firmware logic to boot internal image.
@@ -78,14 +79,20 @@ class _CtrlDBypasser(_BaseFwBypasser):
 
     def bypass_dev_boot_usb(self):
         """Bypass the dev mode firmware logic to boot USB."""
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+u')
         self.servo.ctrl_u()
+
+
+    def bypass_dev_default_boot(self):
+        """Bypass the dev mode firmware logic to boot from default target."""
+        self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
+        self.servo.enter_key()
 
 
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
-        time.sleep(self.faft_config.usb_plug)
+        self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
         self.servo.switch_usbkey('dut')
         logging.info('Enabled dut_sees_usb')
         if not self.client_host.ping_wait_up(
@@ -96,16 +103,16 @@ class _CtrlDBypasser(_BaseFwBypasser):
 
 
     def trigger_dev_to_rec(self):
-        """Trigger to the rec mode from the dev screen."""
-        time.sleep(self.faft_config.firmware_screen)
-        self.servo.enter_key()
+        """Trigger to the to-norm screen from the dev screen."""
+        self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+s')
+        self.servo.ctrl_s()
 
 
     def trigger_rec_to_dev(self):
         """Trigger to the dev mode from the rec screen."""
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+d')
         self.servo.ctrl_d()
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen', 'Pressing button to switch to dev mode')
         if self.faft_config.rec_button_dev_switch:
             logging.info('RECOVERY button pressed to switch to dev mode')
             self.servo.toggle_recovery_switch()
@@ -119,9 +126,27 @@ class _CtrlDBypasser(_BaseFwBypasser):
 
     def trigger_dev_to_normal(self):
         """Trigger to the normal mode from the dev screen."""
-        time.sleep(self.faft_config.firmware_screen)
+        # Navigate to to-norm screen
+        self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+s')
+        self.servo.ctrl_s()
+        # Select "Confirm"
+        self.faft_framework.wait_for('confirm_screen', 'Pressing enter')
         self.servo.enter_key()
-        time.sleep(self.faft_config.confirm_screen)
+
+
+class _LegacyKeyboardBypasser(_KeyboardBypasser):
+    """Controls bypass logic via keyboard shortcuts for legacy clamshell UI."""
+
+    def trigger_dev_to_rec(self):
+        """Trigger to the to-norm screen from the dev screen."""
+        self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
+        self.servo.enter_key()
+
+    def trigger_dev_to_normal(self):
+        """Trigger to the normal mode from the dev screen."""
+        self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
+        self.servo.enter_key()
+        self.faft_framework.wait_for('confirm_screen', 'Pressing enter')
         self.servo.enter_key()
 
 
@@ -137,14 +162,14 @@ class _JetstreamBypasser(_BaseFwBypasser):
     def bypass_dev_boot_usb(self):
         """Bypass the dev mode firmware logic to boot USB."""
         self.servo.switch_usbkey('dut')
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Toggling development switch')
         self.servo.toggle_development_switch()
 
 
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
-        time.sleep(self.faft_config.usb_plug)
+        self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
         self.servo.switch_usbkey('dut')
         if not self.client_host.ping_wait_up(
                 timeout=self.faft_config.delay_reboot_to_ping):
@@ -161,7 +186,7 @@ class _JetstreamBypasser(_BaseFwBypasser):
     def trigger_rec_to_dev(self):
         """Trigger to the dev mode from the rec screen."""
         self.servo.disable_development_mode()
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Toggling development switch')
         self.servo.toggle_development_switch()
 
 
@@ -177,7 +202,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
     def set_button(self, button, duration, info):
         """Helper method that sets the button hold time for UI selections"""
         self.servo.set_nocheck(button, duration)
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen')
         logging.info(info)
 
 
@@ -207,7 +232,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         and this will move up one to legacy boot instead.
         """
         self.trigger_dev_screen()
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power as'
                         ' enter key to select Boot USB Image'))
         self.servo.power_short_press()
@@ -233,7 +258,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         next item and pwr button selects current activated item.
         """
         self.trigger_dev_screen()
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing power button')
         logging.info('Selecting power as enter key to accept the default'
                      ' boot option.')
         self.servo.power_short_press()
@@ -241,7 +266,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
-        time.sleep(self.faft_config.usb_plug)
+        self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
         self.servo.switch_usbkey('dut')
         logging.info('Enabled dut_sees_usb')
         if not self.client_host.ping_wait_up(
@@ -296,11 +321,11 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         Vol up button selects previous item, vol down button selects
         next item and pwr button selects current activated item.
         """
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing volume up')
         self.servo.set_nocheck('volume_up_hold', 100)
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen', 'Pressing volume up')
         self.servo.set_nocheck('volume_up_hold', 100)
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power '
                         'as enter key to select Developer Options'))
         self.servo.power_short_press()
@@ -320,13 +345,13 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         Vol up button selects previous item, vol down button selects
         next item and pwr button selects current activated item.
         """
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing volume up + volume down')
         self.set_button('volume_up_down_hold', 100, ('Enter Recovery Menu.'))
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power as '
                         'enter key to select Confirm Enabling Developer Mode'))
         self.servo.power_short_press()
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen')
 
 
     def trigger_dev_to_normal(self):
@@ -346,13 +371,13 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         Vol up button selects previous item, vol down button selects
         next item and pwr button selects current activated item.
         """
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting '
                         'Enable Root Verification using pwr '
                         'button to enter TO_NORM screen'))
         self.servo.power_short_press()
         logging.info('Transitioning from DEV to TO_NORM screen.')
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing power button')
         logging.info('Selecting Confirm Enabling Verified '
                         'Boot using pwr button in '
                         'TO_NORM screen')
@@ -374,13 +399,13 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         Vol up button selects previous item, vol down button selects
         next item and pwr button selects current activated item.
         """
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting '
                         'Enable Root Verification using pwr '
                         'button to enter TO_NORM screen'))
         self.servo.power_short_press()
         logging.info('Transitioning from DEV to TO_NORM screen.')
-        time.sleep(self.faft_config.firmware_screen)
+        self.faft_framework.wait_for('firmware_screen', 'Pressing volume down')
 
         # In firmware_FwScreenPressPower, test will power off the DUT using
         # Power button in second screen (TO_NORM screen) so scrolling to
@@ -388,9 +413,9 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         # a generic action and wait for next action of either Lid close or
         # power button press.
         self.servo.set_nocheck('volume_down_hold', 100)
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen', 'Pressing volume down')
         self.servo.set_nocheck('volume_down_hold', 100)
-        time.sleep(self.faft_config.confirm_screen)
+        self.faft_framework.wait_for('confirm_screen')
 
 
 class _BaseModeSwitcher(object):
@@ -413,7 +438,7 @@ class _BaseModeSwitcher(object):
     def _create_fw_bypasser(self):
         """Creates a proper firmware bypasser.
 
-        @rtype: _TabletDetachableBypasser | _CtrlDBypasser | _JetstreamBypasser
+        @rtype: _BaseFwBypasser
         """
         return self.FW_BYPASSER_CLASS(self.faft_framework)
 
@@ -477,7 +502,7 @@ class _BaseModeSwitcher(object):
           _enable_dev_mode_and_reboot()
 
         Rec,normal -----> Dev:
-          _disable_rec_mode_and_reboot()
+          disable_rec_mode_and_reboot()
 
         Any -----> normal:
           _enable_normal_mode_and_reboot()
@@ -505,7 +530,7 @@ class _BaseModeSwitcher(object):
                      to_mode, from_mode, wait_for_dut_up)
 
         if sync_before_boot:
-            self.faft_framework.blocking_sync()
+            self.faft_framework.blocking_sync(True)
         if to_mode == 'rec':
             self.enable_rec_mode_and_reboot(usb_state='dut')
             if wait_for_dut_up:
@@ -568,7 +593,7 @@ class _BaseModeSwitcher(object):
                                       reboot_type)
         if sync_before_boot:
             boot_id = self.faft_framework.get_bootid()
-            self.faft_framework.blocking_sync()
+            self.faft_framework.blocking_sync(True)
         logging.info("-[ModeSwitcher]-[ start simple_reboot(%r) ]-",
                      reboot_type)
         reboot_method()
@@ -611,7 +636,8 @@ class _BaseModeSwitcher(object):
             is_devsw_boot = self.checkers.crossystem_checker(
                                                {'devsw_boot': '1'}, True)
             boot_id = self.faft_framework.get_bootid()
-            self.faft_framework.blocking_sync()
+
+            self.faft_framework.blocking_sync(reboot_type != 'custom')
         if is_rec:
             logging.info("-[mode_aware_reboot]-[ is_rec=%s is_dev_switch=%s ]-",
                          is_rec, is_devsw_boot)
@@ -664,7 +690,7 @@ class _BaseModeSwitcher(object):
             self.servo.switch_usbkey(usb_state)
         psc.power_on(psc.REC_ON_FORCE_MRC)
 
-    def _disable_rec_mode_and_reboot(self, usb_state=None):
+    def disable_rec_mode_and_reboot(self, usb_state=None):
         """Disable the rec mode and reboot.
 
         It is achieved by calling power state controller to do a normal
@@ -672,7 +698,7 @@ class _BaseModeSwitcher(object):
         """
         psc = self.servo.get_power_state_controller()
         psc.power_off()
-        time.sleep(self.faft_config.ec_boot_to_pwr_button)
+        self.faft_framework.wait_for('ec_boot_to_pwr_button', 'Powering on')
         psc.power_on(psc.REC_OFF)
 
 
@@ -697,6 +723,12 @@ class _BaseModeSwitcher(object):
         """Bypass the dev mode firmware logic to boot USB."""
         logging.info("-[bypass_dev_boot_usb]-")
         self.bypasser.bypass_dev_boot_usb()
+
+
+    def bypass_dev_default_boot(self):
+        """Bypass the dev mode firmware logic to boot from default target."""
+        logging.info("-[bypass_dev_default_boot]-")
+        self.bypasser.bypass_dev_default_boot()
 
 
     def bypass_rec_mode(self):
@@ -770,10 +802,10 @@ class _BaseModeSwitcher(object):
             raise ConnectionError('DUT is still up unexpectedly')
 
 
-class _KeyboardDevSwitcher(_BaseModeSwitcher):
-    """Class that switches firmware mode via keyboard combo."""
+class _MenuSwitcher(_BaseModeSwitcher):
+    """Mode switcher via keyboard shortcuts for menu UI."""
 
-    FW_BYPASSER_CLASS = _CtrlDBypasser
+    FW_BYPASSER_CLASS = _KeyboardBypasser
 
     def _enable_dev_mode_and_reboot(self):
         """Switch to developer mode and reboot."""
@@ -784,17 +816,22 @@ class _KeyboardDevSwitcher(_BaseModeSwitcher):
         self.wait_for_client_offline()
         self.bypasser.trigger_rec_to_dev()
 
-
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot."""
         logging.info("Disabling keyboard controlled developer mode")
-        self._disable_rec_mode_and_reboot()
+        self.disable_rec_mode_and_reboot()
         self.wait_for_client_offline()
         self.bypasser.trigger_dev_to_normal()
 
 
+class _KeyboardDevSwitcher(_MenuSwitcher):
+    """Mode switcher via keyboard shortcuts for legacy clamshell UI."""
+
+    FW_BYPASSER_CLASS = _LegacyKeyboardBypasser
+
+
 class _JetstreamSwitcher(_BaseModeSwitcher):
-    """Class that switches firmware mode in Jetstream devices."""
+    """Mode switcher for Jetstream devices."""
 
     FW_BYPASSER_CLASS = _JetstreamBypasser
 
@@ -805,18 +842,17 @@ class _JetstreamSwitcher(_BaseModeSwitcher):
         self.wait_for_client_offline()
         self.bypasser.trigger_rec_to_dev()
 
-
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot."""
         logging.info("Disabling Jetstream developer mode")
         self.servo.disable_development_mode()
         self.enable_rec_mode_and_reboot(usb_state='host')
-        time.sleep(self.faft_config.firmware_screen)
-        self._disable_rec_mode_and_reboot(usb_state='host')
+        self.faft_framework.wait_for('firmware_screen', 'Disabling rec and rebooting')
+        self.disable_rec_mode_and_reboot(usb_state='host')
 
 
 class _TabletDetachableSwitcher(_BaseModeSwitcher):
-    """Class that switches fw mode in tablets/detachables with fw menu UI."""
+    """Mode switcher for legacy menu UI."""
 
     FW_BYPASSER_CLASS = _TabletDetachableBypasser
 
@@ -836,7 +872,6 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
         self.wait_for_client_offline()
         self.bypasser.trigger_rec_to_dev()
 
-
     def _enable_normal_mode_and_reboot(self):
         """Switch to normal mode and reboot.
 
@@ -854,19 +889,17 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
         Vol up button selects previous item, vol down button selects
         next item and pwr button selects current activated item.
         """
-        self._disable_rec_mode_and_reboot()
+        self.disable_rec_mode_and_reboot()
         self.wait_for_client_offline()
         self.bypasser.trigger_dev_to_normal()
 
-    def bypass_dev_default_boot(self):
-        """Accept the default boot device from the Developer Options screen."""
-        self.bypasser.bypass_dev_default_boot()
-
 
 _SWITCHER_CLASSES = {
+    'menu_switcher': _MenuSwitcher,
     'keyboard_dev_switcher': _KeyboardDevSwitcher,
     'jetstream_switcher': _JetstreamSwitcher,
-    'tablet_detachable_switcher': _TabletDetachableSwitcher}
+    'tablet_detachable_switcher': _TabletDetachableSwitcher,
+}
 
 
 def create_mode_switcher(faft_framework):

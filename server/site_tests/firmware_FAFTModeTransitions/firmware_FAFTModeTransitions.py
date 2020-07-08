@@ -40,12 +40,6 @@ class firmware_FAFTModeTransitions(FirmwareTest):
         if 'rec' in mode_seq:
             logging.info("Mode sequence contains 'rec', setup USB stick with"
                          " image.")
-            info = self._client.host_info_store.get()
-            if info.build:
-                self._client.stage_build_to_usb(info.build)
-            else:
-                logging.warn('Failed to get build label from the DUT, will use'
-                             ' existing image in USB.')
             self.setup_usbkey(usbkey=True)
 
         m1 = mode_seq[0]

@@ -158,5 +158,66 @@ class TestCheckPowerState(unittest.TestCase):
         self.assertEqual(ft.ec.match, "S0")
 
 
+class Test_stage_build_to_usbkey(unittest.TestCase):
+    class MockFirmwareTest(firmware_test.FirmwareTest):
+        def __init__(self):
+            self._client = mock.MagicMock()
+
+    def setUp(self):
+        self.test = self.MockFirmwareTest()
+
+    def test_stage_build_to_usbkey(self):
+        self.test._client.host_info_store.get.return_value.build = "dummy_build"
+        self.test._client._servo_host.validate_image_usbkey.return_value = (
+            "another_build")
+        self.assertTrue(self.test.stage_build_to_usbkey())
+        self.test._client.stage_build_to_usb.assert_called_with("dummy_build")
+
+    def test_stage_build_to_usbkey_same_build(self):
+        self.test._client.host_info_store.get.return_value.build = "dummy_build"
+        self.test._client._servo_host.validate_image_usbkey.return_value = (
+            "dummy_build")
+        self.assertTrue(self.test.stage_build_to_usbkey())
+        self.test._client.stage_build_to_usb.assert_not_called()
+
+    def test_stage_build_to_usbkey_no_build(self):
+        self.test._client.host_info_store.get.return_value.build = None
+        self.assertFalse(self.test.stage_build_to_usbkey())
+        self.test._client.stage_build_to_usb.assert_not_called()
+
+    def test_stage_build_to_usbkey_download_error(self):
+        self.test._client.host_info_store.get.return_value.build = "dummy_build"
+        self.test._client._servo_host.validate_image_usbkey.return_value = (
+            "another_build")
+        self.test._client.stage_build_to_usb = (
+            mock.MagicMock(side_effect=error.AutotestError("download")))
+        self.assertFalse(self.test.stage_build_to_usbkey())
+        self.test._client.stage_build_to_usb.assert_called_with("dummy_build")
+
+    def test_setup_usbkey(self):
+        self.test._client.host_info_store.get.return_value.build = "dummy_build"
+        self.test._client._servo_host.validate_image_usbkey.return_value = (
+            "another_build")
+        self.test.assert_test_image_in_usb_disk = mock.MagicMock()
+        self.test.set_servo_v4_role_to_snk = mock.MagicMock()
+        self.test.setup_usbkey(usbkey=True)
+        self.test._client.stage_build_to_usb.assert_called_with("dummy_build")
+        self.test.assert_test_image_in_usb_disk.assert_called()
+        self.test.set_servo_v4_role_to_snk.assert_called()
+
+    def test_setup_usbkey_no_stage(self):
+        self.test._client.host_info_store.get.return_value.build = "dummy_build"
+        self.test._client._servo_host.validate_image_usbkey.return_value = (
+            "another_build")
+        self.test.assert_test_image_in_usb_disk = mock.MagicMock()
+        self.test.set_servo_v4_role_to_snk = mock.MagicMock()
+        self.test.servo = mock.MagicMock()
+        self.test.setup_usbkey(usbkey=False)
+        self.test._client.stage_build_to_usb.assert_not_called()
+        self.test.assert_test_image_in_usb_disk.assert_not_called()
+        self.test.servo.switch_usbkey.assert_called_with('host')
+        self.test.set_servo_v4_role_to_snk.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

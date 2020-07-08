@@ -73,7 +73,7 @@ class firmware_Cr50Testlab(Cr50Test):
     def reset_ccd(self):
         """Enable ccd testlab mode and set the privilege level to open"""
         logging.info('Resetting CCD state')
-        self.fast_open(enable_testlab=True, reset_ccd=True)
+        self.fast_ccd_open(enable_testlab=True, reset_ccd=True)
         self.check_reset_count()
 
 

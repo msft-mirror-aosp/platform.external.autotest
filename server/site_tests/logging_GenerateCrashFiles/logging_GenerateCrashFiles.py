@@ -15,6 +15,7 @@ class logging_GenerateCrashFiles(test.test):
     """Tests if crash files are generated when crash is invoked."""
     version = 2
     SHORT_WAIT = 10
+    SLEEP_FOR_CRASH_FILES = 30
     REBOOT_TIMEOUT = 60
     CRASH_DIR = CrashTest._SYSTEM_CRASH_DIR
     CHROME_CRASH_DIR = CrashTest._FALLBACK_USER_CRASH_DIR
@@ -95,7 +96,7 @@ class logging_GenerateCrashFiles(test.test):
 
         # Sync the file system.
         self.host.run('sync', ignore_status=True)
-        time.sleep(self.SHORT_WAIT)
+        time.sleep(self.SLEEP_FOR_CRASH_FILES)
 
         self.check_missing_crash_files(crash_files, existing_files,
                                        prefix, location)

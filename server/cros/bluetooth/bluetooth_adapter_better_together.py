@@ -142,7 +142,6 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
       logging.debug("Test iteration %d", i)
       self.test_set_discovery_filter(filter)
       self.test_discover_device(address)
-      self.test_stop_discovery()
 
       self.test_set_le_connection_parameters(address, parameters)
       self.test_pause_discovery()

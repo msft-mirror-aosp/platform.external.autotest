@@ -61,8 +61,6 @@ class Cr50Test(FirmwareTest):
     # USB issues may show up with the timer sof calibration overflow interrupt.
     # Count these during cleanup.
     CR50_USB_ERROR = 'timer_sof_calibration_overflow_int'
-    # CCD password used by tests.
-    PASSWORD = 'Password'
 
     def initialize(self,
                    host,
@@ -82,7 +80,7 @@ class Cr50Test(FirmwareTest):
                                     'access to the Cr50 console')
         # TODO(b/149948314): remove when dual-v4 is sorted out.
         if 'ccd_cr50' in self.servo.get_servo_version():
-            self.servo.set_nocheck('watchdog_remove', 'ccd')
+            self.servo.disable_ccd_watchdog_for_test()
 
         logging.info('Test Args: %r', full_args)
 
@@ -544,7 +542,7 @@ class Cr50Test(FirmwareTest):
         if not self.cr50.ccd_is_reset():
             # Try to open cr50 and enable testlab mode if it isn't enabled.
             try:
-                self.fast_open(True)
+                self.fast_ccd_open(True)
             except:
                 # Even if we can't open cr50, do our best to reset the rest of
                 # the system state. Log a warning here.
@@ -558,12 +556,12 @@ class Cr50Test(FirmwareTest):
             if not self.can_set_ccd_level:
                 raise error.TestError("CCD state has changed, but we can't "
                                       "restore it")
-            self.fast_open(True)
+            self.fast_ccd_open(True)
             self.cr50.set_caps(self.original_ccd_settings)
 
         # First try using testlab open to open the device
         if self.original_ccd_level == 'open':
-            self.fast_open(True)
+            self.fast_ccd_open(True)
         elif self.original_ccd_level != self.cr50.get_ccd_level():
             self.cr50.set_ccd_level(self.original_ccd_level)
 
@@ -585,6 +583,7 @@ class Cr50Test(FirmwareTest):
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
         self._get_cr50_stats_from_uart_capture()
+        self.servo.allow_ccd_watchdog_for_test()
 
     def _get_cr50_stats_from_uart_capture(self):
         """Check cr50 uart output for errors.
@@ -611,26 +610,6 @@ class Cr50Test(FirmwareTest):
         # Log any flash operation errors.
         logging.info('do_flash_op count: %d', flash_error_count)
         logging.info('usb error count: %d', usb_error_count)
-
-    def _try_to_bring_dut_up(self):
-        """Try to quickly get the dut in a pingable state"""
-        logging.info('checking dut state')
-
-        self.servo.set_nocheck('cold_reset', 'off')
-        self.servo.set_nocheck('warm_reset', 'off')
-        time.sleep(self.cr50.SHORT_WAIT)
-        if not self.cr50.ap_is_on():
-            logging.info('Pressing power button to turn on AP')
-            self.servo.power_short_press()
-
-        end_time = time.time() + self.RESPONSE_TIMEOUT
-        while not self.host.ping_wait_up(
-                self.faft_config.delay_reboot_to_ping * 2):
-            if time.time() > end_time:
-                logging.warn('DUT is unresponsive after trying to bring it up')
-                return
-            self.servo.get_power_state_controller().reset()
-            logging.info('DUT did not respond. Resetting it.')
 
     def _update_device_images_and_running_cr50_firmware(
             self, state, release_path, prod_path, prepvt_path):
@@ -707,7 +686,7 @@ class Cr50Test(FirmwareTest):
         self.cr50.ccd_enable()
 
         # reboot to normal mode if the device is in dev mode.
-        self.enter_mode_after_checking_tpm_state('normal')
+        self.enter_mode_after_checking_cr50_state('normal')
 
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
         self.clear_fwmp()
@@ -957,147 +936,6 @@ class Cr50Test(FirmwareTest):
         # If we expect a rollback, the version should remain unchanged
         self._cr50_verify_update(expected_rw, rollback or expect_rollback)
 
-    def ccd_open_from_ap(self):
-        """Start the open process and press the power button."""
-        # Opening CCD requires power button presses. If those presses would
-        # power off the AP and prevent CCD open from completing, ignore them.
-        if self.faft_config.ec_forwards_short_pp_press:
-            self.stop_powerd()
-
-        self._ccd_open_last_len = 0
-
-        self._ccd_open_stdout = StringIO.StringIO()
-
-        ccd_open_cmd = utils.sh_escape('gsctool -a -o')
-        full_ssh_cmd = '%s "%s"' % (self.host.ssh_command(options='-tt'),
-                                    ccd_open_cmd)
-        # Start running the Cr50 Open process in the background.
-        self._ccd_open_job = utils.BgJob(
-                full_ssh_cmd,
-                nickname='ccd_open',
-                stdout_tee=self._ccd_open_stdout,
-                stderr_tee=utils.TEE_TO_LOGS)
-        if self._ccd_open_job == None:
-            raise error.TestFail('could not start ccd open')
-
-        try:
-            # Wait for the first gsctool power button prompt before starting the
-            # open process.
-            logging.info(self._get_ccd_open_output())
-            # Cr50 starts out by requesting 5 quick presses then 4 longer
-            # power button presses. Run the quick presses without looking at the
-            # command output, because getting the output can take some time. For
-            # the presses that require a 1 minute wait check the output between
-            # presses, so we can catch errors
-            #
-            # run quick presses for 30 seconds. It may take a couple of seconds
-            # for open to start. 10 seconds should be enough. 30 is just used
-            # because it will definitely be enough, and this process takes 300
-            # seconds, so doing quick presses for 30 seconds won't matter.
-            end_time = time.time() + 30
-            while time.time() < end_time:
-                self.servo.power_short_press()
-                logging.info('short int power button press')
-                time.sleep(self.PP_SHORT_INTERVAL)
-            # Poll the output and press the power button for the longer presses.
-            utils.wait_for_value(
-                    self._check_open_and_press_power_button,
-                    expected_value=True,
-                    timeout_sec=self.cr50.PP_LONG)
-        except Exception, e:
-            logging.info(e)
-            raise
-        finally:
-            self._close_ccd_open_job()
-            self._try_to_bring_dut_up()
-        logging.info(self.cr50.get_ccd_info())
-
-    def _check_open_and_press_power_button(self):
-        """Check stdout and press the power button if prompted.
-
-        @return: True if the process is still running.
-        """
-        logging.info(self._get_ccd_open_output())
-        self.servo.power_short_press()
-        logging.info('long int power button press')
-        # Give cr50 some time to complete the open process. After the last
-        # power button press cr50 erases nvmem and resets the dut before setting
-        # the state to open. Wait a bit so we don't check the ccd state in the
-        # middle of this reset process. Power button requests happen once a
-        # minute, so waiting 10 seconds isn't a big deal.
-        time.sleep(10)
-        return ('Open' in self.cr50.get_ccd_info()['State'] or
-                self._ccd_open_job.sp.poll() is not None)
-
-    def _get_ccd_open_output(self):
-        """Read the new output."""
-        self._ccd_open_job.process_output()
-        self._ccd_open_stdout.seek(self._ccd_open_last_len)
-        output = self._ccd_open_stdout.read()
-        self._ccd_open_last_len = self._ccd_open_stdout.len
-        return output
-
-    def _close_ccd_open_job(self):
-        """Terminate the process and check the results."""
-        exit_status = utils.nuke_subprocess(self._ccd_open_job.sp)
-        stdout = self._ccd_open_stdout.getvalue().strip()
-        delattr(self, '_ccd_open_job')
-        if stdout:
-            logging.info('stdout of ccd open:\n%s', stdout)
-        if exit_status:
-            logging.info('exit status: %d', exit_status)
-        if 'Error' in stdout:
-            raise error.TestFail(
-                    'ccd open Error %s' % stdout.split('Error')[-1])
-        if self.cr50.OPEN != self.cr50.get_ccd_level():
-            raise error.TestFail('unable to open cr50: %s' % stdout)
-        else:
-            logging.info('Opened Cr50')
-
-    def fast_open(self, enable_testlab=False, reset_ccd=True):
-        """Try to use testlab open. If that fails, do regular ap open.
-
-        @param enable_testlab: If True, enable testlab mode after cr50 is open.
-        @param reset_ccd: If True, reset ccd after open.
-        """
-        if not self.faft_config.has_powerbutton:
-            logging.warning('No power button', exc_info=True)
-            enable_testlab = False
-        # Try to use testlab open first, so we don't have to wait for the
-        # physical presence check.
-        self.cr50.send_command('ccd testlab open')
-        if self.cr50.get_ccd_level() != 'open':
-            if self.servo.has_control('chassis_open'):
-                self.servo.set('chassis_open', 'yes')
-            pw = '' if self.cr50.password_is_reset() else self.PASSWORD
-            # Use the console to open cr50 without entering dev mode if
-            # possible. It takes longer and relies on more systems to enter dev
-            #  mode and ssh into the AP. Skip the steps that aren't required.
-            if not (pw or self.cr50.get_cap(
-                            'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
-                self.enter_mode_after_checking_tpm_state('dev')
-
-            if pw or self.cr50.get_cap(
-                            'OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
-                self.cr50.set_ccd_level(self.cr50.OPEN, pw)
-            else:
-                self.ccd_open_from_ap()
-
-            if self.servo.has_control('chassis_open'):
-                self.servo.set('chassis_open', 'no')
-
-            if enable_testlab:
-                self.cr50.set_ccd_testlab('on')
-
-        if reset_ccd:
-            self.cr50.send_command('ccd reset')
-
-        # Make sure the device is in normal mode. After opening cr50, the TPM
-        # should be cleared and the device should automatically reset to normal
-        # mode. Just check to be consistent. It's possible capabilitiy settings
-        # are set to skip wiping the TPM.
-        self.enter_mode_after_checking_tpm_state('normal')
-
     def run_gsctool_cmd_with_password(self, password, cmd, name, expect_error):
         """Run a gsctool command and input the password
 
@@ -1173,18 +1011,6 @@ class Cr50Test(FirmwareTest):
             return
         self.run_gsctool_cmd_with_password(password, 'gsctool -a -U', 'unlock',
                                            expect_error)
-
-    def enter_mode_after_checking_tpm_state(self, mode):
-        """Reboot to mode if cr50 doesn't already match the state"""
-        # If the device is already in the correct mode, don't do anything
-        if (mode == 'dev') == self.cr50.in_dev_mode():
-            logging.info('already in %r mode', mode)
-            return
-
-        self.switcher.reboot_to_mode(to_mode=mode)
-
-        if (mode == 'dev') != self.cr50.in_dev_mode():
-            raise error.TestError('Unable to enter %r mode' % mode)
 
     def tpm_is_responsive(self):
         """Check TPM responsiveness by running tpm_version."""

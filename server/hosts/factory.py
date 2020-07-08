@@ -20,7 +20,6 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import jetstream_host
 from autotest_lib.server.hosts import moblab_host
 from autotest_lib.server.hosts import gce_host
-from autotest_lib.server.hosts import sonic_host
 from autotest_lib.server.hosts import ssh_host
 from autotest_lib.server.hosts import labstation_host
 from autotest_lib.server.hosts import file_store
@@ -43,7 +42,7 @@ _started_hostnames = set()
 # overhead in checking for less common host types.
 host_types = [cros_host.CrosHost, labstation_host.LabstationHost,
               moblab_host.MoblabHost, jetstream_host.JetstreamHost,
-              sonic_host.SonicHost, gce_host.GceHost]
+              gce_host.GceHost]
 OS_HOST_DICT = {'cros': cros_host.CrosHost,
                 'jetstream': jetstream_host.JetstreamHost,
                 'moblab': moblab_host.MoblabHost,

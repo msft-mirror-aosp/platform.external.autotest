@@ -44,15 +44,29 @@ class hardware_StorageWearoutDetect(test.test):
                    (\s+\d{3}){3}               # three 3-digits numbers
                    \s+NOW                      # fail indicator"""
 
-    # Ex "0x07  0x008  1          100  ---  Percentage Used Endurance Indicator"
-    SATA_FAIL = r".*\s{3,}(?P<param>(99|\d{3}))\s+.*Percentage Used Endurance.*"
+    # We want to detect and fail if we see a non-zero value for either
+    # attribute 160 Uncorrectable_Error_Cnt or attribute 187 Reported_Uncorrect
+    # ID# ATTRIBUTE_NAME          FLAGS    VALUE WORST THRESH FAIL RAW_VALUE
+    # 160 Uncorrectable_Error_Cnt -----    100   100   100     -   10
+    SATA_FAIL = r"""\s*(?P<param>(160\s+Uncorrectable_Error_Cnt|
+                    187\s+Reported_Uncorrect))
+                    \s+[P-][O-][S-][R-][C-][K-]
+                    (\s+\d{1,3}){3}
+                    \s+(NOW|[-])
+                    \s+[1-9][0-9]*"""
 
-    # Ex "Device life time estimation type A [DEVICE_LIFE_TIME_EST_TYP_A: 0x01]"
-    # 0x0a means 90-100% band, 0x0b means over 100% band -> find not digit
-    MMC_FAIL = r".*(?P<param>DEVICE_LIFE_TIME_EST_TYP_.)]?: 0x0\D"
+    # Ex "Pre EOL information [PRE_EOL_INFO: 0x02]"
+    # 0x02 means Warning, consumed 80% of reserved blocks
+    # 0x03 means Urgent
+    MMC_FAIL = r".*(?P<param>PRE_EOL_INFO]?: 0x0[23])"
 
-    # Ex "Percentage Used:         100%"
-    NVME_FAIL = r"Percentage Used:\s+(?P<param>(99|\d{3}))%"
+    # Ex Available Spare:                    100%
+    # We want to fail when the available spare is below the
+    # available spare threshold.
+    NVME_SPARE = r"Available Spare:\s+(?P<param>\d{1,3})%"
+
+    #Available Spare Threshold:          10%
+    NVME_THRESH = r"Available Spare Threshold:\s+(?P<param>\d{1,3})%"
 
     def run_once(self, use_cached_result=True):
         """
@@ -114,15 +128,24 @@ class hardware_StorageWearoutDetect(test.test):
                     param = m.group('param')
                     fail_msg += 'MMC failure ' + param
 
-                m = re.match(self.SATA_FAIL, line)
+                m = re.match(self.SATA_FAIL, line, re.X)
                 if m:
                     param = m.group('param')
-                    fail_msg += 'SATA failure, percentage used ' + param
+                    fail_msg += 'SATA failure, attribute ' + param
 
-                m = re.match(self.NVME_FAIL, line)
+                m = re.match(self.NVME_SPARE, line)
                 if m:
-                    param = m.group('param')
-                    fail_msg += 'NVMe failure, percentage used ' + param
+                    # Check the next line for the available spare threshold.
+                    # Fail if available spare is below the threshold.
+                    spare = m.group('param')
+                    nextLine = next(f)
+                    nm = re.match(self.NVME_THRESH, nextLine)
+                    if nm:
+                        thresh = nm.group('param')
+                        if int(spare) < int(thresh):
+                            fail_msg += 'NVMe failure, Available Spare ' + \
+                                        spare + '% below threshold ' + \
+                                        thresh + '%'
 
         if not sata_detect and not mmc_detect and not nvme_detect:
             raise error.TestFail('Can not detect storage device.')

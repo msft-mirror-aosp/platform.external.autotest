@@ -40,7 +40,7 @@ class firmware_Cr50WilcoRmaFactoryMode(Cr50Test):
 
         # Switch to dev mode and open CCD, so the test has access to gsctool
         # and bpforce.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         self.switcher.setup_mode('dev')
 
         # Keep track of whether Cr50 is in factory mode to minimize cleanup.

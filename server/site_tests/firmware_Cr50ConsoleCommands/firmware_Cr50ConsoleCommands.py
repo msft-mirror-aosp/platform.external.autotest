@@ -63,11 +63,12 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         self.missing = []
         self.extra = []
         self.past_matches = {}
+        self._ext = ''
 
         # Make sure the console is restricted
         if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_REQ] == 'Always':
             logging.info('Restricting console')
-            self.fast_open(enable_testlab=True)
+            self.fast_ccd_open(enable_testlab=True)
             self.cr50.set_cap('GscFullConsole', 'IfOpened')
             time.sleep(self.CCD_HOOK_WAIT)
             self.cr50.set_ccd_level('lock')
@@ -108,10 +109,13 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
 
     def get_expected_output(self, cmd, split_str):
         """Return the expected cr50 console output"""
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), cmd)
-        logging.info('reading %s', path)
+        file_dir = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.join(file_dir, cmd + self._ext)
+        if not os.path.isfile(path):
+            path = os.path.join(file_dir, cmd)
         if not os.path.isfile(path):
             raise error.TestFail('Could not find %s file %s' % (cmd, path))
+        logging.info('reading %s', path)
 
         with open(path, 'r') as f:
             contents = f.read()
@@ -178,6 +182,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         # ends in 22.
         if version[2] == '22':
             self.include.append('guc')
+            self._ext = '.guc'
         else:
             self.exclude.append('guc')
 

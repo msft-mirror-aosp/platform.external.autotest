@@ -312,10 +312,7 @@ class ControlData(object):
         self._set_string('source_archive_uri', val)
 
     def set_attributes(self, val):
-        # Add subsystem:default if subsystem is not specified.
         self._set_set('attributes', val)
-        if not any(a.startswith('subsystem') for a in self.attributes):
-            self.attributes.add('subsystem:default')
 
 
 def _extract_const(expr):

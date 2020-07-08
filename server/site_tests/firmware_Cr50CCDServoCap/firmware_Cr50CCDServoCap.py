@@ -114,7 +114,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
 
         self.check_servo_monitor()
         # Make sure cr50 is open with testlab enabled.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         if not self.cr50.testlab_is_on():
             raise error.TestNAError('Cr50 testlab mode needs to be enabled')
         logging.info('Cr50 is %s', self.servo.get('cr50_ccd_level'))

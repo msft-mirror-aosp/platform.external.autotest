@@ -42,7 +42,7 @@ def run(machine):
 
     repeat = int(args_dict.get("repeat", 1))
 
-    default_actions = str("plug,unplug,login,plug,"
+    default_actions = str("plug,unplug,login,closelid,openlid,plug,"
                           "closelid,unplug,openlid,"
                           "closelid,plug,openlid,unplug")
 

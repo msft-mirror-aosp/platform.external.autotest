@@ -131,6 +131,37 @@ def power_cycle_via_servo(host):
                                   host.BOOT_TIMEOUT)
 
 
+def verify_ccd_testlab_enable(host):
+    """Verify that ccd testlab enable when DUT support cr50.
+
+    The new deploy process required to deploy DUTs with testlab enable when
+    connection to the servo by type-c, so we will be sure that communication
+    by servo is permanent, it's critical for auto-repair capability.
+
+    @param host server.hosts.CrosHost object.
+    """
+
+    host_info = host.host_info_store.get()
+    if host_info.os == 'labstation':
+        # skip labstation because they do not has servo
+        return
+
+    # Only verify for ccd servo connection
+    if host.servo and host.servo.get_main_servo_device() == 'ccd_cr50':
+        if not host.servo.has_control('cr50_testlab'):
+            raise Exception(
+                'CCD connection required support of cr50 on the DUT. Please '
+                'verify which servo need to be used for DUT setup.')
+
+        status = host.servo.get('cr50_testlab')
+        if status == 'on':
+            logging.info("CCD testlab mode is enabled on the DUT.")
+        else:
+            raise Exception(
+                'CCD testlab mode is not enabled on the DUT, enable '
+                'testlab mode is required for all DUTs that support CR50.')
+
+
 def verify_boot_into_rec_mode(host):
     """Verify that we can boot into USB when in recover mode, and reset tpm.
 
@@ -180,12 +211,14 @@ def install_test_image(host):
     servo.switch_usbkey('dut')
     servo.get_power_state_controller().power_on()
 
-    # Dev mode screen should be up now:  type ctrl+U and wait for
-    # boot from USB to finish.
-    time.sleep(10)
-    servo.ctrl_u()
-
-    if not host.wait_up(timeout=host.USB_BOOT_TIMEOUT):
+    # Type ctrl+U repeatedly for up to BOOT_TIMEOUT or until DUT boots.
+    boot_deadline = time.time() + host.BOOT_TIMEOUT
+    while time.time() < boot_deadline:
+        logging.info("Pressing ctrl+u")
+        servo.ctrl_u()
+        if host.ping_wait_up(timeout=5):
+            break
+    else:
         raise Exception('DUT failed to boot from USB for install test image.')
 
     host.run('chromeos-install --yes', timeout=host.INSTALL_TIMEOUT)

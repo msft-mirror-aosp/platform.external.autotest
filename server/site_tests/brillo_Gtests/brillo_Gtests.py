@@ -15,7 +15,7 @@ from autotest_lib.server import test
 
 
 NATIVE_TESTS_PATH = '/data/nativetest'
-WHITELIST_FILE = '/data/nativetest/tests.txt'
+ALLOWLIST_FILE = '/data/nativetest/tests.txt'
 ANDROID_NATIVE_TESTS_FILE_FMT = (
         '%(build_target)s-continuous_native_tests-%(build_id)s.zip')
 BRILLO_NATIVE_TESTS_FILE_FMT = '%(build_target)s-brillo-tests-%(build_id)s.zip'
@@ -31,7 +31,7 @@ class brillo_Gtests(test.test):
     version = 1
 
 
-    def initialize(self, host=None, gtest_suites=None, use_whitelist=False,
+    def initialize(self, host=None, gtest_suites=None, use_allowlist=False,
                    filter_tests=None, native_tests=None):
         if not afe_utils.host_in_lab(host):
             return
@@ -71,23 +71,23 @@ class brillo_Gtests(test.test):
                                      NATIVE_TESTS_PATH))
 
 
-    def _get_whitelisted_tests(self, whitelist_path):
-        """Return the list of whitelisted tests.
+    def _get_allowlisted_tests(self, allowlist_path):
+        """Return the list of allowlisted tests.
 
-        The whitelist is expected to be a three column CSV file containing:
+        The allowlist is expected to be a three column CSV file containing:
         * the test name
         * "yes" or "no" whether the test should be run as root or not.
         * optional command line arguments to be passed to the test.
 
         Anything after a # on a line is considered to be a comment and  ignored.
 
-        @param whitelist_path: Path to the whitelist.
+        @param allowlist_path: Path to the allowlist.
 
         @return a map of test name to GtestSuite tuple.
         """
         suite_map = dict()
         for line in self.host.run_output(
-                'cat %s' % whitelist_path).splitlines():
+                'cat %s' % allowlist_path).splitlines():
             # Remove anything after the first # (comments).
             line = line.split('#')[0]
             if line.strip() == '':
@@ -95,7 +95,7 @@ class brillo_Gtests(test.test):
 
             parts = line.split(',')
             if len(parts) < 2:
-                logging.error('badly formatted line in %s: %s', whitelist_path,
+                logging.error('badly formatted line in %s: %s', allowlist_path,
                               line)
                 continue
 
@@ -107,10 +107,10 @@ class brillo_Gtests(test.test):
         return suite_map
 
 
-    def _find_all_gtestsuites(self, use_whitelist=False, filter_tests=None):
+    def _find_all_gtestsuites(self, use_allowlist=False, filter_tests=None):
         """Find all the gTest Suites installed on the DUT.
 
-        @param use_whitelist: Only whitelisted tests found on the system will
+        @param use_allowlist: Only allowlisted tests found on the system will
                               be used.
         @param filter_tests: Only tests that match these globs will be used.
         """
@@ -119,32 +119,32 @@ class brillo_Gtests(test.test):
         gtest_suites = [GtestSuite(os.path.basename(path), path, True, '')
                         for path in gtest_suites_path]
 
-        if use_whitelist:
+        if use_allowlist:
             try:
-                whitelisted = self._get_whitelisted_tests(WHITELIST_FILE)
+                allowlisted = self._get_allowlisted_tests(ALLOWLIST_FILE)
                 suites_to_run = []
                 for suite in gtest_suites:
-                    if whitelisted.get(suite.name):
-                        whitelisted_suite = whitelisted.get(suite.name)
+                    if allowlisted.get(suite.name):
+                        allowlisted_suite = allowlisted.get(suite.name)
                         # Get the name and path from the suites on the DUT and
-                        # get the other args from the whitelist map.
+                        # get the other args from the allowlist map.
                         suites_to_run.append(GtestSuite(
                                 suite.name, suite.path,
-                                whitelisted_suite.run_as_root,
-                                whitelisted_suite.args))
+                                allowlisted_suite.run_as_root,
+                                allowlisted_suite.args))
                 gtest_suites = suites_to_run
-                if (len(suites_to_run) != len(whitelisted)):
-                    whitelist_test_names = set(whitelisted.keys())
+                if (len(suites_to_run) != len(allowlisted)):
+                    allowlist_test_names = set(allowlisted.keys())
                     found_test_names = set([t.name for t in suites_to_run])
-                    diff_tests = list(whitelist_test_names - found_test_names)
+                    diff_tests = list(allowlist_test_names - found_test_names)
                     for t in diff_tests:
                         logging.warning('Could not find %s', t);
                     raise error.TestWarn(
-                            'Not all whitelisted tests found on the DUT. '
+                            'Not all allowlisted tests found on the DUT. '
                             'Expected %i tests but only found %i' %
-                            (len(whitelisted), len(suites_to_run)))
+                            (len(allowlisted), len(suites_to_run)))
             except error.GenericHostRunError:
-                logging.error('Failed to read whitelist %s', WHITELIST_FILE)
+                logging.error('Failed to read allowlist %s', ALLOWLIST_FILE)
 
         if filter_tests:
             gtest_suites = [t for t in gtest_suites
@@ -210,15 +210,15 @@ class brillo_Gtests(test.test):
         return True
 
 
-    def run_once(self, host=None, gtest_suites=None, use_whitelist=False,
+    def run_once(self, host=None, gtest_suites=None, use_allowlist=False,
                  filter_tests=None, native_tests=None):
         """Run gTest Suites on the DUT.
 
         @param host: host object representing the device under test.
         @param gtest_suites: List of gTest suites to run. Default is to run
                              every gTest suite on the host.
-        @param use_whitelist: If gTestSuites is not passed in and use_whitelist
-                              is true, only whitelisted tests found on the
+        @param use_allowlist: If gTestSuites is not passed in and use_allowlist
+                              is true, only allowlisted tests found on the
                               system will be used.
         @param filter_tests: If gTestSuites is not passed in, search for tests
                              that match these globs to run instead.
@@ -231,7 +231,7 @@ class brillo_Gtests(test.test):
             gtest_suites = [GtestSuite('', t, True, '') for t in native_tests]
         if not gtest_suites:
             gtest_suites = self._find_all_gtestsuites(
-                    use_whitelist=use_whitelist, filter_tests=filter_tests)
+                    use_allowlist=use_allowlist, filter_tests=filter_tests)
 
         failed_gtest_suites = []
         for gtestSuite in gtest_suites:

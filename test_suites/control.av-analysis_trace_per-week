@@ -27,7 +27,7 @@ which should run once every week.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['max_runtime_mins'] = 240
+args_dict['max_runtime_mins'] = 720
 args_dict['timeout_mins'] = 4320
 args_dict['file_bugs'] = False
 args_dict['name'] = 'av-analysis_trace_per-week'

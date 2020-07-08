@@ -61,13 +61,13 @@ class bluetooth_AdapterPowerMeasure(BluetoothAdapterQuickTests):
         self._check_legitimate_board()
 
         # device is a pure XMLRPC server running as chameleond
-        # on the chameleon host. We need to enable Servod.
+        # on the bluetooth peer. We need to enable Servod.
         if not device.EnableServod(board):
             raise error.TestError('Failed to enable Servod.')
 
-        # Start the Servod process on the chameleon host.
+        # Start the Servod process on the bluetooth peer.
         if not device.servod.Start():
-            raise error.TestError('Failed to start Servod on chameleon host.')
+            raise error.TestError('Failed to start Servod on bluetooth peer.')
 
 
     def _cleanup_servod(self, device):
@@ -76,7 +76,7 @@ class bluetooth_AdapterPowerMeasure(BluetoothAdapterQuickTests):
         @param device: the peer device
         """
         if not device.servod.Stop():
-            logging.error('Failed to stop Servod on chameleon host.')
+            logging.error('Failed to stop Servod on bluetooth peer.')
 
         self.host.run_short('start ui')
 
@@ -199,6 +199,6 @@ class bluetooth_AdapterPowerMeasure(BluetoothAdapterQuickTests):
         self.max_power_mw = max_power_mw
         self.suspend_time_secs = suspend_time_secs
 
-        self.quick_test_init(host, use_chameleon=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.pw_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

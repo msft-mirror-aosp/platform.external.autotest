@@ -391,6 +391,7 @@ class Servo(object):
         self._programmer = None
         self._prev_log_inode = None
         self._prev_log_size = 0
+        self._ccd_watchdog_disabled = False
 
     def __str__(self):
         """Description of this object and address, for use in errors"""
@@ -601,6 +602,32 @@ class Servo(object):
             time.sleep(self.SHORT_DELAY)
             time_left = time_left - self.SHORT_DELAY
         raise error.TestFail("Failed setting volume_down to no")
+
+    def arrow_up(self, press_secs='tab'):
+        """Simulate arrow up key presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'.
+        """
+        # TODO: Remove this check after a lab update to include CL:1913684
+        if not self.has_control('arrow_up'):
+            logging.warning('Control arrow_up ignored. '
+                            'Please update hdctools')
+            return
+        self.set_nocheck('arrow_up', press_secs)
+
+    def arrow_down(self, press_secs='tab'):
+        """Simulate arrow down key presses.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'.
+        """
+        # TODO: Remove this check after a lab update to include CL:1913684
+        if not self.has_control('arrow_down'):
+            logging.warning('Control arrow_down ignored. '
+                            'Please update hdctools')
+            return
+        self.set_nocheck('arrow_down', press_secs)
 
     def ctrl_d(self, press_secs='tab'):
         """Simulate Ctrl-d simultaneous button presses.
@@ -838,12 +865,13 @@ class Servo(object):
             return '%s.%s' % (prefix, ctrl_name)
         return ctrl_name
 
-    def _inspect_control_failure(self, e, ctrl_name, get=True):
+    def _inspect_control_failure(self, e, ctrl_name, ctrl_value=None):
         """Inspect the |e| for special failures.
 
         @param e: exception object
         @param ctrl_name: control name
-        @param get: bool, whether this was a get() or a set() call
+        @param ctrl_value: The value the control was set to. None indicates a
+                           'get' control.
 
         @raises ControlUnavailableError: if error message matches NO_CONTROL_RE
         @raises UnresponsiveConsoleError: if error message matches
@@ -854,13 +882,18 @@ class Servo(object):
         """
         err_str = self._get_xmlrpclib_exception(e)
         # Prefix for error parsing
-        prefix = 'Getting' if get else 'Setting'
-        err_summary = '%s %r' % (prefix, ctrl_name)
+        if ctrl_value == None:
+            prefix = 'Getting'
+            ctrl_value_str = ''
+        else:
+            prefix = 'Setting'
+            ctrl_value_str = ' to %r' % ctrl_value
+        err_summary = '%s %r %s' % (prefix, ctrl_name, ctrl_value_str)
         err_msg = '%s :: %s' % (err_summary, err_str)
         unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
         if unknown_ctrl:
             unknown_ctrl_name = unknown_ctrl.group(1)
-            logging.error('%s %r :: No control named %r', prefix, ctrl_name,
+            logging.error('%s :: No control named %r', err_summary,
                           unknown_ctrl_name)
             raise ControlUnavailableError('No control named %r' %
                                           unknown_ctrl_name)
@@ -893,7 +926,7 @@ class Servo(object):
             e.filename = str(self)
             raise
         except xmlrpclib.Fault as e:
-            self._inspect_control_failure(e, ctrl_name, get=True)
+            self._inspect_control_failure(e, ctrl_name)
 
     def set(self, ctrl_name, ctrl_value, prefix=''):
         """Set and check the value of a gpio using Servod.
@@ -939,7 +972,7 @@ class Servo(object):
             e.filename = str(self)
             raise
         except xmlrpclib.Fault as e:
-            self._inspect_control_failure(e, ctrl_name, get=False)
+            self._inspect_control_failure(e, ctrl_name, ctrl_value=ctrl_value)
 
     def set_get_all(self, controls):
         """Set &| get one or more control values.
@@ -990,7 +1023,8 @@ class Servo(object):
 
 
     def image_to_servo_usb(self, image_path=None,
-                           make_image_noninteractive=False):
+                           make_image_noninteractive=False,
+                           power_off_dut=True):
         """Install an image to the USB key plugged into the servo.
 
         This method may copy any image to the servo USB key including a
@@ -998,17 +1032,19 @@ class Servo(object):
         for test purposes such as restoring a corrupted image or conducting
         an upgrade of ec/fw/kernel as part of a test of a specific image part.
 
-        @param image_path Path on the host to the recovery image.
-        @param make_image_noninteractive Make the recovery image
+        @param image_path: Path on the host to the recovery image.
+        @param make_image_noninteractive: Make the recovery image
                                    noninteractive, therefore the DUT
                                    will reboot automatically after
                                    installation.
+        @param power_off_dut: To put the DUT in power off mode.
         """
         # We're about to start plugging/unplugging the USB key.  We
         # don't know the state of the DUT, or what it might choose
         # to do to the device after hotplug.  To avoid surprises,
         # force the DUT to be off.
-        self._power_state.power_off()
+        if power_off_dut:
+            self._power_state.power_off()
 
         if image_path:
             logging.info('Searching for usb device and copying image to it. '
@@ -1082,17 +1118,25 @@ class Servo(object):
         servo is controlled by a remote host, in this case the image needs to
         be transferred to the remote host. This adds the servod port number, to
         make sure tests for different DUTs don't trample on each other's files.
+        Along with the firmware image, any subsidiary files in the same
+        directory shall be copied to the host as well.
 
         @param image_path: a string, name of the firmware image file to be
                transferred.
         @return: a string, full path name of the copied file on the remote.
         """
-        name = os.path.basename(image_path)
-        remote_name = 'dut_%s.%s' % (self._servo_host.servo_port, name)
-        dest_path = os.path.join('/tmp', remote_name)
-        logging.info('Copying %s to %s', name, dest_path)
-        self._servo_host.send_file(image_path, dest_path)
-        return dest_path
+        src_path = os.path.dirname(image_path)
+        dest_path = os.path.join('/tmp', 'dut_%d' % self._servo_host.servo_port)
+        logging.info('Copying %s to %s', src_path, dest_path)
+        # Copy a directory, src_path to dest_path. send_file() will create a
+        # directory named basename(src_path) under dest_path, and copy all files
+        # in src_path to the destination.
+        self._servo_host.send_file(src_path, dest_path, delete_dest=True)
+
+        # Make a image path of the destination.
+        # e.g. /tmp/dut_9999/EC/ec.bin
+        rv = os.path.join(dest_path, os.path.basename(src_path))
+        return os.path.join(rv, os.path.basename(image_path))
 
 
     def system(self, command, timeout=3600):
@@ -1481,6 +1525,26 @@ class Servo(object):
             return
         return self.get('servo_v4_dts_mode')
 
+    def ccd_watchdog_enable(self, enable):
+        """Control the ccd watchdog."""
+        if 'ccd' not in self._servo_type:
+            return
+        if self._ccd_watchdog_disabled and enable:
+            logging.info('CCD watchdog disabled for test')
+            return
+        control = 'watchdog_add' if enable else 'watchdog_remove'
+        self.set_nocheck(control, 'ccd')
+
+    def disable_ccd_watchdog_for_test(self):
+        """Prevent servo from enabling the watchdog."""
+        self._ccd_watchdog_disabled = True
+        self.ccd_watchdog_enable(False)
+
+    def allow_ccd_watchdog_for_test(self):
+        """Allow servo to enable the ccd watchdog."""
+        self._ccd_watchdog_disabled = False
+        self.ccd_watchdog_enable(True)
+
     def set_dts_mode(self, state):
         """Set servo dts mode to off or on.
 
@@ -1496,19 +1560,15 @@ class Servo(object):
                          state)
             return
 
-        # TODO(mruthven): remove watchdog check once the labstation has been
-        # updated to have support for modifying the watchdog.
-        set_watchdog = (self.has_control('watchdog') and
-                        'ccd' in self._servo_type)
         enable_watchdog = state == 'on'
 
-        if set_watchdog and not enable_watchdog:
-            self.set_nocheck('watchdog_remove', 'ccd')
+        if not enable_watchdog:
+            self.ccd_watchdog_enable(False)
 
         self.set_nocheck('servo_v4_dts_mode', state)
 
-        if set_watchdog and enable_watchdog:
-            self.set_nocheck('watchdog_add', 'ccd')
+        if enable_watchdog:
+            self.ccd_watchdog_enable(True)
 
 
     def _get_servo_type_fw_version(self, servo_type, prefix=''):

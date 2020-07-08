@@ -8,8 +8,9 @@ import logging
 from lxml import etree
 import os
 import StringIO
+import time
 
-from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib import error, utils
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 
 
@@ -38,8 +39,21 @@ class ChartFixture:
                         script=self.DISPLAY_SCRIPT,
                         scene=scene_path,
                         log=self.OUTPUT_LOG))
-        # TODO(inker): Suppose chart should be displayed very soon. Or require
-        # of waiting until chart actually displayed.
+
+        logging.info(
+                'Poll for "is ready" message for ensuring chart is ready.')
+        timeout = 30
+        poll_time_step = 0.1
+        while timeout > 0:
+            if self.host.run(
+                    'grep',
+                    args=('-q', 'Chart is ready.', self.OUTPUT_LOG),
+                    ignore_status=True).exit_status == 0:
+                break
+            time.sleep(poll_time_step)
+            timeout -= poll_time_step
+        else:
+            raise error.TestError('Timeout waiting for chart ready')
 
     def cleanup(self):
         """Cleanup display script."""
@@ -157,7 +171,7 @@ class DUTFixture:
                         'enable_external_camera': False
                 }),
                 owner='arc-camera')
-        self.host.run('restart cros-camera')
+        self.host.upstart_restart('cros-camera')
 
         logging.info('Replace camera profile in ARC++ container')
         profile = self._read_file(self.CAMERA_PROFILE_PATH)
@@ -167,9 +181,9 @@ class DUTFixture:
 
     @contextlib.contextmanager
     def _stop_camera_service(self):
-        self.host.run('stop cros-camera')
+        self.host.upstart_stop('cros-camera')
         yield
-        self.host.run('start cros-camera')
+        self.host.upstart_restart('cros-camera')
 
     def log_camera_scene(self):
         """Capture an image from camera as the log for debugging scene related
@@ -193,7 +207,7 @@ class DUTFixture:
         """Cleanup camera filter."""
         logging.info('Remove filter option and restore camera service')
         self.host.run('rm', args=('-f', self.TEST_CONFIG_PATH))
-        self.host.run('restart cros-camera')
+        self.host.upstart_restart('cros-camera')
 
         logging.info('Restore camera profile in ARC++ container')
         self.host.run('restart ui')

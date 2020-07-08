@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -33,26 +31,18 @@ class autoupdate_FromUI(update_engine_test.UpdateEngineTest):
         @param running_at_desk: True if the test is being run locally.
 
         """
-        self._job_repo_url = job_repo_url
-        payload = self._get_payload_url(full_payload=full_payload)
-        image_url, _ = self._stage_payload_by_uri(payload)
-
-        if running_at_desk:
-            image_url = self._copy_payload_to_public_bucket(payload)
-            logging.info('We are running from a workstation. Putting URL on a'
-                         ' public location: %s', image_url)
+        payload_url = self.get_payload_for_nebraska(
+            job_repo_url, full_payload=full_payload,
+            public_bucket=running_at_desk)
 
         active, inactive = kernel_utils.get_kernel_state(self._host)
         # Login and click 'Check for update' in the Settings app.
         self._run_client_test_and_check_result(self._UI_TEST,
-                                               image_url=image_url)
+                                               payload_url=payload_url)
 
         self._host.reboot()
 
         # Check that the update completed successfully
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
-        kernel_utils.verify_boot_expectations(
-            inactive,
-            'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)

@@ -6,8 +6,9 @@ import logging
 import os
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
-from autotest_lib.server.cros.update_engine import chromiumos_test_platform
+from autotest_lib.server import afe_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -73,72 +74,20 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         raise error.TestFail('Could not find %s' % filename)
 
 
-    def _verify_active_slot_changed(self, source_active_slot,
-                                    target_active_slot, source_release,
-                                    target_release):
-        """Make sure we're using a different slot after the update."""
-        if target_active_slot == source_active_slot:
-            err_msg = 'The active image slot did not change after the update.'
-            if source_release is None:
-                err_msg += (
-                    ' The DUT likely rebooted into the old image, which '
-                    'probably means that the payload we applied was '
-                    'corrupt.')
-            elif source_release == target_release:
-                err_msg += (' Given that the source and target versions are '
-                            'identical, we rebooted into the old image due to '
-                            'a bad payload.')
-            else:
-                err_msg += (' This is strange since the DUT reported the '
-                            'correct target version. This is probably a system '
-                            'bug; check the DUT system log.')
-            raise error.TestFail(err_msg)
-
-        logging.info('Target active slot changed as expected: %s',
-                     target_active_slot)
-
-
-    def update_device_without_cros_au_rpc(self, cros_device, payload_uri,
-                                          clobber_stateful=False, tag='source'):
-        """Updates the device.
-
-        @param cros_device: The device to be updated.
-        @param payload_uri: The payload with which the device should be updated.
-        @param clobber_stateful: Boolean that determines whether the stateful
-                                 of the device should be force updated. By
-                                 default, set to False
-        @param tag: An identifier string added to each log filename.
-
-        @raise error.TestFail if anything goes wrong with the update.
-
-        """
-        try:
-            cros_device.install_version_without_cros_au_rpc(
-                payload_uri, clobber_stateful=clobber_stateful)
-        except Exception as e:
-            logging.exception('ERROR: Failed to update device.')
-            raise error.TestFail(str(e))
-        finally:
-            self._copy_generated_nebraska_logs(
-                cros_device.cros_updater.request_logs_dir, tag)
-
-
-    def run_update_test(self, cros_device, test_conf):
+    def run_update_test(self, test_conf):
         """Runs the update test and checks it succeeded.
 
-        @param cros_device: The device under test.
         @param test_conf: A dictionary containing test configuration values.
 
         """
         # Record the active root partition.
-        source_active_slot = self._host.get_active_boot_slot()
-        logging.info('Source active slot: %s', source_active_slot)
+        active, inactive = kernel_utils.get_kernel_state(self._host)
+        logging.info('Source active slot: %s', active)
 
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
 
-        self.update_device_without_cros_au_rpc(
-            cros_device, test_conf['target_payload_uri'], tag='target')
+        self.update_device(test_conf['target_payload_uri'], tag='target')
 
         # Compare hostlog events from the update to the expected ones.
         rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
@@ -148,12 +97,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         self.verify_update_events(source_release, rootfs)
         self.verify_update_events(source_release, reboot, target_release)
-
-        target_active_slot = self._host.get_active_boot_slot()
-        self._verify_active_slot_changed(source_active_slot,
-                                         target_active_slot,
-                                         source_release, target_release)
-
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)
         logging.info('Update successful, test completed')
 
 
@@ -171,19 +115,27 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         self._stage_payloads(test_conf['target_payload_uri'],
                              test_conf['target_archive_uri'])
 
-        # Get an object representing the CrOS DUT.
-        cros_device = chromiumos_test_platform.ChromiumOSTestPlatform(
-            self._host, self._autotest_devserver, self.job.resultdir)
-
-        # Install source image
+        # Install source image with quick-provision.
         source_payload_uri = test_conf['source_payload_uri']
         if source_payload_uri is not None:
-            self.update_device_without_cros_au_rpc(
-                cros_device, source_payload_uri, clobber_stateful=True)
+            try:
+                build_name, _ = self._get_update_parameters_from_uri(
+                    source_payload_uri)
+                url = self._autotest_devserver.get_update_url(build_name)
+                logging.info('Installing source image with update url: %s', url)
+                afe_utils.machine_install_and_update_labels(
+                    self._host, url, use_quick_provision=True,
+                    is_release_bucket=True, au_fallback=False)
+            except Exception:
+                logging.warning('quick-provision failed, trying with AU.')
+                # TODO(crbug.com/991421): Remove this fallback once the quick
+                # provision use case is stabilized.
+                self.update_device(source_payload_uri, clobber_stateful=True)
+
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
         # Start the update to the target image.
-        self.run_update_test(cros_device, test_conf)
+        self.run_update_test(test_conf)
 
         # Check we can login after the update.
         self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

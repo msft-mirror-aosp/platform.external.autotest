@@ -108,7 +108,7 @@ class firmware_Cr50RddG3(Cr50Test):
         time.sleep(self.WAIT_FOR_STATE)
 
         self.check_rdd_status('on', 'Rdd disconnected after EC hibernate',
-                              ['ec_hibernate_breaks_rdd'])
+                              ['rdd_off_in_g3', 'ec_hibernate_breaks_rdd'])
 
         logging.info('Checking Rdd can be disconnected in G3.')
         self.servo.set_dts_mode('off')

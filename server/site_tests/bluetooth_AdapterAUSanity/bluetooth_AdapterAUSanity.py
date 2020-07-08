@@ -21,26 +21,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    def au_pairing(self, device, test_profile):
-        """audio pairing procedure.
-
-        @param device: the bt peer device
-        @param test_profile: which test profile is used,
-                             A2DP, HFP_WBS or HFP_NBS
-        """
-        self.test_reset_on_adapter()
-        self.test_bluetoothd_running()
-        self.initialize_bluetooth_audio(device, test_profile)
-        self.test_device_set_discoverable(device, True)
-        self.test_discover_device(device.address)
-        self.test_stop_discovery()
-        self.test_pairing(device.address, device.pin, trusted=True)
-        device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
-        self.test_connection_by_adapter(device.address)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, test_profile)
-
-
     def au_run_method(self, device, test_method, test_profile):
         """audio procedure of running a specified test method.
 
@@ -54,7 +34,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.initialize_bluetooth_audio(device, test_profile)
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.test_stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
         device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
         self.test_connection_by_adapter(device.address)
@@ -194,6 +173,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         """
         self.host = host
 
-        self.quick_test_init(host, use_chameleon=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.au_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

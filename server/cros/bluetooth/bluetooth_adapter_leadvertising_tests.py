@@ -108,16 +108,6 @@ class bluetooth_AdapterLEAdvertising(
                                                instance_id,
                                                advertising_disabled)
 
-    def get_kernel_version(self, host):
-        """Get the kernel version of the DUT.
-
-        @param host: DUT host
-
-        @returns: kernel version
-        """
-        kernel_command = "uname -r"
-        kernel_version = self.host.run(kernel_command).stdout.strip()
-        return kernel_version
 
     def check_kernel_version(self):
         """ Check if test can execute on this kernel version."""
@@ -335,6 +325,9 @@ class bluetooth_AdapterLEAdvertising(
 
         @param peer: handle to peer used in test
         """
+
+        self.kernel_version = self.host.get_kernel_version()
+        self.check_kernel_version()
 
         self.bluetooth_le_facade = self.bluetooth_facade
 
@@ -1248,7 +1241,7 @@ class bluetooth_AdapterLEAdvertising(
 
         """
         self.host = host
-        self.kernel_version = self.get_kernel_version(self.host)
+        self.kernel_version = self.host.get_kernel_version()
         self.check_kernel_version()
 
         self.advertisements = advertisements

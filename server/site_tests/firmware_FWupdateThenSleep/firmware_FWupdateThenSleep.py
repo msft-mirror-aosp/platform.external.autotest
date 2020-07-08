@@ -10,13 +10,14 @@ from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
 class firmware_FWupdateThenSleep(FirmwareTest):
-    """RO+RW firmware update using chromeos-firmwareupdate --mode=recovery, then
+    """Firmware update using chromeos-firmwareupdate --mode=recovery, then
     sleep and wake, then make sure the host responds and the flash contents
     don't change.
     """
     MODE = 'recovery'
+    MIN_BATTERY_LEVEL = 20
 
-    def initialize(self, host, cmdline_args):
+    def initialize(self, host, cmdline_args, battery_only=False):
 
         self.flashed = False
         self._want_restore = None
@@ -24,6 +25,28 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         self._original_hw_wp = None
 
         super(firmware_FWupdateThenSleep, self).initialize(host, cmdline_args)
+
+        ac_online = self._client.is_ac_connected()
+        battery_percentage = self._client.get_battery_display_percentage()
+        self.have_power_control = False
+        if battery_only:
+            if not self._client.has_battery():
+                raise error.TestNAError("DUT type does not have a battery.")
+
+            if self.servo.supports_built_in_pd_control():
+                self.have_power_control = True
+                self.setup_pdtester(False, True, False, min_batt_level=25)
+            elif ac_online:
+                raise error.TestNAError(
+                    "For this version of the test, the DUT power supply must"
+                    " be unplugged, or connected through Servo V4 Type-C.")
+            elif battery_percentage < self.MIN_BATTERY_LEVEL:
+                raise error.TestError(
+                    "Battery level is too low (%s%%).  Please charge the DUT "
+                    "to at least %s%%, then try again."
+                    % (battery_percentage, self.MIN_BATTERY_LEVEL))
+            else:
+                logging.info("On battery: %s%% charge", battery_percentage)
 
         self._original_sw_wp = self.faft_client.bios.get_write_protect_status()
         self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
@@ -36,8 +59,12 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         self.set_hardware_write_protect(False)
         self.faft_client.bios.set_write_protect_range(0, 0, False)
 
+        if battery_only and self.have_power_control:
+            self.set_servo_v4_role_to_snk()
+
     def cleanup(self):
         """Restore the original firmware and original write-protect."""
+        self._restore_servo_v4_role()
 
         self.set_hardware_write_protect(False)
         try:
@@ -141,7 +168,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
                     % (cmd_desc, written_desc, '\n'.join(errors))]
         return []
 
-    def run_once(self, wp=0):
+    def run_once(self, wp=0, battery_only=False):
         """Try a firmware update, then put the machine in sleep and wake it."""
 
         errors = []
@@ -153,6 +180,17 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         self.modify_shellball('mod', modify_ro=True, modify_ec=have_ec)
         modded_fwids = self.identify_shellball(include_ec=have_ec)
 
+        # Check power again, in case it got reconnected during setup.
+        if battery_only and self._client.is_ac_connected():
+            if self.have_power_control:
+                raise error.TestError(
+                    "DUT is on AC power, even though Servo role was set to"
+                    " sink.  Is a second power supply connected?")
+            else:
+                raise error.TestError(
+                    "DUT is back on AC power, when it should be on battery."
+                    "  Did it get plugged back in?")
+
         errors += self.apply_update('mod', before_fwids, modded_fwids, wp=wp)
         if errors:
             fail_msg = "Problem(s) occurred during flash, before sleep:"
@@ -163,10 +201,10 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         before_sleep_fwids = self.get_installed_versions()
         self.suspend()
         if self.faft_config.chrome_ec:
-            # TODO(b/154846910): use an enum instead of a string
-            if not self.wait_power_state('(S0ix|S3)', self.DEFAULT_PWR_RETRIES):
-                raise error.TestFail('Platform failed to reach S0ix or S3 after'
-                                     ' flashing firmware.')
+            if not self.wait_power_state(
+                    self.POWER_STATE_SUSPEND, self.DEFAULT_PWR_RETRIES):
+                raise error.TestFail('Platform failed to reach a suspend state'
+                                     ' after flashing firmware.')
         else:
             self.switcher.wait_for_client_offline(orig_boot_id=original_boot_id)
         logging.info("System should now be in sleep; trying to wake.")

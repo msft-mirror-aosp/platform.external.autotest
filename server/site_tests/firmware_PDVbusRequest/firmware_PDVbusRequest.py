@@ -8,7 +8,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.servo import pd_console
+from autotest_lib.server.cros.servo import pd_device
 
 
 class firmware_PDVbusRequest(FirmwareTest):
@@ -33,8 +33,7 @@ class firmware_PDVbusRequest(FirmwareTest):
 
     """
     version = 1
-
-    PD_SETTLE_DELAY = 4
+    PD_SETTLE_DELAY = 10
     USBC_SINK_VOLTAGE = 5
     VBUS_TOLERANCE = 0.12
 
@@ -88,21 +87,24 @@ class firmware_PDVbusRequest(FirmwareTest):
         """Exectue VBUS request test.
 
         """
-        # TODO(b/35573842): Refactor to use PDPortPartner to probe the port
-        self.pdtester_port = 1 if 'servo_v4' in self.pdtester.servo_type else 0
+        consoles = [self.usbpd, self.pdtester]
+        port_partner = pd_device.PDPortPartner(consoles)
 
-        # create objects for pd utilities
-        pd_dut_utils = pd_console.PDConsoleUtils(self.usbpd)
-        pd_pdtester_utils = pd_console.PDConsoleUtils(self.pdtester)
+        # Identify a valid test port pair
+        port_pair = port_partner.identify_pd_devices()
+        if not port_pair:
+            raise error.TestFail('No PD connection found!')
 
-        # Make sure PD support exists in the UART console
-        if pd_dut_utils.verify_pd_console() == False:
-            raise error.TestFail("pd command not present on console!")
+        for port in port_pair:
+            if port.is_pdtester:
+                self.pdtester_port = port
+            else:
+                self.dut_port = port
 
-        # Type C connection (PD contract) should exist at this point
-        dut_state = pd_dut_utils.query_pd_connection()
-        logging.info('DUT PD connection state: %r', dut_state)
-        if dut_state['connect'] == False:
+        dut_connect_state = self.dut_port.get_pd_state()
+        logging.info('Initial DUT connect state = %s', dut_connect_state)
+
+        if not self.dut_port.is_connected(dut_connect_state):
             raise error.TestFail("pd connection not found")
 
         dut_voltage_limit = self.faft_config.usbc_input_voltage_limit
@@ -127,12 +129,12 @@ class firmware_PDVbusRequest(FirmwareTest):
             # Wait for new PD contract to be established
             time.sleep(self.PD_SETTLE_DELAY)
             # Get current PDTester PD state
-            pdtester_state = pd_pdtester_utils.get_pd_state(self.pdtester_port)
+            pdtester_state = self.pdtester_port.get_pd_state()
             # If PDTester is in SNK mode and the DUT is in S0, the DUT should
             # source VBUS = USBC_SINK_VOLTAGE. If PDTester is in SNK mode, and
             # the DUT is not in S0, the DUT shouldn't source VBUS, which means
             # VBUS = 0.
-            if pdtester_state == pd_pdtester_utils.SNK_CONNECT:
+            if self.pdtester_port.is_snk(pdtester_state):
                 expected_vbus_voltage = (self.USBC_SINK_VOLTAGE
                         if self.get_power_state() == 'S0' else 0)
                 ok_to_fail = False
@@ -159,12 +161,11 @@ class firmware_PDVbusRequest(FirmwareTest):
 
         # The DUT must be in SNK mode for the pd <port> dev <voltage>
         # command to have an effect.
-        if dut_state['role'] != pd_dut_utils.SNK_CONNECT:
+        if not self.dut_port.is_snk():
             # DUT needs to be in SINK Mode, attempt to force change
-            pd_dut_utils.set_pd_dualrole(dut_state['port'], 'snk')
+            self.dut_port.drp_set('snk')
             time.sleep(self.PD_SETTLE_DELAY)
-            if (pd_dut_utils.get_pd_state(dut_state['port']) !=
-                pd_dut_utils.SNK_CONNECT):
+            if not self.dut_port.is_snk():
                 raise error.TestFail("DUT not able to connect in SINK mode")
 
         logging.info('Start of DUT initiated tests')
@@ -179,8 +180,8 @@ class firmware_PDVbusRequest(FirmwareTest):
                              'update hdctools and servo_v4 firmware', v)
                 continue
             # Build 'pd <port> dev <voltage> command
-            cmd = 'pd %d dev %d' % (dut_state['port'], v)
-            pd_dut_utils.send_pd_command(cmd)
+            cmd = 'pd %d dev %d' % (self.dut_port.port, v)
+            self.dut_port.utils.send_pd_command(cmd)
             time.sleep(self.PD_SETTLE_DELAY)
             result, result_str = self._compare_vbus(v, ok_to_fail=is_override)
             logging.info('%s, %s', result_str, result)
@@ -189,11 +190,11 @@ class firmware_PDVbusRequest(FirmwareTest):
 
         # Make sure DUT is set back to its max voltage so DUT will accept all
         # options
-        cmd = 'pd %d dev %d' % (dut_state['port'], dut_voltage_limit)
-        pd_dut_utils.send_pd_command(cmd)
+        cmd = 'pd %d dev %d' % (self.dut_port.port, dut_voltage_limit)
+        self.dut_port.utils.send_pd_command(cmd)
         time.sleep(self.PD_SETTLE_DELAY)
         # The next group of tests need DUT to connect in SNK and SRC modes
-        pd_dut_utils.set_pd_dualrole(dut_state['port'], 'on')
+        self.dut_port.drp_set('on')
 
         if dut_failures:
             logging.error('DUT voltage request failures')

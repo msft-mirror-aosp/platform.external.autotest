@@ -20,11 +20,11 @@ class firmware_ECPowerButton(FirmwareTest):
     LONG_WAKE_DELAY = 13
     SHORT_WAKE_DELAY = 7
 
+    # Delay between recovery screen and shutdown by power button
+    RECOVERY_SCREEN_SHUTDOWN_DELAY = 3
+
     # Duration of holding down power button to shut down with powerd
     POWER_BUTTON_POWERD_DURATION = 6
-
-    # Duration of holding down power button to shut down without powerd
-    POWER_BUTTON_NO_POWERD_DURATION = 11
 
     # Duration of holding down power button to test ignoring power button press
     POWER_BUTTON_IGNORE_PRESS_DURATION = 0.2
@@ -34,6 +34,10 @@ class firmware_ECPowerButton(FirmwareTest):
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECPowerButton, self).initialize(host, cmdline_args)
+
+        # Duration of holding down power button to shut down without powerd
+        self.POWER_BUTTON_NO_POWERD_DURATION = max(
+                self.faft_config.hold_pwr_button_nopowerd_shutdown, 11)
         # Short duration of holding down power button to power on
         self.POWER_BUTTON_SHORT_POWER_ON_DURATION = max(
                 self.faft_config.hold_pwr_button_poweron, 0.05)
@@ -82,6 +86,31 @@ class firmware_ECPowerButton(FirmwareTest):
         """Runs a single iteration of the test."""
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
+
+        logging.info("Boot to recovery screen.")
+        self.switcher.enable_rec_mode_and_reboot(usb_state='host')
+        time.sleep(self.faft_config.firmware_screen)
+        if self.get_power_state() != self.POWER_STATE_S0:
+            raise error.TestFail("DUT didn't boot to recovery screen")
+
+        logging.info("Shutdown by short power button press.")
+        self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
+        time.sleep(self.RECOVERY_SCREEN_SHUTDOWN_DELAY)
+        power_state = self.get_power_state()
+        if (power_state != self.POWER_STATE_S5 and
+            power_state != self.POWER_STATE_G3):
+            raise error.TestFail("DUT didn't shutdown by "
+                                 "short power button press")
+        if self.ec.check_feature('EC_FEATURE_EFS2'):
+            logging.info("Check if EC jumped to RW.")
+            if not self.ec.check_ro_rw('RW'):
+                raise error.TestFail("EC didn't jump to RW")
+
+        logging.info("Boot by short power button press.")
+        self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
+        self.switcher.wait_for_client()
+        if self.get_power_state() != self.POWER_STATE_S0:
+            raise error.TestFail("DUT didn't boot by short power button press")
 
         logging.info("Check system ignores short (200ms) power button press.")
         old_boot_id = self.get_bootid(retry=1)

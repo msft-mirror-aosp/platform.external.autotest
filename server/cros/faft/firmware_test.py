@@ -8,11 +8,13 @@ import logging
 import os
 import pprint
 import re
+import StringIO
 import time
 import uuid
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import vboot_constants as vboot
@@ -25,6 +27,7 @@ from autotest_lib.server.cros.servo import chrome_base_ec
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.server.cros.servo import servo
+from autotest_lib.server.cros.faft import telemetry
 
 ConnectionError = mode_switcher.ConnectionError
 
@@ -84,6 +87,9 @@ class FirmwareTest(FAFTBase):
     # Delay between closing and opening lid
     LID_DELAY = 1
 
+    # Delay for establishing state after changing PD settings
+    PD_RESYNC_DELAY = 2
+
     # The default number of power state check retries (each try takes 3 secs)
     DEFAULT_PWR_RETRIES = 5
 
@@ -111,6 +117,9 @@ class FirmwareTest(FAFTBase):
         'reimage': False,
         'usb_check': False,
     }
+
+    # CCD password used by tests.
+    CCD_PASSWORD = 'Password'
 
     @classmethod
     def check_setup_done(cls, label):
@@ -158,6 +167,11 @@ class FirmwareTest(FAFTBase):
             if 'true' in args['no_ec_sync'].lower():
                 self._no_ec_sync = True
 
+        self._use_sync_script = global_config.global_config.get_config_value(
+                'CROS', 'enable_fs_sync_script', type=bool, default=False)
+        self._use_fsfreeze = global_config.global_config.get_config_value(
+                'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
+
         self.faft_config = FAFTConfig(
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
@@ -187,6 +201,9 @@ class FirmwareTest(FAFTBase):
 
         if not self.faft_client.system.dev_tpm_present():
             raise error.TestError('/dev/tpm0 does not exist on the client')
+
+        # Initialize servo role to src
+        self.servo.set_servo_v4_role('src')
 
         # Create the BaseEC object. None if not available.
         self.base_ec = chrome_base_ec.create_base_ec(self.servo)
@@ -225,8 +242,36 @@ class FirmwareTest(FAFTBase):
         self._create_old_faft_lockfile()
         self._setup_ec_write_protect(ec_wp)
         # See chromium:239034 regarding needing this sync.
-        self.blocking_sync()
+        self.blocking_sync(False)
         logging.info('FirmwareTest initialize done (id=%s)', self.run_id)
+
+    def stage_build_to_usbkey(self):
+        """Downloads host's build to the USB key attached to servo.
+
+        @return: True if build is verified to be on USB key, False otherwise.
+        """
+        info = self._client.host_info_store.get()
+        if info.build:
+            current_build = self._client._servo_host.validate_image_usbkey()
+            if current_build != info.build:
+                logging.debug('Current build on USB: %s differs from test'
+                              ' build: %s, proceed with download.',
+                              current_build, info.build)
+                try:
+                    self._client.stage_build_to_usb(info.build)
+                    return True
+                except error.AutotestError as e:
+                    logging.warn('Stage build to USB failed, tests that require'
+                                 ' test image on Servo USB may fail: {}'.format(e))
+                    return False
+            else:
+                logging.debug('Current build on USB: %s is same as test'
+                              ' build, skip download.', current_build)
+                return True
+        else:
+            logging.warn('Failed to get build label from the DUT, will use'
+                         ' existing image in Servo USB.')
+            return False
 
     def run_once(self, *args, **dargs):
         """Delegates testing to a test method.
@@ -490,12 +535,19 @@ class FirmwareTest(FAFTBase):
             usb_dev = self.servo.probe_host_usb_dev()
             if not usb_dev:
                 raise error.TestError(
-                        'An USB disk should be plugged in the servo board.')
+                    'An USB disk should be plugged in the servo board. %s' %
+                    telemetry.collect_usb_state(self.servo))
 
         rootfs = '%s%s' % (usb_dev, self._ROOTFS_PARTITION_NUMBER)
         logging.info('usb dev is %s', usb_dev)
         tmpd = self.servo.system_output('mktemp -d -t usbcheck.XXXX')
-        self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
+        try:
+            self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
+        except error.AutoservRunError as e:
+            usb_info = telemetry.collect_usb_state(self.servo)
+            raise error.TestError(
+                ('Could not mount the partition on USB device. %s: %s\n'
+                 'More telemetry: %s') % (type(e).__name__, e, usb_info))
 
         try:
             usb_lsb = self.servo.system_output('cat %s' %
@@ -554,6 +606,8 @@ class FirmwareTest(FAFTBase):
         # Make it sourcing max voltage.
         self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
 
+        time.sleep(self.PD_RESYNC_DELAY)
+
         # Servo v4 requires an external charger to source power. Make sure
         # this setup is correct.
         if 'servo_v4' in self.pdtester.servo_type:
@@ -579,6 +633,7 @@ class FirmwareTest(FAFTBase):
                                   used for recovery boot, like Ctrl-U USB boot.
         """
         if usbkey:
+            self.stage_build_to_usbkey()
             self.assert_test_image_in_usb_disk()
         elif host is None:
             # USB disk is not required for the test. Better to mux it to host.
@@ -982,17 +1037,18 @@ class FirmwareTest(FAFTBase):
         self.servo_v4_uart_file = None
         self.usbpd_uart_file = None
 
-        try:
-            # Check that the console works before declaring the cr50 console
-            # connection exists and enabling uart capture.
-            self.servo.get('cr50_version')
-            self.servo.set('cr50_uart_capture', 'on')
-            self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
-            self.cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
-        except servo.ControlUnavailableError:
-            logging.warn('cr50 console not supported.')
-        except error.TestFail as e:
-            logging.warn('Unknown cr50 uart capture error: %s', str(e))
+        if self.servo.has_control('cr50_version'):
+            try:
+                # Check that the console works before declaring the cr50 console
+                # connection exists and enabling uart capture.
+                cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                self.servo.set('cr50_uart_capture', 'on')
+                self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
+                self.cr50 = cr50
+            except servo.ControlUnavailableError:
+                logging.warn('cr50 console not supported.')
+            except Exception as e:
+                logging.warn('Unknown cr50 uart capture error: %s', str(e))
         if (self.faft_config.chrome_ec and
             self.servo.has_control('ec_uart_capture')):
             self.servo.set('ec_uart_capture', 'on')
@@ -1337,8 +1393,31 @@ class FirmwareTest(FAFTBase):
             # a device is ready for transfer operation.
             self.faft_client.system.run_shell_command('hdparm -f %s' % device)
 
-    def blocking_sync(self):
-        """Sync root device and internal device."""
+    def blocking_sync(self, for_reset=False):
+        """Sync root device and internal device, via script if possible.
+
+        The actual calls end up logged by the run() call, since they're printed
+        to stdout/stderr in the script.
+
+        @param for_reset: if True, prepare for reset
+                          (currently, just quits the RPC server)
+        """
+
+        if self._use_sync_script:
+            logging.info(
+                    'Blocking sync%s', ' before reset' if for_reset else '')
+            try:
+                # client/bin is installed on the DUT as /usr/local/autotest/bin
+                sync_cmd = '/usr/local/autotest/bin/fs_sync.py'
+                if self._use_fsfreeze and for_reset:
+                    sync_cmd += ' --freeze'
+                self.faft_client.quit()
+                self._client.run(sync_cmd)
+                return
+            except (AttributeError, ImportError, error.AutoservRunError) as e:
+                logging.warn(
+                        'Falling back to old sync method due to error: %s', e)
+
         # The double calls to sync fakes a blocking call
         # since the first call returns before the flush
         # is complete, but the second will wait for the
@@ -1364,7 +1443,7 @@ class FirmwareTest(FAFTBase):
                           default: EC soft reboot;
                           'hard': EC cold/hard reboot.
         """
-        self.blocking_sync()
+        self.blocking_sync(True)
         self.ec.reboot(flags)
         time.sleep(self.faft_config.ec_boot_to_console)
         self.check_lid_and_power_on()
@@ -2069,3 +2148,239 @@ class FirmwareTest(FAFTBase):
             raise error.TestError('Unable to own tpm while clearing fwmp.')
         self.host.run('cryptohome '
                       '--action=remove_firmware_management_parameters')
+
+    def wait_for(self, cfg_field, action_msg=None, extra_time=0):
+        """Waits for time specified in a config.
+
+        @ivar cfg_field: The name of the config field that specifies the
+                            time to wait.
+        @ivar action_msg: Optional log message describing the action that
+                            will occur after the wait.
+        @ivar extra_time: Additional time to be added to time from config.
+        """
+        wait_time = self.faft_config.__getattr__(cfg_field) + extra_time
+        if extra_time:
+            wait_src = "%s + %s" % (cfg_field, extra_time)
+        else:
+            wait_src = cfg_field
+
+        units = 'second' if wait_time==1 else 'seconds'
+        start_msg = "Waiting %s(%s) %s" % (wait_time, wait_src, units)
+        if action_msg:
+            start_msg += ", before '%s'" % action_msg
+        start_msg += "."
+
+        logging.info(start_msg)
+        time.sleep(wait_time)
+        logging.info("Done waiting.")
+
+    def _try_to_bring_dut_up(self):
+        """Try to quickly get the dut in a pingable state"""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        logging.info('checking dut state')
+
+        self.servo.set_nocheck('cold_reset', 'off')
+        self.servo.set_nocheck('warm_reset', 'off')
+        time.sleep(self.cr50.SHORT_WAIT)
+        if not self.cr50.ap_is_on():
+            logging.info('Pressing power button to turn on AP')
+            self.servo.power_short_press()
+
+        end_time = time.time() + self.RESPONSE_TIMEOUT
+        while not self.host.ping_wait_up(
+                self.faft_config.delay_reboot_to_ping * 2):
+            if time.time() > end_time:
+                logging.warn('DUT is unresponsive after trying to bring it up')
+                return
+            self.servo.get_power_state_controller().reset()
+            logging.info('DUT did not respond. Resetting it.')
+
+    def _check_open_and_press_power_button(self):
+        """Check stdout and press the power button if prompted.
+
+        Returns:
+            True if the process is still running.
+        """
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        logging.info(self._get_ccd_open_output())
+        self.servo.power_short_press()
+        logging.info('long int power button press')
+        # power button press cr50 erases nvmem and resets the dut before setting
+        # the state to open. Wait a bit so we don't check the ccd state in the
+        # middle of this reset process. Power button requests happen once a
+        # minute, so waiting 10 seconds isn't a big deal.
+        time.sleep(10)
+        return ('Open' in self.cr50.get_ccd_info()['State'] or
+                self._ccd_open_job.sp.poll() is not None)
+
+    def _get_ccd_open_output(self):
+        """Read the new output."""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        self._ccd_open_job.process_output()
+        self._ccd_open_stdout.seek(self._ccd_open_last_len)
+        output = self._ccd_open_stdout.read()
+        self._ccd_open_last_len = self._ccd_open_stdout.len
+        return output
+
+    def _close_ccd_open_job(self):
+        """Terminate the process and check the results."""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        exit_status = utils.nuke_subprocess(self._ccd_open_job.sp)
+        stdout = self._ccd_open_stdout.getvalue().strip()
+        delattr(self, '_ccd_open_job')
+        if stdout:
+            logging.info('stdout of ccd open:\n%s', stdout)
+        if exit_status:
+            logging.info('exit status: %d', exit_status)
+        if 'Error' in stdout:
+            raise error.TestFail('ccd open Error %s' %
+                                 stdout.split('Error')[-1])
+        if self.cr50.OPEN != self.cr50.get_ccd_level():
+            raise error.TestFail('unable to open cr50: %s' % stdout)
+        else:
+            logging.info('Opened Cr50')
+
+    def ccd_open_from_ap(self):
+        """Start the open process and press the power button."""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        # Opening CCD requires power button presses. If those presses would
+        # power off the AP and prevent CCD open from completing, ignore them.
+        if self.faft_config.ec_forwards_short_pp_press:
+            self.stop_powerd()
+
+        self._ccd_open_last_len = 0
+
+        self._ccd_open_stdout = StringIO.StringIO()
+
+        ccd_open_cmd = utils.sh_escape('gsctool -a -o')
+        full_ssh_cmd = '%s "%s"' % (self.host.ssh_command(options='-tt'),
+                                    ccd_open_cmd)
+        # Start running the Cr50 Open process in the background.
+        self._ccd_open_job = utils.BgJob(full_ssh_cmd,
+                                         nickname='ccd_open',
+                                         stdout_tee=self._ccd_open_stdout,
+                                         stderr_tee=utils.TEE_TO_LOGS)
+        if self._ccd_open_job == None:
+            raise error.TestFail('could not start ccd open')
+
+        try:
+            # Wait for the first gsctool power button prompt before starting the
+            # open process.
+            logging.info(self._get_ccd_open_output())
+            # Cr50 starts out by requesting 5 quick presses then 4 longer
+            # power button presses. Run the quick presses without looking at the
+            # command output, because getting the output can take some time. For
+            # the presses that require a 1 minute wait check the output between
+            # presses, so we can catch errors
+            #
+            # run quick presses for 30 seconds. It may take a couple of seconds
+            # for open to start. 10 seconds should be enough. 30 is just used
+            # because it will definitely be enough, and this process takes 300
+            # seconds, so doing quick presses for 30 seconds won't matter.
+            end_time = time.time() + 30
+            while time.time() < end_time:
+                self.servo.power_short_press()
+                logging.info('short int power button press')
+                time.sleep(self.PP_SHORT_INTERVAL)
+            # Poll the output and press the power button for the longer presses.
+            utils.wait_for_value(self._check_open_and_press_power_button,
+                                 expected_value=True,
+                                 timeout_sec=self.cr50.PP_LONG)
+        except Exception, e:
+            logging.info(e)
+            raise
+        finally:
+            self._close_ccd_open_job()
+            self._try_to_bring_dut_up()
+        logging.info(self.cr50.get_ccd_info())
+
+    def enter_mode_after_checking_cr50_state(self, mode):
+        """Reboot to mode if cr50 doesn't already match the state"""
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        # If the device is already in the correct mode, don't do anything
+        if (mode == 'dev') == self.cr50.in_dev_mode():
+            logging.info('already in %r mode', mode)
+            return
+
+        self.switcher.reboot_to_mode(to_mode=mode)
+
+        if (mode == 'dev') != self.cr50.in_dev_mode():
+            raise error.TestError('Unable to enter %r mode' % mode)
+
+    def fast_ccd_open(self, enable_testlab=False, reset_ccd=True,
+                      dev_mode=False):
+        """Try to use ccd testlab open. If that fails, do regular ap open.
+
+        Args:
+            enable_testlab: If True, enable testlab mode after cr50 is open.
+            reset_ccd: If True, reset ccd after open.
+            dev_mode: True if the device should be in dev mode after ccd is
+                      is opened.
+        """
+        if not hasattr(self, 'cr50'):
+            raise error.TestNAError('Test can only be run on devices with '
+                                    'access to the Cr50 console')
+
+        if self.servo.main_device_is_ccd():
+            error_txt = 'because the main servo device is CCD.'
+            if enable_testlab:
+                raise error.TestNAError('Cannot enable testlab: %s' % error_txt)
+            elif reset_ccd:
+                raise error.TestNAError('CCD reset not allowed: %s' % error_txt)
+
+        if not self.faft_config.has_powerbutton:
+            logging.warning('No power button', exc_info=True)
+            enable_testlab = False
+
+        # Try to use testlab open first, so we don't have to wait for the
+        # physical presence check.
+        self.cr50.send_command('ccd testlab open')
+        if self.cr50.get_ccd_level() != 'open':
+            if self.servo.has_control('chassis_open'):
+                self.servo.set('chassis_open', 'yes')
+            pw = '' if self.cr50.password_is_reset() else self.CCD_PASSWORD
+            # Use the console to open cr50 without entering dev mode if
+            # possible. Ittakes longer and relies on more systems to enter dev
+            # mode and ssh into the AP. Skip the steps that aren't required.
+            if not (pw or self.cr50.get_cap(
+                            'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
+                self.enter_mode_after_checking_cr50_state('dev')
+
+            if pw or self.cr50.get_cap(
+                            'OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
+                self.cr50.set_ccd_level(self.cr50.OPEN, pw)
+            else:
+                self.ccd_open_from_ap()
+
+            if self.servo.has_control('chassis_open'):
+                self.servo.set('chassis_open', 'no')
+
+            if enable_testlab:
+                self.cr50.set_ccd_testlab('on')
+
+        if reset_ccd:
+            self.cr50.send_command('ccd reset')
+
+        # In default, the device should be in normal mode. After opening cr50,
+        # the TPM should be cleared and the device should automatically reset to
+        # normal mode. However, some tests might want the device in 'dev' mode.
+        self.enter_mode_after_checking_cr50_state('dev' if dev_mode else
+                                                 'normal')

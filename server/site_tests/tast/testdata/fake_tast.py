@@ -115,6 +115,7 @@ def parse_args():
     run_parser.add_argument('-var', action='append', default=[])
     run_parser.add_argument('-defaultvarsdir')
     run_parser.add_argument('-varsfile', action='append', default=[])
+    run_parser.add_argument('-buildartifactsurl')
 
     return parser.parse_args()
 

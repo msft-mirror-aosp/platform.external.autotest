@@ -39,7 +39,6 @@ class bluetooth_AdapterControllerRoleTests(
         """
 
         self.test_discover_device(device.address)
-        self.bluetooth_facade.stop_discovery()
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         self.test_disconnection_by_adapter(device.address)
@@ -53,7 +52,6 @@ class bluetooth_AdapterControllerRoleTests(
         """
         logging.info('Setting up slave device')
         self.test_discover_device(device.address)
-        self.bluetooth_facade.stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_connection_by_adapter(device.address)
@@ -104,6 +102,17 @@ class bluetooth_AdapterControllerRoleTests(
             device_use: 'pre' - device should be connected before test runs - or
                         'mid' - device should be connected during test
         """
+
+        #
+        # Due to crbug/946835, some messages does not reach btmon
+        # causing our tests to fails. This is seen on kernel 3.18 and lower.
+        # Remove this check when the issue is fixed
+        # TODO(crbug/946835)
+        #
+        self.is_supported_kernel_version(self.host.get_kernel_version(),
+                                         '3.19',
+                                         'Test cannnot proceed on this'
+                                         'kernel due to crbug/946835 ')
 
         self.bluetooth_le_facade = self.bluetooth_facade
 
@@ -172,6 +181,17 @@ class bluetooth_AdapterControllerRoleTests(
             device_use: 'pre' - device should be connected before test runs - or
                         'mid' - device should be connected during test
         """
+
+        #
+        # Due to crbug/946835, some messages does not reach btmon
+        # causing our tests to fails. This is seen on kernel 3.18 and lower.
+        # Remove this check when the issue is fixed
+        # TODO(crbug/946835)
+        #
+        self.is_supported_kernel_version(self.host.get_kernel_version(),
+                                         '3.19',
+                                         'Test cannnot proceed on this'
+                                         'kernel due to crbug/946835 ')
 
         self.bluetooth_le_facade = self.bluetooth_facade
 
@@ -258,6 +278,17 @@ class bluetooth_AdapterControllerRoleTests(
                         'end' - device should be connected at end of test, when
                                 already connected to Nearby device
         """
+
+        #
+        # Due to crbug/946835, some messages does not reach btmon
+        # causing our tests to fails. This is seen on kernel 3.18 and lower.
+        # Remove this check when the issue is fixed
+        # TODO(crbug/946835)
+        #
+        self.is_supported_kernel_version(self.host.get_kernel_version(),
+                                         '3.19',
+                                         'Test cannnot proceed on this'
+                                         'kernel due to crbug/946835 ')
 
         self.bluetooth_le_facade = self.bluetooth_facade
 

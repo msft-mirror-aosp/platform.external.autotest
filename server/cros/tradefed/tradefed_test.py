@@ -57,7 +57,7 @@ class TradefedTest(test.test):
     _BRANCH_MAX_RETRY = [(0, 5), (1, 30),      # dev=5, beta=30, stable=99
         (constants.APPROXIMATE_STABLE_BRANCH_NUMBER, 99)]
     # TODO(kinaba): betty-arcnext
-    _BOARD_MAX_RETRY = {'betty': 0, 'zork': 0}
+    _BOARD_MAX_RETRY = {'betty': 0}
 
     _SHARD_CMD = None
     _board_arch = None
@@ -913,6 +913,12 @@ class TradefedTest(test.test):
             logging.warning('Failed to restore powerd policy, overrided policy '
                             'will persist until device reboot.')
 
+    def _clean_crash_logs(self):
+        try:
+            self._run_commands(['rm -f /home/chronos/crash/*'])
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning('Failed to clean up crash logs.')
+
     def _run_and_parse_tradefed(self, command):
         """Kick off the tradefed command.
 
@@ -1149,6 +1155,7 @@ class TradefedTest(test.test):
         accurate = []
         board = self._get_board_name()
         session_id = None
+        toggle_ndk = board == 'rammus-arc-r' # Toggle to ndk translation for this board
 
         self._setup_result_directories()
         if media_asset:
@@ -1160,14 +1167,13 @@ class TradefedTest(test.test):
         while steps < self._max_retry:
             steps += 1
             keep_media = media_asset and media_asset.uri and steps >= 1
-            enable_arcvm = self._get_android_version() >= 29
             self._run_commands(login_precondition_commands, ignore_status=True)
             with login.login_chrome(
                     hosts=self._hosts,
                     board=board,
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps,
-                    enable_arcvm=enable_arcvm) as current_logins:
+                    toggle_ndk=toggle_ndk) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation
@@ -1202,9 +1208,13 @@ class TradefedTest(test.test):
                 #              not-excecuted, for instance, by collecting all
                 #              tests on startup (very expensive, may take 30
                 #              minutes).
-                # TODO(b/137917339): Only prevent screen from turning off for
-                # media tests. Remove this check once the GPU issue is fixed.
                 if media_asset and media_asset.uri:
+                    # Clean-up crash logs from previous sessions to ensure
+                    # enough disk space for 16GB storage devices: b/156075084.
+                    if not keep_media:
+                        self._clean_crash_logs()
+                    # TODO(b/137917339): Only prevent screen from turning off for
+                    # media tests. Remove this check once the GPU issue is fixed.
                     self._override_powerd_prefs()
                 try:
                     waived_tests, acc = self._run_and_parse_tradefed(command)

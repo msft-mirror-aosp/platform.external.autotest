@@ -14,16 +14,18 @@ from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros.update_engine import dlc_util
 from autotest_lib.client.cros.update_engine import update_engine_event as uee
 from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
+from chromite.lib import auto_updater
+from chromite.lib import auto_updater_transfer
+from chromite.lib import remote_access
 from chromite.lib import retry_util
-
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     """Base class for all autoupdate_ server tests.
@@ -73,6 +75,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Define functions used in update_engine_util.
         self._run = self._host.run if self._host else None
         self._get_file = self._host.get_file if self._host else None
+
+        # Utilities for DLC management
+        self._dlc_util = dlc_util.DLCUtil(self._run)
 
 
     def cleanup(self):
@@ -250,12 +255,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return autotest_devserver
 
 
-    def _get_payload_url(self, build=None, full_payload=True):
+    def _get_payload_url(self, build=None, full_payload=True, is_dlc=False):
         """
-        Gets the GStorage URL of the full or delta payload for this build.
+        Gets the GStorage URL of the full or delta payload for this build, for
+        either platform or DLC payloads.
 
-        @param build: build string e.g samus-release/R65-10225.0.0.
+        @param build: build string e.g eve-release/R85-13265.0.0.
         @param full_payload: True for full payload. False for delta.
+        @param is_dlc: True to get the payload URL for dummy-dlc.
 
         @returns the payload URL.
 
@@ -268,12 +275,21 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             self._autotest_devserver = dev_server.ImageServer(ds_url)
 
         gs = dev_server._get_image_storage_server()
-        if full_payload:
-            # Example: chromeos_R65-10225.0.0_samus_full_dev.bin
-            regex = 'chromeos_%s*_full_*' % build.rpartition('/')[2]
+
+        # Example payload names (AU):
+        # chromeos_R85-13265.0.0_eve_full_dev.bin
+        # chromeos_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
+        # Example payload names (DLC):
+        # dlc_dummy-dlc_package_R85-13265.0.0_eve_full_dev.bin
+        # dlc_dummy-dlc_package_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
+        if is_dlc:
+            payload_prefix = 'dlc_*%s*_%s_*' % (build.rpartition('/')[2], '%s')
         else:
-            # Example: chromeos_R65-10225.0.0_R65-10225.0.0_samus_delta_dev.bin
-            regex = 'chromeos_%s*_delta_*' % build.rpartition('/')[2]
+            payload_prefix = 'chromeos_%s*_%s_*' % (build.rpartition('/')[2],
+                                                    '%s')
+
+        regex = payload_prefix % ('full' if full_payload else 'delta')
+
         payload_url_regex = gs + build + '/' + regex
         logging.debug('Trying to find payloads at %s', payload_url_regex)
         payloads = utils.gs_ls(payload_url_regex)
@@ -289,8 +305,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return '/'.join([build_uri.rstrip('/'), 'stateful.tgz'])
 
 
-    def _get_job_repo_url(self):
+    def _get_job_repo_url(self, job_repo_url=None):
         """Gets the job_repo_url argument supplied to the test by the lab."""
+        if job_repo_url is not None:
+            return job_repo_url
         if self._hosts is not None:
             self._host = self._hosts[0]
         if self._host is None:
@@ -344,16 +362,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         payload_filename = payload_url.rpartition('/')[2]
-        utils.run('gsutil cp %s* %s' % (payload_url, self._CELLULAR_BUCKET))
+        utils.run(['gsutil', 'cp', '%s*' % payload_url, self._CELLULAR_BUCKET])
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
-        utils.run('gsutil acl ch -u AllUsers:R %s*' % new_gs_url)
+        utils.run(['gsutil', 'acl', 'ch', '-u', 'AllUsers:R',
+                   '%s*' % new_gs_url])
         return new_gs_url.replace('gs://', 'https://storage.googleapis.com/')
-
-
-    def _get_chromeos_version(self):
-        """Read the ChromeOS version from /etc/lsb-release."""
-        lsb = self._host.run('cat /etc/lsb-release').stdout
-        return lsbrelease_utils.get_chromeos_release_version(lsb)
 
 
     def _suspend_then_resume(self):
@@ -379,12 +392,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     # TODO(ahassani): Move this to chromite so it can be used by endtoend tests
     # too so we don't have to rely on request_log API on nebraska.
-    def _extract_request_logs(self, update_engine_log):
+    def _extract_request_logs(self, update_engine_log, is_dlc=False):
         """
         Extracts request logs from an update_engine log.
 
         @param update_engine_log: The update_engine log as a string.
-        @returns a list object representing the request logs.
+        @param is_dlc: True to return the request logs for the DLC updates
+                       instead of the platform update.
+        @returns a list object representing the platform (OS) request logs, or
+                 a dictionary of lists representing DLC request logs,
+                 keyed by DLC ID, if is_dlc is True.
 
         """
         # Looking for all request XML strings in the log.
@@ -412,28 +429,77 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                  'log file.')
 
         result = []
+        dlc_results = {}
         for timestamp, request in zip(timestamps, requests):
 
             root = ElementTree.fromstring(request)
-            app = root.find('app')
-            event = app.find('event')
 
-            result.append({
-                'version': app.attrib.get('version'),
-                'event_type': (int(event.attrib.get('eventtype'))
-                              if event is not None else None),
-                'event_result': (int(event.attrib.get('eventresult'))
-                                if event is not None else None),
-                'timestamp': timestamp.strftime(self._TIMESTAMP_FORMAT),
-            })
+            # There may be events for multiple apps if DLCs are installed.
+            # See below (trimmed) example request including DLC:
+            #
+            # <request requestid=...>
+            #   <os version="Indy" platform=...></os>
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}"
+            #       version="13265.0.0" track=...>
+            #     <event eventtype="13" eventresult="1"></event>
+            #   </app>
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_dummy-dlc"
+            #       version="0.0.0.0" track=...>
+            #     <event eventtype="13" eventresult="1"></event>
+            #   </app>
+            # </request>
+            #
+            # The first <app> section is for the platform update. The second
+            # is for the DLC update.
+            #
+            # Example without DLC:
+            # <request requestid=...>
+            #   <os version="Indy" platform=...></os>
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}"
+            #       version="13265.0.0" track=...>
+            #     <event eventtype="13" eventresult="1"></event>
+            #   </app>
+            # </request>
 
-            previous_version = (event.attrib.get('previousversion')
-                                if event is not None else None)
-            if previous_version:
-                result[-1]['previous_version'] = previous_version
+            apps = root.findall('app')
+            for app in apps:
+                event = app.find('event')
 
-        logging.info('Extracted Request log: %s', result)
-        return result
+                event_info = {
+                    'version': app.attrib.get('version'),
+                    'event_type': (int(event.attrib.get('eventtype'))
+                                  if event is not None else None),
+                    'event_result': (int(event.attrib.get('eventresult'))
+                                    if event is not None else None),
+                    'timestamp': timestamp.strftime(self._TIMESTAMP_FORMAT),
+                }
+
+                previous_version = (event.attrib.get('previousversion')
+                                    if event is not None else None)
+                if previous_version:
+                    event_info['previous_version'] = previous_version
+
+                # Check if the event is for the platform update or for a DLC
+                # by checking the appid. For platform, the appid looks like:
+                #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}
+                # For DLCs, it is the platform app ID + _ + the DLC ID:
+                #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_dummy-dlc
+                id_segments = app.attrib.get('appid').split('_')
+                if len(id_segments) > 1:
+                    dlc_id = id_segments[1]
+                    if dlc_id in dlc_results:
+                        dlc_results[dlc_id].append(event_info)
+                    else:
+                        dlc_results[dlc_id] = [event_info]
+                else:
+                    result.append(event_info)
+
+        if is_dlc:
+            logging.info('Extracted DLC request logs: %s', dlc_results)
+            return dlc_results
+        else:
+            logging.info('Extracted platform (OS) request log: %s', result)
+            return result
 
 
     def _create_hostlog_files(self):
@@ -462,6 +528,49 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return rootfs_hostlog, reboot_hostlog
 
 
+    def _create_dlc_hostlog_files(self):
+        """Create the rootfs and reboot hostlog files for DLC updates.
+
+        Each DLC has its own set of update requests in the logs together with
+        the platform update requests. To ensure the DLC update was successful
+        we will compare the update events against the expected events, which
+        are the same expected events as for the platform update. There is a
+        hostlog for the rootfs update and the post-reboot update check for
+        each DLC.
+
+        @returns two dictionaries, one for the rootfs DLC update and one for
+                 the post-reboot check. The keys are DLC IDs and the values
+                 are the hostlog filenames.
+
+        """
+        dlc_rootfs_hostlogs = {}
+        dlc_reboot_hostlogs = {}
+
+        dlc_rootfs_request_logs = self._extract_request_logs(
+            self._get_update_engine_log(1), is_dlc=True)
+
+        for dlc_id in dlc_rootfs_request_logs:
+            dlc_rootfs_hostlog = os.path.join(self.resultsdir,
+                                              'hostlog_' + dlc_id)
+            dlc_rootfs_hostlogs[dlc_id] = dlc_rootfs_hostlog
+            with open(dlc_rootfs_hostlog, 'w') as fp:
+                # Same number of events for DLC updates as for platform
+                json.dump(dlc_rootfs_request_logs[dlc_id][-4:], fp)
+
+        dlc_reboot_request_logs = self._extract_request_logs(
+            self._get_update_engine_log(0), is_dlc=True)
+
+        for dlc_id in dlc_reboot_request_logs:
+            dlc_reboot_hostlog = os.path.join(self.resultsdir,
+                                              'hostlog_' + dlc_id + '_reboot')
+            dlc_reboot_hostlogs[dlc_id] = dlc_reboot_hostlog
+            with open(dlc_reboot_hostlog, 'w') as fp:
+                # Same number of events for DLC updates as for platform
+                json.dump(dlc_reboot_request_logs[dlc_id][:1], fp)
+
+        return dlc_rootfs_hostlogs, dlc_reboot_hostlogs
+
+
     def _set_active_p2p_host(self, host):
         """
         Choose which p2p host device to run commands on.
@@ -472,11 +581,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param host: The host to run commands on.
 
         """
-        self._create_update_engine_variables(host.run, host.get_file)
+        self._set_util_functions(host.run, host.get_file)
 
 
-    def _change_cellular_setting_in_update_engine(self,
-                                                  update_over_cellular=True):
+    def _set_update_over_cellular_setting(self, update_over_cellular=True):
         """
         Toggles the update_over_cellular setting in update_engine.
 
@@ -484,7 +592,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         answer = 'yes' if update_over_cellular else 'no'
-        cmd = 'update_engine_client --update_over_cellular=%s' % answer
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD,
+               '--update_over_cellular=%s' % answer]
         retry_util.RetryException(error.AutoservRunError, 2, self._run, cmd)
 
 
@@ -521,6 +630,30 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             except Exception as e:
                 logging.error('Could not copy logs from %s into %s due to '
                               'exception: %s', source, dest, e)
+
+    @staticmethod
+    def _get_update_parameters_from_uri(payload_uri):
+        """Extract vars needed to update with a Google Storage payload URI.
+
+        The two values we need are:
+        (1) A build_name string e.g dev-channel/samus/9583.0.0
+        (2) A filename of the exact payload file to use for the update. This
+        payload needs to have already been staged on the devserver.
+
+        @param payload_uri: Google Storage URI to extract values from
+
+        """
+
+        # gs://chromeos-releases/dev-channel/samus/9334.0.0/payloads/blah.bin
+        # build_name = dev-channel/samus/9334.0.0
+        # payload_file = payloads/blah.bin
+        build_name = payload_uri[:payload_uri.index('payloads/')]
+        build_name = urlparse.urlsplit(build_name).path.strip('/')
+        payload_file = payload_uri[payload_uri.index('payloads/'):]
+
+        logging.debug('Extracted build_name: %s, payload_file: %s from %s.',
+                      build_name, payload_file, payload_uri)
+        return build_name, payload_file
 
 
     def verify_update_events(self, source_release, hostlog_filename,
@@ -559,31 +692,20 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                      err_msg))
 
 
-    def get_update_url_for_test(self, job_repo_url, full_payload=True,
-                                public=False, moblab=False):
+    def get_update_url_for_test(self, job_repo_url=None, full_payload=True):
         """
-        Get the correct update URL for autoupdate tests to use.
+        Returns a devserver update URL for tests that cannot use a Nebraska
+        instance on the DUT for updating.
 
-        There are bunch of different update configurations that are required
-        by AU tests. Some tests need a full payload, some need a delta payload.
-        Some require the omaha response to be critical or be able to handle
-        multiple DUTs etc. This function returns the correct update URL to the
-        test based on the inputs parameters.
-
-        This tests expects the test to set self._host or self._hosts.
+        This expects the test to set self._host or self._hosts.
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
-        @param public: url needs to be publicly accessible.
-        @param moblab: True if we are running on moblab.
 
-        @returns an update url string.
+        @returns a valid devserver update URL.
 
         """
-        if job_repo_url is None:
-            self._job_repo_url = self._get_job_repo_url()
-        else:
-            self._job_repo_url = job_repo_url
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
         if not self._job_repo_url:
             raise error.TestFail('There was no job_repo_url so we cannot get '
                                  'a payload to use.')
@@ -592,16 +714,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # The lab devserver assigned to this test.
         lab_devserver = dev_server.ImageServer(ds_url)
-
-        if public:
-            # Get the google storage url of the payload. We will be copying
-            # the payload to a public google storage bucket (similar location
-            # to updates via autest command).
-            payload_url = self._get_payload_url(build,
-                                                full_payload=full_payload)
-            url = self._copy_payload_to_public_bucket(payload_url)
-            logging.info('Public update URL: %s', url)
-            return url
 
         # Stage payloads on the lab devserver.
         self._autotest_devserver = lab_devserver
@@ -619,3 +731,91 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Update URL: %s', url)
         return url
 
+
+    def get_payload_url_on_public_bucket(self, job_repo_url=None,
+                                         full_payload=True, is_dlc=False):
+        """
+        Get the google storage url of the payload in a public bucket.
+
+        We will be copying the payload to a public google storage bucket
+        (similar location to updates via autest command).
+
+        @param job_repo_url: string url containing the current build.
+        @param full_payload: True for full, False for delta.
+        @param is_dlc: True to get the payload URL for dummy-dlc.
+
+        """
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
+        payload_url = self._get_payload_url(full_payload=full_payload,
+                                            is_dlc=is_dlc)
+        url = self._copy_payload_to_public_bucket(payload_url)
+        logging.info('Public update URL: %s', url)
+        return url
+
+
+    def get_payload_for_nebraska(self, job_repo_url=None, full_payload=True,
+                                 public_bucket=False, is_dlc=False):
+        """
+        Gets a platform or DLC payload URL to be used with a nebraska instance
+        on the DUT.
+
+        @param job_repo_url: string url containing the current build.
+        @param full_payload: bool whether we want a full payload.
+        @param public_bucket: True to return a payload on a public bucket.
+        @param is_dlc: True to get the payload URL for dummy-dlc.
+
+        @returns string URL of a payload staged on a lab devserver.
+
+        """
+        if public_bucket:
+            return self.get_payload_url_on_public_bucket(
+                job_repo_url, full_payload=full_payload, is_dlc=is_dlc)
+
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
+        payload = self._get_payload_url(full_payload=full_payload,
+                                        is_dlc=is_dlc)
+        payload_url, _ = self._stage_payload_by_uri(payload)
+        logging.info('Payload URL for Nebraska: %s', payload_url)
+        return payload_url
+
+
+    def update_device(self, payload_uri, clobber_stateful=False, tag='source'):
+        """
+        Updates the device.
+
+        Used by autoupdate_EndToEndTest and autoupdate_StatefulCompatibility,
+        which use auto_updater to perform updates.
+
+        @param payload_uri: The payload with which the device should be updated.
+        @param clobber_stateful: Boolean that determines whether the stateful
+                                 of the device should be force updated. By
+                                 default, set to False
+        @param tag: An identifier string added to each log filename.
+
+        @raise error.TestFail if anything goes wrong with the update.
+
+        """
+        cros_preserved_path = ('/mnt/stateful_partition/unencrypted/'
+                               'preserve/cros-update')
+        build_name, payload_filename = self._get_update_parameters_from_uri(
+            payload_uri)
+        logging.info('Installing %s on the DUT', payload_uri)
+        with remote_access.ChromiumOSDeviceHandler(
+            self._host.hostname, base_dir=cros_preserved_path) as device:
+            updater = auto_updater.ChromiumOSUpdater(
+                device, build_name, build_name,
+                yes=True,
+                payload_filename=payload_filename,
+                clobber_stateful=clobber_stateful,
+                do_stateful_update=False,
+                staging_server=self._autotest_devserver.url(),
+                transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
+
+            try:
+                updater.RunUpdate()
+            except Exception as e:
+                logging.exception('ERROR: Failed to update device.')
+                raise error.TestFail(str(e))
+            finally:
+                self._copy_generated_nebraska_logs(
+                    updater.request_logs_dir, identifier=tag)

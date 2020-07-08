@@ -28,7 +28,7 @@ class firmware_PDConnect(FirmwareTest):
         @param dts_mode: the test is under DTS mode?
         """
         # Delay in seconds between disconnect and connect commands
-        RECONNECT_DELAY = 2
+        RECONNECT_DELAY = 10
         for dev in port_pair:
             if dts_mode and not dev.is_pdtester:
                 logging.info('If DUT in DTS mode, it is always connected. '

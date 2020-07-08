@@ -6,6 +6,7 @@
 
 import base64
 import collections
+from datetime import datetime
 import dbus
 import dbus.mainloop.glib
 import dbus.service
@@ -22,12 +23,15 @@ import time
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import constants
+from autotest_lib.client.cros.udev_helpers import UdevadmInfo, UdevadmTrigger
 from autotest_lib.client.cros import xmlrpc_server
 from autotest_lib.client.cros.audio import check_quality
 from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import output_recorder
+from autotest_lib.client.cros.power import sys_power
 
 
 CheckQualityArgsClass = collections.namedtuple(
@@ -40,12 +44,12 @@ def _dbus_byte_array_to_b64_string(dbus_byte_array):
 
 
 def _b64_string_to_dbus_byte_array(b64_string):
-  """Base64 decodes a dbus byte array for use with the xml rpc proxy."""
-  dbus_array = dbus.Array([], signature=dbus.Signature('y'))
-  bytes = bytearray(base64.standard_b64decode(b64_string))
-  for byte in bytes:
-    dbus_array.append(dbus.Byte(byte))
-  return dbus_array
+    """Base64 decodes a dbus byte array for use with the xml rpc proxy."""
+    dbus_array = dbus.Array([], signature=dbus.Signature('y'))
+    bytes = bytearray(base64.standard_b64decode(b64_string))
+    for byte in bytes:
+        dbus_array.append(dbus.Byte(byte))
+    return dbus_array
 
 
 def dbus_print_error(default_return_value=False):
@@ -174,6 +178,10 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     # Timeout for how long we'll wait for BlueZ and the Adapter to show up
     # after reset.
     ADAPTER_TIMEOUT = 30
+
+    # How long to wait for uhid device
+    UHID_TIMEOUT = 15
+    UHID_CHECK_SECS = 2
 
     # How long we should wait for property update signal before we cancel it
     PROPERTY_UPDATE_TIMEOUT_MILLI_SECS = 5000
@@ -365,7 +373,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 return (False, None)
 
         def _get_ddc_write_cmd(ddc_read_result, ddc_write_cmd_prefix):
-           """ Create ddc_write_cmd from read command
+            """ Create ddc_write_cmd from read command
 
            This function performs the following
            1) Take the output of ddc_read_cmd which is in following form
@@ -380,49 +388,49 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
               'hcitool 01 8C FC 00 28 01 ===> 58 <===='
 
            """
-           last_line  = [i for i in ddc_read_result.split('\n') if i != ''][-1]
-           last_byte = [i for i in last_line.split(' ') if i != ''][-1]
-           processed_byte= hex(int(last_byte, 16) | 0x40).split('0x')[1]
-           cmd = ddc_write_cmd_prefix + ' ' + processed_byte
-           logging.debug('ddc_write_cmd is %s', cmd)
-           return cmd
+            last_line  = [i for i in ddc_read_result.split('\n') if i != ''][-1]
+            last_byte = [i for i in last_line.split(' ') if i != ''][-1]
+            processed_byte= hex(int(last_byte, 16) | 0x40).split('0x')[1]
+            cmd = ddc_write_cmd_prefix + ' ' + processed_byte
+            logging.debug('ddc_write_cmd is %s', cmd)
+            return cmd
 
         try:
-           logging.info('Enabling WRT logs')
-           status, _ = _execute_cmd(fw_trace_cmd, 'FW trace cmd')
-           if not status:
-               logging.info('FW trace command execution failed')
-               return False
+            logging.info('Enabling WRT logs')
+            status, _ = _execute_cmd(fw_trace_cmd, 'FW trace cmd')
+            if not status:
+                logging.info('FW trace command execution failed')
+                return False
 
-           status, ddc_read_result = _execute_cmd(ddc_read_cmd, 'DDC Read')
-           if not status:
-               logging.info('DDC Read command  execution failed')
-               return False
+            status, ddc_read_result = _execute_cmd(ddc_read_cmd, 'DDC Read')
+            if not status:
+                logging.info('DDC Read command  execution failed')
+                return False
 
-           ddc_write_cmd = _get_ddc_write_cmd(ddc_read_result,
-                                              ddc_write_cmd_prefix)
-           logging.debug('DDC Write command  is %s', ddc_write_cmd)
-           status, _ = _execute_cmd(ddc_write_cmd, 'DDC Write')
-           if not status:
-               logging.info('DDC Write commanad execution failed')
-               return False
+            ddc_write_cmd = _get_ddc_write_cmd(ddc_read_result,
+                                               ddc_write_cmd_prefix)
+            logging.debug('DDC Write command  is %s', ddc_write_cmd)
+            status, _ = _execute_cmd(ddc_write_cmd, 'DDC Write')
+            if not status:
+                logging.info('DDC Write commanad execution failed')
+                return False
 
-           status, hw_trace_result = _execute_cmd(hw_trace_cmd, 'HW trace')
-           if not status:
-               logging.info('HW Trace command  execution failed')
-               return False
+            status, hw_trace_result = _execute_cmd(hw_trace_cmd, 'HW trace')
+            if not status:
+                logging.info('HW Trace command  execution failed')
+                return False
 
-           logging.debug('Executing the multi_comm_trace cmd %s to file %s'
-                        ,multi_comm_trace_str, multi_comm_trace_file)
-           with open(multi_comm_trace_file, 'w') as f:
-               f.write(multi_comm_trace_str+'\n')
-               f.flush()
+            logging.debug('Executing the multi_comm_trace cmd %s to file %s'
+                         ,multi_comm_trace_str, multi_comm_trace_file)
+            with open(multi_comm_trace_file, 'w') as f:
+                f.write(multi_comm_trace_str+'\n')
+                f.flush()
 
-           logging.info('WRT Logs enabled')
-           return True
+            logging.info('WRT Logs enabled')
+            return True
         except Exception as e:
-           logging.error('Exception %s while enabling WRT logs', str(e))
-           return False
+            logging.error('Exception %s while enabling WRT logs', str(e))
+            return False
 
     def collect_wrt_logs(self):
         """Collect the WRT logs for Intel Bluetooth adapters
@@ -805,6 +813,40 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @return True if it wrote value to a power/wakeup, False otherwise
         """
         return self._set_wake_enabled(value)
+
+    def wait_for_uhid_device(self, device_address):
+        """Waits for uhid device with given device address.
+
+        Args:
+            device_address: Peripheral address
+        """
+        def match_uhid_to_device(uhidpath, device_address):
+            """Check if given uhid syspath is for the given device address """
+            # If the syspath has a uniq property that matches the peripheral
+            # device's address, then it has matched
+            props = UdevadmInfo.GetProperties(uhidpath)
+            if props.get('uniq', '').lower() == device_address.lower():
+                logging.info('Found uhid device for address {} at {}'.format(
+                        device_address, uhidpath))
+                return True
+
+            return False
+
+        start = datetime.now()
+
+        # Keep scanning udev for correct uhid device
+        while (datetime.now() - start).seconds <= self.UHID_TIMEOUT:
+            existing_inputs = UdevadmTrigger(
+                    subsystem_match=['input']).DryRun()
+            for entry in existing_inputs:
+                logging.info('udevadm trigger entry: {}'.format(entry))
+                if 'uhid' in entry and match_uhid_to_device(
+                        entry, device_address):
+                    return True
+
+            time.sleep(self.UHID_CHECK_SECS)
+
+        return False
 
 
     def _reset(self, set_power=False):
@@ -1738,8 +1780,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             logging.error('Device not found')
             return False
         if self._is_connected(device):
-          logging.info('Device is already connected')
-          return True
+            logging.info('Device is already connected')
+            return True
         device.Connect()
         return self._is_connected(device)
 
@@ -1776,8 +1818,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             logging.error('Device not found')
             return False
         if not self._is_connected(device):
-          logging.info('Device is not connected')
-          return True
+            logging.info('Device is not connected')
+            return True
         device.Disconnect()
         return not self._is_connected(device)
 
@@ -1815,8 +1857,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             return False
 
         if not self._is_connected(device):
-          logging.info('Device is not connected')
-          return False
+            logging.info('Device is not connected')
+            return False
 
         return self._device_services_resolved(device)
 
@@ -2456,14 +2498,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         char_map = {}
 
         if device_path:
-          objects = self._bluez.GetManagedObjects(
-              dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=False)
+            objects = self._bluez.GetManagedObjects(
+                dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=False)
 
-          for path, ifaces in objects.iteritems():
-              if (self.BLUEZ_GATT_CHAR_IFACE in ifaces and
-                  path.startswith(device_path)):
-                  uuid = ifaces[self.BLUEZ_GATT_CHAR_IFACE]['UUID'].lower()
-                  char_map[uuid] = path
+            for path, ifaces in objects.iteritems():
+                if (self.BLUEZ_GATT_CHAR_IFACE in ifaces and
+                    path.startswith(device_path)):
+                    uuid = ifaces[self.BLUEZ_GATT_CHAR_IFACE]['UUID'].lower()
+                    char_map[uuid] = path
         else:
             logging.warning('Device %s not in object tree.', address)
 
@@ -2767,6 +2809,88 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                     self.BLUEZ_SERVICE_NAME,
                     path),
                 self.BLUEZ_PLUGIN_DEVICE_IFACE)
+
+
+    def bt_caused_last_resume(self):
+        """Checks if last resume from suspend was caused by bluetooth
+
+        @return: True if BT wake path was cause of resume, False otherwise
+        """
+
+        # When the resume cause is printed to powerd log, it omits the
+        # /power/wakeup portion of wake path
+        bt_wake_path = self._get_wake_enabled_path()
+
+        # If bluetooth does not have a valid wake path, it could not have caused
+        # the resume
+        if not bt_wake_path:
+            return False
+
+        bt_wake_path = bt_wake_path.replace('/power/wakeup', '')
+
+        event_file = '/var/log/power_manager/powerd.LATEST'
+
+        # Each powerd_suspend wakeup has a log "powerd_suspend returned 0",
+        # with the return code of the suspend. We search for the last
+        # occurrence in the log, and then find the collocated event_count log,
+        # indicating the wakeup cause. -B option for grep will actually grab the
+        # *next* 5 logs in time, since we are piping the powerd file backwards
+        # with tac command
+        resume_indicator = 'powerd_suspend returned'
+        cmd = 'tac {} | grep -B 5 -m1 "{}"'.format(event_file, resume_indicator)
+
+        try:
+            last_resume_details = utils.run(cmd).stdout
+
+            # If BT caused wake, there will be a line describing the bt wake
+            # path's event_count before and after the resume
+            for line in last_resume_details.split('\n'):
+                if 'event_count' in line:
+                    logging.info('Checking wake event: {}'.format(line))
+                    if bt_wake_path in line:
+                        return True
+
+        except error.CmdError:
+            logging.error('Could not locate recent suspend')
+
+        return False
+
+
+    def do_suspend(self, seconds, expect_bt_wake):
+        """Suspend DUT using the power manager.
+
+        @param seconds: The number of seconds to suspend the device.
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+
+        @throws: SuspendFailure on resume with unexpected timing or wake source.
+            The raised exception will be handled as a non-zero retcode over the
+            RPC, signalling for the test to fail.
+        """
+        early_wake = False
+        try:
+            sys_power.do_suspend(seconds)
+
+        except sys_power.SpuriousWakeupError:
+            logging.info('Early resume detected...')
+            early_wake = True
+
+        # Handle error conditions based on test expectations, whether resume
+        # was early, and cause of the resume
+        bt_caused_wake = self.bt_caused_last_resume()
+        logging.info('Cause for resume: {}'.format(
+            'BT' if bt_caused_wake else 'Not BT'))
+
+        if not expect_bt_wake and bt_caused_wake:
+            raise sys_power.SuspendFailure('BT woke us unexpectedly')
+
+        if expect_bt_wake and not bt_caused_wake:
+            raise sys_power.SuspendFailure('BT should have woken us')
+
+        if bt_caused_wake and not early_wake:
+            raise sys_power.SuspendFailure('BT wake did not come early')
+
+        return True
 
 
 if __name__ == '__main__':

@@ -153,6 +153,9 @@ class firmware_ECUsbPorts(FirmwareTest):
 
         if self.servo.main_device_is_ccd():
             logging.info("Using CCD, ignore checking USB port connection.")
+        elif (self.servo.has_control('servo_v4_type') and
+              self.servo.get('servo_v4_type') == 'type-c'):
+            logging.info("Using type-c servo, ignore checking USB port connection.")
         else:
             logging.info("Turn off all USB ports and then turn them on again.")
             self.switcher.mode_aware_reboot(

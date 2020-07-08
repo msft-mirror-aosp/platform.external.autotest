@@ -179,16 +179,21 @@ class bluetooth_AdapterCLSanity(BluetoothAdapterQuickTests,
            @param test_name: specifc test to run otherwise None to run the
                              whole batch
         """
-        self.cl_adapter_pairing_test()
+        self.cl_HID_keyboard_reports_test()
+        self.cl_HID_reports_reboot_test()
+        self.cl_HID_reports_suspend_resume_test()
+        self.cl_HID_reports_test()
+        self.cl_adapter_discoverable_test()
+        self.cl_adapter_discovery_test()
         self.cl_adapter_keyboard_pairing_test()
         self.cl_adapter_pairing_suspend_resume_test()
+        self.cl_adapter_pairing_test()
         self.cl_adapter_pairing_twice_test()
-        self.cl_HID_reports_test()
-        self.cl_HID_keyboard_reports_test()
-        self.cl_HID_reports_suspend_resume_test()
-        #self.cl_HID_reports_reboot_test()
         self.cl_connect_disconnect_loop_test()
-        self.cl_adapter_discovery_test()
+        self.cl_sdp_service_attribute_request_test()
+        self.cl_sdp_service_browse_test()
+        self.cl_sdp_service_search_attribute_request_test()
+        self.cl_sdp_service_search_request_basic_test()
 
 
     def run_once(self, host, num_iterations=1, test_name=None,

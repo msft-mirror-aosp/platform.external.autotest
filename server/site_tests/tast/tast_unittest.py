@@ -370,10 +370,9 @@ class TastTest(unittest.TestCase):
                          {'tast_missing_test.0': 'pkg.Test3'})
 
     def testNoTestsMatched(self):
-        """Tests that an error is raised if no tests are matched."""
+        """Tests that no error is raised if no tests are matched."""
         self._init_tast_commands([])
-        with self.assertRaises(error.TestFail) as _:
-            self._run_test()
+        self._run_test()
 
     def testListCommandFails(self):
         """Tests that an error is raised if the list command fails."""

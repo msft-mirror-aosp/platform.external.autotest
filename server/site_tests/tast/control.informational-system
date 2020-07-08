@@ -35,8 +35,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['('
-                             '!disabled && '
-                             '("group:mainline" || !"group:*") && '
+                             '"group:mainline" && '
                              'informational && '
                              '!"dep:chrome" && '
                              '!"dep:android*"'

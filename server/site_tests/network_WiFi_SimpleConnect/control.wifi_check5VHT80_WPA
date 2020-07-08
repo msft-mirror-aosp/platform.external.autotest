@@ -6,7 +6,7 @@ AUTHOR = 'briannorris'
 NAME = 'network_WiFi_SimpleConnect.wifi_check5VHT80_WPA'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_matfunc, suite:wifi_release, subsystem:wifi')
+ATTRIBUTES = ('suite:wifi_matfunc, suite:wifi_release')
 DEPENDENCIES = 'wificell'
 
 DOC = """

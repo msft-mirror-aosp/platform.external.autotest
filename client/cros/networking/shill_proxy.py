@@ -669,7 +669,7 @@ class ShillProxy(object):
         return None
 
 
-    def find_matching_service(self, properties):
+    def find_matching_service(self, properties, only_visible=True):
         """Find a service object that matches the given properties.
 
         This re-implements the manager DBus method FindMatchingService.
@@ -678,9 +678,12 @@ class ShillProxy(object):
 
         @param properties dict of strings understood by shill to describe
             a service.
+        @param only_visible if set to True, restrict the search to services
+            that are currently visible.
 
         """
-        return self.find_object('Service', properties)
+        return self.find_object('Service' if only_visible else 'AnyService',
+                properties)
 
 
     def connect_service_synchronous(self, service, timeout_seconds):

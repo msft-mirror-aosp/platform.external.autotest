@@ -33,7 +33,7 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
 
     def cleanup(self):
         """Clean up the test state."""
-        self._change_cellular_setting_in_update_engine(False)
+        self._set_update_over_cellular_setting(False)
         super(autoupdate_Cellular, self).cleanup()
 
 
@@ -45,18 +45,15 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
         @param full_payload: Whether the payload should be full or delta.
 
         """
-        update_url = self.get_update_url_for_test(job_repo_url,
-                                                  full_payload=full_payload,
-                                                  public=True)
+        payload_url = self.get_payload_for_nebraska(
+            job_repo_url, full_payload=full_payload, public_bucket=True)
         active, inactive = kernel_utils.get_kernel_state(self._host)
-        self._change_cellular_setting_in_update_engine(True)
+        self._set_update_over_cellular_setting(True)
         self._run_client_test_and_check_result('autoupdate_CannedOmahaUpdate',
-                                               image_url=update_url,
+                                               payload_url=payload_url,
                                                use_cellular=True)
         self._check_for_cellular_entries_in_update_log()
         self._host.reboot()
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
-        kernel_utils.verify_boot_expectations(
-            inactive, 'The active image slot did not change after the update.',
-            self._host)
+        kernel_utils.verify_boot_expectations(inactive, host=self._host)

@@ -5,7 +5,7 @@
 
 paired and/or connected.
 
-Single chameleon tests:
+Single btpeer tests:
   - Reconnect on resume test
     - Classic HID
     - LE HID
@@ -17,7 +17,7 @@ Single chameleon tests:
   - Suspend while discovering (discovering should pause and unpause)
   - Suspend while advertising (advertising should pause and unpause)
 
-Multiple chameleon tests:
+Multiple btpeer tests:
   - Reconnect on resume test
     - One classic HID, One LE HID
     - Two classic HID
@@ -27,61 +27,28 @@ Multiple chameleon tests:
     - Two classic LE
 """
 
-import threading
-import time
-
-from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+     BluetoothAdapterTests, TABLET_MODELS
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
 
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
-test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
 
 SHORT_SUSPEND = 10
 MED_SUSPEND = 20
 LONG_SUSPEND = 30
 
 
-class bluetooth_AdapterSRSanity(
-        BluetoothAdapterQuickTests,
-        bluetooth_adapter_tests.BluetoothAdapterTests):
+class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
+                                BluetoothAdapterTests):
     """Server side bluetooth adapter suspend resume test with peer."""
-
-    def _device_connect_async(self, device_type, device, adapter_address):
-        """ Connects peer device asynchronously with DUT.
-
-        This function uses a thread instead of a subprocess so that the test
-        result is stored for the test. Otherwise, the test connection was
-        sometimes failing but the test itself was passing.
-
-        @param device_type: The device type (used to check if it's LE)
-        @param device: the meta device with the peer device
-        @param adapter_address: the address of the adapter
-
-        @returns threading.Thread object with device connect task
-        """
-
-        def _action_device_connect():
-            time.sleep(1)
-            if 'BLE' in device_type:
-                # LE reconnects by advertising (dut controller will create LE
-                # connection, not the peer device)
-                self.test_device_set_discoverable(device, True)
-            else:
-                # Classic requires peer to initiate a connection to wake up the
-                # dut
-                self.test_connection_by_device_only(device, adapter_address)
-
-        thread = threading.Thread(target=_action_device_connect)
-        return thread
 
 
     def test_discover_and_pair(self, device):
         """ Discovers and pairs given device. Automatically connects too."""
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.bluetooth_facade.stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
 
     def _test_keyboard_with_string(self, device):
@@ -127,6 +94,8 @@ class bluetooth_AdapterSRSanity(
                     # the dut
                     self.test_connection_by_device(device)
 
+                # Make sure hid device was created before using it
+                self.test_hid_device_created(device.address)
                 if device_test is not None:
                     device_test(device)
 
@@ -210,7 +179,7 @@ class bluetooth_AdapterSRSanity(
         """
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(
-            suspend_time=LONG_SUSPEND, allow_early_resume=True)
+            suspend_time=LONG_SUSPEND, expect_bt_wake=True)
 
         # Clear wake before testing
         self.test_adapter_set_wake_disabled()
@@ -229,16 +198,20 @@ class bluetooth_AdapterSRSanity(
 
             # Trigger suspend, asynchronously trigger wake and wait for resume
             self.test_suspend_and_wait_for_sleep(
-                suspend, sleep_timeout=SHORT_SUSPEND)
+                suspend, sleep_timeout=5)
 
             # Trigger peer wakeup
-            peer_wake = self._device_connect_async(device_type, device,
-                                                   adapter_address)
+            peer_wake = self.device_connect_async(device_type,
+                                                  device,
+                                                  adapter_address,
+                                                  delay_wake=5)
             peer_wake.start()
 
-            # Expect a quick resume. If a timeout occurs, test fails.
+            # Expect a quick resume. If a timeout occurs, test fails. Since we
+            # delay sending the wake signal, we should accomodate that in our
+            # expected timeout.
             self.test_wait_for_resume(
-                boot_id, suspend, resume_timeout=SHORT_SUSPEND,
+                boot_id, suspend, resume_timeout=SHORT_SUSPEND + 5,
                 fail_on_timeout=True)
 
             # Finish peer wake process
@@ -246,6 +219,7 @@ class bluetooth_AdapterSRSanity(
 
             # Make sure we're actually connected
             self.test_device_is_connected(device.address)
+            self.test_hid_device_created(device.address)
 
             if device_test is not None:
                 device_test(device)
@@ -257,7 +231,9 @@ class bluetooth_AdapterSRSanity(
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID', devices={'MOUSE': 1},
-                  model_testNA=['bob', 'dru'])
+                  model_testNA=['bob', 'dru'],
+                  skip_models=TABLET_MODELS,
+                  )
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
@@ -267,7 +243,9 @@ class bluetooth_AdapterSRSanity(
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID', devices={'BLE_MOUSE': 1},
-                  model_testNA=['bob', 'dru'])
+                  model_testNA=['bob', 'dru'],
+                  skip_models=TABLET_MODELS,
+                  )
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]
@@ -290,8 +268,7 @@ class bluetooth_AdapterSRSanity(
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND, allow_early_resume=False)
+        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
 
         # We don't pair to the peer device because we don't want it in the
         # whitelist. However, we want an advertising peer in this test
@@ -319,8 +296,7 @@ class bluetooth_AdapterSRSanity(
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=MED_SUSPEND, allow_early_resume=False)
+        suspend = self.suspend_async(suspend_time=MED_SUSPEND)
 
         self.test_discoverable()
         self.test_suspend_and_wait_for_sleep(
@@ -346,8 +322,7 @@ class bluetooth_AdapterSRSanity(
         """ Suspend while adapter is powered off. """
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND, allow_early_resume=False)
+        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
 
         # Pair device so we have something to do in suspend
         self.test_discover_and_pair(device)
@@ -394,6 +369,6 @@ class bluetooth_AdapterSRSanity(
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_chameleon=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.sr_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

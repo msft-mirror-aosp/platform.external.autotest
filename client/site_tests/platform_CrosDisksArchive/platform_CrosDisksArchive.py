@@ -7,9 +7,8 @@ import logging
 import shutil
 
 from autotest_lib.client.bin import test
-from autotest_lib.client.common_lib import autotemp, error
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cros_disks import CrosDisksTester
-from autotest_lib.client.cros.cros_disks import DefaultFilesystemTestContent
 from autotest_lib.client.cros.cros_disks import FilesystemTestDirectory
 from autotest_lib.client.cros.cros_disks import FilesystemTestFile
 from autotest_lib.client.cros.cros_disks import VirtualFilesystemImage
@@ -17,6 +16,8 @@ from collections import deque
 
 
 def utf8(s):
+    """Converts a Unicode string to a UTF-8 bytestring.
+    """
     return s.encode('utf8')
 
 
@@ -24,10 +25,9 @@ class CrosDisksArchiveTester(CrosDisksTester):
     """A tester to verify archive support in CrosDisks.
     """
 
-    def __init__(self, test, archive_types):
+    def __init__(self, test):
         super(CrosDisksArchiveTester, self).__init__(test)
         self._data_dir = os.path.join(test.bindir, 'data')
-        self._archive_types = archive_types
 
     def _find_all_files(self, root_dir):
         """Returns all files under a directory and its sub-directories.
@@ -56,10 +56,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
         archive_name = os.path.basename(archive_path)
 
         # Mount archive file via CrosDisks.
-        #
-        # TODO(crbug.com/996549) Remove '.rar2fs' once old avfsd-based system
-        # is removed.
-        self.cros_disks.mount(archive_path, '.rar2fs')
+        self.cros_disks.mount(archive_path, os.path.splitext(archive_path)[1])
         mount_result = self.cros_disks.expect_mount_completion({
                 'status':
                 0,
@@ -100,25 +97,25 @@ class CrosDisksArchiveTester(CrosDisksTester):
                 ]),
         ]
 
-        self._test_archive(
-                os.path.join(mount_path, 'Format V4.rar'),
-                FilesystemTestDirectory('', want))
+        self._test_archive(os.path.join(mount_path, 'Format V4.rar'),
+                           FilesystemTestDirectory('', want))
 
         # Test RAR V5 with Unicode BMP and non-BMP characters in file
         # and directory names.
         want += [
-                FilesystemTestDirectory(
-                        utf8(u'Dir 1F601 \U0001F601'), [
-                                FilesystemTestFile(
-                                        utf8(u'File 1F602 \U0001F602.txt'),
-                                        utf8(u'Char U+1F602 is \U0001F602 ' +
-                                             u'FACE WITH TEARS OF JOY\n')),
-                        ]),
+                FilesystemTestDirectory(utf8(u'Dir 1F601 \U0001F601'), [
+                        FilesystemTestFile(
+                                utf8(u'File 1F602 \U0001F602.txt'),
+                                utf8(u'Char U+1F602 is \U0001F602 ' +
+                                     u'FACE WITH TEARS OF JOY\n')),
+                ]),
         ]
 
-        self._test_archive(
-                os.path.join(mount_path, 'Format V5.rar'),
-                FilesystemTestDirectory('', want))
+        self._test_archive(os.path.join(mount_path, 'Format V5.rar'),
+                           FilesystemTestDirectory('', want))
+
+        self._test_archive(os.path.join(mount_path, 'Unicode.zip'),
+                           FilesystemTestDirectory('', want))
 
     def _test_multipart(self, mount_path):
         # Test multipart RARs.
@@ -141,15 +138,14 @@ class CrosDisksArchiveTester(CrosDisksTester):
                 'Invalid.rar',
                 'Encrypted.rar',
                 'Not There.rar',
+                'Invalid.zip',
         ]:
             archive_path = os.path.join(mount_path, archive_name)
             logging.info('Mounting archive %r', archive_path)
 
             # Mount archive file via CrosDisks.
-            #
-            # TODO(crbug.com/996549) Remove '.rar2fs' once old avfsd-based
-            # system is removed.
-            self.cros_disks.mount(archive_path, '.rar2fs')
+            self.cros_disks.mount(archive_path,
+                                  os.path.splitext(archive_path)[1])
             mount_result = self.cros_disks.expect_mount_completion({
                     'status':
                     12,
@@ -159,51 +155,49 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     '',
             })
 
-    def _test_nested(self, mount_path):
-        archive_name = 'Nested.rar'
-        archive_path = os.path.join(mount_path, archive_name)
-        logging.info('Mounting archive %r', archive_path)
+    def _test_nested(self, incoming_mount_path):
+        for archive_name in ['Nested.rar', 'Nested.zip']:
+            archive_path = os.path.join(incoming_mount_path, archive_name)
+            logging.info('Mounting archive %r', archive_path)
 
-        # Mount archive file via CrosDisks.
-        #
-        # TODO(crbug.com/996549) Remove '.rar2fs' once old avfsd-based system
-        # is removed.
-        self.cros_disks.mount(archive_path, '.rar2fs')
-        mount_result = self.cros_disks.expect_mount_completion({
-                'status':
-                0,
-                'source_path':
-                archive_path,
-                'mount_path':
-                os.path.join('/media/archive', archive_name),
-        })
+            # Mount archive file via CrosDisks.
+            self.cros_disks.mount(archive_path,
+                                  os.path.splitext(archive_path)[1])
+            mount_result = self.cros_disks.expect_mount_completion({
+                    'status':
+                    0,
+                    'source_path':
+                    archive_path,
+                    'mount_path':
+                    os.path.join('/media/archive', archive_name),
+            })
 
-        mount_path = utf8(mount_result['mount_path'])
-        logging.info('Archive mounted at %r', mount_path)
+            mount_path = utf8(mount_result['mount_path'])
+            logging.info('Archive mounted at %r', mount_path)
 
-        self._test_unicode(mount_path)
-        self._test_multipart(mount_path)
-        self._test_invalid(mount_path)
+            self._test_unicode(mount_path)
+            self._test_multipart(mount_path)
+            self._test_invalid(mount_path)
 
-        logging.info('Unmounting archive')
-        self.cros_disks.unmount(mount_path, [])
+            logging.info('Unmounting archive')
+            self.cros_disks.unmount(mount_path, [])
 
     def test_archives(self):
         # Create a FAT filesystem containing all our test archive files.
         logging.info('Creating FAT filesystem holding test archive files')
-        with VirtualFilesystemImage(
-                block_size=1024,
-                block_count=65536,
-                filesystem_type='vfat',
-                mkfs_options=['-F', '32', '-n', 'ARCHIVE']) as image:
+        with VirtualFilesystemImage(block_size=1024,
+                                    block_count=65536,
+                                    filesystem_type='vfat',
+                                    mkfs_options=['-F', '32', '-n',
+                                                  'ARCHIVE']) as image:
             image.format()
             image.mount(options=['sync'])
 
             logging.debug('Copying archive files to %r', image.mount_dir)
             for archive_name in [
-                    'test.rar',
                     'Encrypted.rar',
                     'Invalid.rar',
+                    'Invalid.zip',
                     'Format V4.rar',
                     'Format V5.rar',
                     'Multipart Old Style.rar',
@@ -212,11 +206,12 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'Multipart New Style.part02.rar',
                     'Multipart New Style.part03.rar',
                     'Nested.rar',
+                    'Nested.zip',
+                    'Unicode.zip',
             ]:
                 logging.debug('Copying %r', archive_name)
-                shutil.copy(
-                        os.path.join(self._data_dir, archive_name),
-                        image.mount_dir)
+                shutil.copy(os.path.join(self._data_dir, archive_name),
+                            image.mount_dir)
 
             image.unmount()
 
@@ -239,9 +234,6 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.info('FAT filesystem mounted at %r', mount_path)
 
             # Perform tests with the archive files in the mounted FAT filesystem.
-            self._test_archive(
-                    os.path.join(mount_path, 'test.rar'),
-                    DefaultFilesystemTestContent())
             self._test_unicode(mount_path)
             self._test_multipart(mount_path)
             self._test_invalid(mount_path)
@@ -258,5 +250,5 @@ class platform_CrosDisksArchive(test.test):
     version = 1
 
     def run_once(self, *args, **kwargs):
-        tester = CrosDisksArchiveTester(self, kwargs['archive_types'])
+        tester = CrosDisksArchiveTester(self)
         tester.run(*args, **kwargs)

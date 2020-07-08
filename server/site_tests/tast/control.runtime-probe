@@ -32,7 +32,7 @@ def run(machine):
                   stream=temp_file)
         job.run_test('tast',
                      host=host,
-                     test_exprs=['(!disabled && "group:runtime_probe")'],
+                     test_exprs=['("group:runtime_probe")'],
                      command_args=args,
                      varsfiles=[temp_file.name])
 

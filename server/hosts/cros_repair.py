@@ -40,21 +40,21 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
             type=bool,
             default=False)
 
-# Triggers for the 'au', 'powerwash', and 'usb' repair actions.
+# Triggers for the 'provision', 'powerwash', and 'usb' repair actions.
 # These are also used as dependencies in the `CrosHost` repair
 # sequence, as follows:
 #
-# au:
-#   - triggers: _CROS_AU_TRIGGERS
+# provision:
+#   - triggers: _CROS_PROVISION_TRIGGERS
 #   - depends on: _CROS_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS
 #
 # powerwash:
-#   - triggers: _CROS_POWERWASH_TRIGGERS + _CROS_AU_TRIGGERS
+#   - triggers: _CROS_POWERWASH_TRIGGERS + _CROS_PROVISION_TRIGGERS
 #   - depends on: _CROS_USB_TRIGGERS
 #
 # usb:
 #   - triggers: _CROS_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS +
-#               _CROS_AU_TRIGGERS
+#               _CROS_PROVISION_TRIGGERS
 #   - no dependencies
 #
 # N.B. AC power detection depends on software on the DUT, and there
@@ -62,12 +62,13 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
 # did have power.  So, we make the 'power' verifier a trigger for
 # reinstall repair actions, too.
 #
-# TODO(jrbarnette):  AU repair can't fix all problems reported by
-# the 'cros' verifier; it's listed as an AU trigger as a
+# TODO(jrbarnette):  provision repair can't fix all problems reported by
+# the 'cros' verifier; it's listed as an provision trigger as a
 # simplification.  The ultimate fix is to split the 'cros' verifier
 # into smaller individual verifiers.
-_CROS_AU_TRIGGERS = ('power', 'rwfw', 'python', 'cros',)
-_CROS_POWERWASH_TRIGGERS = ('tpm', 'good_au', 'ext4',)
+_CROS_PROVISION_TRIGGERS = ('power', 'rwfw', 'python', 'cros',
+                            'dev_default_boot',)
+_CROS_POWERWASH_TRIGGERS = ('tpm', 'good_provision', 'ext4',)
 _CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
 _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
 
@@ -197,12 +198,12 @@ class UpdateSuccessVerifier(hosts.Verifier):
                           ignore_status=True)
         if result.exit_status == 0:
             raise hosts.AutoservVerifyError(
-                    'Last AU on this DUT failed')
+                    'Last provision on this DUT failed')
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'The most recent AU attempt on this DUT succeeded'
+        return 'The most recent provision attempt on this DUT succeeded'
 
 
 class TPMStatusVerifier(hosts.Verifier):
@@ -369,7 +370,9 @@ class EnrollmentStateVerifier(hosts.Verifier):
     def verify(self, host):
         # pylint: disable=missing-docstring
         if self._get_enrollment_state(host):
-            raise hosts.AutoservVerifyError('The device is enrolled.')
+            raise hosts.AutoservNonCriticalVerifyError('The device is enrolled,'
+                                                       ' it may interfere with'
+                                                       ' some tests.')
 
     def _get_enrollment_state(self, host):
         logging.debug('checking enrollment state from VPD cache...')
@@ -657,36 +660,37 @@ class EnrollmentCleanupRepair(hosts.RepairAction):
         return 'Cleanup enrollment state and reboot the host'
 
 
-class AutoUpdateRepair(hosts.RepairAction):
+class ProvisionRepair(hosts.RepairAction):
     """
-    Repair by re-installing a test image using autoupdate.
+    Repair by re-installing a test image using quick provision.
 
     Try to install the DUT's designated "stable test image" using the
-    standard procedure for installing a new test image via autoupdate.
+    standard procedure for installing a new test image via quick provision.
     """
 
     def repair(self, host):
         # pylint: disable=missing-docstring
         image_name = host.get_cros_repair_image_name()
-        logging.info('Staging build for AU: %s', image_name)
+        logging.info('Staging build for provision: %s', image_name)
         devserver = dev_server.ImageServer.resolve(image_name, host.hostname)
         devserver.trigger_download(image_name, synchronous=False)
         update_url = tools.image_url_pattern() % (
                 devserver.url(), image_name)
-        afe_utils.machine_install_and_update_labels(host, update_url)
+        afe_utils.machine_install_and_update_labels(host, update_url,
+                                                    use_quick_provision=True)
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'Re-install the stable build via AU'
+        return 'Re-install the stable build on the host'
 
 
-class PowerWashRepair(AutoUpdateRepair):
+class PowerWashRepair(ProvisionRepair):
     """
-    Powerwash the DUT, then re-install using autoupdate.
+    Powerwash the DUT, then re-install using quick provision.
 
     Powerwash the DUT, then attempt to re-install a stable test image as
-    for `AutoUpdateRepair`.
+    for `ProvisionRepair`.
     """
 
     def repair(self, host):
@@ -699,7 +703,7 @@ class PowerWashRepair(AutoUpdateRepair):
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'Powerwash and then re-install the stable build via AU'
+        return 'Powerwash and then re-install the stable build on the host'
 
 
 class ServoInstallRepair(hosts.RepairAction):
@@ -781,7 +785,7 @@ def _cros_verify_base_dag():
         (EXT4fsErrorVerifier,             'ext4',     ('ssh',)),
         (WritableVerifier,                'writable', ('ssh',)),
         (TPMStatusVerifier,               'tpm',      ('ssh',)),
-        (UpdateSuccessVerifier,           'good_au',  ('ssh',)),
+        (UpdateSuccessVerifier,           'good_provision',  ('ssh',)),
         (FirmwareStatusVerifier,          'fwstatus', ('ssh',)),
         (FirmwareVersionVerifier,         'rwfw',     ('ssh',)),
         (PythonVerifier,                  'python',   ('ssh',)),
@@ -807,14 +811,14 @@ def _cros_basic_repair_actions():
         (ServoResetRepair, 'servoreset', (), ('ssh',)),
         (ServoCr50RebootRepair, 'cr50_reset', (), ('ssh',)),
 
-        # N.B. FirmwareRepair can't fix a 'good_au' failure directly,
+        # N.B. FirmwareRepair can't fix a 'good_provision' failure directly,
         # because it doesn't remove the flag file that triggers the
         # failure.  We include it as a repair trigger because it's
         # possible the the last update failed because of the firmware,
         # and we want the repair steps below to be able to trust the
         # firmware.
         (cros_firmware.FaftFirmwareRepair,
-         'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_au',)),
+         'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_provision',)),
 
         (DevDefaultBootRepair,
          'set_default_boot', ('ssh',), ('dev_default_boot',)),
@@ -826,23 +830,23 @@ def _cros_basic_repair_actions():
     return repair_actions
 
 
-def _cros_extended_repair_actions(au_triggers=_CROS_AU_TRIGGERS,
+def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
                                   powerwash_triggers=_CROS_POWERWASH_TRIGGERS,
                                   usb_triggers=_CROS_USB_TRIGGERS):
     """Return the extended repair actions for a `CrosHost`"""
 
-    # The dependencies and triggers for the 'au', 'powerwash', and 'usb'
+    # The dependencies and triggers for the 'provision', 'powerwash', and 'usb'
     # repair actions stack up:  Each one is able to repair progressively
     # more verifiers than the one before.  The 'triggers' lists specify
     # the progression.
 
     repair_actions = (
-        (AutoUpdateRepair, 'au',
-                usb_triggers + powerwash_triggers, au_triggers),
+        (ProvisionRepair, 'provision',
+                usb_triggers + powerwash_triggers, provision_triggers),
         (PowerWashRepair, 'powerwash',
-                usb_triggers, powerwash_triggers + au_triggers),
+                usb_triggers, powerwash_triggers + provision_triggers),
         (ServoInstallRepair, 'usb',
-                (), usb_triggers + powerwash_triggers + au_triggers),
+                (), usb_triggers + powerwash_triggers + provision_triggers),
     )
     return repair_actions
 
@@ -876,7 +880,7 @@ def _moblab_repair_actions():
     """Return the repair actions for a `MoblabHost`."""
     repair_actions = (
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
-        (AutoUpdateRepair, 'au', ('ssh',), ('power', 'python', 'cros')),
+        (ProvisionRepair, 'provision', ('ssh',), ('power', 'python', 'cros')),
     )
     return repair_actions
 
@@ -892,7 +896,7 @@ def create_moblab_repair_strategy():
     'tpm':  Moblab DUTs don't run the tests that matter to this
         verifier.  TODO(jrbarnette)  This assertion is unproven.
 
-    'good_au':  This verifier can't pass, because the Moblab AU
+    'good_provision':  This verifier can't pass, because the Moblab provision
         procedure doesn't properly delete the PROVISION_FAILED file.
         TODO(jrbarnette) We should refactor ChromiumOSUpdater so
         that it can be different for Moblab.
@@ -910,7 +914,7 @@ def create_moblab_repair_strategy():
 
 def _jetstream_repair_actions():
     """Return the repair actions for a `JetstreamHost`."""
-    au_triggers = _CROS_AU_TRIGGERS
+    provision_triggers = _CROS_PROVISION_TRIGGERS
     jetstream_tpm_triggers = ('jetstream_tpm', 'jetstream_attestation')
     jetstream_service_triggers = (jetstream_tpm_triggers +
                                   ('jetstream_services',))
@@ -919,15 +923,15 @@ def _jetstream_repair_actions():
         (
             (JetstreamTpmRepair, 'jetstream_tpm_repair',
              _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS,
-             au_triggers + jetstream_tpm_triggers),
+             provision_triggers + jetstream_tpm_triggers),
 
             (JetstreamServiceRepair, 'jetstream_service_repair',
              _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS + (
                  'jetstream_tpm', 'jetstream_attestation'),
-             au_triggers + jetstream_service_triggers),
+             provision_triggers + jetstream_service_triggers),
         ) +
         _cros_extended_repair_actions(
-            au_triggers=au_triggers + jetstream_service_triggers,
+            provision_triggers=provision_triggers + jetstream_service_triggers,
             usb_triggers=_JETSTREAM_USB_TRIGGERS))
     return repair_actions
 

@@ -29,6 +29,7 @@ RETURN_CODES = enum.Enum(
         'STAGE_USB_FAILURE',
         'INSTALL_FIRMWARE_FAILURE',
         'INSTALL_TEST_IMAGE_FAILURE',
+        'PRE_DEPLOY_VERIFICATION_FAILURE',
         'BOOT_FROM_RECOVERY_MODE_FAILURE',
         'SETUP_LABSTATION_FAILURE',
         'UPDATE_LABEL_FAILURE',
@@ -79,6 +80,13 @@ def main():
         logging.error("fail to install firmware: %s", err)
         return RETURN_CODES.INSTALL_FIRMWARE_FAILURE
 
+    if 'run-pre-deploy-verification' in opts.actions:
+      try:
+        preparedut.verify_ccd_testlab_enable(host)
+      except Exception as err:
+        logging.error("fail on pre-deploy verification: %s", err)
+        return RETURN_CODES.PRE_DEPLOY_VERIFICATION_FAILURE
+
     if 'verify-recovery-mode' in opts.actions:
       try:
         preparedut.verify_boot_into_rec_mode(host)
@@ -115,7 +123,8 @@ def _parse_args():
       'actions',
       nargs='+',
       choices=['stage-usb', 'install-test-image', 'install-firmware',
-               'verify-recovery-mode', 'update-label', 'setup-labstation'],
+               'verify-recovery-mode', 'run-pre-deploy-verification',
+               'update-label', 'setup-labstation'],
       help='DUT preparation actions to execute.',
   )
   parser.add_argument(

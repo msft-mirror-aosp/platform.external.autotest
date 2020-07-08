@@ -2,6 +2,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import ui_utils
 from autotest_lib.client.cros.input_playback import keyboard
 import logging
+import time
 
 
 class UIPrinterHelper(object):
@@ -25,10 +26,27 @@ class UIPrinterHelper(object):
         self.open_printer_menu()
         self.open_see_more_print_sub_menu()
         self.select_printer_from_see_more_menu(printer_name)
-        self.wait_for_print_ready()
+        if not self.check_print_window_open():
+            raise error.TestError("Print not open after setting printer.")
         self.click_print(isPDF)
         if self._keyboard:
             self._keyboard.close()
+
+    def check_print_window_open(self):
+        """Check if the print window is still open."""
+        start_time = time.time()
+
+        # Giving up to 5 seconds for the window to load.
+        while time.time() - start_time < 5:
+            if (self.ui.item_present('Destination', role='inlineTextBox') and
+                    self.ui.item_present('Cancel', role='button')) and not (
+                    self.ui.item_present('Loading preview')):
+                return True
+
+        logging.info("Print Window was not open {}"
+                     .format(self.ui.get_name_role_list()))
+        self.ui.screenshoter.take_ss()
+        return False
 
     def open_printer_menu(self, retry=0):
         """Open the printer menu via the Chrome Dropdown."""

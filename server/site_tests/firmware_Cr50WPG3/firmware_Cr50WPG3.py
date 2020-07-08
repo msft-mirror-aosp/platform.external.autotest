@@ -60,7 +60,7 @@ class firmware_Cr50WPG3(Cr50Test):
             raise error.TestNAError('CCD required to check wp.')
         self.generate_flashrom_wp_cmd()
 
-        self.fast_open(True)
+        self.fast_ccd_open(True)
         # faft-cr50 runs with servo micro and type c servo v4. Use ccdblock to
         # get cr50 to ignore the fact servo is connected and allow the test to
         # use ccd to check wp status.

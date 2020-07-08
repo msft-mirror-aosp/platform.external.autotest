@@ -366,6 +366,10 @@ class ChameleonBoard(object):
         """ Read the current version of chameleond."""
         return self._chameleond_proxy.get_bt_pkg_version()
 
+    def get_bt_commit_hash(self):
+        """ Read the current git commit hash of chameleond."""
+        return self._chameleond_proxy.get_bt_commit_hash()
+
 
     def _get_log(self):
         """Get log from chameleon. It will be registered by atexit.

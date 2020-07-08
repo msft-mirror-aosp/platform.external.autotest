@@ -54,6 +54,19 @@ class _BaseVerifier(object):
                             prefix, state, old_state)
             self._dut_host.host_info_store.commit(host_info)
 
+    def host_is_up(self):
+        """Check if the host is up and available by ssh"""
+        return self._dut_host.is_up(timeout=20)
+
+    def servo_is_up(self):
+        """Check if servo host is up and servod is initialized"""
+        return self.servo_host_is_up() and bool(self._dut_host.servo)
+
+    def servo_host_is_up(self):
+        """Check if servo host is up and available by ssh"""
+        return (self._dut_host._servo_host
+            and self._dut_host._servo_host.is_up(timeout=20))
+
 
 class _BaseDUTVerifier(_BaseVerifier):
     """Base verify check availability of DUT before run actual verifier.
@@ -65,15 +78,11 @@ class _BaseDUTVerifier(_BaseVerifier):
         """Return CrosHost"""
         return self._dut_host
 
-    def verify(self):
+    def verify(self, **args):
         """Vallidate the host reachable by SSH and run verifier"""
         if not self._dut_host:
             raise AuditError('host is not present')
-        if not self._dut_host.is_up(timeout=20):
-            # for failed DUTs will add logic to try to load them from USB
-            # need more analysis to confirm it
-            raise AuditError('host is not ssh-able')
-        self._verify()
+        self._verify(**args)
 
 
 class _BaseServoVerifier(_BaseVerifier):
@@ -81,15 +90,12 @@ class _BaseServoVerifier(_BaseVerifier):
 
     Verifier run audit actions against ServoHost.
     """
-
     def get_host(self):
         """Return ServoHost"""
         return self._dut_host._servo_host
 
     def verify(self):
         """Vallidate the host and servo initialized and run verifier"""
-        if not self._dut_host or not self._dut_host._servo_host:
+        if not self._dut_host:
             raise AuditError('host is not present')
-        if not self._dut_host.servo:
-            raise AuditError('servo is not initialized')
         self._verify()

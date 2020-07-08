@@ -170,8 +170,9 @@ class FirmwareRepair(hosts.RepairAction):
         build = self._get_stable_build(host)
         if not build:
             raise hosts.AutoservRepairError(
-                  'Failed to find stable firmware build for %s.',
-                   host.hostname, 'cannot find firmware stable_version')
+                  'Failed to find stable firmware build for %s, if the DUT is'
+                  ' in faft-*pool, faft stable_version needs to be set.'
+                   % host.hostname, 'cannot find firmware stable_version')
         host.firmware_install(build)
 
 

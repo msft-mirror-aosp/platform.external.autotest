@@ -37,7 +37,7 @@ class firmware_SoftwareSync(FirmwareTest):
             self.original_ccd_level = self.cr50.get_ccd_level()
 
             # CCD needs to be open for 'ec_comm corrupt' run.
-            self.fast_ccd_open()
+            self.fast_ccd_open(reset_ccd=False, dev_mode=dev_mode)
             logging.info("CCD opened.")
         else:
             self.original_ccd_level = None
@@ -106,26 +106,6 @@ class firmware_SoftwareSync(FirmwareTest):
 
         logging.info("Expect EC in RW and RW is restored.")
         self.check_state(self.software_sync_checker)
-
-    def fast_ccd_open(self):
-        """Open CCD fast.
-
-        TODO(b/155249964): This method of opening ccd wont work on mp images
-        unless TestLab is enabled. Ideally, opening CCD needs to be done in
-        AP, like what Cr50Test.ccd_open_from_ap() does.
-        Revise this and move to servo or chrome_cr50 class.
-        """
-        if self.cr50.get_ccd_level() == self.cr50.OPEN:
-            return
-
-        self.cr50.send_command('ccd testlab open')
-        # set_ccd_level() will compare the current ccd level and the requested
-        # level, and will return if they are same.
-
-        try:
-            self.cr50.set_ccd_level(self.cr50.OPEN)
-        except:
-            raise error.TestNAError('could not open ccd')
 
     def run_test_corrupt_hash_in_cr50(self):
         """Run the test corrupting ECRW hash in CR50."""

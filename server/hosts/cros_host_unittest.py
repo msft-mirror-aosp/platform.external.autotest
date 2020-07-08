@@ -6,6 +6,7 @@ import unittest
 
 import common
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_constants
@@ -226,6 +227,22 @@ class CrosHostTestCase(unittest.TestCase):
 
         image_server.stage_artifacts.assert_called_with('board/version', ['test_image'])
         host.servo.image_to_servo_usb.assert_called_with('image_url')
+
+        host.servo.get_power_state_controller.return_value.power_on.assert_called()
+
+    @mock.patch('autotest_lib.server.hosts.cros_host.dev_server')
+    def test_stage_build_to_usb_failure(self, devserver_mock):
+        host = self.TestCrosHost()
+        image_server = mock.MagicMock()
+        devserver_mock.ImageServer.resolve.return_value = image_server
+        image_server.get_test_image_url.return_value = 'image_url'
+        host.servo.image_to_servo_usb.side_effect = error.AutotestError('download')
+
+        with self.assertRaises(error.AutotestError):
+            host.stage_build_to_usb('board/version')
+
+        host.servo.get_power_state_controller.return_value.power_on.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

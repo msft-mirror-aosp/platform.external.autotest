@@ -191,7 +191,10 @@ class tast(test.test):
 
         self._log_version()
         self._find_devservers()
-        self._get_tests_to_run()
+
+        # Shortcut if no test belongs to the specified test_exprs.
+        if not self._get_tests_to_run():
+          return
 
         run_failed = False
         try:
@@ -266,6 +269,22 @@ class tast(test.test):
                 args += ['-var=' + var_arg % args_dict[key]]
         logging.info('Autotest wificell-related args: %s', args)
         return args
+
+    def _get_cloud_storage_info(self):
+        """Gets the cloud storage bucket URL to pass to tast.
+
+        @returns Cloud storage bucket URL that should be inserted in
+            the command line after "tast run".
+        """
+        gs_bucket = dev_server._get_image_storage_server()
+        args_dict = utils.args_to_dict(self._command_args)
+        if not gs_bucket or 'build' not in args_dict.keys():
+            return []
+        gs_path = gs_bucket + args_dict['build']
+        if not gs_path.endswith('/'):
+            gs_path += '/'
+        logging.info('Cloud storage bucket: %s', gs_path)
+        return ['-buildartifactsurl=%s' % gs_path]
 
     def _find_devservers(self):
         """Finds available devservers.
@@ -373,6 +392,8 @@ class tast(test.test):
     def _get_tests_to_run(self):
         """Runs the tast command to update the list of tests that will be run.
 
+        @returns False if no tests matched by test_exprs; True otherwise
+
         @raises error.TestFail if the tast command fails or times out.
         """
         logging.info('Getting list of tests that will be run')
@@ -385,9 +406,11 @@ class tast(test.test):
             raise error.TestFail('Failed to parse tests: %s' % str(e))
         if len(self._tests_to_run) == 0:
             expr = ' '.join([utils.sh_quote_word(a) for a in self._test_exprs])
-            raise error.TestFail('No tests matched by %s' % expr)
+            logging.warning('No tests matched by %s', expr)
+            return False
 
         logging.info('Expect to run %d test(s)', len(self._tests_to_run))
+        return True
 
     def _run_tests(self):
         """Runs the tast command to perform testing.
@@ -400,7 +423,7 @@ class tast(test.test):
             '-waituntilready=true',
             '-timeout=' + str(self._max_run_sec),
             '-continueafterfailure=true',
-        ] + self._get_servo_args() + self._get_wificell_args()
+        ] + self._get_servo_args() + self._get_wificell_args() + self._get_cloud_storage_info()
 
         if self._varsfiles:
             for varsfile in self._varsfiles:

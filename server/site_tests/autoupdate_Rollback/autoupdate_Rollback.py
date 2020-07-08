@@ -20,11 +20,11 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
     def _powerwash(self):
         """Powerwashes DUT."""
         logging.info('Powerwashing device before rollback.')
-        self._host.run('echo car > %s' % STATEFUL_MARKER_FILE)
-        self._host.run("echo '%s' > %s" % (POWERWASH_COMMAND,
-                                           POWERWASH_MARKER_FILE))
+        self._host.run(['echo', 'car', '>', STATEFUL_MARKER_FILE])
+        self._host.run(['echo', "'%s'" % POWERWASH_COMMAND, '>',
+                        POWERWASH_MARKER_FILE])
         self._host.reboot()
-        marker = self._host.run('[ -e %s ]' % STATEFUL_MARKER_FILE,
+        marker = self._host.run(['test', '-e', STATEFUL_MARKER_FILE],
                                 ignore_status=True, ignore_timeout=True)
         if marker is None or marker.exit_status == 0:
             raise error.TestFail("Powerwash cycle didn't remove the marker "
@@ -44,12 +44,12 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         # Rollback operation.
         preserved_prefs_path = ('/mnt/stateful_partition/unencrypted/preserve'
                                 '/update_engine/prefs/')
-        self._host.run('rm %s %s' %
-                      (os.path.join(preserved_prefs_path, 'rollback-version'),
-                       os.path.join(preserved_prefs_path, 'rollback-happened')),
-                      ignore_status=True)
+        self._host.run(
+            ['rm', os.path.join(preserved_prefs_path, 'rollback-version'),
+             os.path.join(preserved_prefs_path, 'rollback-happened')],
+            ignore_status=True)
         # Restart update-engine to pick up new prefs.
-        self._host.run('restart update-engine', ignore_status=True)
+        self._restart_update_engine(ignore_status=True)
 
 
     def run_once(self, job_repo_url=None, powerwash_before_rollback=False):

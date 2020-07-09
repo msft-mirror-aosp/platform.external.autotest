@@ -8,7 +8,6 @@ import os
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
-from autotest_lib.server import afe_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -115,23 +114,10 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         self._stage_payloads(test_conf['target_payload_uri'],
                              test_conf['target_archive_uri'])
 
-        # Install source image with quick-provision.
+        # Install source image
         source_payload_uri = test_conf['source_payload_uri']
         if source_payload_uri is not None:
-            try:
-                build_name, _ = self._get_update_parameters_from_uri(
-                    source_payload_uri)
-                url = self._autotest_devserver.get_update_url(build_name)
-                logging.info('Installing source image with update url: %s', url)
-                afe_utils.machine_install_and_update_labels(
-                    self._host, url, use_quick_provision=True,
-                    is_release_bucket=True, au_fallback=False)
-            except Exception:
-                logging.warning('quick-provision failed, trying with AU.')
-                # TODO(crbug.com/991421): Remove this fallback once the quick
-                # provision use case is stabilized.
-                self.update_device(source_payload_uri, clobber_stateful=True)
-
+            self.update_device(source_payload_uri, clobber_stateful=True)
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
         # Start the update to the target image.

@@ -18,14 +18,14 @@ class power_UiResume(arc.ArcTest):
     """
     version = 3
 
-    def initialize(self):
+    def initialize(self, no_arc=False):
         """
         Entry point. Initialize ARC if it is enabled on the DUT, otherwise log
         in Chrome browser.
 
         """
         self._arc_available = utils.is_arc_available()
-        if self._arc_available:
+        if self._arc_available and not no_arc:
             super(power_UiResume, self).initialize()
         else:
             self._chrome = chrome.Chrome()

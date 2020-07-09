@@ -8,7 +8,11 @@ AUTHOR = "Cr50 FW team"
 NAME = "firmware_Cr50CCDFirmwareUpdate"
 PURPOSE = "Verify flashing firmware through ccd_cr50"
 ATTRIBUTES = "suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
-TIME = "MEDIUM"
+# We mark TIME as 'FAST' intentionally to have this test scheduled later than
+# other tests (having longer TIME attribute) among the test suite.
+# This is to minimize a side-effect of this test failures on the rest of
+# scheduled tests.
+TIME = "FAST"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 

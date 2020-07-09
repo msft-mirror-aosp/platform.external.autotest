@@ -146,9 +146,7 @@ def add_provision_labels(host, version_prefix, image_name,
 
 def machine_install_and_update_labels(host, update_url,
                                       use_quick_provision=False,
-                                      with_cheets=False, staging_server=None,
-                                      is_release_bucket=False,
-                                      au_fallback=True):
+                                      with_cheets=False, staging_server=None):
     """Install a build and update the version labels on a host.
 
     @param host: Host object where the build is to be installed.
@@ -159,16 +157,12 @@ def machine_install_and_update_labels(host, update_url,
         version of Android for a target running ARC.
     @param staging_server: Server where images have been staged. Typically,
         an instance of dev_server.ImageServer.
-    @param is_release_bucket: If True, use release bucket
-        gs://chromeos-releases.
-    @param au_fallback: If True, we fallback to AU provisioning if the
-        quick-provisioning fails.
     """
     clean_provision_labels(host)
 
     if use_quick_provision:
         image_name, host_attributes = _provision_with_quick_provision(
-            host, update_url, is_release_bucket, au_fallback)
+            host, update_url)
     else:
         image_name, host_attributes = _provision_with_au(host, update_url,
                                                          staging_server)
@@ -216,16 +210,11 @@ def _provision_with_au(host, update_url, staging_server):
         image_name, host_attributes = updater.run_update()
     return image_name, host_attributes
 
-def _provision_with_quick_provision(host, update_url, is_release_bucket,
-                                    au_fallback):
+def _provision_with_quick_provision(host, update_url):
     """Installs a build on the host using autoupdater quick-provision.
 
     @param host: Host object where the build is to be installed.
     @param update_url: URL of the build to install.
-    @param is_release_bucket: If True, use release bucket
-        gs://chromeos-releases.
-    @param au_fallback: If True, we fallback to AU provisioning if the
-        quick-provisioning fails.
 
     @returns A tuple of the form `(image_name, host_attributes)`, where
         'image_name' is the name of the image installed, and 'host_attributes'
@@ -233,7 +222,5 @@ def _provision_with_quick_provision(host, update_url, is_release_bucket,
     """
     logging.debug('Attempting to provision with autoupdater quick-provision.')
     updater = autoupdater.ChromiumOSUpdater(update_url, host=host,
-                                            use_quick_provision=True,
-                                            is_release_bucket=is_release_bucket,
-                                            au_fallback=au_fallback)
+                                            use_quick_provision=True)
     return updater.run_update()

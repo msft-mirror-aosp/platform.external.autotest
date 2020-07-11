@@ -439,14 +439,6 @@ def _upload_cts_testresult(dir_entry, multiprocessing):
                                   multiprocessing,
                                   DEFAULT_CTS_RESULTS_GSURI,
                                   DEFAULT_CTS_APFE_GSURI)
-                    # TODO(rohitbm): make better comparison using regex.
-                    # plan_follower CTS results go to plan_follower specific
-                    # gs buckets apart from standard gs buckets.
-                    if 'plan_follower' in path:
-                        _upload_files(host, path, result_pattern,
-                                      multiprocessing,
-                                      DEFAULT_CTS_DELTA_RESULTS_GSURI,
-                                      DEFAULT_CTS_DELTA_APFE_GSURI)
                 except Exception as e:
                     logging.error('ERROR uploading test results %s to GS: %s',
                                   path, e)

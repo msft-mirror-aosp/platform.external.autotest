@@ -55,6 +55,10 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         ['BOARD_CCD_REC_LID_PIN_DIOA12', 'rec_lid_a12',
          'rec_lid_a1,rec_lid_a9,sps'],
     ]
+    GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
+    MP_BRANCH_STR = 'cr50_v1.9308_87_mp.'
+    PREPVT_BRANCH_STR = 'cr50_v1.9308_B.'
+    TOT_STR = 'cr50_v2.0.'
 
     def initialize(self, host, cmdline_args, full_args):
         super(firmware_Cr50ConsoleCommands, self).initialize(host, cmdline_args,
@@ -177,28 +181,32 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
                     self.exclude.extend(exclude.split(','))
             else:
                 self.exclude.append(include)
-        version = self.cr50.get_version().split('.')
+        version = self.cr50.get_full_version()
         # Factory images end with 22. Expect guc attributes if the version
         # ends in 22.
-        if version[2] == '22':
-            self.include.append('guc')
+        if self.GUC_BRANCH_STR in version:
             self._ext = '.guc'
-        else:
-            self.exclude.append('guc')
-
-        if self.is_tot_run:
-            self.include.append('tot')
-        else:
+            self.include.append('guc')
             self.exclude.append('tot')
-
-        # Use the major version to determine prePVT or MP. prePVT have even
-        # major versions. prod have odd.
-        if int(version[1]) % 2:
-            self.include.append('mp')
             self.exclude.append('prepvt')
-        else:
-            self.exclude.append('mp')
+        elif self.is_tot_run or self.TOT_STR in version:
+            # TOT isn't that controlled. It may include prepvt, mp, or guc
+            # changes. Don't exclude any branches.
+            self.include.append('tot')
+        elif self.MP_BRANCH_STR in version:
+            self.include.append('mp')
+
+            self.exclude.append('prepvt')
+            self.exclude.append('guc')
+            self.exclude.append('tot')
+        elif self.PREPVT_BRANCH_STR in version:
             self.include.append('prepvt')
+
+            self.exclude.append('mp')
+            self.exclude.append('guc')
+            self.exclude.append('tot')
+        else:
+            raise error.TestNAError('Unsupported branch %s', version)
         brdprop = self.cr50.get_board_properties()
         logging.info('brdprop: 0x%x', brdprop)
         logging.info('include: %s', ', '.join(self.include))

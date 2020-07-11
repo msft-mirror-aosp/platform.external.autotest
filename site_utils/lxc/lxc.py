@@ -248,19 +248,3 @@ def install_package(package):
     logging.warn('This function is obsoleted, please use install_packages '
                  'instead.')
     install_packages(packages=[package])
-
-
-@retry.retry(error.CmdError, timeout_min=20)
-def install_python_package(package):
-    """Install the given python package inside container using pip.
-
-    This function is kept for backwards compatibility reason. New code should
-    use function install_packages for better performance.
-
-    @param package: Name of the python package to install.
-
-    @raise error.CmdError: If the package doesn't exist or failed to install.
-    """
-    logging.warn('This function is obsoleted, please use install_packages '
-                 'instead.')
-    install_packages(python_packages=[package])

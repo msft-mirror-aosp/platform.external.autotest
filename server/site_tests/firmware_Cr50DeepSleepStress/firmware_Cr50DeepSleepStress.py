@@ -184,7 +184,8 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                            min_resume=self.MIN_RESUME,
                            check_connection=False,
                            suspend_iterations=suspend_count,
-                           suspend_state=self.MEM)
+                           suspend_state=self.MEM,
+                           check_client_result=True)
 
 
     def check_cr50_deep_sleep(self, suspend_count):
@@ -213,9 +214,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         logging.debug('suspend %d: tolerated diff %d got %d', suspend_count,
                       tolerated_diff, act_diff)
         if act_diff != self._suspend_diff:
-            self._suspend_diff = act_diff
             logging.warning('suspend %d: mismatch changed from %d to %d',
-                            self._suspend_diff, act_diff)
+                            suspend_count, self._suspend_diff, act_diff)
+            self._suspend_diff = act_diff
 
         self.cr50.get_sleepmask()
         self.cr50.get_ccdstate()

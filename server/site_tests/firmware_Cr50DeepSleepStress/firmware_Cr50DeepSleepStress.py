@@ -184,7 +184,8 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                            min_resume=self.MIN_RESUME,
                            check_connection=False,
                            suspend_iterations=suspend_count,
-                           suspend_state=self.MEM)
+                           suspend_state=self.MEM,
+                           check_client_result=True)
 
 
     def check_cr50_deep_sleep(self, suspend_count):

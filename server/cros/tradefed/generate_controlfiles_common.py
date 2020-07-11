@@ -205,7 +205,7 @@ def get_bundle_abi(filename):
     return ''
 
 
-def get_extension(module, abi, revision, is_public=False, camera_facing=None):
+def get_extension(module, abi, revision, is_public=False, led_provision=None, camera_facing=None):
     """Defines a unique string.
 
     Notice we chose module revision first, then abi, as the module revision
@@ -214,6 +214,8 @@ def get_extension(module, abi, revision, is_public=False, camera_facing=None):
                    is specified, the control file will runs all the tests.
     @param public: boolean variable to specify whether or not the bundle is from
                    public source or not.
+    @param led_provision: string or None indicate whether the camerabox has led
+                          light or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
     @return string: unique string for specific tests. If public=True then the
@@ -227,6 +229,8 @@ def get_extension(module, abi, revision, is_public=False, camera_facing=None):
     if abi:
         ext_parts += [abi]
     ext_parts += [module]
+    if led_provision:
+        ext_parts += [led_provision]
     if camera_facing:
         ext_parts += ['camerabox', camera_facing]
     return '.'.join(ext_parts)
@@ -257,6 +261,7 @@ def get_controlfile_name(module,
                          abi,
                          revision,
                          is_public=False,
+                         led_provision=None,
                          camera_facing=None):
     """Defines the control file name.
 
@@ -266,12 +271,14 @@ def get_controlfile_name(module,
                    public source or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
+    @param led_provision: string or None indicate whether the camerabox has led
+                          light or not.
     @return string: control file for specific tests. If public=True or
                     module=all, then the name will be "control.<abi>.<module>",
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
-    return 'control.%s' % get_extension(module, abi, revision, is_public,
+    return 'control.%s' % get_extension(module, abi, revision, is_public, led_provision,
                                         camera_facing)
 
 
@@ -333,7 +340,7 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     return sorted(list(suites))
 
 
-def get_dependencies(modules, abi, is_public, camera_facing):
+def get_dependencies(modules, abi, is_public, led_provision, camera_facing):
     """Defines lab dependencies needed to schedule a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -342,6 +349,8 @@ def get_dependencies(modules, abi, is_public, camera_facing):
                 current test.
     @param is_public: boolean variable to specify whether or not the bundle is
                       from public source or not.
+    @param led_provision: specify if led is provisioned in the camerabox setup. 'noled' when
+                          there is no led light in the box and 'led' otherwise.
     @param camera_facing: specify requirement of camerabox setup with target
                           test camera facing. Set to None if it's not camerabox
                           related test.
@@ -349,6 +358,9 @@ def get_dependencies(modules, abi, is_public, camera_facing):
     dependencies = ['arc']
     if abi in CONFIG['LAB_DEPENDENCY']:
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
+
+    if led_provision is not None:
+        dependencies.append(led_provision)
 
     if camera_facing is not None:
         dependencies.append('camerabox_facing:'+camera_facing)
@@ -736,6 +748,7 @@ def get_controlfile_content(combined,
                             uri,
                             suites=None,
                             is_public=False,
+                            led_provision=None,
                             camera_facing=None):
     """Returns the text inside of a control file.
 
@@ -746,7 +759,7 @@ def get_controlfile_content(combined,
     """
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
-    tag = '%s' % get_extension(combined, abi, revision, is_public,
+    tag = '%s' % get_extension(combined, abi, revision, is_public, led_provision,
                                camera_facing)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
@@ -772,6 +785,7 @@ def get_controlfile_content(combined,
             modules,
             abi,
             is_public,
+            led_provision,
             camera_facing),
         extra_artifacts=get_extra_artifacts(modules),
         extra_artifacts_host=get_extra_artifacts_host(modules),
@@ -1122,13 +1136,14 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
     """Control files for CtsCameraTestCases.camerabox.*"""
     module = 'CtsCameraTestCases'
     for facing in ['back', 'front']:
-        name = get_controlfile_name(module, abi,
-                                    revision, is_public, facing)
-        content = get_controlfile_content(module, set([module]), abi,
-                                          revision, build, uri,
-                                          None, is_public, facing)
-        with open(name, 'w') as f:
-            f.write(content)
+        for led_provision in ['led', 'noled']:
+            name = get_controlfile_name(module, abi,
+                                        revision, is_public, led_provision, facing)
+            content = get_controlfile_content(module, set([module]), abi,
+                                              revision, build, uri,
+                                              None, is_public, led_provision, facing)
+            with open(name, 'w') as f:
+                f.write(content)
 
 
 def run(uris, is_public, cache_dir):

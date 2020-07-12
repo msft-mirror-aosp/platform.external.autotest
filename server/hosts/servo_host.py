@@ -1068,7 +1068,7 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def _get_host_metrics_data(self):
         return {'port': self.servo_port,
-                'host': self.hostname,
+                'host': self.get_dut_hostname() or self.hostname,
                 'board': self.servo_board or ''}
 
     def _is_servo_device_connected(self, servo_type, serial):

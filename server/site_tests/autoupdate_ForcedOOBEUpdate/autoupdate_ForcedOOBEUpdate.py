@@ -161,12 +161,12 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             logging.info('The update will be interrupted now...')
             completed = self._get_update_progress()
 
-            self._take_screenshot('before_interrupt.png')
+            self._take_screenshot(self._BEFORE_INTERRUPT_FILENAME)
             if interrupt == self._REBOOT_INTERRUPT:
                 self._host.reboot()
             elif interrupt == self._SUSPEND_INTERRUPT:
                 self._suspend_then_resume()
-            self._take_screenshot('after_interrupt.png')
+            self._take_screenshot(self._AFTER_INTERRUPT_FILENAME)
 
             if self._is_update_engine_idle():
                 raise error.TestFail('The update was IDLE after interrupt.')
@@ -174,6 +174,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 completed, reboot_interrupt=interrupt is 'reboot'):
                 raise error.TestFail('The update did not continue where it '
                                      'left off after interruption.')
+
+            # Remove screenshots since interrupt test succeeded.
+            self._remove_screenshots()
 
         # Create lsb-release with no_update=True to get post-reboot event.
         lsb_url = payload_url if cellular else update_url

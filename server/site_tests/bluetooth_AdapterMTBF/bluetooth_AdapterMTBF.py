@@ -183,6 +183,8 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=SHORT_SUSPEND_SEC)
 
+        self.test_device_set_discoverable(device, False)
+
         self.test_suspend_and_wait_for_sleep(
             suspend, sleep_timeout=ACTION_TIMEOUT_SEC)
         self.test_wait_for_resume(
@@ -190,13 +192,15 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
         # LE can't reconnect without advertising/discoverable
         self.test_device_set_discoverable(device, True)
+        time.sleep(self.TEST_SLEEP_SECS)
         self.test_connection_by_device(device)
 
 
     def test_suspend_and_mouse_wakeup(self, mouse):
         """Test the device can be waken up by the mouse"""
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND_SEC)
+        suspend = self.suspend_async(
+            suspend_time=SHORT_SUSPEND_SEC, expect_bt_wake=True)
 
         self.test_adapter_wake_enabled()
         self.test_suspend_and_wait_for_sleep(

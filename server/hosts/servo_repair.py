@@ -306,7 +306,7 @@ class _CCDTestlabVerifier(hosts.Verifier):
         status = host.get_servo().get('cr50_testlab')
         if status != 'on':
             data = {'port': host.servo_port,
-                    'host': host.hostname,
+                    'host': host.get_dut_hostname() or host.hostname,
                     'board': host.servo_board or ''}
             metrics.Counter(
                 'chromeos/autotest/repair/ccd_testlab').increment(fields=data)

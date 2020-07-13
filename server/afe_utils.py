@@ -184,30 +184,18 @@ def _provision_with_au(host, update_url, staging_server):
         are new attributes to be applied to the DUT.
     """
     logging.debug("Attempting to provision with Chromite ChromiumOSUpdater.")
-    # TODO(crbug.com/1049346): The try-except block exists to catch failures
-    # in chromite auto_updater that may occur due to autotest/chromite
-    # version mismatch. This should be removed once that bug is resolved.
-    try:
-        # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
-        # update_url.
-        image_name = '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
-        with remote_access.ChromiumOSDeviceHandler(
-              host.ip, base_dir=DEVICE_BASE_DIR) as device:
-            updater = auto_updater.ChromiumOSUpdater(
-                device, None, image_name, auto_updater_transfer.LabTransfer,
-                staging_server=staging_server.url(), reboot=True,
-                clear_tpm_owner=True)
-            updater.RunUpdate()
-        repo_url = tools.get_package_url(staging_server.url(), image_name)
-        host_attributes = {ds_constants.JOB_REPO_URL: repo_url}
-    except Exception as e:
-        logging.warning('Chromite auto_updater has failed with the exception: '
-                        '%s', e)
-        logging.debug('Attempting to provision with autoupdater '
-                      'ChromiumOSUpdater.')
-        updater = autoupdater.ChromiumOSUpdater(update_url, host=host,
-                                                use_quick_provision=False)
-        image_name, host_attributes = updater.run_update()
+    # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
+    # update_url.
+    image_name = '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
+    with remote_access.ChromiumOSDeviceHandler(
+          host.ip, base_dir=DEVICE_BASE_DIR) as device:
+        updater = auto_updater.ChromiumOSUpdater(
+            device, None, image_name, auto_updater_transfer.LabTransfer,
+            staging_server=staging_server.url(), reboot=True,
+            clear_tpm_owner=True)
+        updater.RunUpdate()
+    repo_url = tools.get_package_url(staging_server.url(), image_name)
+    host_attributes = {ds_constants.JOB_REPO_URL: repo_url}
     return image_name, host_attributes
 
 def _provision_with_quick_provision(host, update_url):

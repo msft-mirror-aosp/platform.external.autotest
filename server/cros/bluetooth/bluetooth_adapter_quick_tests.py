@@ -158,6 +158,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             if len(self.host.peer_list) == 0:
                 raise error.TestFail('Unable to find a Bluetooth peer')
 
+            # Check the chameleond version on the peer and update if necessary
+            if not self.update_btpeer():
+                logging.error('Updating btpeers failed. Ignored')
+
             # Query connected devices on our btpeer at init time
             self.available_devices = self.list_devices_available()
 

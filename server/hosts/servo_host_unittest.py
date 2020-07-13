@@ -23,6 +23,7 @@ class MockHost(servo_host.ServoHost):
         self._mock_cmds = {c.cmd: c for c in args}
         self._init_attributes()
         self.hostname = "chromeos1-row1-rack1-host1"
+        self._dut_hostname = 'dut-' + self.hostname
         self.servo_port = '9991'
 
     def run(self, command, **kwargs):

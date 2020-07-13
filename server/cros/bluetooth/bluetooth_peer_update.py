@@ -133,8 +133,19 @@ def restart_check_chameleond(peer):
     return status and expected_output in output
 
 
-def update_and_check(peer, latest_commit):
-    """Update the chameleond on peer devices if required"""
+def update_peer(peer, latest_commit):
+    """Update the chameleond on peer devices if required
+
+    @params peer: btpeer to be updated
+    @params latest_commit: target git commit
+
+    @returns: (True, None) if update succeeded
+              (False, reason) if update failed
+    """
+
+    if peer.get_platform() != 'RASPI':
+        logging.error('Unsupported peer %s',str(peer.host))
+        return False, 'Unsupported peer'
 
     if not perform_update(peer, latest_commit):
         return False, 'Update failed'
@@ -147,28 +158,6 @@ def update_and_check(peer, latest_commit):
 
     logging.info('updating chameleond succeded')
     return True, ''
-
-
-def update_peer(peer, latest_commit):
-    """Update chameleond on a peer device"""
-
-    status = {'updated': False,
-              'reason' : None,
-              'update_needed' : True}
-
-    if peer.get_platform() != 'RASPI':
-        logging.error('Unsupported peer %s',str(peer.host))
-        status['reason'] = 'Unsupported peer'
-        return status
-
-    if not is_update_needed(peer,latest_commit):
-        status['update_needed'] = False
-        logging.info('Update not needed on peer %s', str(peer.host))
-        return status
-
-    status['updated'], status['reason'] = update_and_check(peer, latest_commit)
-    logging.debug(status)
-    return status
 
 
 def update_peers(host, latest_commit):
@@ -184,17 +173,26 @@ def update_peers(host, latest_commit):
     status = {}
     for peer in peer_list:
         #TODO(b:160782273) Make this parallel
-        status[peer] = update_peer(peer, latest_commit)
+        status[peer] = {}
+        status[peer]['update_needed'] = is_update_needed(peer,latest_commit)
 
+    logging.debug(status)
     # If none of the peer need update raise TestNA
     if not any([v['update_needed'] for v in status.values()]):
         raise error.TestNAError('Update not needed')
+    for peer in peer_list:
+        if status[peer]['update_needed']:
+            status[peer]['updated'], status[peer]['reason'] = \
+            update_peer(peer, latest_commit)
 
+    logging.debug(status)
     # If any of the peers failed update, raise failure with the reason
     if not all([v['updated'] for v in status.values() if v['update_needed']]):
         for peer, v in status.items():
-            if not v['updated']:
-                logging.error('peer %s failed %s', str(peer.host),  v['reason'])
+            if v['update_needed']:
+                if not v['updated']:
+                    logging.error('updating peer %s failed %s', str(peer.host),
+                                  v['reason'])
         raise error.TestFail()
 
     logging.info('%s peers updated',len([v['updated'] for v in status.values()
@@ -217,7 +215,8 @@ def get_latest_commit():
             cmd = 'gsutil cp {} {}'.format(src, tmp_filename)
             result = utils.run(cmd)
             if result.exit_status != 0:
-                logging.error('Downloading commit file failed with %s', result.exit_status)
+                logging.error('Downloading commit file failed with %s',
+                              result.exit_status)
                 return (False, None)
             with open(tmp_filename) as f:
                 content = f.read()

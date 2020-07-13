@@ -11,6 +11,7 @@ import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros import tpm_utils
@@ -20,6 +21,11 @@ from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
+
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
@@ -74,7 +80,7 @@ _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
 
 
 class ACPowerVerifier(hosts.Verifier):
-    """Check for AC power and a reasonable battery charge."""
+    """Check for AC power and battery charging state."""
 
     def verify(self, host):
         # pylint: disable=missing-docstring
@@ -93,17 +99,26 @@ class ACPowerVerifier(hosts.Verifier):
                     'Cannot determine AC power status')
 
         try:
-            if float(info['Battery']['percentage']) < 50.0:
-                raise hosts.AutoservVerifyError(
-                        'Battery is less than 50%')
-        except KeyError:
-            logging.info('Cannot determine battery status - '
-                         'skipping check.')
+            charging_state = info['Battery']['state']
+            battery_level = float(info['Battery']['percentage'])
+            if battery_level < 50.0 and charging_state == 'Discharging':
+                # TODO(@xianuowang) remove metrics here once we have device
+                # health profile to collect history of DUT's metrics.
+                metrics_data = {'host': host.hostname,
+                                'board': host.host_info_store.get().board}
+                metrics.Counter(
+                    'chromeos/autotest/repair/verifier/power').increment(
+                        fields=metrics_data)
+                raise hosts.AutoservVerifyError('Battery is in discharging'
+                        ' state and current level is less than 50%')
+        except (KeyError, ValueError):
+            logging.warning('Cannot determine battery state -'
+                            ' skipping check.')
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'The DUT is plugged in to AC power'
+        return 'The DUT is plugged in to AC power and battery is charing'
 
 
 class WritableVerifier(hosts.Verifier):

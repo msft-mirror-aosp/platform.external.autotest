@@ -35,9 +35,9 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-SHORT_SUSPEND = 10
-MED_SUSPEND = 20
-LONG_SUSPEND = 30
+SUSPEND_SEC = 15
+EXPECT_NO_WAKE_SUSPEND_SEC = 30
+EXPECT_PEER_WAKE_SUSPEND_SEC = 60
 
 
 class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
@@ -68,7 +68,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                            device (for example, mouse click)
         """
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
+        suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
 
         try:
             for _, device, device_test in devtuples:
@@ -79,9 +79,9 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             # Trigger suspend, wait for regular resume, verify we can reconnect
             # and run device specific test
             self.test_suspend_and_wait_for_sleep(
-                suspend, sleep_timeout=SHORT_SUSPEND)
+                suspend, sleep_timeout=SUSPEND_SEC)
             self.test_wait_for_resume(
-                boot_id, suspend, resume_timeout=SHORT_SUSPEND)
+                boot_id, suspend, resume_timeout=SUSPEND_SEC)
 
             for device_type, device, device_test in devtuples:
                 if 'BLE' in device_type:
@@ -179,7 +179,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(
-            suspend_time=LONG_SUSPEND, expect_bt_wake=True)
+            suspend_time=EXPECT_PEER_WAKE_SUSPEND_SEC, expect_bt_wake=True)
 
         # Clear wake before testing
         self.test_adapter_set_wake_disabled()
@@ -211,7 +211,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             # delay sending the wake signal, we should accomodate that in our
             # expected timeout.
             self.test_wait_for_resume(
-                boot_id, suspend, resume_timeout=SHORT_SUSPEND + 5,
+                boot_id, suspend, resume_timeout=SUSPEND_SEC + 5,
                 fail_on_timeout=True)
 
             # Finish peer wake process
@@ -266,7 +266,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
+        suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # We don't pair to the peer device because we don't want it in the
         # whitelist. However, we want an advertising peer in this test
@@ -275,12 +275,12 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
         self.test_start_discovery()
         self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=SHORT_SUSPEND)
+            suspend, sleep_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # If discovery events wake us early, we will raise and suspend.exitcode
         # will be non-zero
         self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=SHORT_SUSPEND)
+            boot_id, suspend, resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # Discovering should restore after suspend
         self.test_is_discovering()
@@ -294,16 +294,18 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=MED_SUSPEND)
+        suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         self.test_discoverable()
         self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=SHORT_SUSPEND)
+            suspend, sleep_timeout=SUSPEND_SEC)
 
         # Peer device should not be able to discover us in suspend
         self.test_discover_by_device_fails(device)
 
-        self.test_wait_for_resume(boot_id, suspend, resume_timeout=MED_SUSPEND)
+        self.test_wait_for_resume(boot_id,
+                                  suspend,
+                                  resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # Test that we are properly discoverable again
         self.test_is_discoverable()
@@ -320,7 +322,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Suspend while adapter is powered off. """
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND)
+        suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
 
         # Pair device so we have something to do in suspend
         self.test_discover_and_pair(device)
@@ -328,10 +330,10 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         # Trigger power down and quickly suspend
         self.test_power_off_adapter()
         self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=SHORT_SUSPEND)
+            suspend, sleep_timeout=SUSPEND_SEC)
         # Suspend and resume should succeed
         self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=SHORT_SUSPEND)
+            boot_id, suspend, resume_timeout=SUSPEND_SEC)
 
         # We should be able to power it back on
         self.test_power_on_adapter()

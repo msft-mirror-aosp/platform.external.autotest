@@ -281,19 +281,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             @functools.wraps(test_method)
             def wrapper(self):
                 """A wrapper of the decorated method."""
+                # Set test name before exiting so batches correctly identify
+                # failing tests
+                self.test_name = test_name
+
                 if not _check_runnable(self):
                     return
-                if not _is_enough_peers_present(self):
-                    raise error.TestNAError('Not enough peer available')
 
                 try:
-                    self.quick_test_test_start(test_name, devices,
-                                               shared_devices_count)
+                    if not _is_enough_peers_present(self):
+                        raise error.TestNAError('Not enough peer available')
+
                     model = self.host.get_platform()
                     if model in skip_models:
                         logging.info('SKIPPING TEST %s', test_name)
                         raise error.TestNAError(
                                 'Test not supported on this model')
+
+                    self.quick_test_test_start(test_name, devices,
+                                               shared_devices_count)
 
                     test_method(self)
                 except error.TestFail as e:
@@ -316,9 +322,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
            as well as peer devices. In addition the methods prints test start
            traces.
         """
-
-        self.test_name = test_name
-
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()

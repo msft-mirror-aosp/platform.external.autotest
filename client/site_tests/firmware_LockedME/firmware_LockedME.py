@@ -11,6 +11,7 @@ from autotest_lib.client.common_lib import error
 
 
 class firmware_LockedME(test.test):
+    """Validates that the Management Engine has been locked."""
     # Needed by autotest
     version = 1
 
@@ -100,7 +101,7 @@ class firmware_LockedME(test.test):
 
         # flashrom should have read the section as all 0xff's. If not,
         # the ME is not locked.
-        logging.info('%s should be all 0xff...' % sectname)
+        logging.info('%s should be all 0xff...', sectname)
         with open(sectname, 'rb') as f:
             for c in f.read():
                 if c != chr(0xff):

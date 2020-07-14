@@ -69,6 +69,11 @@ SUPPORTED_DEVICE_TYPES = {
 # the ones that were not launched
 TABLET_MODELS = ['kakadu', 'kodama', 'krane', 'dru', 'druwl', 'dumo']
 
+# TODO(b/158336394) - Devices with Realtek chipsets won't behave well during
+# suspend/resume because they don't maintain FW. List all Realtek models here
+# and skip them in the relevant tests.
+REALTEK_MODELS = ['blooglet', 'barla', 'ezkinil', 'trembyle']
+
 
 def method_name():
     """Get the method name of a class.

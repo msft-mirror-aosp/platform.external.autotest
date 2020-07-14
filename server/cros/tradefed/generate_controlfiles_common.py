@@ -628,17 +628,14 @@ def _format_modules_cmd(is_public, abi_to_run, modules=None, retry=False):
 
 def get_run_template(modules, is_public, retry=False, abi_to_run=None):
     """Command to run the modules specified by a control file."""
-    cmd = None
-    if modules.intersection(get_collect_modules(is_public)):
-        if _COLLECT in modules or _PUBLIC_COLLECT in modules:
-            cmd = _format_collect_cmd(is_public, abi_to_run, retry=retry)
-        elif _ALL in modules:
-            cmd = _format_modules_cmd(is_public, abi_to_run,
-                                      modules, retry=retry)
-    else:
-        cmd = _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
-    return cmd
-
+    no_intersection = not modules.intersection(get_collect_modules(is_public))
+    collect_present = (_COLLECT in modules or _PUBLIC_COLLECT in modules)
+    all_present = _ALL in modules
+    if no_intersection or (all_present and not collect_present):
+      return _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
+    elif collect_present:
+      return _format_collect_cmd(is_public, abi_to_run, retry=retry)
+    return None
 
 def get_retry_template(modules, is_public):
     """Command to retry the failed modules as specified by a control file."""
@@ -743,8 +740,8 @@ def get_controlfile_content(combined,
     """Returns the text inside of a control file.
 
     @param combined: name to use for this combination of modules.
-    @param modules: list of CTS modules which will be tested in the control
-                   file. If 'all' is specified, the control file will runs
+    @param modules: set of CTS modules which will be tested in the control
+                   file. If 'all' is specified, the control file will run
                    all the tests.
     """
     # We tag results with full revision now to get result directories containing

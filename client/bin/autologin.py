@@ -40,6 +40,8 @@ def main(args):
                         help='Prevent ARC sync behavior as much as possible.')
     parser.add_argument('--toggle_ndk', action='store_true',
                         help='Toggle the translation from houdini to ndk')
+    parser.add_argument('--nativebridge64', action='store_true',
+                        help='Enables the experiment for 64-bit native bridges')
     parser.add_argument('--url', help='Navigate to URL.')
     args = parser.parse_args(args)
 
@@ -53,6 +55,9 @@ def main(args):
         browser_args.append('--no-startup-window')
     if args.toggle_ndk:
         browser_args.append('--enable-features=ArcNativeBridgeExperiment')
+    if args.nativebridge64:
+        browser_args.append(
+            '--enable-features=ArcNativeBridge64BitSupportExperiment')
 
     # Avoid calling close() on the Chrome object; this keeps the session active.
     cr = chrome.Chrome(

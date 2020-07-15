@@ -21,13 +21,16 @@ class ChromeLogin(object):
             self._hard_reboot_on_failure = True
 
     def __init__(self, host, board=None, dont_override_profile=False,
-                 enable_default_apps=False, toggle_ndk=False):
+                 enable_default_apps=False, toggle_ndk=False,
+                 nativebridge64=False):
         """Initializes the ChromeLogin object.
 
         @param board: optional parameter to extend timeout for login for slow
                       DUTs. Used in particular for virtual machines.
         @param dont_override_profile: reuses the existing test profile if any
         @param enable_default_apps: enables default apps (like Files app)
+        @param toggle_ndk: toggles native bridge engine switch.
+        @param nativebridge64: enables 64-bit native bridge experiment.
         """
         self._host = host
         self._timeout = constants.LOGIN_BOARD_TIMEOUT.get(
@@ -37,6 +40,7 @@ class ChromeLogin(object):
         self._need_reboot = False
         self._hard_reboot_on_failure = False
         self._toggle_ndk = toggle_ndk
+        self._nativebridge64 = nativebridge64
 
     def _cmd_builder(self, verbose=False):
         """Gets remote command to start browser with ARC enabled."""
@@ -61,6 +65,8 @@ class ChromeLogin(object):
         if self._enable_default_apps:
             logging.info('Using --enable_default_apps to start Chrome.')
             cmd += ' --enable_default_apps'
+        if self._nativebridge64:
+            cmd += ' --nativebridge64'
         if not verbose:
             cmd += ' > /dev/null 2>&1'
         return cmd

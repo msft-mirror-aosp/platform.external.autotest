@@ -158,7 +158,11 @@ class BluetoothAdapterPairingTests(
         # self.test_stop_discovery()
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+
+        # Verify device is now connected
+        self.test_device_is_connected(device.address)
+        self.test_hid_device_created(device.address)
+
         # Disconnect the device
         self.test_disconnection_by_adapter(device.address)
         total_duration_by_adapter = 0
@@ -176,6 +180,8 @@ class BluetoothAdapterPairingTests(
 
             # Verify device is now connected
             self.test_device_is_connected(device.address)
+            self.test_hid_device_created(device.address)
+
             self.test_disconnection_by_adapter(device.address)
 
             if not bool(self.fails):

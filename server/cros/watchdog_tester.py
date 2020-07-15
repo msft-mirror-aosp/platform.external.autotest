@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging, re
 
 # http://docs.python.org/2/library/errno.html
@@ -52,7 +54,7 @@ class WatchdogTester(object):
 
         try:
             self._client.run('echo "z" > %s' % self.WD_DEV)
-        except error.AutoservRunError, e:
+        except error.AutoservRunError as e:
             raise error.TestError('write to %s failed (%s)' %
                                   (self.WD_DEV, errno.errorcode[e.errno]))
 

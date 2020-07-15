@@ -85,6 +85,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                 for device in device_list:
                     addresses.append(device.address)
+                    self.start_agent(device)
 
             # Make sure device RSSI is sufficient
             self.verify_device_rssi(addresses)
@@ -405,6 +406,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         for device_list in self.devices.values():
             for device in device_list:
                 if device is not None:
+                    self.stop_agent(device)
                     logging.info('Clear device %s from DUT', device.name)
                     self.bluetooth_facade.disconnect_device(device.address)
                     device_is_paired = self.bluetooth_facade.device_is_paired(

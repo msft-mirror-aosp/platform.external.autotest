@@ -613,12 +613,16 @@ class BluetoothAdapterTests(test.test):
     # Board list for name/ID test check. These devices don't need to be tested
     REFERENCE_BOARDS = ['rambi', 'nyan', 'oak', 'reef', 'yorp', 'bip']
 
-
     # Path for btmon logs
     BTMON_DIR_LOG_PATH = '/var/log/btmon'
 
-    #Path for usbmon logs
+    # Path for usbmon logs
     USBMON_DIR_LOG_PATH = '/var/log/usbmon'
+
+    # The agent capability of various device types.
+    AGENT_CAPABILITY = {
+            'BLUETOOTH_AUDIO': 'NoInputNoOutput',
+    }
 
 
     def group_btpeers_type(self):
@@ -1010,6 +1014,29 @@ class BluetoothAdapterTests(test.test):
             logging.info("%s failure is ignored",test_method.__name__)
             instance.fails = original_fails
         return test_result
+
+
+    def start_agent(self, device):
+        """Start the pairing agent of the device if applicable.
+
+        @param device: the peer device
+        """
+        dev_type = device.GetDeviceType()
+        capability = self.AGENT_CAPABILITY.get(dev_type)
+        if capability:
+            device.StartPairingAgent(capability)
+
+
+    def stop_agent(self, device):
+        """Stop the pairing agent of the device if applicable.
+
+        @param device: the peer device
+        """
+        dev_type = device.GetDeviceType()
+        capability = self.AGENT_CAPABILITY.get(dev_type)
+        if capability:
+            device.StopPairingAgent()
+
 
     # -------------------------------------------------------------------
     # Adater standalone tests

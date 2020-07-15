@@ -129,7 +129,7 @@ class platform_BootPerf(test.test):
             except Exception:
                 pass
 
-    def _parse_bootstat(self, filename, fieldnum):
+    def _parse_bootstat(self, filename, fieldnum, required=False):
         """Read values from a bootstat event file.
 
         Each line of a bootstat event file represents one occurrence
@@ -154,12 +154,16 @@ class platform_BootPerf(test.test):
         try:
             # crbug.com/1098635: racing with chrome browser
             #  See external/chromium_org/chrome/browser/chromeos/boot_times_loader.cc
-            cnt = 1
-            while cnt < 30:
-                if os.path.exists(filename):
-                    break
-                time.sleep(1)
-                cnt += 1
+            if required:
+                cnt = 0
+                while cnt < 30:
+                    if os.path.exists(filename):
+                        break
+                    time.sleep(1)
+                    cnt += 1
+
+                if cnt :
+                    logging.warning("Waited %d seconds for bootstat file: %s", cnt, filename)
 
             with open(filename) as statfile:
                 values = map(lambda l: float(l.split()[fieldnum]),
@@ -170,7 +174,7 @@ class platform_BootPerf(test.test):
                                  filename)
 
 
-    def _parse_uptime(self, eventname, bootstat_dir='/tmp', index=0):
+    def _parse_uptime(self, eventname, bootstat_dir='/tmp', index=0, required=False):
         """Return time since boot for a bootstat event.
 
         @param eventname        Name of the bootstat event.
@@ -178,6 +182,7 @@ class platform_BootPerf(test.test):
                                 files.
         @param index            Index of which occurrence of the event
                                 to select.
+        @param required         If the parameter is required, wait for it.
         @return                 Time since boot for the selected
                                 event.
 
@@ -258,7 +263,7 @@ class platform_BootPerf(test.test):
         for keyval_name, event_name, required in self._EVENT_KEYVALS:
             key = 'seconds_' + keyval_name
             try:
-                results[key] = self._parse_uptime(event_name)
+                results[key] = self._parse_uptime(event_name, required=required)
             except error.TestFail:
                 if required:
                     raise;

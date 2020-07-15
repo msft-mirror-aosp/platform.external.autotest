@@ -35,7 +35,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
         self.test_pairing(device.address, device.pin, trusted=True)
-        device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
         self.test_connection_by_adapter(device.address)
         test_method()
         self.test_disconnection_by_adapter(device.address)

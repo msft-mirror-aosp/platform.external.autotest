@@ -2723,8 +2723,9 @@ class PCHPowergatingStats(object):
         if len(utils.system_output('lspci -d :31dc')) > 0:
             S0IX_WHITELIST.add('CNV')
 
-        # HrP2 device has 0x02f0 as devid.
-        if len(utils.system_output('lspci -d :02f0')) > 0:
+        # HrP2 device has 0x02f0(CML) or 0x4df0(JSL) as devid.
+        if (len(utils.system_output('lspci -d :02f0')) > 0 or
+            len(utils.system_output('lspci -d :4df0')) > 0):
             S0IX_WHITELIST.update(['CNVI', 'NPK_AON'])
 
         on_ip = set(ip['name'] for ip in self._stat if ip['state'])

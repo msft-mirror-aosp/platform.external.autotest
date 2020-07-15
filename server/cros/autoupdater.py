@@ -649,25 +649,17 @@ class ChromiumOSUpdater(object):
                      self.host.get_release_version(),
                      self.update_version)
 
-    def _install_via_update_engine(self, devserver_name, image_name):
+
+    def _install_via_update_engine(self):
         """Install an updating using the production AU flow.
 
-        This uses the standard AU flow and the `stateful_update` script to
-        download and install a root FS, kernel and stateful filesystem content.
-
-        @param devserver_name: The devserver name and port (optional).
-        @param image_name: The image to be installed.
+        This uses the standard AU flow and the `stateful_update` script
+        to download and install a root FS, kernel and stateful
+        filesystem content.
 
         @return The kernel expected to be booted next.
         """
         logging.info('Installing image using update_engine.')
-        ds = dev_server.ImageServer('http://%s' % devserver_name)
-        try:
-            ds.stage_artifacts(image_name, ['full_payload', 'stateful',
-                                            'autotest_packages'])
-        except dev_server.DevServerException as e:
-            raise error.TestFail, str(e), sys.exc_info()[2]
-
         expected_kernel = self.update_image()
         self.update_stateful()
         self._set_target_version()
@@ -710,8 +702,7 @@ class ChromiumOSUpdater(object):
         logging.info('Try quick provision with devserver.')
         ds = dev_server.ImageServer('http://%s' % devserver_name)
         try:
-            ds.stage_artifacts(image_name, ['quick_provision', 'stateful',
-                                            'autotest_packages'])
+            ds.stage_artifacts(image_name, ['quick_provision', 'stateful'])
         except dev_server.DevServerException as e:
             raise error.TestFail, str(e), sys.exc_info()[2]
 
@@ -723,19 +714,20 @@ class ChromiumOSUpdater(object):
                 fields={'devserver': devserver_name, 'gs_cache': False})
 
 
-    def _install_via_quick_provision(self, server_name, image_name):
+    def _install_via_quick_provision(self):
         """Install an updating using the `quick-provision` script.
 
         This uses the `quick-provision` script to download and install
         a root FS, kernel and stateful filesystem content.
 
-        @param server_name: The devserver name and port (optional).
-        @param image_name: The image to be installed.
-
         @return The kernel expected to be booted next.
         """
+        if not self._use_quick_provision:
+            return None
+        image_name = url_to_image_name(self.update_url)
         logging.info('Installing image using quick-provision.')
         provision_command = self._get_remote_script(_QUICK_PROVISION_SCRIPT)
+        server_name = urlparse.urlparse(self.update_url)[1]
         try:
             try:
                 self._quick_provision_with_gs_cache(provision_command,
@@ -769,12 +761,9 @@ class ChromiumOSUpdater(object):
         """
         logging.info('Installing image at %s onto %s',
                      self.update_url, self.host.hostname)
-        server_name = urlparse.urlparse(self.update_url)[1]
-        image_name = url_to_image_name(self.update_url)
-
         try:
-            return (self._install_via_quick_provision(server_name, image_name)
-                    or self._install_via_update_engine(server_name, image_name))
+            return (self._install_via_quick_provision()
+                    or self._install_via_update_engine())
         except:
             # N.B. This handling code includes non-Exception classes such
             # as KeyboardInterrupt.  We need to clean up, but we also must

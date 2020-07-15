@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import argparse
 import contextlib
 import copy
@@ -1002,8 +1004,8 @@ def combine_modules_by_common_word(modules):
 
         else:
             combined[prefix] = set(d[key])
-    print 'Reduced number of control files from %d to %d.' % (len(modules),
-                                                              len(combined))
+    print('Reduced number of control files from %d to %d.' % (len(modules),
+                                                              len(combined)))
     return combined
 
 

@@ -251,6 +251,7 @@ class base_sysinfo(object):
 
         self._installed_packages = []
         self._journal_cursor = None
+        self._system_log_cursor = None
 
 
     def serialize(self):
@@ -332,11 +333,21 @@ class base_sysinfo(object):
             self._messages_size = stat.st_size
             self._messages_inode = stat.st_ino
 
-        self._journal_cursor = get_journal_cursor()
-        # We want to only log the journal from this point on, not everything.
+        self._system_log_cursor = get_system_log_cursor()
+        if not self._system_log_cursor:
+            # TODO(yoshiki): remove journald related code: crbug.com/1066706
+            self._journal_cursor = get_journal_cursor()
+
+        # We want to only log the entries from this point on, not everything.
         # When you do not filter from the cursor on the journal.gz can be
         # extremely large and take a very long amount of time to compress.
-        if self._journal_cursor:
+        if self._system_log_cursor:
+            self.test_loggables.add(command((
+                '/usr/sbin/croslog --output=export --cursor="{}"'.format(self._system_log_cursor)),
+                logf='unified-log',
+                compress_log=True))
+        elif self._journal_cursor:
+            # TODO(yoshiki): remove journald related code: crbug.com/1066706
             self.test_loggables.add(command((
                 'journalctl -o export -c "{}"'.format(self._journal_cursor)),
                 logf='journal',
@@ -506,6 +517,7 @@ def _run_loggables_ignoring_errors(loggables, output_dir):
                     log, output_dir)
 
 def get_journal_cursor():
+    # TODO(yoshiki): remove journald related code: crbug.com/1066706
     cmd = "/usr/bin/journalctl  -n0 --show-cursor -q"
     try:
         cursor = utils.system_output(cmd)
@@ -514,3 +526,16 @@ def get_journal_cursor():
         return cursor[pos:]
     except Exception, e:
         logging.error("error running journalctl --show-cursor: %s", e)
+
+def get_system_log_cursor():
+    if not os.path.exists("/usr/sbin/croslog"):
+        return None
+
+    cmd = "/usr/sbin/croslog --lines=0 --show-cursor --quiet"
+    try:
+        cursor = utils.system_output(cmd)
+        prefix = "-- cursor: "
+        pos = cursor.find(prefix) + len(prefix)
+        return cursor[pos:]
+    except Exception, e:
+        logging.error("error running croslog --show-cursor: %s", e)

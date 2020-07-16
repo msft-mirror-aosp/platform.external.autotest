@@ -34,8 +34,7 @@ class BaseImageTests(lxc_utils.LXCTests):
     def testCreate_existing(self):
         """Verifies that BaseImage works with existing base containers."""
         with TestBaseContainer() as control:
-            manager = BaseImage(control.container_path,
-                                control.name)
+            manager = BaseImage(control.container_path, control.name)
             self.assertIsNotNone(manager.base_container)
             self.assertEquals(control.container_path,
                               manager.base_container.container_path)
@@ -116,7 +115,7 @@ class BaseImageSetupTests(lxc_utils.LXCTests):
     """
 
     def setUp(self):
-        self.manager = BaseImage(container_path=test_dir)
+        self.manager = BaseImage(test_dir, lxc.BASE)
 
     def tearDown(self):
         self.manager.cleanup()
@@ -183,7 +182,7 @@ def setUpModule():
     # Unfortunately, aside from duping the BaseImage code completely, there
     # isn't an easy way to download and configure a base container.  So even
     # though this is the BaseImage unittest, we use a BaseImage to set it up.
-    bcm = BaseImage(lxc.DEFAULT_CONTAINER_PATH)
+    bcm = BaseImage(lxc.DEFAULT_CONTAINER_PATH, lxc.BASE)
     if bcm.base_container is None:
         bcm.setup()
         cleanup_ref_container = True

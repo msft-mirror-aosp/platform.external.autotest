@@ -17,5 +17,3 @@ from container import ContainerId
 from container_bucket import ContainerBucket
 from container_factory import ContainerFactory
 from lxc import install_packages
-from shared_host_dir import SharedHostDir
-from zygote import Zygote

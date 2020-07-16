@@ -187,7 +187,7 @@ def setup_base(container_path):
     @param bucket: ContainerBucket to interact with containers.
     """
     logging.info('Rebuild base container in folder %s.', container_path)
-    image = base_image.BaseImage(container_path)
+    image = base_image.BaseImage(container_path, lxc.BASE)
     image.setup()
     logging.info('Base container created: %s', image.get().name)
 

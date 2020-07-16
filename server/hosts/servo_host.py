@@ -30,6 +30,7 @@ from autotest_lib.server.hosts import base_servohost
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.cros.faft.utils import config
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.site_utils.admin_audit import servo_updater
 
 try:
     from chromite.lib import metrics
@@ -1392,6 +1393,8 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
                           caller.
     @param try_servo_repair  If true, check a servo host with
                           `repair()` instead of `verify()`.
+    @param dut_host_info: A HostInfo object of the DUT that connected
+                          to this servo.
 
     @returns: A ServoHost object or None. See comments above.
 
@@ -1445,6 +1448,15 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         newhost.reset_servo()
     if dut:
         newhost.set_dut_hostname(dut.hostname)
+
+    if try_lab_servo or try_servo_repair:
+        try:
+            logging.info("Check and update servo firmware.")
+            servo_updater.update_servo_firmware(
+                newhost,
+                force_update=False)
+        except Exception as e:
+            logging.error("Servo device update error: %s", e)
 
     try:
         newhost.restart_servod(quick_startup=True)

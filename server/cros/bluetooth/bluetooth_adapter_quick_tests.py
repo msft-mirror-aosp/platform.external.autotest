@@ -224,6 +224,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   model_testNA=[],
                                   model_testWarn=[],
                                   skip_models=[],
+                                  skip_chipsets=[],
                                   shared_devices_count=0):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
@@ -242,6 +243,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   failures are emitted as TestWarn.
            @param skip_models: Raises TestNA on these models and doesn't attempt
                                to run the tests.
+           @param skip_chipsets: Raises TestNA on these chipset and doesn't
+                                 attempt to run the tests.
+
         """
 
         def decorator(test_method):
@@ -304,6 +308,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         logging.info('SKIPPING TEST %s', test_name)
                         raise error.TestNAError(
                                 'Test not supported on this model')
+
+                    chipset = self.get_chipset_name()
+                    logging.debug('Bluetooth module name is %s', chipset)
+                    if chipset in skip_chipsets:
+                        logging.info('SKIPPING TEST %s on chipset %s',
+                                     test_name, chipset)
+                        raise error.TestNAError(
+                                'Test not supported on this chipset')
 
                     self.quick_test_test_start(test_name, devices,
                                                shared_devices_count)

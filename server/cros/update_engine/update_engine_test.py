@@ -807,7 +807,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 yes=True,
                 payload_filename=payload_filename,
                 clobber_stateful=clobber_stateful,
-                do_stateful_update=False,
+                do_stateful_update=True,
                 staging_server=self._autotest_devserver.url(),
                 transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
 

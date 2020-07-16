@@ -829,7 +829,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
     def net_detect_scan_period_seconds(self, period):
         """Sets the period between net detect scans performed by the NIC to look
-        for whitelisted SSIDs to |period|. This setting only takes effect if the
+        for allowlisted SSIDs to |period|. This setting only takes effect if the
         NIC is programmed to wake on SSID.
 
         The correct way to use this method is:

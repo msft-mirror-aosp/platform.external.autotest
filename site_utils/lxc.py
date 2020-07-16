@@ -58,7 +58,7 @@ def main():
         utils.run('sudo true')
 
     options = parse_options()
-    image = base_image.BaseImage(container_path=options.path)
+    image = base_image.BaseImage(options.path, lxc.BASE)
     if options.setup:
         image.setup(name=options.name, force_delete=options.force_delete)
     elif options.force_delete:

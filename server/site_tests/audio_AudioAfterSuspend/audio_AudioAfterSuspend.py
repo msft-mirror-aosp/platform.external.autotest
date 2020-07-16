@@ -196,6 +196,16 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         @param plug_status: audio channel plug unplug sequence
 
         """
+        if ((bind_from == chameleon_audio_ids.CrosIds.HEADPHONE or
+            bind_to == chameleon_audio_ids.CrosIds.EXTERNAL_MIC) and
+            not audio_test_utils.has_audio_jack(self.host)):
+            raise error.TestNAError(
+                    'No audio jack for the DUT.'
+                    ' Confirm swarming bot dimension and control file'
+                    ' dependency for audio jack is matching.'
+                    ' For new boards, has_audio_jack might need to be updated.'
+            )
+
         if (recorder == chameleon_audio_ids.CrosIds.INTERNAL_MIC and
             not audio_test_utils.has_internal_microphone(host)):
             return

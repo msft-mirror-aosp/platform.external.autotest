@@ -269,7 +269,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # We don't pair to the peer device because we don't want it in the
-        # whitelist. However, we want an advertising peer in this test
+        # allowlist. However, we want an advertising peer in this test
         # responding to the discovery requests.
         self.test_device_set_discoverable(device, True)
 

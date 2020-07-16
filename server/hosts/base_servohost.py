@@ -473,10 +473,19 @@ class BaseServoHost(ssh_host.SSHHost):
                 when servo host is not 'localhost'.
 
         """
-        run_args = {'command': command, 'timeout': timeout,
-                    'ignore_status': ignore_status, 'stdout_tee': stdout_tee,
-                    'stderr_tee': stderr_tee, 'stdin': stdin,
-                    'verbose': verbose, 'args': args}
+        run_args = {
+            'command'             : command,
+            'timeout'             : timeout,
+            'ignore_status'       : ignore_status,
+            'stdout_tee'          : stdout_tee,
+            'stderr_tee'          : stderr_tee,
+            # connect_timeout     n/a for localhost
+            # options             n/a for localhost
+            'ssh_failure_retry_ok': ssh_failure_retry_ok,
+            'stdin'               : stdin,
+            'verbose'             : verbose,
+            'args'                : args,
+        }
         if self.is_localhost():
             if self._sudo_required:
                 run_args['command'] = 'sudo -n sh -c "%s"' % utils.sh_escape(

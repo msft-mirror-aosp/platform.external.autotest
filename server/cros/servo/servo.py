@@ -191,6 +191,7 @@ class _PowerStateController(object):
             self._servo.set_get_all(['warm_reset:on',
                                  'sleep:%.4f' % self._RESET_HOLD_TIME,
                                  'warm_reset:off'])
+
     def power_off(self):
         """Force the DUT to power off.
 
@@ -1648,3 +1649,9 @@ class Servo(object):
             self._uart.stop_capture()
             self._uart.dump()
             self._uart = None
+
+    def ec_reboot(self):
+        """Reboot Just the embedded controller."""
+        self.set_nocheck('ec_uart_flush', 'off')
+        self.set_nocheck('ec_uart_cmd', 'reboot')
+        self.set_nocheck('ec_uart_flush', 'on')

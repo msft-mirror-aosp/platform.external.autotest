@@ -10,4 +10,6 @@
   <Entry include="CtsDeqpTestCases dEQP-EGL.functional.robustness.reset_context.shaders.out_of_bounds.reset_status.writes.shader_storage_block#vertex" />
   <Entry include="CtsDeqpTestCases dEQP-EGL.functional.robustness.reset_context.shaders.out_of_bounds.reset_status.writes.local_array#vertex" />
   <Entry include="CtsKeystoreTestCases android.keystore.cts.CipherTest#testEmptyPlaintextEncryptsAndDecryptsWhenUnlockedRequired" />
+  <Entry include="CtsPermission2TestCases android.permission2.cts.PermissionPolicyTest#testPlatformPermissionPolicyUnaltered" />
+  <Entry include="CtsIncidentHostTestCases com.android.server.cts.GraphicsStatsValidationTest#testBasicDrawFrame" />
 </SubPlan>

@@ -54,7 +54,7 @@ class TradefedTest(test.test):
     # parameter in control files can override the count, within the
     # _BRANCH_MAX_RETRY limit below.
     _BRANCH_DEFAULT_RETRY = [(0, 5), (1, 10)]  # dev=5, beta=stable=10
-    _BRANCH_MAX_RETRY = [(0, 5), (1, 30),      # dev=5, beta=30, stable=99
+    _BRANCH_MAX_RETRY = [(0, 12), (1, 30),      # dev=12, beta=30, stable=99
         (constants.APPROXIMATE_STABLE_BRANCH_NUMBER, 99)]
     # TODO(kinaba): betty-arcnext
     _BOARD_MAX_RETRY = {'betty': 0}
@@ -1156,6 +1156,7 @@ class TradefedTest(test.test):
         board = self._get_board_name()
         session_id = None
         toggle_ndk = board == 'rammus-arc-r' # Toggle to ndk translation for this board
+        nativebridge64_experiment = (self._get_release_branch_number() == 0)
 
         self._setup_result_directories()
         if media_asset:
@@ -1173,7 +1174,8 @@ class TradefedTest(test.test):
                     board=board,
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps,
-                    toggle_ndk=toggle_ndk) as current_logins:
+                    toggle_ndk=toggle_ndk,
+                    nativebridge64=nativebridge64_experiment) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

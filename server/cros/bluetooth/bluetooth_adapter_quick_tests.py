@@ -85,6 +85,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                 for device in device_list:
                     addresses.append(device.address)
+                    self.start_agent(device)
 
             # Make sure device RSSI is sufficient
             self.verify_device_rssi(addresses)
@@ -157,6 +158,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
             if len(self.host.peer_list) == 0:
                 raise error.TestFail('Unable to find a Bluetooth peer')
+
+            # Check the chameleond version on the peer and update if necessary
+            if not self.update_btpeer():
+                logging.error('Updating btpeers failed. Ignored')
 
             # Query connected devices on our btpeer at init time
             self.available_devices = self.list_devices_available()
@@ -277,19 +282,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             @functools.wraps(test_method)
             def wrapper(self):
                 """A wrapper of the decorated method."""
+                # Set test name before exiting so batches correctly identify
+                # failing tests
+                self.test_name = test_name
+
                 if not _check_runnable(self):
                     return
-                if not _is_enough_peers_present(self):
-                    raise error.TestNAError('Not enough peer available')
 
                 try:
-                    self.quick_test_test_start(test_name, devices,
-                                               shared_devices_count)
+                    if not _is_enough_peers_present(self):
+                        raise error.TestNAError('Not enough peer available')
+
                     model = self.host.get_platform()
                     if model in skip_models:
                         logging.info('SKIPPING TEST %s', test_name)
                         raise error.TestNAError(
                                 'Test not supported on this model')
+
+                    self.quick_test_test_start(test_name, devices,
+                                               shared_devices_count)
 
                     test_method(self)
                 except error.TestFail as e:
@@ -312,9 +323,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
            as well as peer devices. In addition the methods prints test start
            traces.
         """
-
-        self.test_name = test_name
-
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()
@@ -398,6 +406,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         for device_list in self.devices.values():
             for device in device_list:
                 if device is not None:
+                    self.stop_agent(device)
                     logging.info('Clear device %s from DUT', device.name)
                     self.bluetooth_facade.disconnect_device(device.address)
                     device_is_paired = self.bluetooth_facade.device_is_paired(

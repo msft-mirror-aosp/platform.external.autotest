@@ -905,9 +905,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     # Add EC image to firmware update command
                     fw_cmd += ' -e %s' % dest_ec_path
 
+                # Make sure command is allowed to finish even if ssh fails.
+                fw_cmd = "trap '' SIGHUP; %s" % fw_cmd
+
                 # Update firmware on DUT
                 logging.info('Updating firmware.')
-                self.run(fw_cmd)
+                try:
+                    self.run(fw_cmd, options="LogLevel=verbose")
+                except error.AutoservRunError as e:
+                    if e.result_obj.exit_status != 255:
+                        raise
+                    elif ec_image:
+                        logging.warn("DUT network dropped during update"
+                                     " (often caused by EC resetting USB)")
+                    else:
+                        logging.error("DUT network dropped during update"
+                                      " (unexpected, since no EC image)")
+                        raise
             else:
                 # Host is not available, program firmware using servo
                 if ec_image:

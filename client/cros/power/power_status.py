@@ -2708,7 +2708,7 @@ class PCHPowergatingStats(object):
                  power consumption S0ix, empty list if none.
         """
         # PCH IP block that is on for S0ix. Ignore these IP block.
-        S0IX_WHITELIST = set([
+        S0IX_ALLOWLIST = set([
                 'PMC', 'OPI-DMI', 'SPI / eSPI', 'XHCI', 'xHCI', 'FUSE', 'Fuse',
                 'PCIE0', 'NPKVRC', 'NPKVNN', 'NPK_VNN', 'PSF1', 'PSF2', 'PSF3',
                 'PSF4', 'SBR0', 'SBR1', 'SBR2', 'SBR4', 'SBR5', 'SBR6', 'SBR7'])
@@ -2721,15 +2721,15 @@ class PCHPowergatingStats(object):
 
         # CNV device has 0x31dc as devid .
         if len(utils.system_output('lspci -d :31dc')) > 0:
-            S0IX_WHITELIST.add('CNV')
+            S0IX_ALLOWLIST.add('CNV')
 
         # HrP2 device has 0x02f0(CML) or 0x4df0(JSL) as devid.
         if (len(utils.system_output('lspci -d :02f0')) > 0 or
             len(utils.system_output('lspci -d :4df0')) > 0):
-            S0IX_WHITELIST.update(['CNVI', 'NPK_AON'])
+            S0IX_ALLOWLIST.update(['CNVI', 'NPK_AON'])
 
         on_ip = set(ip['name'] for ip in self._stat if ip['state'])
-        on_ip -= S0IX_WHITELIST
+        on_ip -= S0IX_ALLOWLIST
 
         if on_ip:
             on_ip_in_warn_list = on_ip & S0IX_WARNLIST
@@ -2741,8 +2741,8 @@ class PCHPowergatingStats(object):
         if on_ip:
             logging.error('Found PCH IP that need to powergate: %s',
                           ', '.join(on_ip))
-            return False
-        return True
+            return on_ip
+        return []
 
     def read_pch_powergating_info(self, sleep_seconds=1):
         """

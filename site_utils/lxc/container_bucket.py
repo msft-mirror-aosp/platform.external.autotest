@@ -52,7 +52,7 @@ class ContainerBucket(object):
             # fall back to using the default container path).
             try:
                 base_image_ok = True
-                container = BaseImage(self.container_path).get()
+                container = BaseImage(self.container_path, constants.BASE).get()
             except error.ContainerError as e:
                 base_image_ok = False
                 raise e

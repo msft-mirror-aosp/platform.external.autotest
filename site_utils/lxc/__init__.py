@@ -10,7 +10,6 @@
   5. Cleanup, e.g., destroy the container.
 """
 
-from base_image import BaseImage
 from constants import *
 from container import Container
 from container import ContainerId

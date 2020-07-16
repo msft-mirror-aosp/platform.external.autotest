@@ -33,7 +33,7 @@ class ContainerTests(lxc_utils.LXCTests):
 
         # Check if a base container exists on this machine and download one if
         # necessary.
-        image = base_image.BaseImage()
+        image = base_image.BaseImage(lxc.DEFAULT_CONTAINER_PATH)
         try:
             cls.base_container = image.get()
             cls.cleanup_base_container = False
@@ -48,7 +48,7 @@ class ContainerTests(lxc_utils.LXCTests):
         cls.base_container = None
         if not unittest_setup.config.skip_cleanup:
             if cls.cleanup_base_container:
-                lxc.BaseImage().cleanup()
+                lxc.BaseImage(lxc.DEFAULT_CONTAINER_PATH).cleanup()
             utils.run('sudo rm -r %s' % cls.test_dir)
 
     def testInit(self):

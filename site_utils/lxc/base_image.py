@@ -29,7 +29,7 @@ class BaseImage(object):
     associated snapshot clones.
     """
 
-    def __init__(self, container_path, base_name=constants.BASE):
+    def __init__(self, container_path, base_name):
         """Creates a new BaseImage.
 
         If a valid base container already exists on this machine, the BaseImage

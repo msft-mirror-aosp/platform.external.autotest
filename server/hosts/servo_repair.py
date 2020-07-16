@@ -457,6 +457,22 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
         return 'Wait for update, then reboot servo host.'
 
 
+class _ECRebootRepair(hosts.RepairAction):
+    """
+    Reboot EC on DUT from servo.
+    """
+
+    def _is_applicable(self, host):
+        return (not host.is_localhost()) and host.is_ec_supported()
+
+    def repair(self, host):
+        host.get_servo().ec_reboot()
+
+    @property
+    def description(self):
+        return 'Reboot EC'
+
+
 class _DutRebootRepair(hosts.RepairAction):
     """
     Reboot DUT to recover some servo controls depending on EC console.
@@ -534,6 +550,10 @@ def create_servo_repair_strategy():
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
         (
             _DutRebootRepair, 'dut_reboot', ['servod_connection'],
+            ['servod_control', 'lid_open', 'ec_board']
+        ),
+        (
+            _ECRebootRepair, 'ec_reboot', ['servod_connection'],
             ['servod_control', 'lid_open', 'ec_board']
         ),
     ]

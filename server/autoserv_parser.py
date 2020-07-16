@@ -230,6 +230,14 @@ class autoserv_parser(object):
             help='Relative path from results directory to the sub-directory '
             'which should be offloaded synchronously',
         )
+        self.parser.add_argument(
+                '--ssp-base-image-name',
+                action='store',
+                help='Name of the base container image to use for'
+                     ' Server Side Packaging (SSP). Only meaningful when SSP is'
+                     ' enabled. The default value is provided via the global'
+                     ' config setting for AUTOSERV/container_base_name.'
+        )
 
         #
         # Warning! Please read before adding any new arguments!

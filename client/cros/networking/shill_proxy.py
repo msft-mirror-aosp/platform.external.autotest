@@ -93,7 +93,6 @@ class ShillProxy(object):
     SERVICE_PROPERTY_PASSPHRASE = 'Passphrase'
     SERVICE_PROPERTY_PROFILE = 'Profile'
     SERVICE_PROPERTY_SAVE_CREDENTIALS = 'SaveCredentials'
-    SERVICE_PROPERTY_FT_ENABLED = 'WiFi.FTEnabled'
     # Unless you really care whether a network is WPA (TSN) vs. WPA-2
     # (RSN), you should use SERVICE_PROPERTY_SECURITY_CLASS.
     SERVICE_PROPERTY_SECURITY_RAW = 'Security'
@@ -159,7 +158,6 @@ class ShillProxy(object):
         SERVICE_PROPERTY_STRENGTH: (dbus.Byte, {}),
         SERVICE_PROPERTY_STATE: (dbus.String, {}),
         SERVICE_PROPERTY_TYPE: (dbus.String, {}),
-        SERVICE_PROPERTY_FT_ENABLED: (dbus.Boolean, {}),
         SERVICE_PROPERTY_STATIC_IP_CONFIG: (dbus.Dictionary,
                                             {'signature' : 'sv'}),
 

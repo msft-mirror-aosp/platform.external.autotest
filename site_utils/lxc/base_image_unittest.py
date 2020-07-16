@@ -183,7 +183,7 @@ def setUpModule():
     # Unfortunately, aside from duping the BaseImage code completely, there
     # isn't an easy way to download and configure a base container.  So even
     # though this is the BaseImage unittest, we use a BaseImage to set it up.
-    bcm = BaseImage()
+    bcm = BaseImage(lxc.DEFAULT_CONTAINER_PATH)
     if bcm.base_container is None:
         bcm.setup()
         cleanup_ref_container = True

@@ -113,11 +113,6 @@ def _install_package_precheck(packages):
              skipped.
 
     """
-    if not constants.SSP_ENABLED and not common_utils.is_in_container():
-        logging.info('Server-side packaging is not enabled. Install package %s '
-                     'is skipped.', packages)
-        return False
-
     if server_utils.is_inside_chroot():
         logging.info('Test is running inside chroot. Install package %s is '
                      'skipped.', packages)

@@ -3882,7 +3882,7 @@ class BluetoothAdapterTests(test.test):
                            or the end of the test(END).
         """
 
-        if test_state is 'END':
+        if test_state == 'END':
             # Disable all the bluetooth debug logs
             self.enable_disable_debug_log(enable=False)
 
@@ -3907,7 +3907,7 @@ class BluetoothAdapterTests(test.test):
                     device.Close()
 
                     # Power cycle BT device if we're in the middle of a test
-                    if test_state is 'MID':
+                    if test_state == 'MID':
                         device.PowerCycle()
 
         self.devices = dict()

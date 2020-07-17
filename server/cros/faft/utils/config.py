@@ -7,6 +7,7 @@ import logging
 import os
 
 import common
+from autotest_lib.client.common_lib import error
 
 
 # Path to the local checkout of the fw-testing-configs repo
@@ -83,6 +84,7 @@ class Config(object):
             self.platform = platform.replace('-','_')
         if _has_config_file(self.platform):
             platform_config = _load_config(self.platform)
+            seen_platforms = [self.platform]
             self._add_cfg_to_precedence(self.platform, platform_config)
             model_configs = platform_config.get('models', {})
             model_config = model_configs.get(model, None)
@@ -92,7 +94,13 @@ class Config(object):
                 logging.debug('Using model override for %s', model)
             parent_platform = self._precedence_list[-1].get('parent', None)
             while parent_platform is not None:
+                if parent_platform in seen_platforms:
+                    loop = ' -> '.join(seen_platforms + [parent_platform])
+                    raise error.TestError('fw-testing-configs for platform %s '
+                                          'contains an inheritance loop: %s' % (
+                                          self.platform, loop))
                 parent_config = _load_config(parent_platform)
+                seen_platforms.append(parent_platform)
                 self._add_cfg_to_precedence(parent_platform, parent_config)
                 parent_platform = self._precedence_list[-1].get('parent', None)
         else:

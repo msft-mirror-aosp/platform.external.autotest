@@ -5,6 +5,7 @@
 import sys
 import functools
 import logging
+import time
 
 import common
 from autotest_lib.client.common_lib import hosts
@@ -330,6 +331,42 @@ class _CCDTestlabVerifier(hosts.Verifier):
     def description(self):
         return 'ccd testlab enabled'
 
+class _CCDPowerDeliveryVerifier(hosts.Verifier):
+    """Verifier to check and reset servo_v4_role for servos that support
+    power delivery feature(a.k.a power pass through).
+
+    There are currently two position of servo_v4_role, src and snk:
+    src --  servo in power delivery mode and passes power to the DUT.
+    snk --  servo in normal mode and not passes power to DUT.
+    We want to ensure that servo_v4_role is set to src.
+
+    TODO(xianuowang@) Convert it to verifier/repair action pair or remove it
+    once we collected enough metrics.
+    """
+    def verify(self, host):
+        if host.get_servo().get('servo_v4_role') == 'snk':
+            logging.warning('The servo initlized with role snk while'
+                            ' supporting power delivery, resetting role'
+                            ' to src...')
+            host.get_servo().set_servo_v4_role('src')
+            time.sleep(5)
+            result = host.get_servo().get('servo_v4_role')
+            metrics_data = {
+                'hostname': host.get_dut_hostname() or 'unknown',
+                'status': 'success' if result == 'src' else 'failed',
+            }
+            metrics.Counter(
+                'chromeos/autotest/repair/verifier/power_delivery2'
+            ).increment(fields=metrics_data)
+
+    def _is_applicable(self, host):
+        return (host.is_in_lab() and
+                host.get_servo().supports_built_in_pd_control())
+
+    @property
+    def description(self):
+        return 'ensure applicable servo is in "src" mode for power delivery'
+
 
 class _PowerButtonVerifier(hosts.Verifier):
     """
@@ -457,6 +494,22 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
         return 'Wait for update, then reboot servo host.'
 
 
+class _ECRebootRepair(hosts.RepairAction):
+    """
+    Reboot EC on DUT from servo.
+    """
+
+    def _is_applicable(self, host):
+        return (not host.is_localhost()) and host.is_ec_supported()
+
+    def repair(self, host):
+        host.get_servo().ec_reboot()
+
+    @property
+    def description(self):
+        return 'Reboot EC'
+
+
 class _DutRebootRepair(hosts.RepairAction):
     """
     Reboot DUT to recover some servo controls depending on EC console.
@@ -524,6 +577,7 @@ def create_servo_repair_strategy():
         (_LidVerifier,               'lid_open',    ['servod_connection']),
         (_EcBoardVerifier,           'ec_board',    ['servod_connection']),
         (_CCDTestlabVerifier,        'ccd_testlab', ['servod_connection']),
+        (_CCDPowerDeliveryVerifier,  'power_delivery', ['servod_connection']),
     ]
 
     servod_deps = ['servod_job', 'servod_connection', 'servod_control',
@@ -534,6 +588,10 @@ def create_servo_repair_strategy():
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
         (
             _DutRebootRepair, 'dut_reboot', ['servod_connection'],
+            ['servod_control', 'lid_open', 'ec_board']
+        ),
+        (
+            _ECRebootRepair, 'ec_reboot', ['servod_connection'],
             ['servod_control', 'lid_open', 'ec_board']
         ),
     ]

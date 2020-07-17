@@ -394,7 +394,7 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
     PD_STATE_DICT = {
         'port': 'Port\s+([\w]+)',
         'role': 'Role:\s+([\w]+-[\w]+)',
-        'pd_state': 'State:\s+([\d\w()_]+)',
+        'pd_state': 'State:\s+([\w()]+)',
         'flags': 'Flags:\s+([\w]+)',
         'polarity': '(CC\d)'
     }
@@ -597,9 +597,9 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
     PD_STATE_DICT = {
         'port': 'Port\s+([\w]+)',
         'role': 'Role:\s+([\w]+-[\w]+)',
-        'pd_state': 'State:\s+([\d\w()_.]+)',
+        'pd_state': 'TC State:\s+([\w().]+)',
         'flags': 'Flags:\s+([\w]+)',
-        'pe_state': 'State:\s+(PE_[\w]+)',
+        'pe_state': 'PE State:\s+(\w*)',
         'polarity': '(CC\d)'
     }
 

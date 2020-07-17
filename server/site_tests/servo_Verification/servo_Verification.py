@@ -62,8 +62,8 @@ class servo_Verification(test.test):
         # This assumes that the string is job.run_test(...) so the first ( is
         # at index 0.
         for index in range(1, len(run_test_str)):
-          if run_test_str[index] is '(': paran += 1
-          if run_test_str[index] is ')': paran -= 1
+          if run_test_str[index] == '(': paran += 1
+          if run_test_str[index] == ')': paran -= 1
           if paran == 0: break
         else:
           # Failed to find balanced parentheses.

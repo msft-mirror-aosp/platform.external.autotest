@@ -6,6 +6,7 @@ import logging
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros import vboot_constants as vboot
 
@@ -41,6 +42,18 @@ class firmware_SoftwareSync(FirmwareTest):
             logging.info("CCD opened.")
         else:
             self.original_ccd_level = None
+
+        # Get the boot mode. It should be NORMAL at this point, even if EFS2 is
+        # not supported.
+        res = cr50_utils.GSCTool(host, ['-a', '-g']).stdout.strip()
+        if 'NORMAL' in res:
+            pass
+        elif 'error' in res.lower():
+            raise error.TestFail('TPM Vendor command GET_BOOT_MODE failed: %r' %
+                                 res)
+        else:
+            raise error.TestFail('GET_BOOT_MODE did not return NORMAL: %r' %
+                                 res)
 
     def cleanup(self):
         try:

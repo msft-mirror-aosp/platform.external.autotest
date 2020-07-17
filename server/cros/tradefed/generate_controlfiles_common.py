@@ -360,7 +360,7 @@ def get_dependencies(modules, abi, is_public, led_provision, camera_facing):
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
 
     if led_provision is not None:
-        dependencies.append(led_provision)
+        dependencies.append('camerabox_light:'+led_provision)
 
     if camera_facing is not None:
         dependencies.append('camerabox_facing:'+camera_facing)

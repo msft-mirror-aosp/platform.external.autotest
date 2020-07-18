@@ -138,6 +138,8 @@ class firmware_ECWakeSource(FirmwareTest):
 
         if self.servo.main_device_is_ccd():
             logging.info('Using CCD, ignore waking by power button.')
+        elif not self.faft_config.ec_has_hibernate_cmd:
+            logging.info('EC does not support hibernate, skipping hibernate test.')
         else:
             logging.info('EC hibernate and wake by power button.')
             self.hibernate_and_wake_by_power_button()

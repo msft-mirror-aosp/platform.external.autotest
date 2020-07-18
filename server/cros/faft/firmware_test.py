@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import ast
 import ctypes
 import logging
@@ -2301,7 +2303,7 @@ class FirmwareTest(FAFTBase):
             utils.wait_for_value(self._check_open_and_press_power_button,
                                  expected_value=True,
                                  timeout_sec=self.cr50.PP_LONG)
-        except Exception, e:
+        except Exception as e:
             logging.info(e)
             raise
         finally:

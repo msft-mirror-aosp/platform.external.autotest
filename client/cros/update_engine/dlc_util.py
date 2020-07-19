@@ -4,10 +4,16 @@
 
 import json
 import logging
+import os
+import shutil
 
 from autotest_lib.client.common_lib import utils
 
 _DEFAULT_RUN = utils.run
+
+# Directory for preloaded DLCs that may be packaged with the OS. Preloaded
+# DLCs can be installed without needing to go through update_engine.
+_PRELOAD_DIR = '/mnt/stateful_partition/var_overlay/cache/dlc-images/'
 
 class DLCUtil(object):
     """
@@ -104,3 +110,35 @@ class DLCUtil(object):
         """
         cmd = [self._DLCSERVICE_UTIL_CMD, '--purge', '--id=%s' % dlc_id]
         self._run(cmd, ignore_status=ignore_status)
+
+
+    def remove_preloaded(self, dlc_id):
+        """
+        Remove a DLC from the preload directory. DLCs in this directory can be
+        preloaded, meaning they can be installed without needing to download
+        and install them using update_engine. It is hard to differentiate
+        preloading a DLC and installing a DLC after a successful AU. After
+        AU, updated DLCs should be installed but not yet mounted. In both
+        cases, calling dlcservice_util --install should result in the DLC
+        being installed without going through Omaha/Nebraska. Clearing the
+        preload directory for a DLC allows us to verify it was updated,
+        by ruling out the possibility that it was preloaded instead.
+
+        @param dlc_id: Wipe preload directory for the DLC with this id.
+
+        """
+        preload_dir = os.path.join(_PRELOAD_DIR, dlc_id)
+        if os.path.exists(preload_dir) and os.path.isdir(preload_dir):
+            shutil.rmtree(preload_dir)
+
+
+    def is_installed(self, dlc_id):
+        """
+        Check if a DLC is installed.
+
+        @param dlc_id: The id of the DLC to check.
+
+        @return True if the DLC is installed, False if it's not.
+
+        """
+        return dlc_id in self.list().keys()

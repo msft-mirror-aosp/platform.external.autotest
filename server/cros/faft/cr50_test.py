@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging
 import os
 import pprint
@@ -385,7 +387,7 @@ class Cr50Test(FirmwareTest):
         for i in range(retries):
             try:
                 return self.cr50_update(image, rollback=rollback)
-            except Exception, e:
+            except Exception as e:
                 logging.warning('Failed to update to %s attempt %d: %s',
                                 os.path.basename(image), i, str(e))
                 logging.info('Sleeping 60 seconds')

@@ -255,11 +255,8 @@ class FingerprintTest(test.test):
                                  % ectool_output)
         return ret
 
-    def setup_test(self, host, test_dir, use_dev_signed_fw=False,
-                   enable_hardware_write_protect=True,
-                   enable_software_write_protect=True,
-                   force_firmware_flashing=False, init_entropy=True):
-        """Performs initialization."""
+    def initialize(self, host):
+        """Perform minimal initialization, to avoid AttributeError in cleanup"""
         self.host = host
         self.servo = host.servo
 
@@ -267,6 +264,14 @@ class FingerprintTest(test.test):
 
         self.servo.initialize_dut()
 
+        self.fp_board = self.get_fp_board()
+        self._build_fw_file = self.get_build_fw_file()
+
+    def setup_test(self, test_dir, use_dev_signed_fw=False,
+                   enable_hardware_write_protect=True,
+                   enable_software_write_protect=True,
+                   force_firmware_flashing=False, init_entropy=True):
+        """Perform more complete initialization, including copying test files"""
         logging.info('HW write protect enabled: %s',
                      self.is_hardware_write_protect_enabled())
 
@@ -290,8 +295,7 @@ class FingerprintTest(test.test):
         logging.info('Created dut_working_dir: %s', self._dut_working_dir)
         self.copy_files_to_dut(test_dir, self._dut_working_dir)
 
-        self._build_fw_file = self.get_build_fw_file()
-        self._validate_build_fw_file(self._build_fw_file)
+        self.validate_build_fw_file()
 
         gen_script = os.path.abspath(os.path.join(self.autodir,
                                                   'server', 'cros', 'faft',
@@ -472,13 +476,14 @@ class FingerprintTest(test.test):
 
     def get_build_fw_file(self):
         """Returns full path to build FW file on DUT."""
-
-        fp_board = self.get_fp_board()
-        ls_cmd = 'ls ' + self._FINGERPRINT_BUILD_FW_DIR + '/' + fp_board \
-                 + '*.bin'
+        ls_cmd = 'ls %s/%s*.bin' % (
+            self._FINGERPRINT_BUILD_FW_DIR, self.fp_board)
         result = self.run_cmd(ls_cmd)
         if result.exit_status != 0:
-            raise error.TestFail('Unable to find firmware from build on device')
+            raise error.TestFail(
+                'Unable to find firmware file on device:'
+                ' command failed (rc=%s): %s'
+                % (result.exit_status, result.stderr.strip() or ls_cmd))
         ret = result.stdout.rstrip()
         logging.info('Build firmware file: %s', ret)
         return ret
@@ -489,11 +494,17 @@ class FingerprintTest(test.test):
             raise error.TestFail('"%s" does not match expected "%s" for board '
                                  '%s' % (a, b, self.get_fp_board()))
 
-    def _validate_build_fw_file(self, build_fw_file):
+    def validate_build_fw_file(self,
+                               allowed_types=(_KEY_TYPE_PRE_MP, _KEY_TYPE_MP)):
         """
         Checks that all attributes in the given firmware file match their
         expected values.
+
+        @param allowed_types: If key type is something else, raise TestFail.
+                              Default: pre-MP or MP.
+        @type allowed_types: tuple | list
         """
+        build_fw_file = self._build_fw_file
         # check hash
         actual_hash = self._calculate_sha256sum(build_fw_file)
         expected_hash = self._get_expected_firmware_hash(build_fw_file)
@@ -504,23 +515,24 @@ class FingerprintTest(test.test):
         expected_key_id = self._get_expected_firmware_key_id(build_fw_file)
         self.check_equal(actual_key_id, expected_key_id)
 
-        # check that signing key is "pre mass production" (pre-mp) or
-        # "mass production" (MP) for firmware in the build
+        # check that the signing key for firmware in the build
+        # is "pre mass production" (pre-mp) or "mass production" (MP)
         key_type = self._get_key_type(actual_key_id)
-        if not (key_type == self._KEY_TYPE_MP or
-                key_type == self._KEY_TYPE_PRE_MP):
-            raise error.TestFail('Firmware key type must be MP or PRE-MP '
-                                 'for board: %s' % self.get_fp_board())
+        if key_type not in allowed_types:
+            raise error.TestFail(
+                'Firmware key type must be %s for board %s; got %s (%s)' %
+                (' or '.join(allowed_types), self.fp_board, key_type,
+                 actual_key_id))
 
         # check ro_version
         actual_ro_version = self._read_firmware_ro_version(build_fw_file)
-        expected_ro_version =\
+        expected_ro_version = \
             self._get_expected_firmware_ro_version(build_fw_file)
         self.check_equal(actual_ro_version, expected_ro_version)
 
         # check rw_version
         actual_rw_version = self._read_firmware_rw_version(build_fw_file)
-        expected_rw_version =\
+        expected_rw_version = \
             self._get_expected_firmware_rw_version(build_fw_file)
         self.check_equal(actual_rw_version, expected_rw_version)
 

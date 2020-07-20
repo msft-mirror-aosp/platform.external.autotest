@@ -25,6 +25,7 @@ import pipes
 import re
 import shutil
 import stat
+import subprocess
 import tempfile
 import urlparse
 
@@ -137,7 +138,7 @@ class TradefedTest(test.test):
                 os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
                 os.environ['PATH'] = os.environ['JAVA_HOME']\
                                   + '/bin:' + os.environ['PATH']
-                os.system('java -version')
+                logging.info(subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT))
             except OSError:
                 logging.error('Can\'t change current PATH directory')
 

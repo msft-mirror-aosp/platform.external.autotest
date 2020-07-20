@@ -16,14 +16,12 @@ from collections import deque
 
 
 def utf8(s):
-    """Converts a Unicode string to a UTF-8 bytestring.
-    """
+    """Converts a Unicode string to a UTF-8 bytestring."""
     return s.encode('utf8')
 
 
 class CrosDisksArchiveTester(CrosDisksTester):
-    """A tester to verify archive support in CrosDisks.
-    """
+    """A tester to verify archive support in CrosDisks."""
 
     def __init__(self, test):
         super(CrosDisksArchiveTester, self).__init__(test)
@@ -136,9 +134,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
     def _test_invalid(self, mount_path):
         for archive_name in [
                 'Invalid.rar',
+                'Invalid.zip',
                 'Encrypted.rar',
                 'Not There.rar',
-                'Invalid.zip',
+                'Not There.zip',
         ]:
             archive_path = os.path.join(mount_path, archive_name)
             logging.info('Mounting archive %r', archive_path)
@@ -147,12 +146,28 @@ class CrosDisksArchiveTester(CrosDisksTester):
             self.cros_disks.mount(archive_path,
                                   os.path.splitext(archive_path)[1])
             mount_result = self.cros_disks.expect_mount_completion({
-                    'status':
-                    12,
-                    'source_path':
-                    archive_path,
-                    'mount_path':
-                    '',
+                    'status': 12,  # MOUNT_ERROR_MOUNT_PROGRAM_FAILED
+                    'source_path': archive_path,
+                    'mount_path': '',
+            })
+
+    def _test_need_password(self, mount_path):
+        for archive_name in [
+                'Encrypted AES-128.zip',
+                'Encrypted AES-192.zip',
+                'Encrypted AES-256.zip',
+                'Encrypted ZipCrypto.zip',
+        ]:
+            archive_path = os.path.join(mount_path, archive_name)
+            logging.info('Mounting archive %r', archive_path)
+
+            # Mount archive file via CrosDisks.
+            self.cros_disks.mount(archive_path,
+                                  os.path.splitext(archive_path)[1])
+            mount_result = self.cros_disks.expect_mount_completion({
+                    'status': 13,  # MOUNT_ERROR_NEED_PASSWORD
+                    'source_path': archive_path,
+                    'mount_path': '',
             })
 
     def _test_nested(self, incoming_mount_path):
@@ -182,7 +197,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.info('Unmounting archive')
             self.cros_disks.unmount(mount_path, [])
 
-    def test_archives(self):
+    def _test_archives(self):
         # Create a FAT filesystem containing all our test archive files.
         logging.info('Creating FAT filesystem holding test archive files')
         with VirtualFilesystemImage(block_size=1024,
@@ -196,6 +211,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.debug('Copying archive files to %r', image.mount_dir)
             for archive_name in [
                     'Encrypted.rar',
+                    'Encrypted AES-128.zip',
+                    'Encrypted AES-192.zip',
+                    'Encrypted AES-256.zip',
+                    'Encrypted ZipCrypto.zip',
                     'Invalid.rar',
                     'Invalid.zip',
                     'Format V4.rar',
@@ -237,18 +256,22 @@ class CrosDisksArchiveTester(CrosDisksTester):
             self._test_unicode(mount_path)
             self._test_multipart(mount_path)
             self._test_invalid(mount_path)
+            self._test_need_password(mount_path)
             self._test_nested(mount_path)
 
             logging.info('Unmounting FAT filesystem')
             self.cros_disks.unmount(mount_path, [])
 
     def get_tests(self):
-        return [self.test_archives]
+        return [self._test_archives]
 
 
 class platform_CrosDisksArchive(test.test):
+    """Checks archive support in CrosDisks."""
+
     version = 1
 
     def run_once(self, *args, **kwargs):
+        """Entry point of this test."""
         tester = CrosDisksArchiveTester(self)
         tester.run(*args, **kwargs)

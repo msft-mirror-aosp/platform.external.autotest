@@ -171,7 +171,8 @@ def _run_with_ssp(job, container_id, job_id, results, parser, ssp_url,
                    'Failed to stage server-side package')
         raise error.AutoservError('Failed to stage server-side package')
 
-    bucket = lxc.ContainerBucket()
+    bucket = lxc.ContainerBucket(
+            base_name=_ssp_base_image_name_or_default(parser.options))
     control = (parser.args[0] if len(parser.args) > 0 and parser.args[0] != ''
                else None)
     try:
@@ -389,7 +390,9 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
             logging.debug('Destroy container %s before aborting the autoserv '
                           'process.', container_id)
             try:
-                bucket = lxc.ContainerBucket()
+                bucket = lxc.ContainerBucket(
+                        base_name=_ssp_base_image_name_or_default(
+                                parser.options))
                 container = bucket.get_container(container_id)
                 if container:
                     container.destroy()
@@ -675,6 +678,14 @@ def _require_ssp_from_control(control_name):
     if not control or control.require_ssp is None:
         return True
     return control.require_ssp
+
+
+def _ssp_base_image_name_or_default(options):
+    """Extract base image name from autoserv options or the global config."""
+    if options.ssp_base_image_name:
+        return options.ssp_base_image_name
+    return global_config.global_config.get_config_value('AUTOSERV',
+                                                        'container_base_name')
 
 
 def main():

@@ -28,7 +28,7 @@ class firmware_Cr50Testlab(Cr50Test):
 
         # Get the current reset count, so we can check that there haven't been
         # any cr50 resets at any point during the test.
-        self.start_reset_count = self.servo.get('cr50_reset_count')
+        self.start_reset_count = self.cr50.get_reset_count()
 
 
     def try_testlab(self, mode, err=''):
@@ -65,7 +65,7 @@ class firmware_Cr50Testlab(Cr50Test):
 
     def check_reset_count(self):
         """Verify there haven't been any cr50 reboots"""
-        reset_count = self.servo.get('cr50_reset_count')
+        reset_count = self.cr50.get_reset_count()
         if self.start_reset_count != reset_count:
             raise error.TestFail('Unexpected cr50 reboot')
 

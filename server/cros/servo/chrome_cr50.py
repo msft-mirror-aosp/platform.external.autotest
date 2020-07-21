@@ -1195,3 +1195,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         rv = self.send_command_retry_get_output('ec_comm',
                 ['boot_mode\s*:\s*(NORMAL|NO_BOOT)'], safe=True)
         return mode_exp == rv[0][1]
+
+    def get_reset_count(self):
+        """Returns the cr50 reset count"""
+        return self.send_command_retry_get_output('sysinfo',
+                                                  ['Reset count: (\d+)'],
+                                                  safe=True)[0][1]

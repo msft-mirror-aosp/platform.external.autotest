@@ -174,7 +174,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             logging.debug(irq_info)
             num, count = irq_info.split()
             irq_counts[int(num)] = int(count)
-        irq_counts[self.KEY_RESET] = int(self.servo.get('cr50_reset_count'))
+        irq_counts[self.KEY_RESET] = int(self.cr50.get_reset_count())
         irq_counts[self.KEY_DEEP_SLEEP] = int(self.cr50.get_deep_sleep_count())
         # Log some information, so we can debug issues with sleep.
         self.log_sleep_debug_information()

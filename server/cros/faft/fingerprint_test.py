@@ -153,7 +153,7 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.3266-99b5e2c98',
                 _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
             },
-            'nocturne_fp_v2.0.4017-9c45fb4b3.bin': {
+            'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.4017-9c45fb4b3-RW.bin': {
                 _FIRMWARE_VERSION_SHA256SUM: '16c405eeaff75dcbc76dbc9f368f66e3fabc47e2ebcf13bd2b64b8b133bbff97',
                 _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
                 _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.4017-9c45fb4b3',
@@ -179,7 +179,7 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.3266-99b5e2c98',
                 _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
             },
-            'nami_fp_v2.0.4017-9c45fb4b3.bin': {
+            'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.4017-9c45fb4b3-RW.bin': {
                 _FIRMWARE_VERSION_SHA256SUM: '7965ea4c4371ee6d21dc462b9ed7c99078d17f4b772bec51441ca9af7d8f3a80',
                 _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
                 _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.4017-9c45fb4b3',
@@ -199,7 +199,7 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.3266-99b5e2c98',
                 _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
             },
-            'dartmonkey_v2.0.4017-9c45fb4b3.bin': {
+            'dartmonkey_v2.0.2887-311310808-RO_v2.0.4017-9c45fb4b3-RW.bin': {
                 _FIRMWARE_VERSION_SHA256SUM: 'b84914c70e93c28e2221f48be338dbf0ad0cfb12b7877baaf6b47f7bfd2aa958',
                 _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
                 _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.4017-9c45fb4b3',
@@ -686,12 +686,8 @@ class FingerprintTest(test.test):
         return golden_version
 
     def get_build_rw_firmware_version(self, use_dev_signed_fw):
-        """Returns RW firmware version from build (based on filename)."""
-        fw_file = os.path.basename(self._build_fw_file)
-        if not fw_file.endswith('.bin'):
-            raise error.TestFail('Unexpected filename for RW firmware: %s'
-                                 % fw_file)
-        fw_version = fw_file[:-4]
+        """Returns RW firmware version from build."""
+        fw_version = self._read_firmware_rw_version(self._build_fw_file)
         if use_dev_signed_fw:
             fw_version = self._construct_dev_version(fw_version)
         return fw_version

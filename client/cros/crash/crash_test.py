@@ -151,21 +151,16 @@ class CrashTest(test.test):
         utils.system('pkill -9 -e --exact crash_sender', ignore_status=True)
 
 
-    def _set_sending_mock(self, mock_enabled, send_success=True):
+    def _set_sending_mock(self, mock_enabled):
         """Enables / disables mocking of the sending process.
 
         This uses the _MOCK_CRASH_SENDING file to achieve its aims. See notes
         at the top.
 
         @param mock_enabled: If True, mocking is enabled, else it is disabled.
-        @param send_success: If mock_enabled this is True for the mocking to
-                indicate success, False to indicate failure.
         """
         if mock_enabled:
-            if send_success:
-                data = ''
-            else:
-                data = '1'
+            data = ''
             logging.info('Setting sending mock')
             utils.open_write_close(self._MOCK_CRASH_SENDING, data)
         else:
@@ -371,7 +366,6 @@ class CrashTest(test.test):
 
 
     def _prepare_sender_one_crash(self,
-                                  send_success,
                                   reports_enabled,
                                   report):
         """Create metadata for a fake crash report.
@@ -379,13 +373,11 @@ class CrashTest(test.test):
         This enabled mocking of the crash sender, then creates a fake
         crash report for testing purposes.
 
-        @param send_success: True to make the crash_sender success, False to
-                make it fail.
         @param reports_enabled: True to enable consent to that reports will be
                 sent.
         @param report: Report to use for crash, if None we create one.
         """
-        self._set_sending_mock(mock_enabled=True, send_success=send_success)
+        self._set_sending_mock(mock_enabled=True)
         self._set_consent(reports_enabled)
         if report is None:
             # Use the same file format as crash does normally:
@@ -537,19 +529,11 @@ class CrashTest(test.test):
                 self._log_reader.get_logs()))
 
 
-    def _call_sender_one_crash(self,
-                               send_success=True,
-                               reports_enabled=True,
-                               report=None,
-                               should_fail=False,
-                               ignore_pause=True):
+    def _call_sender_one_crash(self, reports_enabled=True, report=None):
         """Call the crash sender script to mock upload one crash.
 
-        @param send_success: Mock a successful send if true
         @param reports_enabled: Has the user consented to sending crash reports.
         @param report: report to use for crash, if None we create one.
-        @param should_fail: expect the crash_sender program to fail
-        @param ignore_pause: crash_sender should ignore pause file existence
 
         @returns a dictionary describing the result with the keys
           from _parse_sender_output, as well as:
@@ -558,16 +542,14 @@ class CrashTest(test.test):
             rate_count: how many crashes have been uploaded in the past
               24 hours.
         """
-        report = self._prepare_sender_one_crash(send_success,
-                                                reports_enabled,
+        report = self._prepare_sender_one_crash(reports_enabled,
                                                 report)
         self._log_reader.set_start_by_current()
         script_output = ""
         try:
             script_output = utils.system_output(
-                '%s %s2>&1' % (self._CRASH_SENDER_PATH,
-                               "--ignore_pause_file " if ignore_pause else ""),
-                ignore_status=should_fail)
+                '%s --ignore_pause_file 2>&1' % (self._CRASH_SENDER_PATH),
+                ignore_status=False)
         except error.CmdError as err:
             raise error.TestFail('"%s" returned an unexpected non-zero '
                                  'value (%s).'

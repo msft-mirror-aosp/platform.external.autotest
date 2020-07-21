@@ -260,7 +260,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                          r'Connection timed out\r$', result.stderr):
                 counters_inc('run', 'final_timeout')
                 raise error.AutoservSSHTimeout(
-                        "ssh timed out: %s" % original_cmd.strip(), result)
+                        "ssh timed out: %r" % original_cmd.strip(), result)
             if "Permission denied." in result.stderr:
                 msg = "ssh permission denied"
                 counters_inc('run', 'final_eperm')
@@ -273,7 +273,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 msg = result.stdout.strip()
                 if msg:
                     msg = msg.splitlines()[-1]
-            raise error.AutoservRunError("command execution error (%d): %s" %
+            raise error.AutoservRunError("command execution error (%d): %r" %
                                          (result.exit_status, msg), result)
 
         counters_inc('run', failure_name)
@@ -442,7 +442,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 err_re = re.compile (regexp)
                 if err_re.search(stream):
                     raise error.AutoservRunError(
-                        '%s failed, found error pattern: "%s"' % (command,
+                        '%r failed, found error pattern: %r' % (command,
                                                                 regexp), result)
 
         for (regexp, stream) in ((stderr_ok_regexp, result.stderr),
@@ -459,7 +459,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 msg = result.stdout.strip()
                 if msg:
                     msg = msg.splitlines()[-1]
-            raise error.AutoservRunError("command execution error (%d): %s" %
+            raise error.AutoservRunError("command execution error (%d): %r" %
                                          (result.exit_status, msg), result)
 
 

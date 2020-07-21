@@ -481,7 +481,7 @@ class BaseServoHost(ssh_host.SSHHost):
             'stderr_tee'          : stderr_tee,
             # connect_timeout     n/a for localhost
             # options             n/a for localhost
-            'ssh_failure_retry_ok': ssh_failure_retry_ok,
+            # ssh_failure_retry_ok n/a for localhost
             'stdin'               : stdin,
             'verbose'             : verbose,
             'args'                : args,
@@ -499,4 +499,5 @@ class BaseServoHost(ssh_host.SSHHost):
         else:
             run_args['connect_timeout'] = connect_timeout
             run_args['options'] = options
+            run_args['ssh_failure_retry_ok'] = ssh_failure_retry_ok
             return super(BaseServoHost, self).run(**run_args)

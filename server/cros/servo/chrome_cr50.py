@@ -423,7 +423,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
 
     def send_command_retry_get_output(self, command, regexp_list, safe=False,
-                                      compare_output=False):
+                                      compare_output=False, retries=MAX_RETRY_COUNT):
         """Retry the command 5 times if you get a timeout or drop some output
 
 
@@ -437,7 +437,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                         self.send_command_get_output)
         err = 'no consistent output' if compare_output else 'unknown'
         past_rv = []
-        for i in range(self.MAX_RETRY_COUNT):
+        for i in range(retries):
             try:
                 rv = send_command(command, regexp_list)
                 if not compare_output or rv in past_rv:

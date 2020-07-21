@@ -1031,14 +1031,9 @@ class FirmwareTest(FAFTBase):
 
     def _setup_uart_capture(self):
         """Set up the CPU/EC/PD UART capture."""
-
-        # If adding another capture, make sure to update the UARTS constant.
-        self.cpu_uart_file = os.path.join(self.resultsdir, 'cpu_uart.txt')
-        self.servo.set('cpu_uart_capture', 'on')
+        # Cr50 and usbpd uarts use the same servo pins. Set these up, so usbpd
+        # capture and cr50 capture don't interfere with each other.
         self.cr50_uart_file = None
-        self.ec_uart_file = None
-        self.servo_micro_uart_file = None
-        self.servo_v4_uart_file = None
         self.usbpd_uart_file = None
 
         if self.servo.has_control('cr50_version'):
@@ -1048,30 +1043,31 @@ class FirmwareTest(FAFTBase):
                 cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
                 self.servo.set('cr50_uart_capture', 'on')
                 self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
+                logging.info('Enabling cr50 uart capture')
                 self.cr50 = cr50
             except servo.ControlUnavailableError:
                 logging.warn('cr50 console not supported.')
             except Exception as e:
                 logging.warn('Unknown cr50 uart capture error: %s', str(e))
-        if (self.faft_config.chrome_ec and
-            self.servo.has_control('ec_uart_capture')):
-            self.servo.set('ec_uart_capture', 'on')
-            self.ec_uart_file = os.path.join(self.resultsdir, 'ec_uart.txt')
-            # Log separate PD console if supported
-            if (self.check_ec_capability(['usbpd_uart'], suppress_warning=True)
+        if (not self.cr50_uart_file and
+                self.check_ec_capability(['usbpd_uart'], suppress_warning=True)
                 and self.servo.has_control('usbpd_uart_capture')):
-                self.servo.set('usbpd_uart_capture', 'on')
-                self.usbpd_uart_file = os.path.join(self.resultsdir,
-                                                    'usbpd_uart.txt')
-        else:
-            logging.info('Not a Google EC, cannot capture ec console output.')
+            logging.info('Enabling usbpd uart capture')
+            self.servo.set('usbpd_uart_capture', 'on')
+            self.usbpd_uart_file = os.path.join(self.resultsdir,
+                                                'usbpd_uart.txt')
 
-        for servo_console in ['servo_micro', 'servo_v4']:
-            capture_cmd = '%s_uart_capture' % servo_console
-            uart_file_attr = '%s_uart_file' % servo_console
+        for uart in self.UARTS:
+            capture_cmd = '%s_uart_capture' % uart
+            uart_file_attr = '%s_uart_file' % uart
+            if hasattr(self, uart_file_attr):
+                logging.debug('Already setup %s %r', uart_file_attr,
+                              getattr(self, uart_file_attr))
+                continue
             if self.servo.has_control(capture_cmd):
+                logging.info('Setup %s', capture_cmd)
                 self.servo.set(capture_cmd, 'on')
-                outfile = '%s_uart.txt' % servo_console
+                outfile = '%s_uart.txt' % uart
                 setattr(self, uart_file_attr, os.path.join(self.resultsdir,
                                                            outfile))
 

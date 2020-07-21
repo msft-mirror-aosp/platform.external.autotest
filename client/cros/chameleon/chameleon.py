@@ -362,10 +362,6 @@ class ChameleonBoard(object):
         self._chameleond_proxy.Reboot()
 
 
-    def get_bt_pkg_version(self):
-        """ Read the current version of chameleond."""
-        return self._chameleond_proxy.get_bt_pkg_version()
-
     def get_bt_commit_hash(self):
         """ Read the current git commit hash of chameleond."""
         return self._chameleond_proxy.get_bt_commit_hash()

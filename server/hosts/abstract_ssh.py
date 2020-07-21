@@ -21,6 +21,8 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 from autotest_lib.server.hosts import rpc_server_tracker
 from autotest_lib.server.hosts import ssh_multiplex
+from autotest_lib.server.hosts.drone_api_client import client
+
 import six
 from six.moves import filter
 
@@ -36,6 +38,8 @@ enable_main_ssh = get_value('AUTOSERV',
                             'enable_main_ssh',
                             type=bool,
                             default=False)
+
+enable_tls = get_value('AUTOSERV', 'enable_tls', type=bool, default=False)
 
 # Number of seconds to use the cached up status.
 _DEFAULT_UP_STATUS_EXPIRATION_SECONDS = 300
@@ -96,6 +100,8 @@ class AbstractSSHHost(remote.RemoteHost):
         self._use_rsync = None
         self.known_hosts_file = tempfile.mkstemp()[1]
         self._rpc_server_tracker = rpc_server_tracker.RpcServerTracker(self);
+        self.tls_client = None
+        self.tls_unstable = False
 
         """
         Main SSH connection background job, socket temp directory and socket
@@ -961,6 +967,8 @@ class AbstractSSHHost(remote.RemoteHost):
             self._main_ssh.close()
         if os.path.exists(self.known_hosts_file):
             os.remove(self.known_hosts_file)
+        if self.tls_client:
+            self.tls_client.close()
 
 
     def restart_main_ssh(self):
@@ -968,11 +976,9 @@ class AbstractSSHHost(remote.RemoteHost):
         Stop and restart the ssh main connection.  This is meant as a last
         resort when ssh commands fail and we don't understand why.
         """
-        logging.debug('Restarting main ssh connection')
+        logging.debug("Restarting main ssh connection")
         self._main_ssh.close()
         self._main_ssh.maybe_start(timeout=30)
-
-
 
     def start_main_ssh(self, timeout=DEFAULT_START_MAIN_SSH_TIMEOUT_S):
         """
@@ -986,10 +992,39 @@ class AbstractSSHHost(remote.RemoteHost):
                  connection to be established. If timeout is reached, a
                  warning message is logged, but no other action is taken.
         """
+        self._maybe_start_tls_client()
         if not enable_main_ssh:
             return
         self._main_ssh.maybe_start(timeout=timeout)
 
+    def _maybe_start_tls_client(self):
+        """Start a TLS Client if one does not exist and TLS is not unstable."""
+
+        # Only run TLS if the global_config has specified so (aka Drones).
+        if not enable_tls:
+            return
+        if self.tls_unstable or self.tls_client is not None:
+            if self.tls_unstable:
+                logging.debug("Not starting TLS, as it is unstable.")
+            return
+        self.start_tls_client()
+
+    def start_tls_client(self):
+        """Start the TLS client."""
+        logging.debug("Starting TLS Client.")
+        self.tls_client = client.TLSClient(hostname=self.hostname)
+        logging.debug("TLS Client started.")
+
+    def close_tls_client(self):
+        """Try to close the TLS Client connection."""
+        if self.tls_client is None:
+            return
+        try:
+            self.tls_client.close()
+        except Exception as e:
+            logging.warning("TLS could not close %s", e)
+            self.tls_unstable = True
+        self.tls_client = None
 
     def clear_known_hosts(self):
         """Clears out the temporary ssh known_hosts file.

@@ -203,7 +203,7 @@ class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):
         except Exception as e:
             # The possible errors is timeout of commands.
             logging.debug('Failed to flash servo keyboard map; %s', e)
-            self._send_metrics(STATUS_FAIL)
+            self._send_metrics()
         finally:
             # Restore the default settings.
             # Select the chip on the USB mux unless using Servo V4

@@ -900,7 +900,7 @@ class Servo(object):
                                           unknown_ctrl_name)
         # The error message for unavailble controls is huge as it prints
         # all available controls. Do not log it explicitly.
-        logging.error(err_msg)
+        logging.debug(err_msg)
         if re.search(NO_CONSOLE_OUTPUT_RE, err_str):
             raise UnresponsiveConsoleError('Console not printing output. %s.' %
                                            err_summary)

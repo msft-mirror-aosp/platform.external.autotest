@@ -1057,7 +1057,7 @@ class FirmwareTest(FAFTBase):
             self.ec_uart_file = os.path.join(self.resultsdir, 'ec_uart.txt')
             # Log separate PD console if supported
             if (self.check_ec_capability(['usbpd_uart'], suppress_warning=True)
-                and self.servo.has_control('usb_pd_uart_capture')):
+                and self.servo.has_control('usbpd_uart_capture')):
                 self.servo.set('usbpd_uart_capture', 'on')
                 self.usbpd_uart_file = os.path.join(self.resultsdir,
                                                     'usbpd_uart.txt')

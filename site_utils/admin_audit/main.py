@@ -97,6 +97,8 @@ def main():
             except Exception as err:
                 logging.error("fail to init servo host: %s", err)
                 return RETURN_CODES.OTHER_FAILURES
+        if need_servod and host.servo:
+            host.servo.uart_logs_dir = opts.results_dir
 
         for action in opts.actions:
             if opts.dry_run:

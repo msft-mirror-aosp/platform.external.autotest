@@ -7,6 +7,8 @@ This class provides wrapper functions for Bluetooth quick sanity test
 batches or packages
 """
 
+from __future__ import print_function
+
 import functools
 import logging
 import tempfile
@@ -109,7 +111,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         # For b:142276989, catch 'object_path' fault and reboot to prevent
         # failures from continuing into future tests
-        except Exception, e:
+        except Exception as e:
             if (e.__class__.__name__ == 'Fault' and
                 """object has no attribute 'object_path'""" in str(e)):
 

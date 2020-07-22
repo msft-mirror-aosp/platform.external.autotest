@@ -171,6 +171,8 @@ class FirmwareTest(FAFTBase):
             if 'true' in args['no_ec_sync'].lower():
                 self._no_ec_sync = True
 
+        self._uart_file_dict = {}
+
         self._use_sync_script = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_script', type=bool, default=False)
         self._use_fsfreeze = global_config.global_config.get_config_value(
@@ -1029,12 +1031,29 @@ class FirmwareTest(FAFTBase):
         self.check_state((self.checkers.crossystem_checker, {
                           'wpsw_cur': '1' if self._old_wpsw_cur else '0'}))
 
+    def set_uart_capture_result_path(self, uart, filename):
+        """Set the uart file path"""
+        self._uart_file_dict[uart] = filename
+
+    def save_uart_capture_result_path(self, uart):
+        """Create the uart file location and store it in the file dict."""
+        outfile = os.path.join(self.resultsdir, '%s_uart.txt' % uart)
+        self.set_uart_capture_result_path(uart, outfile)
+
+    def get_uart_capture_result_path(self, uart):
+        """Get the uart file path"""
+        return self._uart_file_dict.get(uart, None)
+
+    def has_uart_capture_result_path(self, uart):
+        """Returns True if a uart file info is saved."""
+        return uart in self._uart_file_dict
+
     def _setup_uart_capture(self):
         """Set up the CPU/EC/PD UART capture."""
         # Cr50 and usbpd uarts use the same servo pins. Set these up, so usbpd
         # capture and cr50 capture don't interfere with each other.
-        self.cr50_uart_file = None
-        self.usbpd_uart_file = None
+        self.set_uart_capture_result_path('cr50', None)
+        self.set_uart_capture_result_path('usbpd', None)
 
         if self.servo.has_control('cr50_version'):
             try:
@@ -1042,40 +1061,35 @@ class FirmwareTest(FAFTBase):
                 # connection exists and enabling uart capture.
                 cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
                 self.servo.set('cr50_uart_capture', 'on')
-                self.cr50_uart_file = os.path.join(self.resultsdir, 'cr50_uart.txt')
+                self.save_uart_capture_result_path('cr50')
                 logging.info('Enabling cr50 uart capture')
                 self.cr50 = cr50
             except servo.ControlUnavailableError:
                 logging.warn('cr50 console not supported.')
             except Exception as e:
                 logging.warn('Unknown cr50 uart capture error: %s', str(e))
-        if (not self.cr50_uart_file and
+        if (not self.get_uart_capture_result_path('cr50') and
                 self.check_ec_capability(['usbpd_uart'], suppress_warning=True)
                 and self.servo.has_control('usbpd_uart_capture')):
             logging.info('Enabling usbpd uart capture')
             self.servo.set('usbpd_uart_capture', 'on')
-            self.usbpd_uart_file = os.path.join(self.resultsdir,
-                                                'usbpd_uart.txt')
+            self.save_uart_capture_result_path('usbpd')
 
         for uart in self.UARTS:
             capture_cmd = '%s_uart_capture' % uart
-            uart_file_attr = '%s_uart_file' % uart
-            if hasattr(self, uart_file_attr):
-                logging.debug('Already setup %s %r', uart_file_attr,
-                              getattr(self, uart_file_attr))
+            if self.has_uart_capture_result_path(uart):
+                logging.debug('Already setup %s uart capture', uart)
                 continue
             if self.servo.has_control(capture_cmd):
                 logging.info('Setup %s', capture_cmd)
                 self.servo.set(capture_cmd, 'on')
-                outfile = '%s_uart.txt' % uart
-                setattr(self, uart_file_attr, os.path.join(self.resultsdir,
-                                                           outfile))
+                self.save_uart_capture_result_path(uart)
 
     def _record_uart_capture(self):
         """Record the CPU/EC/PD UART output stream to files."""
         for uart in self.UARTS:
             # Attribute will be nonexistent or empty if capture wasn't set up.
-            uart_file = getattr(self, '%s_uart_file' % uart, None)
+            uart_file = self.get_uart_capture_result_path(uart)
             if uart_file:
                 with open(uart_file, 'a') as f:
                     f.write(ast.literal_eval(
@@ -1087,7 +1101,7 @@ class FirmwareTest(FAFTBase):
         self._record_uart_capture()
         for uart in self.UARTS:
             # Attribute will be nonexistent or empty if capture wasn't set up.
-            uart_file = getattr(self, '%s_uart_file' % uart, None)
+            uart_file = self.get_uart_capture_result_path(uart)
             if uart_file:
                 self.servo.set('%s_uart_capture' % uart, 'off')
 

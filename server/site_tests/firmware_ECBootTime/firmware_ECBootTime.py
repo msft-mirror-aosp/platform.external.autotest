@@ -96,6 +96,11 @@ class firmware_ECBootTime(FirmwareTest):
         # After reboot it will be restored to default
         self.ec.send_command("hcdebug normal")
 
+        # Enable port80 output for x86 devices so there is an early signal from
+        # the host that it is booting, instead of relying on an EC transaction.
+        if self._x86:
+            self.ec.send_command("port80 intprint")
+
         # Switch on the AP
         power_press = self.ec.send_command_get_output(
             power_cmd, boot_anchors)

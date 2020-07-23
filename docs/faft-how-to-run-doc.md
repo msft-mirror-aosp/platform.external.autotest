@@ -118,7 +118,11 @@ Details of servoV4 Type-C connections in Figure 2:
 ### ServoV4 Type-C with servo micro {#servov4-typec-micro}
 
 Make sure to use the following servo type and configuration
-for running the FAFT PD suite
+for running the faft_pd suite or the faft_cr50 suite (note: the cr50 suite
+requires special images so is not runnable outside of Google).  This setup
+requires servod to be in "DUAL_V4" mode.  You should generally only use this
+setup for faft_pd and faft_cr50, faft_ec and faft_bios do not expect servod to
+be in DUAL_V4 mode.
 
 ![Figure3](assets/faft_rc_pd_typeC.png)
 

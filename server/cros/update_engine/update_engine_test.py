@@ -233,7 +233,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                                      archive_url=archive_url)
             return (self._autotest_devserver.get_staged_file_url(f, build_name)
                     for f in filenames)
-        except dev_server.DevServerException, e:
+        except dev_server.DevServerException as e:
             raise error.TestError('Failed to stage payload: %s' % e)
 
 

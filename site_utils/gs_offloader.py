@@ -127,10 +127,6 @@ DEFAULT_CTS_RESULTS_GSURI = global_config.global_config.get_config_value(
         'CROS', 'cts_results_server', default='')
 DEFAULT_CTS_APFE_GSURI = global_config.global_config.get_config_value(
         'CROS', 'cts_apfe_server', default='')
-DEFAULT_CTS_DELTA_RESULTS_GSURI = global_config.global_config.get_config_value(
-        'CROS', 'ctsdelta_results_server', default='')
-DEFAULT_CTS_DELTA_APFE_GSURI = global_config.global_config.get_config_value(
-        'CROS', 'ctsdelta_apfe_server', default='')
 DEFAULT_CTS_BVT_APFE_GSURI = global_config.global_config.get_config_value(
         'CROS', 'ctsbvt_apfe_server', default='')
 

@@ -39,6 +39,7 @@ from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 from autotest_lib.server.cros.tradefed import tradefed_utils
 from autotest_lib.server.cros.tradefed import tradefed_prerequisite
+from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
@@ -163,14 +164,55 @@ class TradefedTest(test.test):
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
     def postprocess(self):
-        """Postprocess: output performance values."""
-        path = tradefed_utils.get_test_result_xml_path(
-            os.path.join(self.resultsdir,
-                         self._get_tradefed_base_dir()))
+        """Postprocess: synchronous offloads and performance data"""
+        self._output_perf()
+        self._prepare_synchronous_offloads()
+
+    def _output_perf(self):
+        """Output performance values."""
+        base = self._default_tradefed_base_dir()
+        path = tradefed_utils.get_test_result_xml_path(base)
         if path:
             for metric in tradefed_utils.get_perf_metrics_from_test_result_xml(
                 path, self.resultsdir):
                 self.output_perf_value(**metric)
+
+    def _prepare_synchronous_offloads(self):
+        """
+        Copy files needed for APFE to synchronous offload dir,  with some
+        structure to make the post-job postprocessing simpler.
+        """
+        testname = os.path.basename(self.outputdir)
+        # This is yyyy.mm.dd_hh.mm.ss  (start time)
+        timestamp_pattern = ("[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]" +
+                             "_[0-9][0-9].[0-9][0-9].[0-9][0-9]")
+        time_glob = os.path.join(
+            self._default_tradefed_base_dir(), timestamp_pattern
+        )
+        for dirpath in glob.glob(time_glob):
+            timestamp = os.path.basename(dirpath)
+            locs = [os.path.join(dirpath, f) for f in ["test_result.xml",
+                                                       "testResult.xml"]]
+            for f in locs:
+                if os.path.exists(f):
+                    subdirs = self._subdirs(f, testname, timestamp)
+                    self._copy_to_offload_dir(f, subdirs)
+        for z in glob.glob(time_glob+".zip"):
+            self._copy_to_offload_dir(z, self._subdirs(z, testname))
+
+    def _copy_to_offload_dir(self, src_path, subdirs, recursive=True):
+        target = os.path.join(os.getenv(OFFLOAD_ENVVAR), *subdirs)
+        self._safe_makedirs(target)
+        if not recursive or os.path.isfile(src_path):
+            return shutil.copy2(src_path, str(target))
+        return shutil.copytree(src_path, str(target))
+
+    def _subdirs(self, path, testname, timestamp=""):
+        # CTS results from bvt-arc suites need to be sent to the
+        # specially-designated bucket for early EDI entries in APFE,
+        # but only there.
+        dest = "BVT" if 'bvt-arc' in path else "CTS"
+        return ["APFE", dest, testname, timestamp]
 
     def cleanup(self):
         """Cleans up any dirtied state."""
@@ -950,8 +992,7 @@ class TradefedTest(test.test):
                 self._clean_download_cache_if_needed(force=True)
             raise
 
-        result_destination = os.path.join(self.resultsdir,
-                                          self._get_tradefed_base_dir())
+        result_destination = self._default_tradefed_base_dir()
         # Gather the global log first. Datetime parsing below can abort the test
         # if tradefed startup had failed. Even then the global log is useful.
         self._collect_tradefed_global_log(output, result_destination)
@@ -976,8 +1017,7 @@ class TradefedTest(test.test):
         """
         logging.info('Setting up tradefed results and logs directories.')
 
-        results_destination = os.path.join(self.resultsdir,
-                                           self._get_tradefed_base_dir())
+        results_destination = self._default_tradefed_base_dir()
         logs_destination = os.path.join(results_destination, 'logs')
         directory_mapping = [
             (os.path.join(self._repository, 'results'), results_destination),
@@ -989,6 +1029,9 @@ class TradefedTest(test.test):
                 shutil.rmtree(tradefed_path)
             self._safe_makedirs(final_path)
             os.symlink(final_path, tradefed_path)
+
+    def _default_tradefed_base_dir(self):
+        return os.path.join(self.resultsdir, self._get_tradefed_base_dir())
 
     def _install_plan(self, subplan):
         """Copy test subplan to CTS-TF.

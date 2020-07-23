@@ -2301,9 +2301,14 @@ class FanRpmLogger(MeasurementLogger):
         self.refresh()
 
     def refresh(self):
-        cmd = 'ectool pwmgetfanrpm all | cut -f 2 -d: | xargs'
-        res = utils.run(cmd, ignore_status=True)
-        return [int(rpm) for rpm in res.stdout.split(' ')]
+        @retry.retry(Exception, timeout_min=0.1, delay_sec=2)
+        def get_fan_rpm_all():
+            cmd = 'ectool pwmgetfanrpm all | cut -f 2 -d: | xargs'
+            res = utils.run(cmd, ignore_status=True,
+                            stdout_tee=utils.TEE_TO_LOGS,
+                            stderr_tee=utils.TEE_TO_LOGS)
+            return [int(rpm) for rpm in res.stdout.split(' ')]
+        return get_fan_rpm_all()
 
     def save_results(self, resultsdir, fname_prefix=None):
         if not fname_prefix:

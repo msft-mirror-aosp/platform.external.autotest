@@ -3838,6 +3838,35 @@ class BluetoothAdapterTests(test.test):
             self.test_stop_discovery()
 
 
+    def verify_controller_capability(self, required_roles=[],
+                                     test_type=''):
+        """Raise an exception if required role support isn't present
+
+        @param required_roles: List of test role requirements in
+                               ["central", "peripheral", "central-peripheral"]
+
+        @raises: error.TestFail if device does not meet requirements
+                                AND test_type is 'AVL'
+                 error.TestNA if device does not meet requirements
+                                and test_type is not 'AVL'
+        """
+
+        adapter_props = self.get_adapter_properties()
+
+        supported_roles = adapter_props.get('Roles', [])
+
+        for req in required_roles:
+            if req not in supported_roles:
+                # We don't meet requirements, throw error
+                msg = 'Role requirement {} not in supported modes {}'.format(
+                      req, supported_roles)
+
+                if test_type == 'AVL':
+                    raise error.TestFail(msg)
+
+                raise error.TestNAError(msg)
+
+
     def set_fail_fast(self, args_dict, default=False):
         """Set whether the test should fail fast if running into any problem
 

@@ -27,6 +27,10 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
+
+MIN_BATTERY_LEVEL = 50.0
+
+
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
 #
@@ -101,7 +105,8 @@ class ACPowerVerifier(hosts.Verifier):
         try:
             charging_state = info['Battery']['state']
             battery_level = float(info['Battery']['percentage'])
-            if battery_level < 50.0 and charging_state == 'Discharging':
+            if (battery_level < MIN_BATTERY_LEVEL and
+                charging_state == 'Discharging'):
                 # TODO(@xianuowang) remove metrics here once we have device
                 # health profile to collect history of DUT's metrics.
                 metrics_data = {'host': host.hostname,
@@ -110,7 +115,8 @@ class ACPowerVerifier(hosts.Verifier):
                     'chromeos/autotest/repair/verifier/power').increment(
                         fields=metrics_data)
                 raise hosts.AutoservVerifyError('Battery is in discharging'
-                        ' state and current level is less than 50%')
+                        ' state and current level is less than %s%%' %
+                        MIN_BATTERY_LEVEL)
         except (KeyError, ValueError):
             logging.warning('Cannot determine battery state -'
                             ' skipping check.')

@@ -6,12 +6,16 @@
 # prompt, such as within the Chromium OS development chroot.
 
 import ast
+import contextlib
+import httplib
 import logging
 import os
 import re
 import socket
 import time
 import xmlrpclib
+
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -68,6 +72,45 @@ class UnresponsiveConsoleError(ConsoleError):
 class ResponsiveConsoleError(ConsoleError):
     """Error for: A console control fails but console is responsive."""
     pass
+
+
+class ServodBadStatusLine(httplib.BadStatusLine):
+    """Error for failures to communicate with servod"""
+    def __init__(self, when, line):
+        """
+
+        @param when: Description of the operation being performed (get/set)
+        @param line: The line that came from the server; most failures see ''
+        """
+        super(ServodBadStatusLine, self).__init__(line)
+        self.when = when
+
+    def __str__(self):
+        """String representation of the exception"""
+        return '%s: %s' % (self.when, self.line)
+
+
+class ServodConnectionError(socket.error):
+    """Error for socket errors seen during communication with servod"""
+
+    # TODO(b/990593): when in python3, subclass ConnectionError instead
+
+    def __init__(self, when, errno, strerror, filename):
+        """
+
+        @param when: Description of the operation being performed at the time
+        @param errno: errno value, such as ECONNRESET
+        @param strerror: OS-provided description ("connection reset by peer")
+        @param filename: Something to report as a path, such as a socket address
+        """
+        # [Errno 104] [Setting ctrl:val] Connection reset by peer: <Servo...
+        self.when = when
+        super(ServodConnectionError, self).__init__(errno, strerror, filename)
+
+    def __str__(self):
+        """String representation of the exception"""
+        return '%s: [Errno %d] %s: %r' % (
+            self.when, self.errno, self.strerror, self.filename)
 
 
 def _extract_image_from_tarball(tarball, dest_dir, image_candidates, timeout):
@@ -385,7 +428,8 @@ class Servo(object):
         # to minimize the dependencies on the rest of Autotest.
         self._servo_host = servo_host
         self._servo_serial = servo_serial
-        self._server = servo_host.get_servod_server_proxy()
+        with self._wrap_socket_errors('get_servod_server_proxy()'):
+            self._server = servo_host.get_servod_server_proxy()
         self._servo_type = self.get_servo_version()
         self._power_state = _PowerStateController(self)
         self._uart = _Uart(self)
@@ -400,6 +444,27 @@ class Servo(object):
                 type(self).__name__,
                 self._servo_host.hostname,
                 self._servo_host.servo_port)
+
+    @contextlib.contextmanager
+    def _wrap_socket_errors(self, description):
+        """
+        Wrap an operation, replacing BadStatusLine and socket.error with
+        servo-specific versions.
+
+        @param description:  String to use when describing what was being done
+        @raise ServodBadStatusLine: when operation raises httplib.BadStatusLine
+        @raise ServodSocketError: when operation raises socket.error
+        """
+        try:
+            yield
+        except httplib.BadStatusLine as e:
+            exc = ServodBadStatusLine(description, e.line)
+            six.reraise(type(exc), exc)
+        except socket.error as e:
+            # TODO(b/990593): when in python3, catch ConnectionError instead
+            exc = ServodConnectionError(
+                description, e.args[0], e.args[1], str(self))
+            six.reraise(type(exc), exc)
 
     @property
     def servo_serial(self):
@@ -442,11 +507,8 @@ class Servo(object):
         if enable_main:
             self.enable_main_servo_device()
 
-        try:
+        with self._wrap_socket_errors('initialize_dut->hwinit()'):
             self._server.hwinit()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
         if self.has_control('usb_mux_oe1'):
             self.set('usb_mux_oe1', 'on')
             self.switch_usbkey('off')
@@ -460,8 +522,9 @@ class Servo(object):
                              'setup does not support power_state. Skipping.')
             else:
                 self._power_state.reset()
-        logging.debug('Servo initialized, version is %s',
-                      self._server.get_version())
+        with self._wrap_socket_errors('initialize_dut->get_version()'):
+            version = self._server.get_version()
+        logging.debug('Servo initialized, version is %s', version)
         if self.has_control('init_keyboard'):
             # This indicates the servod version does not
             # have explicit keyboard initialization yet.
@@ -774,20 +837,15 @@ class Servo(object):
 
     def get_board(self):
         """Get the board connected to servod."""
-        try:
+        with self._wrap_socket_errors('get_board()'):
             return self._server.get_board()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
 
 
     def get_base_board(self):
         """Get the board of the base connected to servod."""
         try:
-            return self._server.get_base_board()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors('get_base_board()'):
+                return self._server.get_base_board()
         except  xmlrpclib.Fault as e:
             # TODO(waihong): Remove the following compatibility check when
             # the new versions of hdctools are deployed.
@@ -845,7 +903,8 @@ class Servo(object):
         ctrl_name = self._build_ctrl_name(ctrl_name, prefix)
         try:
             # If the control exists, doc() will work.
-            self._server.doc(ctrl_name)
+            with self._wrap_socket_errors('has_control->doc(%s)' % ctrl_name):
+                self._server.doc(ctrl_name)
             return True
         except xmlrpclib.Fault as e:
             if re.search('No control %s' % ctrl_name,
@@ -922,10 +981,8 @@ class Servo(object):
         """
         ctrl_name = self._build_ctrl_name(ctrl_name, prefix)
         try:
-            return self._server.get(ctrl_name)
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors('Getting %s' % ctrl_name):
+                return self._server.get(ctrl_name)
         except xmlrpclib.Fault as e:
             self._inspect_control_failure(e, ctrl_name)
 
@@ -966,12 +1023,11 @@ class Servo(object):
         ctrl_name = self._build_ctrl_name(ctrl_name, prefix)
         # The real danger here is to pass a None value through the xmlrpc.
         assert ctrl_value is not None
-        logging.debug('Setting %s to %r', ctrl_name, ctrl_value)
+        description = 'Setting %s to %r' % (ctrl_name, ctrl_value)
+        logging.debug('%s', description)
         try:
-            self._server.set(ctrl_name, ctrl_value)
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors(description):
+                self._server.set(ctrl_name, ctrl_value)
         except xmlrpclib.Fault as e:
             self._inspect_control_failure(e, ctrl_name, ctrl_value=ctrl_value)
 
@@ -983,12 +1039,11 @@ class Servo(object):
         @raise: error.TestError in case error occurs setting/getting values.
         """
         rv = []
+        description = 'Set/get all: %s' % str(controls)
+        logging.debug('%s', description)
         try:
-            logging.debug('Set/get all: %s', str(controls))
-            rv = self._server.set_get_all(controls)
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors(description):
+                rv = self._server.set_get_all(controls)
         except xmlrpclib.Fault as e:
             # TODO(waihong): Remove the following backward compatibility when
             # the new versions of hdctools are deployed.
@@ -1176,11 +1231,8 @@ class Servo(object):
         @return: The version of the servo.
 
         """
-        try:
+        with self._wrap_socket_errors('get_servo_version->get_version()'):
             servo_type = self._server.get_version()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
         if '_and_' not in servo_type or not active:
             return servo_type
 
@@ -1214,11 +1266,8 @@ class Servo(object):
 
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""
-        try:
+        with self._wrap_socket_errors('main_device_is_ccd->get_version()'):
             servo = self._server.get_version()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
         return 'ccd_cr50' in servo and 'servo_micro' not in servo
 
 

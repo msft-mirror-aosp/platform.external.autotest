@@ -2,8 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging
 import re
+import six
 import sys
 import urllib2
 import urlparse
@@ -704,7 +707,7 @@ class ChromiumOSUpdater(object):
         try:
             ds.stage_artifacts(image_name, ['quick_provision', 'stateful'])
         except dev_server.DevServerException as e:
-            raise error.TestFail, str(e), sys.exc_info()[2]
+            six.reraise(error.TestFail, str(e), sys.exc_info()[2])
 
         static_url = 'http://%s/static' % devserver_name
         command = '%s --noreboot %s %s' % (provision_command, image_name,

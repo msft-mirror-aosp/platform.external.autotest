@@ -118,21 +118,24 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     def le_role_slave(self):
         """Tests connection as slave"""
 
+        self.verify_controller_capability(
+                        required_roles=['peripheral'],
+                        test_type=self.flag)
+
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
         self.controller_slave_test(kbd, kbd_test_func)
 
 
-    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
     @test_wrapper('LE Master Before Slave Test',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
-                  skip_models=['auron_paine','auron_yuna','banjo',
-                        'buddy','candy','enguarde','gandof', 'gnawty',
-                        'guado','heli','kip','lulu','rikku','samus',
-                        'tidus'])
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def le_role_master_before_slave(self):
         """Tests connection as master and then as slave"""
+
+        self.verify_controller_capability(
+                        required_roles=['central-peripheral'],
+                        test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -151,6 +154,10 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     def le_role_slave_before_master(self):
         """Tests connection as slave and then as master"""
 
+        self.verify_controller_capability(
+                        required_roles=['central-peripheral'],
+                        test_type=self.flag)
+
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
 
@@ -167,6 +174,10 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
 
+        self.verify_controller_capability(
+                        required_roles=['central'],
+                        test_type=self.flag)
+
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
@@ -174,15 +185,14 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.nearby_sender_role_test(kbd, kbd_test_func)
 
 
-    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
     @test_wrapper('LE Sender Role Test During HID',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
-                  skip_models=['auron_paine','auron_yuna','banjo',
-                        'buddy','candy','enguarde','gandof', 'gnawty',
-                        'guado','heli','kip','lulu','rikku','samus',
-                        'tidus'])
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
+
+        self.verify_controller_capability(
+                        required_roles=['central'],
+                        test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -201,6 +211,10 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     def le_role_hid_during_sender(self):
         """Tests HID device while already in Nearby Sender role"""
 
+        self.verify_controller_capability(
+                        required_roles=['central'],
+                        test_type=self.flag)
+
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
 
@@ -217,6 +231,10 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
+        self.verify_controller_capability(
+                        required_roles=['peripheral'],
+                        test_type=self.flag)
+
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
@@ -224,15 +242,14 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.nearby_receiver_role_test(kbd, kbd_test_func)
 
 
-    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
     @test_wrapper('LE Receiver Role Test During HID',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
-                  skip_models=['auron_paine','auron_yuna','banjo',
-                        'buddy','candy','enguarde','gandof', 'gnawty',
-                        'guado','heli','kip','lulu','rikku','samus',
-                        'tidus'])
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def le_role_receiver_during_hid(self):
         """Tests Nearby Receiver role while already connected to HID device"""
+
+        self.verify_controller_capability(
+                        required_roles=['central-peripheral'],
+                        test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -246,15 +263,14 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, slave_info=hid_test_device)
 
 
-    # TODO(b/158868300): Silencing known firmware issue with AC7260 (WP2)
     @test_wrapper('LE HID Test During Receiver Adv',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
-                  skip_models=['auron_paine','auron_yuna','banjo',
-                        'buddy','candy','enguarde','gandof', 'gnawty',
-                        'guado','heli','kip','lulu','rikku','samus',
-                        'tidus'])
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def le_role_hid_during_receiver_adv(self):
         """Tests HID device while already in Nearby Receiver role adv state"""
+
+        self.verify_controller_capability(
+                        required_roles=['central-peripheral'],
+                        test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -272,6 +288,10 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                   devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def le_role_hid_during_receiver_connection(self):
         """Tests HID device while already in Nearby Receiver role connection"""
+
+        self.verify_controller_capability(
+                        required_roles=['central-peripheral'],
+                        test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]

@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import functools
 import logging
 import pprint
@@ -320,7 +322,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             if matched_output:
                 break
             logging.info('try %d: could not match ccd output %s', i, rv)
-          except Exception, e:
+          except Exception as e:
             logging.info('try %d got error %s', i, str(e))
 
         self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
@@ -445,7 +447,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 if past_rv:
                     logging.debug('%d %s not in %s', i, rv, past_rv)
                 past_rv.append(rv)
-            except Exception, e:
+            except Exception as e:
                 err = e
                 logging.info('attempt %d %r: %s %s', i, command, type(e),
                              str(e))
@@ -518,7 +520,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         try:
             self.send_command_get_output(cmd, self.START_STR)
             logging.debug('Detected cr50 reboot')
-        except error.TestFail, e:
+        except error.TestFail as e:
             logging.debug('Failed to detect cr50 reboot')
         # Reset the timeout.
         self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
@@ -654,7 +656,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # still expected on all current non board id locked release images.
         try:
             version_info = self.get_version_info(self.ACTIVE_BID)
-        except error.TestFail, e:
+        except error.TestFail as e:
             logging.info(str(e))
             logging.info('Cannot use the version to get the board id')
             return None
@@ -971,7 +973,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             self.ccd_disable(raise_error=True)
             self.ccd_enable(raise_error=True)
             rv = True
-        except Exception, e:
+        except Exception as e:
             logging.info(e)
             rv = False
         self._servo.set_dts_mode(dts_start)

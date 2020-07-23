@@ -30,7 +30,7 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Multiple LE advertising test',
-                  skip_models=['dru', 'druwl'])
+                  skip_models=REALTEK_MODELS + ['dru', 'druwl'])
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(

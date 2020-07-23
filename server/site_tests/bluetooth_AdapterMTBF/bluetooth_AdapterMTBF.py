@@ -33,7 +33,7 @@ MOUSE_TEST_ITERATION_LONG = 50
 # Iterations to run the keyboard report test, this equals about 10 mins
 KEYBOARD_TEST_ITERATION = 60
 # Iterations to run the A2DP report test, this equals about 30 mins
-A2DP_TEST_ITERATION = 225
+A2DP_TEST_ITERATION = 1
 
 class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
                             BluetoothAdapterHIDReportTests,

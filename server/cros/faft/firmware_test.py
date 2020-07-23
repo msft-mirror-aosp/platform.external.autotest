@@ -42,6 +42,8 @@ class FAFTBase(test.test):
     handle the reboot mechanism, in order to ensure FAFTClient is still
     connected after reboot.
     @type servo: servo.Servo
+    @type _client: autotest_lib.server.hosts.ssh_host.SSHHost |
+                   autotest_lib.server.hosts.cros_host.CrosHost
     """
     def initialize(self, host):
         """Create a FAFTClient object and install the dependency."""

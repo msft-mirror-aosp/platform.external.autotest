@@ -102,8 +102,19 @@ class FirmwareTest(FAFTBase):
     FWMP_CLEARED_ERROR_MSG = ('CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS'
                               '_INVALID')
 
-    # UARTs that may be captured
-    UARTS = ('cpu', 'cr50', 'ec', 'servo_micro', 'servo_v4', 'usbpd')
+    # UARTs that may be captured. These are the uart_stream prefixes that might
+    # be applicable for a test.
+    UARTS = (
+        'cpu',
+        'cr50',
+        'ec',
+        'servo_micro',
+        'servo_v4',
+        'usbpd',
+        'ccd_cr50.ec',
+        'ccd_cr50.cpu',
+        'ccd_cr50.cr50'
+    )
 
     _ROOTFS_PARTITION_NUMBER = 3
 

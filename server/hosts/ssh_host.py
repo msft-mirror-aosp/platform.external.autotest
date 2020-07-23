@@ -29,6 +29,12 @@ except ImportError:
     metrics = utils.metrics_mock
 
 
+def THIS_IS_SLOW(func):
+    """Mark the given function as slow, when looking at calls to it"""
+    func.__name__ = '%s__SLOW__' % func.__name__
+    return func
+
+
 class SSHHost(abstract_ssh.AbstractSSHHost):
     """
     This class represents a remote machine controlled through an ssh
@@ -119,8 +125,8 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
              ignore_timeout, ssh_failure_retry_ok):
         """Helper function for run()."""
         if connect_timeout > timeout:
-            # timeout passed from run_very_slowly may be smaller than 1
-            # due to we minus elapsed time from original timeout supplied.
+            # timeout passed from run() may be smaller than 1, because we
+            # subtract the elapsed time from the original timeout supplied.
             connect_timeout = max(int(timeout), 1)
         original_cmd = command
 
@@ -280,7 +286,8 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         return result
 
 
-    def run_very_slowly(self, command, timeout=None, ignore_status=False,
+    @THIS_IS_SLOW
+    def run(self, command, timeout=None, ignore_status=False,
             stdout_tee=utils.TEE_TO_LOGS, stderr_tee=utils.TEE_TO_LOGS,
             connect_timeout=30, options='', stdin=None, verbose=True, args=(),
             ignore_timeout=False, ssh_failure_retry_ok=False):
@@ -343,9 +350,6 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 timeout_message = str('Timeout encountered: %s' %
                                       cmderr.args[0])
                 raise error.AutoservRunError(timeout_message, cmderr.args[1])
-
-
-    run = run_very_slowly
 
 
     def run_background(self, command, verbose=True):

@@ -596,13 +596,14 @@ class Cr50Test(FirmwareTest):
         operation. Open the cr50 uart file and count the number of times this is
         printed. Log the number of errors.
         """
-        if not hasattr(self, 'cr50_uart_file'):
+        cr50_uart_file = self.get_uart_capture_result_path('cr50')
+        if not cr50_uart_file:
             logging.info('There is not a cr50 uart file')
             return
 
         flash_error_count = 0
         usb_error_count = 0
-        with open(self.cr50_uart_file, 'r') as f:
+        with open(cr50_uart_file, 'r') as f:
             for line in f:
                 if self.CR50_FLASH_OP_ERROR_MSG in line:
                     flash_error_count += 1

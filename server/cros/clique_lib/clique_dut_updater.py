@@ -137,9 +137,6 @@ class CliqueDUTUpdater(object):
 
         try:
             ds = dev_server.ImageServer.resolve(image)
-            # We need the autotest packages to run the tests.
-            ds.stage_artifacts(image, ['full_payload', 'stateful',
-                                       'autotest_packages'])
         except dev_server.DevServerException as e:
             error_str = 'Host: ' + dut_host + '. ' + e
             logging.error(error_str)
@@ -148,7 +145,8 @@ class CliqueDUTUpdater(object):
         url = self._get_update_url(ds.url(), image)
         logging.debug('Host: %s. Installing image from %s', dut_host, url)
         try:
-            autoupdater.ChromiumOSUpdater(url, host=dut_host).run_update()
+            autoupdater.ChromiumOSUpdater(url, host=dut_host,
+                                          use_quick_provision=True).run_update()
         except error.TestFail as e:
             error_str = 'Host: ' + dut_host + '. ' + e
             logging.error(error_str)

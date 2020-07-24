@@ -343,20 +343,27 @@ class _CCDPowerDeliveryVerifier(hosts.Verifier):
     TODO(xianuowang@) Convert it to verifier/repair action pair or remove it
     once we collected enough metrics.
     """
+    # Change to use the  constant value in CrosHost if we move it to
+    # verifier/repair pair.
+    CHANGE_SERVO_ROLE_TIMEOUT = 180
+
     def verify(self, host):
         if host.get_servo().get('servo_v4_role') == 'snk':
             logging.warning('The servo initlized with role snk while'
                             ' supporting power delivery, resetting role'
                             ' to src...')
             host.get_servo().set_servo_v4_role('src')
-            time.sleep(5)
+            time.sleep(self.CHANGE_SERVO_ROLE_TIMEOUT)
             result = host.get_servo().get('servo_v4_role')
+            logging.debug('Servo_v4 role after reset: %s', result)
             metrics_data = {
                 'hostname': host.get_dut_hostname() or 'unknown',
                 'status': 'success' if result == 'src' else 'failed',
+                'board': host.servo_board or 'unknown',
+                'model': host.servo_model or 'unknown'
             }
             metrics.Counter(
-                'chromeos/autotest/repair/verifier/power_delivery2'
+                'chromeos/autotest/repair/verifier/power_delivery3'
             ).increment(fields=metrics_data)
 
     def _is_applicable(self, host):

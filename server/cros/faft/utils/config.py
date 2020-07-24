@@ -71,12 +71,12 @@ class Config(object):
         self._precedence_list = []
         self._precedence_names = []
         # Loadthe most specific JSON config possible by splitting
-        # `platform` at its '_' and reversing ([::-1]).
+        # `platform` at its '_'/'-' and reversing ([::-1]).
         # For example, veyron_minnie should load minnie.json.
         # octopus_fleex should look for fleex.json. It doesn't exist, so
         # instead it loads octopus.json.
+        platform = platform.lower().replace('-', '_')
         for p in platform.rsplit('_', 1)[::-1]:
-            p = p.lower().replace('-', '_')
             if _has_config_file(p):
                 self.platform = p
                 break

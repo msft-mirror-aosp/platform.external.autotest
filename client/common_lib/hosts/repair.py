@@ -399,9 +399,14 @@ class Verifier(_DependencyNode):
         @param host     The host to be tested for a problem.
         @param silent   If true, don't log host status records.
         """
-        if not self._is_applicable(host):
-            logging.info('Verfy %s is not applicable to %s, skipping...',
-                         self.description, host.hostname)
+        try:
+            if not self._is_applicable(host):
+                logging.info('Verfy %s is not applicable to %s, skipping...',
+                             self.description, host.hostname)
+                return
+        except Exception as e:
+            logging.error('Skipping %s verifier due to unexpect error during'
+                          ' check applicability; %s', self.tag, e)
             return
 
         if self._result is not None:
@@ -626,14 +631,18 @@ class RepairAction(_DependencyNode):
         #
         # If we're blocked by a failed dependency, we exit with an
         # exception.  So set status to 'blocked' first.
-        self.status = 'blocked'
-
-        if not self._is_applicable(host):
-            logging.info('RepairAction is not applicable, skipping repair: %s',
-                         self.description)
-            self.status = 'skipped'
+        self.status = 'skipped'
+        try:
+            if not self._is_applicable(host):
+                logging.info('RepairAction is not applicable, skipping repair: %s',
+                             self.description)
+                return
+        except Exception as e:
+            logging.error('Skipping %s repair action due to unexpect error'
+                          ' during check applicability; %s', self.tag, e)
             return
 
+        self.status = 'blocked'
         try:
             self._verify_dependencies(host, silent)
         except Exception as e:

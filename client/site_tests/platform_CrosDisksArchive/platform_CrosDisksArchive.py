@@ -49,19 +49,20 @@ class CrosDisksArchiveTester(CrosDisksTester):
                 else:
                     yield relative_path
 
-    def _test_archive(self, archive_path, want_content):
+    def _test_archive(self, archive_path, want_content, password=None):
         logging.info('Mounting archive %r', archive_path)
         archive_name = os.path.basename(archive_path)
 
+        options = []
+        if password is not None: options.append(b'password=' + utf8(password))
+
         # Mount archive file via CrosDisks.
-        self.cros_disks.mount(archive_path, os.path.splitext(archive_path)[1])
+        self.cros_disks.mount(archive_path,
+                              os.path.splitext(archive_path)[1], options)
         mount_result = self.cros_disks.expect_mount_completion({
-                'status':
-                0,
-                'source_path':
-                archive_path,
-                'mount_path':
-                os.path.join('/media/archive', archive_name),
+                'status': 0,
+                'source_path': archive_path,
+                'mount_path': os.path.join('/media/archive', archive_name),
         })
 
         mount_path = utf8(mount_result['mount_path'])
@@ -152,6 +153,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
             })
 
     def _test_need_password(self, mount_path):
+        want = FilesystemTestDirectory('', [
+            FilesystemTestFile('Secret.txt', 'This is my little secret\n')
+        ])
+
         for archive_name in [
                 'Encrypted AES-128.zip',
                 'Encrypted AES-192.zip',
@@ -161,7 +166,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
             archive_path = os.path.join(mount_path, archive_name)
             logging.info('Mounting archive %r', archive_path)
 
-            # Mount archive file via CrosDisks.
+            # Trying to mount archive without providing password should fail.
             self.cros_disks.mount(archive_path,
                                   os.path.splitext(archive_path)[1])
             mount_result = self.cros_disks.expect_mount_completion({
@@ -169,6 +174,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'source_path': archive_path,
                     'mount_path': '',
             })
+
+            # Mounting archive with password.
+            self._test_archive(os.path.join(mount_path, archive_name), want,
+                               'password')
 
     def _test_nested(self, incoming_mount_path):
         for archive_name in ['Nested.rar', 'Nested.zip']:
@@ -179,12 +188,9 @@ class CrosDisksArchiveTester(CrosDisksTester):
             self.cros_disks.mount(archive_path,
                                   os.path.splitext(archive_path)[1])
             mount_result = self.cros_disks.expect_mount_completion({
-                    'status':
-                    0,
-                    'source_path':
-                    archive_path,
-                    'mount_path':
-                    os.path.join('/media/archive', archive_name),
+                    'status': 0,
+                    'source_path': archive_path,
+                    'mount_path': os.path.join('/media/archive', archive_name),
             })
 
             mount_path = utf8(mount_result['mount_path'])
@@ -243,10 +249,8 @@ class CrosDisksArchiveTester(CrosDisksTester):
             self.cros_disks.mount(loop_device, '',
                                   ["ro", "nodev", "noexec", "nosuid"])
             mount_result = self.cros_disks.expect_mount_completion({
-                    'status':
-                    0,
-                    'source_path':
-                    loop_device,
+                    'status': 0,
+                    'source_path': loop_device,
             })
 
             mount_path = utf8(mount_result['mount_path'])

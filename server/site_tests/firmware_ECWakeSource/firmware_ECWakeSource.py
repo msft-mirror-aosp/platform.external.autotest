@@ -39,14 +39,17 @@ class firmware_ECWakeSource(FirmwareTest):
           self.servo.set('lid_open', 'yes')
         super(firmware_ECWakeSource, self).cleanup()
 
-    def hibernate_and_wake_by_power_button(self):
+    def hibernate_and_wake_by_power_button(self, host):
         """Shutdown to G3/S5, hibernate EC, and then wake by power button."""
+        is_ac = host.is_ac_connected()
         self.run_shutdown_cmd()
         self.ec.send_command('hibernate 1000')
         time.sleep(self.WAKE_DELAY)
-        # If the DUT enters hibernate mode successfully, EC console shouldn't
-        # be responsive.
-        if self.is_ec_console_responsive():
+
+        # If AC is plugged during the test, the DUT would wake up right after
+        # entering hibernate mode. So skip the verification for EC console
+        # responsiveness.
+        if is_ac != True and self.is_ec_console_responsive():
             raise error.TestFail('The DUT is not in hibernate mode.')
         self.servo.power_short_press()
         self.switcher.wait_for_client()
@@ -142,4 +145,4 @@ class firmware_ECWakeSource(FirmwareTest):
             logging.info('EC does not support hibernate, skipping hibernate test.')
         else:
             logging.info('EC hibernate and wake by power button.')
-            self.hibernate_and_wake_by_power_button()
+            self.hibernate_and_wake_by_power_button(host)

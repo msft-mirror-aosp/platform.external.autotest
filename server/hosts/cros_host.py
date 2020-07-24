@@ -1333,7 +1333,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                           'cleanup through the RPM Infrastructure.')
 
             battery_percentage = self.get_battery_percentage()
-            if battery_percentage and battery_percentage < 50:
+            if (battery_percentage and
+                battery_percentage < cros_repair.MIN_BATTERY_LEVEL):
                 raise
             elif self.is_ac_connected():
                 logging.info('The device has power adapter connected and '

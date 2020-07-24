@@ -206,6 +206,8 @@ suite:syzkaller
 suite:telemetry_unit
 suite:telemetry_unit_server
 suite:tendo_experimental
+suite:thermal_qual_fast
+suite:thermal_qual_full
 suite:toolchain-tests
 suite:touch
 suite:video

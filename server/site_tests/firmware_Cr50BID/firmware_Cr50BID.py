@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging
 
 from autotest_lib.client.common_lib import error
@@ -359,7 +361,7 @@ class firmware_Cr50BID(Cr50Test):
         try:
             cr50_utils.SetChipBoardId(self.host, bid, flags)
             result = self.SUCCESS
-        except error.AutoservRunError, e:
+        except error.AutoservRunError as e:
             result = e.result_obj.stderr.strip()
 
         if result != exit_code:

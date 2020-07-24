@@ -28,7 +28,6 @@ SERVOD_STARTUP_TIMEOUT = 60
 
 # pools that support dual v4. (go/cros-fw-lab-strategy)
 POOLS_SUPPORT_DUAL_V4 = {'faft-cr50',
-                         'faft-cr50-experimental',
                          'faft-cr50-tot',
                          'faft-cr50-debug',
                          'faft_cr50_debug'

@@ -911,7 +911,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 # Update firmware on DUT
                 logging.info('Updating firmware.')
                 try:
-                    self.run(fw_cmd, options="LogLevel=verbose")
+                    self.run(fw_cmd, options="-o LogLevel=verbose")
                 except error.AutoservRunError as e:
                     if e.result_obj.exit_status != 255:
                         raise
@@ -1333,7 +1333,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                           'cleanup through the RPM Infrastructure.')
 
             battery_percentage = self.get_battery_percentage()
-            if battery_percentage and battery_percentage < 50:
+            if (battery_percentage and
+                battery_percentage < cros_repair.MIN_BATTERY_LEVEL):
                 raise
             elif self.is_ac_connected():
                 logging.info('The device has power adapter connected and '

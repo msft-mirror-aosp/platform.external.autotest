@@ -9,14 +9,11 @@ import time
 from autotest_lib.server import test
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.server.cros import gsutil_wrapper
-from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 
 
 class FingerprintTest(test.test):
     """Base class that sets up helpers for fingerprint tests."""
     version = 1
-
-    _FINGERPRINT_BOARD_NAME_SUFFIX = '_fp'
 
     # Location of firmware from the build on the DUT
     _FINGERPRINT_BUILD_FW_DIR = '/opt/google/biod/fw'
@@ -458,15 +455,6 @@ class FingerprintTest(test.test):
         FPMCUs have unique names.
         See go/cros-fingerprint-firmware-branching-and-signing.
         """
-
-        # For devices that don't have unibuild support (which is required to
-        # use cros_config).
-        # TODO(https://crbug.com/1030862): remove when nocturne has cros_config
-        #  support.
-        board = self.host.get_board().replace(ds_constants.BOARD_PREFIX, '')
-        if board == 'nocturne':
-            return board + self._FINGERPRINT_BOARD_NAME_SUFFIX
-
         # Use cros_config to get fingerprint board.
         result = self._run_cros_config_cmd('board')
         if result.exit_status != 0:

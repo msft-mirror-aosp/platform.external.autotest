@@ -3344,6 +3344,8 @@ class BluetoothAdapterTests(test.test):
         @returns: true if the recorded output matches the expected output
                   false otherwise
         """
+        length_correct = True
+        content_correct = True
 
         # Read data from trace I/O files
         input_trace = bluetooth_test_utils.parse_trace_file(os.path.join(
@@ -3368,15 +3370,24 @@ class BluetoothAdapterTests(test.test):
 
         # Fail if we didn't record the correct number of events
         if len(rec_key_events) != len(input_scan_codes):
-            return False
+            logging.info('Expected {} events, received {}'.format(
+                    len(input_scan_codes), len(rec_key_events)))
+            length_correct = False
 
         for idx, predicted in enumerate(predicted_events):
             recorded = rec_key_events[idx]
 
             if not predicted == recorded:
-                return False
+                content_correct = False
+                break
 
-        return True
+        self.results = {
+            'received_events': len(rec_key_events) > 0,
+            'length_correct': length_correct,
+            'content_correct': content_correct,
+        }
+
+        return all(self.results)
 
 
     def is_newer_kernel_version(self, version, minimum_version):

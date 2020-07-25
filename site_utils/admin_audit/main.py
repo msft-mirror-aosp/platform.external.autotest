@@ -36,6 +36,7 @@ ACTION_VERIFY_DUT_STORAGE = 'verify-dut-storage'
 ACTION_VERIFY_SERVO_USB = 'verify-servo-usb-drive'
 ACTION_VERIFY_SERVO_FW = 'verify-servo-fw'
 ACTION_FLASH_SERVO_KEYBOARD_MAP = 'flash-servo-keyboard-map'
+ACTION_VERIFY_DUT_MACADDR = 'verify-dut-macaddr'
 
 _LOG_FILE = 'audit.log'
 
@@ -44,12 +45,14 @@ VERIFIER_MAP = {
     ACTION_VERIFY_SERVO_USB: verifiers.VerifyServoUsb,
     ACTION_VERIFY_SERVO_FW: verifiers.VerifyServoFw,
     ACTION_FLASH_SERVO_KEYBOARD_MAP: verifiers.FlashServoKeyboardMapVerifier,
+    ACTION_VERIFY_DUT_MACADDR: verifiers.VerifyDUTMacAddress,
 }
 
 # Actions required Servod service
 ACTIONS_REQUIRED_SERVOD = set([
     ACTION_VERIFY_SERVO_USB,
     ACTION_FLASH_SERVO_KEYBOARD_MAP,
+    ACTION_VERIFY_DUT_MACADDR,
 ])
 
 # Actions required ServoHost without Servod process

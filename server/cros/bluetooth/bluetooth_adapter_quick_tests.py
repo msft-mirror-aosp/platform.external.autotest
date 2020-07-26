@@ -100,6 +100,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         flag='Quick Sanity', start_browser=False):
         """Inits the test batch"""
         self.host = host
+        self.in_lab = site_utils.host_in_lab(self.host.hostname)
         #factory can not be declared as local variable, otherwise
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
         # server, which log out the user.
@@ -162,8 +163,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 raise error.TestFail('Unable to find a Bluetooth peer')
 
             # Check the chameleond version on the peer and update if necessary
-            if not self.update_btpeer():
-                logging.error('Updating btpeers failed. Ignored')
+            if self.in_lab:
+                if not self.update_btpeer():
+                    logging.error('Updating btpeers failed. Ignored')
+            else:
+                logging.info('No attempting peer update since DUT is not in lab.')
 
             # Query connected devices on our btpeer at init time
             self.available_devices = self.list_devices_available()

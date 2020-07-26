@@ -911,7 +911,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 # Update firmware on DUT
                 logging.info('Updating firmware.')
                 try:
-                    self.run(fw_cmd, options="LogLevel=verbose")
+                    self.run(fw_cmd, options="-o LogLevel=verbose")
                 except error.AutoservRunError as e:
                     if e.result_obj.exit_status != 255:
                         raise

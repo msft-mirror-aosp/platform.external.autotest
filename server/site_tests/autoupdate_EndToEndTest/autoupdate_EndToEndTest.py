@@ -8,6 +8,7 @@ import os
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
+from autotest_lib.server import afe_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -113,6 +114,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         self._stage_payloads(test_conf['target_payload_uri'],
                              test_conf['target_archive_uri'])
+
+        afe_utils.clean_provision_labels(self._host)
 
         # Install source image
         source_payload_uri = test_conf['source_payload_uri']

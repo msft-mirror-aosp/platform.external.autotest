@@ -58,7 +58,7 @@ class audio_AudioVolume(audio_test.AudioTest):
                             than (recorded magnitude at volume 100) * 0.2.
             """
             if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
-                return (70, 100, 0.8)
+                return (50, 100, 0.85)
             elif source_id == chameleon_audio_ids.CrosIds.HEADPHONE:
                 return (40, 80, 0.5)
             elif source_id == chameleon_audio_ids.CrosIds.HDMI:

@@ -12,10 +12,12 @@ NOTE: This module should only be used in the context of a running test. Any
 import common
 import logging
 import traceback
+import sys
 import urlparse
 
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
 from autotest_lib.server import site_utils as server_utils
@@ -187,6 +189,12 @@ def _provision_with_au(host, update_url, staging_server):
     # Get image_name in the format <board>-release/Rxx-12345.0.0 from the
     # update_url.
     image_name = '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
+    try:
+       staging_server.stage_artifacts(image_name, ['full_payload', 'stateful',
+                                                   'autotest_packages'])
+    except dev_server.DevServerException as e:
+       raise error.TestFail, str(e), sys.exc_info()[2]
+
     with remote_access.ChromiumOSDeviceHandler(
           host.ip, base_dir=DEVICE_BASE_DIR) as device:
         updater = auto_updater.ChromiumOSUpdater(

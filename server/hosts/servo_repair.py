@@ -495,6 +495,8 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
             except Exception as e:
                 logging.error('Failed to update servohost image: %s', e)
             super(_ServoRebootRepair, self).repair(host)
+            # restart servod for v3 after reboot.
+            host.restart_servod()
 
     @property
     def description(self):

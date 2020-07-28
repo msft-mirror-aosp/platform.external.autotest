@@ -42,10 +42,18 @@ _DEFAULT_FILES_TO_LOG_PER_BOOT = [
     '/var/log/storage_info.txt',
 ] + list(constants.LOG_PSTORE_DIRS)
 _DEFAULT_FILES_TO_LOG_BEFORE_ITERATION = [
-    '/proc/schedstat', '/proc/meminfo', '/proc/slabinfo', '/proc/interrupts'
+    '/proc/diskstats',
+    '/proc/schedstat',
+    '/proc/meminfo',
+    '/proc/slabinfo',
+    '/proc/interrupts'
 ]
 _DEFAULT_FILES_TO_LOG_AFTER_ITERATION = [
-    '/proc/schedstat', '/proc/meminfo', '/proc/slabinfo', '/proc/interrupts'
+    '/proc/diskstats',
+    '/proc/schedstat',
+    '/proc/meminfo',
+    '/proc/slabinfo',
+    '/proc/interrupts'
 ]
 
 

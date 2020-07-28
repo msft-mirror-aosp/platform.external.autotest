@@ -1071,6 +1071,7 @@ class FirmwareTest(FAFTBase):
                 # Check that the console works before declaring the cr50 console
                 # connection exists and enabling uart capture.
                 cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                cr50.get_version()
                 self.servo.set('cr50_uart_capture', 'on')
                 self.save_uart_capture_result_path('cr50')
                 logging.info('Enabling cr50 uart capture')

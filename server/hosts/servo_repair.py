@@ -291,35 +291,33 @@ class _ServodControlVerifier(hosts.Verifier):
 
 class _CCDTestlabVerifier(hosts.Verifier):
     """
-    Verifier to check that ccd testlab is anabled.
+    Verifier to check that ccd testlab is enabled.
 
-    ALl DUT connected by ccd has to supported cr50 with enabled testlab
+    All DUT connected by ccd has to supported cr50 with enabled testlab
     to allow manipulation by servo. The flag testlab is sticky and will
-    stay enabled if was set up. To enable testlab ccd has to be open.
+    stay enabled if was set up. The testlab can be enabled when ccd is
+    open. (go/ccd-setup)
     """
     @ignore_exception_for_non_cros_host
     def verify(self, host):
         if not host.get_servo().has_control('cr50_testlab'):
             raise hosts.AutoservVerifyError(
-                'cr50 has to be supported when use servo with'
-                ' ccd_cr50/type-c connection')
+                'cr50 has to be supported when use servo with '
+                'ccd_cr50/type-c connection')
 
         status = host.get_servo().get('cr50_testlab')
-        if status != 'on':
-            data = {'port': host.servo_port,
-                    'host': host.get_dut_hostname() or host.hostname,
-                    'board': host.servo_board or ''}
-            metrics.Counter(
-                'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
-            # TODO enable when lab will finished rework on all DUTs
-            # or new servo_state will come to the stage
-            # raise hosts.AutoservNonCriticalVerifyError(
-            #     'The ccd testlab is off (not enabled);'
-            #     ' required the rework to enable it (go/ccd-setup)',
-            #     'ccd_testlab_disabled')
-            host.record('INFO', None, 'ccd_testlab_disabled',
-                        'The ccd testlab is off (not enabled);'
-                        ' required the rework to enable it (go/ccd-setup)')
+        # check by 'on' to fail when get unexpected value
+        if status == 'on':
+            # ccd testlab enabled
+            return
+        data = {'port': host.servo_port,
+                'host': host.get_dut_hostname() or host.hostname,
+                'board': host.servo_board or ''}
+        metrics.Counter(
+            'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
+        raise hosts.AutoservNonCriticalVerifyError(
+            'The ccd testlab is disabled; DUT requires manual work '
+            'to enable it (go/ccd-setup).')
 
     def _is_applicable(self, host):
         if host.get_servo():

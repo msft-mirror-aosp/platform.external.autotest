@@ -258,9 +258,8 @@ class RemoteHost(base_classes.Host):
         on the destruction of the Host object that was used to obtain
         it.
         """
-        self.run("mkdir -p %s" % parent)
         template = os.path.join(parent, self.TMP_DIR_TEMPLATE)
-        dir_name = self.run("mktemp -d %s" % template).stdout.rstrip()
+        dir_name = self.run('mkdir -p %s && mktemp -d %s' % (parent, template)).stdout.rstrip()
         self.tmp_dirs.append(dir_name)
         return dir_name
 
@@ -314,20 +313,27 @@ class RemoteHost(base_classes.Host):
         cause unexpected behavior.
         """
         # follow mktemp's behavior of only expanding 3 or more consecutive Xs
-        base_template = re.sub('XXXX*', '*', self.TMP_DIR_TEMPLATE)
-        # distinguish between non-wildcard asterisks in parent directory name
-        # and wildcards inserted from the template
-        base = '*'.join(map(lambda x: '"%s"' % utils.sh_escape(x),
-                base_template.split('*')))
-        path = '"%s' % os.path.join(utils.sh_escape(parent), base[1:])
-        self.run('rm -rf %s' % path, ignore_status=True)
-        # remove deleted directories from tmp_dirs
-        regex = os.path.join(parent, re.sub('(XXXX*)',
-                        lambda match: '[a-zA-Z0-9]{%d}' % len(match.group(1)),
-                        self.TMP_DIR_TEMPLATE))
-        regex += '(/|$)' # remove if matches, or is within a dir that matches
-        self.tmp_dirs = filter(lambda x: not re.match(regex, x), self.tmp_dirs)
+        if isinstance(parent, (list, tuple)):
+            parents = parent
+        else:
+            parents = [parent]
+        rm_paths = []
+        for parent in parents:
+            base_template = re.sub('XXXX*', '*', self.TMP_DIR_TEMPLATE)
+            # distinguish between non-wildcard asterisks in parent directory name
+            # and wildcards inserted from the template
+            base = '*'.join(map(lambda x: '"%s"' % utils.sh_escape(x),
+                    base_template.split('*')))
+            path = '"%s' % os.path.join(utils.sh_escape(parent), base[1:])
+            rm_paths.append(path)
+            # remove deleted directories from tmp_dirs
+            regex = os.path.join(parent, re.sub('(XXXX*)',
+                            lambda match: '[a-zA-Z0-9]{%d}' % len(match.group(1)),
+                            self.TMP_DIR_TEMPLATE))
+            regex += '(/|$)' # remove if matches, or is within a dir that matches
+            self.tmp_dirs = filter(lambda x: not re.match(regex, x), self.tmp_dirs)
 
+        self.run('rm -rf {}'.format(" ".join(rm_paths)), ignore_status=True)
 
     def check_uptime(self):
         """

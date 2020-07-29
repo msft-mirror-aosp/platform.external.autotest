@@ -6,7 +6,6 @@ import logging
 import re
 import sys
 import time
-import urllib2
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
@@ -146,32 +145,14 @@ class provision_AutoUpdate(test.test):
                                 'Host already running %s' % value)
                 return
 
-        # We're about to reimage a machine, so we need full_payload and
-        # stateful.  If something happened where the devserver doesn't have one
-        # of these, then it's also likely that it'll be missing autotest.
-        # Therefore, we require the devserver to also have autotest staged, so
-        # that the test that runs after this provision finishes doesn't error
-        # out because the devserver that its job_repo_url is set to is missing
-        # autotest test code.
-        ds = None
         try:
             ds = dev_server.ImageServer.resolve(image, host.hostname)
-            ds.stage_artifacts(image, ['full_payload', 'stateful',
-                                       'autotest_packages'])
         except dev_server.DevServerException as e:
             raise error.TestFail, str(e), sys.exc_info()[2]
-        finally:
-            # If a devserver is resolved, Log what has been downloaded so far.
-            if ds:
-                try:
-                    ds.list_image_dir(image)
-                except (dev_server.DevServerException, urllib2.URLError) as e2:
-                    logging.warning('Failed to list_image_dir for build %s. '
-                                    'Error: %s', image, e2)
 
         url = _IMAGE_URL_PATTERN % (ds.url(), image)
 
-        logging.debug('Installing image')
+        logging.debug('Installing image from URL: %s', url)
         start_time = time.time()
         failure = None
         try:

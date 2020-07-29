@@ -531,46 +531,44 @@ class _BaseModeSwitcher(object):
         logging.info('-[ModeSwitcher]-[ start reboot_to_mode(%r, %r, %r) ]-',
                      to_mode, from_mode, wait_for_dut_up)
 
+        devsw_cur = ''
         if sync_before_boot:
-            self.faft_framework.blocking_sync(True)
+            lines = self.faft_client.system.run_shell_command_get_output(
+                'crossystem')
+            logging.debug('-[ModeSwitcher]- crossystem output:\n%s',
+                          '\n'.join(lines))
+            devsw_cur = self.faft_client.system.get_crossystem_value(
+                'devsw_cur')
+            self.faft_framework.blocking_sync(freeze_for_reset=True)
+
         if to_mode == 'rec':
             self.enable_rec_mode_and_reboot(usb_state='dut')
-            if wait_for_dut_up:
-                self.wait_for_client(retry_power_on=True)
 
         elif to_mode == 'rec_force_mrc':
             self._enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
-            if wait_for_dut_up:
-                self.wait_for_client(retry_power_on=True)
 
         elif to_mode == 'dev':
-            if sync_before_boot:
-                lines = self.faft_client.system.run_shell_command_get_output(
-                        'crossystem')
-                logging.debug('-[ModeSwitcher]- crossystem output:\n%s',
-                              '\n'.join(lines))
-                devsw_cur = self.faft_client.system.get_crossystem_value(
-                        'devsw_cur')
-            else:
-                devsw_cur = 'N/A'
             self._enable_dev_mode_and_reboot()
             if wait_for_dut_up:
                 self.bypass_dev_mode()
-                try:
-                    self.wait_for_client(retry_power_on=True)
-                except ConnectionError as e:
-                    raise ConnectionError('{} devsw_cur: {}'.format(e,
-                                                                    devsw_cur))
 
         elif to_mode == 'normal':
             self._enable_normal_mode_and_reboot()
-            if wait_for_dut_up:
-                self.wait_for_client(retry_power_on=True)
 
         else:
             raise NotImplementedError(
                     'Not supported mode switching from %s to %s' %
                      (str(from_mode), to_mode))
+
+        if wait_for_dut_up:
+            try:
+                self.wait_for_client(retry_power_on=True)
+            except ConnectionError as e:
+                if devsw_cur:
+                    raise ConnectionError('%s, devsw_cur: %s' % (e, devsw_cur))
+                else:
+                    raise
+
         logging.info('-[ModeSwitcher]-[ end reboot_to_mode(%r, %r, %r) ]-',
                      to_mode, from_mode, wait_for_dut_up)
 
@@ -595,7 +593,7 @@ class _BaseModeSwitcher(object):
                                       reboot_type)
         if sync_before_boot:
             boot_id = self.faft_framework.get_bootid()
-            self.faft_framework.blocking_sync(True)
+            self.faft_framework.blocking_sync(freeze_for_reset=True)
         logging.info("-[ModeSwitcher]-[ start simple_reboot(%r) ]-",
                      reboot_type)
         reboot_method()

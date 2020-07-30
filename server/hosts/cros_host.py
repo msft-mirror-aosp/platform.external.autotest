@@ -30,6 +30,7 @@ from autotest_lib.server.cros.servo import pdtester
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import chameleon_host
+from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import cros_label
 from autotest_lib.server.hosts import cros_repair
 from autotest_lib.server.hosts import pdtester_host
@@ -47,12 +48,6 @@ except ImportError:
 
 
 CONFIG = global_config.global_config
-
-# Device is not fixable due issues with hardware and has to be replaced
-DEVICE_STATE_NEEDS_REPLACEMENT = 'needs_replacement'
-# Device required manual attention to be fixed
-DEVICE_STATE_NEEDS_MANUAL_REPAIR = 'needs_manual_repair'
-
 
 class FactoryImageCheckerException(error.AutoservError):
     """Exception raised when an image is a factory image."""
@@ -1041,7 +1036,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         audit_const.HW_STATE_NEED_REPLACEMENT)
                     self.host_info_store.commit(info)
                     self.set_device_repair_state(
-                        DEVICE_STATE_NEEDS_REPLACEMENT)
+                        cros_constants.DEVICE_STATE_NEEDS_REPLACEMENT)
                     logging.debug(
                         'Fail install image from USB; Storage error; %s', e)
                     raise error.AutoservError(
@@ -2621,9 +2616,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         ]
         if self.get_servo_state() in servo_state_required_manual_fix:
             data = {'host': self.hostname,
-                    'state': DEVICE_STATE_NEEDS_MANUAL_REPAIR}
+                    'state': cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR}
             metrics.Counter(
                 'chromeos/autotest/repair/special_dut_state'
                 ).increment(fields=data)
             # TODO (otabek) unblock when be sure that we do not have flakiness
-            # self.set_device_repair_state(DEVICE_STATE_NEEDS_MANUAL_REPAIR)
+            # self.set_device_repair_state(
+            #   cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR)

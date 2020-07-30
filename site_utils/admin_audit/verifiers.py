@@ -122,7 +122,10 @@ class VerifyServoUsb(base._BaseServoVerifier):
             command = 'badblocks -sw -e 1 -t 0xff %s' % usb
             logging.info('Running command: %s', command)
             # The response is the list of bad block on USB.
-            result = servo.system_output(command)
+            # Extended time for 2 hour to run USB verification.
+            # TODO (otabek@) (b:153661014#comment2) bring F3 to run
+            # check faster if badblocks cannot finish in 2 hours.
+            result = servo.system_output(command, timeout=7200)
             logging.info("Check result: '%s'", result)
             if result:
                 # So has result is Bad and empty is Good.

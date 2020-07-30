@@ -133,15 +133,13 @@ class network_WiFi_UpdateRouter(test.test):
         logging.info('Updating %s to image %s from %s',
                      device_host.hostname, desired.release_version,
                      current_release_version)
-        logging.info('Staging artifacts.')
         try:
             ds = dev_server.ImageServer.resolve(desired.builder_version,
                                                 device_host.hostname)
-            ds.stage_artifacts(desired.builder_version,
-                               ['full_payload', 'stateful'])
         except dev_server.DevServerException as e:
             logging.error(e)
             raise error.TestFail(str(e))
 
         url = self.get_update_url(ds.url(), desired.builder_version)
-        autoupdater.ChromiumOSUpdater(url, host=device_host).run_update()
+        autoupdater.ChromiumOSUpdater(url, host=device_host,
+                                      use_quick_provision=True).run_update()

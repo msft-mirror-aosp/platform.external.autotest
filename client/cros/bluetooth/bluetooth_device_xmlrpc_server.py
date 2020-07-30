@@ -1672,20 +1672,6 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @returns: True on success. False otherwise.
 
         """
-        device = self._find_device(address)
-        if not device:
-            logging.error('Device not found')
-            return False
-        if self._is_paired(device):
-            logging.info('Device is already paired')
-            return True
-
-        device_path = device.object_path
-        logging.info('Device %s is found.', device.object_path)
-
-        self._setup_pairing_agent(pin)
-        mainloop = gobject.MainLoop()
-
         def connect_reply():
             """Handler when connect succeeded."""
             logging.info('Device connected: %s', device_path)
@@ -1732,14 +1718,33 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             finally:
                 mainloop.quit()
 
+        device = self._find_device(address)
+        if not device:
+            logging.error('Device not found')
+            return False
+
+        device_path = device.object_path
+        logging.info('Device %s is found.', device.object_path)
+
+        self._setup_pairing_agent(pin)
+        mainloop = gobject.MainLoop()
+
         try:
-            # On success, this will also connect
-            device.Pair(reply_handler=pair_reply, error_handler=pair_error,
-                        timeout=timeout * 1000)
+            if not self._is_paired(device):
+                logging.info('Device is not paired. Pair and Connect.')
+                device.Pair(reply_handler=pair_reply, error_handler=pair_error,
+                            timeout=timeout * 1000)
+                mainloop.run()
+            elif not self._is_connected(device):
+                logging.info('Device is already paired. Connect.')
+                device.Connect(reply_handler=connect_reply,
+                               reply_error=connect_error,
+                               timeout=timeout * 1000)
+                mainloop.run()
         except Exception as e:
             logging.error('Exception %s in pair_legacy_device', e)
             return False
-        mainloop.run()
+
         return self._is_paired(device) and self._is_connected(device)
 
 

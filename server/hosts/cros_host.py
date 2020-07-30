@@ -1198,7 +1198,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # We don't want flag a DUT as failed if only non-critical
             # verifier(s) failed during the repair.
             if e.is_critical():
-                self.try_set_device_need_manual_repair()
+                self.try_set_device_needs_manual_repair()
                 raise
 
 
@@ -2581,21 +2581,41 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Get device repair state"""
         return self._device_repair_state
 
-    def set_device_repair_state(self, state):
+    def set_device_repair_state(self, state, resultdir=None):
         """Set device repair state.
 
         The special device state will be written to the 'dut_state.repair'
-        file in result directory. The file will be read by Lucifer.
+        file in result directory. The file will be read by Lucifer. The
+        file will not be created if result directory not specified.
+
+        @params state:      The new state for the device.
+        @params resultdir:  The path to result directory. If path not provided
+                            will be attempt to get retrieve it from job
+                            if present.
         """
-        if self.job:
-            target = os.path.join(self.job.resultdir, 'dut_state.repair')
+        resultdir = resultdir or getattr(self.job, 'resultdir', '')
+        if resultdir:
+            target = os.path.join(resultdir, 'dut_state.repair')
             common_utils.open_write_close(target, state)
+            logging.info('Set device state as %s. '
+                         'Created dut_state.repair file.', state)
         else:
             logging.debug('Cannot write the device state due missing info '
                           'about result dir.')
         self._device_repair_state = state
 
-    def try_set_device_need_manual_repair(self):
+    def set_device_needs_replacement(self, resultdir=None):
+        """Set device as required replacement.
+
+        @params resultdir:  The path to result directory. If path not provided
+                            will be attempt to get retrieve it from job
+                            if present.
+        """
+        self.set_device_repair_state(
+            cros_constants.DEVICE_STATE_NEEDS_REPLACEMENT,
+            resultdir=resultdir)
+
+    def try_set_device_needs_manual_repair(self):
         """Check if device require manual attention to be fixed.
 
         The state 'needs_manual_repair' can be set when auto repair cannot

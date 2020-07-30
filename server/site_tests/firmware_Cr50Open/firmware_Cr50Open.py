@@ -69,7 +69,7 @@ class firmware_Cr50Open(Cr50Test):
             cr50_utils.GSCTool(self.host, ['-a', '-o'])
             # Wait long enough for cr50 to open ccd and wipe the tpm.
             time.sleep(10)
-            if 'Open' not in self.cr50.get_ccd_info()['State']:
+            if self.cr50.OPEN != self.cr50.get_ccd_level():
                 raise error.TestFail('Unable to open cr50 from AP with batt '
                                      'disconnected')
             return

@@ -147,7 +147,7 @@ class platform_StageAndRecover(test.test):
                 self.host.run('chromeos-install --yes', ignore_status=True,
                               timeout=self._INSTALL_DELAY_TIMEOUT)
                 self.host.reboot()
-        except error.AutotestError:
+        except error.AutoservRunError:
             pass
 
         if self.error_messages:

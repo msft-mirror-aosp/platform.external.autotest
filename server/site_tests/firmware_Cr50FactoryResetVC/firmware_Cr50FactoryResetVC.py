@@ -61,7 +61,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
 
     def fwmp_ccd_lockout(self):
         """Returns True if FWMP is locking out CCD."""
-        return 'fwmp_lock' in self.cr50.get_ccd_info()['TPM']
+        return 'fwmp_lock' in self.cr50.get_ccd_info('TPM')
 
 
     def set_fwmp_lockout(self, enable):

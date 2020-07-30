@@ -109,15 +109,15 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CAP_FORMAT = '\s+(Y|-) \d\=%s( \(%s\))?[\r\n]+\s*' % (CAP_STATES,
                                                           CAP_STATES)
     # Name each group, so we can use groupdict to extract all useful information
-    # from the ccd outupt.
-    CCD_FORMAT = [
-        '(State: (?P<State>Opened|Locked|Unlocked))',
-        '(Password: (?P<Password>set|none))',
-        '(Flags: (?P<Flags>\S*))',
-        '(Capabilities:.*(?P<Capabilities>%s))' %
-                (CAP_FORMAT.join(CAP_NAMES) + CAP_FORMAT),
-        '(TPM:(?P<TPM>[ \S]*)\r)',
-    ]
+    # from the ccd output.
+    CCD_FORMAT = {
+        'State' : '(State: (?P<State>Opened|Locked|Unlocked))',
+        'Password' : '(Password: (?P<Password>set|none))',
+        'Flags' : '(Flags: (?P<Flags>\S*))',
+        'Capabilities' : '(Capabilities:.*(?P<Capabilities>%s))' %
+                         (CAP_FORMAT.join(CAP_NAMES) + CAP_FORMAT),
+        'TPM' : '(TPM:(?P<TPM>[ \S]*)\r)',
+    }
 
     # CR50 Board Properties as defined in platform/ec/board/cr50/scratch-reg1.h
     BOARD_PROP = {
@@ -246,7 +246,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def password_is_reset(self):
         """Returns True if the password is cleared"""
-        return self.get_ccd_info()['Password'] == 'none'
+        return self.get_ccd_info('Password') == 'none'
 
 
     def ccd_is_reset(self):
@@ -291,17 +291,24 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def in_dev_mode(self):
         """Return True if cr50 thinks the device is in dev mode"""
-        return 'dev_mode' in self.get_ccd_info()['TPM']
+        return 'dev_mode' in self.get_ccd_info('TPM')
 
 
-    def get_ccd_info(self):
+    def get_ccd_info(self, field=None):
         """Get the current ccd state.
 
         Take the output of 'ccd' and convert it to a dictionary.
 
-        @return: A dictionary with the ccd state name as the key and setting as
-                 value.
+        @param: the ccd info param to get or None to get the full ccd output
+                dictionary.
+        @return: the field value or a dictionary with the ccd field name as the
+                 key and the setting as the value.
         """
+
+        if field:
+            match_value = self.CCD_FORMAT[field]
+        else:
+            match_value = '.*'.join(self.CCD_FORMAT.values())
         matched_output = None
         original_timeout = float(self._servo.get('cr50_uart_timeout'))
         # Change the console timeout to 10s, it may take longer than 3s to read
@@ -317,8 +324,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             # timeout if output is dropped.
             rv = self.send_command_retry_get_output('ccd', ['ccd.*>'],
                     safe=True)[0]
-            matched_output = re.search('.*'.join(self.CCD_FORMAT), rv,
-                                       re.DOTALL)
+            matched_output = re.search(match_value, rv, re.DOTALL)
             if matched_output:
                 break
             logging.info('try %d: could not match ccd output %s', i, rv)
@@ -328,9 +334,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
         if not matched_output:
             raise error.TestFail('Could not get ccd output')
-        logging.info('Current CCD settings:\n%s',
-                     pprint.pformat(matched_output.groupdict()))
-        return matched_output.groupdict()
+        matched_dict = matched_output.groupdict()
+        logging.info('Current CCD settings:\n%s', pprint.pformat(matched_dict))
+        if field:
+            return matched_dict.get(field)
+        return matched_dict
 
 
     def get_cap(self, cap):
@@ -353,7 +361,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                  requirement]
         """
         # Add whitespace at the end, so we can still match the last line.
-        cap_info_str = self.get_ccd_info()['Capabilities'] + '\r\n'
+        cap_info_str = self.get_ccd_info('Capabilities') + '\r\n'
         cap_settings = re.findall('(\S+) ' + self.CAP_FORMAT,
                                   cap_info_str)
         caps = {}
@@ -829,7 +837,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def get_ccd_level(self):
         """Returns the current ccd privilege level"""
-        return self._servo.get('cr50_ccd_level').lower()
+        return self.get_ccd_info('State').lower().rstrip('ed')
 
 
     def set_ccd_level(self, level, password=''):

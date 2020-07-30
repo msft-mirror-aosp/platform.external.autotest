@@ -37,8 +37,13 @@ CROS_VERIFY_DAG = (
 CROS_REPAIR_ACTIONS = (
     (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
     (cros_repair.ServoSysRqRepair, 'sysrq', (), ('ssh',)),
-    (cros_repair.ServoResetRepair, 'servoreset', (), ('ssh',)),
-    (cros_repair.ServoCr50RebootRepair, 'cr50_reset', (), ('ssh',)),
+    (cros_repair.ServoResetRepair, 'servoreset', (), ('ssh', 'stop_start_ui',)),
+    (
+        cros_repair.ServoCr50RebootRepair,
+        'cr50_reset',
+        (),
+        ('ssh', 'stop_start_ui',),
+    ),
     (cros_firmware.FaftFirmwareRepair,
      'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_provision')),
     (cros_repair.DevDefaultBootRepair,

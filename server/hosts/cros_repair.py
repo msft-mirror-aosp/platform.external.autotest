@@ -29,6 +29,8 @@ except ImportError:
 
 MIN_BATTERY_LEVEL = 50.0
 
+DEFAULT_SERVO_RESET_TRIGGER = ('ssh', 'stop_start_ui')
+
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
@@ -818,15 +820,21 @@ def _cros_verify_extended_dag():
     )
 
 
-def _cros_basic_repair_actions():
-    """Return the basic repair actions for a `CrosHost`"""
+def _cros_basic_repair_actions(
+    servo_reset_trigger=DEFAULT_SERVO_RESET_TRIGGER
+):
+    """Return the basic repair actions for a `CrosHost`
+
+    @param servo_reset_trigger: sequence of verifiers that trigger servo reset
+    and servo cr50 reboot repair.
+    """
     repair_actions = (
         # RPM cycling must precede Servo reset:  if the DUT has a dead
         # battery, we need to reattach AC power before we reset via servo.
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
         (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
-        (ServoResetRepair, 'servoreset', (), ('ssh',)),
-        (ServoCr50RebootRepair, 'cr50_reset', (), ('ssh',)),
+        (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
+        (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
 
         # N.B. FirmwareRepair can't fix a 'good_provision' failure directly,
         # because it doesn't remove the flag file that triggers the
@@ -936,7 +944,7 @@ def _jetstream_repair_actions():
     jetstream_service_triggers = (jetstream_tpm_triggers +
                                   ('jetstream_services',))
     repair_actions = (
-        _cros_basic_repair_actions() +
+        _cros_basic_repair_actions(servo_reset_trigger=('ssh',)) +
         (
             (JetstreamTpmRepair, 'jetstream_tpm_repair',
              _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS,

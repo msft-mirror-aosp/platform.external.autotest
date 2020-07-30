@@ -132,6 +132,15 @@ class bluetooth_AdapterLEAdvertising(
         logging.debug("Test is supported on this kernel version")
 
 
+    def ext_adv_enabled(self):
+        """ Check if platform supports extended advertising
+
+        @returns True if extended advertising is supported, else False
+        """
+        platform = self.host.get_platform()
+        return platform in bluetooth_adapter_tests.EXT_ADV_MODELS
+
+
     # ---------------------------------------------------------------
     # Definitions of all test cases
     # ---------------------------------------------------------------
@@ -407,9 +416,10 @@ class bluetooth_AdapterLEAdvertising(
                                            instance_id,
                                            advertising_disabled=False)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs)
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs)
 
         # Unregister all existing advertisements which are [1, 2, 4]
         # since adv 3 was removed in the previous step.
@@ -468,9 +478,10 @@ class bluetooth_AdapterLEAdvertising(
                                            instance_id,
                                            advertising_disabled=False)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               len(advertisements) - 1)
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   len(advertisements) - 1)
 
         self.test_reset_advertising([2, 3])
 
@@ -506,9 +517,10 @@ class bluetooth_AdapterLEAdvertising(
                                            instance_id,
                                            advertising_disabled=False)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs1 - 1)
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs1 - 1)
 
         # Register two more advertisements.
         # The instance IDs to register would be [2, 4]
@@ -710,9 +722,10 @@ class bluetooth_AdapterLEAdvertising(
                                            instance_id,
                                            advertising_disabled=False)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs - 1)
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs - 1)
 
         # Test if advertising is reset correctly.Only instances [1, 3] are left.
         self.test_reset_advertising([1, 3])
@@ -832,9 +845,10 @@ class bluetooth_AdapterLEAdvertising(
                 invalid_small_max_adv_interval_ms,
                 new_min_adv_interval_ms, new_max_adv_interval_ms)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs)
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs)
 
         # Fails to set intervals that are too large. Intervals remain the same.
         self.test_fail_to_set_advertising_intervals(
@@ -842,9 +856,10 @@ class bluetooth_AdapterLEAdvertising(
                 invalid_large_max_adv_interval_ms,
                 new_min_adv_interval_ms, new_max_adv_interval_ms)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs)
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs)
 
         # Unregister all advertisements.
         self.unregister_advertisements(advertisements)

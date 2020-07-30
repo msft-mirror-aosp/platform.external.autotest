@@ -4,7 +4,6 @@
 
 import json
 import logging
-import os
 import time
 
 import common
@@ -156,10 +155,7 @@ class WritableVerifier(hosts.Verifier):
         # This deliberately stops looking after the first error.
         # See above for the details.
         for testdir in self._TEST_DIRECTORIES:
-            filename = os.path.join(testdir, 'writable_test')
-            command = 'touch %s && rm %s' % (filename, filename)
-            rv = host.run(command=command, ignore_status=True)
-            if rv.exit_status != 0:
+            if not host.is_file_system_writable([testdir]):
                 msg = 'Can\'t create a file in %s' % testdir
                 raise hosts.AutoservVerifyError(msg)
 

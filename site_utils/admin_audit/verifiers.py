@@ -66,6 +66,9 @@ class VerifyDutStorage(base._BaseDUTVerifier):
             if state and set_label:
                 self._set_host_info_state(constants.DUT_STORAGE_STATE_PREFIX,
                                           state)
+                if state == constants.HW_STATE_NEED_REPLACEMENT:
+                    self.get_host().set_device_needs_replacement(
+                        resultdir=self.get_result_dir())
             self._state = state
         except Exception as e:
             raise base.AuditError('Exception during getting state of'

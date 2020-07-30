@@ -108,14 +108,14 @@ def main():
                 logging.info('DRY RUN: Would have run actions %s', action)
                 return
 
-            response = _verify(action, host)
+            response = _verify(action, host, opts.results_dir)
             if response:
                 return response
 
     return RETURN_CODES.OK
 
 
-def _verify(action, host):
+def _verify(action, host, resultdir):
     """Run verifier for the action with targeted host.
 
     @param action: The action requested to run the verifier.
@@ -125,7 +125,9 @@ def _verify(action, host):
         _log("START", action)
         verifier = VERIFIER_MAP[action]
         if verifier:
-            verifier(host).verify()
+            v = verifier(host)
+            v.set_result_dir(resultdir)
+            v.verify()
         else:
             logging.info('Verifier is not specified')
         _log("END_GOOD", action)

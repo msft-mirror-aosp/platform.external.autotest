@@ -210,9 +210,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param args_dict Dictionary from which to extract the chameleon
           arguments.
         """
-        return {key: args_dict[key]
-                for key in ('chameleon_host', 'chameleon_port')
-                if key in args_dict}
+        chameleon_args = {key: args_dict[key]
+                          for key in ('chameleon_host', 'chameleon_port')
+                          if key in args_dict}
+        if 'chameleon_ssh_port' in args_dict:
+            chameleon_args['port'] = int(args_dict['chameleon_ssh_port'])
+        return chameleon_args
 
     @staticmethod
     def get_btpeer_arguments(args_dict):

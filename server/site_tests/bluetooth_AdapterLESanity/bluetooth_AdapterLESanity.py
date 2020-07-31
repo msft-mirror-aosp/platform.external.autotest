@@ -14,6 +14,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import \
      BluetoothAdapterPairingTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
      import BluetoothAdapterHIDReportTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+     EXT_ADV_MODELS
 
 
 class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
@@ -263,8 +265,11 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, slave_info=hid_test_device)
 
 
+    # TODO(b/162324887) - platforms supporting extended advertising do not
+    # properly resume advertising after connecting an LE device
     @test_wrapper('LE HID Test During Receiver Adv',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=EXT_ADV_MODELS)
     def le_role_hid_during_receiver_adv(self):
         """Tests HID device while already in Nearby Receiver role adv state"""
 

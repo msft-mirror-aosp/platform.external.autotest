@@ -97,6 +97,9 @@ class audio_AudioAfterReboot(audio_test.AudioTest):
 
     def check_correct_audio_node_selected(self):
         """Checks the node selected by Cras is correct."""
+        # Selects and checks the node selected by cras is correct.
+        audio_test_utils.check_and_set_chrome_active_node_types(
+                self.facade, self.audio_nodes[0][0], self.audio_nodes[1][0])
         audio_test_utils.check_audio_nodes(self.audio_facade, self.audio_nodes)
 
 

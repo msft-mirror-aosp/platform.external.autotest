@@ -108,8 +108,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # start with some whitespace, so account for that too.
     CAP_FORMAT = '\s+(Y|-) \d\=%s( \(%s\))?[\r\n]+\s*' % (CAP_STATES,
                                                           CAP_STATES)
-    # Name each group, so we can use groupdict to extract all useful information
-    # from the ccd output.
+    # Be as specific as possible with the 'ccd' output, so the test will notice
+    # missing characters and retry getting the output. Name each group, so the
+    # test can extract the field information into a dictionary.
+    # CCD_FIELDS is used to order the regex when searching for multiple fields
+    CCD_FIELDS = ['State', 'Password', 'Flags', 'Capabilities', 'TPM']
+    # CCD_FORMAT has the field names as keys and the expected output as the
+    # value.
     CCD_FORMAT = {
         'State' : '(State: (?P<State>Opened|Locked|Unlocked))',
         'Password' : '(Password: (?P<Password>set|none))',
@@ -308,7 +313,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if field:
             match_value = self.CCD_FORMAT[field]
         else:
-            match_value = '.*'.join(self.CCD_FORMAT.values())
+            values = [ self.CCD_FORMAT[field] for field in self.CCD_FIELDS ]
+            match_value = '.*'.join(values)
         matched_output = None
         original_timeout = float(self._servo.get('cr50_uart_timeout'))
         # Change the console timeout to 10s, it may take longer than 3s to read

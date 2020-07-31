@@ -191,7 +191,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         """Tests Nearby Sender role while already connected to HID device"""
 
         self.verify_controller_capability(
-                        required_roles=['central'],
+                        required_roles=['central-peripheral'],
                         test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]

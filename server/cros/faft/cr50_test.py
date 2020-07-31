@@ -119,6 +119,8 @@ class Cr50Test(FirmwareTest):
         try:
             self._save_eraseflashinfo_image(
                     full_args.get('cr50_eraseflashinfo_image_path', ''))
+            if self.cr50.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'):
+                raise error.TestError('Board cannot boot EFI image')
             self._saved_state |= self.ERASEFLASHINFO_IMAGE
         except Exception as e:
             logging.warning('Error saving eraseflashinfo image: %s', str(e))

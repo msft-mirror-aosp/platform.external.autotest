@@ -66,6 +66,8 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                     os.environ['PATH'] = os.environ['JAVA_HOME']\
                                        + '/bin:' + os.environ['PATH']
                     logging.info(subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT))
+                    # TODO(jiyounha): remove once crbug.com/1105515 is resolved.
+                    logging.info(subprocess.check_output(['whereis', 'java'], stderr=subprocess.STDOUT))
                 except OSError:
                     logging.error('Can\'t change current PATH directory')
 

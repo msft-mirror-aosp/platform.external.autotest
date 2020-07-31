@@ -210,9 +210,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param args_dict Dictionary from which to extract the chameleon
           arguments.
         """
-        return {key: args_dict[key]
-                for key in ('chameleon_host', 'chameleon_port')
-                if key in args_dict}
+        chameleon_args = {key: args_dict[key]
+                          for key in ('chameleon_host', 'chameleon_port')
+                          if key in args_dict}
+        if 'chameleon_ssh_port' in args_dict:
+            chameleon_args['port'] = int(args_dict['chameleon_ssh_port'])
+        return chameleon_args
 
     @staticmethod
     def get_btpeer_arguments(args_dict):
@@ -1198,7 +1201,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # We don't want flag a DUT as failed if only non-critical
             # verifier(s) failed during the repair.
             if e.is_critical():
-                self.try_set_device_need_manual_repair()
+                self.try_set_device_needs_manual_repair()
                 raise
 
 
@@ -2581,21 +2584,41 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Get device repair state"""
         return self._device_repair_state
 
-    def set_device_repair_state(self, state):
+    def set_device_repair_state(self, state, resultdir=None):
         """Set device repair state.
 
         The special device state will be written to the 'dut_state.repair'
-        file in result directory. The file will be read by Lucifer.
+        file in result directory. The file will be read by Lucifer. The
+        file will not be created if result directory not specified.
+
+        @params state:      The new state for the device.
+        @params resultdir:  The path to result directory. If path not provided
+                            will be attempt to get retrieve it from job
+                            if present.
         """
-        if self.job:
-            target = os.path.join(self.job.resultdir, 'dut_state.repair')
+        resultdir = resultdir or getattr(self.job, 'resultdir', '')
+        if resultdir:
+            target = os.path.join(resultdir, 'dut_state.repair')
             common_utils.open_write_close(target, state)
+            logging.info('Set device state as %s. '
+                         'Created dut_state.repair file.', state)
         else:
             logging.debug('Cannot write the device state due missing info '
                           'about result dir.')
         self._device_repair_state = state
 
-    def try_set_device_need_manual_repair(self):
+    def set_device_needs_replacement(self, resultdir=None):
+        """Set device as required replacement.
+
+        @params resultdir:  The path to result directory. If path not provided
+                            will be attempt to get retrieve it from job
+                            if present.
+        """
+        self.set_device_repair_state(
+            cros_constants.DEVICE_STATE_NEEDS_REPLACEMENT,
+            resultdir=resultdir)
+
+    def try_set_device_needs_manual_repair(self):
         """Check if device require manual attention to be fixed.
 
         The state 'needs_manual_repair' can be set when auto repair cannot
@@ -2623,3 +2646,49 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # TODO (otabek) unblock when be sure that we do not have flakiness
             # self.set_device_repair_state(
             #   cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR)
+
+    def is_file_system_writable(self, testdirs=None):
+        """Check is the file systems are writable.
+
+        The standard linux response to certain unexpected file system errors
+        (including hardware errors in block devices) is to change the file
+        system status to read-only. This checks that that hasn't happened.
+
+        @param testdirs: List of directories to check. If no data provided
+                         then '/mnt/stateful_partition' and '/var/tmp'
+                         directories will be checked.
+
+        @returns boolean whether file-system writable.
+        """
+        def _check_dir(testdir):
+            # check if we can create a file
+            filename = os.path.join(testdir, 'writable_my_test_file')
+            command = 'touch %s && rm %s' % (filename, filename)
+            rv = self.run(command=command,
+                          timeout=30,
+                          ignore_status=True)
+            is_writable = rv.exit_status == 0
+            if not is_writable:
+                logging.info('Cannot create a file in "%s"!'
+                             ' Probably the FS is read-only', testdir)
+                logging.info("FileSystem is not writable!")
+                return False
+            return True
+
+        if not testdirs or len(testdirs) == 0:
+            # N.B. Order matters here:  Encrypted stateful is loop-mounted
+            # from a file in unencrypted stateful, so we don't test for
+            # errors in encrypted stateful if unencrypted fails.
+            testdirs = ['/mnt/stateful_partition', '/var/tmp']
+
+        for dir in testdirs:
+            # loop will be stopped if any directory fill fail the check
+            try:
+                if not _check_dir(dir):
+                    return False
+            except Exception as e:
+                # here expected only timeout error, all other will
+                # be catch by 'ignore_status=True'
+                logging.debug('Fail to check %s to write in it', dir)
+                return False
+        return True

@@ -71,10 +71,9 @@ class audio_AudioVolume(audio_test.AudioTest):
             """ Create the golden file for the source_id. """
             if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
                 return audio_test_data.GenerateAudioTestData(
-                        path=os.path.join(self.bindir, 'fix_440_16_0.5.raw'),
+                        path=os.path.join(self.bindir, 'fix_440_16.raw'),
                         duration_secs=10,
-                        frequencies=[440, 440],
-                        volume_scale=0.5)
+                        frequencies=[440, 440])
             return audio_test_data.GenerateAudioTestData(
                     path=os.path.join(self.bindir, 'fix_2k_1k_16.raw'),
                     duration_secs=10,

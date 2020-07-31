@@ -20,7 +20,7 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
-        tag='arm.waivers',
+        tag='x86.waivers',
         test_name='cheets_CTS_P.x86.waivers',
         run_template=['run', 'commandAndExit', 'cts', '--subplan', 'waivers'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],

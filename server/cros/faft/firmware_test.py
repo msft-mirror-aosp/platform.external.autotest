@@ -2242,7 +2242,7 @@ class FirmwareTest(FAFTBase):
         # middle of this reset process. Power button requests happen once a
         # minute, so waiting 10 seconds isn't a big deal.
         time.sleep(10)
-        return ('Open' in self.cr50.get_ccd_info()['State'] or
+        return (self.cr50.OPEN != self.cr50.get_ccd_level() or
                 self._ccd_open_job.sp.poll() is not None)
 
     def _get_ccd_open_output(self):
@@ -2379,7 +2379,7 @@ class FirmwareTest(FAFTBase):
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
         self.cr50.send_command('ccd testlab open')
-        if self.cr50.get_ccd_level() != 'open':
+        if self.cr50.OPEN != self.cr50.get_ccd_level():
             if self.servo.has_control('chassis_open'):
                 self.servo.set('chassis_open', 'yes')
             pw = '' if self.cr50.password_is_reset() else self.CCD_PASSWORD

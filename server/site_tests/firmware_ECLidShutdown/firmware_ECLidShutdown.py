@@ -20,7 +20,7 @@ class firmware_ECLidShutdown(FirmwareTest):
     # Delay to allow for a power state change after closing or opening the lid.
     # This value is determined experimentally.
     LID_POWER_STATE_DELAY = 5
-    POWER_STATE_CHECK_TRIES = 1
+    POWER_STATE_CHECK_TRIES = 3
     IGNORE_LID_IN_USERSPACE_CMD = 'echo 0 > /var/lib/power_manager/use_lid'
     CHECK_POWER_MANAGER_CFG_DEFAULT = '[ ! -f /var/lib/power_manager/use_lid ]'
 

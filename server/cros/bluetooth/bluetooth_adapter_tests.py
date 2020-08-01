@@ -76,6 +76,16 @@ TABLET_MODELS = ['kakadu', 'kodama', 'krane', 'dru', 'druwl', 'dumo']
 # and skip them in the relevant tests.
 REALTEK_MODELS = ['blooglet', 'barla', 'ezkinil', 'trembyle']
 
+# TODO(b/161005264) - Some tests rely on software rotation to pass, so we must
+# know which models don't use software rotation. Use a static list until we can
+# query the bluez API instead. Extended advertising is supported on platforms
+# on 4.19 and 5.4, with HrP2, JfP2, CcP2, RTL8822C, or QCN3991 chipsets.
+EXT_ADV_MODELS = ['ezkinil', 'trembyle', 'drawcia', 'drawlat', 'drawman',
+                  'maglia', 'magolor', 'sarien', 'arcada', 'akemi',
+                  'drallion', 'drallion360', 'hatch', 'stryke', 'helios',
+                  'dragonair', 'dratini', 'duffy', 'jinlon', 'kaisa',
+                  'kindred', 'kled', 'puff', 'kohaku', 'nightfury', 'morphius',
+                  'lazor', 'trogdor']
 
 def method_name():
     """Get the method name of a class.

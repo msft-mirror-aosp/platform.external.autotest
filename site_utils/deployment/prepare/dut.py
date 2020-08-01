@@ -102,6 +102,23 @@ def download_image_to_servo_usb(host, build):
     host.servo.image_to_servo_usb(update_url)
 
 
+def try_reset_by_servo(host):
+    """Reboot the DUT by run cold_reset by servo.
+
+    Cold reset implemented as
+    `dut-control -p <SERVO-PORT> power_state:reset`.
+
+    @params host: CrosHost instance with initialized servo instance.
+    """
+    logging.info('Attempting reset via servo...')
+    host.servo.get_power_state_controller().reset()
+
+    logging.info('Waiting for DUT to come back up.')
+    if not host.wait_up(timeout=host.BOOT_TIMEOUT):
+        raise error.AutoservError(
+            'DUT failed to come back after %d seconds' % host.BOOT_TIMEOUT)
+
+
 def power_cycle_via_servo(host):
     """Power cycle a host though it's attached servo.
 
@@ -264,6 +281,7 @@ def install_firmware(host):
 
     @param host   Host instance to use for servo and ssh operations.
     """
+    logging.info("Started install firmware on the DUT.")
     # Disable software-controlled write-protect for both FPROMs, and
     # install the RO firmware.
     for fprom in ['host', 'ec']:
@@ -284,9 +302,13 @@ def install_firmware(host):
              ignore_status=True)
 
     logging.info("Rebooting DUT in normal mode(non-dev).")
-    power_cycle_via_servo(host)
-    logging.info("Install firmware completed successfully.")
+    try:
+        host.reboot()
+    except Exception as e:
+        logging.debug('Failed to reboot from host side; %s', e)
+        try_reset_by_servo(host)
 
+    logging.info("Install firmware completed successfully.")
 
 
 def _start_firmware_update(host, result_file):

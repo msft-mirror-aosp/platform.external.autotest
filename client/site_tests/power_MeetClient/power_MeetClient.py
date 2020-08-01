@@ -8,7 +8,6 @@ import os
 import logging
 import time
 
-
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import power_load_util
@@ -66,6 +65,11 @@ class power_MeetClient(power_test.power_Test):
             url = self.video_url + '/' + meet_code
             logging.info('Navigating left window to %s', url)
             tab.Navigate(url)
+
+            # Workaround when camera isn't init for some unknown reason.
+            time.sleep(10)
+            tab.EvaluateJavaScript('location.reload()')
+
             tab.WaitForDocumentReadyStateToBeComplete()
             logging.info(meet_code)
             self.keyvals['meet_code'] = meet_code

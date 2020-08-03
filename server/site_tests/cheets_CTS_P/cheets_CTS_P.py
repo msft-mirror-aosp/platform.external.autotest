@@ -42,8 +42,9 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
     version = 1
 
     _SHARD_CMD = '--shard-count'
-    _SCENE_URI = ('https://storage.googleapis.com'
-                  '/chromiumos-test-assets-public/camerabox/scene.pdf')
+    _SCENE_URI = (
+            'https://storage.googleapis.com/chromiumos-test-assets-public'
+            '/camerabox/cts_portrait_scene.jpg')
 
     def _tradefed_retry_command(self, template, session_id):
         """Build tradefed 'retry' command from template."""

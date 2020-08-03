@@ -401,7 +401,7 @@ class Verifier(_DependencyNode):
         """
         try:
             if not self._is_applicable(host):
-                logging.info('Verfy %s is not applicable to %s, skipping...',
+                logging.info('Verify %s is not applicable to %s, skipping...',
                              self.description, host.hostname)
                 return
         except Exception as e:

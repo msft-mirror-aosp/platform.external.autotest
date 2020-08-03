@@ -51,7 +51,6 @@ SUPPORTED_DEVICE_TYPES = {
     'KEYBOARD': lambda btpeer: btpeer.get_bluetooth_hid_keyboard,
     'BLE_MOUSE': lambda btpeer: btpeer.get_ble_mouse,
     'BLE_KEYBOARD': lambda btpeer: btpeer.get_ble_keyboard,
-    'A2DP_SINK': lambda btpeer: btpeer.get_bluetooth_a2dp_sink,
     # Tester allows us to test DUT's discoverability, etc. from a peer
     'BLUETOOTH_TESTER': lambda btpeer: btpeer.get_bluetooth_tester,
     # This is a base object that does not emulate any Bluetooth device.

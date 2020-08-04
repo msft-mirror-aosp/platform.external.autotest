@@ -98,6 +98,7 @@ def parse_args():
         subparser.add_argument('-remotedatadir')
         subparser.add_argument('-remoterunner')
         subparser.add_argument('-sshretries')
+        subparser.add_argument('-downloaddata')
         subparser.add_argument('target')
         subparser.add_argument('patterns', action='append', nargs='*')
 

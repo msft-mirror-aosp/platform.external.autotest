@@ -28,7 +28,7 @@ class power_MeetClient(power_test.power_Test):
     doc_url = 'http://doc.new'
     extra_browser_args = ['--use-fake-ui-for-media-stream']
 
-    def initialize(self, seconds_period=20., pdash_note='',
+    def initialize(self, seconds_period=5., pdash_note='',
                    force_discharge=False):
         """initialize method."""
         super(power_MeetClient, self).initialize(

@@ -115,7 +115,7 @@ class tast(test.test):
                    max_run_sec=3600, command_args=[], install_root='/',
                    ssp=None, build=None, build_bundle='cros',
                    run_private_tests=True, varsfiles=None,
-                   clear_tpm=False):
+                   download_data_lazily=False, clear_tpm=False):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -141,6 +141,9 @@ class tast(test.test):
             specified to build and run a private bundle.
         @param varsfiles: list of names of yaml files containing variables set
             in |-varsfile| arguments.
+        @param download_data_lazily: If True, external data files are downloaded
+            lazily between tests. If false, external data files are downloaded
+            in a batch before running tests.
         @param clear_tpm: clear the TPM first before running the tast tests.
 
         @raises error.TestFail if the Tast installation couldn't be found.
@@ -162,6 +165,7 @@ class tast(test.test):
         self._run_private_tests = run_private_tests
         self._fake_now = None
         self._varsfiles = varsfiles
+        self._download_data_lazily = download_data_lazily
         self._clear_tpm = clear_tpm
 
         # List of JSON objects describing tests that will be run. See Test in
@@ -330,6 +334,8 @@ class tast(test.test):
             '-logtime=false',
             subcommand,
             '-sshretries=%d' % self._SSH_CONNECT_RETRIES,
+            '-downloaddata=%s' % (
+                'lazy' if self._download_data_lazily else 'batch'),
         ]
         if self._build:
             cmd.extend([

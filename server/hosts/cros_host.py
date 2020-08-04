@@ -1800,6 +1800,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         return self._ping_wait_for_status(self._PING_STATUS_DOWN, timeout)
 
+    def _is_host_port_forwarded(self):
+      """Checks if the dut is connected over port forwarding.
+
+      N.B. This method does not detect all situations where port forwarding is
+      occurring. Namely, running autotest on the dut may result in a
+      false-positive, and port forwarding using a different machine on the
+      same network will be a false-negative.
+
+      @return True if the dut is connected over port forwarding
+              False otherwise
+      """
+      is_localhost = self.hostname in ['localhost', '127.0.0.1']
+      is_forwarded = is_localhost and not self.is_default_port
+      if is_forwarded:
+          logging.info('Detected DUT connected by port forwarding')
+      return is_forwarded
+
     def test_wait_for_sleep(self, sleep_timeout=None):
         """Wait for the client to enter low-power sleep mode.
 
@@ -1827,7 +1844,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if sleep_timeout is None:
             sleep_timeout = self.SLEEP_TIMEOUT
 
-        if not self.ping_wait_down(timeout=sleep_timeout):
+        # If the dut is accessed over SSH port-forwarding, `ping` is not useful
+        # for detecting the dut is down since a ping to localhost will always
+        # succeed. In this case, fall back to wait_down() which uses SSH.
+        if self._is_host_port_forwarded():
+          success = self.wait_down(timeout=sleep_timeout)
+        else:
+          success = self.ping_wait_down(timeout=sleep_timeout)
+
+        if not success:
             raise error.TestFail(
                 'client failed to sleep after %d seconds' % sleep_timeout)
 
@@ -1893,7 +1918,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if shutdown_timeout is None:
             shutdown_timeout = self.SHUTDOWN_TIMEOUT
 
-        if not self.ping_wait_down(timeout=shutdown_timeout):
+        if self._is_host_port_forwarded():
+          success = self.wait_down(timeout=shutdown_timeout)
+        else:
+          success = self.ping_wait_down(timeout=shutdown_timeout)
+
+        if not success:
             raise error.TestFail(
                 'client failed to shut down after %d seconds' %
                     shutdown_timeout)

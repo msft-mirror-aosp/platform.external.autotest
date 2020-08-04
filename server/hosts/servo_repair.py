@@ -10,6 +10,7 @@ import time
 import common
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import repair_utils
 
@@ -350,10 +351,30 @@ class _CCDPowerDeliveryVerifier(hosts.Verifier):
             logging.warning('The servo initlized with role snk while'
                             ' supporting power delivery, resetting role'
                             ' to src...')
-            host.get_servo().set_servo_v4_role('src')
-            time.sleep(self.CHANGE_SERVO_ROLE_TIMEOUT)
+
+            try:
+                logging.info('setting power direction with retries')
+                # do not pass host since host does not inherit from CrosHost.
+                charge_manager = servo_charger.ServoV4ChargeManager(
+                    host=None,
+                    servo=host.get_servo(),
+                )
+                attempts = charge_manager.start_charging()
+                logging.info('setting power direction took %d tries', attempts)
+                # if control makes it here, we successfully changed the host
+                # direction
+                result = 'src'
+            except Exception as e:
+                logging.error(
+                    'setting power direction with retries failed %s',
+                    e.message,
+                )
+            finally:
+                time.sleep(self.CHANGE_SERVO_ROLE_TIMEOUT)
+
             result = host.get_servo().get('servo_v4_role')
             logging.debug('Servo_v4 role after reset: %s', result)
+
             metrics_data = {
                 'hostname': host.get_dut_hostname() or 'unknown',
                 'status': 'success' if result == 'src' else 'failed',

@@ -2242,7 +2242,7 @@ class FirmwareTest(FAFTBase):
         # middle of this reset process. Power button requests happen once a
         # minute, so waiting 10 seconds isn't a big deal.
         time.sleep(10)
-        return (self.cr50.OPEN != self.cr50.get_ccd_level() or
+        return (self.cr50.OPEN == self.cr50.get_ccd_level() or
                 self._ccd_open_job.sp.poll() is not None)
 
     def _get_ccd_open_output(self):

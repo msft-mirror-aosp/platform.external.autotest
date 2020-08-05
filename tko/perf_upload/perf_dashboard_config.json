@@ -290,11 +290,6 @@
     "master_name": "ChromeOSWiFi"
   },
   {
-    "autotest_name": "network_WiFi_Perf.11g_wep",
-    "dashboard_test_name": "network_WiFi_Perf",
-    "master_name": "ChromeOSWiFi"
-  },
-  {
     "autotest_name": "network_WiFi_Perf.ht20",
     "dashboard_test_name": "network_WiFi_Perf",
     "master_name": "ChromeOSWiFi"
@@ -470,11 +465,6 @@
   },
   {
     "autotest_name": "network_WiFi_SuspendStress.Hidden",
-    "dashboard_test_name": "network_WiFi_SuspendStress",
-    "master_name": "ChromeOSWiFi"
-  },
-  {
-    "autotest_name": "network_WiFi_SuspendStress.WEP40",
     "dashboard_test_name": "network_WiFi_SuspendStress",
     "master_name": "ChromeOSWiFi"
   },

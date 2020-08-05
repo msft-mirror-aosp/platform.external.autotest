@@ -762,6 +762,20 @@ class _BaseModeSwitcher(object):
         @raise ConnectionError: Failed to connect DUT.
         """
         logging.info("-[FAFT]-[ start wait_for_client ]---")
+        # Wait for the system to be powered on before trying the network
+        # Skip "None" result because that indicates lack of EC or problem
+        # querying the power state.
+        current_timer = 0
+        while (timeout > current_timer and
+               self.faft_framework.get_power_state() not in
+               (self.faft_framework.POWER_STATE_S0, None)):
+                time.sleep(2)
+                current_timer += 2
+        power_state = self.faft_framework.get_power_state()
+        if power_state not in (self.faft_framework.POWER_STATE_S0, None):
+            raise ConnectionError('DUT unexpectedly down, '
+                                  'power state is %s' % power_state)
+
         # Wait for the system to respond to ping before attempting ssh
         if not self.client_host.ping_wait_up(timeout):
             logging.warning("-[FAFT]-[ system did not respond to ping ]")

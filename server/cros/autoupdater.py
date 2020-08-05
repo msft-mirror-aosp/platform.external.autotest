@@ -777,13 +777,10 @@ class ChromiumOSUpdater(object):
         server_name = urlparse.urlparse(self.update_url)[1]
         image_name = url_to_image_name(self.update_url)
 
+        if self._use_quick_provision:
+            return self._install_via_quick_provision(server_name, image_name)
         try:
-            result = None
-            if self._use_quick_provision:
-                result = self._install_via_quick_provision(server_name,
-                                                           image_name)
-            return result or self._install_via_update_engine(server_name,
-                                                             image_name)
+            return self._install_via_update_engine(server_name, image_name)
         except:
             # N.B. This handling code includes non-Exception classes such
             # as KeyboardInterrupt.  We need to clean up, but we also must

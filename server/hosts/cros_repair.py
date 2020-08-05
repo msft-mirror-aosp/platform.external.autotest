@@ -27,7 +27,7 @@ except ImportError:
     metrics = utils.metrics_mock
 
 
-MIN_BATTERY_LEVEL = 50.0
+MIN_BATTERY_LEVEL = 90.0
 
 DEFAULT_SERVO_RESET_TRIGGER = ('ssh', 'stop_start_ui')
 
@@ -87,14 +87,25 @@ _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
 class ACPowerVerifier(hosts.Verifier):
     """Check for AC power and battery charging state."""
 
+    # Battery discharging state in power_supply_info file.
+    BATTERY_DISCHARGING = 'Discharging'
+
     def verify(self, host):
         # pylint: disable=missing-docstring
+        info = self._load_info(host)
+        self._validate_ac_plugged(info)
+        self._validate_battery(host, info)
+
+    def _load_info(self, host):
         try:
             info = host.get_power_supply_info()
         except error.AutoservRunError:
             raise hosts.AutoservVerifyError(
                     'Failed to get power supply info')
+        return info
 
+    def _validate_ac_plugged(self, info):
+        # Validate that DUT is plugged to the AC.
         try:
             if info['Line Power']['online'] != 'yes':
                 raise hosts.AutoservVerifyError(
@@ -103,11 +114,32 @@ class ACPowerVerifier(hosts.Verifier):
             raise hosts.AutoservVerifyError(
                     'Cannot determine AC power status')
 
+    def _validate_battery(self, host, info):
         try:
             charging_state = info['Battery']['state']
+            if charging_state == self.BATTERY_DISCHARGING:
+                logging.debug('Try to fix discharging state of the battery. '
+                              'Possible that a test left wrong state.')
+                # Here is the chance that battery is discharging because
+                # of some test did not clean up the state.
+                # We are going to try to fix it by set charging to normal.
+                host.run('ectool chargecontrol normal', ignore_status=True)
+                # wait to change state.
+                time.sleep(5)
+                info = self._load_info(host)
+                charging_state = info['Battery']['state']
+                fixed = charging_state != self.BATTERY_DISCHARGING
+                # TODO (@otabek) remove metrics after research
+                metrics_data = {'host': host.hostname,
+                                'model': host.host_info_store.get().model,
+                                'fixed': fixed}
+                metrics.Counter(
+                    'chromeos/autotest/repair/chargecontrol_fixed'
+                ).increment(fields=metrics_data)
+
             battery_level = float(info['Battery']['percentage'])
             if (battery_level < MIN_BATTERY_LEVEL and
-                charging_state == 'Discharging'):
+                charging_state == self.BATTERY_DISCHARGING):
                 # TODO(@xianuowang) remove metrics here once we have device
                 # health profile to collect history of DUT's metrics.
                 metrics_data = {'host': host.hostname,

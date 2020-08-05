@@ -184,6 +184,7 @@ class _PowerStateController(object):
         """
         self._servo = servo
         self.supported = self._servo.has_control('power_state')
+        self.last_rec_mode = self.REC_OFF
         if not self.supported:
             logging.info('Servo setup does not support power-state operations. '
                          'All power-state calls will lead to error.TestFail')
@@ -269,6 +270,18 @@ class _PowerStateController(object):
         """
         self._check_supported()
         self._servo.set_nocheck('power_state', rec_mode)
+        self.last_rec_mode = rec_mode
+
+    def retry_power_on(self):
+        """Retry powering on the DUT.
+
+        After power_on(...) the system might not come up reliably, although
+        the reasons aren't known yet. This function retries turning on the
+        system again, trying to bring it in the last state that power_on()
+        attempted to reach.
+        """
+        self._check_supported()
+        self._servo.set_nocheck('power_state', self.last_rec_mode)
 
 
 class _Uart(object):

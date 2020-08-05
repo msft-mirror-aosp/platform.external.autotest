@@ -80,6 +80,8 @@ class power_Test(test.test):
         ret = [
             # No pop up to ask permission to record video.
             '--use-fake-ui-for-media-stream',
+            # Allow 2 windows side by side.
+            '--force-tablet-mode=clamshell',
         ]
 
         # Use fake camera for DUT without camera, e.g. chromebox.

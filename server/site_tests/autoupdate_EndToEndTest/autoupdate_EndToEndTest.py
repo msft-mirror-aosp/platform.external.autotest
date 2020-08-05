@@ -9,6 +9,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server import afe_utils
+from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -109,21 +110,47 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         """
         logging.debug('The test configuration supplied: %s', test_conf)
         self._autotest_devserver = self._get_devserver_for_test(test_conf)
-        self._stage_payloads(test_conf['source_payload_uri'],
-                             test_conf['source_archive_uri'])
-
-        self._stage_payloads(test_conf['target_payload_uri'],
-                             test_conf['target_archive_uri'])
 
         afe_utils.clean_provision_labels(self._host)
 
-        # Install source image
+        # Install source image with quick-provision.
         source_payload_uri = test_conf['source_payload_uri']
-        if source_payload_uri is not None:
-            self.update_device(source_payload_uri, clobber_stateful=True)
+        if source_payload_uri:
+            # TODO(crbug.com/991421): Just use for 'reef' board for now. Once
+            # that stabilized, remove the back up logic of using auto updater
+            # for installing the source image.
+            use_qp = 'reef' in source_payload_uri
+            if use_qp:
+                try:
+                    build_name, _ = self._get_update_parameters_from_uri(
+                        source_payload_uri)
+                    update_url = self._autotest_devserver.get_update_url(
+                        build_name)
+                    logging.info('Installing source image with update url: %s',
+                                 update_url)
+
+                    autoupdater.ChromiumOSUpdater(
+                        update_url,
+                        host=self._host,
+                        use_quick_provision=True,
+                        is_release_bucket=True).run_update()
+                except Exception as e:
+                    logging.warning('quick-provision failed with error: %s, '
+                                    'Trying with AU.', e)
+                    use_qp = False
+
+            if not use_qp:
+                # TODO(crbug.com/991421): Remove this fallback once the quick
+                # provision use case is stabilized.
+                self._stage_payloads(test_conf['source_payload_uri'],
+                                     test_conf['source_archive_uri'])
+                self.update_device(source_payload_uri, clobber_stateful=True)
+
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
         # Start the update to the target image.
+        self._stage_payloads(test_conf['target_payload_uri'],
+                             test_conf['target_archive_uri'])
         self.run_update_test(test_conf)
 
         # Check we can login after the update.

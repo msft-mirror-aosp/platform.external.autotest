@@ -1229,6 +1229,14 @@ class BluetoothDevice(object):
         return self._proxy.do_suspend(seconds, expect_bt_wake)
 
 
+    def get_wlan_vid_pid(self):
+        """ Return vendor id and product id of the wlan chip on BT/WiFi module
+
+        @returns: (vid,pid) on success; (None,None) on failure
+        """
+        return self._proxy.get_wlan_vid_pid()
+
+
     def close(self, close_host=True):
         """Tear down state associated with the client.
 

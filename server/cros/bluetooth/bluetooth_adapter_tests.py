@@ -3850,7 +3850,11 @@ class BluetoothAdapterTests(test.test):
         (vid,pid) = self.bluetooth_facade.get_wlan_vid_pid()
         logging.debug('Bluetooth module vid pid is %s %s', vid, pid)
         if vid is None or pid is None:
-            return ''
+            # Controllers that aren't WLAN+BT combo chips does not expose
+            # Vendor ID/Product ID. Use alternate method.
+            # This will return one of ['WCN3991', ''] or a string containing
+            # the name of chipset read from DUT
+            return self.bluetooth_facade.get_bt_module_name()
         for name, l in CHIPSET_TO_VIDPID.items():
             if (vid, pid) in l:
                 return name

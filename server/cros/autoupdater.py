@@ -229,7 +229,7 @@ def url_to_image_name(update_url):
     @returns a string representing the image name in the update_url.
 
     """
-    return '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
+    return urlparse.urlparse(update_url).path[len('/update/'):]
 
 
 def get_update_failure_reason(exception):
@@ -333,7 +333,7 @@ class ChromiumOSUpdater(object):
     """Chromium OS specific DUT update functionality."""
 
     def __init__(self, update_url, host=None, interactive=True,
-                 use_quick_provision=False):
+                 use_quick_provision=False, is_release_bucket=None):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
@@ -341,13 +341,15 @@ class ChromiumOSUpdater(object):
         @param interactive: Bool whether we are doing an interactive update.
         @param use_quick_provision: Whether we should attempt to perform
             the update using the quick-provision script.
+        @param is_release_bucket: If True, use release bucket
+            gs://chromeos-releases.
         """
         self.update_url = update_url
         self.host = host
         self.interactive = interactive
         self.update_version = _url_to_version(update_url)
         self._use_quick_provision = use_quick_provision
-
+        self._is_release_bucket = is_release_bucket
 
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
@@ -473,7 +475,11 @@ class ChromiumOSUpdater(object):
 
     def _set_target_version(self):
         """Set the "target version" for the update."""
-        version_number = self.update_version.split('-')[1]
+        # Version strings that come from release buckets do not have RXX- at the
+        # beginning. So remove this prefix only if the version has it.
+        version_number = (self.update_version.split('-')[1]
+                          if '-' in self.update_version
+                          else self.update_version)
         self._run('echo %s > %s' % (version_number, _TARGET_VERSION))
 
 
@@ -689,8 +695,10 @@ class ChromiumOSUpdater(object):
         # If enabled, GsCache server listion on different port on the
         # devserver.
         gs_cache_server = devserver_name.replace(DEVSERVER_PORT, GS_CACHE_PORT)
-        gs_cache_url = ('http://%s/download/chromeos-image-archive'
-                        % gs_cache_server)
+        gs_cache_url = ('http://%s/download/%s'
+                        % (gs_cache_server,
+                           'chromeos-releases' if self._is_release_bucket
+                           else 'chromeos-image-archive'))
 
         # Check if GS_Cache server is enabled on the server.
         self._run('curl -s -o /dev/null %s' % gs_cache_url)
@@ -712,9 +720,12 @@ class ChromiumOSUpdater(object):
         """
         logging.info('Try quick provision with devserver.')
         ds = dev_server.ImageServer('http://%s' % devserver_name)
+        archive_url = ('gs://chromeos-releases/%s' %  image_name
+                       if self._is_release_bucket else None)
         try:
             ds.stage_artifacts(image_name, ['quick_provision', 'stateful',
-                                            'autotest_packages'])
+                                            'autotest_packages'],
+                               archive_url=archive_url)
         except dev_server.DevServerException as e:
             six.reraise(error.TestFail, str(e), sys.exc_info()[2])
 

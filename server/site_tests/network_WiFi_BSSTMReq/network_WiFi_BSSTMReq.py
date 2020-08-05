@@ -40,6 +40,9 @@ class network_WiFi_BSSTMReq(wifi_cell_test_base.WiFiCellTestBase):
         self._router1_conf.ssid = router_ssid
         self.context.configure(self._router1_conf, multi_interface=True)
 
+        # Capture the detection and connection to the second AP.
+        self.context.capture_host.start_capture(self._router1_conf.frequency)
+
         # Get BSSIDs of the two APs
         bssid0 = self.context.router.get_hostapd_mac(0)
         bssid1 = self.context.router.get_hostapd_mac(1)
@@ -73,6 +76,8 @@ class network_WiFi_BSSTMReq(wifi_cell_test_base.WiFiCellTestBase):
         if not self.context.client.wait_for_roam(
                 roam_to_bssid, timeout_seconds=self.TIMEOUT_SECONDS):
             raise error.TestFail('Failed to roam.')
+
+        self.context.capture_host.stop_capture()
 
     def cleanup(self):
         """Cleanup function."""

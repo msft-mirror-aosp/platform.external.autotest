@@ -9,6 +9,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import service_stopper
+from autotest_lib.client.cros.camera import camera_utils
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_telemetry_utils
@@ -73,6 +74,23 @@ class power_Test(test.test):
                 seconds_period, self._checkpoint_logger)
 
         self._pdash_note = pdash_note
+
+    def get_extra_browser_args_for_camera_test(self):
+        """Return Chrome args for camera power test."""
+        ret = [
+            # No pop up to ask permission to record video.
+            '--use-fake-ui-for-media-stream',
+            # Allow 2 windows side by side.
+            '--force-tablet-mode=clamshell',
+        ]
+
+        # Use fake camera for DUT without camera, e.g. chromebox.
+        if not camera_utils.find_cameras():
+            ret.append('--use-fake-device-for-media-stream')
+            self.keyvals['use_fake_camera'] = 1
+        else:
+            self.keyvals['use_fake_camera'] = 0
+        return ret
 
     def warmup(self, warmup_time=30):
         """Warm up.

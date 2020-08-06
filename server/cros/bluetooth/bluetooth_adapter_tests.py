@@ -39,6 +39,23 @@ from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 Event = recorder.Event
 
+CHIPSET_TO_VIDPID = { 'BRCM-4354':[('0x002d','0x4354')],
+                      'MVL-8897':[('0x02df','0x912d')],
+                      'MVL-8997':[('0x1b4b','0x2b42')],
+                      'QCA-9462': [('0x168c', '0x0034')],
+                      'QCA-6174A-5':[('0x168c','0x003e')],
+                      'QCA-6174A-3':[('0x271','0x050a')],   # UART
+                      'Intel-AX200':[('0x8086', '0x2723')], # CcP2
+                      'Intel-AX201':[('0x8086','0x02f0')],  # HrP2
+                      'Intel-AC9260':[('0x8086','0x2526')], # ThP2
+                      'Intel-AC9560':[('0x8086','0x31dc'),  # JfP2
+                                      ('0x8086','0x9df0')],
+                      'Intel-AC7260':[('0x8086','0x08b1'),  # WP2
+                                      ('0x8086','0x08b2')],
+                      'Intel-AC7265':[('0x8086','0x095a'),  # StP2
+                                      ('0x8086','0x095b')],
+                      'Realtek-RTL8822C-USB':[('0x10ec','0xc822')] }
+
 # Location of data traces relative to this (bluetooth_adapter_tests.py) file
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
@@ -3823,6 +3840,25 @@ class BluetoothAdapterTests(test.test):
         finally:
             if not bluetooth_peer_update.cleanup(self.host, commit):
                 logging.error('Update peer cleanup failed')
+
+
+    def get_chipset_name(self):
+        """ Get the name of BT/WiFi chipset on this host
+
+        @returns chipset name if successful else ''
+        """
+        (vid,pid) = self.bluetooth_facade.get_wlan_vid_pid()
+        logging.debug('Bluetooth module vid pid is %s %s', vid, pid)
+        if vid is None or pid is None:
+            # Controllers that aren't WLAN+BT combo chips does not expose
+            # Vendor ID/Product ID. Use alternate method.
+            # This will return one of ['WCN3991', ''] or a string containing
+            # the name of chipset read from DUT
+            return self.bluetooth_facade.get_bt_module_name()
+        for name, l in CHIPSET_TO_VIDPID.items():
+            if (vid, pid) in l:
+                return name
+        return ''
 
 
     def verify_device_rssi(self, address_list):

@@ -874,8 +874,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         # Install firmware from local tarball
         try:
-            # Check if DUT is available and copying to DUT is enabled
-            if self.is_up() and try_scp:
+            # Check if copying to DUT is enabled and DUT is available
+            if try_scp and self.is_up():
                 # DUT is available, make temp firmware directory to store images
                 logging.info('Making temp folder.')
                 dest_folder = '/tmp/firmware'

@@ -5,13 +5,12 @@
 from autotest_lib.server import utils
 
 AUTHOR = "Chrome OS Team"
-NAME = "firmware_FingerprintSigner"
+NAME = "firmware_FingerprintSigner.fsi"
 PURPOSE = """
 Verify that the signer ID is correct
 """
-ATTRIBUTES = "suite:fingerprint"
 CRITERIA = """
-Fails if the on-disk fingerprint firmware image is signed with DEV keys
+Fails if the on-disk fingerprint firmware image is signed with keys that aren't MP.
 """
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
@@ -21,8 +20,8 @@ DEPENDENCIES = "fingerprint"
 JOB_RETRIES = 0
 
 DOC = """
-This variant of firmware_FingerprintSigner requires the on-disk firmware image
-to be signed with pre-MP or MP (since automated runs may use either) keys.
+This test makes sure the firmware stored in the OS image is signed with MP keys,
+not pre-MP or dev.  It is intended to be run as part of the FSI process.
 """
 
 args_dict = utils.args_to_dict(args)
@@ -30,6 +29,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_FingerprintSigner", host=host, fsi=False)
+    job.run_test("firmware_FingerprintSigner", host=host, fsi=True)
 
 parallel_simple(run, machines)

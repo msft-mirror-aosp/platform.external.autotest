@@ -2898,6 +2898,61 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return True
 
 
+    def get_wlan_vid_pid(self):
+        """ Return vendor id and product id of the wlan chip on BT/WiFi module
+
+        @returns: (vid,pid) on success; (None,None) on failure
+        """
+        vid = None
+        pid = None
+        path_template = '/sys/class/net/%s/device/'
+        for dev_name in ['wlan0', 'mlan0']:
+            if os.path.exists(path_template % dev_name):
+                path_v = path_template % dev_name + 'vendor'
+                path_d = path_template % dev_name + 'device'
+                logging.debug('Paths are %s %s', path_v, path_d)
+                try:
+                    vid = open(path_v).read().strip('\n')
+                    pid = open(path_d).read().strip('\n')
+                    break
+                except Exception as e:
+                    logging.error('Exception %s while reading vid/pid', str(e))
+        logging.debug('returning vid:%s pid:%s', vid, pid)
+        return (vid, pid)
+
+
+    def get_bt_module_name(self):
+        """ Return bluetooth module name for non-USB devices
+
+        @returns '' on failure. On success return chipset name, if found in
+                 dict.Otherwise it returns the raw string read.
+        """
+        # map the string read from device to chipset name
+        chipset_string_dict  = { 'qcom,wcn3991-bt\x00' : 'WCN3991'}
+
+        hci_device  = '/sys/class/bluetooth/hci0'
+        real_path = os.path.realpath(hci_device)
+
+        logging.debug('real path is %s', real_path)
+        if 'usb' in  real_path:
+            return ''
+
+        device_path = os.path.join(real_path, 'device', 'of_node', 'compatible')
+        try:
+            chipset_string = open(device_path).read()
+            logging.debug('read string %s from %s', chipset_string, device_path)
+        except Exception as e:
+            logging.error('Exception %s while reading from file', str(e),
+                          device_path)
+            return ''
+
+        if chipset_string in chipset_string_dict:
+            return chipset_string_dict[chipset_string]
+        else:
+            logging.debug("Chipset not known. Returning %s", chipset_string)
+            return chipset_string
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     handler = logging.handlers.SysLogHandler(address='/dev/log')

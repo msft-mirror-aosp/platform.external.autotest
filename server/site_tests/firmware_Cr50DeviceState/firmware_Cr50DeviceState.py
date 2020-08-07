@@ -186,13 +186,14 @@ class firmware_Cr50DeviceState(Cr50Test):
         return irq_counts
 
 
-    def get_expected_count(self, irq_key, cr50_time, cmd_time):
+    def get_expected_count(self, irq_key, cr50_time, cmd_time, idle):
         """Get the expected irq increase for the given irq and state
 
         Args:
             irq_key: the irq int
             cr50_time: the cr50 time in seconds
             cmd_time: the time the test took to run commands
+            idle: Cr50 should enter regular sleep while the device is idle.
 
         Returns:
             A list with the expected irq count range [min, max]
@@ -206,8 +207,13 @@ class firmware_Cr50DeviceState(Cr50Test):
             # taskinfo, which would be a pmu wakeup.
             if cr50_time < 5:
                 return [0, 1]
-
-            min_count = max(cr50_time - self.SLEEP_DELAY - cmd_time, 0)
+            # Only enforce the minimum regular sleep count if the device is
+            # idle. Cr50 may not enter regular sleep during power state
+            # transitions.
+            if idle:
+                min_count = max(cr50_time - self.SLEEP_DELAY, 0)
+            else:
+                min_count = 0
             # Just checking there is not a lot of extra sleep wakeups. Add 1 to
             # the sleep rate so cr50 can have some extra wakeups, but not too
             # many.
@@ -324,19 +330,17 @@ class firmware_Cr50DeviceState(Cr50Test):
                                                 'dropping characters)' %
                                                 (step, step_name, count))
                     expected_range = self.get_expected_count(irq_key,
-                            cr50_diffs[step], cmd_offset)
+                            cr50_diffs[step], cmd_offset,
+                            idle='idle' in step_name)
 
                     rv = self.check_increase(irq_key, name, count,
                             expected_range)
                     if rv:
                         logging.info('Unexpected count in %s test: %s %s',
                                      state, step_name, rv)
-                        # Running commands can take a while and cr50 may not be
-                        # idle. Ignore irq counts while running AP commands.
-                        if 'cmd done' not in step_name:
-                            step_errors[step].append(rv)
+                        step_errors[step].append(rv)
 
-                irq_progress_str.append(' %2s %7d' % (event, count))
+                irq_progress_str.append(' %2s %8d' % (event, count))
 
             # Separate each step count with '|'. Add '|' to the start and end of
             # the line.
@@ -346,7 +350,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         ds_key = self.ARM if self.is_arm else ''
         ds_key += state + self.DEEP_SLEEP_STEP_SUFFIX
-        expected_range = self.get_expected_count(ds_key, 0, 0)
+        expected_range = self.get_expected_count(ds_key, 0, 0, False)
         rv = self.check_increase(None, ds_key, events.count(self.DS_RESUME),
                 expected_range)
         if rv:
@@ -399,19 +403,19 @@ class firmware_Cr50DeviceState(Cr50Test):
             elif state == 'G3':
                 full_command = 'poweroff'
             self.faft_client.system.run_shell_command(full_command)
-            self.stage_irq_add(self.get_irq_counts(), 'cmd done')
+        self.stage_irq_add(self.get_irq_counts(), 'cmd done')
 
         time.sleep(self.SHORT_WAIT);
         # check state transition
         if not self.wait_power_state(state, self.SHORT_WAIT):
             raise error.TestFail('Platform failed to reach %s state.' % state)
-        self.stage_irq_add(self.get_irq_counts(), 'in %s' % state)
+        self.stage_irq_add(self.get_irq_counts(), 'entered %s' % state)
 
 
     def stage_irq_add(self, irq_dict, name=''):
         """Add the current irq counts to the stored dictionary of irq info"""
         self.steps.append(irq_dict)
-        self.step_names.append(name.center(11))
+        self.step_names.append(name.center(12))
         self.irqs.update(irq_dict.keys())
         logging.info('%s:\n%s', name, pprint.pformat(irq_dict))
 
@@ -439,9 +443,17 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
+        # Nothing is really happening. Cr50 should basically be idle during
+        # SLEEP_TIME.
+        self.stage_irq_add(self.get_irq_counts(), 'idle in %s' % state)
 
         # Return to S0
         self.enter_state('S0')
+
+        logging.info('waiting %d seconds', self.SLEEP_TIME)
+        time.sleep(self.SLEEP_TIME)
+
+        self.stage_irq_add(self.get_irq_counts(), 'idle in S0')
 
 
     def verify_state(self, state):

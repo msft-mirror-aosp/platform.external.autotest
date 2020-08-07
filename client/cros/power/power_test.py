@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.camera import camera_utils
@@ -25,12 +26,14 @@ class power_Test(test.test):
     hist_percentile_re = '^(\d+).+\{(\d+)\.\d+\%\}'
 
     def initialize(self, seconds_period=20., pdash_note='',
-                   force_discharge=False):
+                   force_discharge=False,
+                   check_network=False):
         """Perform necessary initialization prior to power test run.
 
         @param seconds_period: float of probing interval in seconds.
         @param pdash_note: note of the current run to send to power dashboard.
         @param force_discharge: force battery to discharge during the test.
+        @param check_network: check that Ethernet interface is not running.
 
         @var backlight: power_utils.Backlight object.
         @var keyvals: dictionary of result keyvals.
@@ -63,6 +66,16 @@ class power_Test(test.test):
                                         'Could not force discharge.')
             if not power_utils.charge_control_by_ectool(False):
                 raise error.TestError('Could not run battery force discharge.')
+
+        ifaces = [iface for iface in interface.get_interfaces()
+                if (not iface.is_wifi_device() and
+                iface.name.startswith('eth'))]
+        logging.debug('Ethernet interfaces include: ',
+                str([iface.name for iface in ifaces]))
+        for iface in ifaces:
+            if check_network and iface.is_lower_up:
+                raise error.TestError('Ethernet interface is active. '
+                                      'Please remove Ethernet cable.')
 
         self._psr = power_utils.DisplayPanelSelfRefresh()
         self._services = service_stopper.ServiceStopper(

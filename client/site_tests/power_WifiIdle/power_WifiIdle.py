@@ -4,6 +4,7 @@
 import logging
 import time
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros.networking.chrome_testing \
         import chrome_networking_test_api as cnta

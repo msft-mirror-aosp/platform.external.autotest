@@ -639,32 +639,35 @@ class ServoHost(base_servohost.BaseServoHost):
             return ''
         return resp.stdout.strip()
 
-    def reboot_servo_v3_with_long_uptime(self):
-        """Check and reboot servo_v3 if uptime more than 4 days/96 hours."""
-        try:
-            if self.get_board() != 'beaglebone_servo':
-                logging.info('Servo reboot is only applicable for servo V3.')
-                return
-        except Exception as e:
-            logging.error('(Non-critical) Fail to detect servo_host '
-                          'board: %s', e)
-            logging.info('Servo-host board not detected! Skipping reboot.')
+    def reboot_servo_v3_on_need(self):
+        """Check and reboot servo_v3 based on below conditions.
+               1. If there is an update pending on reboot.
+               2. Servo_v3 has been up for more than 96 hours.
+        """
+        if self.get_board() != 'beaglebone_servo':
+            logging.info('Servo reboot is only applicable for servo V3.')
             return
 
-        try:
-            uptime_hours = float(self.check_uptime())/3600
-            if uptime_hours < 96:
-                logging.info('Uptime of servo_v3: %s hour(s)', uptime_hours)
-                return
-        except Exception as e:
-            logging.debug('(Non-critical)Failed to get uptime; %s', e)
+        update_pending_reboot = (self._check_update_status() ==
+                                 self.UPDATE_STATE.PENDING_REBOOT)
+        uptime_hours = float(self.check_uptime())/3600
+        logging.info('Uptime of servo_v3: %s hour(s)', uptime_hours)
+        long_up_time = uptime_hours > 96
+
+        # Skip reboot if neither condition are met.
+        if not (update_pending_reboot or long_up_time):
             return
 
-        self.record('INFO', None, None,
-                    'Starting reboot servo_v3 since it has been up for more '
-                    'than 96 hours')
+        if update_pending_reboot:
+            message = 'Starting reboot servo_v3 because an update is pending.'
+            reboot_method = self._post_update_reboot
+        elif long_up_time:
+            message = 'Starting reboot servo_v3 because uptime > 96 hours.'
+            reboot_method = self._servo_host_reboot
+        self.record('INFO', None, None, message)
+        logging.info(message)
         try:
-            self.reboot()
+            reboot_method()
             message = 'Servo_v3 reboot completed successfully.'
         except Exception as e:
             logging.debug("Fail to reboot servo_v3; %s", e)
@@ -1481,7 +1484,12 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
             # lab inside the locking logic.
             newhost.reset_servo()
         else:
-            newhost.reboot_servo_v3_with_long_uptime()
+            try:
+                newhost.reboot_servo_v3_on_need()
+            except Exception as error:
+                logging.info('[Non-critical] Unexpected error while trying'
+                              ' to reboot servo_v3, skipping the reboot; %s',
+                              error)
 
     if dut:
         newhost.set_dut_hostname(dut.hostname)

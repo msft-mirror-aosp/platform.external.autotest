@@ -864,9 +864,9 @@ def _cros_basic_repair_actions(
         # RPM cycling must precede Servo reset:  if the DUT has a dead
         # battery, we need to reattach AC power before we reset via servo.
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
-        (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
         (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
         (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
+        (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
 
         # N.B. FirmwareRepair can't fix a 'good_provision' failure directly,
         # because it doesn't remove the flag file that triggers the

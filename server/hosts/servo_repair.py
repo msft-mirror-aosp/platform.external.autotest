@@ -65,8 +65,7 @@ class _UpdateVerifier(hosts.Verifier):
                 # v3s from been update, so always try to repair here.
                 # See crbug.com/994396, crbug.com/1057302.
                 host.run('cgpt repair /dev/mmcblk0', ignore_status=True)
-
-                host.update_image(wait_for_update=False)
+                host.update_image()
         # We don't want failure from update block DUT repair action.
         # See crbug.com/1029950.
         except Exception as e:
@@ -507,12 +506,6 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
             logging.warning('Reboot labstation requested, it will be '
                             'handled by labstation AdminRepair task.')
         else:
-            try:
-                host.update_image(wait_for_update=True)
-            # We don't want failure from update block DUT repair action.
-            # See crbug.com/1029950.
-            except Exception as e:
-                logging.error('Failed to update servohost image: %s', e)
             super(_ServoRebootRepair, self).repair(host)
             # restart servod for v3 after reboot.
             host.restart_servod()

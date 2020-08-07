@@ -333,7 +333,8 @@ class ChromiumOSUpdater(object):
     """Chromium OS specific DUT update functionality."""
 
     def __init__(self, update_url, host=None, interactive=True,
-                 use_quick_provision=False, is_release_bucket=None):
+                 use_quick_provision=False, is_release_bucket=None,
+                 is_servohost=False):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
@@ -343,6 +344,7 @@ class ChromiumOSUpdater(object):
             the update using the quick-provision script.
         @param is_release_bucket: If True, use release bucket
             gs://chromeos-releases.
+        @param is_servohost: Bool whether the update target is a servohost.
         """
         self.update_url = update_url
         self.host = host
@@ -350,6 +352,8 @@ class ChromiumOSUpdater(object):
         self.update_version = _url_to_version(update_url)
         self._use_quick_provision = use_quick_provision
         self._is_release_bucket = is_release_bucket
+        self._is_servohost = is_servohost
+
 
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
@@ -650,10 +654,14 @@ class ChromiumOSUpdater(object):
             raise HostUpdateError(self.host.hostname,
                                   HostUpdateError.DUT_DOWN)
         self._reset_stateful_partition()
-        self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
-        self._run('touch %s' % PROVISION_FAILED)
+        # Servohost reboot logic is handled by themselves.
+        if not self._is_servohost:
+            self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
+            self._run('touch %s' % PROVISION_FAILED)
         self.host.prepare_for_update()
-        self._reset_update_engine()
+        # Servohost will only update via quick provision.
+        if not self._is_servohost:
+            self._reset_update_engine()
         logging.info('Updating from version %s to %s.',
                      self.host.get_release_version(),
                      self.update_version)
@@ -888,13 +896,15 @@ class ChromiumOSUpdater(object):
             logging.exception('Failure during download and install.')
             raise ImageInstallError(self.host.hostname, server_name, str(e))
 
-        try:
-            self._complete_update(expected_kernel)
-        except _AttributedUpdateError:
-            raise
-        except Exception as e:
-            logging.exception('Failure from build after update.')
-            raise NewBuildUpdateError(self.update_version, str(e))
+        # Servohost will handle post update process themselves.
+        if not self._is_servohost:
+            try:
+                self._complete_update(expected_kernel)
+            except _AttributedUpdateError:
+                raise
+            except Exception as e:
+                logging.exception('Failure from build after update.')
+                raise NewBuildUpdateError(self.update_version, str(e))
 
         image_name = url_to_image_name(self.update_url)
         # update_url is different from devserver url needed to stage autotest

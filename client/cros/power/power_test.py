@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import service_stopper
@@ -145,6 +146,7 @@ class power_Test(test.test):
         self._checkpoint_logger.checkpoint(name, start_time)
         self._psr.refresh()
 
+    @retry.retry(Exception, timeout_min=1, delay_sec=2)
     def collect_keypress_latency(self, cr):
         """Collect keypress latency information from Histograms.
 

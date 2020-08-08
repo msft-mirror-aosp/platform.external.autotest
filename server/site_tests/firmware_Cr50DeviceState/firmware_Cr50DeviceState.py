@@ -487,6 +487,10 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.all_errors[self.ccd_str] = 'usb is not active with ccd enabled'
             return
 
+        # Login before entering S0ix so cr50 will be able to enter regular sleep
+        client_at = autotest.Autotest(self.host)
+        client_at.run_test('login_LoginSuccess')
+
         # Initialize the Test IRQ counts
         self.reset_irq_counts()
 
@@ -498,10 +502,6 @@ class firmware_Cr50DeviceState(Cr50Test):
         result = self.host.run('check_powerd_config --suspend_to_idle',
                 ignore_status=True)
         if not result.exit_status:
-            # Login before entering S0ix so cr50 will be able to enter regular
-            # sleep
-            client_at = autotest.Autotest(self.host)
-            client_at.run_test('login_LoginSuccess')
             self.verify_state('S0ix')
 
         # Enter S3

@@ -393,7 +393,6 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def enter_state(self, state):
         """Get the command to enter the power state"""
-        self.stage_irq_add(self.get_irq_counts(), 'start %s' % state)
         if state == 'S0':
             self.trigger_s0()
         else:
@@ -404,13 +403,11 @@ class firmware_Cr50DeviceState(Cr50Test):
             elif state == 'G3':
                 full_command = 'poweroff'
             self.faft_client.system.run_shell_command(full_command)
-        self.stage_irq_add(self.get_irq_counts(), 'cmd done')
 
         time.sleep(self.SHORT_WAIT);
         # check state transition
         if not self.wait_power_state(state, self.SHORT_WAIT):
             raise error.TestFail('Platform failed to reach %s state.' % state)
-        self.stage_irq_add(self.get_irq_counts(), 'entered %s' % state)
 
 
     def stage_irq_add(self, irq_dict, name=''):
@@ -441,6 +438,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # Enter the given state
         self.enter_state(state)
+        self.stage_irq_add(self.get_irq_counts(), 'entered %s' % state)
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
@@ -450,6 +448,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # Return to S0
         self.enter_state('S0')
+        self.stage_irq_add(self.get_irq_counts(), 'entered S0')
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
@@ -491,9 +490,6 @@ class firmware_Cr50DeviceState(Cr50Test):
         # Login before entering S0ix so cr50 will be able to enter regular sleep
         client_at = autotest.Autotest(self.host)
         client_at.run_test('login_LoginSuccess')
-
-        # Initialize the Test IRQ counts
-        self.reset_irq_counts()
 
         # Make sure the DUT is in s0
         self.enter_state('S0')

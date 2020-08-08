@@ -491,9 +491,6 @@ class firmware_Cr50DeviceState(Cr50Test):
         client_at = autotest.Autotest(self.host)
         client_at.run_test('login_LoginSuccess')
 
-        # Make sure the DUT is in s0
-        self.enter_state('S0')
-
         # Check if the device supports S0ix. The exit status will be 0 if it
         # does 1 if it doesn't.
         result = self.host.run('check_powerd_config --suspend_to_idle',

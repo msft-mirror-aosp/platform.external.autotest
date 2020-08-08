@@ -1431,18 +1431,28 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def verify_cros_version_label(self):
-        """ Make sure host's cros-version label match the actual image in dut.
+        """Verify if host's cros-version label match the actual image in dut.
 
-        Remove any cros-version: label that doesn't match that installed in
-        the dut.
-
-        @param raise_error: Set to True to raise exception if any mismatch found
-
-        @raise error.AutoservError: If any mismatch between cros-version label
-                                    and the build installed in dut is found.
+        @returns True if the label match with image in dut, otherwise False
         """
-        # crbug.com/1007333: This check is being removed.
-        return True
+        os_from_host = self.get_release_builder_path()
+        info = self.host_info_store.get()
+        os_from_label = info.get_label_value(self.VERSION_PREFIX)
+        if not os_from_label:
+            logging.debug('No existing %s label detected', self.VERSION_PREFIX)
+            return True
+
+        # known cases where the version label will not match the
+        # original CHROMEOS_RELEASE_BUILDER_PATH setting:
+        #  * Tests for the `arc-presubmit` append "-cheetsth" to the label.
+        if os_from_label.endswith(provision.CHEETS_SUFFIX):
+            logging.debug('%s label with %s suffix detected, this suffix will'
+                          ' be ignored when comparing label.',
+                          self.VERSION_PREFIX, provision.CHEETS_SUFFIX)
+            os_from_label = os_from_label[:-len(provision.CHEETS_SUFFIX)]
+        logging.debug('OS version from host: %s; OS verision cached in '
+                      'label: %s', os_from_host, os_from_label)
+        return os_from_label == os_from_host
 
 
     def cleanup_services(self):
@@ -1479,7 +1489,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # Check if the rpm outlet was manipulated.
         if self.has_power():
             self._cleanup_poweron()
-        self.verify_cros_version_label()
 
 
     def reboot(self, **dargs):
@@ -1636,8 +1645,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # goofy controls dbus on these DUTs.
         if not self._is_factory_image():
             self.run('update_engine_client --status')
-
-        self.verify_cros_version_label()
 
 
     @retry.retry(error.AutoservError, timeout_min=5, delay_sec=10)

@@ -952,6 +952,10 @@ class Cr50Test(FirmwareTest):
         set_pwd_cmd = utils.sh_escape(cmd)
         full_ssh_command = '%s "%s"' % (self.host.ssh_command(options='-tt'),
                                         set_pwd_cmd)
+
+        # Make sure the test waits long enough to avoid ccd rate limiting.
+        time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
+
         stdout = StringIO.StringIO()
         # Start running the gsctool Command in the background.
         gsctool_job = utils.BgJob(

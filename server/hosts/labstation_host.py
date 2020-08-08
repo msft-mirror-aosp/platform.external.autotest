@@ -10,7 +10,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import afe_utils
 from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import cros_label
-from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.hosts import labstation_repair
 from autotest_lib.server.cros import provision
 from autotest_lib.server.hosts import base_servohost
@@ -71,7 +70,7 @@ class LabstationHost(base_servohost.BaseServoHost):
 
         @returns True if a reboot is required, otherwise False
         """
-        if self._check_update_status() == autoupdater.UPDATER_NEED_REBOOT:
+        if self._check_update_status() == self.UPDATE_STATE.PENDING_REBOOT:
             logging.info('Labstation reboot requested from labstation for'
                          ' update image')
             return True
@@ -97,13 +96,20 @@ class LabstationHost(base_servohost.BaseServoHost):
         """Try to reboot the labstation if it's safe to do(no servo in use,
          and not processing updates), and cleanup reboot control file.
         """
-        if (self._is_servo_in_use() or self._check_update_status()
-            in autoupdater.UPDATER_PROCESSING_UPDATE):
+        if self._is_servo_in_use():
             logging.info('Aborting reboot action because some DUT(s) are'
-                         ' currently using servo(s) or'
-                         ' labstation update is in processing.')
+                         ' currently using servo(s).')
             return
-        self._servo_host_reboot()
+
+        update_state = self._check_update_status()
+        if update_state == self.UPDATE_STATE.RUNNING:
+            logging.info('Aborting reboot action because an update process'
+                         ' is running.')
+            return
+        if update_state == self.UPDATE_STATE.PENDING_REBOOT:
+            self._post_update_reboot()
+        else:
+            self._servo_host_reboot()
         self.update_cros_version_label()
         logging.info('Cleaning up reboot control files.')
         self._cleanup_post_reboot()
@@ -116,14 +122,6 @@ class LabstationHost(base_servohost.BaseServoHost):
 
     def get_os_type(self):
         return 'labstation'
-
-
-    def prepare_for_update(self):
-        """Prepares the DUT for an update.
-        Subclasses may override this to perform any special actions
-        required before updating.
-        """
-        pass
 
 
     def verify_job_repo_url(self, tag=''):

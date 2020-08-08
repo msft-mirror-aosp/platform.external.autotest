@@ -25,7 +25,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     DEEP_SLEEP_STEP_SUFFIX = ' Num Deep Sleep Steps'
 
-    KEY_CMD_TIME = -4
+    KEY_CMD_END_TIME = -4
     # Use negative numbers to keep track of counts not in the IRQ list.
     KEY_DEEP_SLEEP = -3
     KEY_TIME = -2
@@ -55,7 +55,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         191 : 'EC_RX_CR50_TX',
         193 : 'USB',
     }
-    IGNORED_KEYS = [KEY_CMD_TIME]
+    IGNORED_KEYS = [KEY_CMD_END_TIME]
     SLEEP_KEYS = [ KEY_REGULAR_SLEEP, KEY_DEEP_SLEEP ]
     # USB, AP UART, and EC UART should be disabled if ccd is disabled.
     CCD_KEYS = [ 181, 184, 188, 191, 193 ]
@@ -159,11 +159,11 @@ class firmware_Cr50DeviceState(Cr50Test):
     def get_irq_counts(self):
         """Return a dict with the irq numbers as keys and counts as values"""
         irq_counts = { self.KEY_REGULAR_SLEEP : 0 }
-        irq_counts[self.KEY_TIME] = int(self.cr50.gettime())
         # Running all of these commands may take a while. Track how much time
         # commands are running, so we can offset the cr50 time to set sleep
         # expectations
-        start_cmd_time = time.time()
+        start_cmd_time = int(self.cr50.gettime())
+        irq_counts[self.KEY_TIME] = start_cmd_time
 
         output = self.get_taskinfo_output()
         irq_list = re.findall('\d+\s+\d+\r', output)
@@ -178,21 +178,21 @@ class firmware_Cr50DeviceState(Cr50Test):
         irq_counts[self.KEY_DEEP_SLEEP] = int(self.cr50.get_deep_sleep_count())
         # Log some information, so we can debug issues with sleep.
         self.log_sleep_debug_information()
-        # Running commands can actually take a bit of time. This will prevent
-        # the device from going to sleep. Subtract this from the time
-        # difference when calculating sleep counts. Make it an int, because
-        # that's all we need.
-        irq_counts[self.KEY_CMD_TIME] = int(time.time() - start_cmd_time)
+        # Track when the commands end, so the test can ignore the time spent
+        # running these console commands.
+        end_cmd_time = int(self.cr50.gettime())
+        irq_counts[self.KEY_CMD_END_TIME] = end_cmd_time
+        logging.info('Commands finished in %d seconds',
+                     end_cmd_time - start_cmd_time)
         return irq_counts
 
 
-    def get_expected_count(self, irq_key, cr50_time, cmd_time, idle):
+    def get_expected_count(self, irq_key, cr50_time, idle):
         """Get the expected irq increase for the given irq and state
 
         Args:
             irq_key: the irq int
             cr50_time: the cr50 time in seconds
-            cmd_time: the time the test took to run commands
             idle: Cr50 should enter regular sleep while the device is idle.
 
         Returns:
@@ -287,14 +287,18 @@ class firmware_Cr50DeviceState(Cr50Test):
         irq_diff = ['%24s|%s|' % ('', '|'.join(self.step_names))]
         step_errors = [ [] for i in range(num_steps) ]
 
-        cr50_times = self.get_irq_step_counts(self.KEY_TIME)
-        cr50_diffs = []
-        for i, cr50_time in enumerate(cr50_times):
+        end_cmd_times = self.get_irq_step_counts(self.KEY_CMD_END_TIME)
+        start_cmd_times = self.get_irq_step_counts(self.KEY_TIME)
+        cr50_time_diff = []
+        for i, start_time in enumerate(start_cmd_times):
+            # The test collects a lot of information using console commands.
+            # These take a long time to run and cr50 isn't idle. The idle
+            # time is the time this step started minus the time the last set of
+            # commands finished running.
             if events[i] == self.INCREASE:
-                cr50_time -= cr50_times[i - 1]
-            cr50_diffs.append(cr50_time)
-
-        cmd_offsets = self.get_irq_step_counts(self.KEY_CMD_TIME)
+                cr50_time_diff.append(start_time - end_cmd_times[i - 1])
+            else:
+                cr50_time_diff.append(start_time)
 
         # Go through each irq and update its info in the progress dict
         for irq_key in irq_list:
@@ -308,7 +312,6 @@ class firmware_Cr50DeviceState(Cr50Test):
             irq_counts = self.get_irq_step_counts(irq_key)
             for step, count in enumerate(irq_counts):
                 event = events[step]
-                cmd_offset = 0
 
                 # The deep sleep counts are not reset after deep sleep. Change
                 # the event to INCREASE.
@@ -317,7 +320,6 @@ class firmware_Cr50DeviceState(Cr50Test):
 
                 if event == self.INCREASE:
                     count -= irq_counts[step - 1]
-                    cmd_offset = cmd_offsets[step - 1]
 
                 # Check that the count increase is within the expected value.
                 if event != self.START:
@@ -330,8 +332,7 @@ class firmware_Cr50DeviceState(Cr50Test):
                                                 'dropping characters)' %
                                                 (step, step_name, count))
                     expected_range = self.get_expected_count(irq_key,
-                            cr50_diffs[step], cmd_offset,
-                            idle='idle' in step_name)
+                            cr50_time_diff[step], idle='idle' in step_name)
 
                     rv = self.check_increase(irq_key, name, count,
                             expected_range)
@@ -350,7 +351,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         ds_key = self.ARM if self.is_arm else ''
         ds_key += state + self.DEEP_SLEEP_STEP_SUFFIX
-        expected_range = self.get_expected_count(ds_key, 0, 0, False)
+        expected_range = self.get_expected_count(ds_key, 0, False)
         rv = self.check_increase(None, ds_key, events.count(self.DS_RESUME),
                 expected_range)
         if rv:

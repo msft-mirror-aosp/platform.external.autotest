@@ -486,33 +486,36 @@ class _RestartServod(hosts.RepairAction):
 
 
 class _ServoRebootRepair(repair_utils.RebootRepair):
-    """
-    Reboot repair action that also waits for an update.
+    """Try repair servo by reboot servohost.
 
-    This is the same as the standard `RebootRepair`, but for
-    a non-multi-DUTs servo host, if there's a pending update,
-    we wait for that to complete before rebooting.  This should
-    ensure that the servo_v3 is up-to-date after reboot. Labstation
-    reboot and update is handled by labstation host class.
+    This is the same as the standard `RebootRepair`, for servo_v3 it will
+    reboot the beaglebone board immidiately while for labstation it will
+    request a reboot by touch a flag file on its labstation, then
+    labstation reboot will be handled by labstation AdminRepair task as
+    labstation host multiple servos and need do an synchronized reboot.
     """
 
     def repair(self, host):
+        super(_ServoRebootRepair, self).repair(host)
+        # restart servod for v3 after reboot.
+        host.restart_servod()
+
+    def _is_applicable(self, host):
         if host.is_localhost() or not host.is_cros_host():
-            raise hosts.AutoservRepairError(
-                'Target servo is not a test lab servo',
-                'servo_not_applicable_to_host_outside_lab')
+            logging.info('Target servo is not in a lab, the reboot repair'
+                         ' action is not applicable.')
+            return False
+
         if host.is_labstation():
             host.request_reboot()
-            logging.warning('Reboot labstation requested, it will be '
-                            'handled by labstation AdminRepair task.')
-        else:
-            super(_ServoRebootRepair, self).repair(host)
-            # restart servod for v3 after reboot.
-            host.restart_servod()
+            logging.info('Reboot labstation requested, it will be handled'
+                         ' by labstation AdminRepair task.')
+            return False
+        return True
 
     @property
     def description(self):
-        return 'Wait for update, then reboot servo host.'
+        return 'Reboot the servo host.'
 
 
 class _ECRebootRepair(hosts.RepairAction):

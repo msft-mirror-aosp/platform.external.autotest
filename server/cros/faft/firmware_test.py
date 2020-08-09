@@ -2289,6 +2289,9 @@ class FirmwareTest(FAFTBase):
         if self.faft_config.ec_forwards_short_pp_press:
             self.stop_powerd()
 
+        # Make sure the test waits long enough to avoid ccd rate limiting.
+        time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
+
         self._ccd_open_last_len = 0
 
         self._ccd_open_stdout = StringIO.StringIO()

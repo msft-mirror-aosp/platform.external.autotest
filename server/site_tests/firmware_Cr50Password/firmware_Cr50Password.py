@@ -42,10 +42,12 @@ class firmware_Cr50Password(Cr50Test):
         self.set_ccd_password('clear:' + self.CCD_PASSWORD, expect_error=True)
 
         self.cr50.send_command('ccd unlock ' + self.CCD_PASSWORD)
-        # Make sure you can't clear the password while the console is unlocked
-        self.set_ccd_password('clear:' + self.CCD_PASSWORD, expect_error=True)
+        # Make sure you can clear the password while the console is unlocked
+        self.set_ccd_password('clear:' + self.CCD_PASSWORD)
 
         self.cr50.send_command('ccd testlab open')
+        # Set the password again.
+        self.set_ccd_password(self.CCD_PASSWORD)
 
         # Make sure you can't clear the password with the wrong password
         self.set_ccd_password('clear:' + self.CCD_PASSWORD.lower(),

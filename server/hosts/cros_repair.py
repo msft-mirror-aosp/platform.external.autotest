@@ -160,6 +160,37 @@ class ACPowerVerifier(hosts.Verifier):
         return 'The DUT is plugged in to AC power and battery is charing'
 
 
+class CrosVerisionVerifier(hosts.Verifier):
+    """Confirm that current ChromeOS image on the host is matches
+    to provision-cros_version label.
+
+    Some tests behavior may changed DUT image while they don't update
+    provision-cros_version label, which could cause the next test run
+    on the same host gets an unexpected OS version and yields false
+    positive test result.
+    """
+    def verify(self, host):
+        label_match = True
+        try:
+            label_match = host.verify_cros_version_label()
+        except Exception as e:
+            # We don't want fail this verifier for any errors that other
+            # than a actual version mismatch, as that can make debugging
+            # more challenge.
+            logging.warning('Unexpected error during verify cros verision'
+                            ' on %s; %s', host.hostname, e)
+
+        if not label_match:
+            raise hosts.AutoservVerifyError('ChromeOS image on the host'
+                                            ' does not match to cros-version'
+                                            ' label.')
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'ChromeOS image on host matches cros_version label'
+
+
 class WritableVerifier(hosts.Verifier):
     """
     Confirm the stateful file systems are writable.
@@ -689,6 +720,28 @@ class CrosRebootRepair(repair_utils.RebootRepair):
         return 'Reset GBB flags and Reboot the host'
 
 
+class LabelCleanupRepair(hosts.RepairAction):
+    """Cleanup unexpected labels for the host, e.g. mismatched
+    cros-version label.
+    """
+    # The repair action currently only cleanup cros-version label, however
+    # we can extent it to cleanup other labels when there is need, and it
+    # should be able to determine which label to clean based on check the
+    # cached result from it's trigger list. (example: trigger verifiers can
+    # be access via self._trigger_list, and we can tell which verifier failed
+    # by check Verifier._is_good() method.)
+    def repair(self, host):
+        logging.info('Removing %s label from the host', host.VERSION_PREFIX)
+        info = host.host_info_store.get()
+        info.clear_version_labels()
+        host.host_info_store.commit(info)
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Cleanup unexpected labels for the host'
+
+
 class EnrollmentCleanupRepair(hosts.RepairAction):
     """Cleanup enrollment state on ChromeOS device"""
 
@@ -841,6 +894,7 @@ def _cros_verify_base_dag():
         (FirmwareVersionVerifier,         'rwfw',     ('ssh',)),
         (PythonVerifier,                  'python',   ('ssh',)),
         (repair_utils.LegacyHostVerifier, 'cros',     ('ssh',)),
+        (CrosVerisionVerifier,            'cros_version_label', ('ssh',)),
     )
     return verify_dag
 
@@ -867,6 +921,7 @@ def _cros_basic_repair_actions(
         (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
         (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
         (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
+        (LabelCleanupRepair, 'label_cleanup', (), ('cros_version_label',)),
 
         # N.B. FirmwareRepair can't fix a 'good_provision' failure directly,
         # because it doesn't remove the flag file that triggers the

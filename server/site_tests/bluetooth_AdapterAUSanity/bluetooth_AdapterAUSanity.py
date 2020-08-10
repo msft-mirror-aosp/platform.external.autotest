@@ -7,10 +7,10 @@
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, AVRCP, HFP_WBS, HFP_NBS)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
-        BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
 
 
 class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
@@ -77,7 +77,9 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
                 device, lambda: test_method(device, test_profile), test_profile)
 
 
+    # TODO(b/163284498) Realtek not ready for WBS yet pending on cras patches.
     @test_wrapper('HFP WBS sinewave test with dut as source',
+                  skip_chipsets=['Realtek-RTL8822C-USB'],
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_source_test(self):
         """HFP WBS test with sinewave streaming from dut to peer."""
@@ -86,7 +88,9 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_WBS)
 
 
+    # TODO(b/163284498) Realtek not ready for WBS yet pending on cras patches.
     @test_wrapper('HFP WBS sinewave test with dut as sink',
+                  skip_chipsets=['Realtek-RTL8822C-USB'],
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""

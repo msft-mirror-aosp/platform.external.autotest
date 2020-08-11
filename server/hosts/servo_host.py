@@ -1486,10 +1486,9 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         else:
             try:
                 newhost.reboot_servo_v3_on_need()
-            except Exception as error:
-                logging.info('[Non-critical] Unexpected error while trying'
-                              ' to reboot servo_v3, skipping the reboot; %s',
-                              error)
+            except Exception as e:
+                logging.info('[Non-critical] Unexpected error while trying to'
+                              ' reboot servo_v3, skipping the reboot; %s', e)
 
     if dut:
         newhost.set_dut_hostname(dut.hostname)

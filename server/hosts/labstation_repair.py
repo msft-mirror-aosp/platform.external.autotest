@@ -36,10 +36,7 @@ class _LabstationUpdateVerifier(hosts.Verifier):
 
             stable_version = info.stable_versions.get('cros')
             if stable_version:
-                host.update_image(
-                    wait_for_update=False,
-                    stable_version=stable_version
-                )
+                host.update_image(stable_version=stable_version)
             else:
                 raise hosts.AutoservVerifyError('Failed to check/update'
                                                 ' labstation due to no stable'

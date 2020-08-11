@@ -10,9 +10,11 @@ import logging
 import os
 import re
 
-from autotest_lib.client.common_lib.cros import cr50_utils, dev_server
+from autotest_lib.client.common_lib.cros import cr50_utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from chromite.lib import gs
 
 
 # TOT cr50 images are built as part of the reef image builder.
@@ -35,11 +37,32 @@ class provision_Cr50TOT(FirmwareTest):
     """
     version = 1
 
+    def get_latest_build(self, board='reef-release',
+                         bucket='chromeos-image-archive'):
+        """Gets the latest build for the given board.
+
+        Args:
+          board: The board for which the latest build needs to be fetched.
+          bucket: The GS bucket name.
+
+        Raises:
+          error.TestFail() if the List() method is unable to retrieve the
+              contents of the path gs://<bucket>/<board> for any reason.
+        """
+        path = 'gs://%s/%s' % (bucket, board)
+        try:
+            contents = gs.GSContext().List(path=path)
+            latest_build = contents[-1].url.strip(path).strip('/')
+        except Exception as e:
+            raise error.TestFail('Could not determine the latest build due '
+                                 'to exception: %s' % e)
+        logging.info('Using the latest build: %s', latest_build)
+        return latest_build
+
     def get_latest_cr50_build(self):
         """Download the TOT cr50 image from the reef artifacts."""
         self.host.run('mkdir -p %s' % (REMOTE_TMPDIR))
-
-        latest_ver = dev_server.ImageServer.get_latest_build('reef-release')
+        latest_ver = self.get_latest_build()
         bucket = os.path.join(GS_URL, latest_ver.split('-')[-1])
         filename = FIRMWARE_NAME % (latest_ver, BUILDER)
         logging.info('Using cr50 image from %s', latest_ver)

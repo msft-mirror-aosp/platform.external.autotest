@@ -952,6 +952,8 @@ class Cr50Test(FirmwareTest):
         set_pwd_cmd = utils.sh_escape(cmd)
         full_ssh_command = '%s "%s"' % (self.host.ssh_command(options='-tt'),
                                         set_pwd_cmd)
+        logging.info('Running: %s', cmd)
+        logging.info('Password: %s', password)
 
         # Make sure the test waits long enough to avoid ccd rate limiting.
         time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
@@ -1010,8 +1012,12 @@ class Cr50Test(FirmwareTest):
         if not self.cr50.testlab_is_on():
             raise error.TestError('Will not set password unless testlab mode '
                                   'is enabled.')
-        self.run_gsctool_cmd_with_password(password, 'gsctool -a -P',
-                                           'set_password', expect_error)
+        try:
+            self.run_gsctool_cmd_with_password(password, 'gsctool -a -P',
+                                               'set_password', expect_error)
+        finally:
+            logging.info('Cr50 password is %s',
+                         'cleared' if self.cr50.password_is_reset() else 'set')
 
     def ccd_unlock_from_ap(self, password=None, expect_error=False):
         """Unlock cr50"""

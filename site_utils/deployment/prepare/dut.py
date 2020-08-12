@@ -179,6 +179,46 @@ def verify_ccd_testlab_enable(host):
                 'testlab mode is required for all DUTs that support CR50.')
 
 
+def verify_labstation_RPM_config_unsafe(host):
+    """Verify that we can power cycle a labstation with its RPM information.
+    Any host without RPM information will be safely skipped.
+
+    @param host: any host
+
+    This procedure is intended to catch inaccurate RPM info when the
+    host is deployed.
+
+    If the RPM config information is wrong, then this command will fail.
+
+    Note that we do not cleanly stop servod as part of power-cycling the DUT;
+    therefore calling this function is not safe in general.
+
+    """
+    host_info = host.host_info_store.get()
+
+    powerunit_hostname = host_info.attributes.get('powerunit_hostname')
+    powerunit_outlet   = host_info.attributes.get('powerunit_outlet')
+
+    powerunit_hasinfo = (bool(powerunit_hostname), bool(powerunit_outlet))
+
+    if powerunit_hasinfo == (True, True):
+        pass
+    elif powerunit_hasinfo == (False, False):
+        logging.info("intentionally skipping labstation %s", host.hostname)
+        return
+    else:
+        msg = "inconsistent power info: %s %s" % (
+            powerunit_hostname, powerunit_outlet
+        )
+        logging.error(msg)
+        raise Exception(msg)
+
+    logging.info("Shutting down labstation...")
+    host.rpm_power_off_and_wait()
+    host.rpm_power_on_and_wait()
+    logging.info("RPM Check Successful")
+
+
 def verify_boot_into_rec_mode(host):
     """Verify that we can boot into USB when in recover mode, and reset tpm.
 

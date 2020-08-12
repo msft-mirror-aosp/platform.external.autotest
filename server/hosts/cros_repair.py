@@ -27,7 +27,7 @@ except ImportError:
     metrics = utils.metrics_mock
 
 
-MIN_BATTERY_LEVEL = 90.0
+MIN_BATTERY_LEVEL = 50.0
 
 DEFAULT_SERVO_RESET_TRIGGER = ('ssh', 'stop_start_ui')
 

@@ -142,7 +142,10 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_run_avrcp_method(device, self.test_avrcp_commands)
 
 
-    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1})
+    # Add 'Quick Sanity' to flags to exclude the test from AVL.
+    # When this test is stable enough later, remove the flags here.
+    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1},
+                  flags=['Quick Sanity'])
     def au_avrcp_media_info_test(self):
         """AVRCP test to examine metadata propgation."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

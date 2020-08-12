@@ -6,6 +6,7 @@ AUTHOR = "dbeckett"
 NAME = "infra_TLSExecDUTCommand"
 TIME = "SHORT"
 TEST_TYPE = "server"
+ATTRIBUTES = 'suite:ent-nightly'
 
 DOC = """
 Test the TLS ExecDUTCommand API

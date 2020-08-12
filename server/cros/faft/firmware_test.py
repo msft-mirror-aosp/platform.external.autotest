@@ -2209,7 +2209,15 @@ class FirmwareTest(FAFTBase):
         logging.info('checking dut state')
 
         self.servo.set_nocheck('cold_reset', 'off')
-        self.servo.set_nocheck('warm_reset', 'off')
+        try:
+            self.servo.set_nocheck('warm_reset', 'off')
+        except error.TestFail as e:
+            # TODO(b/159338538): remove once the kukui remap issue is resolved.
+            if 'Timed out waiting for interfaces to become available' in str(e):
+                logging.warn('Ignoring warm_reset interface issue b/159338538')
+            else:
+                raise
+
         time.sleep(self.cr50.SHORT_WAIT)
         if not self.cr50.ap_is_on():
             logging.info('Pressing power button to turn on AP')

@@ -1228,8 +1228,9 @@ class ServoHost(base_servohost.BaseServoHost):
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH
 
-        if start_servod == self.VERIFY_FAILED:
-            # can be cause if device is not connected to the servo host
+        if (start_servod == self.VERIFY_FAILED
+            or create_servo == self.VERIFY_FAILED):
+            # sometimes servo can start with out present servo
             if self.is_labstation():
                 if not self.servo_serial:
                     return servo_constants.SERVO_STATE_WRONG_CONFIG
@@ -1239,6 +1240,8 @@ class ServoHost(base_servohost.BaseServoHost):
                     return servo_constants.SERVO_STATE_NOT_CONNECTED
             elif self._is_servo_board_present_on_servo_v3() == False:
                 return servo_constants.SERVO_STATE_NOT_CONNECTED
+
+        if start_servod == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
 
         if create_servo == self.VERIFY_FAILED:

@@ -674,6 +674,11 @@ class Cr50Test(FirmwareTest):
 
     def _try_quick_ccd_cleanup(self):
         """Try to clear all ccd state."""
+        # This is just a first pass at cleanup. Don't raise any errors.
+        try:
+            self.cr50.ccd_enable()
+        except Exception as e:
+            logging.warn('Ignored exception enabling ccd %r', str(e))
         self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('rddkeepalive disable')
         self.cr50.send_command('ccd reset')

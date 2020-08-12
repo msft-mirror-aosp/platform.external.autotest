@@ -18,6 +18,7 @@ from autotest_lib.server.cros.network import wifi_test_context_manager
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
+from autotest_lib.utils import labellib
 
 
 # A datetime.DateTime representing the Unix epoch in UTC.
@@ -282,9 +283,15 @@ class tast(test.test):
         """
         gs_bucket = dev_server._get_image_storage_server()
         args_dict = utils.args_to_dict(self._command_args)
-        if not gs_bucket or 'build' not in args_dict.keys():
+        build = args_dict.get('build')
+        if not build:
+            labels = self._host.host_info_store.get().labels
+            build = labellib.LabelsMapping(labels).get(
+                labellib.Key.CROS_VERSION)
+
+        if not gs_bucket or not build:
             return []
-        gs_path = gs_bucket + args_dict['build']
+        gs_path = gs_bucket + build
         if not gs_path.endswith('/'):
             gs_path += '/'
         logging.info('Cloud storage bucket: %s', gs_path)
@@ -403,7 +410,7 @@ class tast(test.test):
         @raises error.TestFail if the tast command fails or times out.
         """
         logging.info('Getting list of tests that will be run')
-        args = ['-json=true']
+        args = ['-json=true'] + self._get_cloud_storage_info()
         result = self._run_tast('list', args, self._LIST_TIMEOUT_SEC)
         try:
             self._tests_to_run = _encode_utf8_json(

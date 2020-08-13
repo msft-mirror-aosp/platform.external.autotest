@@ -33,8 +33,9 @@ from autotest_lib.server.cros.faft import telemetry
 ConnectionError = mode_switcher.ConnectionError
 
 
-class FAFTBase(test.test):
-    """The base class of FAFT classes.
+class FirmwareTest(test.test):
+    """
+    Base class that sets up helper objects/functions for firmware tests.
 
     It launches the FAFTClient on DUT, such that the test can access its
     firmware functions and interfaces. It also provides some methods to
@@ -43,22 +44,6 @@ class FAFTBase(test.test):
     @type servo: servo.Servo
     @type _client: autotest_lib.server.hosts.ssh_host.SSHHost |
                    autotest_lib.server.hosts.cros_host.CrosHost
-    """
-    def initialize(self, host):
-        """Create a FAFTClient object and install the dependency."""
-
-        self.servo = host.servo
-
-        self.servo.initialize_dut()
-
-        self._client = host
-        self.faft_client = RPCProxy(host)
-        self.lockfile = '/usr/local/tmp/faft/lock'
-
-
-class FirmwareTest(FAFTBase):
-    """
-    Base class that sets up helper objects/functions for firmware tests.
 
     TODO: add documentaion as the FAFT rework progresses.
     """
@@ -103,13 +88,6 @@ class FirmwareTest(FAFTBase):
 
     _ROOTFS_PARTITION_NUMBER = 3
 
-    _backup_firmware_identity = dict()
-    _backup_kernel_sha = dict()
-    _backup_cgpt_attr = dict()
-    _backup_gbb_flags = None
-    _backup_dev_mode = None
-    _restore_power_mode = None
-
     # Class level variable, keep track the states of one time setup.
     # This variable is preserved across tests which inherit this class.
     _global_setup_done = {
@@ -146,9 +124,26 @@ class FirmwareTest(FAFTBase):
         cls._global_setup_done[label] = False
 
     def initialize(self, host, cmdline_args, ec_wp=None):
-        super(FirmwareTest, self).initialize(host)
+        """Initialize the FirmwareTest.
+
+        This method interacts with the Servo, FAFT RPC client, FAFT Config,
+        Mode Switcher, EC consoles, write-protection, GBB flags, and a lockfile.
+        """
         self.run_id = str(uuid.uuid4())
+        self._client = host
+        self.servo = host.servo
+
+        self.lockfile = '/usr/local/tmp/faft/lock'
+        self._backup_gbb_flags = None
+        self._backup_firmware_identity = dict()
+        self._backup_kernel_sha = dict()
+        self._backup_cgpt_attr = dict()
+        self._backup_dev_mode = None
+        self._restore_power_mode = None
+        self._uart_file_dict = {}
+
         logging.info('FirmwareTest initialize begin (id=%s)', self.run_id)
+
         # Parse arguments from command line
         args = {}
         self.power_control = host.POWER_CONTROL_RPM
@@ -167,13 +162,13 @@ class FirmwareTest(FAFTBase):
             if 'true' in args['no_ec_sync'].lower():
                 self._no_ec_sync = True
 
-        self._uart_file_dict = {}
-
         self._use_sync_script = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_script', type=bool, default=False)
         self._use_fsfreeze = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
 
+        self.servo.initialize_dut()
+        self.faft_client = RPCProxy(host)
         self.faft_config = FAFTConfig(
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
@@ -354,16 +349,21 @@ class FirmwareTest(FAFTBase):
             # Remote is not responding. Revive DUT so that subsequent tests
             # don't fail.
             self._restore_routine_from_timeout()
-        self.switcher.restore_mode()
+
+        if hasattr(self, 'switcher'):
+            self.switcher.restore_mode()
+
         self._restore_ec_write_protect()
         self._restore_servo_v4_role()
-        self._restore_gbb_flags()
-        self.faft_client.updater.start_daemon()
-        self.faft_client.updater.cleanup()
-        self._remove_faft_lockfile()
-        self._remove_old_faft_lockfile()
-        self._record_faft_client_log()
-        self.faft_client.quit()
+
+        if hasattr(self, 'faft_client'):
+            self._restore_gbb_flags()
+            self.faft_client.updater.start_daemon()
+            self.faft_client.updater.cleanup()
+            self._remove_faft_lockfile()
+            self._remove_old_faft_lockfile()
+            self._record_faft_client_log()
+            self.faft_client.quit()
 
         # Capture any new uart output, then discard log messages again.
         self._cleanup_uart_capture()

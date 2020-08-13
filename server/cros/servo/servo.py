@@ -329,7 +329,7 @@ class _Uart(object):
         """Start capturing UART streams."""
         for uart in self._UartToCapture:
             if self._start_stop_capture(uart, True):
-                self._streams.append(('%s_uart_stream' % uart, '%s_uart.log' %
+                self._streams.append(('%s_uart_stream' % uart, '%s_uart.txt' %
                                       uart))
 
     def dump(self):

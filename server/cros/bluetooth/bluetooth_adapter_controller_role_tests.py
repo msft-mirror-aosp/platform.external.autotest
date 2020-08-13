@@ -240,6 +240,10 @@ class bluetooth_AdapterControllerRoleTests(
         # Connect to peer from DUT
         self.test_connection_by_adapter(nearby_device.address)
 
+        # TODO(b/164131633) On 4.4 kernel, sometimes the input device is not
+        # created if we connect a second device too quickly
+        time.sleep(self.TEST_SLEEP_SECS)
+
         # If test requires it, connect and test slave device
         if slave_info is not None and device_use == 'mid':
             self.connect_and_test_slave_device(
@@ -332,6 +336,10 @@ class bluetooth_AdapterControllerRoleTests(
 
         # Connect to DUT from peer
         self.test_connection_by_device(nearby_device)
+
+        # TODO(b/164131633) On 4.4 kernel, sometimes the input device is not
+        # created if we connect a second device too quickly
+        time.sleep(self.TEST_SLEEP_SECS)
 
         # If test requires it, connect and test slave device
         if slave_info is not None and device_use == 'end':

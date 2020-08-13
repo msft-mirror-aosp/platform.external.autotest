@@ -598,7 +598,7 @@ class Cr50Test(FirmwareTest):
         operation. Open the cr50 uart file and count the number of times this is
         printed. Log the number of errors.
         """
-        cr50_uart_file = self.get_uart_capture_result_path('cr50')
+        cr50_uart_file = self.servo.get_uart_logfile('cr50')
         if not cr50_uart_file:
             logging.info('There is not a cr50 uart file')
             return

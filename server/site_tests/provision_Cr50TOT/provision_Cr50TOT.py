@@ -26,8 +26,6 @@ FIRMWARE_NAME = 'ChromeOS-firmware-%s-%s.tar.bz2'
 REMOTE_TMPDIR = '/tmp/cr50_tot_update'
 CR50_IMAGE_PATH = 'cr50/ec.bin'
 # Wait 10 seconds for the update to take effect.
-WAIT_FOR_UPDATE = 10
-
 class provision_Cr50TOT(FirmwareTest):
     """Update cr50 to TOT.
 
@@ -119,7 +117,8 @@ class provision_Cr50TOT(FirmwareTest):
 
         cr50_utils.GSCTool(self.host, ['-a', cr50_path])
 
-        self.cr50.wait_for_reboot(timeout=WAIT_FOR_UPDATE)
+        self.cr50.wait_for_reboot(
+                timeout=self.faft_config.gsc_update_wait_for_reboot)
         cr50_version = self.cr50.get_active_version_info()[3].split('/')[-1]
         logging.info('Cr50 running %s. Expected %s', cr50_version,
                      expected_version)

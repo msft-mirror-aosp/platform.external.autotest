@@ -549,6 +549,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @param cmd: the command to run to reset cr50.
         @param timeout: seconds to wait to detect the reboot.
         """
+        logging.info('Wait up to %s seconds for reboot (%s)', timeout,
+                     cmd.strip())
         if self._servo.main_device_is_ccd():
             self.send_command(cmd)
             # Cr50 USB is reset when it reboots. Wait for the CCD connection to

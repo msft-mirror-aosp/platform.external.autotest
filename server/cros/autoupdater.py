@@ -5,6 +5,7 @@
 from __future__ import print_function
 
 import logging
+import os
 import re
 import six
 import sys
@@ -472,9 +473,11 @@ class ChromiumOSUpdater(object):
 
     def _reset_stateful_partition(self):
         """Clear any pending stateful update request."""
-        self._run('%s --stateful_change=reset 2>&1'
-                  % self._get_stateful_update_script())
-        self._run('rm -f %s' % _TARGET_VERSION)
+        cmd = ['rm', '-rf']
+        for f in ('var_new', 'dev_image_new', '.update_available'):
+            cmd += [os.path.join('/mnt/stateful_partition', f)]
+        cmd += [_TARGET_VERSION, '2>&1']
+        self._run(cmd)
 
 
     def _set_target_version(self):

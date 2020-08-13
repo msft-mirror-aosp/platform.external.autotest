@@ -666,7 +666,7 @@ class AbstractSSHHost(remote.RemoteHost):
     def is_up_fast(self):
         """Return True if the host can be pinged."""
         ping_config = ping_runner.PingConfig(
-                self.hostname, count=3, ignore_result=True, ignore_status=True)
+                self.hostname, count=1, ignore_result=True, ignore_status=True)
         return ping_runner.PingRunner().ping(ping_config).received > 0
 
 

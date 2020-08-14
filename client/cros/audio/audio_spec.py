@@ -19,6 +19,7 @@ def has_internal_speaker(board_type, board_name):
     @returns: True if the board has internal speaker. False otherwise.
 
     """
+    board_name = strip_kernelnext_suffix(board_name)
     if (board_type == _BOARD_TYPE_CHROMEBOX
                 or board_type == _BOARD_TYPE_CHROMEBIT
                 or board_name in _BOARD_WITHOUT_SOUND_CARD):
@@ -49,12 +50,25 @@ def has_audio_jack(board_name, board_type):
     @returns: True if the board has headphone. False otherwise.
 
     """
+    board_name = strip_kernelnext_suffix(board_name)
     if (board_name in ['nocturne'] or board_type == _BOARD_TYPE_CHROMEBIT):
         return False
     return True
 
+def strip_kernelnext_suffix(board_name):
+    """Removes the '-kernelnext' suffix from board_name if present.
 
-BORADS_WITH_HOTWORDING = [
+    @param board_name: board name of the DUT.
+
+    @returns: board_name without '-kernelnext' suffix.
+
+    """
+    if board_name.endswith("-kernelnext"):
+      return board_name[:-len("-kernelnext")]
+
+    return board_name
+
+BOARDS_WITH_HOTWORDING = [
         'atlas', 'coral', 'eve', 'kevin', 'nami', 'nocturne', 'pyro', 'rammus',
         'samus'
 ]
@@ -69,7 +83,8 @@ def has_hotwording(board_name, model_name):
     @returns: True if the board has hotwording.
 
     """
-    return board_name in BORADS_WITH_HOTWORDING
+    board_name = strip_kernelnext_suffix(board_name)
+    return (board_name in BOARDS_WITH_HOTWORDING)
 
 def has_echo_reference(board_name):
     """Checks if a board has echo reference.
@@ -79,12 +94,13 @@ def has_echo_reference(board_name):
     @returns: True if the board has echo reference.
 
     """
+    board_name = strip_kernelnext_suffix(board_name)
     return board_name in ['nocturne', 'atlas']
 
 
 BoardInfo = collections.namedtuple('BoardInfo', ['board', 'model', 'sku'])
 
-BORADS_WITH_TWO_INTERNAL_MICS = [
+BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('coral', 'babytiger', ''),
         BoardInfo('coral', 'nasher360', ''),
         BoardInfo('coral', 'rabbid', ''),
@@ -121,7 +137,8 @@ def get_num_internal_microphone(board, model, sku):
     if not has_internal_microphone(board):
         return 0
 
-    for b in BORADS_WITH_TWO_INTERNAL_MICS:
+    board = strip_kernelnext_suffix(board)
+    for b in BOARDS_WITH_TWO_INTERNAL_MICS:
         if b.board == board and b.model == model:
             if b.sku == '' or b.sku == sku:
                 return 2
@@ -147,6 +164,7 @@ def get_internal_mic_node(board, model, sku):
 
     @returns: The name of the expected internal microphone nodes.
     """
+    board = strip_kernelnext_suffix(board)
     if get_num_internal_microphone(board, model, sku) == 2:
         return 'FRONT_MIC'
 
@@ -168,6 +186,7 @@ def get_plugged_internal_mics(board, model, sku):
 
     @returns: A list of all the plugged internal microphone nodes.
     """
+    board = strip_kernelnext_suffix(board)
     if get_num_internal_microphone(board, model, sku) == 2:
         return ['FRONT_MIC', 'REAR_MIC']
 
@@ -186,4 +205,5 @@ def get_headphone_node(board):
 
     @returns: The name of the expected headphone node.
     """
+    board = strip_kernelnext_suffix(board)
     return HEADPHONE_NODE.get((board), 'HEADPHONE')

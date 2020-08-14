@@ -3885,9 +3885,9 @@ class BluetoothAdapterTests(test.test):
                             'Peer {} not discovered'.format(device_address))
 
                 if not rssi or rssi < self.MIN_RSSI:
-                    raise error.TestNAError(
-                            'Peer {} RSSI is too low: {}'.format(
-                                    device_address, rssi))
+                    # Tests are allowed to continue due to crbug/1114233
+                    logging.info('Peer {} RSSI is too low: {} !!!'.format(
+                        device_address, rssi))
 
                 logging.info('Peer {} RSSI {}'.format(device_address, rssi))
         finally:

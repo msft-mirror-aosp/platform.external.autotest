@@ -214,10 +214,12 @@ class firmware_Cr50DeviceState(Cr50Test):
                 min_count = max(cr50_time - self.SLEEP_DELAY, 0)
             else:
                 min_count = 0
-            # Just checking there is not a lot of extra sleep wakeups. Add 1 to
-            # the sleep rate so cr50 can have some extra wakeups, but not too
-            # many.
-            max_count = cr50_time * (self.SLEEP_RATE + 1)
+            # Check that cr50 isn't continuously entering and exiting sleep.
+            # The PMU wakeups should happen around twice a second. Depending
+            # on TPM activity it may occur more often. Add 2 to the multiplier
+            # to allow for extra wakeups. This is mostly to catch issues that
+            # cause cr50 to wake up 100 times a second
+            max_count = cr50_time * (self.SLEEP_RATE + 2)
             return [min_count, max_count]
         # If ccd is disabled, ccd irq counts should not increase.
         if not self.ccd_enabled and (irq_key in self.CCD_KEYS):

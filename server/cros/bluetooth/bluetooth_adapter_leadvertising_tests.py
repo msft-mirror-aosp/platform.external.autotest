@@ -137,7 +137,7 @@ class bluetooth_AdapterLEAdvertising(
 
         @returns True if extended advertising is supported, else False
         """
-        platform = self.host.get_platform()
+        platform = self.get_base_platform_name()
         return platform in bluetooth_adapter_tests.EXT_ADV_MODELS
 
 

@@ -561,6 +561,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # On most devices, a Cr50 reset will cause an AP reset. Force this to
         # happen on devices where the AP is left down.
         if not self.faft_config.ap_up_after_cr50_reboot:
+            # Reset the DUT a few seconds after cr50 reboot.
+            time.sleep(self.SHORT_WAIT)
             logging.info('Resetting DUT after Cr50 reset')
             self._servo.get_power_state_controller().reset()
 

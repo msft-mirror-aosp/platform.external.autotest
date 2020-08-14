@@ -653,6 +653,23 @@ class BluetoothAdapterTests(test.test):
     }
 
 
+    # TODO(b/131170539) remove when sarien/arcada no longer have _signed
+    # postfix
+    def get_base_platform_name(self):
+        """Returns the DUT platform name
+
+        If the DUT is a DVT device, _signed or _unsigned may be appended
+            to the device name, which we should ignore in our BT tests
+
+        @returns: String name of the DUT's platform with _signed or
+                _unsigned removed
+        """
+
+        platform = self.host.get_platform()
+
+        return platform.replace('_signed', '').replace('_unsigned', '')
+
+
     def group_btpeers_type(self):
         """Group all Bluetooth peers by the type of their detected device."""
 
@@ -1540,7 +1557,7 @@ class BluetoothAdapterTests(test.test):
         @returns True if adapter ID follows expected format, False otherwise
         """
 
-        device = self.host.get_platform()
+        device = self.get_base_platform_name()
         adapter_info = self.get_adapter_properties()
 
         # Don't complete test if this is a reference board
@@ -1567,7 +1584,7 @@ class BluetoothAdapterTests(test.test):
         @returns True if adapter alias follows expected format, False otherwise
         """
 
-        device = self.host.get_platform()
+        device = self.get_base_platform_name()
         adapter_info = self.get_adapter_properties()
 
         # Don't complete test if this is a reference board

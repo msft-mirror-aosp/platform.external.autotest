@@ -303,7 +303,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     if not _is_enough_peers_present(self):
                         raise error.TestNAError('Not enough peer available')
 
-                    model = self.host.get_platform()
+                    model = self.get_base_platform_name()
                     if model in skip_models:
                         logging.info('SKIPPING TEST %s', test_name)
                         raise error.TestNAError(
@@ -362,7 +362,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def quick_test_test_end(self, model_testNA=[], model_testWarn=[]):
         """Log and track the test results"""
         result_msgs = []
-        model = self.host.get_platform()
+        model = self.get_base_platform_name()
 
         if self.test_iter is not None:
             result_msgs += ['Test Iter: ' + str(self.test_iter)]

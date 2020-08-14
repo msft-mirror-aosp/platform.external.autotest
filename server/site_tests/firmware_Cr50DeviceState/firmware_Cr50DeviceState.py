@@ -479,6 +479,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def run_through_power_states(self):
         """Go through S0ix, S3, and G3. Verify there are no interrupt storms"""
+        self._try_to_bring_dut_up()
         self.run_errors = {}
         self.ccd_str = 'ccd ' + ('enabled' if self.ccd_enabled else 'disabled')
         logging.info('Running through states with %s', self.ccd_str)

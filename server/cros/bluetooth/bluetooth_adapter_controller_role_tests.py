@@ -232,7 +232,8 @@ class bluetooth_AdapterControllerRoleTests(
         peer_discover.start()
 
         # Verify that we correctly receive advertisement from nearby device
-        self.test_receive_advertisement(address=nearby_device.address)
+        self.test_receive_advertisement(address=nearby_device.address,
+                                        timeout=30)
 
         # Make sure peer thread completes
         peer_discover.join()
@@ -311,7 +312,7 @@ class bluetooth_AdapterControllerRoleTests(
         # TODO ideally, peer would be broadcasting non-connectable adv with
         # 0xFE2C data, but this is not implemented yet on peer
         self.test_receive_advertisement(address=nearby_device.address,
-                                        timeout=20)
+                                        timeout=30)
 
         # Pair the nearby device first - necessary for later connection to slave
         self.pair_adapter_to_device(nearby_device)

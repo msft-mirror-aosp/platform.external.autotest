@@ -4,7 +4,6 @@
 
 from __future__ import print_function
 
-import ast
 import ctypes
 import logging
 import os
@@ -34,8 +33,9 @@ from autotest_lib.server.cros.faft import telemetry
 ConnectionError = mode_switcher.ConnectionError
 
 
-class FAFTBase(test.test):
-    """The base class of FAFT classes.
+class FirmwareTest(test.test):
+    """
+    Base class that sets up helper objects/functions for firmware tests.
 
     It launches the FAFTClient on DUT, such that the test can access its
     firmware functions and interfaces. It also provides some methods to
@@ -44,22 +44,6 @@ class FAFTBase(test.test):
     @type servo: servo.Servo
     @type _client: autotest_lib.server.hosts.ssh_host.SSHHost |
                    autotest_lib.server.hosts.cros_host.CrosHost
-    """
-    def initialize(self, host):
-        """Create a FAFTClient object and install the dependency."""
-
-        self.servo = host.servo
-
-        self.servo.initialize_dut()
-
-        self._client = host
-        self.faft_client = RPCProxy(host)
-        self.lockfile = '/usr/local/tmp/faft/lock'
-
-
-class FirmwareTest(FAFTBase):
-    """
-    Base class that sets up helper objects/functions for firmware tests.
 
     TODO: add documentaion as the FAFT rework progresses.
     """
@@ -102,28 +86,7 @@ class FirmwareTest(FAFTBase):
     FWMP_CLEARED_ERROR_MSG = ('CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS'
                               '_INVALID')
 
-    # UARTs that may be captured. These are the uart_stream prefixes that might
-    # be applicable for a test.
-    UARTS = (
-        'cpu',
-        'cr50',
-        'ec',
-        'servo_micro',
-        'servo_v4',
-        'usbpd',
-        'ccd_cr50.ec',
-        'ccd_cr50.cpu',
-        'ccd_cr50.cr50'
-    )
-
     _ROOTFS_PARTITION_NUMBER = 3
-
-    _backup_firmware_identity = dict()
-    _backup_kernel_sha = dict()
-    _backup_cgpt_attr = dict()
-    _backup_gbb_flags = None
-    _backup_dev_mode = None
-    _restore_power_mode = None
 
     # Class level variable, keep track the states of one time setup.
     # This variable is preserved across tests which inherit this class.
@@ -161,9 +124,26 @@ class FirmwareTest(FAFTBase):
         cls._global_setup_done[label] = False
 
     def initialize(self, host, cmdline_args, ec_wp=None):
-        super(FirmwareTest, self).initialize(host)
+        """Initialize the FirmwareTest.
+
+        This method interacts with the Servo, FAFT RPC client, FAFT Config,
+        Mode Switcher, EC consoles, write-protection, GBB flags, and a lockfile.
+        """
         self.run_id = str(uuid.uuid4())
+        self._client = host
+        self.servo = host.servo
+
+        self.lockfile = '/usr/local/tmp/faft/lock'
+        self._backup_gbb_flags = None
+        self._backup_firmware_identity = dict()
+        self._backup_kernel_sha = dict()
+        self._backup_cgpt_attr = dict()
+        self._backup_dev_mode = None
+        self._restore_power_mode = None
+        self._uart_file_dict = {}
+
         logging.info('FirmwareTest initialize begin (id=%s)', self.run_id)
+
         # Parse arguments from command line
         args = {}
         self.power_control = host.POWER_CONTROL_RPM
@@ -182,13 +162,13 @@ class FirmwareTest(FAFTBase):
             if 'true' in args['no_ec_sync'].lower():
                 self._no_ec_sync = True
 
-        self._uart_file_dict = {}
-
         self._use_sync_script = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_script', type=bool, default=False)
         self._use_fsfreeze = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
 
+        self.servo.initialize_dut()
+        self.faft_client = RPCProxy(host)
         self.faft_config = FAFTConfig(
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
@@ -206,6 +186,18 @@ class FirmwareTest(FAFTBase):
         # Get pdtester console
         self.pdtester = host.pdtester
         self.pdtester_host = host._pdtester_host
+        # Check for presence of a working Cr50 console
+        if self.servo.has_control('cr50_version'):
+            try:
+                # Check that the console works before declaring the cr50 console
+                # connection exists and enabling uart capture.
+                cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                cr50.get_version()
+                self.cr50 = cr50
+            except servo.ControlUnavailableError:
+                logging.warn('cr50 console not supported.')
+            except Exception as e:
+                logging.warn('Ignored unknown cr50 version error: %s', str(e))
 
         if 'power_control' in args:
             self.power_control = args['power_control']
@@ -225,7 +217,7 @@ class FirmwareTest(FAFTBase):
         # Create the BaseEC object. None if not available.
         self.base_ec = chrome_base_ec.create_base_ec(self.servo)
 
-        self._setup_uart_capture()
+        self._record_uart_capture()
         self._record_system_info()
         self.faft_client.system.set_dev_default_boot()
         self.fw_vboot2 = self.faft_client.system.get_fw_vboot2()
@@ -357,16 +349,21 @@ class FirmwareTest(FAFTBase):
             # Remote is not responding. Revive DUT so that subsequent tests
             # don't fail.
             self._restore_routine_from_timeout()
-        self.switcher.restore_mode()
+
+        if hasattr(self, 'switcher'):
+            self.switcher.restore_mode()
+
         self._restore_ec_write_protect()
         self._restore_servo_v4_role()
-        self._restore_gbb_flags()
-        self.faft_client.updater.start_daemon()
-        self.faft_client.updater.cleanup()
-        self._remove_faft_lockfile()
-        self._remove_old_faft_lockfile()
-        self._record_faft_client_log()
-        self.faft_client.quit()
+
+        if hasattr(self, 'faft_client'):
+            self._restore_gbb_flags()
+            self.faft_client.updater.start_daemon()
+            self.faft_client.updater.cleanup()
+            self._remove_faft_lockfile()
+            self._remove_old_faft_lockfile()
+            self._record_faft_client_log()
+            self.faft_client.quit()
 
         # Capture any new uart output, then discard log messages again.
         self._cleanup_uart_capture()
@@ -1042,80 +1039,13 @@ class FirmwareTest(FAFTBase):
         self.check_state((self.checkers.crossystem_checker, {
                           'wpsw_cur': '1' if self._old_wpsw_cur else '0'}))
 
-    def set_uart_capture_result_path(self, uart, filename):
-        """Set the uart file path"""
-        self._uart_file_dict[uart] = filename
-
-    def save_uart_capture_result_path(self, uart):
-        """Create the uart file location and store it in the file dict."""
-        outfile = os.path.join(self.resultsdir, '%s_uart.txt' % uart)
-        self.set_uart_capture_result_path(uart, outfile)
-
-    def get_uart_capture_result_path(self, uart):
-        """Get the uart file path"""
-        return self._uart_file_dict.get(uart, None)
-
-    def has_uart_capture_result_path(self, uart):
-        """Returns True if a uart file info is saved."""
-        return uart in self._uart_file_dict
-
-    def _setup_uart_capture(self):
-        """Set up the CPU/EC/PD UART capture."""
-        # Cr50 and usbpd uarts use the same servo pins. Set these up, so usbpd
-        # capture and cr50 capture don't interfere with each other.
-        self.set_uart_capture_result_path('cr50', None)
-        self.set_uart_capture_result_path('usbpd', None)
-
-        if self.servo.has_control('cr50_version'):
-            try:
-                # Check that the console works before declaring the cr50 console
-                # connection exists and enabling uart capture.
-                cr50 = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
-                cr50.get_version()
-                self.servo.set('cr50_uart_capture', 'on')
-                self.save_uart_capture_result_path('cr50')
-                logging.info('Enabling cr50 uart capture')
-                self.cr50 = cr50
-            except servo.ControlUnavailableError:
-                logging.warn('cr50 console not supported.')
-            except Exception as e:
-                logging.warn('Unknown cr50 uart capture error: %s', str(e))
-        if (not self.get_uart_capture_result_path('cr50') and
-                self.check_ec_capability(['usbpd_uart'], suppress_warning=True)
-                and self.servo.has_control('usbpd_uart_capture')):
-            logging.info('Enabling usbpd uart capture')
-            self.servo.set('usbpd_uart_capture', 'on')
-            self.save_uart_capture_result_path('usbpd')
-
-        for uart in self.UARTS:
-            capture_cmd = '%s_uart_capture' % uart
-            if self.has_uart_capture_result_path(uart):
-                logging.debug('Already setup %s uart capture', uart)
-                continue
-            if self.servo.has_control(capture_cmd):
-                logging.info('Setup %s', capture_cmd)
-                self.servo.set(capture_cmd, 'on')
-                self.save_uart_capture_result_path(uart)
-
     def _record_uart_capture(self):
         """Record the CPU/EC/PD UART output stream to files."""
-        for uart in self.UARTS:
-            # Attribute will be nonexistent or empty if capture wasn't set up.
-            uart_file = self.get_uart_capture_result_path(uart)
-            if uart_file:
-                with open(uart_file, 'a') as f:
-                    f.write(ast.literal_eval(
-                        self.servo.get('%s_uart_stream' % uart)))
+        self.servo.record_uart_capture(self.resultsdir)
 
     def _cleanup_uart_capture(self):
         """Cleanup the CPU/EC/PD UART capture."""
-        # Flush the remaining UART output first.
-        self._record_uart_capture()
-        for uart in self.UARTS:
-            # Attribute will be nonexistent or empty if capture wasn't set up.
-            uart_file = self.get_uart_capture_result_path(uart)
-            if uart_file:
-                self.servo.set('%s_uart_capture' % uart, 'off')
+        self.servo.close(self.resultsdir)
 
     def set_ap_off_power_mode(self, power_mode):
         """

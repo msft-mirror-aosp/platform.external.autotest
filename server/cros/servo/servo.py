@@ -273,7 +273,18 @@ class _PowerStateController(object):
 
 class _Uart(object):
     """Class to capture UART streams of CPU, EC, Cr50, etc."""
-    _UartToCapture = ('cpu', 'ec', 'cr50', 'servo_v4', 'servo_micro', 'usbpd')
+    _UartToCapture = (
+        'cpu',
+        'cr50',
+        'ec',
+        'servo_micro',
+        'servo_v4',
+        'usbpd',
+        'ccd_cr50.ec',
+        'ccd_cr50.cpu',
+        'ccd_cr50.cr50'
+    )
+
 
     def __init__(self, servo):
         self._servo = servo
@@ -318,16 +329,22 @@ class _Uart(object):
         """Start capturing UART streams."""
         for uart in self._UartToCapture:
             if self._start_stop_capture(uart, True):
-                self._streams.append(('%s_uart_stream' % uart, '%s_uart.log' %
-                                      uart))
+                self._streams.append(uart)
+
+    def get_logfile(self, uart):
+        """Return the path to the uart logfile or none if logs_dir isn't set."""
+        if not self.logs_dir:
+            return None
+        return os.path.join(self.logs_dir, '%s_uart.txt' % uart)
 
     def dump(self):
         """Dump UART streams to log files accordingly."""
         if not self.logs_dir:
             return
 
-        for stream, logfile in self._streams:
-            logfile_fullname = os.path.join(self.logs_dir, logfile)
+        for uart in self._streams:
+            logfile_fullname = self.get_logfile(uart)
+            stream = '%s_uart_stream' % uart
             try:
                 content = self._servo.get(stream)
             except Exception as err:
@@ -1686,18 +1703,22 @@ class Servo(object):
         """Set directory to save UART logs.
 
         @param logs_dir  String of directory name."""
-        if self._uart:
-            self._uart.logs_dir = logs_dir
+        self._uart.logs_dir = logs_dir
 
+    def get_uart_logfile(self, uart):
+        """Return the path to the uart log file."""
+        return self._uart.get_logfile(uart)
+
+    def record_uart_capture(self, outdir=None):
+        """Save uart stream output."""
+        if outdir and not self.uart_logs_dir:
+            self.uart_logs_dir = outdir
+        self._uart.dump()
 
     def close(self, outdir=None):
         """Close the servo object."""
-        if outdir and not self.uart_logs_dir:
-            self.uart_logs_dir = outdir
-        if self._uart:
-            self._uart.stop_capture()
-            self._uart.dump()
-            self._uart = None
+        self._uart.stop_capture()
+        self.record_uart_capture(outdir)
 
     def ec_reboot(self):
         """Reboot Just the embedded controller."""

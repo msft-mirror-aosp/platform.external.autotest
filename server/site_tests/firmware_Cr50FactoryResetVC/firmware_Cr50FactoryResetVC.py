@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging
 import time
 
@@ -35,7 +37,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         try:
             self.bp_override(True)
             self.bp_override(False)
-        except Exception, e:
+        except Exception as e:
             logging.info(e)
             raise error.TestNAError('Cannot fully test factory mode vendor '
                     'command without the ability to fake battery presence')
@@ -196,7 +198,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
                     try:
                         self.set_factory_mode(True)
                         self.set_factory_mode(False)
-                    except Exception, e:
+                    except Exception as e:
                         message = 'FAILURE %r %r' % (self.get_state_message(),
                                 e)
                         logging.info(message)

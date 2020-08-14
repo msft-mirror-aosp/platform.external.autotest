@@ -112,6 +112,7 @@ CONFIG['PUBLIC_DEPENDENCIES'] = {}
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
   _ALL: 2,
+  'GtsExoPlayerTestCases': 5,  # TODO(b/149376356, b/164230246)
   'GtsMediaTestCases': 5,  # TODO(b/140841434)
   'GtsYouTubeTestCases': 5,  # TODO(b/149376356)
 }

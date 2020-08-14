@@ -31,7 +31,8 @@ from autotest_lib.server import test
 
 from autotest_lib.client.bin.input.linux_input import (
         BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL,
-        KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG, KEY_PREVIOUSSONG)
+        REL_WHEEL_HI_RES, KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG,
+        KEY_PREVIOUSSONG)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
         GATT_ClientFacade, GATT_Application, GATT_HIDApplication)
 from autotest_lib.server.cros.multimedia import remote_facade_factory
@@ -3266,12 +3267,19 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.Scroll(units)
-        actual_events = self._record_input_events(device, gesture)
+        recorded_events = self._record_input_events(device, gesture)
+
+        # Since high-speed scrolling events are inserted after they are passed
+        # through bluetooth module, we ignore these events since they are
+        # irrelevant for us
+        scroll_events = [ev for ev in recorded_events
+                            if ev.code != REL_WHEEL_HI_RES]
+
         expected_events = [Event(EV_REL, REL_WHEEL, units), recorder.SYN_EVENT]
         self.results = {
-                'actual_events': map(str, actual_events),
+                'scroll_events': map(str, scroll_events),
                 'expected_events': map(str, expected_events)}
-        return actual_events == expected_events
+        return scroll_events == expected_events
 
 
     @test_retry_and_log

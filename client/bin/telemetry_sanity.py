@@ -20,7 +20,7 @@ import sys
 # This sets up import paths for autotest.
 import common
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.common_lib.cros import arc, arc_common, chrome
 from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.client.cros import cryptohome
 
@@ -58,7 +58,11 @@ class TelemetrySanity(object):
   def RunCryptohomeTest(self):
     """Test Cryptohome."""
     logging.info('RunCryptohomeTest: Starting chrome and logging in.')
-    with chrome.Chrome(num_tries=1) as cr:
+    # Only run ARC tests for P.
+    run_arc_tests = (utils.is_arc_available() and
+                     arc.get_android_sdk_version() <= 28)
+    arc_mode = arc_common.ARC_MODE_ENABLED if run_arc_tests else None
+    with chrome.Chrome(arc_mode=arc_mode, num_tries=1) as cr:
       # Check that the cryptohome is mounted.
       # is_vault_mounted throws an exception if it fails.
       logging.info('Checking mounted cryptohome.')
@@ -71,6 +75,21 @@ class TelemetrySanity(object):
       logging.info('Evaluating JavaScript.')
       if tab.EvaluateJavaScript('2+2') != 4:
         raise TestFail('EvaluateJavaScript failed')
+
+      # ARC test.
+      if run_arc_tests:
+        arc.wait_for_adb_ready()
+        logging.info('Android booted successfully.')
+        arc.wait_for_android_process('org.chromium.arc.intent_helper')
+        if not arc.is_package_installed('android'):
+          raise TestFail('"android" system package was not listed by '
+                         'Package Manager.')
+
+    if run_arc_tests:
+      utils.poll_for_condition(lambda: not arc.is_android_container_alive(),
+                               timeout=15,
+                               desc='Android container still running '
+                               'after Chrome shutdown.')
 
 
   def RunIncognitoTest(self):

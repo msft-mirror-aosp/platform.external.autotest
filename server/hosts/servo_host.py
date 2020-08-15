@@ -1492,6 +1492,8 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
 
     if dut:
         newhost.set_dut_hostname(dut.hostname)
+    if dut_host_info:
+        newhost.set_dut_host_info(dut_host_info)
 
     if try_lab_servo or try_servo_repair:
         try:
@@ -1512,20 +1514,6 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         logging.warning("Restart servod failed due to:\n%s\n"
                         "This error is forgiven here, we will retry"
                         " in servo repair process.", str(e))
-
-    # TODO(gregorynisbet): Clean all of this up.
-    logging.debug('create_servo_host: attempt to set info store on '
-                  'servo host')
-    try:
-        if dut_host_info is None:
-            logging.debug('create_servo_host: dut_host_info is '
-                          'None, skipping')
-        else:
-            newhost.set_dut_host_info(dut_host_info)
-            logging.debug('create_servo_host: successfully set info '
-                          'store')
-    except Exception:
-        logging.error("create_servo_host: (%s)", traceback.format_exc())
 
     # Note that the logic of repair() includes everything done
     # by verify().  It's sufficient to call one or the other;

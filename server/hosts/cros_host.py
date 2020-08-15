@@ -947,8 +947,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                                                    ec_regex)
                     if dest_ec_version != image_ec_version:
                         raise error.TestFail(
-                            'Failed to update EC RO, version %s (expected %s)' %
-                            (dest_ec_version, image_ec_version))
+                            'Failed to update EC firmware, version %s '
+                            '(expected %s)' % (dest_ec_version,
+                                               image_ec_version))
 
                 if bios_image:
                     # Check programmed BIOS firmware against expected version
@@ -960,7 +961,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                                                      bios_regex)
                     if dest_bios_version != image_bios_version:
                         raise error.TestFail(
-                            'Failed to update BIOS RO, version %s '
+                            'Failed to update BIOS, version %s '
                             '(expected %s)' % (dest_bios_version,
                                                image_bios_version))
         finally:

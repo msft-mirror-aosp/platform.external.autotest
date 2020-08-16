@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging
 import time
 
@@ -48,7 +50,7 @@ class firmware_Cr50Open(Cr50Test):
         #Make sure open doesn't work from the console.
         try:
             self.cr50.set_ccd_level('open')
-        except error.TestFail, e:
+        except error.TestFail as e:
             if not batt_pres:
                 raise error.TestFail('Unable to open cr50 from console with '
                                      'batt disconnected: %s' % str(e))
@@ -76,7 +78,7 @@ class firmware_Cr50Open(Cr50Test):
         #Make sure open only works from the AP when the device is in dev mode.
         try:
             self.ccd_open_from_ap()
-        except error.TestFail, e:
+        except error.TestFail as e:
             logging.info(e)
             # ccd open should work if the device is in dev mode or ccd open
             # isn't restricted. If open failed for some reason raise the error.

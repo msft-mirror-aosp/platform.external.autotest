@@ -232,13 +232,18 @@ class bluetooth_AdapterControllerRoleTests(
         peer_discover.start()
 
         # Verify that we correctly receive advertisement from nearby device
-        self.test_receive_advertisement(address=nearby_device.address)
+        self.test_receive_advertisement(address=nearby_device.address,
+                                        timeout=30)
 
         # Make sure peer thread completes
         peer_discover.join()
 
         # Connect to peer from DUT
         self.test_connection_by_adapter(nearby_device.address)
+
+        # TODO(b/164131633) On 4.4 kernel, sometimes the input device is not
+        # created if we connect a second device too quickly
+        time.sleep(self.TEST_SLEEP_SECS)
 
         # If test requires it, connect and test slave device
         if slave_info is not None and device_use == 'mid':
@@ -307,7 +312,7 @@ class bluetooth_AdapterControllerRoleTests(
         # TODO ideally, peer would be broadcasting non-connectable adv with
         # 0xFE2C data, but this is not implemented yet on peer
         self.test_receive_advertisement(address=nearby_device.address,
-                                        timeout=20)
+                                        timeout=30)
 
         # Pair the nearby device first - necessary for later connection to slave
         self.pair_adapter_to_device(nearby_device)
@@ -332,6 +337,10 @@ class bluetooth_AdapterControllerRoleTests(
 
         # Connect to DUT from peer
         self.test_connection_by_device(nearby_device)
+
+        # TODO(b/164131633) On 4.4 kernel, sometimes the input device is not
+        # created if we connect a second device too quickly
+        time.sleep(self.TEST_SLEEP_SECS)
 
         # If test requires it, connect and test slave device
         if slave_info is not None and device_use == 'end':

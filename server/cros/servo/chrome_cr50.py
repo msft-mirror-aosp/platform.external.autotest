@@ -514,7 +514,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def reboot(self):
         """Reboot Cr50 and wait for cr50 to reset"""
-        self.wait_for_reboot(cmd='reboot')
+        self.wait_for_reboot(cmd='reboot', timeout=10)
 
 
     def _uart_wait_for_reboot(self, cmd='\n', timeout=60):
@@ -561,6 +561,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # On most devices, a Cr50 reset will cause an AP reset. Force this to
         # happen on devices where the AP is left down.
         if not self.faft_config.ap_up_after_cr50_reboot:
+            # Reset the DUT a few seconds after cr50 reboot.
+            time.sleep(self.SHORT_WAIT)
             logging.info('Resetting DUT after Cr50 reset')
             self._servo.get_power_state_controller().reset()
 
@@ -618,7 +620,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         inactive_partition = self.get_inactive_version_info()[0]
 
-        self.wait_for_reboot(cmd='rollback')
+        self.wait_for_reboot(cmd='rollback', timeout=10)
 
         running_partition = self.get_active_version_info()[0]
         if inactive_partition != running_partition:

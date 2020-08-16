@@ -1228,8 +1228,9 @@ class ServoHost(base_servohost.BaseServoHost):
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH
 
-        if start_servod == self.VERIFY_FAILED:
-            # can be cause if device is not connected to the servo host
+        if (start_servod == self.VERIFY_FAILED
+            or create_servo == self.VERIFY_FAILED):
+            # sometimes servo can start with out present servo
             if self.is_labstation():
                 if not self.servo_serial:
                     return servo_constants.SERVO_STATE_WRONG_CONFIG
@@ -1239,6 +1240,8 @@ class ServoHost(base_servohost.BaseServoHost):
                     return servo_constants.SERVO_STATE_NOT_CONNECTED
             elif self._is_servo_board_present_on_servo_v3() == False:
                 return servo_constants.SERVO_STATE_NOT_CONNECTED
+
+        if start_servod == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
 
         if create_servo == self.VERIFY_FAILED:
@@ -1492,6 +1495,8 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
 
     if dut:
         newhost.set_dut_hostname(dut.hostname)
+    if dut_host_info:
+        newhost.set_dut_host_info(dut_host_info)
 
     if try_lab_servo or try_servo_repair:
         try:
@@ -1512,20 +1517,6 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         logging.warning("Restart servod failed due to:\n%s\n"
                         "This error is forgiven here, we will retry"
                         " in servo repair process.", str(e))
-
-    # TODO(gregorynisbet): Clean all of this up.
-    logging.debug('create_servo_host: attempt to set info store on '
-                  'servo host')
-    try:
-        if dut_host_info is None:
-            logging.debug('create_servo_host: dut_host_info is '
-                          'None, skipping')
-        else:
-            newhost.set_dut_host_info(dut_host_info)
-            logging.debug('create_servo_host: successfully set info '
-                          'store')
-    except Exception:
-        logging.error("create_servo_host: (%s)", traceback.format_exc())
 
     # Note that the logic of repair() includes everything done
     # by verify().  It's sufficient to call one or the other;

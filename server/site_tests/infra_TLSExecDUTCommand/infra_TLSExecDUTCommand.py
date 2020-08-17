@@ -7,7 +7,7 @@ import logging
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import test
-from autotest_lib.server.hosts.client.client import TLSClient
+from autotest_lib.server.hosts.drone_api_client.client import TLSClient
 
 
 class infra_TLSExecDUTCommand(test.test):

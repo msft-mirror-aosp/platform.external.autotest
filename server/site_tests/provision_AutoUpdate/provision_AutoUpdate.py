@@ -111,17 +111,12 @@ class provision_AutoUpdate(test.test):
             raise error.TestFail('No build version specified.')
 
 
-    def run_once(self, host, value, force_update_engine=False):
+    def run_once(self, host, value):
         """The method called by the control file to start the test.
 
         @param host: The host object to update to |value|.
         @param value: The host object to provision with a build corresponding
                       to |value|.
-        @param force_update_engine: When true, the update flow must
-                      perform the update unconditionally, using
-                      update_engine.  Optimizations that could suppress
-                      invoking update_engine, including quick-provision,
-                      mustn't be used.
         """
         with_cheets = False
         logging.debug('Start provisioning %s to %s.', host, value)
@@ -134,16 +129,15 @@ class provision_AutoUpdate(test.test):
         # If the host is already on the correct build, we have nothing to do.
         # Note that this means we're not doing any sort of stateful-only
         # update, and that we're relying more on cleanup to do cleanup.
-        if not force_update_engine:
-            info = host.host_info_store.get()
-            if info.build == value:
-                # We can't raise a TestNA, as would make sense, as that makes
-                # job.run_test return False as if the job failed.  However, it'd
-                # still be nice to get this into the status.log, so we manually
-                # emit an INFO line instead.
-                self.job.record('INFO', None, None,
-                                'Host already running %s' % value)
-                return
+        info = host.host_info_store.get()
+        if info.build == value:
+            # We can't raise a TestNA, as would make sense, as that makes
+            # job.run_test return False as if the job failed.  However, it'd
+            # still be nice to get this into the status.log, so we manually
+            # emit an INFO line instead.
+            self.job.record('INFO', None, None,
+                            'Host already running %s' % value)
+            return
 
         try:
             ds = dev_server.ImageServer.resolve(image, host.hostname)
@@ -157,8 +151,7 @@ class provision_AutoUpdate(test.test):
         failure = None
         try:
             afe_utils.machine_install_and_update_labels(
-                    host, url, not force_update_engine, with_cheets,
-                    staging_server=ds)
+                    host, url, with_cheets, staging_server=ds)
         except BaseException as e:
             failure = e
             raise

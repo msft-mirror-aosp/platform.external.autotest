@@ -126,7 +126,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             autoupdater.ChromiumOSUpdater(
                 update_url,
                 host=self._host,
-                use_quick_provision=True,
                 is_release_bucket=True).run_update()
 
             self._run_client_test_and_check_result(self._LOGIN_TEST,

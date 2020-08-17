@@ -303,7 +303,6 @@ class BaseServoHost(ssh_host.SSHHost):
                                             hostname=self.hostname)
         url = ds.get_update_url(target_build)
         updater = autoupdater.ChromiumOSUpdater(update_url=url, host=self,
-                                                use_quick_provision=True,
                                                 is_servohost=True)
         logging.info('Using devserver url: %s to trigger update on '
                      'servo host %s, from %s to %s', url, self.hostname,

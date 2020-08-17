@@ -1134,13 +1134,14 @@ class FirmwareTest(test.test):
         return self.ec.send_command_get_output("powerinfo",
             ['\\b' + power_state + '\\b'])
 
-    def wait_power_state(self, power_state, retries):
+    def wait_power_state(self, power_state, retries, retry_delay=0):
         """
         Wait for certain power state.
 
         @param power_state: power state you are expecting
         @param retries: retries.  This is necessary if AP is powering down
         and transitioning through different states.
+        @param retry_delay: delay between retries in seconds
         """
         logging.info('Checking power state "%s" maximum %d times.',
                      power_state, retries)
@@ -1150,12 +1151,16 @@ class FirmwareTest(test.test):
 
         while retries > 0:
             logging.info("try count: %d", retries)
+            start_time = time.time()
             try:
                 retries = retries - 1
                 if self._check_power_state(power_state):
                     return True
             except error.TestFail:
                 pass
+            delay_time = retry_delay - time.time() + start_time
+            if delay_time > 0:
+                time.sleep(delay_time)
         return False
 
     def run_shutdown_cmd(self):

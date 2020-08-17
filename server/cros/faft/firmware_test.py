@@ -1107,7 +1107,7 @@ class FirmwareTest(test.test):
             # Don't fail when EC not present or not fully initialized
             return None
 
-        pattern = r'power state (\w+) = (\w+)'
+        pattern = r'power state (\w+) = (\w+),'
 
         try:
             match = self.ec.send_command_get_output("powerinfo", [pattern])
@@ -1118,7 +1118,7 @@ class FirmwareTest(test.test):
             logging.warn("powerinfo output did not match pattern: %r", pattern)
             return None
         (line, state_num, state_name) = match[0]
-        logging.debug("%s", line)
+        logging.debug("power state info %r", match)
         return state_name
 
     def _check_power_state(self, power_state):

@@ -780,8 +780,7 @@ class ProvisionRepair(hosts.RepairAction):
         devserver.trigger_download(image_name, synchronous=False)
         update_url = tools.image_url_pattern() % (
                 devserver.url(), image_name)
-        afe_utils.machine_install_and_update_labels(host, update_url,
-                                                    use_quick_provision=True)
+        afe_utils.machine_install_and_update_labels(host, update_url)
 
     @property
     def description(self):

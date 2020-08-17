@@ -35,7 +35,7 @@ class firmware_Cr50TpmManufactured(FirmwareTest):
         # We want to make this as accessible as possible and checking the
         # captured uart is the best way to do that.
         self._record_uart_capture()
-        cr50_uart_file = self.get_uart_capture_result_path('cr50')
+        cr50_uart_file = self.servo.get_uart_logfile('cr50')
         if not cr50_uart_file:
             raise error.TestNAError('No saved uart file')
         with open(cr50_uart_file, 'r') as f:

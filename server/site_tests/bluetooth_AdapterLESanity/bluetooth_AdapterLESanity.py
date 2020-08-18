@@ -116,9 +116,9 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.test_gatt_browse(device.address)
 
 
-    @test_wrapper('LE Slave Test', devices={'BLE_KEYBOARD':1})
-    def le_role_slave(self):
-        """Tests connection as slave"""
+    @test_wrapper('LE secondary Test', devices={'BLE_KEYBOARD':1})
+    def le_role_secondary(self):
+        """Tests connection as secondary"""
 
         self.verify_controller_capability(
                         required_roles=['peripheral'],
@@ -127,13 +127,13 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
-        self.controller_slave_test(kbd, kbd_test_func)
+        self.controller_secondary_role_test(kbd, kbd_test_func)
 
 
-    @test_wrapper('LE Master Before Slave Test',
+    @test_wrapper('LE primary Before secondary Test',
                   devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
-    def le_role_master_before_slave(self):
-        """Tests connection as master and then as slave"""
+    def le_role_primary_before_secondary(self):
+        """Tests connection as primary and then as secondary"""
 
         self.verify_controller_capability(
                         required_roles=['central-peripheral'],
@@ -147,14 +147,14 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'pre')
-        self.controller_slave_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+        self.controller_secondary_role_test(
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
-    @test_wrapper('LE Slave Before Master Test', devices={'BLE_KEYBOARD':1,
+    @test_wrapper('LE secondary Before primary Test', devices={'BLE_KEYBOARD':1,
                                                           'BLE_MOUSE':1})
-    def le_role_slave_before_master(self):
-        """Tests connection as slave and then as master"""
+    def le_role_secondary_before_primary(self):
+        """Tests connection as secondary and then as primary"""
 
         self.verify_controller_capability(
                         required_roles=['central-peripheral'],
@@ -168,8 +168,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'mid')
-        self.controller_slave_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+        self.controller_secondary_role_test(
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
     @test_wrapper('LE Sender Role Test', devices={'BLE_KEYBOARD':1})
@@ -205,7 +205,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         hid_test_device = (mouse, mouse_test_func, 'pre')
         self.nearby_sender_role_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
     @test_wrapper('LE HID Test During Sender Role',
@@ -226,7 +226,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         hid_test_device = (mouse, mouse_test_func, 'mid')
         self.nearby_sender_role_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
     @test_wrapper('LE Receiver Role Test', devices={'BLE_KEYBOARD':1})
@@ -262,7 +262,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         hid_test_device = (mouse, mouse_test_func, 'pre')
         self.nearby_receiver_role_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
     # TODO(b/162324887) - platforms supporting extended advertising do not
@@ -286,7 +286,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         hid_test_device = (mouse, mouse_test_func, 'mid')
         self.nearby_receiver_role_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
     @test_wrapper('LE HID Test During Receiver Role',
@@ -307,7 +307,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
         hid_test_device = (mouse, mouse_test_func, 'end')
         self.nearby_receiver_role_test(
-                kbd, kbd_test_func, slave_info=hid_test_device)
+                kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
     @batch_wrapper('LE Sanity')

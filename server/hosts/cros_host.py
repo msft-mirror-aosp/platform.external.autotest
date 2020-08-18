@@ -830,7 +830,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             board = board_as
 
         if model is None or model == '':
-            model = self.get_platform_from_fwid()
+            try:
+                model = self.get_platform_from_fwid()
+            except Exception as e:
+                logging.warn('Dut is unresponsive: %s', str(e))
 
         # If local firmware path not provided fetch it from the dev server
         tmpd = None

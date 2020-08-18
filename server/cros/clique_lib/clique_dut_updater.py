@@ -145,8 +145,7 @@ class CliqueDUTUpdater(object):
         url = self._get_update_url(ds.url(), image)
         logging.debug('Host: %s. Installing image from %s', dut_host, url)
         try:
-            autoupdater.ChromiumOSUpdater(url, host=dut_host,
-                                          use_quick_provision=True).run_update()
+            autoupdater.ChromiumOSUpdater(url, host=dut_host).run_update()
         except error.TestFail as e:
             error_str = 'Host: ' + dut_host + '. ' + e
             logging.error(error_str)

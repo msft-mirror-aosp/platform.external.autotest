@@ -59,7 +59,7 @@ a2dp_test_data = {
     'channels': 2,
     'frequencies': (440, 20000),
     'file': os.path.join(audio_test_dir,
-                         'binaural_sine_440hz_20000hz_rate48000_5secs.wav'),
+                         'binaural_sine_440hz_20000hz_rate48000_5secs.raw'),
     'recorded_by_peer': os.path.join(audio_record_dir,
                                      'a2dp_recorded_by_peer.wav'),
 }

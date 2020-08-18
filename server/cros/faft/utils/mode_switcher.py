@@ -534,12 +534,12 @@ class _BaseModeSwitcher(object):
         if to_mode == 'rec':
             self.enable_rec_mode_and_reboot(usb_state='dut')
             if wait_for_dut_up:
-                self.wait_for_client()
+                self.wait_for_client(retry_power_on=True)
 
         elif to_mode == 'rec_force_mrc':
             self._enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
             if wait_for_dut_up:
-                self.wait_for_client()
+                self.wait_for_client(retry_power_on=True)
 
         elif to_mode == 'dev':
             if sync_before_boot:
@@ -555,7 +555,7 @@ class _BaseModeSwitcher(object):
             if wait_for_dut_up:
                 self.bypass_dev_mode()
                 try:
-                    self.wait_for_client()
+                    self.wait_for_client(retry_power_on=True)
                 except ConnectionError as e:
                     raise ConnectionError('{} devsw_cur: {}'.format(e,
                                                                     devsw_cur))
@@ -563,7 +563,7 @@ class _BaseModeSwitcher(object):
         elif to_mode == 'normal':
             self._enable_normal_mode_and_reboot()
             if wait_for_dut_up:
-                self.wait_for_client()
+                self.wait_for_client(retry_power_on=True)
 
         else:
             raise NotImplementedError(
@@ -752,7 +752,7 @@ class _BaseModeSwitcher(object):
         self.bypasser.trigger_dev_to_normal()
 
 
-    def wait_for_client(self, timeout=180):
+    def wait_for_client(self, timeout=180, retry_power_on=False):
         """Wait for the client to come back online.
 
         New remote processes will be launched if their used flags are enabled.
@@ -771,6 +771,11 @@ class _BaseModeSwitcher(object):
                (self.faft_framework.POWER_STATE_S0, None)):
                 time.sleep(2)
                 current_timer += 2
+                if retry_power_on:
+                    logging.info("-[FAFT]-[ retry powering on the DUT ]---")
+                    psc = self.servo.get_power_state_controller()
+                    psc.retry_power_on()
+
         power_state = self.faft_framework.get_power_state()
         if power_state not in (self.faft_framework.POWER_STATE_S0, None):
             raise ConnectionError('DUT unexpectedly down, '

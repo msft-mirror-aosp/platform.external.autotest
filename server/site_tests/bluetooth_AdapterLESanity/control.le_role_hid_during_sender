@@ -20,7 +20,7 @@ DOC = """Tests HID capability during Sender role
 
       A device in Sender role will need to connect to a device in Receiver role.
       This test checks that while connected, it can also initiate a connection
-      to a HID device. Both connections will be as master.
+      to a HID device. Both connections will be in primary role.
       """
 
 args_dict = utils.args_to_dict(args)

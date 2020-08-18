@@ -6,23 +6,17 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros.bluetooth import bluetooth_test
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterLESanity.le_role_master_before_slave'
-PURPOSE = ('Tests controller can handle slave role in connection while already'
-           ' connected as master')
+NAME = 'bluetooth_AdapterLESanity.le_role_secondary'
+PURPOSE = ('Tests controller can handle secondary role in connection')
 CRITERIA = 'Pass the test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 
-DOC = """Tests master and then slave connection capability
-
-      The test is to verify that the controller can accept a connection as slave
-      while already connected as master and use both connections to send data
-      properly.
-      """
+DOC = """Tests basic secondary connection capability"""
 
 args_dict = utils.args_to_dict(args)
 btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)

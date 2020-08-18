@@ -169,21 +169,16 @@ class CrosDisksArchiveTester(CrosDisksTester):
             # Trying to mount archive without providing password should fail.
             self.cros_disks.mount(archive_path,
                                   os.path.splitext(archive_path)[1])
-            mount_result = self.cros_disks.expect_mount_completion({
-                    'status': 13,  # MOUNT_ERROR_NEED_PASSWORD
-                    'source_path': archive_path,
-                    'mount_path': '',
-            })
+            self.cros_disks.expect_mount_completion(
+                    {'status': 13})  # MOUNT_ERROR_NEED_PASSWORD
 
             # Trying to mount archive with a wrong password should fail.
-            self.cros_disks.mount(archive_path,
-                                  os.path.splitext(archive_path)[1],
-                                  [b'password=wrong'])
-            mount_result = self.cros_disks.expect_mount_completion({
-                    'status': 13,  # MOUNT_ERROR_NEED_PASSWORD
-                    'source_path': archive_path,
-                    'mount_path': '',
-            })
+            for password in [b'', b'passwor', b'password ', b' password']:
+                self.cros_disks.mount(archive_path,
+                                      os.path.splitext(archive_path)[1],
+                                      [b'password=' + password])
+                self.cros_disks.expect_mount_completion(
+                        {'status': 13})  # MOUNT_ERROR_NEED_PASSWORD
 
             # Mounting archive with right password should work.
             self._test_archive(os.path.join(mount_path, archive_name), want,

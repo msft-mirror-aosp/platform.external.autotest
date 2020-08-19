@@ -499,8 +499,15 @@ class ChromiumOSUpdater(object):
         autoreboot_cmd = ('FILE="%s" ; [ -f "$FILE" ] || '
                           '( touch "$FILE" ; start autoreboot )')
         self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
-        kernel_utils.verify_boot_expectations(
-            expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE, self.host)
+        try:
+            kernel_utils.verify_boot_expectations(
+                expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,
+                self.host)
+        except Exception:
+            # When the system is rolled back, the provision_failed file is
+            # removed. So add it back here and re-raise the exception.
+            self._run('touch %s' % PROVISION_FAILED)
+            raise
 
         logging.debug('Cleaning up old autotest directories.')
         try:

@@ -80,7 +80,9 @@ class bluetooth_AdapterSASanity(BluetoothAdapterQuickTests,
         self.test_pairable()
 
 
-    @test_wrapper('Adapter suspend resume test')
+    # TODO(b/165410941) - Morphius EVT has a bug that makes all suspend/resume tests
+    #                     unreliable. Skip them for now.
+    @test_wrapper('Adapter suspend resume test', skip_models=['morphius'])
     def sa_adapter_suspend_resume_test(self):
         """Test dapter power states is perserved through suspend resume."""
         def adapter_on_SR_test():

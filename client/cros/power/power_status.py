@@ -2303,11 +2303,28 @@ class FanRpmLogger(MeasurementLogger):
     def refresh(self):
         @retry.retry(Exception, timeout_min=0.1, delay_sec=2)
         def get_fan_rpm_all():
-            cmd = 'ectool pwmgetfanrpm all | cut -f 2 -d: | xargs'
+            """Some example outputs from ectool
+
+            * Two fan system
+            localhost ~ # ectool pwmgetfanrpm all
+            Fan 0 RPM: 4012
+            Fan 1 RPM: 4009
+
+            * One fan but its stalled
+            localhost ~ # ectool pwmgetfanrpm all
+            Fan 0 stalled!
+            """
+            cmd = 'ectool pwmgetfanrpm all'
             res = utils.run(cmd, ignore_status=True,
                             stdout_tee=utils.TEE_TO_LOGS,
                             stderr_tee=utils.TEE_TO_LOGS)
-            return [int(rpm) for rpm in res.stdout.split(' ')]
+            rpm_data = []
+            for i, ln in enumerate(res.stdout.splitlines()):
+                if ln.find('stalled') != -1:
+                    rpm_data.append(0)
+                else:
+                    rpm_data.append(int(ln.split(':')[1]))
+            return rpm_data
         return get_fan_rpm_all()
 
     def save_results(self, resultsdir, fname_prefix=None):

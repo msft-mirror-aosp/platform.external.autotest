@@ -124,9 +124,10 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
 ]
 
 
-def get_num_internal_microphone(board, model, sku):
+def get_num_internal_microphone(board_type, board, model, sku):
     """Gets the number of internal microphones.
 
+    @param board_type: board type string. E.g. CHROMEBOX, CHROMEBIT, and etc.
     @param board: board name of the DUT.
     @param model: model name of the DUT.
     @param sku: sku number string of the DUT.
@@ -134,7 +135,7 @@ def get_num_internal_microphone(board, model, sku):
     @returns: The number of internal microphones.
 
     """
-    if not has_internal_microphone(board):
+    if not has_internal_microphone(board_type):
         return 0
 
     board = strip_kernelnext_suffix(board)
@@ -154,10 +155,11 @@ INTERNAL_MIC_NODE = {
 }
 
 
-def get_internal_mic_node(board, model, sku):
+def get_internal_mic_node(board_type, board, model, sku):
     """Return the expected internal microphone node for given board name and
        model name.
 
+    @param board_type: board type string. E.g. CHROMEBOX, CHROMEBIT, and etc.
     @param board: board name of the DUT.
     @param model: model name of the DUT.
     @param sku: sku number string of the DUT.
@@ -165,7 +167,7 @@ def get_internal_mic_node(board, model, sku):
     @returns: The name of the expected internal microphone nodes.
     """
     board = strip_kernelnext_suffix(board)
-    if get_num_internal_microphone(board, model, sku) == 2:
+    if get_num_internal_microphone(board_type, board, model, sku) == 2:
         return 'FRONT_MIC'
 
     return INTERNAL_MIC_NODE.get((board, model), 'INTERNAL_MIC')
@@ -176,10 +178,11 @@ INTERNAL_MIC_NODES = {
 }
 
 
-def get_plugged_internal_mics(board, model, sku):
+def get_plugged_internal_mics(board_type, board, model, sku):
     """Return a list of all the plugged internal microphone nodes for given
        board name and model name.
 
+    @param board_type: board type string. E.g. CHROMEBOX, CHROMEBIT, and etc.
     @param board: board name of the DUT.
     @param model: model name of the DUT.
     @param sku: sku number string of the DUT.
@@ -187,7 +190,7 @@ def get_plugged_internal_mics(board, model, sku):
     @returns: A list of all the plugged internal microphone nodes.
     """
     board = strip_kernelnext_suffix(board)
-    if get_num_internal_microphone(board, model, sku) == 2:
+    if get_num_internal_microphone(board_type, board, model, sku) == 2:
         return ['FRONT_MIC', 'REAR_MIC']
 
     return INTERNAL_MIC_NODES.get((board, model), ['INTERNAL_MIC'])

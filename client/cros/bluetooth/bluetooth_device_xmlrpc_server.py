@@ -27,6 +27,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.udev_helpers import UdevadmInfo, UdevadmTrigger
 from autotest_lib.client.cros import xmlrpc_server
+from autotest_lib.client.cros.audio import (
+        audio_test_data as audio_test_data_module)
 from autotest_lib.client.cros.audio import check_quality
 from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.client.cros.bluetooth import advertisement
@@ -2084,6 +2086,22 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return self._cras_test_client.stop_capturing_subprocess()
 
 
+    def _generate_playback_file(self, audio_data):
+        """Generate the playback file if it does not exist yet.
+
+        Some audio test files may be large. Generate them on the fly
+        to save the storage of the source tree.
+
+        @param audio_data: the audio test data
+        """
+        if not os.path.exists(audio_data['file']):
+            audio_test_data_module.GenerateAudioTestData(
+                    path=audio_data['file'],
+                    duration_secs=audio_data['duration'],
+                    frequencies=audio_data['frequencies'])
+            logging.debug("Raw file generated: %s", audio_data['file'])
+
+
     def start_playing_audio_subprocess(self, audio_data):
         """Start playing audio in a subprocess.
 
@@ -2121,6 +2139,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @returns: True on success. False otherwise.
         """
         audio_data = json.loads(audio_data)
+        self._generate_playback_file(audio_data)
         return self._cras_test_client.play(audio_data['file'],
                                            channels=audio_data['channels'],
                                            rate=audio_data['rate'],

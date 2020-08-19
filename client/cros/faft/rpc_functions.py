@@ -1142,13 +1142,17 @@ class UpdaterServicer(object):
         """Sets up cbfstool work directory."""
         return self._updater.cbfs_setup_work_dir()
 
-    def cbfs_extract_chip(self, fw_name):
+    def cbfs_extract_chip(self,
+                          fw_name,
+                          extension='.bin',
+                          hash_extension='.hash'):
         """Runs cbfstool to extract chip firmware.
 
         @param fw_name: Name of chip firmware to extract.
         @return: Boolean success status.
         """
-        return self._updater.cbfs_extract_chip(fw_name)
+        return self._updater.cbfs_extract_chip(fw_name, extension,
+                                               hash_extension)
 
     def cbfs_extract_diagnostics(self, diag_name, local_filename):
         """Runs cbfstool to extract a diagnostics image.
@@ -1168,7 +1172,7 @@ class UpdaterServicer(object):
         """
         self._updater.cbfs_replace_diagnostics(diag_name, local_filename)
 
-    def cbfs_get_chip_hash(self, fw_name):
+    def cbfs_get_chip_hash(self, fw_name, hash_extension='.hash'):
         """Gets the chip firmware hash blob.
 
         The hash data is returned as a list of stringified two-byte pieces:
@@ -1177,15 +1181,20 @@ class UpdaterServicer(object):
         @param fw_name: Name of chip firmware whose hash blob to return.
         @return: Hex string of hash blob.
         """
-        return self._updater.cbfs_get_chip_hash(fw_name)
+        return self._updater.cbfs_get_chip_hash(fw_name, hash_extension)
 
-    def cbfs_replace_chip(self, fw_name):
+    def cbfs_replace_chip(self,
+                          fw_name,
+                          extension='.bin',
+                          hash_extension='.hash',
+                          regions=('a', 'b')):
         """Runs cbfstool to replace chip firmware.
 
         @param fw_name: Name of chip firmware to extract.
         @return: Boolean success status.
         """
-        return self._updater.cbfs_replace_chip(fw_name)
+        return self._updater.cbfs_replace_chip(fw_name, extension,
+                                               hash_extension, regions)
 
     def cbfs_sign_and_flash(self):
         """Runs cbfs signer and flash it.

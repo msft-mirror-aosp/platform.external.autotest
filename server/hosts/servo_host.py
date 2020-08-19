@@ -536,11 +536,20 @@ class ServoHost(base_servohost.BaseServoHost):
         # Start servod with dual_v4 if the DUT/servo from designated pools.
         dut_host_info = self.get_dut_host_info()
         if dut_host_info:
+            # DUAL_V4: servo setup includes servo_micro and ccd_cr50
+            # connection to the DUT
+            is_dual_setup = False
             if bool(dut_host_info.pools &
                     servo_constants.POOLS_SUPPORT_DUAL_V4):
                 logging.debug('The DUT is detected in following designated'
                               ' pools %s,starting servod with DUAL_V4 option.',
                               servo_constants.POOLS_SUPPORT_DUAL_V4)
+                is_dual_setup = True
+            elif dut_host_info.attributes.get('servo_setup') == 'DUAL_V4':
+                logging.debug('The DUT servo setup specified in config as '
+                              ' "DUAL_V4"')
+                is_dual_setup = True
+            if is_dual_setup:
                 cmd += ' DUAL_V4=1'
 
         # Remove the symbolic links from the logs. This helps ensure that

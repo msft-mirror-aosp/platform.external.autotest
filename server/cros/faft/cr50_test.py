@@ -935,9 +935,9 @@ class Cr50Test(FirmwareTest):
         image_rw = self._cr50_run_update(path)
 
         # Running the update may cause cr50 to reboot. Wait for that before
-        # sending more commands. The reboot should happen quickly. Wait a
-        # maximum of 10 seconds.
-        self.cr50.wait_for_reboot(timeout=10)
+        # sending more commands. The reboot should happen quickly.
+        self.cr50.wait_for_reboot(
+                timeout=self.faft_config.gsc_update_wait_for_reboot)
 
         if rollback:
             self.cr50.rollback()

@@ -38,6 +38,7 @@ from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.site_utils.rpm_control_system import rpm_client
 from autotest_lib.site_utils.admin_audit import constants as audit_const
+from autotest_lib.site_utils.admin_audit import verifiers as audit_verify
 
 # In case cros_host is being ran via SSP on an older Moblab version with an
 # older chromite version.
@@ -1052,6 +1053,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         'need_replacement, please check debug log '
                         'for details.')
                 else:
+                    # DUT will be marked for replacement if storage is bad.
+                    audit_verify.VerifyDutStorage(self).verify()
+
                     logging.debug('Fail install image from USB; %s', e)
                     raise error.AutoservError(
                         'Failed to install image from USB due to unexpected '

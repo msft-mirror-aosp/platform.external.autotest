@@ -95,7 +95,7 @@ STDERR_PREFIX = '[stderr] '
 # safe characters for the shell (do not need quoting)
 _SHELL_QUOTING_ALLOWLIST = frozenset(string.ascii_letters +
                                     string.digits +
-                                    '_-+=>')
+                                    '_-+=>|')
 
 def custom_warning_handler(message, category, filename, lineno, file=None,
                            line=None):

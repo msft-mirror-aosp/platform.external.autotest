@@ -23,6 +23,10 @@ DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
 LE_ADVERTISEMENT_IFACE = 'org.bluez.LEAdvertisement1'
 
 
+class InvalidArgsException(dbus.exceptions.DBusException):
+    _dbus_error_name = 'org.freedesktop.DBus.Error.InvalidArgs'
+
+
 class Advertisement(dbus.service.Object):
     """An advertisement object."""
 
@@ -78,6 +82,11 @@ class Advertisement(dbus.service.Object):
 
         self.scan_response = advertisement_data.get('ScanResponseData')
 
+        self.min_interval = advertisement_data.get('MinInterval')
+        self.max_interval = advertisement_data.get('MaxInterval')
+
+        self.tx_power = advertisement_data.get('TxPower')
+
     def get_path(self):
         """Get the dbus object path of the advertisement.
 
@@ -86,6 +95,19 @@ class Advertisement(dbus.service.Object):
         """
         return dbus.ObjectPath(self.path)
 
+
+    @dbus.service.method(DBUS_PROP_IFACE, in_signature='ssv', out_signature='')
+    def Set(self, interface, prop, value):
+        """Called when bluetoothd Sets a property on our advertising object
+
+        @param interface: String interface, i.e. org.bluez.LEAdvertisement1
+        @param prop: String name of the property being set
+        @param value: Value of the property being set
+        """
+        logging.info('Setting prop {} value to {}'.format(prop, value))
+
+        if prop == 'TxPower':
+            self.tx_power = value
 
     @dbus.service.method(DBUS_PROP_IFACE, in_signature='s',
                          out_signature='a{sv}')
@@ -129,6 +151,15 @@ class Advertisement(dbus.service.Object):
                 scan_rsp[int(key, 16)] = dbus.Array(value, signature='y')
 
             properties['ScanResponseData'] = scan_rsp
+
+        if self.min_interval is not None:
+            properties['MinInterval'] = dbus.UInt32(self.min_interval)
+
+        if self.max_interval is not None:
+            properties['MaxInterval'] = dbus.UInt32(self.max_interval)
+
+        if self.tx_power is not None:
+            properties['TxPower'] = dbus.Int16(self.tx_power)
 
         return properties
 

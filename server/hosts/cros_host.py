@@ -241,8 +241,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     btpeer.split(':'))})
             return result
         else:
-           return {key: args_dict[key]
-                for key in ('btpeer_host', 'btpeer_port')
+            return {key: args_dict[key]
+                for key in ('btpeer_host', 'btpeer_port', 'btpeer_ssh_port')
                 if key in args_dict}
 
 

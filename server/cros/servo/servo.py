@@ -458,8 +458,6 @@ class Servo(object):
         # to minimize the dependencies on the rest of Autotest.
         self._servo_host = servo_host
         self._servo_serial = servo_serial
-        with self._wrap_socket_errors('get_servod_server_proxy()'):
-            self._server = servo_host.get_servod_server_proxy()
         self._servo_type = self.get_servo_version()
         self._power_state = _PowerStateController(self)
         self._uart = _Uart(self)
@@ -474,6 +472,11 @@ class Servo(object):
                 type(self).__name__,
                 self._servo_host.hostname,
                 self._servo_host.servo_port)
+
+    @property
+    def _server(self):
+        with self._wrap_socket_errors('get_servod_server_proxy()'):
+            return self._servo_host.get_servod_server_proxy()
 
     @contextlib.contextmanager
     def _wrap_socket_errors(self, description):

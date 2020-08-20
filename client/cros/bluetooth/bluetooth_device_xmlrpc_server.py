@@ -2908,11 +2908,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         if not expect_bt_wake and bt_caused_wake:
             raise sys_power.SuspendFailure('BT woke us unexpectedly')
 
-        if expect_bt_wake and not bt_caused_wake:
-            raise sys_power.SuspendFailure('BT should have woken us')
-
-        if bt_caused_wake and not early_wake:
-            raise sys_power.SuspendFailure('BT wake did not come early')
+        # TODO(b/160803597) - Uncomment when BT wake reason is correctly
+        # captured in powerd log.
+        #
+        # if expect_bt_wake and not bt_caused_wake:
+        #   raise sys_power.SuspendFailure('BT should have woken us')
+        #
+        # if bt_caused_wake and not early_wake:
+        #   raise sys_power.SuspendFailure('BT wake did not come early')
 
         return True
 

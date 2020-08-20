@@ -283,6 +283,10 @@ class ChromiumOSUpdater(object):
         cmd = ['rm', '-rf']
         for f in ('var_new', 'dev_image_new', '.update_available'):
             cmd += [os.path.join('/mnt/stateful_partition', f)]
+        # TODO(b/165024723): This is a temporary measure until we figure out the
+        # root cause of this bug.
+        cmd += ['/mnt/stateful_partition/dev_image/share/tast/data/chromiumos/'
+                'tast/local/bundles/']
         cmd += [_TARGET_VERSION, '2>&1']
         self._run(cmd)
 
@@ -495,8 +499,15 @@ class ChromiumOSUpdater(object):
         autoreboot_cmd = ('FILE="%s" ; [ -f "$FILE" ] || '
                           '( touch "$FILE" ; start autoreboot )')
         self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
-        kernel_utils.verify_boot_expectations(
-            expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE, self.host)
+        try:
+            kernel_utils.verify_boot_expectations(
+                expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,
+                self.host)
+        except Exception:
+            # When the system is rolled back, the provision_failed file is
+            # removed. So add it back here and re-raise the exception.
+            self._run('touch %s' % PROVISION_FAILED)
+            raise
 
         logging.debug('Cleaning up old autotest directories.')
         try:

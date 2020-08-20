@@ -13,8 +13,8 @@ import logging
 import os
 import re
 import tarfile
+import threading
 import time
-import traceback
 import xmlrpclib
 import calendar
 
@@ -147,11 +147,14 @@ class ServoHost(base_servohost.BaseServoHost):
         # get replaced.
         self.smart_usbhub = None
         self._servo = None
-        self._servod_server_proxy = None
+        self._tunnel_proxy = None
+        self._tunnel_proxy_lock = threading.Lock()
         self._initial_instance_ts = None
         # Flag to make sure that multiple calls to close do not result in the
         # logic executing multiple times.
         self._closed = False
+        # Per-thread local data
+        self._local = threading.local()
 
     def _initialize(self, servo_host='localhost',
                     servo_port=DEFAULT_PORT, servo_board=None,
@@ -259,35 +262,42 @@ class ServoHost(base_servohost.BaseServoHost):
             self._servo = None
 
 
-    def _create_servod_server_proxy(self):
-        """Create a proxy that can be used to communicate with servod server.
+    def _maybe_create_servod_ssh_tunnel_proxy(self):
+        """Create a xmlrpc proxy for use with a ssh tunnel.
+        A lock is used to safely create a singleton proxy.
+        """
+        with self._tunnel_proxy_lock:
+            if self._tunnel_proxy is None:
+                self._tunnel_proxy = self.rpc_server_tracker.xmlrpc_connect(
+                       None,
+                       self.servo_port,
+                       ready_test_name=self.SERVO_READY_METHOD,
+                       timeout_seconds=60,
+                       request_timeout_seconds=3600,
+                       server_desc=str(self))
+
+
+    def get_servod_server_proxy(self):
+        """Return a proxy if it exists; otherwise, create a new one.
+        A proxy can either be a ssh tunnel based proxy, or a httplib
+        based proxy.
 
         @returns: An xmlrpclib.ServerProxy that is connected to the servod
                   server on the host.
         """
         if (servo_constants.ENABLE_SSH_TUNNEL_FOR_SERVO
                 and not self.is_localhost()):
-            return self.rpc_server_tracker.xmlrpc_connect(
-                    None, self.servo_port,
-                    ready_test_name=self.SERVO_READY_METHOD,
-                    timeout_seconds=60,
-                    request_timeout_seconds=3600,
-                    server_desc=str(self))
+            # Check for existing ssh tunnel proxy.
+            if self._tunnel_proxy is None:
+                self._maybe_create_servod_ssh_tunnel_proxy()
+            return self._tunnel_proxy
         else:
-            remote = 'http://%s:%s' % (self.hostname, self.servo_port)
-            return xmlrpclib.ServerProxy(remote)
-
-
-    def get_servod_server_proxy(self):
-        """Return a cached proxy if exists; otherwise, create a new one.
-
-        @returns: An xmlrpclib.ServerProxy that is connected to the servod
-                  server on the host.
-        """
-        # Single-threaded execution, no race
-        if self._servod_server_proxy is None:
-            self._servod_server_proxy = self._create_servod_server_proxy()
-        return self._servod_server_proxy
+            # xmlrpc/httplib is not thread-safe, so each thread must have its
+            # own separate proxy connection.
+            if not hasattr(self._local, "_per_thread_proxy"):
+                remote = 'http://%s:%s' % (self.hostname, self.servo_port)
+                self._local._per_thread_proxy = xmlrpclib.ServerProxy(remote)
+            return self._local._per_thread_proxy
 
 
     def verify(self, silent=False):
@@ -536,11 +546,20 @@ class ServoHost(base_servohost.BaseServoHost):
         # Start servod with dual_v4 if the DUT/servo from designated pools.
         dut_host_info = self.get_dut_host_info()
         if dut_host_info:
+            # DUAL_V4: servo setup includes servo_micro and ccd_cr50
+            # connection to the DUT
+            is_dual_setup = False
             if bool(dut_host_info.pools &
                     servo_constants.POOLS_SUPPORT_DUAL_V4):
                 logging.debug('The DUT is detected in following designated'
                               ' pools %s,starting servod with DUAL_V4 option.',
                               servo_constants.POOLS_SUPPORT_DUAL_V4)
+                is_dual_setup = True
+            elif dut_host_info.attributes.get('servo_setup') == 'DUAL_V4':
+                logging.debug('The DUT servo setup specified in config as '
+                              ' "DUAL_V4"')
+                is_dual_setup = True
+            if is_dual_setup:
                 cmd += ' DUAL_V4=1'
 
         # Remove the symbolic links from the logs. This helps ensure that

@@ -697,17 +697,17 @@ class _Run(object):
 
     def verify_machine(self):
         binary = os.path.join(self.autodir, 'bin/autotest')
-        try:
-            self.host.run('ls %s > /dev/null 2>&1' % binary)
-        except:
-            raise error.AutoservInstallError(
-                "Autotest does not appear to be installed")
-
+        at_check = "test -e {}".format(binary)
         if not self.parallel_flag:
             tmpdir = os.path.join(self.autodir, 'tmp')
             download = os.path.join(self.autodir, 'tests/download')
-            self.host.run('umount %s' % tmpdir, ignore_status=True)
-            self.host.run('umount %s' % download, ignore_status=True)
+            at_check += " && umount {} && umount {}".format(tmpdir, download)
+        if self.host.run(at_check, ignore_status=True) == 1:
+            # if test -e fails, the exit code will be 1. If the umount fails,
+            # the exit code will be 32 (and we don't care).
+            raise error.AutoservInstallError(
+                "Autotest does not appear to be installed")
+
 
 
     def get_base_cmd_args(self, section):

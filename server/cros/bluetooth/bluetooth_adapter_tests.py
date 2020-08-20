@@ -956,6 +956,9 @@ class BluetoothAdapterTests(test.test):
         # default(disable).
         self.enable_disable_debug_log(enable=True)
 
+        # Re-disable cellular
+        self.enable_disable_cellular(enable=False)
+
         self.start_new_btmon()
         self.start_new_usbmon()
 
@@ -1087,6 +1090,80 @@ class BluetoothAdapterTests(test.test):
     # -------------------------------------------------------------------
     # Adater standalone tests
     # -------------------------------------------------------------------
+
+
+    def service_exists(self, service_name):
+        """Checks if a service exists on the DUT
+
+        @param service_name: name of the service
+
+        @returns: True if service status can be queried, else False
+        """
+
+        status_cmd = 'initctl status {}'.format(service_name)
+        try:
+            # Querying the status of a non-existent service throws an
+            # AutoservRunError exception.  If no exception is thrown, we know
+            # the service exists
+            self.host.run(status_cmd)
+
+        except error.AutoservRunError:
+            return False
+
+        return True
+
+
+    def service_enabled(self, service_name):
+        """Checks if a service is running on the DUT
+
+        @param service_name: name of the service
+
+        @throws: AutoservRunError is thrown if there is no service with the
+                provided name installed on the DUT.
+
+        @returns: True if service is currently running, else False
+        """
+
+        status_cmd = 'initctl status {}'.format(service_name)
+        output = self.host.run(status_cmd).stdout
+
+        return 'start/running' in output
+
+
+    def enable_disable_cellular(self, enable):
+        """Enable cellular services on the DUT
+
+        @param enable: True to enable cellular services
+                       False to disable cellular services
+
+        @returns: True if services were set successfully, else False
+        """
+        cellular_services = ['modemmanager', 'modemfwd']
+        toggle_string = 'start' if enable else 'stop'
+
+        for service in cellular_services:
+            # Some platforms will not support all services. In these cases,
+            # no need to fail, since they won't interfere with our tests
+            if not self.service_exists(service):
+                logging.debug('Service %s does not exist on DUT', service)
+                continue
+
+            # A sample call to enable or disable a service is as follows:
+            # "initctl stop modemfwd"
+            if self.service_enabled(service) != enable:
+                self.host.run('initctl {} {}'.format(toggle_string, service))
+
+            if self.service_enabled(service) != enable:
+                logging.error('Failed to set initctl service to state %d',
+                              enable)
+                return False
+
+        if enable:
+            logging.info('Cellular enabled')
+        else:
+            logging.info('Cellular disabled')
+
+        return True
 
 
     def enable_disable_debug_log(self, enable):
@@ -3997,6 +4074,9 @@ class BluetoothAdapterTests(test.test):
         if test_state == 'END':
             # Disable all the bluetooth debug logs
             self.enable_disable_debug_log(enable=False)
+
+            # Re-enable cellular services
+            self.enable_disable_cellular(enable=True)
 
             if hasattr(self, 'host'):
                 # Stop btmon process

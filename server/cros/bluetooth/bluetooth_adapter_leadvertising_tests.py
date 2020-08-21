@@ -132,15 +132,6 @@ class bluetooth_AdapterLEAdvertising(
         logging.debug("Test is supported on this kernel version")
 
 
-    def ext_adv_enabled(self):
-        """ Check if platform supports extended advertising
-
-        @returns True if extended advertising is supported, else False
-        """
-        platform = self.get_base_platform_name()
-        return platform in bluetooth_adapter_tests.EXT_ADV_MODELS
-
-
     # ---------------------------------------------------------------
     # Definitions of all test cases
     # ---------------------------------------------------------------
@@ -564,9 +555,14 @@ class bluetooth_AdapterLEAdvertising(
                                                  new_min_adv_interval_ms,
                                                  new_max_adv_interval_ms)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs)
+        # If the registration fails and extended advertising is available,
+        # there will be no events in btmon. Therefore, we only run this part of
+        # the test if extended advertising is not available, indicating that
+        # software advertisement rotation is being used.
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs)
 
         self.unregister_advertisements(advertisements)
 
@@ -800,9 +796,14 @@ class bluetooth_AdapterLEAdvertising(
                                                  new_min_adv_interval_ms,
                                                  new_max_adv_interval_ms)
 
-        self.test_check_duration_and_intervals(new_min_adv_interval_ms,
-                                               new_max_adv_interval_ms,
-                                               number_advs)
+        # If the registration fails and extended advertising is available,
+        # there will be no events in btmon. Therefore, we only run this part of
+        # the test if extended advertising is not available, indicating that
+        # software advertisement rotation is being used.
+        if not self.ext_adv_enabled():
+            self.test_check_duration_and_intervals(new_min_adv_interval_ms,
+                                                   new_max_adv_interval_ms,
+                                                   number_advs)
 
         self.unregister_advertisements(advertisements)
 
@@ -1278,20 +1279,12 @@ class bluetooth_AdapterLEAdvertising(
             self.test_case_SI200_RA3_CD_RS()
             self.test_case_SI200_RA3_CD_UA1_CD_RS()
             self.test_case_SI200_RA3_CD_UA1_CD_RA2_CD_UA4()
-
-            # TODO b/155925590 : Bluez 5.54 has a known issue where the failure
-            # on 6th adv isn't communicated back to the caller properly.
-            # Disabling test until a fix is applied
-            # self.test_case_SI200_RA5_CD_FRA1_CD_UA5()
+            self.test_case_SI200_RA5_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_RS()
             self.test_case_RA3_CD_SI200_CD_UA1_CD_RS()
             self.test_case_RA3_CD_SI200_CD_SI2000_CD_UA3()
-
-            # TODO b/155925590 : Bluez 5.54 has a known issue where the failure
-            # on 6th adv isn't communicated back to the caller properly.
-            # Disabling test until a fix is applied
-            # self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
+            self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_FSI10_CD_FSI20000_CD_UA3()
             self.test_case_SI200_RA3_CD_SR_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()

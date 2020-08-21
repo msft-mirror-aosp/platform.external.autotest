@@ -145,7 +145,7 @@ class firmware_ECPowerButton(FirmwareTest):
 
         logging.info("Shutdown when powerd is still running and wake from S5 "
                      "with short power button press.")
-        if self.servo.is_localhost():
+        if self.servo.is_localhost() and self.has_internal_display:
             self.check_state(self.debounce_power_button)
         self.switcher.mode_aware_reboot(
                 'custom',

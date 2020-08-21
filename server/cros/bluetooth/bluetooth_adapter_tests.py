@@ -627,7 +627,7 @@ class BluetoothAdapterTests(test.test):
 
     # Error messages about advertising dbus methods.
     ERROR_FAILED_TO_REGISTER_ADVERTISEMENT = (
-            'org.bluez.Error.Failed: Failed to register advertisement')
+            'org.bluez.Error.NotPermitted: Maximum advertisements reached')
     ERROR_INVALID_ADVERTISING_INTERVALS = (
             'org.bluez.Error.InvalidArguments: Invalid arguments')
 
@@ -2555,6 +2555,15 @@ class BluetoothAdapterTests(test.test):
         return min_adv_interval_ms_found, max_adv_interval_ms_found
 
 
+    def ext_adv_enabled(self):
+        """ Check if platform supports extended advertising
+
+        @returns True if extended advertising is supported, else False
+        """
+        platform = self.get_base_platform_name()
+        return platform in EXT_ADV_MODELS
+
+
     @test_retry_and_log(False)
     def test_register_advertisement(self, advertisement_data, instance_id,
                                     min_adv_interval_ms, max_adv_interval_ms):
@@ -2682,22 +2691,31 @@ class BluetoothAdapterTests(test.test):
         advertisement_not_added = not self.bluetooth_le_facade.btmon_find(
                 'Advertising Added:')
 
-        # Verify that the advertising intervals are correct.
-        min_adv_interval_ms_found, max_adv_interval_ms_found = (
-                self._verify_advertising_intervals(min_adv_interval_ms,
-                                                   max_adv_interval_ms))
-
-        # Verify advertising remains enabled.
-        advertising_enabled = self.bluetooth_le_facade.btmon_find(
-                'Advertising: Enabled (0x01)')
-
         self.results = {
                 'failed_to_register_error': failed_to_register_error,
                 'advertisement_not_added': advertisement_not_added,
+        }
+
+        # If the registration fails and extended advertising is available,
+        # there will be no events in btmon. Therefore, we only run this part of
+        # the test if extended advertising is not available, indicating that
+        # software advertisement rotation is being used.
+        if not self.ext_adv_enabled():
+            # Verify that the advertising intervals are correct.
+            min_adv_interval_ms_found, max_adv_interval_ms_found = (
+                    self._verify_advertising_intervals(min_adv_interval_ms,
+                                                       max_adv_interval_ms))
+
+            # Verify advertising remains enabled.
+            advertising_enabled = self.bluetooth_le_facade.btmon_find(
+                    'Advertising: Enabled (0x01)')
+
+            self.results.update({
                 'min_adv_interval_ms_found': min_adv_interval_ms_found,
                 'max_adv_interval_ms_found': max_adv_interval_ms_found,
                 'advertising_enabled': advertising_enabled,
-        }
+            })
+
         return all(self.results.values())
 
 

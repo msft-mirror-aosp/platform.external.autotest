@@ -656,6 +656,37 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return build_name, payload_file
 
 
+    def _restore_stateful(self):
+        """
+        Restore the stateful partition after a destructive test.
+
+        The stateful payload needs to already have been staged (e.g as part of
+        get_update_url_for_test()).
+
+        """
+        logging.info('Restoring stateful partition...')
+        _, build = tools.get_devserver_build_from_package_url(
+            self._job_repo_url)
+
+         # Setup local dir.
+        self._run(['mkdir', '-p', '-m', '1777', '/usr/local/tmp'])
+
+        # Download and extract the stateful payload.
+        update_url = self._autotest_devserver.get_update_url(build)
+        statefuldev_url = update_url.replace('update', 'static')
+        statefuldev_url += '/stateful.tgz'
+        cmd = ['curl', '--silent', '--max-time', '300',
+               statefuldev_url, '|', 'tar', '--ignore-command-error',
+               '--overwrite','--directory', '/mnt/stateful_partition', '-xz']
+        self._run(cmd)
+
+        # Touch a file so changes are picked up after reboot.
+        update_file = '/mnt/stateful_partition/.update_available'
+        self._run(['echo', '-n', 'clobber', '>', update_file])
+        self._host.reboot()
+        logging.info('Stateful restored successfully.')
+
+
     def verify_update_events(self, source_release, hostlog_filename,
                              target_release=None):
         """Compares a hostlog file against a set of expected events.
@@ -692,7 +723,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                      err_msg))
 
 
-    def get_update_url_for_test(self, job_repo_url=None, full_payload=True):
+    def get_update_url_for_test(self, job_repo_url=None, full_payload=True,
+                                stateful=False):
         """
         Returns a devserver update URL for tests that cannot use a Nebraska
         instance on the DUT for updating.
@@ -701,6 +733,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
+        @param stateful: bool whether we want to stage stateful payload too.
 
         @returns a valid devserver update URL.
 
@@ -717,8 +750,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # Stage payloads on the lab devserver.
         self._autotest_devserver = lab_devserver
-        artifact = 'full_payload' if full_payload else 'delta_payload'
-        self._autotest_devserver.stage_artifacts(build, [artifact])
+        artifacts = ['full_payload' if full_payload else 'delta_payload']
+        if stateful:
+            artifacts.append('stateful')
+        self._autotest_devserver.stage_artifacts(build, artifacts)
 
         # Use the same lab devserver to also handle the update.
         url = self._autotest_devserver.get_update_url(build)

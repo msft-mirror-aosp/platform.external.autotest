@@ -128,6 +128,9 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
     def test_better_together(self, phone):
         """Test better together"""
+        # Clean up the environment
+        self.bluetooth_facade.disconnect_device(phone.address)
+        self.bluetooth_facade.remove_device_object(phone.address)
         phone.RemoveDevice(self.bluetooth_facade.address)
         self.test_smart_unlock(address=phone.address)
 

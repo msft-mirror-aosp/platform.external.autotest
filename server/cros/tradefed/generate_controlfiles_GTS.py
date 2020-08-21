@@ -148,6 +148,7 @@ CONFIG['EXTRA_ARTIFACTS'] = {}
 CONFIG['PREREQUISITES'] = {
     'GtsGmscoreHostTestCases': ['bluetooth'],
 }
+CONFIG['USE_JDK9'] = True
 
 from generate_controlfiles_common import main
 

@@ -1342,6 +1342,13 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
+    def test_is_powered_off(self):
+        """Check if the adapter is powered off."""
+        is_powered_off = not self.bluetooth_facade.is_powered_on()
+        self.results = {'is_powered_off': is_powered_off}
+        return all(self.results.values())
+
+
     @test_retry_and_log(False)
     def test_is_facade_valid(self):
         """Checks whether the bluetooth facade is in a good state.

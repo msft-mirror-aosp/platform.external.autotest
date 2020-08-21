@@ -775,10 +775,9 @@ def count_all_cpus():
 
 def get_online_cpus():
     """
-    Return list of integer cpu numbers that are online.
+    Return frozenset of integer cpu numbers that are online.
     """
-    cpus = [int(f.split('/')[-1]) for f in glob.iglob('/dev/cpu/[0-9]*')]
-    return frozenset(cpus)
+    return frozenset(read_cpu_set('/sys/devices/system/cpu/online'))
 
 def get_cpus_filepaths_for_suffix(cpus, suffix):
     """
@@ -1366,6 +1365,24 @@ class USBSuspendStats(AbstractStats):
         return usb_stats
 
 
+def read_cpu_set(filename):
+    """
+    Parse data of form "0,2-4,9"
+
+    Return a set of ints
+    """
+    data = utils.read_file(filename)
+    ret = set()
+
+    for entry in data.split(','):
+        entry_data = entry.split('-')
+        start = end = int(entry_data[0])
+        if len(entry_data) > 1:
+          end = int(entry_data[1])
+        ret |= set(range(start, end + 1))
+    return ret
+
+
 def get_cpu_sibling_groups():
     """
     Get CPU core groups in HMP systems.
@@ -1382,15 +1399,7 @@ def get_cpu_sibling_groups():
         if c in cpus_processed:
             # This cpu is already part of a sibling group. Skip.
             continue
-        siblings_data = utils.read_file(siblings_path)
-        sibling_group = set()
-        for sibling_entry in siblings_data.split(','):
-            entry_data = sibling_entry.split('-')
-            sibling_start = sibling_end = int(entry_data[0])
-            if len(entry_data) > 1:
-              sibling_end = int(entry_data[1])
-            siblings = set(range(sibling_start, sibling_end + 1))
-            sibling_group |= siblings
+        sibling_group = read_cpu_set(siblings_path)
         cpus_processed |= sibling_group
         sibling_groups.append(frozenset(sibling_group))
     return tuple(sibling_groups)

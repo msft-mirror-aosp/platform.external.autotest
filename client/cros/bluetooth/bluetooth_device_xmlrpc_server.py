@@ -2095,7 +2095,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @param audio_data: the audio test data
         """
         if not os.path.exists(audio_data['file']):
+            data_format = dict(file_type='raw', sample_format='S16_LE',
+                               channel=audio_data['channels'],
+                               rate=audio_data['rate'])
             audio_test_data_module.GenerateAudioTestData(
+                    data_format=data_format,
                     path=audio_data['file'],
                     duration_secs=audio_data['duration'],
                     frequencies=audio_data['frequencies'])
@@ -2110,6 +2114,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @returns: True on success. False otherwise.
         """
         audio_data = json.loads(audio_data)
+        self._generate_playback_file(audio_data)
         try:
             return self._cras_test_client.start_playing_subprocess(
                     audio_data['file'],

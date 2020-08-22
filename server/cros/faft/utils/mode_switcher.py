@@ -761,22 +761,24 @@ class _BaseModeSwitcher(object):
                         come up.
         @raise ConnectionError: Failed to connect DUT.
         """
-        logging.info("-[FAFT]-[ start wait_for_client ]---")
+        logging.info("-[FAFT]-[ start wait_for_client(%ds) ]---",
+                     timeout if retry_power_on else 0)
         # Wait for the system to be powered on before trying the network
         # Skip "None" result because that indicates lack of EC or problem
         # querying the power state.
         current_timer = 0
+        power_state = self.faft_framework.get_power_state()
         while (timeout > current_timer and
-               self.faft_framework.get_power_state() not in
-               (self.faft_framework.POWER_STATE_S0, None)):
+               power_state not in (self.faft_framework.POWER_STATE_S0, None)):
                 time.sleep(2)
                 current_timer += 2
+                power_state = self.faft_framework.get_power_state()
+                logging.info('power state after retry: %s', power_state)
                 if retry_power_on:
                     logging.info("-[FAFT]-[ retry powering on the DUT ]---")
                     psc = self.servo.get_power_state_controller()
                     psc.retry_power_on()
 
-        power_state = self.faft_framework.get_power_state()
         if power_state not in (self.faft_framework.POWER_STATE_S0, None):
             raise ConnectionError('DUT unexpectedly down, '
                                   'power state is %s' % power_state)

@@ -20,6 +20,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
     import BluetoothAdapterHIDReportTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
     BluetoothAdapterQuickTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+    TABLET_MODELS
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 
 # How long for a short suspend in seconds
@@ -57,6 +59,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     def typical_use_cases_test(self):
         """Do some initialization work then start the typical MTBF test loop"""
 
+        self.is_tablet = self.host.get_model_from_cros_config() in TABLET_MODELS
         mouse = self.devices['BLE_MOUSE'][0]
 
         self.run_typical_use_cases(mouse)
@@ -201,6 +204,8 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
     def test_suspend_and_mouse_wakeup(self, mouse):
         """Test the device can be waken up by the mouse"""
+        if self.is_tablet:
+            return
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(
             suspend_time=SHORT_SUSPEND_SEC, expect_bt_wake=True)

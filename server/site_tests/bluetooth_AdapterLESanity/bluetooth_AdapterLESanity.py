@@ -18,6 +18,11 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
      EXT_ADV_MODELS
 
 
+# TODO(b/161174805) - veyron_fievel and veyron_mickey experiencing an
+# unexpected re-connect to peer, causing peer tests to fail. LE Role tests are
+# being hit especially hard, so temporarily disabling these tests on veyron
+LAB_VEYRON_MODELS = ['veyron_mickey', 'veyron_fievel']
+
 class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         BluetoothAdapterPairingTests,
         BluetoothAdapterHIDReportTests,
@@ -116,7 +121,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.test_gatt_browse(device.address)
 
 
-    @test_wrapper('LE secondary Test', devices={'BLE_KEYBOARD':1})
+    @test_wrapper('LE secondary Test', devices={'BLE_KEYBOARD':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_secondary(self):
         """Tests connection as secondary"""
 
@@ -131,7 +137,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE primary Before secondary Test',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_primary_before_secondary(self):
         """Tests connection as primary and then as secondary"""
 
@@ -152,7 +159,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE secondary Before primary Test', devices={'BLE_KEYBOARD':1,
-                                                          'BLE_MOUSE':1})
+                                                          'BLE_MOUSE':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_secondary_before_primary(self):
         """Tests connection as secondary and then as primary"""
 
@@ -172,7 +180,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
-    @test_wrapper('LE Sender Role Test', devices={'BLE_KEYBOARD':1})
+    @test_wrapper('LE Sender Role Test', devices={'BLE_KEYBOARD':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
 
@@ -188,7 +197,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE Sender Role Test During HID',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
 
@@ -209,7 +219,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE HID Test During Sender Role',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_hid_during_sender(self):
         """Tests HID device while already in Nearby Sender role"""
 
@@ -229,7 +240,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
-    @test_wrapper('LE Receiver Role Test', devices={'BLE_KEYBOARD':1})
+    @test_wrapper('LE Receiver Role Test', devices={'BLE_KEYBOARD':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
@@ -245,7 +257,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE Receiver Role Test During HID',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_receiver_during_hid(self):
         """Tests Nearby Receiver role while already connected to HID device"""
 
@@ -269,7 +282,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
     # properly resume advertising after connecting an LE device
     @test_wrapper('LE HID Test During Receiver Adv',
                   devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
-                  skip_models=EXT_ADV_MODELS)
+                  skip_models=EXT_ADV_MODELS+LAB_VEYRON_MODELS)
     def le_role_hid_during_receiver_adv(self):
         """Tests HID device while already in Nearby Receiver role adv state"""
 
@@ -290,7 +303,8 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE HID Test During Receiver Role',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=LAB_VEYRON_MODELS)
     def le_role_hid_during_receiver_connection(self):
         """Tests HID device while already in Nearby Receiver role connection"""
 

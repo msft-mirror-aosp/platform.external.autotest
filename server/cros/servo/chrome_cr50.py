@@ -1221,3 +1221,22 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return self.send_command_retry_get_output('sysinfo',
                                                   ['Reset count: (\d+)'],
                                                   safe=True)[0][1]
+
+    def check_servo_monitor(self):
+        """Returns True if cr50 can detect servo connect/disconnect"""
+        orig_dts = self._servo.get('servo_v4_dts_mode')
+        # Detach ccd so EC uart won't interfere with servo detection
+        self._servo.set_dts_mode('off')
+        self._servo.set('ec_uart_en', 'off')
+        time.sleep(self.SHORT_WAIT)
+        if self.get_ccdstate()['Servo'] != 'disconnected':
+            self._servo.set_dts_mode(orig_dts)
+            return False
+
+        self._servo.set('ec_uart_en', 'on')
+        time.sleep(self.SHORT_WAIT)
+        if self.get_ccdstate()['Servo'] != 'connected':
+            self._servo.set_dts_mode(orig_dts)
+            return False
+        self._servo.set_dts_mode(orig_dts)
+        return True

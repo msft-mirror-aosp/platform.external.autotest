@@ -131,12 +131,13 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Reconnects an A2DP device after suspend/resume. """
         raise NotImplementedError()
 
+    # TODO(b/163143005) - Hana can't handle two concurrent HID connections
     @test_wrapper('Reconnect Multiple Classic HID',
                   devices={
                           'MOUSE': 1,
                           'KEYBOARD': 1
                   },
-                  skip_models=MORPHIUS_EVT)
+                  skip_models=MORPHIUS_EVT + ['hana'])
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [

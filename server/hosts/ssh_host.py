@@ -56,6 +56,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
     This is a leaf class in an abstract class hierarchy, it must
     implement the unimplemented methods in parent classes.
     """
+    RUN_TIMEOUT = 3600
 
     def _initialize(self, hostname, *args, **dargs):
         """
@@ -65,6 +66,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 hostname: network hostname or address of remote machine
         """
         super(SSHHost, self)._initialize(hostname=hostname, *args, **dargs)
+        self._default_run_timeout = self.RUN_TIMEOUT
         self.setup_ssh()
 
 
@@ -285,6 +287,11 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         counters_inc('run', failure_name)
         return result
 
+    def set_default_run_timeout(self, timeout):
+        """Set the default timeout for run."""
+        if timeout < 0:
+            raise error.TestError('Invalid timeout %d', timeout)
+        self._default_run_timeout = timeout
 
     @THIS_IS_SLOW
     def run(self, command, timeout=None, ignore_status=False,
@@ -298,7 +305,8 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                every job, a server core dies in the lab.
         @see: common_lib.hosts.host.run()
 
-        @param timeout: command execution timeout in seconds. Default is 1 hour.
+        @param timeout: command execution timeout in seconds. Default is
+                        _default_run_timeout (1 hour).
         @param connect_timeout: ssh connection timeout (in seconds)
         @param options: string with additional ssh command options
         @param verbose: log the commands
@@ -321,7 +329,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
             command = ' '.join(command)
 
         if timeout is None:
-            timeout = 3600
+            timeout = self._default_run_timeout
         start_time = time.time()
         with metrics.SecondsTimer('chromeos/autotest/ssh/master_ssh_time',
                                   scale=0.001):

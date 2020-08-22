@@ -204,7 +204,7 @@ class bluetooth_AdapterSASanity(BluetoothAdapterQuickTests,
         self.sa_adapter_discoverable_timeout_test()
         self.sa_default_state_test()
         self.sa_valid_address_test()
-        #self.sa_dbus_api_tests()  # Disabled since tests is not stable yet.
+        self.sa_dbus_api_tests()
 
 
     def run_once(self, host, num_iterations=1, test_name=None,

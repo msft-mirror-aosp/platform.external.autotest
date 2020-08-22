@@ -94,6 +94,10 @@ class Cr50Test(FirmwareTest):
                 info=self.cr50.CAP_SETTING)
 
         self.host = host
+        # SSH commands should complete within 3 minutes. Change the default, so
+        # it doesn't take half an hour for commands to timeout when the DUT is
+        # down.
+        self.host.set_default_run_timeout(180)
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
         # Clear the FWMP, so it can't disable CCD.
         self.clear_fwmp()

@@ -1370,12 +1370,12 @@ class ServoHost(base_servohost.BaseServoHost):
             or init_servo == self.VERIFY_FAILED):
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
 
+        if ec_board == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_EC_BROKEN
         if pwr_button == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_BAD_RIBBON_CABLE
         if lid_open == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_LID_OPEN_FAILED
-        if ec_board == self.VERIFY_FAILED:
-            return servo_constants.SERVO_STATE_EC_BROKEN
 
         metrics.Counter(
             'chromeos/autotest/repair/unknown_servo_state'

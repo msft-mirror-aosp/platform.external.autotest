@@ -20,12 +20,10 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
     import BluetoothAdapterHIDReportTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
     BluetoothAdapterQuickTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+    TABLET_MODELS
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 
-# How long for a short suspend in seconds
-SHORT_SUSPEND_SEC = 10
-# The timeout in seconds for resume and sleep actions
-ACTION_TIMEOUT_SEC = 10
 # Iterations to run the short mouse report test, this equals about 10 mins
 MOUSE_TEST_ITERATION_SHORT = 15
 # Iterations to run the long mouse report test, this equals about 30 mins
@@ -57,6 +55,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     def typical_use_cases_test(self):
         """Do some initialization work then start the typical MTBF test loop"""
 
+        self.is_tablet = self.host.get_model_from_cros_config() in TABLET_MODELS
         mouse = self.devices['BLE_MOUSE'][0]
 
         self.run_typical_use_cases(mouse)
@@ -184,14 +183,14 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     def test_suspend_resume(self, device):
         """Test the device can connect after suspending and resuming"""
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(suspend_time=SHORT_SUSPEND_SEC)
+        suspend = self.suspend_async(suspend_time=15)
 
         self.test_device_set_discoverable(device, False)
 
         self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=ACTION_TIMEOUT_SEC)
+            suspend, sleep_timeout=15)
         self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=ACTION_TIMEOUT_SEC)
+            boot_id, suspend, resume_timeout=15)
 
         # LE can't reconnect without advertising/discoverable
         self.test_device_set_discoverable(device, True)
@@ -201,13 +200,15 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
     def test_suspend_and_mouse_wakeup(self, mouse):
         """Test the device can be waken up by the mouse"""
+        if self.is_tablet:
+            return
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND_SEC, expect_bt_wake=True)
+            suspend_time=60, expect_bt_wake=True)
 
         self.test_adapter_wake_enabled()
         self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=ACTION_TIMEOUT_SEC)
+            suspend, sleep_timeout=5)
 
         # Trigger peer wakeup
         peer_wake = self.device_connect_async('BLE_MOUSE', mouse,
@@ -216,7 +217,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
         # Expect a quick resume. If a timeout occurs, test fails.
         self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=ACTION_TIMEOUT_SEC,
+            boot_id, suspend, resume_timeout=20,
             fail_on_timeout=True)
 
         # Finish peer wake process

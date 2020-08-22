@@ -94,17 +94,6 @@ def restart_adb():
     utils.system('adb start-server')
 
 
-def adb_connect():
-    """Attempt to connect ADB to the Android container.
-
-    Returns true if successful. Do not call this function directly. Call
-    wait_for_adb_ready() instead.
-    """
-    if utils.system('adb connect localhost:22', ignore_status=True) != 0:
-        return False
-    return is_adb_connected()
-
-
 def is_adb_connected():
     """Return true if adb is connected to the container."""
     output = utils.system_output('adb get-state', ignore_status=True)
@@ -206,7 +195,7 @@ def _restart_adb_and_wait_for_ready(timeout):
     timeout -= (time.time() - start_time)
 
     try:
-        utils.poll_for_condition(condition=adb_connect,
+        utils.poll_for_condition(condition=is_adb_connected,
                                  timeout=timeout)
         return True
     except (utils.TimeoutError):

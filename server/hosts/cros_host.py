@@ -1034,7 +1034,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                    'I/O error when trying to write primary GPT',
                    'Input/output error while writing out',
                    'cannot read GPT header',
-                   'can not determine destination device'
+                   'can not determine destination device',
+                   'wrong fs type',
+                   'bad superblock on',
                 ]
                 has_error = [msg for msg in storage_errors if(msg in str(e))]
                 if has_error:

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2008 Google Inc, Martin J. Bligh <mbligh@google.com>,
 #                Benjamin Poirier, Ryan Stutsman
 # Released under the GPL v2
@@ -7,6 +8,10 @@ Miscellaneous small functions.
 DO NOT import this file directly - it is mixed in by server/utils.py,
 import that instead
 """
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import atexit, os, re, shutil, textwrap, sys, tempfile, types
 
@@ -68,12 +73,12 @@ def get(location, local_copy = False):
     # location is a file-like object
     if hasattr(location, "read"):
         tmpfile = os.path.join(tmpdir, "file")
-        tmpfileobj = file(tmpfile, 'w')
+        tmpfileobj = open(tmpfile, 'w')
         shutil.copyfileobj(location, tmpfileobj)
         tmpfileobj.close()
         return tmpfile
 
-    if isinstance(location, types.StringTypes):
+    if isinstance(location, (str,)):
         # location is a URL
         if location.startswith('http') or location.startswith('ftp'):
             tmpfile = os.path.join(tmpdir, os.path.basename(location))
@@ -127,7 +132,7 @@ def __clean_tmp_dirs():
     for dir in __tmp_dirs[pid]:
         try:
             shutil.rmtree(dir)
-        except OSError, e:
+        except OSError as e:
             if e.errno == 2:
                 pass
     __tmp_dirs[pid] = []
@@ -288,15 +293,15 @@ def get_public_key():
         os.path.isfile(rsa_private_key_path)
 
     if has_dsa_keypair:
-        print 'DSA keypair found, using it'
+        print('DSA keypair found, using it')
         public_key_path = dsa_public_key_path
 
     elif has_rsa_keypair:
-        print 'RSA keypair found, using it'
+        print('RSA keypair found, using it')
         public_key_path = rsa_public_key_path
 
     else:
-        print 'Neither RSA nor DSA keypair found, creating DSA ssh key pair'
+        print('Neither RSA nor DSA keypair found, creating DSA ssh key pair')
         utils.system('ssh-keygen -t dsa -q -N "" -f %s' % dsa_private_key_path)
         public_key_path = dsa_public_key_path
 

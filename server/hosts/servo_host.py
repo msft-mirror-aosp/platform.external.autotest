@@ -52,6 +52,9 @@ class ServoHost(base_servohost.BaseServoHost):
     # Timeout for initializing servo signals.
     INITIALIZE_SERVO_TIMEOUT_SECS = 60
 
+    # Default timeout for run terminal command.
+    DEFAULT_TERMINAL_TIMEOUT = 30
+
     # Ready test function
     SERVO_READY_METHOD = 'get_version'
 
@@ -110,6 +113,10 @@ class ServoHost(base_servohost.BaseServoHost):
               # Lastly, we get the MCU's console line.
               r'(?P<%s>.+$)' % (MCU_GROUP, LINE_GROUP))
     MCU_EXTRACTOR = re.compile(MCU_RE)
+
+    # Regex to detect timeout messages when USBC pigtail has timeout issue.
+    # e.g.:  [475635.427072 PD TMOUT RX 1/1]
+    USBC_PIGTAIL_TIMEOUT_RE = r'\[[\d \.]{1,20}(PD TMOUT RX 1\/1)\]'
 
     # Suffix to identify compressed logfiles.
     COMPRESSION_SUFFIX = '.tbz2'
@@ -630,6 +637,76 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.error('Unexpected error occurred from usbhub control, please'
                       ' file a bug and inform chrome-fleet-software@ team!')
 
+    def _is_usbc_pigtail_connection_timeout(self):
+        """Check if servo has issue with USBC pigtail connection timeout.
+
+        The usb_console has to be clean for good servo. If console generate
+        messages like (below) then issue is present:
+        [475635.427072 PD TMOUT RX 1/1]
+        RXERR1 Preamble
+        [475635.476044 PD TMOUT RX 1/1]
+        RXERR1 Preamble
+        """
+        if not self.servo_serial:
+            return False
+        logging.debug('Starting check if USBC pigtail connection timeout.')
+        try:
+            cmd = 'usb_console -d 18d1:501b -s %s' % self.servo_serial
+            resp = self.run(cmd, timeout=self.DEFAULT_TERMINAL_TIMEOUT)
+            result_lines = resp.stdout.splitlines()
+            for line in result_lines:
+                if re.match(self.USBC_PIGTAIL_TIMEOUT_RE, line):
+                    return True
+        except Exception as e:
+            logging.debug('(Non-critical) %s.', e)
+        return False
+
+    def _reset_usbc_pigtail_connection(self):
+        """Reset USBC pigtail connection on servo board.
+
+        To reset need to run 'cc off' and then 'cc srcdts' in usb_console.
+        """
+        if not self.servo_serial:
+            return False
+        logging.debug('Starting reset USBC pigtail connection.')
+        def _run_command(cc_command):
+            """Run configuration chanel commands.
+
+            @returns: True if pas successful and False if fail.
+            """
+            try:
+                cmd = (r"echo 'cc %s' | usb_console -d 18d1:501b -s %s"
+                       % (cc_command, self.servo_serial))
+                resp = self.run(cmd, timeout=self.DEFAULT_TERMINAL_TIMEOUT)
+                return True
+            except Exception as e:
+                logging.info('(Non-critical) %s.', e)
+            return False
+
+        logging.info('Turn off configuration channel. And wait 5 seconds.')
+        if _run_command('off'):
+            # wait till command will be effected
+            time.sleep(5)
+            logging.info('Turn on configuration channel. '
+                          'And wait 15 seconds.')
+            if _run_command('srcdts'):
+                # wait till command will be effected
+                time.sleep(15)
+
+    def reset_usbc_pigtail_connection_on_need(self):
+        """Reset USBC pitgtail issue if it present."""
+        if not self.is_labstation():
+            logging.info('USBC pigtail reset applicable only for labstations')
+            return
+
+        if self._is_usbc_pigtail_connection_timeout():
+            logging.info('USBC pigtail issue detected on servo.')
+            self._reset_usbc_pigtail_connection()
+            fields = self._get_host_metrics_data()
+            fields['success'] = not self._is_usbc_pigtail_connection_timeout()
+            metrics.Counter(
+                'chromeos/autotest/repair/servo_usbc/reset'
+                ).increment(fields=fields)
 
     def _get_servo_usb_devnum(self):
         """Helper function to collect current usb devnum of servo.
@@ -1293,12 +1370,12 @@ class ServoHost(base_servohost.BaseServoHost):
             or init_servo == self.VERIFY_FAILED):
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
 
+        if ec_board == self.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_EC_BROKEN
         if pwr_button == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_BAD_RIBBON_CABLE
         if lid_open == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_LID_OPEN_FAILED
-        if ec_board == self.VERIFY_FAILED:
-            return servo_constants.SERVO_STATE_EC_BROKEN
 
         metrics.Counter(
             'chromeos/autotest/repair/unknown_servo_state'
@@ -1504,6 +1581,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
             # Reset servo if the servo is locked, as we check if the servohost
             # is up, if the servohost is labstation and if the servohost is in
             # lab inside the locking logic.
+            newhost.reset_usbc_pigtail_connection_on_need()
             newhost.reset_servo()
         else:
             try:

@@ -26,6 +26,7 @@ Multiple btpeer tests:
     - Two classic HID
     - Two classic LE
 """
+import time
 
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
      BluetoothAdapterTests, TABLET_MODELS
@@ -35,6 +36,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
+PROFILE_CONNECT_WAIT = 15
 SUSPEND_SEC = 15
 EXPECT_NO_WAKE_SUSPEND_SEC = 30
 EXPECT_PEER_WAKE_SUSPEND_SEC = 60
@@ -78,6 +80,15 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                 self.test_discover_and_pair(device)
                 self.test_device_set_discoverable(device, False)
                 self.test_connection_by_adapter(device.address)
+
+                # Profile connection may not have completed yet and this will
+                # race with a subsequent disconnection (due to suspend). Use the
+                # device test to force profile connect or wait if no test was
+                # given.
+                if device_test is not None:
+                    device_test(device)
+                else:
+                    time.sleep(PROFILE_CONNECT_WAIT)
 
             # Trigger suspend, wait for regular resume, verify we can reconnect
             # and run device specific test
@@ -131,12 +142,13 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """ Reconnects an A2DP device after suspend/resume. """
         raise NotImplementedError()
 
+    # TODO(b/163143005) - Hana can't handle two concurrent HID connections
     @test_wrapper('Reconnect Multiple Classic HID',
                   devices={
                           'MOUSE': 1,
                           'KEYBOARD': 1
                   },
-                  skip_models=MORPHIUS_EVT)
+                  skip_models=MORPHIUS_EVT + ['hana'])
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [

@@ -100,6 +100,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         flag='Quick Sanity', start_browser=False):
         """Inits the test batch"""
         self.host = host
+        self.start_browser = start_browser
         self.in_lab = site_utils.host_in_lab(self.host.hostname)
         #factory can not be declared as local variable, otherwise
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
@@ -107,7 +108,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         try:
             self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                    no_chrome = not start_browser, disable_arc=True)
+                    no_chrome=not self.start_browser,
+                    disable_arc=True)
             self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
 
         # For b:142276989, catch 'object_path' fault and reboot to prevent

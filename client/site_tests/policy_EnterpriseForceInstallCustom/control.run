@@ -4,6 +4,7 @@
 
 AUTHOR = 'dbeckett'
 NAME = 'policy_EnterpriseForceInstallCustom.run'
+ATTRIBUTES = 'suite:ent-nightly, suite:policy'
 TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'

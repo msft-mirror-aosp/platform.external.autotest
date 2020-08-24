@@ -1,11 +1,6 @@
-# Lint as: python2, python3
 # Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import copy
@@ -25,8 +20,6 @@ from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server import hosts
 from autotest_lib.server import site_linux_system
 from autotest_lib.server.cros import dnsname_mangler
-import six
-from six.moves import range
 
 
 StationInstance = collections.namedtuple('StationInstance',
@@ -299,7 +292,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         # Generate hostapd.conf.
         self.router.run("cat <<EOF >%s\n%s\nEOF\n" %
             (conf_file, '\n'.join(
-            "%s=%s" % kv for kv in six.iteritems(hostapd_conf_dict))))
+            "%s=%s" % kv for kv in hostapd_conf_dict.iteritems())))
 
         # Run hostapd.
         logging.info('Starting hostapd on %s(%s) channel=%s...',
@@ -796,7 +789,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         @return string interface name (e.g. 'managed0').
 
         """
-        if ap_num not in list(range(len(self.hostapd_instances))):
+        if ap_num not in range(len(self.hostapd_instances)):
             raise error.TestFail('Invalid instance number (%d) with %d '
                                  'instances configured.' %
                                  (ap_num, len(self.hostapd_instances)))
@@ -812,7 +805,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         @return string interface name (e.g. 'managed0').
 
         """
-        if instance not in list(range(len(self.station_instances))):
+        if instance not in range(len(self.station_instances)):
             raise error.TestFail('Invalid instance number (%d) with %d '
                                  'instances configured.' %
                                  (instance, len(self.station_instances)))

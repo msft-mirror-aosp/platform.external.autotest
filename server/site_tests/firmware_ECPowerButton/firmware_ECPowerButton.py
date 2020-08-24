@@ -75,7 +75,11 @@ class firmware_ECPowerButton(FirmwareTest):
         self.servo.power_key(shutdown_powerkey_duration)
 
         # Send a new line to wakeup EC from deepsleep,
-        # it can happen if the EC console is not used for some time
+        # it can happen if the EC console is not used for some time.
+        # Offset the wake_delay time by the delay (if any) waiting for the AP
+        # to start, so that the wake_delay time is the time to wait after the
+        # AP is actually up and running.
+        wake_delay += self.faft_config.delay_powerinfo_stable
         if wake_delay > 2:
             Timer(wake_delay - 1, self.ec.send_command, [""]).start()
 

@@ -767,6 +767,8 @@ class _BaseModeSwitcher(object):
         # Skip "None" result because that indicates lack of EC or problem
         # querying the power state.
         current_timer = 0
+        self.faft_framework.wait_for('delay_powerinfo_stable',
+                                     'checking power state')
         power_state = self.faft_framework.get_power_state()
         while (timeout > current_timer and
                power_state not in (self.faft_framework.POWER_STATE_S0, None)):

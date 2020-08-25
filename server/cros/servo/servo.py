@@ -1351,16 +1351,20 @@ class Servo(object):
                     self._servo_type)
 
 
-    def program_bios(self, image, rw_only=False):
+    def program_bios(self, image, rw_only=False, copy_image=True):
         """Program bios on DUT with given image.
 
         @param image: a string, file name of the BIOS image to program
                       on the DUT.
         @param rw_only: True to only program the RW portion of BIOS.
+        @param copy_image: True indicates we need scp the image to servohost
+                           while False means the image file is already on
+                           servohost.
 
         """
         self._initialize_programmer()
-        if not self.is_localhost():
+        # We don't need scp if test runs locally.
+        if copy_image and not self.is_localhost():
             image = self._scp_image(image)
         if rw_only:
             self._programmer_rw.program_bios(image)
@@ -1368,16 +1372,19 @@ class Servo(object):
             self._programmer.program_bios(image)
 
 
-    def program_ec(self, image, rw_only=False):
+    def program_ec(self, image, rw_only=False, copy_image=True):
         """Program ec on DUT with given image.
 
         @param image: a string, file name of the EC image to program
                       on the DUT.
         @param rw_only: True to only program the RW portion of EC.
-
+        @param copy_image: True indicates we need scp the image to servohost
+                           while False means the image file is already on
+                           servohost.
         """
         self._initialize_programmer()
-        if not self.is_localhost():
+        # We don't need scp if test runs locally.
+        if copy_image and not self.is_localhost():
             image = self._scp_image(image)
         if rw_only:
             self._programmer_rw.program_ec(image)

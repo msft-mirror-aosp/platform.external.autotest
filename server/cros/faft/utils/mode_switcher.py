@@ -7,6 +7,8 @@ import time
 
 from autotest_lib.client.common_lib import error
 
+DEBOUNCE_STATE = 'debouncing'
+
 class ConnectionError(Exception):
     """Raised on an error of connecting DUT."""
     pass
@@ -752,13 +754,18 @@ class _BaseModeSwitcher(object):
         self.bypasser.trigger_dev_to_normal()
 
 
-    def wait_for_client(self, timeout=180, retry_power_on=False):
+    def wait_for_client(self, timeout=180, retry_power_on=False,
+                        debounce_power_state=True):
         """Wait for the client to come back online.
 
         New remote processes will be launched if their used flags are enabled.
 
         @param timeout: Time in seconds to wait for the client SSH daemon to
                         come up.
+        @param retry_power_on: Try to power on the DUT if it isn't in S0.
+        @param debounce_power_state: Wait until power_state is the same two
+                                     times in a row to determine the actual
+                                     power_state.
         @raise ConnectionError: Failed to connect DUT.
         """
         logging.info("-[FAFT]-[ start wait_for_client(%ds) ]---",
@@ -770,17 +777,39 @@ class _BaseModeSwitcher(object):
         self.faft_framework.wait_for('delay_powerinfo_stable',
                                      'checking power state')
         power_state = self.faft_framework.get_power_state()
+
+        # The device may transition between states. Wait until the power state
+        # is stable for two seconds before determining the state.
+        if debounce_power_state:
+            last_state = power_state
+            power_state = DEBOUNCE_STATE
+
         while (timeout > current_timer and
                power_state not in (self.faft_framework.POWER_STATE_S0, None)):
                 time.sleep(2)
                 current_timer += 2
                 power_state = self.faft_framework.get_power_state()
-                logging.info('power state after retry: %s', power_state)
-                if retry_power_on:
+
+                # If the state changed, debounce it.
+                if debounce_power_state and power_state != last_state:
+                    last_state = power_state
+                    power_state = DEBOUNCE_STATE
+
+                logging.info('power state: %s', power_state)
+
+                # Only power-on the device if it has been consistently out of
+                # S0.
+                if (retry_power_on and
+                    power_state not in (self.faft_framework.POWER_STATE_S0,
+                                        None, DEBOUNCE_STATE)):
                     logging.info("-[FAFT]-[ retry powering on the DUT ]---")
                     psc = self.servo.get_power_state_controller()
                     psc.retry_power_on()
 
+        # Use the last state if the device didn't reach a stable state in
+        # timeout seconds.
+        if power_state == DEBOUNCE_STATE:
+            power_state = last_state
         if power_state not in (self.faft_framework.POWER_STATE_S0, None):
             raise ConnectionError('DUT unexpectedly down, '
                                   'power state is %s' % power_state)

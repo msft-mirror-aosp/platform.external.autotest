@@ -16,6 +16,17 @@ _COMMON_DEPS = {
 }
 
 
+def _define_test(
+    name,
+    *,
+    suites = [],
+):
+    return metadata_pb.Test(
+        name = _TEST_NAME_PREFIX + name,
+        attributes = [metadata_pb.Attribute(name = "suite:" + s)
+                      for s in suites],
+    )
+
 def _define_client_test(
     test_name,
     purpose,
@@ -67,4 +78,5 @@ def _define_client_test(
 
 test_common = struct(
     define_client_test = _define_client_test,
+    define_test = _define_test,
 )

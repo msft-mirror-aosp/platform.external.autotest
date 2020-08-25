@@ -161,9 +161,14 @@ class FirmwareRepair(hosts.RepairAction):
     This repair method only applies to DUTs used for FAFT.
     """
     def _get_stable_build(self, host):
-        raise NotImplementedError('Class %s does not implement '
-                                  '_get_stable_build()'
-                                   % type(self).__name__)
+        raise NotImplementedError(
+                  'Class %s does not implement _get_stable_build()'
+                  % type(self).__name__)
+
+    def _run_repair(self, host, build):
+        raise NotImplementedError(
+                  'Class %s does not implement _run_repair()'
+                  % type(self).__name__)
 
     def repair(self, host):
         repair_utils.require_servo(host, ignore_state=True)
@@ -173,7 +178,7 @@ class FirmwareRepair(hosts.RepairAction):
                   'Failed to find stable firmware build for %s, if the DUT is'
                   ' in faft-*pool, faft stable_version needs to be set.'
                    % host.hostname, 'cannot find firmware stable_version')
-        host.firmware_install(build)
+        self._run_repair(host, build)
 
 
 class FaftFirmwareRepair(FirmwareRepair):
@@ -183,6 +188,9 @@ class FaftFirmwareRepair(FirmwareRepair):
     def _get_stable_build(self, host):
         info = host.host_info_store.get()
         return afe_utils.get_stable_faft_version_v2(info)
+
+    def _run_repair(self, host, build):
+        host.firmware_install(build)
 
     def _is_applicable(self, host):
         return _is_firmware_testing_device(host)
@@ -201,6 +209,27 @@ class GeneralFirmwareRepair(FirmwareRepair):
     def _get_stable_build(self, host):
         # Use firmware in current stable os build.
         return host.get_cros_repair_image_name()
+
+    def _run_repair(self, host, build):
+        # As GeneralFirmwareRepair is the last repair action, we expect
+        # stable_version os image is loaded on usbkey during other repair
+        # action runs. And there is also no point to repeat and waste time if
+        # download image to usbkey failed in other repair actions.
+        if host._servo_host.validate_image_usbkey() != build:
+            raise hosts.AutoservRepairError('%s is expected to be preloaded,'
+                      'however it\'s not found on the usbkey' % build,
+                      'image not loaded on usbkey')
+        ec_image, bios_image = host._servo_host.prepare_repair_firmware_image()
+        if ec_image:
+            logging.info('Attempting to flash ec firmware...')
+            host.servo.program_ec(ec_image, copy_image=False)
+        if bios_image:
+            logging.info('Attempting to flash bios firmware...')
+            host.servo.program_bios(bios_image, copy_image=False)
+
+        logging.info('Cold resetting DUT through servo...')
+        host.servo.get_power_state_controller().reset()
+        host.wait_up(timeout=host.BOOT_TIMEOUT)
 
     def _is_applicable(self, host):
         return not _is_firmware_testing_device(host)

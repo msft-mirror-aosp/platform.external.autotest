@@ -12,5 +12,6 @@ def define_tests():
         test_common.define_test(
             'detachablebase/TriggerHammerd',
             suites = ['bvt-perbuild'],
+            main_package = 'autotest_lib.client.site_tests.detachablebase_TriggerHammerd.detachablebase_TriggerHammerd',
         )
     ]

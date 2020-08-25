@@ -16,7 +16,8 @@ class ControlFileError(Exception):
   """Generic error from this package."""
 
 
-Control = collections.namedtuple('Control', 'path, category, name, suites')
+Control = collections.namedtuple('Control',
+                                 'path, category, name, suites, main_package')
 
 
 def load_all() -> List[Control]:
@@ -55,6 +56,7 @@ def _load_one(path: str) -> Control:
       category=category,
       name=name,
       suites=_extract_suites(module),
+      main_package=_extract_main_package(path, module) or '',
   )
 
 
@@ -129,3 +131,48 @@ def _extract_suites(module: ast.Module) -> List[str]:
     if attr.startswith('suite:'):
       suites.append(attr[_SUITE_PREFIX_LEN:])
   return suites
+
+
+def _extract_main_package(path: str, module: ast.Module) -> Optional[str]:
+  fname = _extract_main_file(path, module)
+  if fname is None:
+    return None
+  relpath = os.path.relpath(os.path.dirname(path), _ROOT_DIR)
+  assert '.' not in relpath
+  return 'autotest_lib.%s.%s' % (relpath.replace('/', '.'), fname)
+
+
+def _extract_main_file(path: str, module: ast.Module) -> Optional[str]:
+  calls = _find_run_test_calls(module)
+  if not calls:
+    logging.warning('Found no job.run_test() calls in %s', path)
+    return None
+  if len(calls) > 1:
+    logging.warning('Found %d job.run_test() calls in %s, want 1', len(calls),
+                    path)
+    return None
+  return _extract_run_test_target(path, calls[0])
+
+
+def _find_run_test_calls(module: ast.Module) -> List[ast.Call]:
+  calls = []
+  for stmt in module.body:
+    if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+      call = stmt.value
+      func = call.func
+      if (isinstance(func, ast.Attribute) and func.attr == 'run_test' and
+          isinstance(func.value, ast.Name) and func.value.id == 'job'):
+        calls.append(call)
+  return calls
+
+
+def _extract_run_test_target(path: str, call: ast.Call) -> Optional[str]:
+  if len(call.args) != 1:
+    logging.warning('job.run_test() has %d arguments in %s, want 1',
+                    len(call.args), path)
+    return None
+  arg = call.args[0]
+  if not isinstance(arg, ast.Constant):
+    logging.warning('job.run_test() has a non constant argument in %s', path)
+    return None
+  return arg.value

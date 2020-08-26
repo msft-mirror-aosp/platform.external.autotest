@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_GTS_R.8.0_r1.GtsPlacementTestCases'
-ATTRIBUTES = 'suite:arc-cts-r, suite:bvt-perbuild'
+ATTRIBUTES = 'suite:arc-cts-r'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
@@ -20,7 +20,6 @@ def run_TS(machine):
         'cheets_GTS_R',
         hosts=host_list,
         iterations=1,
-        max_retry=3,
         tag='8.0_r1.GtsPlacementTestCases',
         test_name='cheets_GTS_R.8.0_r1.GtsPlacementTestCases',
         authkey='gs://chromeos-arc-images/cts/bundle/gts-arc.json',

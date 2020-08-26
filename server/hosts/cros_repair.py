@@ -673,8 +673,15 @@ class ServoCr50RebootRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        host.servo.get_power_state_controller().cr50_reset()
-        self._check_reset_success(host)
+        try:
+            host.servo.get_power_state_controller().cr50_reset()
+            self._check_reset_success(host)
+        finally:
+            # cr50 reset will clear some some init like `ccd testlab open`
+            # so we want to re-initialize servo after cr50 reset if the main
+            # device is ccd.
+            if host.servo.main_device_is_ccd():
+                host.servo.initialize_dut()
 
     def _is_applicable(self, host):
         if host.servo:

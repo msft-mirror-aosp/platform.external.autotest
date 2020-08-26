@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'moblab/StorageQual',
             suites = ['moblab_storage_qual'],
-            main_package = '',
         )
     ]

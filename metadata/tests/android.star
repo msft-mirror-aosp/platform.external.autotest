@@ -12,16 +12,13 @@ def define_tests():
         test_common.define_test(
             'android/CrashLogging',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'android/DummyTest',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'android/Invariants',
             suites = [],
-            main_package = '',
         )
     ]

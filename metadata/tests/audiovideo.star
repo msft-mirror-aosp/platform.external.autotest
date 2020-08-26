@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'audiovideo/AVSyncInternalDisplayAudioJack',
             suites = ['chameleon_audiovideo'],
-            main_package = '',
         )
     ]

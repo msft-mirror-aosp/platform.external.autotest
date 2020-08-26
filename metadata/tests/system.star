@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'system/ColdBoot',
             suites = ['experimental'],
-            main_package = '',
         )
     ]

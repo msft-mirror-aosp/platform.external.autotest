@@ -12,36 +12,29 @@ def define_tests():
         test_common.define_test(
             'servo/ConsoleStress',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'servo/LabControlVerification',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'servo/LabstationVerification',
             suites = ['labstation_verification'],
-            main_package = '',
         ),
         test_common.define_test(
             'servo/LogGrab',
             suites = ['servo_lab'],
-            main_package = '',
         ),
         test_common.define_test(
             'servo/USBInstall',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'servo/USBMuxVerification',
             suites = ['servo_lab'],
-            main_package = '',
         ),
         test_common.define_test(
             'servo/Verification',
             suites = ['servo_verification'],
-            main_package = '',
         )
     ]

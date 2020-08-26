@@ -12,11 +12,9 @@ def define_tests():
         test_common.define_test(
             'p2p/ConsumeFiles',
             suites = ['bvt-perbuild'],
-            main_package = 'autotest_lib.client.site_tests.p2p_ConsumeFiles.p2p_ConsumeFiles',
         ),
         test_common.define_test(
             'p2p/EndToEndTest',
             suites = [],
-            main_package = '',
         )
     ]

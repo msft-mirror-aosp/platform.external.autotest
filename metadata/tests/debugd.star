@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'debugd/DevTools',
             suites = [],
-            main_package = 'autotest_lib.server.site_tests.debugd_DevTools.debugd_DevTools',
         )
     ]

@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'cfm/AutotestSmokeTest',
             suites = ['bluestreak-pre-cq', 'hotrod'],
-            main_package = 'autotest_lib.client.site_tests.cfm_AutotestSmokeTest.cfm_AutotestSmokeTest',
         )
     ]

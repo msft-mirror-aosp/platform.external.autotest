@@ -12,11 +12,9 @@ def define_tests():
         test_common.define_test(
             'infra/FirmwareAutoupdate',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'infra/TLSExecDUTCommand',
             suites = ['ent-nightly'],
-            main_package = '',
         )
     ]

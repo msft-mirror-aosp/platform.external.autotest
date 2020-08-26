@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'autotest/SyncCount',
             suites = ['bvt-perbuild', 'push_to_prod'],
-            main_package = '',
         )
     ]

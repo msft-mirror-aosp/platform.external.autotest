@@ -12,26 +12,21 @@ def define_tests():
         test_common.define_test(
             'telemetry/AFDOGenerate',
             suites = ['AFDO_record'],
-            main_package = '',
         ),
         test_common.define_test(
             'telemetry/AFDOGenerateClient',
             suites = ['AFDO_page_replay'],
-            main_package = 'autotest_lib.client.site_tests.telemetry_AFDOGenerateClient.telemetry_AFDOGenerateClient',
         ),
         test_common.define_test(
             'telemetry/Crosperf',
             suites = [],
-            main_package = '',
         ),
         test_common.define_test(
             'telemetry/Sanity',
             suites = ['bvt-perbuild', 'smoke'],
-            main_package = 'autotest_lib.client.site_tests.telemetry_Sanity.telemetry_Sanity',
         ),
         test_common.define_test(
             'telemetry/ScrollingActionTests',
             suites = [],
-            main_package = '',
         )
     ]

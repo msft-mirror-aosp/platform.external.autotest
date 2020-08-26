@@ -12,9 +12,11 @@ def define_tests():
         test_common.define_test(
             'usbpd/DisplayPortSink',
             suites = ['experimental'],
+            main_package = 'autotest_lib.client.site_tests.usbpd_DisplayPortSink.usbpd_DisplayPortSink',
         ),
         test_common.define_test(
             'usbpd/GFU',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.usbpd_GFU.usbpd_GFU',
         )
     ]

@@ -12,5 +12,6 @@ def define_tests():
         test_common.define_test(
             'performance/Tracker',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.performance_Tracker.performance_Tracker',
         )
     ]

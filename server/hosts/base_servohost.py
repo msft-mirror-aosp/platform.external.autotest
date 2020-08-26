@@ -528,3 +528,29 @@ class BaseServoHost(ssh_host.SSHHost):
             run_args['options'] = options
             run_args['ssh_failure_retry_ok'] = ssh_failure_retry_ok
             return super(BaseServoHost, self).run(**run_args)
+
+    def _mount_drive(self, src_path, dst_path):
+        """Mount an external drive on servohost.
+
+        @param: src_path  the drive path to mount(e.g. /dev/sda3).
+        @param: dst_path  the destination directory on servohost to mount
+                          the drive.
+
+        @returns: True if mount success otherwise False.
+        """
+        # Make sure the dst dir exists.
+        self.run('mkdir -p %s' % dst_path)
+
+        result = self.run('mount -o ro %s %s' % (src_path, dst_path),
+                          ignore_status=True)
+        return result.exit_status == 0
+
+    def _unmount_drive(self, mount_path):
+        """Unmount a drive from servohost.
+
+        @param: mount_path  the path on servohost to unmount.
+
+        @returns: True if unmount success otherwise False.
+        """
+        result = self.run('umount %s' % mount_path, ignore_status=True)
+        return result.exit_status == 0

@@ -628,7 +628,7 @@ class ServoSysRqRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        repair_utils.require_servo(host)
+        repair_utils.require_servo(host, ignore_state=True)
         # Press 3 times Alt+VolUp+X
         # no checking DUT health between each press as
         # killing Chrome is not really likely to fix the DUT SSH.
@@ -654,7 +654,7 @@ class ServoResetRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        repair_utils.require_servo(host)
+        repair_utils.require_servo(host, ignore_state=True)
         host.servo.get_power_state_controller().reset()
         self._check_reset_success(host)
 

@@ -343,6 +343,16 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         self.le_auto_reconnect()
         self.le_discovery_test()
 
+        # Controller role tests
+        self.le_role_hid_during_receiver_adv()
+        self.le_role_hid_during_sender()
+        self.le_role_primary_before_secondary()
+        self.le_role_receiver()
+        self.le_role_receiver_during_hid()
+        self.le_role_secondary()
+        self.le_role_sender()
+        self.le_role_sender_during_hid()
+
 
     def run_once(self, host, num_iterations=1, test_name=None,
                  flag='Quick Sanity'):

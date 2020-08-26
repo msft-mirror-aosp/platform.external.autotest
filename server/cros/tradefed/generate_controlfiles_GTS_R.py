@@ -68,27 +68,14 @@ CONFIG['BVT_TIMEOUT'] = 0.1
 # We allow a very long runtime for qualification (1 day).
 CONFIG['QUAL_TIMEOUT'] = 24
 
-CONFIG['QUAL_BOOKMARKS'] = sorted([
-    'A',  # A bookend to simplify partition algorithm.
-    'GtsExoPlayerTestCases',
-    'GtsMediaTestCases',
-    'GtsMediaTestCasesz',  # runs the biggest module in a single job.
-    'zzzzz'  # A bookend to simplify algorithm.
-])
+# TODO(kinab): Set up when we move the test to arc-gts-qual
+CONFIG['QUAL_BOOKMARKS'] = sorted([])
 
 CONFIG['SMOKE'] = []
 
 CONFIG['BVT_ARC'] = []
 
-CONFIG['BVT_PERBUILD'] = [
-    'GtsAdminTestCases',
-    'GtsMemoryHostTestCases',
-    'GtsMemoryTestCases',
-    'GtsNetTestCases',
-    'GtsOsTestCases',
-    'GtsPlacementTestCases',
-    'GtsPrivacyTestCases',
-]
+CONFIG['BVT_PERBUILD'] = []
 
 CONFIG['NEEDS_POWER_CYCLE'] = []
 

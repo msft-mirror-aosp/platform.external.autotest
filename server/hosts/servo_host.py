@@ -14,6 +14,7 @@ import os
 import re
 import tarfile
 import threading
+import json
 import time
 import xmlrpclib
 import calendar
@@ -329,6 +330,8 @@ class ServoHost(base_servohost.BaseServoHost):
             if self._is_critical_error(e):
                 raise
 
+    def _get_default_usbkey_mount_path(self):
+        return '/media/servo_usb/%s' % self.servo_port
 
     def get_image_name_from_usbkey(self, usbkey_dev):
         """Mount usb drive and check ChromeOS image name on it if there is
@@ -342,23 +345,18 @@ class ServoHost(base_servohost.BaseServoHost):
                   error occurred.
         """
         logging.info('Checking ChromeOS image name on usbkey.')
-        usb_mount_path = '/media/servo_usb/%s' % self.servo_port
-        unmount_cmd = 'umount %s' % usb_mount_path
-        # ChromeOS root fs is in /dev/sdx3
-        mount_cmd = 'mount -o ro %s3 %s' % (usbkey_dev, usb_mount_path)
+        mount_dst = self._get_default_usbkey_mount_path()
         # Unmount if there is an existing stale mount.
-        self.run(unmount_cmd, ignore_status=True)
-        # Create if the mount point is not existing.
-        self.run('mkdir -p %s' % usb_mount_path)
+        self._unmount_drive(mount_dst)
+        # ChromeOS root fs is in /dev/sdx3
+        mount_src = usbkey_dev + '3'
         try:
-            # Attempt to mount the usb drive.
-            mount_result = self.run(mount_cmd, ignore_status=True)
-            if mount_result.exit_status != 0:
-                logging.error('Unexpected error occurred on mount usb drive.')
+            if not self._mount_drive(mount_src, mount_dst):
+                logging.debug('Unexpected error occurred on mount usb drive.')
                 return ''
 
             release_content = self.run(
-                'cat %s/etc/lsb-release' % usb_mount_path,
+                'cat %s/etc/lsb-release' % mount_dst,
                 ignore_status=True).stdout.strip()
 
             if not re.search(r'RELEASE_TRACK=.*test', release_content):
@@ -369,8 +367,78 @@ class ServoHost(base_servohost.BaseServoHost):
                 lsb_release_content=release_content)
         finally:
             logging.debug('Image check compeleted, unmounting the usb drive.')
-            self.run(unmount_cmd, ignore_status=True)
+            self._unmount_drive(mount_dst)
 
+    def _extract_firmware_image_from_usbkey(self, fw_dst):
+        """Extract firmware images from the usbkey on servo, this method
+        assumes there is already a ChromeOS test image staged on servo.
+
+        @param: fw_dst  the path that we'll copy firmware images to.
+
+        @returns: a json format string of firmware manifest data.
+        """
+        usbkey_dev = self._probe_and_validate_usb_dev()
+        if not usbkey_dev:
+            raise hosts.AutoservRepairError('Unexpected error occurred when'
+                      ' probe usbkey dev path, please check logs for detail.')
+
+        mount_dst = self._get_default_usbkey_mount_path()
+        # Unmount if there is an existing stale mount.
+        self._unmount_drive(mount_dst)
+        # ChromeOS root fs is in /dev/sdx3
+        mount_src = usbkey_dev + '3'
+        try:
+            if not self._mount_drive(mount_src, mount_dst):
+                raise hosts.AutoservRepairError('Failed to extract firmware'
+                          ' image; Unable to mount %s.' % usbkey_dev,
+                          'unable to mount usbkey')
+            updater_bin = os.path.join(mount_dst,
+                                       'usr/sbin/chromeos-firmwareupdate')
+            self.run('%s --unpack %s' % (updater_bin, fw_dst))
+            return self.run('%s --manifest' % updater_bin).stdout
+        finally:
+            self._unmount_drive(mount_dst)
+
+    def prepare_repair_firmware_image(self, fw_dst=None):
+        """Prepare firmware image on the servohost for auto repair process
+        to consume.
+
+        @param: fw_dst  the path that we want to store firmware image on
+                        the servohost.
+
+        @returns: A tuple that containes ec firmware image path and bios
+                  firmware image path on the servohost, or None if type of
+                  image is not available based on manifest and dut's model.
+        """
+        model = self.servo_model or self._dut_host_info.model
+        if not model:
+            raise hosts.AutoservRepairError(
+                      'Could not determine DUT\'s model.',
+                      'model infomation unknown')
+
+        if not fw_dst:
+            fw_dst = '/tmp/firmware_image/%s' % self.servo_port
+        # Cleanup and re-create dst path to have a fresh start.
+        self.run('rm -rf %s' % fw_dst)
+        self.run('mkdir -p %s' % fw_dst)
+
+        manifest = json.loads(self._extract_firmware_image_from_usbkey(fw_dst))
+        model_manifest = manifest.get(model)
+        if not model_manifest:
+            raise hosts.AutoservRepairError('Could not find firmware manifest'
+                      ' for model:%s' % model, 'model manifest not found')
+        try:
+            ec_image = os.path.join(fw_dst, model_manifest['ec']['image'])
+        except KeyError:
+            ec_image = None
+        try:
+            bios_image = os.path.join(fw_dst, model_manifest['host']['image'])
+        except KeyError:
+            bios_image = None
+        if not ec_image and not bios_image:
+            raise hosts.AutoservRepairError('Could not find any firmware image'
+                      ' for model:%s' % model, 'cannot find firmware image')
+        return ec_image, bios_image
 
     def _probe_and_validate_usb_dev(self):
         """This method probe the usb dev path by talking to servo, and then
@@ -456,7 +524,6 @@ class ServoHost(base_servohost.BaseServoHost):
             return self.get_image_name_from_usbkey(usb_dev)
         else:
             return ''
-
 
     def repair(self, silent=False):
         """Attempt to repair servo host.

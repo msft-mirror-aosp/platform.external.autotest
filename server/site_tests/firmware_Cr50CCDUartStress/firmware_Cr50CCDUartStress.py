@@ -52,7 +52,7 @@ class firmware_Cr50CCDUartStress(Cr50Test):
         logging.info('Checked the servo type is %r.', servo_type)
 
         # Fast open cr50 and enable testlab.
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
         logging.info('CCD opened.')
 
         # Change active device as ccd_cr50.

@@ -9,6 +9,7 @@ import urlparse
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.update_engine import dlc_util
 from autotest_lib.client.cros.update_engine import update_engine_util
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
@@ -21,6 +22,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         """Initialize for this test."""
         self._set_util_functions(utils.run, shutil.copy)
         self._internet_was_disabled = False
+
+        # Utilities for DLC management
+        self._dlc_util = dlc_util.DLCUtil(self._run)
 
 
     def cleanup(self):

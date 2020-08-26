@@ -1,3 +1,5 @@
+#!/usr/bin/python2
+#
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,7 +9,10 @@ import os
 import tempfile
 import unittest
 
-import config
+import common
+
+from autotest_lib.client.common_lib import error
+from autotest_lib.server.cros.faft.utils import config
 
 
 class CanLoadDefaultTestCase(unittest.TestCase):
@@ -191,6 +196,64 @@ class PlatformNamesTestCase(unittest.TestCase):
                 self.assertEqual(platform_name, d['platform'],
                         msg='JSON file %s contained mismatched platform %s' \
                         % (filepath, d['platform']))
+
+
+class DirectSelfInheritanceTestCase(_MockConfigTestCaseBaseClass):
+    """Ensure that a config which inherits from itself raises an error."""
+
+    mock_configs = {
+        'selfloop': {
+            'parent': 'selfloop',
+        },
+    }
+
+    def runTest(self):
+        """Run assertions on test data."""
+        with self.assertRaises(error.TestError):
+            config.Config('selfloop')
+
+
+class IndirectSelfInheritanceTestCase(_MockConfigTestCaseBaseClass):
+    """Ensure that configs which inherit from each other raise an error."""
+
+    mock_configs = {
+        'indirectloop1': {
+            'parent': 'indirectloop2',
+        },
+        'indirectloop2': {
+            'parent': 'indirectloop1',
+        },
+        'indirectloop3': {
+            'parent': 'indirectloop1',
+        },
+    }
+
+    def runTest(self):
+        """Run assertions on test data."""
+        with self.assertRaises(error.TestError):
+            config.Config('indirectloop1')
+        with self.assertRaises(error.TestError):
+            config.Config('indirectloop3')
+
+
+class FindMostSpecificConfigTestCase(_MockConfigTestCaseBaseClass):
+    """Ensure that configs named like $BOARD-kernelnext load $BOARD.json."""
+
+    mock_configs = {
+            'DEFAULTS': {},
+            'samus': {},
+            'veyron': {},
+            'minnie': {'parent': 'veyron'},
+    }
+
+    def runTest(self):
+        cfg = config.Config('samus-kernelnext')
+        self.assertEqual(config.Config('samus-kernelnext').platform, 'samus')
+        self.assertEqual(config.Config('samus-arc-r').platform, 'samus')
+        self.assertEqual(config.Config('veyron_minnie').platform, 'minnie')
+        self.assertEqual(config.Config('veyron_monroe').platform, 'veyron')
+        self.assertEqual(config.Config('veyron_minnie-arc-r').platform, 'minnie')
+        self.assertEqual(config.Config('veyron_monroe-arc-r').platform, 'veyron')
 
 
 if __name__ == '__main__':

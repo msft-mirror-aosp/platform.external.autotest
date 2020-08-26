@@ -27,11 +27,7 @@ SERVOD_QUICK_STARTUP_TIMEOUT = 20
 SERVOD_STARTUP_TIMEOUT = 60
 
 # pools that support dual v4. (go/cros-fw-lab-strategy)
-POOLS_SUPPORT_DUAL_V4 = {'faft-cr50',
-                         'faft-cr50-experimental',
-                         'faft-cr50-tot',
-                         'faft-cr50-debug',
-                         'faft_cr50_debug'
+POOLS_SUPPORT_DUAL_V4 = {'faft_cr50_debug'
                          'faft-pd-debug',
                          'faft_pd_debug'}
 
@@ -40,11 +36,21 @@ ENABLE_SSH_TUNNEL_FOR_SERVO = _CONFIG.get_config_value(
 
 SERVO_TYPE_LABEL_PREFIX = 'servo_type'
 SERVO_STATE_LABEL_PREFIX = 'servo_state'
-SERVO_STATE_WORKING = 'WORKING'
-SERVO_STATE_BROKEN = 'BROKEN'
-SERVO_STATE_NOT_CONNECTED = 'NOT_CONNECTED'
-SERVO_STATE_WRONG_CONFIG = 'WRONG_CONFIG'
+
+# constants to support whole list of states for servo
 SERVO_STATE_UNKNOWN = 'UNKNOWN'
+SERVO_STATE_MISSING_CONFIG = 'MISSING_CONFIG'
+SERVO_STATE_WRONG_CONFIG = 'WRONG_CONFIG'
+SERVO_STATE_NO_SSH = 'NO_SSH'
+SERVO_STATE_NOT_CONNECTED = 'NOT_CONNECTED'
+SERVO_STATE_NEED_REPLACEMENT = 'NEED_REPLACEMENT'
+SERVO_STATE_CCD_TESTLAB_ISSUE = 'CCD_TESTLAB_ISSUE'
+SERVO_STATE_SERVOD_ISSUE = 'SERVOD_ISSUE'
+SERVO_STATE_LID_OPEN_FAILED = 'LID_OPEN_FAILED'
+SERVO_STATE_BAD_RIBBON_CABLE = 'BAD_RIBBON_CABLE'
+SERVO_STATE_EC_BROKEN = 'EC_BROKEN'
+SERVO_STATE_BROKEN = 'BROKEN'
+SERVO_STATE_WORKING = 'WORKING'
 
 # constants to support reset servo via smart usbhub.
 SMART_USBHUB_LABEL = 'smart_usbhub'

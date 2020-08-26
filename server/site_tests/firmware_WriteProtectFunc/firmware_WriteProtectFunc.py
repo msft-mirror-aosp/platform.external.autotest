@@ -77,8 +77,11 @@ class firmware_WriteProtectFunc(FirmwareTest):
         """
         assert target in (BIOS, EC)
         if target == BIOS:
-            self.set_hardware_write_protect(enable)
+            # Unlock registers to alter the region/range
+            self.set_hardware_write_protect(False)
             self.faft_client.bios.set_write_protect_region('WP_RO', enable)
+            if enable:
+                self.set_hardware_write_protect(True)
         elif target == EC:
             self.switcher.mode_aware_reboot('custom',
                     lambda:self.set_ec_write_protect_and_reboot(enable))
@@ -135,7 +138,7 @@ class firmware_WriteProtectFunc(FirmwareTest):
 
     def run_once(self):
         """Runs a single iteration of the test."""
-        # Check if enabled SW WP can stay preserved across reboots.
+        # Enable WP
         for target in self._targets:
             self._set_write_protect(target, True)
 
@@ -147,6 +150,7 @@ class firmware_WriteProtectFunc(FirmwareTest):
         if self.faft_config.chrome_ec:
             reboots += (('ec reboot', lambda:self.sync_and_ec_reboot('hard')), )
 
+        # Check if enabled SW WP can stay preserved across reboots.
         for (reboot_name, reboot_method) in reboots:
             self.switcher.mode_aware_reboot('custom', reboot_method)
             for target in self._targets:
@@ -158,8 +162,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
 
         work_path = self.faft_client.updater.get_work_path()
 
+        # Check if RO FW really can't be overwritten when WP is enabled.
         for target in self._targets:
-            logging.info('Beginning test for target %s', target)
             ro_before = os.path.join(work_path, '%s_ro_before.bin' % target)
             ro_after = os.path.join(work_path, '%s_ro_after.bin' % target)
             ro_test = os.path.join(work_path, '%s_ro_test.bin' % target)
@@ -173,7 +177,6 @@ class firmware_WriteProtectFunc(FirmwareTest):
             test = os.path.join(work_path, self._get_relative_path(target))
             self.get_wp_ro_firmware_section(test, ro_test)
 
-            # Check if RO FW really can't be overwritten when WP is enabled.
             self.run_cmd('flashrom -p %s -r -i WP_RO:%s' %
                     (self._flashrom_targets[target], ro_before),
                     'SUCCESS')
@@ -194,8 +197,14 @@ class firmware_WriteProtectFunc(FirmwareTest):
                 raise error.TestFail('%s RO changes when WP is on!' %
                         target.upper())
 
-            # Check if RO FW can be overwritten when WP is disabled.
+        # Disable WP
+        for target in self._targets:
             self._set_write_protect(target, False)
+
+        # Check if RO FW can be overwritten when WP is disabled.
+        for target in self._targets:
+            ro_after = os.path.join(work_path, '%s_ro_after.bin' % target)
+            ro_test = os.path.join(work_path, '%s_ro_test.bin' % target)
 
             # Writing WP_RO section is expected to succeed.
             self.run_cmd('flashrom -p %s -w -i WP_RO:%s' %

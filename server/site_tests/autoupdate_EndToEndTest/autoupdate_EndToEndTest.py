@@ -8,7 +8,8 @@ import os
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
-from autotest_lib.server.cros.update_engine import chromiumos_test_platform
+from autotest_lib.server import afe_utils
+from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -74,10 +75,9 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         raise error.TestFail('Could not find %s' % filename)
 
 
-    def run_update_test(self, cros_device, test_conf):
+    def run_update_test(self, test_conf):
         """Runs the update test and checks it succeeded.
 
-        @param cros_device: The device under test.
         @param test_conf: A dictionary containing test configuration values.
 
         """
@@ -88,8 +88,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
 
-        self.update_device_without_cros_au_rpc(
-            cros_device, test_conf['target_payload_uri'], tag='target')
+        self.update_device(test_conf['target_payload_uri'], tag='target')
 
         # Compare hostlog events from the update to the expected ones.
         rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
@@ -111,25 +110,30 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         """
         logging.debug('The test configuration supplied: %s', test_conf)
         self._autotest_devserver = self._get_devserver_for_test(test_conf)
-        self._stage_payloads(test_conf['source_payload_uri'],
-                             test_conf['source_archive_uri'])
 
-        self._stage_payloads(test_conf['target_payload_uri'],
-                             test_conf['target_archive_uri'])
+        afe_utils.clean_provision_labels(self._host)
 
-        # Get an object representing the CrOS DUT.
-        cros_device = chromiumos_test_platform.ChromiumOSTestPlatform(
-            self._host, self._autotest_devserver, self.job.resultdir)
-
-        # Install source image
+        # Install source image with quick-provision.
         source_payload_uri = test_conf['source_payload_uri']
-        if source_payload_uri is not None:
-            self.update_device_without_cros_au_rpc(
-                cros_device, source_payload_uri, clobber_stateful=True)
+        if source_payload_uri:
+            build_name, _ = self._get_update_parameters_from_uri(
+                source_payload_uri)
+            update_url = self._autotest_devserver.get_update_url(
+                build_name)
+            logging.info('Installing source image with update url: %s',
+                         update_url)
+
+            autoupdater.ChromiumOSUpdater(
+                update_url,
+                host=self._host,
+                is_release_bucket=True).run_update()
+
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
         # Start the update to the target image.
-        self.run_update_test(cros_device, test_conf)
+        self._stage_payloads(test_conf['target_payload_uri'],
+                             test_conf['target_archive_uri'])
+        self.run_update_test(test_conf)
 
         # Check we can login after the update.
         self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

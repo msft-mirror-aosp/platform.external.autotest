@@ -4,13 +4,13 @@
 
 import json
 import logging
-import os
 import time
 
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros import tpm_utils
@@ -20,6 +20,17 @@ from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
+
+try:
+    from chromite.lib import metrics
+except ImportError:
+    metrics = utils.metrics_mock
+
+
+MIN_BATTERY_LEVEL = 50.0
+
+DEFAULT_SERVO_RESET_TRIGGER = ('ssh', 'stop_start_ui')
+
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
 # in dev mode (usually, those should be unmanaged devices)
@@ -40,21 +51,21 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
             type=bool,
             default=False)
 
-# Triggers for the 'au', 'powerwash', and 'usb' repair actions.
+# Triggers for the 'provision', 'powerwash', and 'usb' repair actions.
 # These are also used as dependencies in the `CrosHost` repair
 # sequence, as follows:
 #
-# au:
-#   - triggers: _CROS_AU_TRIGGERS
+# provision:
+#   - triggers: _CROS_PROVISION_TRIGGERS
 #   - depends on: _CROS_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS
 #
 # powerwash:
-#   - triggers: _CROS_POWERWASH_TRIGGERS + _CROS_AU_TRIGGERS
+#   - triggers: _CROS_POWERWASH_TRIGGERS + _CROS_PROVISION_TRIGGERS
 #   - depends on: _CROS_USB_TRIGGERS
 #
 # usb:
 #   - triggers: _CROS_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS +
-#               _CROS_AU_TRIGGERS
+#               _CROS_PROVISION_TRIGGERS
 #   - no dependencies
 #
 # N.B. AC power detection depends on software on the DUT, and there
@@ -62,27 +73,39 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
 # did have power.  So, we make the 'power' verifier a trigger for
 # reinstall repair actions, too.
 #
-# TODO(jrbarnette):  AU repair can't fix all problems reported by
-# the 'cros' verifier; it's listed as an AU trigger as a
+# TODO(jrbarnette):  provision repair can't fix all problems reported by
+# the 'cros' verifier; it's listed as an provision trigger as a
 # simplification.  The ultimate fix is to split the 'cros' verifier
 # into smaller individual verifiers.
-_CROS_AU_TRIGGERS = ('power', 'rwfw', 'python', 'cros',)
-_CROS_POWERWASH_TRIGGERS = ('tpm', 'good_au', 'ext4',)
+_CROS_PROVISION_TRIGGERS = ('power', 'rwfw', 'python', 'cros',
+                            'dev_default_boot',)
+_CROS_POWERWASH_TRIGGERS = ('tpm', 'good_provision', 'ext4',)
 _CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
 _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
 
 
 class ACPowerVerifier(hosts.Verifier):
-    """Check for AC power and a reasonable battery charge."""
+    """Check for AC power and battery charging state."""
+
+    # Battery discharging state in power_supply_info file.
+    BATTERY_DISCHARGING = 'Discharging'
 
     def verify(self, host):
         # pylint: disable=missing-docstring
+        info = self._load_info(host)
+        self._validate_ac_plugged(info)
+        self._validate_battery(host, info)
+
+    def _load_info(self, host):
         try:
             info = host.get_power_supply_info()
         except error.AutoservRunError:
             raise hosts.AutoservVerifyError(
                     'Failed to get power supply info')
+        return info
 
+    def _validate_ac_plugged(self, info):
+        # Validate that DUT is plugged to the AC.
         try:
             if info['Line Power']['online'] != 'yes':
                 raise hosts.AutoservVerifyError(
@@ -91,18 +114,81 @@ class ACPowerVerifier(hosts.Verifier):
             raise hosts.AutoservVerifyError(
                     'Cannot determine AC power status')
 
+    def _validate_battery(self, host, info):
         try:
-            if float(info['Battery']['percentage']) < 50.0:
-                raise hosts.AutoservVerifyError(
-                        'Battery is less than 50%')
-        except KeyError:
-            logging.info('Cannot determine battery status - '
-                         'skipping check.')
+            charging_state = info['Battery']['state']
+            if charging_state == self.BATTERY_DISCHARGING:
+                logging.debug('Try to fix discharging state of the battery. '
+                              'Possible that a test left wrong state.')
+                # Here is the chance that battery is discharging because
+                # of some test did not clean up the state.
+                # We are going to try to fix it by set charging to normal.
+                host.run('ectool chargecontrol normal', ignore_status=True)
+                # wait to change state.
+                time.sleep(5)
+                info = self._load_info(host)
+                charging_state = info['Battery']['state']
+                fixed = charging_state != self.BATTERY_DISCHARGING
+                # TODO (@otabek) remove metrics after research
+                metrics_data = {'host': host.hostname,
+                                'model': host.host_info_store.get().model,
+                                'fixed': fixed}
+                metrics.Counter(
+                    'chromeos/autotest/repair/chargecontrol_fixed'
+                ).increment(fields=metrics_data)
+
+            battery_level = float(info['Battery']['percentage'])
+            if (battery_level < MIN_BATTERY_LEVEL and
+                charging_state == self.BATTERY_DISCHARGING):
+                # TODO(@xianuowang) remove metrics here once we have device
+                # health profile to collect history of DUT's metrics.
+                metrics_data = {'host': host.hostname,
+                                'board': host.host_info_store.get().board}
+                metrics.Counter(
+                    'chromeos/autotest/repair/verifier/power').increment(
+                        fields=metrics_data)
+                raise hosts.AutoservVerifyError('Battery is in discharging'
+                        ' state and current level is less than %s%%' %
+                        MIN_BATTERY_LEVEL)
+        except (KeyError, ValueError):
+            logging.warning('Cannot determine battery state -'
+                            ' skipping check.')
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'The DUT is plugged in to AC power'
+        return 'The DUT is plugged in to AC power and battery is charing'
+
+
+class CrosVerisionVerifier(hosts.Verifier):
+    """Confirm that current ChromeOS image on the host is matches
+    to provision-cros_version label.
+
+    Some tests behavior may changed DUT image while they don't update
+    provision-cros_version label, which could cause the next test run
+    on the same host gets an unexpected OS version and yields false
+    positive test result.
+    """
+    def verify(self, host):
+        label_match = True
+        try:
+            label_match = host.verify_cros_version_label()
+        except Exception as e:
+            # We don't want fail this verifier for any errors that other
+            # than a actual version mismatch, as that can make debugging
+            # more challenge.
+            logging.warning('Unexpected error during verify cros verision'
+                            ' on %s; %s', host.hostname, e)
+
+        if not label_match:
+            raise hosts.AutoservVerifyError('ChromeOS image on the host'
+                                            ' does not match to cros-version'
+                                            ' label.')
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'ChromeOS image on host matches cros_version label'
 
 
 class WritableVerifier(hosts.Verifier):
@@ -134,10 +220,7 @@ class WritableVerifier(hosts.Verifier):
         # This deliberately stops looking after the first error.
         # See above for the details.
         for testdir in self._TEST_DIRECTORIES:
-            filename = os.path.join(testdir, 'writable_test')
-            command = 'touch %s && rm %s' % (filename, filename)
-            rv = host.run(command=command, ignore_status=True)
-            if rv.exit_status != 0:
+            if not host.is_file_system_writable([testdir]):
                 msg = 'Can\'t create a file in %s' % testdir
                 raise hosts.AutoservVerifyError(msg)
 
@@ -197,12 +280,12 @@ class UpdateSuccessVerifier(hosts.Verifier):
                           ignore_status=True)
         if result.exit_status == 0:
             raise hosts.AutoservVerifyError(
-                    'Last AU on this DUT failed')
+                    'Last provision on this DUT failed')
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'The most recent AU attempt on this DUT succeeded'
+        return 'The most recent provision attempt on this DUT succeeded'
 
 
 class TPMStatusVerifier(hosts.Verifier):
@@ -545,7 +628,7 @@ class ServoSysRqRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        repair_utils.require_servo(host)
+        repair_utils.require_servo(host, ignore_state=True)
         # Press 3 times Alt+VolUp+X
         # no checking DUT health between each press as
         # killing Chrome is not really likely to fix the DUT SSH.
@@ -571,7 +654,7 @@ class ServoResetRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        repair_utils.require_servo(host)
+        repair_utils.require_servo(host, ignore_state=True)
         host.servo.get_power_state_controller().reset()
         self._check_reset_success(host)
 
@@ -590,8 +673,15 @@ class ServoCr50RebootRepair(_ResetRepairAction):
 
     def repair(self, host):
         # pylint: disable=missing-docstring
-        host.servo.get_power_state_controller().cr50_reset()
-        self._check_reset_success(host)
+        try:
+            host.servo.get_power_state_controller().cr50_reset()
+            self._check_reset_success(host)
+        finally:
+            # cr50 reset will clear some some init like `ccd testlab open`
+            # so we want to re-initialize servo after cr50 reset if the main
+            # device is ccd.
+            if host.servo.main_device_is_ccd():
+                host.servo.initialize_dut()
 
     def _is_applicable(self, host):
         if host.servo:
@@ -637,6 +727,28 @@ class CrosRebootRepair(repair_utils.RebootRepair):
         return 'Reset GBB flags and Reboot the host'
 
 
+class LabelCleanupRepair(hosts.RepairAction):
+    """Cleanup unexpected labels for the host, e.g. mismatched
+    cros-version label.
+    """
+    # The repair action currently only cleanup cros-version label, however
+    # we can extent it to cleanup other labels when there is need, and it
+    # should be able to determine which label to clean based on check the
+    # cached result from it's trigger list. (example: trigger verifiers can
+    # be access via self._trigger_list, and we can tell which verifier failed
+    # by check Verifier._is_good() method.)
+    def repair(self, host):
+        logging.info('Removing %s label from the host', host.VERSION_PREFIX)
+        info = host.host_info_store.get()
+        info.clear_version_labels()
+        host.host_info_store.commit(info)
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Cleanup unexpected labels for the host'
+
+
 class EnrollmentCleanupRepair(hosts.RepairAction):
     """Cleanup enrollment state on ChromeOS device"""
 
@@ -659,18 +771,18 @@ class EnrollmentCleanupRepair(hosts.RepairAction):
         return 'Cleanup enrollment state and reboot the host'
 
 
-class AutoUpdateRepair(hosts.RepairAction):
+class ProvisionRepair(hosts.RepairAction):
     """
-    Repair by re-installing a test image using autoupdate.
+    Repair by re-installing a test image using quick provision.
 
     Try to install the DUT's designated "stable test image" using the
-    standard procedure for installing a new test image via autoupdate.
+    standard procedure for installing a new test image via quick provision.
     """
 
     def repair(self, host):
         # pylint: disable=missing-docstring
         image_name = host.get_cros_repair_image_name()
-        logging.info('Staging build for AU: %s', image_name)
+        logging.info('Staging build for provision: %s', image_name)
         devserver = dev_server.ImageServer.resolve(image_name, host.hostname)
         devserver.trigger_download(image_name, synchronous=False)
         update_url = tools.image_url_pattern() % (
@@ -680,15 +792,15 @@ class AutoUpdateRepair(hosts.RepairAction):
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'Re-install the stable build via AU'
+        return 'Re-install the stable build on the host'
 
 
-class PowerWashRepair(AutoUpdateRepair):
+class PowerWashRepair(ProvisionRepair):
     """
-    Powerwash the DUT, then re-install using autoupdate.
+    Powerwash the DUT, then re-install using quick provision.
 
     Powerwash the DUT, then attempt to re-install a stable test image as
-    for `AutoUpdateRepair`.
+    for `ProvisionRepair`.
     """
 
     def repair(self, host):
@@ -701,7 +813,7 @@ class PowerWashRepair(AutoUpdateRepair):
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'Powerwash and then re-install the stable build via AU'
+        return 'Powerwash and then re-install the stable build on the host'
 
 
 class ServoInstallRepair(hosts.RepairAction):
@@ -783,11 +895,12 @@ def _cros_verify_base_dag():
         (EXT4fsErrorVerifier,             'ext4',     ('ssh',)),
         (WritableVerifier,                'writable', ('ssh',)),
         (TPMStatusVerifier,               'tpm',      ('ssh',)),
-        (UpdateSuccessVerifier,           'good_au',  ('ssh',)),
+        (UpdateSuccessVerifier,           'good_provision',  ('ssh',)),
         (FirmwareStatusVerifier,          'fwstatus', ('ssh',)),
         (FirmwareVersionVerifier,         'rwfw',     ('ssh',)),
         (PythonVerifier,                  'python',   ('ssh',)),
         (repair_utils.LegacyHostVerifier, 'cros',     ('ssh',)),
+        (CrosVerisionVerifier,            'cros_version_label', ('ssh',)),
     )
     return verify_dag
 
@@ -799,24 +912,31 @@ def _cros_verify_extended_dag():
     )
 
 
-def _cros_basic_repair_actions():
-    """Return the basic repair actions for a `CrosHost`"""
+def _cros_basic_repair_actions(
+    servo_reset_trigger=DEFAULT_SERVO_RESET_TRIGGER
+):
+    """Return the basic repair actions for a `CrosHost`
+
+    @param servo_reset_trigger: sequence of verifiers that trigger servo reset
+    and servo cr50 reboot repair.
+    """
     repair_actions = (
         # RPM cycling must precede Servo reset:  if the DUT has a dead
         # battery, we need to reattach AC power before we reset via servo.
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
+        (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
+        (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
         (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
-        (ServoResetRepair, 'servoreset', (), ('ssh',)),
-        (ServoCr50RebootRepair, 'cr50_reset', (), ('ssh',)),
+        (LabelCleanupRepair, 'label_cleanup', (), ('cros_version_label',)),
 
-        # N.B. FirmwareRepair can't fix a 'good_au' failure directly,
+        # N.B. FirmwareRepair can't fix a 'good_provision' failure directly,
         # because it doesn't remove the flag file that triggers the
         # failure.  We include it as a repair trigger because it's
         # possible the the last update failed because of the firmware,
         # and we want the repair steps below to be able to trust the
         # firmware.
         (cros_firmware.FaftFirmwareRepair,
-         'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_au',)),
+         'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_provision',)),
 
         (DevDefaultBootRepair,
          'set_default_boot', ('ssh',), ('dev_default_boot',)),
@@ -828,23 +948,23 @@ def _cros_basic_repair_actions():
     return repair_actions
 
 
-def _cros_extended_repair_actions(au_triggers=_CROS_AU_TRIGGERS,
+def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
                                   powerwash_triggers=_CROS_POWERWASH_TRIGGERS,
                                   usb_triggers=_CROS_USB_TRIGGERS):
     """Return the extended repair actions for a `CrosHost`"""
 
-    # The dependencies and triggers for the 'au', 'powerwash', and 'usb'
+    # The dependencies and triggers for the 'provision', 'powerwash', and 'usb'
     # repair actions stack up:  Each one is able to repair progressively
     # more verifiers than the one before.  The 'triggers' lists specify
     # the progression.
 
     repair_actions = (
-        (AutoUpdateRepair, 'au',
-                usb_triggers + powerwash_triggers, au_triggers),
+        (ProvisionRepair, 'provision',
+                usb_triggers + powerwash_triggers, provision_triggers),
         (PowerWashRepair, 'powerwash',
-                usb_triggers, powerwash_triggers + au_triggers),
+                usb_triggers, powerwash_triggers + provision_triggers),
         (ServoInstallRepair, 'usb',
-                (), usb_triggers + powerwash_triggers + au_triggers),
+                (), usb_triggers + powerwash_triggers + provision_triggers),
     )
     return repair_actions
 
@@ -878,7 +998,7 @@ def _moblab_repair_actions():
     """Return the repair actions for a `MoblabHost`."""
     repair_actions = (
         (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
-        (AutoUpdateRepair, 'au', ('ssh',), ('power', 'python', 'cros')),
+        (ProvisionRepair, 'provision', ('ssh',), ('power', 'python', 'cros')),
     )
     return repair_actions
 
@@ -894,7 +1014,7 @@ def create_moblab_repair_strategy():
     'tpm':  Moblab DUTs don't run the tests that matter to this
         verifier.  TODO(jrbarnette)  This assertion is unproven.
 
-    'good_au':  This verifier can't pass, because the Moblab AU
+    'good_provision':  This verifier can't pass, because the Moblab provision
         procedure doesn't properly delete the PROVISION_FAILED file.
         TODO(jrbarnette) We should refactor ChromiumOSUpdater so
         that it can be different for Moblab.
@@ -912,24 +1032,24 @@ def create_moblab_repair_strategy():
 
 def _jetstream_repair_actions():
     """Return the repair actions for a `JetstreamHost`."""
-    au_triggers = _CROS_AU_TRIGGERS
+    provision_triggers = _CROS_PROVISION_TRIGGERS
     jetstream_tpm_triggers = ('jetstream_tpm', 'jetstream_attestation')
     jetstream_service_triggers = (jetstream_tpm_triggers +
                                   ('jetstream_services',))
     repair_actions = (
-        _cros_basic_repair_actions() +
+        _cros_basic_repair_actions(servo_reset_trigger=('ssh',)) +
         (
             (JetstreamTpmRepair, 'jetstream_tpm_repair',
              _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS,
-             au_triggers + jetstream_tpm_triggers),
+             provision_triggers + jetstream_tpm_triggers),
 
             (JetstreamServiceRepair, 'jetstream_service_repair',
              _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS + (
                  'jetstream_tpm', 'jetstream_attestation'),
-             au_triggers + jetstream_service_triggers),
+             provision_triggers + jetstream_service_triggers),
         ) +
         _cros_extended_repair_actions(
-            au_triggers=au_triggers + jetstream_service_triggers,
+            provision_triggers=provision_triggers + jetstream_service_triggers,
             usb_triggers=_JETSTREAM_USB_TRIGGERS))
     return repair_actions
 

@@ -137,9 +137,6 @@ class CliqueDUTUpdater(object):
 
         try:
             ds = dev_server.ImageServer.resolve(image)
-            # We need the autotest packages to run the tests.
-            ds.stage_artifacts(image, ['full_payload', 'stateful',
-                                       'autotest_packages'])
         except dev_server.DevServerException as e:
             error_str = 'Host: ' + dut_host + '. ' + e
             logging.error(error_str)

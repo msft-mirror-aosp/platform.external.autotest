@@ -4,6 +4,8 @@
 
 """A Batch of Bluetooth advertising tests"""
 
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+        REALTEK_MODELS
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
@@ -27,8 +29,10 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
 
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    # TODO(b/165410941) - Morphius EVT has a bug that makes all suspend/resume tests
+    #                     unreliable. Skip them for now.
     @test_wrapper('Multiple LE advertising test',
-                  model_testNA=['dru', 'druwl'])
+                  skip_models=REALTEK_MODELS + ['dru', 'druwl', 'morphius'])
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(
@@ -45,8 +49,10 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
 
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    # TODO(b/165410941) - Morphius EVT has a bug that makes all suspend/resume tests
+    #                     unreliable. Skip them for now.
     @test_wrapper('Suspend resume LE advertising test',
-                  model_testNA=['dru', 'druwl'])
+                  skip_models=REALTEK_MODELS + ['dru', 'druwl', 'morphius'])
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(

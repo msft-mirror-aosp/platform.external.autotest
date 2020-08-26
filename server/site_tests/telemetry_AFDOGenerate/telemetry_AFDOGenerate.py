@@ -41,9 +41,11 @@ from autotest_lib.site_utils import test_runner_utils
 
 # These are arguments to the linux "perf" tool.
 # The -e value is processor specific and comes from the Intel SDM vol 3b
-PROFILER_ARGS = 'record -a -e r20c4 -c 500000 -b'
+PROFILER_ARGS = 'record -a -e r20c4 -c 50000 -b'
 
-WAIT_FOR_CMD_TIMEOUT_SECS = 60
+# In practice, it takes >2min to copy the perf.data back from the DUT, set
+# this timeout to 600 secs to be safe.
+WAIT_FOR_CMD_TIMEOUT_SECS = 600
 
 # Reuse ssh and scp settings from telemetry_Crosperf
 RSA_KEY = '-i %s' % test_runner_utils.TEST_KEY_PATH
@@ -412,7 +414,7 @@ class telemetry_AFDOGenerate(test.test):
         @returns nothing.
         """
         GS_GCC_DEST = 'gs://chromeos-prebuilt/afdo-job/canonicals/%s'
-        GS_LLVM_DEST = 'gs://chromeos-prebuilt/afdo-job/llvm/%s'
+        GS_LLVM_DEST = 'gs://chromeos-toolchain-artifacts/afdo/unvetted/benchmark/%s'
         GS_LLVM_ASYNC_DEST = \
             'gs://chromeos-throw-away-bucket/afdo-job/llvm/benchmarks/%s'
         GS_TEST_DEST = 'gs://chromeos-throw-away-bucket/afdo-job/canonicals/%s'

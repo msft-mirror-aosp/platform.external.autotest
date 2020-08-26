@@ -7,6 +7,8 @@ This class provides wrapper functions for Bluetooth quick sanity test
 batches or packages
 """
 
+from __future__ import print_function
+
 import functools
 import logging
 import tempfile
@@ -76,26 +78,43 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting peer devices...')
             self.get_device_rasp(devices)
 
+            # Grab all the addresses to verify RSSI
+            addresses = []
+            for device_type, device_list in self.devices.items():
+                # Skip bluetooth_tester since it won't be discoverable
+                if 'TESTER' in device_type:
+                    continue
+
+                for device in device_list:
+                    addresses.append(device.address)
+                    self.start_agent(device)
+
+            # Make sure device RSSI is sufficient
+            self.verify_device_rssi(addresses)
+
     def _print_delimiter(self):
         logging.info('=======================================================')
 
 
     def quick_test_init(self, host, use_btpeer=True, use_chameleon=False,
-                        flag='Quick Sanity'):
+                        flag='Quick Sanity', start_browser=False):
         """Inits the test batch"""
         self.host = host
+        self.start_browser = start_browser
+        self.in_lab = site_utils.host_in_lab(self.host.hostname)
         #factory can not be declared as local variable, otherwise
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
         # server, which log out the user.
 
         try:
             self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                           disable_arc=True)
+                    no_chrome=not self.start_browser,
+                    disable_arc=True)
             self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
 
         # For b:142276989, catch 'object_path' fault and reboot to prevent
         # failures from continuing into future tests
-        except Exception, e:
+        except Exception as e:
             if (e.__class__.__name__ == 'Fault' and
                 """object has no attribute 'object_path'""" in str(e)):
 
@@ -145,6 +164,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             if len(self.host.peer_list) == 0:
                 raise error.TestFail('Unable to find a Bluetooth peer')
 
+            # Check the chameleond version on the peer and update if necessary
+            if self.in_lab:
+                if not self.update_btpeer():
+                    logging.error('Updating btpeers failed. Ignored')
+            else:
+                logging.info('No attempting peer update since DUT is not in lab.')
+
             # Query connected devices on our btpeer at init time
             self.available_devices = self.list_devices_available()
 
@@ -162,6 +188,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.active_test_devices = {}
 
         self.enable_disable_debug_log(enable=True)
+
+        # Disable cellular services, as they can sometimes interfere with
+        # suspend/resume, i.e. b/161920740
+        self.enable_disable_cellular(enable=False)
 
         # Delete files created in previous run
         self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
@@ -200,6 +230,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   model_testNA=[],
                                   model_testWarn=[],
                                   skip_models=[],
+                                  skip_chipsets=[],
                                   shared_devices_count=0):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
@@ -218,6 +249,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   failures are emitted as TestWarn.
            @param skip_models: Raises TestNA on these models and doesn't attempt
                                to run the tests.
+           @param skip_chipsets: Raises TestNA on these chipset and doesn't
+                                 attempt to run the tests.
+
         """
 
         def decorator(test_method):
@@ -264,19 +298,33 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             @functools.wraps(test_method)
             def wrapper(self):
                 """A wrapper of the decorated method."""
+                # Set test name before exiting so batches correctly identify
+                # failing tests
+                self.test_name = test_name
+
                 if not _check_runnable(self):
                     return
-                if not _is_enough_peers_present(self):
-                    raise error.TestNAError('Not enough peer available')
 
                 try:
-                    self.quick_test_test_start(test_name, devices,
-                                               shared_devices_count)
-                    model = self.host.get_platform()
+                    if not _is_enough_peers_present(self):
+                        raise error.TestNAError('Not enough peer available')
+
+                    model = self.get_base_platform_name()
                     if model in skip_models:
                         logging.info('SKIPPING TEST %s', test_name)
                         raise error.TestNAError(
                                 'Test not supported on this model')
+
+                    chipset = self.get_chipset_name()
+                    logging.debug('Bluetooth module name is %s', chipset)
+                    if chipset in skip_chipsets:
+                        logging.info('SKIPPING TEST %s on chipset %s',
+                                     test_name, chipset)
+                        raise error.TestNAError(
+                                'Test not supported on this chipset')
+
+                    self.quick_test_test_start(test_name, devices,
+                                               shared_devices_count)
 
                     test_method(self)
                 except error.TestFail as e:
@@ -299,9 +347,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
            as well as peer devices. In addition the methods prints test start
            traces.
         """
-
-        self.test_name = test_name
-
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()
@@ -323,7 +368,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def quick_test_test_end(self, model_testNA=[], model_testWarn=[]):
         """Log and track the test results"""
         result_msgs = []
-        model = self.host.get_platform()
+        model = self.get_base_platform_name()
 
         if self.test_iter is not None:
             result_msgs += ['Test Iter: ' + str(self.test_iter)]
@@ -385,6 +430,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         for device_list in self.devices.values():
             for device in device_list:
                 if device is not None:
+                    self.stop_agent(device)
                     logging.info('Clear device %s from DUT', device.name)
                     self.bluetooth_facade.disconnect_device(device.address)
                     device_is_paired = self.bluetooth_facade.device_is_paired(
@@ -602,7 +648,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     timeout_mins * 60, self.mtbf_timeout)
                 mtbf_timer.start()
                 start_time = time.time()
-                board = self.host.get_board().split(':')[1]
+                model = self.host.get_model_from_cros_config()
                 build = self.host.get_release_version()
                 milestone = 'M' + self.host.get_chromeos_release_milestone()
                 in_lab = site_utils.host_in_lab(self.host.hostname)
@@ -611,7 +657,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         # The test ran the full duration without failure
                         if self.mtbf_end:
                             self.report_mtbf_result(
-                                True, start_time, test_name, board, build,
+                                True, start_time, test_name, model, build,
                                 milestone, in_lab)
                             break
                     try:
@@ -619,7 +665,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     except Exception as e:
                         logging.info("Caught a failure: %r", e)
                         self.report_mtbf_result(
-                            False, start_time, test_name, board, build,
+                            False, start_time, test_name, model, build,
                             milestone, in_lab)
                         # Don't report the test run as failed for MTBF
                         self.fails = []
@@ -638,7 +684,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.mtbf_end = True
 
 
-    def report_mtbf_result(self, success, start_time, test_name, board, build,
+    def report_mtbf_result(self, success, start_time, test_name, model, build,
         milestone, in_lab):
         """Report MTBF result by uploading it to GCS"""
         duration_secs = int(time.time() - start_time)
@@ -649,7 +695,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                            time.strftime('%H-%M-%S.csv', gm_time_struct)
 
         mtbf_result = '{0},{1},{2},{3},{4},{5},{6}'.format(
-            board, build, milestone, start_time * 1000000, duration_secs,
+            model, build, milestone, start_time * 1000000, duration_secs,
             success, test_name)
         with tempfile.NamedTemporaryFile() as tmp_file:
             tmp_file.write(mtbf_result)

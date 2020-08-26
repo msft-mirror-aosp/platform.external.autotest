@@ -9,7 +9,6 @@ import re
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as cutils
 from autotest_lib.server import utils
-from autotest_lib.server.cros.update_engine import chromiumos_test_platform
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -264,19 +263,13 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
         self._stage_payloads(self._source_payload_uri, None)
         self._stage_payloads(self._target_payload_uri, None)
 
-        # Get an object representing the CrOS DUT.
-        cros_device = chromiumos_test_platform.ChromiumOSTestPlatform(
-            self._host, self._autotest_devserver, self.job.resultdir)
-
         if self._source_payload_uri is not None:
             logging.debug('Going to install source image on DUT.')
-            self.update_device_without_cros_au_rpc(
-                cros_device, self._source_payload_uri, clobber_stateful=True)
+            self.update_device(self._source_payload_uri, clobber_stateful=True)
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')
 
         logging.debug('Going to install target image on DUT.')
-        self.update_device_without_cros_au_rpc(
-            cros_device, self._target_payload_uri, tag='target')
+        self.update_device(self._target_payload_uri, tag='target')
 
         self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')

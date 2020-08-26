@@ -28,7 +28,7 @@ hfp_nbs_test_data = {
     'rate': 8000,
     'channels': 1,
     'frequencies': (3500,),
-    'file': os.path.join(audio_test_dir, 'sine_3500hz_rate8000_ch1_5secs.wav'),
+    'file': os.path.join(audio_test_dir, 'sine_3500hz_rate8000_ch1_5secs.raw'),
     'recorded_by_peer': os.path.join(audio_record_dir,
                                      'hfp_nbs_recorded_by_peer.wav'),
     'recorded_by_dut': os.path.join(audio_record_dir,
@@ -44,7 +44,7 @@ hfp_wbs_test_data = {
 
     'frequencies': (7000,),
     'file': os.path.join(audio_test_dir,
-                         'sine_7000hz_rate16000_ch1_5secs.wav'),
+                         'sine_7000hz_rate16000_ch1_5secs.raw'),
     'recorded_by_peer': os.path.join(audio_record_dir,
                                      'hfp_wbs_recorded_by_peer.wav'),
     'recorded_by_dut': os.path.join(audio_record_dir,
@@ -59,7 +59,7 @@ a2dp_test_data = {
     'channels': 2,
     'frequencies': (440, 20000),
     'file': os.path.join(audio_test_dir,
-                         'binaural_sine_440hz_20000hz_rate48000_5secs.wav'),
+                         'binaural_sine_440hz_20000hz_rate48000_5secs.raw'),
     'recorded_by_peer': os.path.join(audio_record_dir,
                                      'a2dp_recorded_by_peer.wav'),
 }

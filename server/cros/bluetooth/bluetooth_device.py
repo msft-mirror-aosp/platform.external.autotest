@@ -1198,6 +1198,53 @@ class BluetoothDevice(object):
         """
         return self._proxy.set_le_connection_parameters(address, parameters)
 
+    def wait_for_uhid_device(self, device_address):
+        """Wait for uhid device with given device address.
+
+        Args:
+            device_address: Peripheral Address
+
+        Returns:
+            True if uhid device is found.
+        """
+        return self._proxy.wait_for_uhid_device(device_address)
+
+    def bt_caused_last_resume(self):
+        """Checks if last resume from suspend was caused by bluetooth
+
+        @return: True if BT wake path was cause of resume, False otherwise
+        """
+
+        return self._proxy.bt_caused_last_resume()
+
+
+    def do_suspend(self, seconds, expect_bt_wake):
+        """Suspend DUT using the power manager.
+
+        @param seconds: The number of seconds to suspend the device.
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+        """
+
+        return self._proxy.do_suspend(seconds, expect_bt_wake)
+
+
+    def get_wlan_vid_pid(self):
+        """ Return vendor id and product id of the wlan chip on BT/WiFi module
+
+        @returns: (vid,pid) on success; (None,None) on failure
+        """
+        return self._proxy.get_wlan_vid_pid()
+
+
+    def get_bt_module_name(self):
+        """ Return bluetooth module name for non-USB devices
+
+        @returns: Name of the Bluetooth module (or string read from device on
+                  success); '' on failure
+        """
+        return self._proxy.get_bt_module_name()
+
 
     def close(self, close_host=True):
         """Tear down state associated with the client.

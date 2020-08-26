@@ -2,6 +2,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import ui_utils
 from autotest_lib.client.cros.input_playback import keyboard
 import logging
+import time
 
 
 class UIPrinterHelper(object):
@@ -25,10 +26,27 @@ class UIPrinterHelper(object):
         self.open_printer_menu()
         self.open_see_more_print_sub_menu()
         self.select_printer_from_see_more_menu(printer_name)
-        self.wait_for_print_ready()
+        if not self.check_print_window_open():
+            raise error.TestError("Print not open after setting printer.")
         self.click_print(isPDF)
         if self._keyboard:
             self._keyboard.close()
+
+    def check_print_window_open(self):
+        """Check if the print window is still open."""
+        start_time = time.time()
+
+        # Giving up to 5 seconds for the window to load.
+        while time.time() - start_time < 5:
+            if (self.ui.item_present('Destination', role='inlineTextBox') and
+                    self.ui.item_present('Cancel', role='button')) and not (
+                    self.ui.item_present('Loading preview')):
+                return True
+
+        logging.info("Print Window was not open {}"
+                     .format(self.ui.get_name_role_list()))
+        self.ui.screenshoter.take_ss()
+        return False
 
     def open_printer_menu(self, retry=0):
         """Open the printer menu via the Chrome Dropdown."""
@@ -49,12 +67,13 @@ class UIPrinterHelper(object):
         try:
             self.ui.wait_for_ui_obj('Fit to width', role='button', timeout=30)
         except:
-            logging.info("Missing {} in {}".format("Fit to width", self.ui.get_name_role_list()))
+            logging.info("Missing {} in {}".format("Fit to width",
+                         self.ui.get_name_role_list()))
             raise error.TestError("Fit to width no load")
         self.ui.wait_for_ui_obj('Loading preview', remove=True)
 
     def open_see_more_print_sub_menu(self):
-        """For now must pivot there with the KB."""
+        """Open see more sub menu via the clicking it in the dropdown."""
         if not self._keyboard:
             self._keyboard = keyboard.Keyboard()
 
@@ -64,33 +83,12 @@ class UIPrinterHelper(object):
             self._keyboard.press_key("escape")
             self.verify_print_menu_open()
 
-        self.ui.doDefault_on_obj(self._node_name_above_see_more_menu())
-        self._keyboard.press_key("down")
-        self._keyboard.press_key('enter')
+        self.ui.wait_for_ui_obj('Destination Save as PDF')
+        self.ui.doDefault_on_obj("Destination Save as PDF", role='popUpButton')
 
-    def _node_name_above_see_more_menu(self):
-        """
-        Return the name of the node above see more menu.
-
-        Right now "See More" is not directly clickable. There is investigation
-        being done as for why, but still no answer. For now we will instead
-        get the name of the node above it on the menu list, to "hover" over,
-        then down arrow + enter to select "See more".
-        There are some empty items that return off the list query, so we have
-        to filter these out. Additionally if for some odd reason we do not
-        find an item directly above the "See more" option, we will default
-        to "Save as PDF".
-
-        """
-        temp_list = []
-        menu_list = self.ui.get_name_role_list(role="menuListOption")
-        for i, item in enumerate(menu_list):
-            if item["name"]:
-                temp_list.append(item["name"])
-            if "See more" in item["name"]:
-                if len(temp_list) < 2:
-                    return "Save as PDF"  # Default item above
-                return temp_list[-2]  # First non empty item name prior.
+        self.ui.wait_for_ui_obj("See more destinations", role='menuItem')
+        self.ui.doDefault_on_obj("See more destinations", role='menuItem')
+        self.is_see_more_menu_open()
 
     def _is_chrome_menu_open(self):
         """Return True if the chrome dropdown menu is still open."""

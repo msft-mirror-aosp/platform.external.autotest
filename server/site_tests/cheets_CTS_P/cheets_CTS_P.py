@@ -14,7 +14,9 @@
 
 import logging
 import os
+import subprocess
 
+from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import hosts
 from autotest_lib.server import utils
@@ -40,8 +42,9 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
     version = 1
 
     _SHARD_CMD = '--shard-count'
-    _SCENE_URI = ('https://storage.googleapis.com'
-                  '/chromiumos-test-assets-public/camerabox/scene.pdf')
+    _SCENE_URI = (
+            'https://storage.googleapis.com/chromiumos-test-assets-public'
+            '/camerabox/cts_portrait_scene.jpg')
 
     def _tradefed_retry_command(self, template, session_id):
         """Build tradefed 'retry' command from template."""
@@ -57,6 +60,18 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+            # Apply this PATH change only for chroot environment
+            if not client_utils.is_moblab():
+                try:
+                    os.environ['JAVA_HOME'] = '/opt/icedtea-bin-3.4.0'
+                    os.environ['PATH'] = os.environ['JAVA_HOME']\
+                                       + '/bin:' + os.environ['PATH']
+                    logging.info(subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT))
+                    # TODO(jiyounha): remove once crbug.com/1105515 is resolved.
+                    logging.info(subprocess.check_output(['whereis', 'java'], stderr=subprocess.STDOUT))
+                except OSError:
+                    logging.error('Can\'t change current PATH directory')
+
         elif self._timeout <= 3600:
             # TODO(kinaba): remove once crbug.com/1041833 is resolved.
             logging.info('Add more debug log for small modules')

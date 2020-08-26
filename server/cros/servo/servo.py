@@ -6,12 +6,16 @@
 # prompt, such as within the Chromium OS development chroot.
 
 import ast
+import contextlib
+import httplib
 import logging
 import os
 import re
 import socket
 import time
 import xmlrpclib
+
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -68,6 +72,45 @@ class UnresponsiveConsoleError(ConsoleError):
 class ResponsiveConsoleError(ConsoleError):
     """Error for: A console control fails but console is responsive."""
     pass
+
+
+class ServodBadStatusLine(httplib.BadStatusLine):
+    """Error for failures to communicate with servod"""
+    def __init__(self, when, line):
+        """
+
+        @param when: Description of the operation being performed (get/set)
+        @param line: The line that came from the server; most failures see ''
+        """
+        super(ServodBadStatusLine, self).__init__(line)
+        self.when = when
+
+    def __str__(self):
+        """String representation of the exception"""
+        return '%s: %s' % (self.when, self.line)
+
+
+class ServodConnectionError(socket.error):
+    """Error for socket errors seen during communication with servod"""
+
+    # TODO(b/990593): when in python3, subclass ConnectionError instead
+
+    def __init__(self, when, errno, strerror, filename):
+        """
+
+        @param when: Description of the operation being performed at the time
+        @param errno: errno value, such as ECONNRESET
+        @param strerror: OS-provided description ("connection reset by peer")
+        @param filename: Something to report as a path, such as a socket address
+        """
+        # [Errno 104] [Setting ctrl:val] Connection reset by peer: <Servo...
+        self.when = when
+        super(ServodConnectionError, self).__init__(errno, strerror, filename)
+
+    def __str__(self):
+        """String representation of the exception"""
+        return '%s: [Errno %d] %s: %r' % (
+            self.when, self.errno, self.strerror, self.filename)
 
 
 def _extract_image_from_tarball(tarball, dest_dir, image_candidates, timeout):
@@ -141,6 +184,7 @@ class _PowerStateController(object):
         """
         self._servo = servo
         self.supported = self._servo.has_control('power_state')
+        self.last_rec_mode = self.REC_OFF
         if not self.supported:
             logging.info('Servo setup does not support power-state operations. '
                          'All power-state calls will lead to error.TestFail')
@@ -191,6 +235,7 @@ class _PowerStateController(object):
             self._servo.set_get_all(['warm_reset:on',
                                  'sleep:%.4f' % self._RESET_HOLD_TIME,
                                  'warm_reset:off'])
+
     def power_off(self):
         """Force the DUT to power off.
 
@@ -225,11 +270,34 @@ class _PowerStateController(object):
         """
         self._check_supported()
         self._servo.set_nocheck('power_state', rec_mode)
+        self.last_rec_mode = rec_mode
+
+    def retry_power_on(self):
+        """Retry powering on the DUT.
+
+        After power_on(...) the system might not come up reliably, although
+        the reasons aren't known yet. This function retries turning on the
+        system again, trying to bring it in the last state that power_on()
+        attempted to reach.
+        """
+        self._check_supported()
+        self._servo.set_nocheck('power_state', self.last_rec_mode)
 
 
 class _Uart(object):
     """Class to capture UART streams of CPU, EC, Cr50, etc."""
-    _UartToCapture = ('cpu', 'ec', 'cr50', 'servo_v4', 'servo_micro', 'usbpd')
+    _UartToCapture = (
+        'cpu',
+        'cr50',
+        'ec',
+        'servo_micro',
+        'servo_v4',
+        'usbpd',
+        'ccd_cr50.ec',
+        'ccd_cr50.cpu',
+        'ccd_cr50.cr50'
+    )
+
 
     def __init__(self, servo):
         self._servo = servo
@@ -274,16 +342,22 @@ class _Uart(object):
         """Start capturing UART streams."""
         for uart in self._UartToCapture:
             if self._start_stop_capture(uart, True):
-                self._streams.append(('%s_uart_stream' % uart, '%s_uart.log' %
-                                      uart))
+                self._streams.append(uart)
+
+    def get_logfile(self, uart):
+        """Return the path to the uart logfile or none if logs_dir isn't set."""
+        if not self.logs_dir:
+            return None
+        return os.path.join(self.logs_dir, '%s_uart.txt' % uart)
 
     def dump(self):
         """Dump UART streams to log files accordingly."""
         if not self.logs_dir:
             return
 
-        for stream, logfile in self._streams:
-            logfile_fullname = os.path.join(self.logs_dir, logfile)
+        for uart in self._streams:
+            logfile_fullname = self.get_logfile(uart)
+            stream = '%s_uart_stream' % uart
             try:
                 content = self._servo.get(stream)
             except Exception as err:
@@ -384,13 +458,13 @@ class Servo(object):
         # to minimize the dependencies on the rest of Autotest.
         self._servo_host = servo_host
         self._servo_serial = servo_serial
-        self._server = servo_host.get_servod_server_proxy()
         self._servo_type = self.get_servo_version()
         self._power_state = _PowerStateController(self)
         self._uart = _Uart(self)
         self._programmer = None
         self._prev_log_inode = None
         self._prev_log_size = 0
+        self._ccd_watchdog_disabled = False
 
     def __str__(self):
         """Description of this object and address, for use in errors"""
@@ -398,6 +472,32 @@ class Servo(object):
                 type(self).__name__,
                 self._servo_host.hostname,
                 self._servo_host.servo_port)
+
+    @property
+    def _server(self):
+        with self._wrap_socket_errors('get_servod_server_proxy()'):
+            return self._servo_host.get_servod_server_proxy()
+
+    @contextlib.contextmanager
+    def _wrap_socket_errors(self, description):
+        """
+        Wrap an operation, replacing BadStatusLine and socket.error with
+        servo-specific versions.
+
+        @param description:  String to use when describing what was being done
+        @raise ServodBadStatusLine: when operation raises httplib.BadStatusLine
+        @raise ServodSocketError: when operation raises socket.error
+        """
+        try:
+            yield
+        except httplib.BadStatusLine as e:
+            exc = ServodBadStatusLine(description, e.line)
+            six.reraise(type(exc), exc)
+        except socket.error as e:
+            # TODO(b/990593): when in python3, catch ConnectionError instead
+            exc = ServodConnectionError(
+                description, e.args[0], e.args[1], str(self))
+            six.reraise(type(exc), exc)
 
     @property
     def servo_serial(self):
@@ -440,11 +540,8 @@ class Servo(object):
         if enable_main:
             self.enable_main_servo_device()
 
-        try:
+        with self._wrap_socket_errors('initialize_dut->hwinit()'):
             self._server.hwinit()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
         if self.has_control('usb_mux_oe1'):
             self.set('usb_mux_oe1', 'on')
             self.switch_usbkey('off')
@@ -458,8 +555,9 @@ class Servo(object):
                              'setup does not support power_state. Skipping.')
             else:
                 self._power_state.reset()
-        logging.debug('Servo initialized, version is %s',
-                      self._server.get_version())
+        with self._wrap_socket_errors('initialize_dut->get_version()'):
+            version = self._server.get_version()
+        logging.debug('Servo initialized, version is %s', version)
         if self.has_control('init_keyboard'):
             # This indicates the servod version does not
             # have explicit keyboard initialization yet.
@@ -772,20 +870,15 @@ class Servo(object):
 
     def get_board(self):
         """Get the board connected to servod."""
-        try:
+        with self._wrap_socket_errors('get_board()'):
             return self._server.get_board()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
 
 
     def get_base_board(self):
         """Get the board of the base connected to servod."""
         try:
-            return self._server.get_base_board()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors('get_base_board()'):
+                return self._server.get_base_board()
         except  xmlrpclib.Fault as e:
             # TODO(waihong): Remove the following compatibility check when
             # the new versions of hdctools are deployed.
@@ -843,7 +936,8 @@ class Servo(object):
         ctrl_name = self._build_ctrl_name(ctrl_name, prefix)
         try:
             # If the control exists, doc() will work.
-            self._server.doc(ctrl_name)
+            with self._wrap_socket_errors('has_control->doc(%s)' % ctrl_name):
+                self._server.doc(ctrl_name)
             return True
         except xmlrpclib.Fault as e:
             if re.search('No control %s' % ctrl_name,
@@ -864,12 +958,13 @@ class Servo(object):
             return '%s.%s' % (prefix, ctrl_name)
         return ctrl_name
 
-    def _inspect_control_failure(self, e, ctrl_name, get=True):
+    def _inspect_control_failure(self, e, ctrl_name, ctrl_value=None):
         """Inspect the |e| for special failures.
 
         @param e: exception object
         @param ctrl_name: control name
-        @param get: bool, whether this was a get() or a set() call
+        @param ctrl_value: The value the control was set to. None indicates a
+                           'get' control.
 
         @raises ControlUnavailableError: if error message matches NO_CONTROL_RE
         @raises UnresponsiveConsoleError: if error message matches
@@ -880,19 +975,24 @@ class Servo(object):
         """
         err_str = self._get_xmlrpclib_exception(e)
         # Prefix for error parsing
-        prefix = 'Getting' if get else 'Setting'
-        err_summary = '%s %r' % (prefix, ctrl_name)
+        if ctrl_value == None:
+            prefix = 'Getting'
+            ctrl_value_str = ''
+        else:
+            prefix = 'Setting'
+            ctrl_value_str = ' to %r' % ctrl_value
+        err_summary = '%s %r %s' % (prefix, ctrl_name, ctrl_value_str)
         err_msg = '%s :: %s' % (err_summary, err_str)
         unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
         if unknown_ctrl:
             unknown_ctrl_name = unknown_ctrl.group(1)
-            logging.error('%s %r :: No control named %r', prefix, ctrl_name,
+            logging.error('%s :: No control named %r', err_summary,
                           unknown_ctrl_name)
             raise ControlUnavailableError('No control named %r' %
                                           unknown_ctrl_name)
         # The error message for unavailble controls is huge as it prints
         # all available controls. Do not log it explicitly.
-        logging.error(err_msg)
+        logging.debug(err_msg)
         if re.search(NO_CONSOLE_OUTPUT_RE, err_str):
             raise UnresponsiveConsoleError('Console not printing output. %s.' %
                                            err_summary)
@@ -914,12 +1014,10 @@ class Servo(object):
         """
         ctrl_name = self._build_ctrl_name(ctrl_name, prefix)
         try:
-            return self._server.get(ctrl_name)
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors('Getting %s' % ctrl_name):
+                return self._server.get(ctrl_name)
         except xmlrpclib.Fault as e:
-            self._inspect_control_failure(e, ctrl_name, get=True)
+            self._inspect_control_failure(e, ctrl_name)
 
     def set(self, ctrl_name, ctrl_value, prefix=''):
         """Set and check the value of a gpio using Servod.
@@ -958,14 +1056,13 @@ class Servo(object):
         ctrl_name = self._build_ctrl_name(ctrl_name, prefix)
         # The real danger here is to pass a None value through the xmlrpc.
         assert ctrl_value is not None
-        logging.debug('Setting %s to %r', ctrl_name, ctrl_value)
+        description = 'Setting %s to %r' % (ctrl_name, ctrl_value)
+        logging.debug('%s', description)
         try:
-            self._server.set(ctrl_name, ctrl_value)
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors(description):
+                self._server.set(ctrl_name, ctrl_value)
         except xmlrpclib.Fault as e:
-            self._inspect_control_failure(e, ctrl_name, get=False)
+            self._inspect_control_failure(e, ctrl_name, ctrl_value=ctrl_value)
 
     def set_get_all(self, controls):
         """Set &| get one or more control values.
@@ -975,12 +1072,11 @@ class Servo(object):
         @raise: error.TestError in case error occurs setting/getting values.
         """
         rv = []
+        description = 'Set/get all: %s' % str(controls)
+        logging.debug('%s', description)
         try:
-            logging.debug('Set/get all: %s', str(controls))
-            rv = self._server.set_get_all(controls)
-        except socket.error as e:
-            e.filename = str(self)
-            raise
+            with self._wrap_socket_errors(description):
+                rv = self._server.set_get_all(controls)
         except xmlrpclib.Fault as e:
             # TODO(waihong): Remove the following backward compatibility when
             # the new versions of hdctools are deployed.
@@ -1121,8 +1217,15 @@ class Servo(object):
         src_path = os.path.dirname(image_path)
         dest_path = os.path.join('/tmp', 'dut_%d' % self._servo_host.servo_port)
         logging.info('Copying %s to %s', src_path, dest_path)
+        # Copy a directory, src_path to dest_path. send_file() will create a
+        # directory named basename(src_path) under dest_path, and copy all files
+        # in src_path to the destination.
         self._servo_host.send_file(src_path, dest_path, delete_dest=True)
-        return os.path.join(dest_path, os.path.basename(image_path))
+
+        # Make a image path of the destination.
+        # e.g. /tmp/dut_9999/EC/ec.bin
+        rv = os.path.join(dest_path, os.path.basename(src_path))
+        return os.path.join(rv, os.path.basename(image_path))
 
 
     def system(self, command, timeout=3600):
@@ -1161,11 +1264,8 @@ class Servo(object):
         @return: The version of the servo.
 
         """
-        try:
+        with self._wrap_socket_errors('get_servo_version->get_version()'):
             servo_type = self._server.get_version()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
         if '_and_' not in servo_type or not active:
             return servo_type
 
@@ -1199,11 +1299,8 @@ class Servo(object):
 
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""
-        try:
+        with self._wrap_socket_errors('main_device_is_ccd->get_version()'):
             servo = self._server.get_version()
-        except socket.error as e:
-            e.filename = str(self)
-            raise
         return 'ccd_cr50' in servo and 'servo_micro' not in servo
 
 
@@ -1254,16 +1351,20 @@ class Servo(object):
                     self._servo_type)
 
 
-    def program_bios(self, image, rw_only=False):
+    def program_bios(self, image, rw_only=False, copy_image=True):
         """Program bios on DUT with given image.
 
         @param image: a string, file name of the BIOS image to program
                       on the DUT.
         @param rw_only: True to only program the RW portion of BIOS.
+        @param copy_image: True indicates we need scp the image to servohost
+                           while False means the image file is already on
+                           servohost.
 
         """
         self._initialize_programmer()
-        if not self.is_localhost():
+        # We don't need scp if test runs locally.
+        if copy_image and not self.is_localhost():
             image = self._scp_image(image)
         if rw_only:
             self._programmer_rw.program_bios(image)
@@ -1271,16 +1372,19 @@ class Servo(object):
             self._programmer.program_bios(image)
 
 
-    def program_ec(self, image, rw_only=False):
+    def program_ec(self, image, rw_only=False, copy_image=True):
         """Program ec on DUT with given image.
 
         @param image: a string, file name of the EC image to program
                       on the DUT.
         @param rw_only: True to only program the RW portion of EC.
-
+        @param copy_image: True indicates we need scp the image to servohost
+                           while False means the image file is already on
+                           servohost.
         """
         self._initialize_programmer()
-        if not self.is_localhost():
+        # We don't need scp if test runs locally.
+        if copy_image and not self.is_localhost():
             image = self._scp_image(image)
         if rw_only:
             self._programmer_rw.program_ec(image)
@@ -1511,6 +1615,26 @@ class Servo(object):
             return
         return self.get('servo_v4_dts_mode')
 
+    def ccd_watchdog_enable(self, enable):
+        """Control the ccd watchdog."""
+        if 'ccd' not in self._servo_type:
+            return
+        if self._ccd_watchdog_disabled and enable:
+            logging.info('CCD watchdog disabled for test')
+            return
+        control = 'watchdog_add' if enable else 'watchdog_remove'
+        self.set_nocheck(control, 'ccd')
+
+    def disable_ccd_watchdog_for_test(self):
+        """Prevent servo from enabling the watchdog."""
+        self._ccd_watchdog_disabled = True
+        self.ccd_watchdog_enable(False)
+
+    def allow_ccd_watchdog_for_test(self):
+        """Allow servo to enable the ccd watchdog."""
+        self._ccd_watchdog_disabled = False
+        self.ccd_watchdog_enable(True)
+
     def set_dts_mode(self, state):
         """Set servo dts mode to off or on.
 
@@ -1526,19 +1650,15 @@ class Servo(object):
                          state)
             return
 
-        # TODO(mruthven): remove watchdog check once the labstation has been
-        # updated to have support for modifying the watchdog.
-        set_watchdog = (self.has_control('watchdog') and
-                        'ccd' in self._servo_type)
         enable_watchdog = state == 'on'
 
-        if set_watchdog and not enable_watchdog:
-            self.set_nocheck('watchdog_remove', 'ccd')
+        if not enable_watchdog:
+            self.ccd_watchdog_enable(False)
 
         self.set_nocheck('servo_v4_dts_mode', state)
 
-        if set_watchdog and enable_watchdog:
-            self.set_nocheck('watchdog_add', 'ccd')
+        if enable_watchdog:
+            self.ccd_watchdog_enable(True)
 
 
     def _get_servo_type_fw_version(self, servo_type, prefix=''):
@@ -1606,15 +1726,25 @@ class Servo(object):
         """Set directory to save UART logs.
 
         @param logs_dir  String of directory name."""
-        if self._uart:
-            self._uart.logs_dir = logs_dir
+        self._uart.logs_dir = logs_dir
 
+    def get_uart_logfile(self, uart):
+        """Return the path to the uart log file."""
+        return self._uart.get_logfile(uart)
+
+    def record_uart_capture(self, outdir=None):
+        """Save uart stream output."""
+        if outdir and not self.uart_logs_dir:
+            self.uart_logs_dir = outdir
+        self._uart.dump()
 
     def close(self, outdir=None):
         """Close the servo object."""
-        if outdir and not self.uart_logs_dir:
-            self.uart_logs_dir = outdir
-        if self._uart:
-            self._uart.stop_capture()
-            self._uart.dump()
-            self._uart = None
+        self._uart.stop_capture()
+        self.record_uart_capture(outdir)
+
+    def ec_reboot(self):
+        """Reboot Just the embedded controller."""
+        self.set_nocheck('ec_uart_flush', 'off')
+        self.set_nocheck('ec_uart_cmd', 'reboot')
+        self.set_nocheck('ec_uart_flush', 'on')

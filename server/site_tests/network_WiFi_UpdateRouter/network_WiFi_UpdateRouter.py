@@ -38,10 +38,9 @@ class network_WiFi_UpdateRouter(test.test):
     version = 1
 
     STABLE_VERSIONS = {
-        'stumpy': StableVersion('trybot-stumpy-test-ap/R47-7424.0.0-b10',
-                                '7424.0.2015_09_03_1514'),
-        'panther': StableVersion('trybot-panther-test-ap/R47-7424.0.0-b10',
-                                 '7424.0.2015_09_03_1532'),
+        ## crbug.com/1098024: these are left here as documentation of what the
+        # last stable version is, but the current updater code does not support
+        # them.
         'whirlwind': StableVersion('trybot-whirlwind-test-ap-tryjob/'
                                    'R65-10323.83.0-c40829',
                                    '10323.83.2018_04_30_1605'),
@@ -134,12 +133,9 @@ class network_WiFi_UpdateRouter(test.test):
         logging.info('Updating %s to image %s from %s',
                      device_host.hostname, desired.release_version,
                      current_release_version)
-        logging.info('Staging artifacts.')
         try:
             ds = dev_server.ImageServer.resolve(desired.builder_version,
                                                 device_host.hostname)
-            ds.stage_artifacts(desired.builder_version,
-                               ['full_payload', 'stateful'])
         except dev_server.DevServerException as e:
             logging.error(e)
             raise error.TestFail(str(e))

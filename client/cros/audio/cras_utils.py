@@ -317,7 +317,7 @@ def node_type_is_plugged(node_type, nodes_info):
 
 # Cras node types reported from Cras DBus control API.
 CRAS_OUTPUT_NODE_TYPES = ['HEADPHONE', 'INTERNAL_SPEAKER', 'HDMI', 'USB',
-                          'BLUETOOTH', 'LINEOUT', 'UNKNOWN']
+                          'BLUETOOTH', 'LINEOUT', 'UNKNOWN', 'ALSA_LOOPBACK']
 CRAS_INPUT_NODE_TYPES = ['MIC', 'INTERNAL_MIC', 'USB', 'BLUETOOTH',
                          'POST_DSP_LOOPBACK', 'POST_MIX_LOOPBACK', 'UNKNOWN',
                          'KEYBOARD_MIC', 'HOTWORD', 'FRONT_MIC', 'REAR_MIC',
@@ -654,6 +654,20 @@ def get_active_node_volume():
         if node['Active'] == 1 and node['IsInput'] == 0:
             return int(node['NodeVolume'])
     raise CrasUtilsError('Cannot find active node volume from nodes.')
+
+
+def get_active_output_node_max_supported_channels():
+    """Returns max supported channels from active output node.
+
+    @returns: int for max supported channels.
+
+    @raises: CrasUtilsError: if node cannot be found.
+    """
+    nodes = get_cras_nodes()
+    for node in nodes:
+        if node['Active'] == 1 and node['IsInput'] == 0:
+            return int(node['MaxSupportedChannels'])
+    raise CrasUtilsError('Cannot find active output node.')
 
 
 class CrasTestClient(object):

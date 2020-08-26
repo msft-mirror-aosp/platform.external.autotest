@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import argparse
 import contextlib
 import copy
@@ -120,6 +122,9 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- if servo_support_needed %}
             hard_reboot_on_failure=True,
     {%- endif %}
+    {%- if camera_facing %}
+            load_waivers=False,
+    {%- endif %}
             timeout={{timeout}})
 
     {% if sync_count and sync_count > 1 -%}
@@ -205,7 +210,7 @@ def get_bundle_abi(filename):
     return ''
 
 
-def get_extension(module, abi, revision, is_public=False, camera_facing=None):
+def get_extension(module, abi, revision, is_public=False, led_provision=None, camera_facing=None):
     """Defines a unique string.
 
     Notice we chose module revision first, then abi, as the module revision
@@ -214,6 +219,8 @@ def get_extension(module, abi, revision, is_public=False, camera_facing=None):
                    is specified, the control file will runs all the tests.
     @param public: boolean variable to specify whether or not the bundle is from
                    public source or not.
+    @param led_provision: string or None indicate whether the camerabox has led
+                          light or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
     @return string: unique string for specific tests. If public=True then the
@@ -227,6 +234,8 @@ def get_extension(module, abi, revision, is_public=False, camera_facing=None):
     if abi:
         ext_parts += [abi]
     ext_parts += [module]
+    if led_provision:
+        ext_parts += [led_provision]
     if camera_facing:
         ext_parts += ['camerabox', camera_facing]
     return '.'.join(ext_parts)
@@ -257,6 +266,7 @@ def get_controlfile_name(module,
                          abi,
                          revision,
                          is_public=False,
+                         led_provision=None,
                          camera_facing=None):
     """Defines the control file name.
 
@@ -266,12 +276,14 @@ def get_controlfile_name(module,
                    public source or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
+    @param led_provision: string or None indicate whether the camerabox has led
+                          light or not.
     @return string: control file for specific tests. If public=True or
                     module=all, then the name will be "control.<abi>.<module>",
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
-    return 'control.%s' % get_extension(module, abi, revision, is_public,
+    return 'control.%s' % get_extension(module, abi, revision, is_public, led_provision,
                                         camera_facing)
 
 
@@ -333,7 +345,7 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     return sorted(list(suites))
 
 
-def get_dependencies(modules, abi, is_public, camera_facing):
+def get_dependencies(modules, abi, is_public, led_provision, camera_facing):
     """Defines lab dependencies needed to schedule a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -342,6 +354,8 @@ def get_dependencies(modules, abi, is_public, camera_facing):
                 current test.
     @param is_public: boolean variable to specify whether or not the bundle is
                       from public source or not.
+    @param led_provision: specify if led is provisioned in the camerabox setup. 'noled' when
+                          there is no led light in the box and 'led' otherwise.
     @param camera_facing: specify requirement of camerabox setup with target
                           test camera facing. Set to None if it's not camerabox
                           related test.
@@ -349,6 +363,9 @@ def get_dependencies(modules, abi, is_public, camera_facing):
     dependencies = ['arc']
     if abi in CONFIG['LAB_DEPENDENCY']:
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
+
+    if led_provision is not None:
+        dependencies.append('camerabox_light:'+led_provision)
 
     if camera_facing is not None:
         dependencies.append('camerabox_facing:'+camera_facing)
@@ -628,17 +645,14 @@ def _format_modules_cmd(is_public, abi_to_run, modules=None, retry=False):
 
 def get_run_template(modules, is_public, retry=False, abi_to_run=None):
     """Command to run the modules specified by a control file."""
-    cmd = None
-    if modules.intersection(get_collect_modules(is_public)):
-        if _COLLECT in modules or _PUBLIC_COLLECT in modules:
-            cmd = _format_collect_cmd(is_public, abi_to_run, retry=retry)
-        elif _ALL in modules:
-            cmd = _format_modules_cmd(is_public, abi_to_run,
-                                      modules, retry=retry)
-    else:
-        cmd = _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
-    return cmd
-
+    no_intersection = not modules.intersection(get_collect_modules(is_public))
+    collect_present = (_COLLECT in modules or _PUBLIC_COLLECT in modules)
+    all_present = _ALL in modules
+    if no_intersection or (all_present and not collect_present):
+      return _format_modules_cmd(is_public, abi_to_run, modules, retry=retry)
+    elif collect_present:
+      return _format_collect_cmd(is_public, abi_to_run, retry=retry)
+    return None
 
 def get_retry_template(modules, is_public):
     """Command to retry the failed modules as specified by a control file."""
@@ -739,17 +753,18 @@ def get_controlfile_content(combined,
                             uri,
                             suites=None,
                             is_public=False,
+                            led_provision=None,
                             camera_facing=None):
     """Returns the text inside of a control file.
 
     @param combined: name to use for this combination of modules.
-    @param modules: list of CTS modules which will be tested in the control
-                   file. If 'all' is specified, the control file will runs
+    @param modules: set of CTS modules which will be tested in the control
+                   file. If 'all' is specified, the control file will run
                    all the tests.
     """
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
-    tag = '%s' % get_extension(combined, abi, revision, is_public,
+    tag = '%s' % get_extension(combined, abi, revision, is_public, led_provision,
                                camera_facing)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
@@ -775,6 +790,7 @@ def get_controlfile_content(combined,
             modules,
             abi,
             is_public,
+            led_provision,
             camera_facing),
         extra_artifacts=get_extra_artifacts(modules),
         extra_artifacts_host=get_extra_artifacts_host(modules),
@@ -935,10 +951,10 @@ def get_word_pattern(m, l=1):
     Break after l+1 CamelCase word.
     Example: CtsDebugTestCases -> CtsDebug.
     """
-    s = re.findall('^[a-z]+|[A-Z]*[^A-Z0-9]*', m)[0:l + 1]
+    s = re.findall('^[a-z-]+|[A-Z]*[^A-Z0-9]*', m)[0:l + 1]
     # Ignore Test or TestCases at the end as they don't add anything.
     if len(s) > l:
-        if s[l].startswith('Test'):
+        if s[l].startswith('Test') or s[l].startswith('['):
             return ''.join(s[0:l])
         if s[l - 1] == 'Test' and s[l].startswith('Cases'):
             return ''.join(s[0:l - 1])
@@ -979,12 +995,20 @@ def combine_modules_by_common_word(modules):
         # each module its own control file, even though this heuristic would
         # lump them together.
         if prefix.startswith('CtsMedia'):
-            for media in d[key]:
-                combined[media] = set([media])
+            # Separate each CtsMedia* modules, but group extra modules with
+            # optional parametrization (ex: secondary_user, instant) together.
+            prev = ' '
+            for media in sorted(d[key]):
+                if media.startswith(prev):
+                    combined[prev].add(media)
+                else:
+                    prev = media
+                    combined[media] = set([media])
+
         else:
             combined[prefix] = set(d[key])
-    print 'Reduced number of control files from %d to %d.' % (len(modules),
-                                                              len(combined))
+    print('Reduced number of control files from %d to %d.' % (len(modules),
+                                                              len(combined)))
     return combined
 
 
@@ -1117,13 +1141,14 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
     """Control files for CtsCameraTestCases.camerabox.*"""
     module = 'CtsCameraTestCases'
     for facing in ['back', 'front']:
-        name = get_controlfile_name(module, abi,
-                                    revision, is_public, facing)
-        content = get_controlfile_content(module, set([module]), abi,
-                                          revision, build, uri,
-                                          None, is_public, facing)
-        with open(name, 'w') as f:
-            f.write(content)
+        for led_provision in ['led', 'noled']:
+            name = get_controlfile_name(module, abi,
+                                        revision, is_public, led_provision, facing)
+            content = get_controlfile_content(module, set([module]), abi,
+                                              revision, build, uri,
+                                              None, is_public, led_provision, facing)
+            with open(name, 'w') as f:
+                f.write(content)
 
 
 def run(uris, is_public, cache_dir):

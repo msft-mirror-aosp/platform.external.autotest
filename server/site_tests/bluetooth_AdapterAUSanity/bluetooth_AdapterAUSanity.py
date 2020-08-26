@@ -7,10 +7,10 @@
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, AVRCP, HFP_WBS, HFP_NBS)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
-        BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
 
 
 class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
@@ -19,26 +19,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
 
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
-
-
-    def au_pairing(self, device, test_profile):
-        """audio pairing procedure.
-
-        @param device: the bt peer device
-        @param test_profile: which test profile is used,
-                             A2DP, HFP_WBS or HFP_NBS
-        """
-        self.test_reset_on_adapter()
-        self.test_bluetoothd_running()
-        self.initialize_bluetooth_audio(device, test_profile)
-        self.test_device_set_discoverable(device, True)
-        self.test_discover_device(device.address)
-        self.test_stop_discovery()
-        self.test_pairing(device.address, device.pin, trusted=True)
-        device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
-        self.test_connection_by_adapter(device.address)
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, test_profile)
 
 
     def au_run_method(self, device, test_method, test_profile):
@@ -54,9 +34,7 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.initialize_bluetooth_audio(device, test_profile)
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.test_stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
-        device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
         self.test_connection_by_adapter(device.address)
         test_method()
         self.test_disconnection_by_adapter(device.address)
@@ -99,7 +77,9 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
                 device, lambda: test_method(device, test_profile), test_profile)
 
 
+    # TODO(b/163284498) Realtek not ready for WBS yet pending on cras patches.
     @test_wrapper('HFP WBS sinewave test with dut as source',
+                  skip_chipsets=['Realtek-RTL8822C-USB'],
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_source_test(self):
         """HFP WBS test with sinewave streaming from dut to peer."""
@@ -108,7 +88,9 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_WBS)
 
 
+    # TODO(b/163284498) Realtek not ready for WBS yet pending on cras patches.
     @test_wrapper('HFP WBS sinewave test with dut as sink',
+                  skip_chipsets=['Realtek-RTL8822C-USB'],
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""
@@ -160,7 +142,10 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_run_avrcp_method(device, self.test_avrcp_commands)
 
 
-    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1})
+    # Add 'Quick Sanity' to flags to exclude the test from AVL.
+    # When this test is stable enough later, remove the flags here.
+    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1},
+                  flags=['Quick Sanity'])
     def au_avrcp_media_info_test(self):
         """AVRCP test to examine metadata propgation."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -194,6 +179,6 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         """
         self.host = host
 
-        self.quick_test_init(host, use_chameleon=True, flag=flag)
+        self.quick_test_init(host, use_btpeer=True, flag=flag)
         self.au_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

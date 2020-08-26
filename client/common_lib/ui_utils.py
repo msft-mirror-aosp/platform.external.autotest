@@ -1,8 +1,29 @@
 import logging
+import os
 import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 
+
+class UIScreenshoter(object):
+    """Simple class to take screenshots within the ui_utils framework."""
+
+    _SCREENSHOT_DIR_PATH = '/var/log/ui_utils'
+    _SCREENSHOT_BASENAME = 'ui-screenshot'
+
+    def __init__(self):
+        if not os.path.exists(self._SCREENSHOT_DIR_PATH):
+            os.mkdir(self._SCREENSHOT_DIR_PATH, 0755)
+        self.screenshot_num = 0
+
+    def take_ss(self):
+        try:
+            utils.run('screenshot "{}/{}_iter{}.png"'.format(
+                      self._SCREENSHOT_DIR_PATH, self._SCREENSHOT_BASENAME,
+                      self.screenshot_num))
+            self.screenshot_num += 1
+        except Exception as e:
+            logging.warning('Unable to capture screenshot. %s', e)
 
 class UI_Handler(object):
 
@@ -14,6 +35,9 @@ class UI_Handler(object):
                     resolve(%s);
                 })
             })'''
+
+    def __init__(self):
+        self.screenshoter = UIScreenshoter()
 
     def start_ui_root(self, cr):
         """Start the UI root object for testing."""
@@ -85,14 +109,20 @@ class UI_Handler(object):
         @raises error.TestError if the element is not loaded (or removed).
 
         """
-        utils.poll_for_condition(
-            condition=lambda: self.item_present(name=name,
-                                                isRegex=isRegex,
-                                                flip=remove,
-                                                role=role),
-            timeout=timeout,
-            exception=error.TestError('{} did not load in: {}'
-                                      .format(name, self.list_screen_items())))
+        try:
+            utils.poll_for_condition(
+                condition=lambda: self.item_present(name=name,
+                                                    isRegex=isRegex,
+                                                    flip=remove,
+                                                    role=role),
+                timeout=timeout,
+                exception=error.TestError('{} did not load'
+                                          .format(name)))
+        except error.TestError:
+            self.screenshoter.take_ss()
+            logging.debug("CURRENT UI ITEMS VISIBLE {}".format(
+                self.list_screen_items()))
+            raise error.TestError('{} did not load'.format(name))
 
     def did_obj_not_load(self, name, isRegex=False, timeout=5):
         """

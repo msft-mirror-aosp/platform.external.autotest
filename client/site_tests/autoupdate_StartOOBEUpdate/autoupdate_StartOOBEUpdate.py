@@ -95,14 +95,14 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         """
 
-        if critical_update:
+        if critical_update and not cellular:
             self._start_oobe_update(update_url, critical_update, full_payload)
             if interrupt_network:
                 self._wait_for_progress(interrupt_progress)
-                self._take_screenshot('before_interrupt.png')
+                self._take_screenshot(self._BEFORE_INTERRUPT_FILENAME)
                 completed = self._get_update_progress()
                 self._disconnect_reconnect_network_test(update_url)
-                self._take_screenshot('after_interrupt.png')
+                self._take_screenshot(self._AFTER_INTERRUPT_FILENAME)
 
                 if self._is_update_engine_idle():
                     raise error.TestFail(
@@ -110,6 +110,9 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                 if not self._update_continued_where_it_left_off(completed):
                     raise error.TestFail('The update did not continue where '
                                          'it left off after interruption.')
+
+                # Remove screenshots since the interrupt test succeeded.
+                self._remove_screenshots()
             return
 
         # Setup a Nebraska instance on the DUT for cellular tests and

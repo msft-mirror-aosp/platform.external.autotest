@@ -64,7 +64,8 @@ class power_Speedometer2(power_test.power_Test):
             confidence = tab.EvaluateJavaScript(
                     'document.getElementById("%s-number").innerHTML' % \
                     CONFIDENCE)
-            confidence = float(re.findall(r"\d*\.\d*", confidence)[0])
+            match = re.search(r"((\d+(\.\d+)?)|(\.\d+))", confidence)
+            confidence = float(match.group(0))
 
             keyvals = {RESULT: result, CONFIDENCE: confidence}
             for key, val in keyvals.items():

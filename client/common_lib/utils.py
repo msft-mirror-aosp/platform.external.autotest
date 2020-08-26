@@ -93,9 +93,9 @@ STDOUT_PREFIX = '[stdout] '
 STDERR_PREFIX = '[stderr] '
 
 # safe characters for the shell (do not need quoting)
-SHELL_QUOTING_WHITELIST = frozenset(string.ascii_letters +
+_SHELL_QUOTING_ALLOWLIST = frozenset(string.ascii_letters +
                                     string.digits +
-                                    '_-+=>')
+                                    '_-+=>|')
 
 def custom_warning_handler(message, category, filename, lineno, file=None,
                            line=None):
@@ -1626,7 +1626,7 @@ def sh_escape(command):
     return command
 
 
-def sh_quote_word(text, whitelist=SHELL_QUOTING_WHITELIST):
+def sh_quote_word(text, allowlist=_SHELL_QUOTING_ALLOWLIST):
     r"""Quote a string to make it safe as a single word in a shell command.
 
     POSIX shell syntax recognizes no escape characters inside a single-quoted
@@ -1646,12 +1646,12 @@ def sh_quote_word(text, whitelist=SHELL_QUOTING_WHITELIST):
                 sh_quote_word('echo %s' % sh_quote_word('hello world')))
 
     @param text: The string to be quoted into a single word for the shell.
-    @param whitelist: Optional list of characters that do not need quoting.
+    @param allowlist: Optional list of characters that do not need quoting.
                       Defaults to a known good list of characters.
 
     @return A string, possibly quoted, safe as a single word for a shell.
     """
-    if all(c in whitelist for c in text):
+    if all(c in allowlist for c in text):
         return text
     return "'" + text.replace("'", r"'\''") + "'"
 

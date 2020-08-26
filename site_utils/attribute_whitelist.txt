@@ -1,6 +1,3 @@
-subsystem:default
-subsystem:network
-subsystem:wifi
 suite:AFDO_page_replay
 suite:AFDO_record
 suite:another_suite
@@ -104,6 +101,7 @@ suite:faft_bios_ec3po
 suite:faft_bios_ro_qual
 suite:faft_bios_rw_qual
 suite:faft_bios_tot
+suite:faft_cr50_crypto
 suite:faft_cr50_experimental
 suite:faft_cr50_prepvt
 suite:faft_cr50_prepvt_tast
@@ -163,6 +161,7 @@ suite:moblab_quick
 suite:moblab_storage_qual
 suite:network_nightly
 suite:network_ui
+suite:offloads
 suite:partners
 suite:paygen_au_beta
 suite:paygen_au_canary
@@ -201,11 +200,15 @@ suite:storage_qual_cq
 suite:storage_qual_external
 suite:storage_qual_quick
 suite:storage_qual_temp
+suite:storage_qual_v2_quick
 suite:storagequal
 suite:stress
+suite:syzkaller
 suite:telemetry_unit
 suite:telemetry_unit_server
 suite:tendo_experimental
+suite:thermal_qual_fast
+suite:thermal_qual_full
 suite:toolchain-tests
 suite:touch
 suite:video

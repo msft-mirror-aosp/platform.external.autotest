@@ -2,21 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import logging
+import os
 import re
+import six
 import sys
-import urllib2
 import urlparse
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import error, global_config
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server import autotest
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
-from chromite.lib import retry_util
 
 try:
     from chromite.lib import metrics
@@ -28,24 +30,7 @@ def _metric_name(base_name):
     return 'chromeos/autotest/provision/' + base_name
 
 
-# Local stateful update path is relative to the CrOS source directory.
-UPDATER_IDLE = 'UPDATE_STATUS_IDLE'
-UPDATER_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
-# A list of update engine client states that occur after an update is triggered.
-UPDATER_PROCESSING_UPDATE = ['UPDATE_STATUS_CHECKING_FOR_UPDATE',
-                             'UPDATE_STATUS_UPDATE_AVAILABLE',
-                             'UPDATE_STATUS_DOWNLOADING',
-                             'UPDATE_STATUS_FINALIZING',
-                             'UPDATE_STATUS_VERIFYING',
-                             'UPDATE_STATUS_REPORTING_ERROR_EVENT',
-                             'UPDATE_STATUS_ATTEMPTING_ROLLBACK']
-
-
-_STATEFUL_UPDATE_SCRIPT = 'stateful_update'
 _QUICK_PROVISION_SCRIPT = 'quick-provision'
-
-_UPDATER_BIN = '/usr/bin/update_engine_client'
-_UPDATER_LOGS = ['/var/log/messages', '/var/log/update_engine']
 
 # PROVISION_FAILED - A flag file to indicate provision failures.  The
 # file is created at the start of any AU procedure (see
@@ -84,14 +69,6 @@ _REBOOT_FAILURE_MESSAGE = 'Host did not return from reboot'
 
 DEVSERVER_PORT = '8082'
 GS_CACHE_PORT = '8888'
-
-
-class RootFSUpdateError(error.TestFail):
-    """Raised when the RootFS fails to update."""
-
-
-class StatefulUpdateError(error.TestFail):
-    """Raised when the stateful partition fails to update."""
 
 
 class _AttributedUpdateError(error.TestFail):
@@ -139,21 +116,6 @@ class HostUpdateError(_AttributedUpdateError):
             'Error on %s prior to update' % hostname, msg)
 
 
-class DevServerError(_AttributedUpdateError):
-    """Failure updating a DUT attributable to the devserver.
-
-    This class of exception should be raised when the most likely cause
-    of failure was the devserver serving the target image for update.
-    """
-
-    _SUMMARY = 'Devserver failed prior to update'
-    _CLASSIFIERS = []
-
-    def __init__(self, devserver, msg):
-        super(DevServerError, self).__init__(
-            'Devserver error on %s' % devserver, msg)
-
-
 class ImageInstallError(_AttributedUpdateError):
     """Failure updating a DUT when installing from the devserver.
 
@@ -180,14 +142,11 @@ class NewBuildUpdateError(_AttributedUpdateError):
     """
 
     CHROME_FAILURE = 'Chrome failed to reach login screen'
-    UPDATE_ENGINE_FAILURE = ('update-engine failed to call '
-                             'chromeos-setgoodkernel')
     ROLLBACK_FAILURE = 'System rolled back to previous build'
 
     _SUMMARY = 'New build failed'
     _CLASSIFIERS = [
         (CHROME_FAILURE, 'Chrome did not start'),
-        (UPDATE_ENGINE_FAILURE, 'update-engine did not start'),
         (ROLLBACK_FAILURE, ROLLBACK_FAILURE),
     ]
 
@@ -226,7 +185,7 @@ def url_to_image_name(update_url):
     @returns a string representing the image name in the update_url.
 
     """
-    return '/'.join(urlparse.urlparse(update_url).path.split('/')[-2:])
+    return urlparse.urlparse(update_url).path[len('/update/'):]
 
 
 def get_update_failure_reason(exception):
@@ -252,55 +211,6 @@ def get_update_failure_reason(exception):
         else:
             return 'Unknown Error: %s' % type(exception).__name__
     return None
-
-
-def _get_devserver_build_from_update_url(update_url):
-    """Get the devserver and build from the update url.
-
-    @param update_url: The url for update.
-        Eg: http://devserver:port/update/build.
-
-    @return: A tuple of (devserver url, build) or None if the update_url
-        doesn't match the expected pattern.
-
-    @raises ValueError: If the update_url doesn't match the expected pattern.
-    @raises ValueError: If no global_config was found, or it doesn't contain an
-        image_url_pattern.
-    """
-    pattern = global_config.global_config.get_config_value(
-            'CROS', 'image_url_pattern', type=str, default='')
-    if not pattern:
-        raise ValueError('Cannot parse update_url, the global config needs '
-                'an image_url_pattern.')
-    re_pattern = pattern.replace('%s', '(\S+)')
-    parts = re.search(re_pattern, update_url)
-    if not parts or len(parts.groups()) < 2:
-        raise ValueError('%s is not an update url' % update_url)
-    return parts.groups()
-
-
-def _list_image_dir_contents(update_url):
-    """Lists the contents of the devserver for a given build/update_url.
-
-    @param update_url: An update url. Eg: http://devserver:port/update/build.
-    """
-    if not update_url:
-        logging.warning('Need update_url to list contents of the devserver.')
-        return
-    error_msg = 'Cannot check contents of devserver, update url %s' % update_url
-    try:
-        devserver_url, build = _get_devserver_build_from_update_url(update_url)
-    except ValueError as e:
-        logging.warning('%s: %s', error_msg, e)
-        return
-    devserver = dev_server.ImageServer(devserver_url)
-    try:
-        devserver.list_image_dir(build)
-    # The devserver will retry on URLError to avoid flaky connections, but will
-    # eventually raise the URLError if it persists. All HTTPErrors get
-    # converted to DevServerExceptions.
-    except (dev_server.DevServerException, urllib2.URLError) as e:
-        logging.warning('%s: %s', error_msg, e)
 
 
 def _get_metric_fields(update_url):
@@ -330,36 +240,27 @@ class ChromiumOSUpdater(object):
     """Chromium OS specific DUT update functionality."""
 
     def __init__(self, update_url, host=None, interactive=True,
-                 use_quick_provision=False):
+                 is_release_bucket=None, is_servohost=False):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
         @param host: A client.common_lib.hosts.Host implementation.
         @param interactive: Bool whether we are doing an interactive update.
-        @param use_quick_provision: Whether we should attempt to perform
-            the update using the quick-provision script.
+        @param is_release_bucket: If True, use release bucket
+            gs://chromeos-releases.
+        @param is_servohost: Bool whether the update target is a servohost.
         """
         self.update_url = update_url
         self.host = host
         self.interactive = interactive
         self.update_version = _url_to_version(update_url)
-        self._use_quick_provision = use_quick_provision
+        self._is_release_bucket = is_release_bucket
+        self._is_servohost = is_servohost
 
 
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
         return self.host.run(cmd, *args, **kwargs)
-
-
-    def check_update_status(self):
-        """Returns the current update engine state.
-
-        We use the `update_engine_client -status' command and parse the line
-        indicating the update state, e.g. "CURRENT_OP=UPDATE_STATUS_IDLE".
-        """
-        update_status = self.host.run(command='%s -status | grep CURRENT_OP' %
-                                      _UPDATER_BIN)
-        return update_status.stdout.strip().split('=')[-1]
 
 
     def _rootdev(self, options=''):
@@ -371,106 +272,32 @@ class ChromiumOSUpdater(object):
         return self._run('rootdev %s' % options).stdout.strip()
 
 
-    def _get_last_update_error(self):
-        """Get the last autoupdate error code."""
-        command_result = self._run(
-                 '%s --last_attempt_error' % _UPDATER_BIN)
-        return command_result.stdout.strip().replace('\n', ', ')
-
-
-    def _base_update_handler_no_retry(self, run_args):
-        """Base function to handle a remote update ssh call.
-
-        @param run_args: Dictionary of args passed to ssh_host.run function.
-
-        @throws: intercepts and re-throws all exceptions
-        """
-        try:
-            self.host.run(**run_args)
-        except Exception as e:
-            logging.debug('exception in update handler: %s', e)
-            raise e
-
-
-    def _base_update_handler(self, run_args, err_msg_prefix=None):
-        """Handle a remote update ssh call, possibly with retries.
-
-        @param run_args: Dictionary of args passed to ssh_host.run function.
-        @param err_msg_prefix: Prefix of the exception error message.
-        """
-        def exception_handler(e):
-            """Examines exceptions and returns True if the update handler
-            should be retried.
-
-            @param e: the exception intercepted by the retry util.
-            """
-            return (isinstance(e, error.AutoservSSHTimeout) or
-                    (isinstance(e, error.GenericHostRunError) and
-                     hasattr(e, 'description') and
-                     (re.search('ERROR_CODE=37', e.description) or
-                      re.search('generic error .255.', e.description))))
-
-        try:
-            # Try the update twice (arg 2 is max_retry, not including the first
-            # call).  Some exceptions may be caught by the retry handler.
-            retry_util.GenericRetry(exception_handler, 1,
-                                    self._base_update_handler_no_retry,
-                                    run_args)
-        except Exception as e:
-            message = err_msg_prefix + ': ' + str(e)
-            raise RootFSUpdateError(message)
-
-
-    def _wait_for_update_service(self):
-        """Ensure that the update engine daemon is running, possibly
-        by waiting for it a bit in case the DUT just rebooted and the
-        service hasn't started yet.
-        """
-        def handler(e):
-            """Retry exception handler.
-
-            Assumes that the error is due to the update service not having
-            started yet.
-
-            @param e: the exception intercepted by the retry util.
-            """
-            if isinstance(e, error.AutoservRunError):
-                logging.debug('update service check exception: %s\n'
-                              'retrying...', e)
-                return True
-            else:
-                return False
-
-        # Retry at most three times, every 5s.
-        status = retry_util.GenericRetry(handler, 3,
-                                         self.check_update_status,
-                                         sleep=5)
-
-        # Expect the update engine to be idle.
-        if status != UPDATER_IDLE:
-            raise RootFSUpdateError(
-                    'Update engine status is %s (%s was expected).'
-                    % (status, UPDATER_IDLE))
-
-
     def _reset_update_engine(self):
         """Resets the host to prepare for a clean update regardless of state."""
         self._run('stop ui || true')
-        self._run('stop update-engine || true')
-        self._run('start update-engine')
-        self._wait_for_update_service()
+        self._run('restart update-engine')
 
 
     def _reset_stateful_partition(self):
         """Clear any pending stateful update request."""
-        self._run('%s --stateful_change=reset 2>&1'
-                  % self._get_stateful_update_script())
-        self._run('rm -f %s' % _TARGET_VERSION)
+        cmd = ['rm', '-rf']
+        for f in ('var_new', 'dev_image_new', '.update_available'):
+            cmd += [os.path.join('/mnt/stateful_partition', f)]
+        # TODO(b/165024723): This is a temporary measure until we figure out the
+        # root cause of this bug.
+        cmd += ['/mnt/stateful_partition/dev_image/share/tast/data/chromiumos/'
+                'tast/local/bundles/']
+        cmd += [_TARGET_VERSION, '2>&1']
+        self._run(cmd)
 
 
     def _set_target_version(self):
         """Set the "target version" for the update."""
-        version_number = self.update_version.split('-')[1]
+        # Version strings that come from release buckets do not have RXX- at the
+        # beginning. So remove this prefix only if the version has it.
+        version_number = (self.update_version.split('-')[1]
+                          if '-' in self.update_version
+                          else self.update_version)
         self._run('echo %s > %s' % (version_number, _TARGET_VERSION))
 
 
@@ -481,70 +308,10 @@ class ChromiumOSUpdater(object):
         return self._run('/postinst %s 2>&1' % part)
 
 
-    def _verify_update_completed(self):
-        """Verifies that an update has completed.
-
-        @raise RootFSUpdateError if the DUT doesn't indicate that
-                download is complete and the DUT is ready for reboot.
-        """
-        status = self.check_update_status()
-        if status != UPDATER_NEED_REBOOT:
-            error_msg = ''
-            if status == UPDATER_IDLE:
-                error_msg = 'Update error: %s' % self._get_last_update_error()
-            raise RootFSUpdateError(
-                    'Update engine status is %s (%s was expected).  %s'
-                    % (status, UPDATER_NEED_REBOOT, error_msg))
-        return kernel_utils.verify_kernel_state_after_update(self.host)
-
-
-    def trigger_update(self):
-        """Triggers a background update."""
-        # If this function is called immediately after reboot (which it
-        # can be), there is no guarantee that the update engine is up
-        # and running yet, so wait for it.
-        self._wait_for_update_service()
-
-        autoupdate_cmd = ('%s --check_for_update --omaha_url=%s' %
-                          (_UPDATER_BIN, self.update_url))
-        run_args = {'command': autoupdate_cmd}
-        err_prefix = 'Failed to trigger an update on %s. ' % self.host.hostname
-        logging.info('Triggering update via: %s', autoupdate_cmd)
-        metric_fields = {'success': False}
-        try:
-            self._base_update_handler(run_args, err_prefix)
-            metric_fields['success'] = True
-        finally:
-            c = metrics.Counter('chromeos/autotest/autoupdater/trigger')
-            metric_fields.update(_get_metric_fields(self.update_url))
-            c.increment(fields=metric_fields)
-
-
-    def update_image(self):
-        """Updates the device root FS and kernel and verifies success."""
-        autoupdate_cmd = ('%s --update --omaha_url=%s' %
-                          (_UPDATER_BIN, self.update_url))
-        if not self.interactive:
-            autoupdate_cmd = '%s --interactive=false' % autoupdate_cmd
-        run_args = {'command': autoupdate_cmd, 'timeout': 3600}
-        err_prefix = ('Failed to install device image using payload at %s '
-                      'on %s. ' % (self.update_url, self.host.hostname))
-        logging.info('Updating image via: %s', autoupdate_cmd)
-        metric_fields = {'success': False}
-        try:
-            self._base_update_handler(run_args, err_prefix)
-            metric_fields['success'] = True
-        finally:
-            c = metrics.Counter('chromeos/autotest/autoupdater/update')
-            metric_fields.update(_get_metric_fields(self.update_url))
-            c.increment(fields=metric_fields)
-        return self._verify_update_completed()
-
-
     def _get_remote_script(self, script_name):
         """Ensure that `script_name` is present on the DUT.
 
-        The given script (e.g. `stateful_update`) may be present in the
+        The given script (e.g. `quick-provision`) may be present in the
         stateful partition under /usr/local/bin, or we may have to
         download it from the devserver.
 
@@ -576,50 +343,6 @@ class ChromiumOSUpdater(object):
                 return '%s %s' % (script_interpreter, remote_tmp_script)
         return None
 
-    def _get_stateful_update_script(self):
-        """Returns a command to run the stateful update script.
-
-        Find `stateful_update` on the target or install it, as
-        necessary.  If installation fails, raise an exception.
-
-        @raise StatefulUpdateError if the script can't be found or
-            installed.
-        @return A string that can be joined with arguments to run the
-            `stateful_update` command on the DUT.
-        """
-        script_command = self._get_remote_script(_STATEFUL_UPDATE_SCRIPT)
-        if not script_command:
-            raise StatefulUpdateError('Could not install %s on DUT'
-                                      % _STATEFUL_UPDATE_SCRIPT)
-        return script_command
-
-
-    def update_stateful(self, clobber=True):
-        """Updates the stateful partition.
-
-        @param clobber: If True, a clean stateful installation.
-
-        @raise StatefulUpdateError if the update script fails to
-                complete successfully.
-        """
-        logging.info('Updating stateful partition...')
-        statefuldev_url = self.update_url.replace('update', 'static')
-
-        # Attempt stateful partition update; this must succeed so that the newly
-        # installed host is testable after update.
-        statefuldev_cmd = [self._get_stateful_update_script(), statefuldev_url]
-        if clobber:
-            statefuldev_cmd.append('--stateful_change=clean')
-
-        statefuldev_cmd.append('2>&1')
-        try:
-            self._run(' '.join(statefuldev_cmd), timeout=1200)
-        except error.AutoservRunError:
-            raise StatefulUpdateError(
-                    'Failed to perform stateful update on %s' %
-                    self.host.hostname)
-
-
     def _prepare_host(self):
         """Make sure the target DUT is working and ready for update.
 
@@ -641,30 +364,17 @@ class ChromiumOSUpdater(object):
             raise HostUpdateError(self.host.hostname,
                                   HostUpdateError.DUT_DOWN)
         self._reset_stateful_partition()
-        self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
-        self._run('touch %s' % PROVISION_FAILED)
+        # Servohost reboot logic is handled by themselves.
+        if not self._is_servohost:
+            self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
+            self._run('touch %s' % PROVISION_FAILED)
         self.host.prepare_for_update()
-        self._reset_update_engine()
+        # Servohost will only update via quick provision.
+        if not self._is_servohost:
+            self._reset_update_engine()
         logging.info('Updating from version %s to %s.',
                      self.host.get_release_version(),
                      self.update_version)
-
-
-    def _install_via_update_engine(self):
-        """Install an updating using the production AU flow.
-
-        This uses the standard AU flow and the `stateful_update` script
-        to download and install a root FS, kernel and stateful
-        filesystem content.
-
-        @return The kernel expected to be booted next.
-        """
-        logging.info('Installing image using update_engine.')
-        expected_kernel = self.update_image()
-        self.update_stateful()
-        self._set_target_version()
-        return expected_kernel
-
 
     def _quick_provision_with_gs_cache(self, provision_command, devserver_name,
                                        image_name):
@@ -678,8 +388,10 @@ class ChromiumOSUpdater(object):
         # If enabled, GsCache server listion on different port on the
         # devserver.
         gs_cache_server = devserver_name.replace(DEVSERVER_PORT, GS_CACHE_PORT)
-        gs_cache_url = ('http://%s/download/chromeos-image-archive'
-                        % gs_cache_server)
+        gs_cache_url = ('http://%s/download/%s'
+                        % (gs_cache_server,
+                           'chromeos-releases' if self._is_release_bucket
+                           else 'chromeos-image-archive'))
 
         # Check if GS_Cache server is enabled on the server.
         self._run('curl -s -o /dev/null %s' % gs_cache_url)
@@ -701,10 +413,14 @@ class ChromiumOSUpdater(object):
         """
         logging.info('Try quick provision with devserver.')
         ds = dev_server.ImageServer('http://%s' % devserver_name)
+        archive_url = ('gs://chromeos-releases/%s' %  image_name
+                       if self._is_release_bucket else None)
         try:
-            ds.stage_artifacts(image_name, ['quick_provision', 'stateful'])
+            ds.stage_artifacts(image_name, ['quick_provision', 'stateful',
+                                            'autotest_packages'],
+                               archive_url=archive_url)
         except dev_server.DevServerException as e:
-            raise error.TestFail, str(e), sys.exc_info()[2]
+            six.reraise(error.TestFail, str(e), sys.exc_info()[2])
 
         static_url = 'http://%s/static' % devserver_name
         command = '%s --noreboot %s %s' % (provision_command, image_name,
@@ -714,7 +430,7 @@ class ChromiumOSUpdater(object):
                 fields={'devserver': devserver_name, 'gs_cache': False})
 
 
-    def _install_via_quick_provision(self):
+    def _install_update(self):
         """Install an updating using the `quick-provision` script.
 
         This uses the `quick-provision` script to download and install
@@ -722,17 +438,20 @@ class ChromiumOSUpdater(object):
 
         @return The kernel expected to be booted next.
         """
-        if not self._use_quick_provision:
-            return None
+        logging.info('Installing image at %s onto %s',
+                     self.update_url, self.host.hostname)
+        server_name = urlparse.urlparse(self.update_url)[1]
         image_name = url_to_image_name(self.update_url)
+
         logging.info('Installing image using quick-provision.')
         provision_command = self._get_remote_script(_QUICK_PROVISION_SCRIPT)
-        server_name = urlparse.urlparse(self.update_url)[1]
         try:
             try:
                 self._quick_provision_with_gs_cache(provision_command,
                                                     server_name, image_name)
-            except Exception:
+            except Exception as e:
+                logging.error('Failed to quick-provision with gscache with '
+                              'error %s', e)
                 self._quick_provision_with_devserver(provision_command,
                                                      server_name, image_name)
 
@@ -742,43 +461,11 @@ class ChromiumOSUpdater(object):
             # N.B.  We handle only `Exception` here.  Non-Exception
             # classes (such as KeyboardInterrupt) are handled by our
             # caller.
-            logging.exception('quick-provision script failed; '
-                              'will fall back to update_engine.')
+            logging.exception('quick-provision script failed;')
             self._revert_boot_partition()
             self._reset_stateful_partition()
             self._reset_update_engine()
             return None
-
-
-    def _install_update(self):
-        """Install the requested image on the DUT, but don't start it.
-
-        This downloads and installs a root FS, kernel and stateful
-        filesystem content.  This does not reboot the DUT, so the update
-        is merely pending when the method returns.
-
-        @return The kernel expected to be booted next.
-        """
-        logging.info('Installing image at %s onto %s',
-                     self.update_url, self.host.hostname)
-        try:
-            return (self._install_via_quick_provision()
-                    or self._install_via_update_engine())
-        except:
-            # N.B. This handling code includes non-Exception classes such
-            # as KeyboardInterrupt.  We need to clean up, but we also must
-            # re-raise.
-            self._revert_boot_partition()
-            self._reset_stateful_partition()
-            self._reset_update_engine()
-            # Collect update engine logs in the event of failure.
-            if self.host.job:
-                logging.info('Collecting update engine logs due to failure...')
-                self.host.get_file(
-                        _UPDATER_LOGS, self.host.job.sysinfo.sysinfodir,
-                        preserve_perm=False)
-            _list_image_dir_contents(self.update_url)
-            raise
 
 
     def _complete_update(self, expected_kernel):
@@ -812,8 +499,15 @@ class ChromiumOSUpdater(object):
         autoreboot_cmd = ('FILE="%s" ; [ -f "$FILE" ] || '
                           '( touch "$FILE" ; start autoreboot )')
         self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
-        kernel_utils.verify_boot_expectations(
-            expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE, self.host)
+        try:
+            kernel_utils.verify_boot_expectations(
+                expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,
+                self.host)
+        except Exception:
+            # When the system is rolled back, the provision_failed file is
+            # removed. So add it back here and re-raise the exception.
+            self._run('touch %s' % PROVISION_FAILED)
+            raise
 
         logging.debug('Cleaning up old autotest directories.')
         try:
@@ -860,13 +554,15 @@ class ChromiumOSUpdater(object):
             logging.exception('Failure during download and install.')
             raise ImageInstallError(self.host.hostname, server_name, str(e))
 
-        try:
-            self._complete_update(expected_kernel)
-        except _AttributedUpdateError:
-            raise
-        except Exception as e:
-            logging.exception('Failure from build after update.')
-            raise NewBuildUpdateError(self.update_version, str(e))
+        # Servohost will handle post update process themselves.
+        if not self._is_servohost:
+            try:
+                self._complete_update(expected_kernel)
+            except _AttributedUpdateError:
+                raise
+            except Exception as e:
+                logging.exception('Failure from build after update.')
+                raise NewBuildUpdateError(self.update_version, str(e))
 
         image_name = url_to_image_name(self.update_url)
         # update_url is different from devserver url needed to stage autotest

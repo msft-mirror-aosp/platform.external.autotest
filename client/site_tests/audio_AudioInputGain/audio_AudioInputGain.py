@@ -16,6 +16,7 @@ from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.audio import check_quality
 from autotest_lib.client.cros.audio import cmd_utils
 from autotest_lib.client.cros.audio import cras_utils
+from autotest_lib.client.cros.audio import sox_utils
 from autotest_lib.client.cros.multimedia import audio_facade_native
 
 
@@ -34,6 +35,7 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
     HIGH_GAIN = 75
     EXPECTED_GAIN = 100
     FREQ_TOLERANCE = 1
+    SECOND_PEAK_RATIO_TOLERANCE = 0.05
     GAIN_TOLERANCE = 10
 
     def run_once(self):
@@ -46,15 +48,6 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
             @returns: A string for the recorded file path.
 
             """
-            def wait_for_active_stream_count(expected_count):
-                """Make sure the active stream is enabled/disabled"""
-                utils.poll_for_condition(
-                        lambda: (cras_utils.get_active_stream_count() ==
-                                expected_count),
-                        exception=error.TestError(
-                                'Timeout waiting stream count to become %d' %
-                                expected_count))
-
             # Sine raw file lasts 5 seconds
             raw_path = os.path.join(self.bindir, '5SEC.raw')
             raw_file = audio_test_data.GenerateAudioTestData(
@@ -66,10 +59,12 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
             recorded_file = os.path.join(self.resultsdir,
                                          'cras_recorded_%d.raw' % gain_level)
 
-            wait_for_active_stream_count(0)
+            # Note: we've found that a couple of seconds after Chrome is up,
+            #       there may be a ~30-second-long output stream sourced from
+            #       "What's New In Your Chromebook", and it plays no sound.
+            #       Just ignore it and continue testing.
             p = cmd_utils.popen(cras_utils.playback_cmd(raw_file.path))
             try:
-                wait_for_active_stream_count(1)
                 cras_utils.capture(recorded_file,
                                    duration=self.CAPTURE_DURATION)
                 # Make sure the audio is still playing.
@@ -99,6 +94,7 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
 
                 rms_value = []
                 for gain in [self.LOW_GAIN, self.HIGH_GAIN]:
+                    logging.debug('Start testing loopback with gain %d.', gain)
                     audio_facade.set_chrome_active_input_gain(gain)
                     recorded_file = cras_playback_record(gain)
                     args = CheckQualityArgsClass(filename=recorded_file,
@@ -117,10 +113,27 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
                     primary_freq = float(spectra[0][0][0])
                     if abs(primary_freq - 440.0) > self.FREQ_TOLERANCE:
                         raise error.TestFail(
-                                'Primary feq is beyond the expectation: '
+                                'Primary freq is beyond the expectation: '
                                 'got %.2f, expected 440.00, tolerance %f' %
                                         (primary_freq, self.FREQ_TOLERANCE))
-                    rms_value.append(float(spectra[0][0][1]))
+
+                    if len(spectra[0]) > 1:
+                        peak_ratio = (float(spectra[0][1][1]) /
+                                float(spectra[0][0][1]))
+                        if peak_ratio > self.SECOND_PEAK_RATIO_TOLERANCE:
+                            raise error.TestFail(
+                                    'The second peak is not negligible: '
+                                    'f %.2f, peak_ratio %f (tolerance %f)' %
+                                            (float(spectra[0][1][0]),
+                                             peak_ratio,
+                                             self.SECOND_PEAK_RATIO_TOLERANCE))
+
+                    sox_stat = sox_utils.get_stat(input=recorded_file,
+                                                  channels=1,
+                                                  bits=16,
+                                                  rate=48000)
+                    rms_value.append(float(sox_stat.rms))
+                    logging.debug('signal RMS from sox = %f', rms_value[-1])
 
                 gain = rms_value[1] / rms_value[0]
                 if abs(gain - self.EXPECTED_GAIN) > self.GAIN_TOLERANCE:

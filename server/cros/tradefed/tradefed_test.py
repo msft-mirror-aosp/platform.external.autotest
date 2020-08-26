@@ -25,6 +25,7 @@ import pipes
 import re
 import shutil
 import stat
+import subprocess
 import tempfile
 import urlparse
 
@@ -38,6 +39,7 @@ from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 from autotest_lib.server.cros.tradefed import tradefed_utils
 from autotest_lib.server.cros.tradefed import tradefed_prerequisite
+from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
@@ -54,7 +56,7 @@ class TradefedTest(test.test):
     # parameter in control files can override the count, within the
     # _BRANCH_MAX_RETRY limit below.
     _BRANCH_DEFAULT_RETRY = [(0, 5), (1, 10)]  # dev=5, beta=stable=10
-    _BRANCH_MAX_RETRY = [(0, 5), (1, 30),      # dev=5, beta=30, stable=99
+    _BRANCH_MAX_RETRY = [(0, 12), (1, 30),      # dev=12, beta=30, stable=99
         (constants.APPROXIMATE_STABLE_BRANCH_NUMBER, 99)]
     # TODO(kinaba): betty-arcnext
     _BOARD_MAX_RETRY = {'betty': 0}
@@ -137,7 +139,7 @@ class TradefedTest(test.test):
                 os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
                 os.environ['PATH'] = os.environ['JAVA_HOME']\
                                   + '/bin:' + os.environ['PATH']
-                os.system('java -version')
+                logging.info(subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT))
             except OSError:
                 logging.error('Can\'t change current PATH directory')
 
@@ -162,14 +164,55 @@ class TradefedTest(test.test):
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
     def postprocess(self):
-        """Postprocess: output performance values."""
-        path = tradefed_utils.get_test_result_xml_path(
-            os.path.join(self.resultsdir,
-                         self._get_tradefed_base_dir()))
+        """Postprocess: synchronous offloads and performance data"""
+        self._output_perf()
+        self._prepare_synchronous_offloads()
+
+    def _output_perf(self):
+        """Output performance values."""
+        base = self._default_tradefed_base_dir()
+        path = tradefed_utils.get_test_result_xml_path(base)
         if path:
             for metric in tradefed_utils.get_perf_metrics_from_test_result_xml(
                 path, self.resultsdir):
                 self.output_perf_value(**metric)
+
+    def _prepare_synchronous_offloads(self):
+        """
+        Copy files needed for APFE to synchronous offload dir,  with some
+        structure to make the post-job postprocessing simpler.
+        """
+        testname = os.path.basename(self.outputdir)
+        # This is yyyy.mm.dd_hh.mm.ss  (start time)
+        timestamp_pattern = ("[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]" +
+                             "_[0-9][0-9].[0-9][0-9].[0-9][0-9]")
+        time_glob = os.path.join(
+            self._default_tradefed_base_dir(), timestamp_pattern
+        )
+        for dirpath in glob.glob(time_glob):
+            timestamp = os.path.basename(dirpath)
+            locs = [os.path.join(dirpath, f) for f in ["test_result.xml",
+                                                       "testResult.xml"]]
+            for f in locs:
+                if os.path.exists(f):
+                    subdirs = self._subdirs(f, testname, timestamp)
+                    self._copy_to_offload_dir(f, subdirs)
+        for z in glob.glob(time_glob+".zip"):
+            self._copy_to_offload_dir(z, self._subdirs(z, testname))
+
+    def _copy_to_offload_dir(self, src_path, subdirs, recursive=True):
+        target = os.path.join(os.getenv(OFFLOAD_ENVVAR), *subdirs)
+        self._safe_makedirs(target)
+        if not recursive or os.path.isfile(src_path):
+            return shutil.copy2(src_path, str(target))
+        return shutil.copytree(src_path, str(target))
+
+    def _subdirs(self, path, testname, timestamp=""):
+        # CTS results from bvt-arc suites need to be sent to the
+        # specially-designated bucket for early EDI entries in APFE,
+        # but only there.
+        dest = "BVT" if 'bvt-arc' in path else "CTS"
+        return ["APFE", dest, testname, timestamp]
 
     def cleanup(self):
         """Cleans up any dirtied state."""
@@ -913,6 +956,12 @@ class TradefedTest(test.test):
             logging.warning('Failed to restore powerd policy, overrided policy '
                             'will persist until device reboot.')
 
+    def _clean_crash_logs(self):
+        try:
+            self._run_commands(['rm -f /home/chronos/crash/*'])
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning('Failed to clean up crash logs.')
+
     def _run_and_parse_tradefed(self, command):
         """Kick off the tradefed command.
 
@@ -943,8 +992,7 @@ class TradefedTest(test.test):
                 self._clean_download_cache_if_needed(force=True)
             raise
 
-        result_destination = os.path.join(self.resultsdir,
-                                          self._get_tradefed_base_dir())
+        result_destination = self._default_tradefed_base_dir()
         # Gather the global log first. Datetime parsing below can abort the test
         # if tradefed startup had failed. Even then the global log is useful.
         self._collect_tradefed_global_log(output, result_destination)
@@ -969,8 +1017,7 @@ class TradefedTest(test.test):
         """
         logging.info('Setting up tradefed results and logs directories.')
 
-        results_destination = os.path.join(self.resultsdir,
-                                           self._get_tradefed_base_dir())
+        results_destination = self._default_tradefed_base_dir()
         logs_destination = os.path.join(results_destination, 'logs')
         directory_mapping = [
             (os.path.join(self._repository, 'results'), results_destination),
@@ -982,6 +1029,9 @@ class TradefedTest(test.test):
                 shutil.rmtree(tradefed_path)
             self._safe_makedirs(final_path)
             os.symlink(final_path, tradefed_path)
+
+    def _default_tradefed_base_dir(self):
+        return os.path.join(self.resultsdir, self._get_tradefed_base_dir())
 
     def _install_plan(self, subplan):
         """Copy test subplan to CTS-TF.
@@ -1149,6 +1199,8 @@ class TradefedTest(test.test):
         accurate = []
         board = self._get_board_name()
         session_id = None
+        toggle_ndk = board == 'rammus-arc-r' # Toggle to ndk translation for this board
+        nativebridge64_experiment = (self._get_release_branch_number() == 0)
 
         self._setup_result_directories()
         if media_asset:
@@ -1165,7 +1217,9 @@ class TradefedTest(test.test):
                     hosts=self._hosts,
                     board=board,
                     dont_override_profile=keep_media,
-                    enable_default_apps=enable_default_apps) as current_logins:
+                    enable_default_apps=enable_default_apps,
+                    toggle_ndk=toggle_ndk,
+                    nativebridge64=nativebridge64_experiment) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation
@@ -1200,9 +1254,13 @@ class TradefedTest(test.test):
                 #              not-excecuted, for instance, by collecting all
                 #              tests on startup (very expensive, may take 30
                 #              minutes).
-                # TODO(b/137917339): Only prevent screen from turning off for
-                # media tests. Remove this check once the GPU issue is fixed.
                 if media_asset and media_asset.uri:
+                    # Clean-up crash logs from previous sessions to ensure
+                    # enough disk space for 16GB storage devices: b/156075084.
+                    if not keep_media:
+                        self._clean_crash_logs()
+                    # TODO(b/137917339): Only prevent screen from turning off for
+                    # media tests. Remove this check once the GPU issue is fixed.
                     self._override_powerd_prefs()
                 try:
                     waived_tests, acc = self._run_and_parse_tradefed(command)

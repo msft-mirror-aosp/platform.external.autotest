@@ -77,7 +77,7 @@ class firmware_Cr50CheckCap(Cr50Test):
         self.cr50.set_caps(cap_settings)
 
         # Set the ccd state to ccd_level
-        self.cr50.set_ccd_level(ccd_level, self.PASSWORD)
+        self.cr50.set_ccd_level(ccd_level, self.CCD_PASSWORD)
         cap_dict = self.cr50.get_cap_dict()
         logging.info('Cap state with console %r req %r:\n%s', ccd_level,
                      cap_setting, pprint.pformat(cap_dict))
@@ -97,11 +97,14 @@ class firmware_Cr50CheckCap(Cr50Test):
 
     def run_once(self, ccd_open_restricted=False):
         """Check cr50 capabilities work correctly."""
-        self.fast_open(enable_testlab=True)
+        self.fast_ccd_open(enable_testlab=True)
 
         self._ec_prefix = '' if self.servo.main_device_is_ccd() else 'ccd_cr50'
+        # Only check EC uart if the board has a working EC and cr50 can detect
+        # servo connect/disconnect.
         self.check_ec_uart = (
                 self.check_ec_capability(suppress_warning=True) and
+                self.cr50.check_servo_monitor() and
                 self.servo.has_control('ec_board', self._ec_prefix))
         if self.check_ec_uart and self._ec_prefix:
             try:
@@ -125,7 +128,7 @@ class firmware_Cr50CheckCap(Cr50Test):
         # Set the password so we can change the ccd level from the console
         self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('ccd reset')
-        self.set_ccd_password(self.PASSWORD)
+        self.set_ccd_password(self.CCD_PASSWORD)
 
         # Make sure ccd accessiblity behaves as expected based on the cap
         # settings and the ccd state.

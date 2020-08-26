@@ -15,7 +15,6 @@ except django.core.exceptions.ImproperlyConfigured:
                        'setup_django_lite_environment from '
                        'autotest_lib.frontend before any imports that '
                        'depend on django models.')
-from django.db import utils as django_utils
 from xml.sax import saxutils
 import common
 from autotest_lib.frontend.afe import model_logic, model_attributes
@@ -1561,8 +1560,7 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
     # If this is None on a slave, it should be synced back to the master
     shard = dbmodels.ForeignKey(Shard, blank=True, null=True)
 
-    # If this is None, server-side packaging will be used for server side test,
-    # unless it's disabled in global config AUTOSERV/enable_ssp_container.
+    # If this is None, server-side packaging will be used for server side test.
     require_ssp = dbmodels.NullBooleanField(default=None, blank=True, null=True)
 
     # custom manager
@@ -1669,7 +1667,7 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
     @classmethod
     @contextlib.contextmanager
     def _readonly_job_query_context(cls):
-        #TODO(jkop): Get rid of this kludge when we update Django to >=1.7
+        #TODO: Get rid of this kludge if/when we update Django to >=1.7
         #correct usage would be .raw(..., using='readonly')
         old_db = Job.objects._db
         try:
@@ -2305,6 +2303,7 @@ class StableVersion(dbmodels.Model, model_logic.ModelExtensions):
         else:
             raise RuntimeError("the ability to save StableVersions has been intentionally removed")
 
+    # pylint:disable=undefined-variable
     def delete(self):
         if os.getenv("OVERRIDE_STABLE_VERSION_BAN"):
             super(StableVersion, self).delete(*args, **kwargs)

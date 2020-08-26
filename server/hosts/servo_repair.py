@@ -5,10 +5,12 @@
 import sys
 import functools
 import logging
+import time
 
 import common
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import repair_utils
 
@@ -63,8 +65,7 @@ class _UpdateVerifier(hosts.Verifier):
                 # v3s from been update, so always try to repair here.
                 # See crbug.com/994396, crbug.com/1057302.
                 host.run('cgpt repair /dev/mmcblk0', ignore_status=True)
-
-                host.update_image(wait_for_update=False)
+                host.update_image()
         # We don't want failure from update block DUT repair action.
         # See crbug.com/1029950.
         except Exception as e:
@@ -249,7 +250,24 @@ class _DiskSpaceVerifier(hosts.Verifier):
 
 class _ServodConnectionVerifier(hosts.Verifier):
     """
-    Verifier to check that we can connect to `servod`.
+    Verifier to check that we can connect to servod server.
+
+    If this verifier failed, it most likely servod was crashed or in a
+    crashing loop. For servo_v4 it's usually caused by not able to detect
+    CCD or servo_micro.
+    """
+
+    def verify(self, host):
+        host.initilize_servo()
+
+    @property
+    def description(self):
+        return 'servod service is taking calls'
+
+
+class _ServodControlVerifier(hosts.Verifier):
+    """
+    Verifier to check basic servo control functionality.
 
     This tests the connection to the target servod service with a simple
     method call.  As a side-effect, all servo signals are initialized to
@@ -261,44 +279,45 @@ class _ServodConnectionVerifier(hosts.Verifier):
     """
 
     def verify(self, host):
-        host.connect_servo()
+        try:
+            host.initialize_dut_for_servo()
+        except Exception as e:
+            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
 
     @property
     def description(self):
-        return 'servod service is taking calls'
+        return 'Basic servod control is working'
 
 
 class _CCDTestlabVerifier(hosts.Verifier):
     """
-    Verifier to check that ccd testlab is anabled.
+    Verifier to check that ccd testlab is enabled.
 
-    ALl DUT connected by ccd has to supported cr50 with enabled testlab
+    All DUT connected by ccd has to supported cr50 with enabled testlab
     to allow manipulation by servo. The flag testlab is sticky and will
-    stay enabled if was set up. To enable testlab ccd has to be open.
+    stay enabled if was set up. The testlab can be enabled when ccd is
+    open. (go/ccd-setup)
     """
     @ignore_exception_for_non_cros_host
     def verify(self, host):
         if not host.get_servo().has_control('cr50_testlab'):
             raise hosts.AutoservVerifyError(
-                'cr50 has to be supported when use servo with'
-                ' ccd_cr50/type-c connection')
+                'cr50 has to be supported when use servo with '
+                'ccd_cr50/type-c connection')
 
         status = host.get_servo().get('cr50_testlab')
-        if status != 'on':
-            data = {'port': host.servo_port,
-                    'host': host.hostname,
-                    'board': host.servo_board or ''}
-            metrics.Counter(
-                'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
-            # TODO enable when lab will finished rework on all DUTs
-            # or new servo_state will come to the stage
-            # raise hosts.AutoservNonCriticalVerifyError(
-            #     'The ccd testlab is off (not enabled);'
-            #     ' required the rework to enable it (go/ccd-setup)',
-            #     'ccd_testlab_disabled')
-            host.record('INFO', None, 'ccd_testlab_disabled',
-                        'The ccd testlab is off (not enabled);'
-                        ' required the rework to enable it (go/ccd-setup)')
+        # check by 'on' to fail when get unexpected value
+        if status == 'on':
+            # ccd testlab enabled
+            return
+        data = {'port': host.servo_port,
+                'host': host.get_dut_hostname() or host.hostname,
+                'board': host.servo_board or ''}
+        metrics.Counter(
+            'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
+        raise hosts.AutoservNonCriticalVerifyError(
+            'The ccd testlab is disabled; DUT requires manual work '
+            'to enable it (go/ccd-setup).')
 
     def _is_applicable(self, host):
         if host.get_servo():
@@ -309,6 +328,69 @@ class _CCDTestlabVerifier(hosts.Verifier):
     @property
     def description(self):
         return 'ccd testlab enabled'
+
+class _CCDPowerDeliveryVerifier(hosts.Verifier):
+    """Verifier to check and reset servo_v4_role for servos that support
+    power delivery feature(a.k.a power pass through).
+
+    There are currently two position of servo_v4_role, src and snk:
+    src --  servo in power delivery mode and passes power to the DUT.
+    snk --  servo in normal mode and not passes power to DUT.
+    We want to ensure that servo_v4_role is set to src.
+
+    TODO(xianuowang@) Convert it to verifier/repair action pair or remove it
+    once we collected enough metrics.
+    """
+    # Change to use the  constant value in CrosHost if we move it to
+    # verifier/repair pair.
+    CHANGE_SERVO_ROLE_TIMEOUT = 180
+
+    def verify(self, host):
+        if host.get_servo().get('servo_v4_role') == 'snk':
+            logging.warning('The servo initlized with role snk while'
+                            ' supporting power delivery, resetting role'
+                            ' to src...')
+
+            try:
+                logging.info('setting power direction with retries')
+                # do not pass host since host does not inherit from CrosHost.
+                charge_manager = servo_charger.ServoV4ChargeManager(
+                    host=None,
+                    servo=host.get_servo(),
+                )
+                attempts = charge_manager.start_charging()
+                logging.info('setting power direction took %d tries', attempts)
+                # if control makes it here, we successfully changed the host
+                # direction
+                result = 'src'
+            except Exception as e:
+                logging.error(
+                    'setting power direction with retries failed %s',
+                    e.message,
+                )
+            finally:
+                time.sleep(self.CHANGE_SERVO_ROLE_TIMEOUT)
+
+            result = host.get_servo().get('servo_v4_role')
+            logging.debug('Servo_v4 role after reset: %s', result)
+
+            metrics_data = {
+                'hostname': host.get_dut_hostname() or 'unknown',
+                'status': 'success' if result == 'src' else 'failed',
+                'board': host.servo_board or 'unknown',
+                'model': host.servo_model or 'unknown'
+            }
+            metrics.Counter(
+                'chromeos/autotest/repair/verifier/power_delivery3'
+            ).increment(fields=metrics_data)
+
+    def _is_applicable(self, host):
+        return (host.is_in_lab() and
+                host.get_servo().supports_built_in_pd_control())
+
+    @property
+    def description(self):
+        return 'ensure applicable servo is in "src" mode for power delivery'
 
 
 class _PowerButtonVerifier(hosts.Verifier):
@@ -404,37 +486,52 @@ class _RestartServod(hosts.RepairAction):
 
 
 class _ServoRebootRepair(repair_utils.RebootRepair):
-    """
-    Reboot repair action that also waits for an update.
+    """Try repair servo by reboot servohost.
 
-    This is the same as the standard `RebootRepair`, but for
-    a non-multi-DUTs servo host, if there's a pending update,
-    we wait for that to complete before rebooting.  This should
-    ensure that the servo_v3 is up-to-date after reboot. Labstation
-    reboot and update is handled by labstation host class.
+    This is the same as the standard `RebootRepair`, for servo_v3 it will
+    reboot the beaglebone board immidiately while for labstation it will
+    request a reboot by touch a flag file on its labstation, then
+    labstation reboot will be handled by labstation AdminRepair task as
+    labstation host multiple servos and need do an synchronized reboot.
     """
 
     def repair(self, host):
+        super(_ServoRebootRepair, self).repair(host)
+        # restart servod for v3 after reboot.
+        host.restart_servod()
+
+    def _is_applicable(self, host):
         if host.is_localhost() or not host.is_cros_host():
-            raise hosts.AutoservRepairError(
-                'Target servo is not a test lab servo',
-                'servo_not_applicable_to_host_outside_lab')
+            logging.info('Target servo is not in a lab, the reboot repair'
+                         ' action is not applicable.')
+            return False
+
         if host.is_labstation():
             host.request_reboot()
-            logging.warning('Reboot labstation requested, it will be '
-                            'handled by labstation AdminRepair task.')
-        else:
-            try:
-                host.update_image(wait_for_update=True)
-            # We don't want failure from update block DUT repair action.
-            # See crbug.com/1029950.
-            except Exception as e:
-                logging.error('Failed to update servohost image: %s', e)
-            super(_ServoRebootRepair, self).repair(host)
+            logging.info('Reboot labstation requested, it will be handled'
+                         ' by labstation AdminRepair task.')
+            return False
+        return True
 
     @property
     def description(self):
-        return 'Wait for update, then reboot servo host.'
+        return 'Reboot the servo host.'
+
+
+class _ECRebootRepair(hosts.RepairAction):
+    """
+    Reboot EC on DUT from servo.
+    """
+
+    def _is_applicable(self, host):
+        return (not host.is_localhost()) and host.is_ec_supported()
+
+    def repair(self, host):
+        host.get_servo().ec_reboot()
+
+    @property
+    def description(self):
+        return 'Reboot EC'
 
 
 class _DutRebootRepair(hosts.RepairAction):
@@ -497,19 +594,29 @@ def create_servo_repair_strategy():
         (_UpdateVerifier,            'update',      ['servo_ssh']),
         (_BoardConfigVerifier,       'brd_config',  ['servo_ssh']),
         (_SerialConfigVerifier,      'ser_config',  ['servo_ssh']),
-        (_ServodJobVerifier,         'job',         config + ['disk_space']),
-        (_ServodConnectionVerifier,  'servod',      ['job']),
-        (_PowerButtonVerifier,       'pwr_button',  ['servod']),
-        (_LidVerifier,               'lid_open',    ['servod']),
-        (_EcBoardVerifier,           'ec_board',    ['servod']),
-        (_CCDTestlabVerifier,        'ccd_testlab', ['job']),
+        (_ServodJobVerifier,         'servod_job',   config + ['disk_space']),
+        (_ServodConnectionVerifier,  'servod_connection', ['servod_job']),
+        (_ServodControlVerifier,     'servod_control', ['servod_connection']),
+        (_PowerButtonVerifier,       'pwr_button',  ['servod_connection']),
+        (_LidVerifier,               'lid_open',    ['servod_connection']),
+        (_EcBoardVerifier,           'ec_board',    ['servod_connection']),
+        (_CCDTestlabVerifier,        'ccd_testlab', ['servod_connection']),
+        (_CCDPowerDeliveryVerifier,  'power_delivery', ['servod_connection']),
     ]
 
-    servod_deps = ['job', 'servod', 'pwr_button']
+    servod_deps = ['servod_job', 'servod_connection', 'servod_control',
+                   'pwr_button']
     repair_actions = [
         (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space']),
         (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
         (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
-        (_DutRebootRepair, 'dut_reboot', ['servod'], ['lid_open', 'ec_board']),
+        (
+            _DutRebootRepair, 'dut_reboot', ['servod_connection'],
+            ['servod_control', 'lid_open', 'ec_board']
+        ),
+        (
+            _ECRebootRepair, 'ec_reboot', ['servod_connection'],
+            ['servod_control', 'lid_open', 'ec_board']
+        ),
     ]
     return hosts.RepairStrategy(verify_dag, repair_actions, 'servo')

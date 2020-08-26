@@ -775,10 +775,9 @@ def count_all_cpus():
 
 def get_online_cpus():
     """
-    Return list of integer cpu numbers that are online.
+    Return frozenset of integer cpu numbers that are online.
     """
-    cpus = [int(f.split('/')[-1]) for f in glob.iglob('/dev/cpu/[0-9]*')]
-    return frozenset(cpus)
+    return frozenset(read_cpu_set('/sys/devices/system/cpu/online'))
 
 def get_cpus_filepaths_for_suffix(cpus, suffix):
     """
@@ -1366,6 +1365,24 @@ class USBSuspendStats(AbstractStats):
         return usb_stats
 
 
+def read_cpu_set(filename):
+    """
+    Parse data of form "0,2-4,9"
+
+    Return a set of ints
+    """
+    data = utils.read_file(filename)
+    ret = set()
+
+    for entry in data.split(','):
+        entry_data = entry.split('-')
+        start = end = int(entry_data[0])
+        if len(entry_data) > 1:
+          end = int(entry_data[1])
+        ret |= set(range(start, end + 1))
+    return ret
+
+
 def get_cpu_sibling_groups():
     """
     Get CPU core groups in HMP systems.
@@ -1382,15 +1399,7 @@ def get_cpu_sibling_groups():
         if c in cpus_processed:
             # This cpu is already part of a sibling group. Skip.
             continue
-        siblings_data = utils.read_file(siblings_path)
-        sibling_group = set()
-        for sibling_entry in siblings_data.split(','):
-            entry_data = sibling_entry.split('-')
-            sibling_start = sibling_end = int(entry_data[0])
-            if len(entry_data) > 1:
-              sibling_end = int(entry_data[1])
-            siblings = set(range(sibling_start, sibling_end + 1))
-            sibling_group |= siblings
+        sibling_group = read_cpu_set(siblings_path)
         cpus_processed |= sibling_group
         sibling_groups.append(frozenset(sibling_group))
     return tuple(sibling_groups)
@@ -2301,9 +2310,31 @@ class FanRpmLogger(MeasurementLogger):
         self.refresh()
 
     def refresh(self):
-        cmd = 'ectool pwmgetfanrpm all | cut -f 2 -d: | xargs'
-        res = utils.run(cmd, ignore_status=True)
-        return [int(rpm) for rpm in res.stdout.split(' ')]
+        @retry.retry(Exception, timeout_min=0.1, delay_sec=2)
+        def get_fan_rpm_all():
+            """Some example outputs from ectool
+
+            * Two fan system
+            localhost ~ # ectool pwmgetfanrpm all
+            Fan 0 RPM: 4012
+            Fan 1 RPM: 4009
+
+            * One fan but its stalled
+            localhost ~ # ectool pwmgetfanrpm all
+            Fan 0 stalled!
+            """
+            cmd = 'ectool pwmgetfanrpm all'
+            res = utils.run(cmd, ignore_status=True,
+                            stdout_tee=utils.TEE_TO_LOGS,
+                            stderr_tee=utils.TEE_TO_LOGS)
+            rpm_data = []
+            for i, ln in enumerate(res.stdout.splitlines()):
+                if ln.find('stalled') != -1:
+                    rpm_data.append(0)
+                else:
+                    rpm_data.append(int(ln.split(':')[1]))
+            return rpm_data
+        return get_fan_rpm_all()
 
     def save_results(self, resultsdir, fname_prefix=None):
         if not fname_prefix:
@@ -2708,7 +2739,7 @@ class PCHPowergatingStats(object):
                  power consumption S0ix, empty list if none.
         """
         # PCH IP block that is on for S0ix. Ignore these IP block.
-        S0IX_WHITELIST = set([
+        S0IX_ALLOWLIST = set([
                 'PMC', 'OPI-DMI', 'SPI / eSPI', 'XHCI', 'xHCI', 'FUSE', 'Fuse',
                 'PCIE0', 'NPKVRC', 'NPKVNN', 'NPK_VNN', 'PSF1', 'PSF2', 'PSF3',
                 'PSF4', 'SBR0', 'SBR1', 'SBR2', 'SBR4', 'SBR5', 'SBR6', 'SBR7'])
@@ -2721,14 +2752,15 @@ class PCHPowergatingStats(object):
 
         # CNV device has 0x31dc as devid .
         if len(utils.system_output('lspci -d :31dc')) > 0:
-            S0IX_WHITELIST.add('CNV')
+            S0IX_ALLOWLIST.add('CNV')
 
-        # HrP2 device has 0x02f0 as devid.
-        if len(utils.system_output('lspci -d :02f0')) > 0:
-            S0IX_WHITELIST.update(['CNVI', 'NPK_AON'])
+        # HrP2 device has 0x02f0(CML) or 0x4df0(JSL) as devid.
+        if (len(utils.system_output('lspci -d :02f0')) > 0 or
+            len(utils.system_output('lspci -d :4df0')) > 0):
+            S0IX_ALLOWLIST.update(['CNVI', 'NPK_AON'])
 
         on_ip = set(ip['name'] for ip in self._stat if ip['state'])
-        on_ip -= S0IX_WHITELIST
+        on_ip -= S0IX_ALLOWLIST
 
         if on_ip:
             on_ip_in_warn_list = on_ip & S0IX_WARNLIST
@@ -2740,8 +2772,8 @@ class PCHPowergatingStats(object):
         if on_ip:
             logging.error('Found PCH IP that need to powergate: %s',
                           ', '.join(on_ip))
-            return False
-        return True
+            return on_ip
+        return []
 
     def read_pch_powergating_info(self, sleep_seconds=1):
         """

@@ -171,7 +171,7 @@ class DUTFixture:
                         'enable_external_camera': False
                 }),
                 owner='arc-camera')
-        self.host.run('restart cros-camera')
+        self.host.upstart_restart('cros-camera')
 
         logging.info('Replace camera profile in ARC++ container')
         profile = self._read_file(self.CAMERA_PROFILE_PATH)
@@ -181,9 +181,9 @@ class DUTFixture:
 
     @contextlib.contextmanager
     def _stop_camera_service(self):
-        self.host.run('stop cros-camera')
+        self.host.upstart_stop('cros-camera')
         yield
-        self.host.run('start cros-camera')
+        self.host.upstart_restart('cros-camera')
 
     def log_camera_scene(self):
         """Capture an image from camera as the log for debugging scene related
@@ -207,7 +207,7 @@ class DUTFixture:
         """Cleanup camera filter."""
         logging.info('Remove filter option and restore camera service')
         self.host.run('rm', args=('-f', self.TEST_CONFIG_PATH))
-        self.host.run('restart cros-camera')
+        self.host.upstart_restart('cros-camera')
 
         logging.info('Restore camera profile in ARC++ container')
         self.host.run('restart ui')

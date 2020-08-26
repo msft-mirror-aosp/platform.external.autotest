@@ -35,7 +35,11 @@ class NebraskaWrapper(object):
         Initializes the NebraskaWrapper module.
 
         @param log_dir: The directory to write nebraska.log into.
-        @param payload_url: The payload that will returned in responses.
+        @param payload_url: The payload that will be returned in responses for
+                            update requests. This can be a single URL string
+                            or a list of URLs to return multiple payload URLs
+                            (such as a platform payload + DLC payloads) in the
+                            responses.
         @param props_to_override: Dictionary of key/values to use in responses
                 instead of the default values in payload_url's properties file.
 
@@ -43,16 +47,43 @@ class NebraskaWrapper(object):
         self._nebraska_server = None
         self._port = None
         self._log_dir = log_dir
+
+        # _update_metadata_dir is the directory for storing the json metadata
+        # files associated with the payloads.
+        # _update_payloads_address is the address of the update server where
+        # the payloads are staged.
+        # The _install variables serve the same purpose for payloads intended
+        # for DLC install requests.
         self._update_metadata_dir = None
         self._update_payloads_address = None
+        self._install_metadata_dir = None
+        self._install_payloads_address = None
 
+        # Create a temporary directory for the metadata and download the
+        # metadata files.
         if payload_url:
+            # Normalize payload_url to be a list.
+            if not isinstance(payload_url, list):
+                payload_url = [payload_url]
+
             self._update_metadata_dir = autotemp.tempdir()
             self._update_payloads_address = ''.join(
-                payload_url.rpartition('/')[0:2])
-            self.get_payload_properties_file(
-                payload_url, self._update_metadata_dir.name,
-                **props_to_override)
+                payload_url[0].rpartition('/')[0:2])
+            # We can reuse _update_metadata_dir and _update_payloads_address
+            # for the DLC-specific install values for N-N tests, since the
+            # install and update versions will be the same. For the delta
+            # payload case, Nebraska will always use a full payload for
+            # installation and prefer a delta payload for update, so both full
+            # and delta payload metadata files can occupy the same
+            # metadata_dir. The payloads_address can be shared as well,
+            # provided all payloads have the same base URL.
+            self._install_metadata_dir = self._update_metadata_dir
+            self._install_payloads_address = self._update_payloads_address
+
+            for url in payload_url:
+                self.get_payload_properties_file(
+                    url, self._update_metadata_dir.name,
+                    **props_to_override)
 
     def __enter__(self):
         """So that NebraskaWrapper can be used as a Context Manager."""
@@ -86,6 +117,11 @@ class NebraskaWrapper(object):
             cmd += ['--update-metadata', self._update_metadata_dir.name]
         if self._update_payloads_address:
             cmd += ['--update-payloads-address', self._update_payloads_address]
+        if self._install_metadata_dir:
+            cmd += ['--install-metadata', self._install_metadata_dir.name]
+        if self._install_payloads_address:
+            cmd += ['--install-payloads-address',
+                    self._install_payloads_address]
 
         logging.info('Starting nebraska.py with command: %s', cmd)
 

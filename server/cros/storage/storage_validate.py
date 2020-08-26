@@ -104,6 +104,10 @@ class StorageStateValidator(object):
                 self._storage_state = self._get_state_for_mms()
             elif storage_type == STORAGE_TYPE_NVME:
                 self._storage_state = self._get_state_for_nvme()
+        if self._storage_state != STORAGE_STATE_CRITICAL:
+            # run badblocks if storage not in critical state
+            # if bad block found then mark storage as bad
+            self._run_badblocks_check()
         return self._storage_state
 
     def _get_storage_type(self):
@@ -235,7 +239,7 @@ class StorageStateValidator(object):
         logging.debug('Extraction metrics for NVMe storage')
         # Ex "Percentage Used:         100%"
         nvme_fail = r"Percentage Used:\s+(?P<param>(\d{1,3}))%"
-        used_value = 0
+        used_value = -1
         for line in self._info:
             m = re.match(nvme_fail, line)
             if m:
@@ -248,10 +252,58 @@ class StorageStateValidator(object):
                     logging.info('Could not cast: %s to int ', param)
                 break
 
-        if used_value == 0:
+        if used_value < 0:
             raise StorageError('Storage state cannot be detected')
         if used_value < 91:
             return STORAGE_STATE_NORMAL
         if used_value < 99:
             return STORAGE_STATE_WARNING
         return STORAGE_STATE_CRITICAL
+
+    def _get_storage_path(self):
+        """Find and return the path to the device storage.
+
+        Method support detection of the device when it booted from USB.
+        The return path like '/dev/sda'.
+        """
+        # find the name of device storage
+        cmd = ('. /usr/share/misc/chromeos-common.sh;'
+                ' list_fixed_nvme_disks;'
+                ' list_fixed_ata_disks;'
+                ' list_fixed_mmc_disks')
+        cmd_result = self._host.run(cmd,
+                                    ignore_status=True,
+                                    timeout=60)
+        if cmd_result.exit_status != 0:
+            logging.debug('Failed to detect path to the device storage')
+            return None
+        return '/dev/' + cmd_result.stdout.strip()
+
+    def _run_badblocks_check(self):
+        """Run backblocks verification on device storage.
+
+        The blocksize set as 512 based on .
+        """
+        path = self._get_storage_path()
+        if not path:
+            # cannot continue if storage was not detected
+            return
+        logging.info("Running badblocks on storage; path=%s", path)
+        cmd = 'badblocks -e 1 -s -b 512 %s' % path
+        try:
+            # set limit in 1 hour but expecting to finish it up 30 minutes
+            cmd_result = self._host.run(cmd,
+                                        ignore_status=True,
+                                        timeout=3600)
+            if cmd_result.exit_status != 0:
+                logging.debug('Failed to detect path to the device storage')
+                return
+            result = cmd_result.stdout.strip()
+            if result:
+                logging.debug("Check result: '%s'", result)
+                # So has result is Bad and empty is Good.
+                self._storage_state = STORAGE_STATE_CRITICAL
+        except Exception as e:
+            if 'Timeout encountered:' in str(e):
+                logging.info('Timeout during running action')
+            logging.debug(str(e))

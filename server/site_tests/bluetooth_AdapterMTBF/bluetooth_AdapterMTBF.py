@@ -20,14 +20,18 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
     import BluetoothAdapterHIDReportTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
     BluetoothAdapterQuickTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
+    TABLET_MODELS
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 
-SHORT_SUSPEND = 10
-ACTION_TIMEOUT = 10
-SLEEP_FOR_DISCONNECTION = 10
-# These iterations will run for about 30 minutes
-MOUSE_TEST_ITERATION = 50
-A2DP_TEST_ITERATION = 225
+# Iterations to run the short mouse report test, this equals about 10 mins
+MOUSE_TEST_ITERATION_SHORT = 15
+# Iterations to run the long mouse report test, this equals about 30 mins
+MOUSE_TEST_ITERATION_LONG = 50
+# Iterations to run the keyboard report test, this equals about 10 mins
+KEYBOARD_TEST_ITERATION = 60
+# Iterations to run the A2DP report test, this equals about 30 mins
+A2DP_TEST_ITERATION = 1
 
 class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
                             BluetoothAdapterHIDReportTests,
@@ -46,62 +50,114 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     mtbf_wrapper = BluetoothAdapterQuickTests.quick_test_mtbf_decorator
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 
-    def test_suspend_resume(self, device):
-        """Test the device can connect after suspending and resuming"""
-        boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=SHORT_SUSPEND, allow_early_resume=True)
+    @test_wrapper('MTBF Typical Use Cases',
+                  devices={'BLE_MOUSE': 1}, shared_devices_count=1)
+    def typical_use_cases_test(self):
+        """Do some initialization work then start the typical MTBF test loop"""
 
-        self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=ACTION_TIMEOUT)
-        self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=ACTION_TIMEOUT)
+        self.is_tablet = self.host.get_model_from_cros_config() in TABLET_MODELS
+        mouse = self.devices['BLE_MOUSE'][0]
 
-        # LE can't reconnect without advertising/discoverable
-        self.test_device_set_discoverable(device, True)
-        self.test_connection_by_device(device)
+        self.run_typical_use_cases(mouse)
 
 
     @mtbf_wrapper(timeout_mins=MTBF_TIMEOUT_MINS, test_name='typical_use_cases')
     def run_typical_use_cases(self, mouse):
-        """Run typical MTBF test scenarios"""
+        """Run typical MTBF test scenarios:
+           1. Pair the mouse
+           2. Run the better together test
+           3. Suspend/Resume
+           4. Run concurrent mouse report and A2DP tests for 30 minutes
+           5. Suspend and wake up the DUT by mosue
+           6. Pair the keyboard
+           7. Run concurrent mouse and keyboard report tests for 10 minutes
+        """
+        self.test_device_pairing(mouse)
 
+        # Reuse the shared device as a phone
         shared_peer = self.shared_peers[0]
         phone = self.reset_device(shared_peer, 'BLE_PHONE')
+
+        # Run the better together test on the phone
         self.test_better_together(phone)
+
         # Restore the discovery filter since better together test changed it
         self.test_set_discovery_filter({'Transport':'auto'})
+
+        # Reuse the shared device as an bluetooth audio
         audio = self.reset_device(shared_peer, 'BLUETOOTH_AUDIO')
+
         self.test_suspend_resume(device=mouse)
+
+        # Run A2DP and mouse tests concurrently
         audio_thread = threading.Thread(target=self.test_audio, args=(audio,))
         mouse_thread = threading.Thread(
-                target=self.test_mouse, args=(mouse,))
+                target=self.test_mouse, args=(mouse, MOUSE_TEST_ITERATION_LONG))
         audio_thread.start()
         mouse_thread.start()
         audio_thread.join()
         mouse_thread.join()
 
+        # Mouse wakeup test
+        self.test_suspend_and_mouse_wakeup(mouse)
+
+        # Remove the pairing from the audio device
+        audio.RemoveDevice(self.bluetooth_facade.address)
+
+        # Reuse the shared device as a CL keyboard
+        keyboard = self.reset_device(shared_peer, 'KEYBOARD')
+
+        # Pair the keyboard
+        self.test_device_pairing(keyboard)
+
+        # Run the mouse and keyboard report tests concurrently
+        mouse_thread = threading.Thread(
+            target=self.test_mouse, args=(mouse, MOUSE_TEST_ITERATION_SHORT))
+        keyboard_thread = threading.Thread(
+            target=self.test_keyboard, args=(keyboard,))
+        mouse_thread.start()
+        keyboard_thread.start()
+        mouse_thread.join()
+        keyboard_thread.join()
+
+        # Remove the pairing from both peer devices
+        self.test_remove_pairing(mouse.address)
+        self.test_remove_pairing(keyboard.address)
+
 
     def test_better_together(self, phone):
         """Test better together"""
+        # Clean up the environment
+        self.bluetooth_facade.disconnect_device(phone.address)
+        self.bluetooth_facade.remove_device_object(phone.address)
         phone.RemoveDevice(self.bluetooth_facade.address)
         self.test_smart_unlock(address=phone.address)
 
 
-    def test_mouse(self, mouse):
+    def test_mouse(self, mouse, iteration):
         """Run mouse report test for certain iterations"""
-        for i in range(MOUSE_TEST_ITERATION):
+        for i in range(iteration):
             self.run_mouse_tests(device=mouse)
 
 
+    def test_keyboard(self, keyboard):
+        """Run keyboard report test for certain iterations"""
+        for i in range(KEYBOARD_TEST_ITERATION):
+            self.run_keyboard_tests(device=keyboard)
+
+
     def test_audio(self, device):
-        """Test A2DP"""
+        """Test A2DP
+
+           This test plays A2DP audio on the DUT and record on the peer device,
+           then verify the legitimacy of the frames recorded.
+
+        """
         device.RemoveDevice(self.bluetooth_facade.address)
 
         self.initialize_bluetooth_audio(device, A2DP)
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
-        self.test_stop_discovery()
         self.test_pairing(device.address, device.pin, trusted=True)
         device.SetTrustedByRemoteAddress(self.bluetooth_facade.address)
         self.test_connection_by_adapter(device.address)
@@ -112,31 +168,63 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         self.test_remove_device_object(device.address)
 
 
-    @test_wrapper('MTBF Typical Use Cases',
-                  devices={'BLE_MOUSE': 1}, shared_devices_count=1)
-    def typical_use_cases_test(self):
-        """Do some initialization work then start the typical MTBF test loop"""
+    def test_device_pairing(self, device):
+        """Test device pairing"""
+        device.RemoveDevice(self.bluetooth_facade.address)
 
-        mouse = self.devices['BLE_MOUSE'][0]
-
-        # Pair the mouse first
-        # The steps were copied from bluetooth_AdapterMDSanity
-        self.test_discover_device(mouse.address)
-        self.test_stop_discovery()
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
         time.sleep(self.TEST_SLEEP_SECS)
-        self.test_pairing(mouse.address, mouse.pin, trusted=True)
+        self.test_pairing(device.address, device.pin, trusted=True)
         time.sleep(self.TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(mouse.address)
-
-        self.run_typical_use_cases(mouse)
+        self.test_connection_by_adapter(device.address)
 
 
-    @mtbf_wrapper(
-        timeout_mins=MTBF_TIMEOUT_MINS, test_name='better_together_stress')
-    def run_better_together_stress(self, address):
-        """Run better together stress test"""
+    def test_suspend_resume(self, device):
+        """Test the device can connect after suspending and resuming"""
+        boot_id = self.host.get_boot_id()
+        suspend = self.suspend_async(suspend_time=15)
 
-        self.test_smart_unlock(address)
+        self.test_device_set_discoverable(device, False)
+
+        self.test_suspend_and_wait_for_sleep(
+            suspend, sleep_timeout=15)
+        self.test_wait_for_resume(
+            boot_id, suspend, resume_timeout=15)
+
+        # LE can't reconnect without advertising/discoverable
+        self.test_device_set_discoverable(device, True)
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_connection_by_device(device)
+
+
+    def test_suspend_and_mouse_wakeup(self, mouse):
+        """Test the device can be waken up by the mouse"""
+        if self.is_tablet:
+            return
+        boot_id = self.host.get_boot_id()
+        suspend = self.suspend_async(
+            suspend_time=60, expect_bt_wake=True)
+
+        self.test_adapter_wake_enabled()
+        self.test_suspend_and_wait_for_sleep(
+            suspend, sleep_timeout=5)
+
+        # Trigger peer wakeup
+        peer_wake = self.device_connect_async('BLE_MOUSE', mouse,
+                                              self.bluetooth_facade.address)
+        peer_wake.start()
+
+        # Expect a quick resume. If a timeout occurs, test fails.
+        self.test_wait_for_resume(
+            boot_id, suspend, resume_timeout=20,
+            fail_on_timeout=True)
+
+        # Finish peer wake process
+        peer_wake.join()
+
+        # Make sure we're actually connected
+        self.test_device_is_connected(mouse.address)
 
 
     @test_wrapper('MTBF Better Together Stress', devices={'BLE_PHONE': 1})
@@ -146,6 +234,14 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         phone = self.devices['BLE_PHONE'][0]
         phone.RemoveDevice(self.bluetooth_facade.address)
         self.run_better_together_stress(address=phone.address)
+
+
+    @mtbf_wrapper(
+        timeout_mins=MTBF_TIMEOUT_MINS, test_name='better_together_stress')
+    def run_better_together_stress(self, address):
+        """Run better together stress test"""
+
+        self.test_smart_unlock(address)
 
 
     @batch_wrapper('Adapter MTBF')

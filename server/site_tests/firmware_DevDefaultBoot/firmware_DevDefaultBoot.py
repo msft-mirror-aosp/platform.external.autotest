@@ -52,7 +52,7 @@ class firmware_DevDefaultBoot(FirmwareTest):
 
     def try_menu_default_internal(self):
         """With dev_default_boot=disk, use menu default: should boot internal"""
-        logging.info("%s", self.try_menu_default_internal.__doc__.strip())
+        logging.info('%s', self.try_menu_default_internal.__doc__.strip())
 
         self.faft_client.system.set_dev_default_boot('disk')
         self.switcher.simple_reboot()
@@ -77,7 +77,7 @@ class firmware_DevDefaultBoot(FirmwareTest):
 
     def try_menu_default_usb(self):
         """With dev_default_boot=usb, use menu default: should boot USB"""
-        logging.info('%s', self.try_menu_default_usb.__doc__)
+        logging.info('%s', self.try_menu_default_usb.__doc__.strip())
 
         self.faft_client.system.set_dev_default_boot('usb')
         self.switcher.simple_reboot()
@@ -95,13 +95,17 @@ class firmware_DevDefaultBoot(FirmwareTest):
                                     "automated on non-Chrome-EC devices.")
 
         self.faft_client.system.set_dev_boot_usb(1)
+        has_menu = self.faft_config.mode_switcher_type in (
+                'menu_switcher',
+                'tablet_detachable_switcher',
+        )
 
         self.try_timeout_default_internal()
-        if self.faft_config.mode_switcher_type == 'tablet_detachable_switcher':
+        if has_menu:
             self.try_menu_default_internal()
 
         self.try_timeout_default_usb()
-        if self.faft_config.mode_switcher_type == 'tablet_detachable_switcher':
+        if has_menu:
             self.try_menu_default_usb()
 
         # try again to make sure it can be changed back

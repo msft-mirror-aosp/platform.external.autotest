@@ -12,9 +12,11 @@ def define_tests():
         test_common.define_test(
             'accessibility/ChromeVoxSound',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.accessibility_ChromeVoxSound.accessibility_ChromeVoxSound',
         ),
         test_common.define_test(
             'accessibility/Sanity',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.accessibility_Sanity.accessibility_Sanity',
         )
     ]

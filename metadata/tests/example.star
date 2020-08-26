@@ -12,9 +12,11 @@ def define_tests():
         test_common.define_test(
             'example/UnitTest',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.example_UnitTest.example_UnitTest',
         ),
         test_common.define_test(
             'example/UnitTestServer',
             suites = [],
+            main_package = '',
         )
     ]

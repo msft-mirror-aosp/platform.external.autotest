@@ -12,5 +12,6 @@ def define_tests():
         test_common.define_test(
             'vpd/ReadWrite',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.vpd_ReadWrite.vpd_ReadWrite',
         )
     ]

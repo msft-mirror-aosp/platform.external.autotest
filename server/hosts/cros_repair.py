@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import json
 import logging
@@ -20,6 +25,7 @@ from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
+from six.moves import range
 
 try:
     from chromite.lib import metrics
@@ -635,7 +641,7 @@ class ServoSysRqRepair(_ResetRepairAction):
         for _ in range(3):
             try:
                 host.servo.sysrq_x()
-            except error.TestFail, ex:
+            except error.TestFail as ex:
                 raise hosts.AutoservRepairError(
                       'cannot press sysrq-x: %s.' % str(ex),
                       'cannot_press_sysrq_x')

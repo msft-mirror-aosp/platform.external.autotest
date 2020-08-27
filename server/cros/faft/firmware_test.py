@@ -251,7 +251,7 @@ class FirmwareTest(test.test):
         self._create_old_faft_lockfile()
         self._setup_ec_write_protect(ec_wp)
         # See chromium:239034 regarding needing this sync.
-        self.blocking_sync(False)
+        self.blocking_sync()
         logging.info('FirmwareTest initialize done (id=%s)', self.run_id)
 
     def stage_build_to_usbkey(self):
@@ -1354,25 +1354,31 @@ class FirmwareTest(test.test):
             # a device is ready for transfer operation.
             self.faft_client.system.run_shell_command('hdparm -f %s' % device)
 
-    def blocking_sync(self, for_reset=False):
+    def blocking_sync(self, freeze_for_reset=False):
         """Sync root device and internal device, via script if possible.
 
         The actual calls end up logged by the run() call, since they're printed
         to stdout/stderr in the script.
 
-        @param for_reset: if True, prepare for reset
-                          (currently, just quits the RPC server)
+        @param freeze_for_reset: if True, prepare for reset by blocking writes
+                                 (only if enable_fs_sync_fsfreeze=True)
         """
 
         if self._use_sync_script:
-            logging.info(
-                    'Blocking sync%s', ' before reset' if for_reset else '')
+            if freeze_for_reset and self._use_fsfreeze:
+                self.faft_client.quit()
+                logging.info('Blocking sync and freeze')
+            elif freeze_for_reset:
+                self.faft_client.quit()
+                logging.info('Blocking sync for reset')
+            else:
+                logging.info('Blocking sync')
+
             try:
                 # client/bin is installed on the DUT as /usr/local/autotest/bin
                 sync_cmd = '/usr/local/autotest/bin/fs_sync.py'
-                if self._use_fsfreeze and for_reset:
+                if freeze_for_reset and self._use_fsfreeze:
                     sync_cmd += ' --freeze'
-                self.faft_client.quit()
                 self._client.run(sync_cmd)
                 return
             except (AttributeError, ImportError, error.AutoservRunError) as e:
@@ -1404,7 +1410,7 @@ class FirmwareTest(test.test):
                           default: EC soft reboot;
                           'hard': EC cold/hard reboot.
         """
-        self.blocking_sync(True)
+        self.blocking_sync(freeze_for_reset=True)
         self.ec.reboot(flags)
         time.sleep(self.faft_config.ec_boot_to_console)
         self.check_lid_and_power_on()

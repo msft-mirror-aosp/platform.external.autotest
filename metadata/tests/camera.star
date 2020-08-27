@@ -12,11 +12,9 @@ def define_tests():
         test_common.define_test(
             'camera/HAL3Perf',
             suites = ['crosbolt_perf_nightly'],
-            main_package = 'autotest_lib.client.site_tests.camera_HAL3Perf.camera_HAL3Perf',
         ),
         test_common.define_test(
             'camera/V4L2',
             suites = [],
-            main_package = 'autotest_lib.client.site_tests.camera_V4L2.camera_V4L2',
         )
     ]

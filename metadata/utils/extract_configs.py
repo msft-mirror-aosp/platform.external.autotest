@@ -36,7 +36,7 @@ def main():
   controls = control_files.load_all()
   logging.info('Loaded %d control files', len(controls))
   categorized = dict(_categorize_control_files(controls))
-  logging.info('Categorized control files into %d categories', len(categorized))
+  logging.info('Categorized control files into %d categories',)
 
   _delete_existing_defs()
   for category, control in categorized.items():
@@ -91,7 +91,6 @@ _TEST_TEMPLATE = """
         test_common.define_test(
             %(name)s,
             suites = %(suites)s,
-            main_package = %(main_package)s,
         )"""
 
 
@@ -101,7 +100,6 @@ def _generate_category_def(controls: List[control_files.Control]) -> str:
       _TEST_TEMPLATE % {
           'name': "'%s/%s'" % (c.category, c.name),
           'suites': sorted(c.suites),
-          'main_package': "'%s'" % c.main_package,
       } for c in controls
   ])
   return _CATEGORY_TEMPLATE % {'test_list': test_list}

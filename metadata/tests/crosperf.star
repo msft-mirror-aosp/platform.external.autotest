@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'crosperf/Wrapper',
             suites = [],
-            main_package = '',
         )
     ]

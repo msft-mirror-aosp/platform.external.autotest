@@ -12,6 +12,5 @@ def define_tests():
         test_common.define_test(
             'rlz/CheckPing',
             suites = ['rlz'],
-            main_package = '',
         )
     ]

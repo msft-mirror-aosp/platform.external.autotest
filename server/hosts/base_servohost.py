@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,10 +10,10 @@
 """This is a base host class for servohost and labstation."""
 
 
-import httplib
+import six.moves.http_client
 import logging
 import socket
-import xmlrpclib
+import six.moves.xmlrpc_client
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import enum
@@ -354,8 +355,8 @@ class BaseServoHost(ssh_host.SSHHost):
         if self.has_power():
             try:
                 rpm_client.set_power(self, 'CYCLE')
-            except (socket.error, xmlrpclib.Error,
-                    httplib.BadStatusLine,
+            except (socket.error, six.moves.xmlrpc_client.Error,
+                    six.moves.http_client.BadStatusLine,
                     rpm_client.RemotePowerException) as e:
                 raise hosts.AutoservRepairError(
                     'Power cycling %s failed: %s' % (self.hostname, e),

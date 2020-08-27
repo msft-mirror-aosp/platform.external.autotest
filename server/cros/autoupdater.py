@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,7 +10,7 @@ import os
 import re
 import six
 import sys
-import urlparse
+import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -171,7 +172,7 @@ def _url_to_version(update_url):
     # http://.../update/.../0.14.755.0/au/0.14.754.0. In this case we want to
     # strip off the au section of the path before reading the version.
     return re.sub('/au/.*', '',
-                  urlparse.urlparse(update_url).path).split('/')[-1].strip()
+                  six.moves.urllib.parse.urlparse(update_url).path).split('/')[-1].strip()
 
 
 def url_to_image_name(update_url):
@@ -185,7 +186,7 @@ def url_to_image_name(update_url):
     @returns a string representing the image name in the update_url.
 
     """
-    return urlparse.urlparse(update_url).path[len('/update/'):]
+    return six.moves.urllib.parse.urlparse(update_url).path[len('/update/'):]
 
 
 def get_update_failure_reason(exception):
@@ -330,7 +331,7 @@ class ChromiumOSUpdater(object):
             return remote_script
         self.host.run('mkdir -p -m 1777 /usr/local/tmp')
         remote_tmp_script = '/usr/local/tmp/%s' % script_name
-        server_name = urlparse.urlparse(self.update_url)[1]
+        server_name = six.moves.urllib.parse.urlparse(self.update_url)[1]
         script_url = 'http://%s/static/%s' % (server_name, script_name)
         fetch_script = 'curl -Ss -o %s %s && head -1 %s' % (
             remote_tmp_script, script_url, remote_tmp_script)
@@ -440,7 +441,7 @@ class ChromiumOSUpdater(object):
         """
         logging.info('Installing image at %s onto %s',
                      self.update_url, self.host.hostname)
-        server_name = urlparse.urlparse(self.update_url)[1]
+        server_name = six.moves.urllib.parse.urlparse(self.update_url)[1]
         image_name = url_to_image_name(self.update_url)
 
         logging.info('Installing image using quick-provision.')

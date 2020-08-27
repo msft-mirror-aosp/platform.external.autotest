@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 #
 # Copyright 2007 Google Inc. Released under the GPL v2
 
@@ -10,6 +11,10 @@ You should import the "hosts" package instead of importing each type of host.
         SSHHost: a remote machine with a ssh access
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import inspect
 import logging
 import re
@@ -20,6 +25,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import pxssh
 from autotest_lib.server import utils
 from autotest_lib.server.hosts import abstract_ssh
+import six
 
 # In case cros_host is being ran via SSP on an older Moblab version with an
 # older chromite version.
@@ -325,7 +331,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         """
         # For example if the command is a list, we need to convert it to a
         # string first.
-        if not isinstance(command, basestring):
+        if not isinstance(command, six.string_types):
             command = ' '.join(command)
 
         if timeout is None:
@@ -344,14 +350,14 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                     self.DEFAULT_START_MASTER_SSH_TIMEOUT_S,
             ))
 
-            env = " ".join("=".join(pair) for pair in self.env.iteritems())
+            env = " ".join("=".join(pair) for pair in six.iteritems(self.env))
             elapsed = time.time() - start_time
             try:
                 return self._run(command, timeout - elapsed, ignore_status,
                                  stdout_tee, stderr_tee, connect_timeout, env,
                                  options, stdin, args, ignore_timeout,
                                  ssh_failure_retry_ok)
-            except error.CmdError, cmderr:
+            except error.CmdError as cmderr:
                 # We get a CmdError here only if there is timeout of that
                 # command. Catch that and stuff it into AutoservRunError and
                 # raise it.

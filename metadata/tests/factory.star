@@ -12,13 +12,16 @@ def define_tests():
         test_common.define_test(
             'factory/Basic',
             suites = ['factory'],
+            main_package = '',
         ),
         test_common.define_test(
             'factory/InstallServo',
             suites = [],
+            main_package = 'autotest_lib.server.site_tests.factory_InstallServo.factory_InstallServo',
         ),
         test_common.define_test(
             'factory/InstallVM',
             suites = [],
+            main_package = '',
         )
     ]

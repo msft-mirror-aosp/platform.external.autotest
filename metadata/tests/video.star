@@ -12,9 +12,11 @@ def define_tests():
         test_common.define_test(
             'video/WebRtcMainFeedSwitching',
             suites = ['hotrod'],
+            main_package = 'autotest_lib.client.site_tests.video_WebRtcMainFeedSwitching.video_WebRtcMainFeedSwitching',
         ),
         test_common.define_test(
             'video/WebRtcResolutionSwitching',
             suites = ['hotrod'],
+            main_package = 'autotest_lib.client.site_tests.video_WebRtcResolutionSwitching.video_WebRtcResolutionSwitching',
         )
     ]

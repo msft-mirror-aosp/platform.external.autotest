@@ -12,5 +12,6 @@ def define_tests():
         test_common.define_test(
             'webservd/BasicDBusAPI',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.webservd_BasicDBusAPI.webservd_BasicDBusAPI',
         )
     ]

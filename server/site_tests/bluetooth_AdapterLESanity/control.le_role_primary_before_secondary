@@ -10,7 +10,7 @@ NAME = 'bluetooth_AdapterLESanity.le_role_primary_before_secondary'
 PURPOSE = ('Tests controller can handle secondary role in connection while already'
            ' connected as primary')
 CRITERIA = 'Pass the test'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

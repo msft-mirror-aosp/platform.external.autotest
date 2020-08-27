@@ -12,9 +12,11 @@ def define_tests():
         test_common.define_test(
             '/BootDevice',
             suites = ['kernel_daily_regression'],
+            main_package = '',
         ),
         test_common.define_test(
             '/TPMSmogcheck',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.suite_TPM.hardware_TPMTakeOwnership',
         )
     ]

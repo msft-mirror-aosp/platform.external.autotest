@@ -69,6 +69,10 @@ Example:
 run_pylint.py filename.py
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import fnmatch
 import logging
 import os
@@ -95,6 +99,10 @@ SKIPLIST = ['/site-packages/*', '/contrib/*', '/frontend/afe/management.py']
 import astroid
 import pylint.lint
 from pylint.checkers import base, imports, variables
+import six
+from six.moves import filter
+from six.moves import map
+from six.moves import zip
 
 # need to put autotest root dir on sys.path so pylint will be happy
 autotest_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -304,7 +312,7 @@ def check_file(file_path, base_opts):
 
     @returns pylint return code
     """
-    if not isinstance(file_path, basestring):
+    if not isinstance(file_path, six.string_types):
         raise TypeError('expected a string as filepath, got %s'%
             type(file_path))
 

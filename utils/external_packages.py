@@ -1,10 +1,17 @@
+# Lint as: python2, python3
 # Please keep this code python 2.4 compatible and stand alone.
 
-import logging, os, shutil, sys, tempfile, time, urllib2
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import logging, os, shutil, sys, tempfile, time
+from six.moves import urllib
 import subprocess, re
 from distutils.version import LooseVersion
 
 from autotest_lib.client.common_lib import autotemp, revision_control, utils
+import six
 
 _READ_SIZE = 64*1024
 _MAX_PACKAGE_SIZE = 100*1024*1024
@@ -161,7 +168,7 @@ class ExternalPackage(object):
             return True
         try:
             module = __import__(self.module_name)
-        except ImportError, e:
+        except ImportError as e:
             logging.info("%s isn't present. Will install.", self.module_name)
             return True
         # Check if we're getting a module installed somewhere else,
@@ -235,7 +242,7 @@ class ExternalPackage(object):
         if not self.os_requirements:
             return
         failed = False
-        for file_names, package_name in self.os_requirements.iteritems():
+        for file_names, package_name in six.iteritems(self.os_requirements):
             if not any(os.path.exists(file_name) for file_name in file_names):
                 failed = True
                 logging.error('Can\'t find %s, %s probably needs it.',
@@ -553,8 +560,8 @@ class ExternalPackage(object):
         for url in self.urls:
             logging.info('Fetching %s', url)
             try:
-                url_file = urllib2.urlopen(url)
-            except (urllib2.URLError, EnvironmentError):
+                url_file = urllib.request.urlopen(url)
+            except (urllib.error.URLError, EnvironmentError):
                 logging.warning('Could not fetch %s package from %s.',
                                 self.name, url)
                 continue
@@ -622,10 +629,10 @@ class SetuptoolsPackage(ExternalPackage):
         if not egg_path:
             return False
 
-        print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        print 'About to run sudo to install setuptools', self.version
-        print 'on your system for use by', sys.executable, '\n'
-        print '!! ^C within', self.SUDO_SLEEP_DELAY, 'seconds to abort.\n'
+        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n')
+        print('About to run sudo to install setuptools', self.version)
+        print('on your system for use by', sys.executable, '\n')
+        print('!! ^C within', self.SUDO_SLEEP_DELAY, 'seconds to abort.\n')
         time.sleep(self.SUDO_SLEEP_DELAY)
 
         # Copy the egg to the local filesystem /var/tmp so that root can
@@ -638,7 +645,7 @@ class SetuptoolsPackage(ExternalPackage):
             p = subprocess.Popen(['sudo', '/bin/sh', temp_egg],
                                  stdout=subprocess.PIPE)
             regex = re.compile('Copying (.*?) to (.*?)\n')
-            match = regex.search(p.communicate()[0])
+            match = regex.search(p.communicate()[0].decode('utf-8'))
             status = p.wait()
 
             if match:

@@ -58,7 +58,7 @@ def main():
     options = parse_arguments(sys.argv[1:])
     logging_manager.configure_logging(BuildExternalsLoggingConfig(),
                                       verbose=True)
-    os.umask(022)
+    os.umask(0o22)
 
     top_of_tree = external_packages.find_top_of_autotest_tree()
     package_dir = os.path.join(top_of_tree, PACKAGE_DIR)

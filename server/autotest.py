@@ -704,14 +704,13 @@ class _Run(object):
 
     def verify_machine(self):
         binary = os.path.join(self.autodir, 'bin/autotest')
-        at_check = "test -e {}".format(binary)
+        at_check = "test -e {} && echo True || echo False".format(binary)
         if not self.parallel_flag:
             tmpdir = os.path.join(self.autodir, 'tmp')
             download = os.path.join(self.autodir, 'tests/download')
-            at_check += " && umount {} && umount {}".format(tmpdir, download)
-        if self.host.run(at_check, ignore_status=True) == 1:
-            # if test -e fails, the exit code will be 1. If the umount fails,
-            # the exit code will be 32 (and we don't care).
+            at_check += "; umount {}; umount {}".format(tmpdir, download)
+        # Check if the test dir is missing.
+        if "False" in str(self.host.run(at_check, ignore_status=True).stdout):
             raise error.AutoservInstallError(
                 "Autotest does not appear to be installed")
 

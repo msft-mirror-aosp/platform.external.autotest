@@ -230,7 +230,6 @@ class ServoHost(base_servohost.BaseServoHost):
         self.initilize_servo()
         self.initialize_dut_for_servo()
 
-
     def initilize_servo(self):
         """Establish a connection to the servod server on this host.
 
@@ -240,7 +239,6 @@ class ServoHost(base_servohost.BaseServoHost):
         """
         self._servo = servo.Servo(servo_host=self,
                                   servo_serial=self.servo_serial)
-
 
     def initialize_dut_for_servo(self):
         """This method will do some setup for dut control, e.g. setup
@@ -260,7 +258,6 @@ class ServoHost(base_servohost.BaseServoHost):
             raise hosts.AutoservVerifyError('Initialize dut for servo timed'
                                             ' out.')
 
-
     def disconnect_servo(self):
         """Disconnect our servo if it exists.
 
@@ -275,7 +272,6 @@ class ServoHost(base_servohost.BaseServoHost):
             self.rpc_server_tracker.disconnect(self.servo_port)
             self._servo = None
 
-
     def _maybe_create_servod_ssh_tunnel_proxy(self):
         """Create a xmlrpc proxy for use with a ssh tunnel.
         A lock is used to safely create a singleton proxy.
@@ -289,7 +285,6 @@ class ServoHost(base_servohost.BaseServoHost):
                        timeout_seconds=60,
                        request_timeout_seconds=3600,
                        server_desc=str(self))
-
 
     def get_servod_server_proxy(self):
         """Return a proxy if it exists; otherwise, create a new one.
@@ -312,7 +307,6 @@ class ServoHost(base_servohost.BaseServoHost):
                 remote = 'http://%s:%s' % (self.hostname, self.servo_port)
                 self._local._per_thread_proxy = six.moves.xmlrpc_client.ServerProxy(remote)
             return self._local._per_thread_proxy
-
 
     def verify(self, silent=False):
         """Update the servo host and verify it's in a good state.
@@ -496,7 +490,6 @@ class ServoHost(base_servohost.BaseServoHost):
               ' or broken. Please replace usbkey on the servo and retry.',
               'missing usbkey')
 
-
     def is_ec_supported(self):
         """Check if ec is supported on the servo_board"""
         if self.servo_board:
@@ -559,7 +552,6 @@ class ServoHost(base_servohost.BaseServoHost):
                 self.stop_servod()
                 raise
 
-
     def _is_critical_error(self, error):
         if (isinstance(error, hosts.AutoservVerifyDependencyError)
             and not error.is_critical()):
@@ -574,7 +566,6 @@ class ServoHost(base_servohost.BaseServoHost):
                      'action and tests that depends on servo will not run.')
         return True
 
-
     def get_servo(self):
         """Get the cached servo.Servo object.
 
@@ -583,14 +574,12 @@ class ServoHost(base_servohost.BaseServoHost):
         """
         return self._servo
 
-
     def request_reboot(self):
         """Request servohost to be rebooted when it's safe to by touch a file.
         """
         logging.debug('Request to reboot servohost %s has been created by '
                       'servo with port # %s', self.hostname, self.servo_port)
         self.run('touch %s' % self._reboot_file, ignore_status=True)
-
 
     def withdraw_reboot_request(self):
         """Withdraw a servohost reboot request if exists by remove the flag
@@ -600,7 +589,6 @@ class ServoHost(base_servohost.BaseServoHost):
                       ' by servo with port # %s if exists.',
                       self.hostname, self.servo_port)
         self.run('rm -f %s' % self._reboot_file, ignore_status=True)
-
 
     def start_servod(self, quick_startup=False):
         """Start the servod process on servohost.
@@ -667,7 +655,6 @@ class ServoHost(base_servohost.BaseServoHost):
         # Cache the initial instance timestamp to check against servod restarts
         self._initial_instance_ts = self.get_instance_logs_ts()
 
-
     def stop_servod(self):
         """Stop the servod process on servohost.
         """
@@ -683,13 +670,11 @@ class ServoHost(base_servohost.BaseServoHost):
                       servo_constants.SERVOD_TEARDOWN_TIMEOUT)
         time.sleep(servo_constants.SERVOD_TEARDOWN_TIMEOUT)
 
-
     def restart_servod(self, quick_startup=False):
         """Restart the servod process on servohost.
         """
         self.stop_servod()
         self.start_servod(quick_startup)
-
 
     def _process_servodtool_error(self, response):
         """Helper function to handle non-zero servodtool response.
@@ -869,7 +854,6 @@ class ServoHost(base_servohost.BaseServoHost):
         self.smart_usbhub = True
         return True
 
-
     def reset_servo(self):
         """Reset(power-cycle) the servo via smart usbhub.
         """
@@ -900,7 +884,6 @@ class ServoHost(base_servohost.BaseServoHost):
             message = 'Servo reset completed but devnum is still not changed!'
         logging.info(message)
         self.record('INFO', None, None, message)
-
 
     def _extract_compressed_logs(self, logdir, relevant_files):
         """Decompress servod logs in |logdir|.
@@ -965,7 +948,6 @@ class ServoHost(base_servohost.BaseServoHost):
                     fd.write(line + '\n')
         for f in mcu_files:
             mcu_files[f].close()
-
 
     def remove_latest_log_symlinks(self):
         """Remove the conveninence symlinks 'latest' servod logs."""
@@ -1192,7 +1174,6 @@ class ServoHost(base_servohost.BaseServoHost):
         self.run('touch %s' % self._lock_file, ignore_status=True)
         self._is_locked = True
 
-
     def _unlock(self):
         """Unlock servohost by removing the lock file.
         """
@@ -1200,7 +1181,6 @@ class ServoHost(base_servohost.BaseServoHost):
                       self._lock_file)
         self.run('rm %s' % self._lock_file, ignore_status=True)
         self._is_locked = False
-
 
     def close(self):
         """Close the associated servo and the host object."""
@@ -1267,7 +1247,6 @@ class ServoHost(base_servohost.BaseServoHost):
         super(ServoHost, self).close()
         # Mark closed.
         self._closed = True
-
 
     def get_servo_state(self):
         return self._servo_state

@@ -55,7 +55,9 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
     def typical_use_cases_test(self):
         """Do some initialization work then start the typical MTBF test loop"""
 
-        self.is_tablet = self.host.get_model_from_cros_config() in TABLET_MODELS
+        # TODO(b/165606673) - Remove blooglet once the bug is fixed
+        self.skip_wake_test = self.host.get_model_from_cros_config() in \
+                              TABLET_MODELS + ['blooglet']
         mouse = self.devices['BLE_MOUSE'][0]
 
         self.run_typical_use_cases(mouse)
@@ -200,7 +202,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
 
     def test_suspend_and_mouse_wakeup(self, mouse):
         """Test the device can be waken up by the mouse"""
-        if self.is_tablet:
+        if self.skip_wake_test:
             return
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(

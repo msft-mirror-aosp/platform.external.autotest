@@ -12,5 +12,6 @@ def define_tests():
         test_common.define_test(
             'files/CopyFileToGoogleDriveUI',
             suites = ['files'],
+            main_package = 'autotest_lib.client.site_tests.files_CopyFileToGoogleDriveUI.files_CopyFileToGoogleDriveUI',
         )
     ]

@@ -867,9 +867,9 @@ class BluetoothAdapterTests(test.test):
         # available as it indicates platform didn't support method and that's
         # ok
         except Exception as e:
-            logging.info("got exception %s", str(e))
             if not (e.__class__.__name__ == 'Fault' and
                     'is not supported' in str(e)):
+                logging.error("got exception %s", str(e))
                 raise
 
         return device

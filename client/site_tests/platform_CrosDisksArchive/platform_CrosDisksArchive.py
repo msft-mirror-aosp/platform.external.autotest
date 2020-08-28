@@ -126,9 +126,9 @@ class CrosDisksArchiveTester(CrosDisksTester):
 
         for archive_name in [
                 'Multipart Old Style.rar',
-                'Multipart New Style.part01.rar',
-                'Multipart New Style.part02.rar',
-                'Multipart New Style.part03.rar',
+                'Multipart New Style 01.rar',
+                'Multipart New Style 02.rar',
+                'Multipart New Style 03.rar',
         ]:
             self._test_archive(os.path.join(mount_path, archive_name), want)
 
@@ -202,7 +202,6 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.info('Archive mounted at %r', mount_path)
 
             self._test_unicode(mount_path)
-            self._test_multipart(mount_path)
             self._test_invalid(mount_path)
 
             logging.info('Unmounting archive')
@@ -232,9 +231,9 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'Format V5.rar',
                     'Multipart Old Style.rar',
                     'Multipart Old Style.r00',
-                    'Multipart New Style.part01.rar',
-                    'Multipart New Style.part02.rar',
-                    'Multipart New Style.part03.rar',
+                    'Multipart New Style 01.rar',
+                    'Multipart New Style 02.rar',
+                    'Multipart New Style 03.rar',
                     'Nested.rar',
                     'Nested.zip',
                     'Unicode.zip',

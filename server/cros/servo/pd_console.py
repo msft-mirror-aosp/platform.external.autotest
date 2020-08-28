@@ -78,14 +78,14 @@ class PDConsoleUtils(object):
 
         @returns: version of PD stack, one of (1, 2)
         """
-        l = self.send_pd_command_get_output('help pd', ['\s+(.+)'])
-        m = re.search("pd version", l[0][0])
-        if m != None:
-            v = self.send_pd_command_get_output('pd version', ['\s+(\d)'])
-            pd_version = int(v[0][1])
-        else:
-            pd_version = 1
-        return pd_version
+        # Match a number or an error ("Wrong number of params")
+        matches = self.console.send_command_get_output('pd version',
+                                                       [r'\s+(\d+|Wrong.*)'])
+        if matches:
+            result = matches[0][1]
+            if result[0].isdigit():
+                return int(result)
+        return 1
 
     def execute_pd_state_cmd(self, port):
         """Get PD state for specified channel
@@ -363,7 +363,6 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
     passed in and stored when this object is created.
 
     """
-
     SRC_CONNECT = ('SRC_READY',)
     SNK_CONNECT = ('SNK_READY',)
     SRC_DISC = 'SRC_DISCONNECTED'
@@ -789,4 +788,6 @@ def create_pd_console_utils(console):
     }
 
     version = PDConsoleUtils(console).get_pd_version()
-    return pd_console_utils[version](console)
+    logging.debug('%s is TCPM v%s', console, version)
+    cls = pd_console_utils[version]
+    return cls(console)

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,6 +10,10 @@
 """This file provides core logic for servo verify/repair process."""
 
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import os
 import re
@@ -16,7 +21,8 @@ import tarfile
 import threading
 import json
 import time
-import xmlrpclib
+import six
+import six.moves.xmlrpc_client
 import calendar
 
 from autotest_lib.client.bin import utils
@@ -196,11 +202,11 @@ class ServoHost(base_servohost.BaseServoHost):
         self.remote_log_dir = '%s_%s' % (self.SERVOD_LOG_PREFIX,
                                          self.servo_port)
         # Path of the servo host lock file.
-        self._lock_file = (self.TEMP_FILE_DIR + str(self.servo_port)
-                           + self.LOCK_FILE_POSTFIX)
+        self._lock_file = (self.TEMP_FILE_DIR + str(self.servo_port) +
+                           self.LOCK_FILE_POSTFIX)
         # File path to declare a reboot request.
-        self._reboot_file = (self.TEMP_FILE_DIR + str(self.servo_port)
-                             + self.REBOOT_FILE_POSTFIX)
+        self._reboot_file = (self.TEMP_FILE_DIR + str(self.servo_port) +
+                             self.REBOOT_FILE_POSTFIX)
 
         # Lock the servo host if it's an in-lab labstation to prevent other
         # task to reboot it until current task completes. We also wait and
@@ -304,7 +310,7 @@ class ServoHost(base_servohost.BaseServoHost):
             # own separate proxy connection.
             if not hasattr(self._local, "_per_thread_proxy"):
                 remote = 'http://%s:%s' % (self.hostname, self.servo_port)
-                self._local._per_thread_proxy = xmlrpclib.ServerProxy(remote)
+                self._local._per_thread_proxy = six.moves.xmlrpc_client.ServerProxy(remote)
             return self._local._per_thread_proxy
 
 
@@ -1516,7 +1522,7 @@ def get_servo_args_for_host(dut_host):
     @return `servo_args` dict with host and an optional port.
     """
     info = dut_host.host_info_store.get()
-    servo_args = {k: v for k, v in info.attributes.iteritems()
+    servo_args = {k: v for k, v in six.iteritems(info.attributes)
                   if k in servo_constants.SERVO_ATTR_KEYS}
 
     if servo_constants.SERVO_PORT_ATTR in servo_args:

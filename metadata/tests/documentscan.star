@@ -12,5 +12,6 @@ def define_tests():
         test_common.define_test(
             'documentscan/AppTestWithFakeLorgnette',
             suites = [],
+            main_package = 'autotest_lib.client.site_tests.documentscan_AppTestWithFakeLorgnette.documentscan_AppTestWithFakeLorgnette',
         )
     ]

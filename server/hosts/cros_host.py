@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import logging
 import os
@@ -39,6 +44,7 @@ from autotest_lib.server.hosts import servo_constants
 from autotest_lib.site_utils.rpm_control_system import rpm_client
 from autotest_lib.site_utils.admin_audit import constants as audit_const
 from autotest_lib.site_utils.admin_audit import verifiers as audit_verify
+from six.moves import zip
 
 # In case cros_host is being ran via SSP on an older Moblab version with an
 # older chromite version.
@@ -770,7 +776,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         with open(image, 'rb') as f:
             image_data = f.read()
-        match = re.findall(version_regex, image_data)
+        match = re.findall(version_regex, image_data.decode('utf-8'))
         if match:
             return match[0]
         else:

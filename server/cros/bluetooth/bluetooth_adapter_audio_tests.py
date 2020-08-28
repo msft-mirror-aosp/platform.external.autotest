@@ -263,15 +263,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
     def initialize_hfp(self, device, test_profile, test_data,
                        recording_device, bluez_function):
-        """
-        Initial set up for hfp tests.
+        """Initial set up for hfp tests.
 
         Setup that is required for all hfp tests where
         dut is either source or sink. Selects input device, starts recording,
         and lastly it waits for pulseaudio bluez source/sink.
 
         @param device: the bluetooth peer device
-        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
+        @param test_profile: the test profile used, HFP_WBS or HFP_NBS
         @param test_data: a dictionary about the audio test data defined in
                 client/cros/bluetooth/bluetooth_audio_test_data.py
         @param recording_device: which device recorded the audio, possible
@@ -280,11 +279,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 _get_pulseaudio_bluez_source_hfp or
                 _get_pulseaudio_bluez_sink_hfp depending on the role of the dut
         """
-        device_type = "DUT" if recording_device == "recorded_by_dut" else "Peer"
-        dut_role = "sink" if recording_device == "recorded_by_dut" else "source"
+        device_type = 'DUT' if recording_device == 'recorded_by_dut' else 'Peer'
+        dut_role = 'sink' if recording_device == 'recorded_by_dut' else 'source'
 
         # Select audio input device.
-        desc='waiting for cras to select audio input device'
+        desc = 'waiting for cras to select audio input device'
         logging.debug(desc)
         self._poll_for_condition(
                 lambda: self.bluetooth_facade.select_input_device(device.name),
@@ -294,24 +293,24 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         logging.debug('Start recording audio on {}'.format(device_type))
         if not self.bluetooth_facade.start_capturing_audio_subprocess(
                 test_data, recording_device):
-            raise error.TestError(
-                '{} failed to start capturing audio.'.format(device_type)
-            )
+            desc = '{} failed to start capturing audio.'.format(device_type)
+            raise error.TestError(desc)
 
         # Wait for pulseaudio bluez hfp source/sink
-        desc='waiting for pulseaudio bluez hfp {}'.format(dut_role)
+        desc = 'waiting for pulseaudio bluez hfp {}'.format(dut_role)
         logging.debug(desc)
         self._poll_for_condition(lambda: bluez_function(device, test_profile),
                                  desc=desc)
 
 
     def hfp_record_on_dut(self, device, test_profile, test_data):
-        """
-        Play audio from test_data dictionary from peer device to dut and record
-        on dut.
+        """Play audio from test_data dictionary from peer device to dut.
+
+        Play file described in test_data dictionary from peer device to dut
+        using test_profile, either HFP_WBS or HFP_NBS and record on dut.
 
         @param device: the bluetooth peer device
-        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
+        @param test_profile: the test profile used, HFP_WBS or HFP_NBS
         @param test_data: a dictionary about the audio test data defined in
                 client/cros/bluetooth/bluetooth_audio_test_data.py
 
@@ -325,7 +324,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         # Start playing audio on chameleon.
         logging.debug('Start playing audio on Pi')
-        if not device.StartPlayingAudioSubprocess(test_profile):
+        if not device.StartPlayingAudioSubprocess(test_profile, test_data):
             err = 'Failed to start playing audio file on the peer device'
             raise error.TestError(err)
 
@@ -347,21 +346,22 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     def hfp_record_on_peer(self, device, test_profile, test_data):
-        """
-        Play audio from test_data dictionary from dut to bt peer and record
-        on bt peer.
+        """Play audio from test_data dictionary from dut to peer device.
 
-        @param device: the bluetooth peer device
-        @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
-        @param test_data: a dictionary about the audio test data defined in
-                client/cros/bluetooth/bluetooth_audio_test_data.py
+        Play file described in test_data dictionary from dut to peer device
+        using test_profile, either HFP_WBS or HFP_NBS and record on peer.
+
+        @param device: The bluetooth peer device.
+        @param test_profile: The test profile used, HFP_WBS or HFP_NBS.
+        @param test_data: A dictionary about the audio test data defined in
+                client/cros/bluetooth/bluetooth_audio_test_data.py.
 
         @returns: True if the recorded audio frames are legitimate, False
                 if they are not, ie. it did not record.
         """
         logging.debug('Start recording audio on Pi')
         # Start recording audio on the peer Bluetooth audio device.
-        if not device.StartRecordingAudioSubprocess(test_profile):
+        if not device.StartRecordingAudioSubprocess(test_profile, test_data):
             raise error.TestError(
                     'Failed to record on the peer Bluetooth audio device.')
 
@@ -418,7 +418,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         a2dp_test_data = audio_test_data[A2DP]
 
         # Wait for pulseaudio a2dp bluez source
-        desc='waiting for pulseaudio a2dp bluez source'
+        desc = 'waiting for pulseaudio a2dp bluez source'
         logging.debug(desc)
         self._poll_for_condition(
                 lambda: self._get_pulseaudio_bluez_source_a2dp(device, A2DP),
@@ -426,7 +426,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         # Start recording audio on the peer Bluetooth audio device.
         logging.debug('Start recording a2dp')
-        if not device.StartRecordingAudioSubprocess(A2DP):
+        if not device.StartRecordingAudioSubprocess(A2DP, a2dp_test_data):
             raise error.TestError(
                     'Failed to record on the peer Bluetooth audio device.')
 

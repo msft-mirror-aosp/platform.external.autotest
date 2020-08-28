@@ -106,6 +106,12 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
+            'bloonchipper_v2.0.4478-22ad3ce2.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '9a0cd0d9dd44b0b9f1eacf4c381f3d6d2aa3d7c7bbd5a04f1f7ba708bc80015a',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4478-22ad3ce2',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4478-22ad3ce2',
+                _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
+            },
         },
         _FP_BOARD_NAME_NOCTURNE: {
             'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.4017-9c45fb4b3-RW.bin': {

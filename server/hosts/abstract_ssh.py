@@ -140,8 +140,8 @@ class AbstractSSHHost(remote.RemoteHost):
 
     @property
     def is_default_port(self):
-      """Returns True if its port is default SSH port."""
-      return self.port == _DEFAULT_SSH_PORT
+        """Returns True if its port is default SSH port."""
+        return self.port == _DEFAULT_SSH_PORT
 
     @property
     def host_port(self):
@@ -1043,3 +1043,11 @@ class AbstractSSHHost(remote.RemoteHost):
             data = {'host_class': class_name}
             metrics.Counter(
                 'chromeos/autotest/used_hosts').increment(fields=data)
+
+    def is_file_exists(self, file_path):
+        """Check whether a given file is exist on the host.
+        """
+        result = self.run('test -f ' + file_path,
+                          timeout=30,
+                          ignore_status=True)
+        return result.exit_status == 0

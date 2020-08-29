@@ -31,6 +31,9 @@ from autotest_lib.client.cros.audio import (
         audio_test_data as audio_test_data_module)
 from autotest_lib.client.cros.audio import check_quality
 from autotest_lib.client.cros.audio import cras_utils
+from autotest_lib.client.cros.audio.sox_utils import (
+        convert_format, convert_raw_file, get_file_length,
+        trim_silence_from_wav_file)
 from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import output_recorder
 from autotest_lib.client.cros.power import sys_power
@@ -2177,6 +2180,97 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             # The recorded wav file should not be empty.
             wav_file = check_quality.WaveFile(audio_test_data[recording_device])
             return wav_file.get_number_frames() > 0
+
+
+    def convert_audio_sample_rate(self, input_file, out_file, test_data,
+                                  new_rate):
+        """Convert audio file to new sample rate.
+
+        @param input_file: Path to file to upsample.
+        @param out_file: Path to create upsampled file.
+        @param test_data: Dictionary with information about file.
+        @param new_rate: New rate to upsample file to.
+
+        @returns: True if upsampling succeeded, False otherwise.
+        """
+        test_data = json.loads(test_data)
+        logging.debug('Resampling file {} to new rate {}'.format(
+                      input_file, new_rate))
+
+        convert_format(input_file, test_data['channels'],
+                       test_data['bit_width'], test_data['rate'], out_file,
+                       test_data['channels'], test_data['bit_width'], new_rate,
+                       1.0, use_src_header=True, use_dst_header=True)
+
+        return os.path.isfile(out_file)
+
+
+    def trim_wav_file(self, in_file, out_file, new_duration, test_data,
+                      tolerance=0.1):
+        """Trim long file to desired length.
+
+        Trims audio file to length by cutting out silence from beginning and
+        end.
+
+        @param in_file: Path to audio file to be trimmed.
+        @param out_file: Path to trimmed audio file to create.
+        @param new_duration: A float representing the desired duration of
+                the resulting trimmed file.
+        @param test_data: Dictionary containing information about the test file.
+        @param tolerance: (optional) A float representing the allowable
+                difference between trimmed file length and desired duration
+
+        @returns: True if file was trimmed successfully, False otherwise.
+        """
+        test_data = json.loads(test_data)
+        trim_silence_from_wav_file(in_file, out_file, new_duration)
+        measured_length = get_file_length(out_file, test_data['channels'],
+                                     test_data['bit_width'], test_data['rate'])
+        return abs(measured_length - new_duration) <= tolerance
+
+
+    def unzip_audio_test_data(self, tar_path, data_dir):
+        """Unzip audio test data files.
+
+        @param tar_path: Path to audio test data tarball on DUT.
+        @oaram data_dir: Path to directory where to extract test data directory.
+
+        @returns: True if audio test data folder exists, False otherwise.
+        """
+        logging.debug('Downloading audio test data on DUT')
+        # creates path to dir to extract test data to by taking name of the
+        # tarball without the extension eg. <dir>/file.ext to data_dir/file/
+        audio_test_dir = os.path.join(
+                data_dir, os.path.split(tar_path)[1].split('.', 1)[0])
+
+        unzip_cmd = 'tar -xf {0} -C {1}'.format(tar_path, data_dir)
+
+        unzip_proc = subprocess.Popen(unzip_cmd.split(), stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+        _, stderr = unzip_proc.communicate()
+
+        if stderr:
+            logging.error('Error occurred in unzipping audio data: {}'.format(
+                    str(stderr)))
+            return False
+
+        return unzip_proc.returncode == 0 and os.path.isdir(audio_test_dir)
+
+
+    def convert_raw_to_wav(self, input_file, output_file, test_data):
+        """Convert raw audio file to wav file.
+
+        @oaram input_file: the location of the raw file
+        @param output_file: the location to place the resulting wav file
+        @param test_data: the data for the file being converted
+
+        @returns: True if conversion was successful otherwise false
+        """
+        test_data = json.loads(test_data)
+        convert_raw_file(input_file, test_data['channels'],
+                         test_data['bit_width'], test_data['rate'], output_file)
+
+        return os.path.isfile(output_file)
 
 
     def get_primary_frequencies(self, audio_test_data, recording_device):

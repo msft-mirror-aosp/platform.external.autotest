@@ -886,6 +886,67 @@ class BluetoothDevice(object):
                 json.dumps(audio_test_data), recording_device)
 
 
+    def convert_audio_sample_rate(self, input_file, out_file, test_data,
+                                  new_rate):
+        """Convert audio file to new sample rate.
+
+        @param input_file: Path to file to upsample.
+        @param out_file: Path to create upsampled file.
+        @param test_data: Dictionary with information about file.
+        @param new_rate: New rate to upsample file to.
+
+        @returns: True if upsampling succeeded, False otherwise.
+        """
+        return self._proxy.convert_audio_sample_rate(input_file, out_file,
+                                                     json.dumps(test_data),
+                                                     new_rate)
+
+
+    def trim_wav_file(self, in_file, out_file, new_duration, test_data,
+                      tolerance=0.1):
+        """Trim long file to desired length.
+
+        Trims audio file to length by cutting out silence from beginning and
+        end.
+
+        @param in_file: Path to audio file to be trimmed.
+        @param out_file: Path to trimmed audio file to create.
+        @param new_duration: A float representing the desired duration of
+                the resulting trimmed file.
+        @param test_data: Dictionary containing information about the test file.
+        @param tolerance: (optional) A float representing the allowable
+                difference between trimmed file length and desired duration
+
+        @returns: True if file was trimmed successfully, False otherwise.
+        """
+        return self._proxy.trim_wav_file(in_file, out_file, new_duration,
+                                         json.dumps(test_data), tolerance)
+
+
+    def unzip_audio_test_data(self, tar_path, data_dir):
+        """Unzip audio test data files.
+
+        @param tar_path: Path to audio test data tarball on DUT.
+        @oaram data_dir: Path to directory where to extract test data directory.
+
+        @returns: True if audio test data folder exists, False otherwise.
+        """
+        return self._proxy.unzip_audio_test_data(tar_path, data_dir)
+
+
+    def convert_raw_to_wav(self, input_file, output_file, test_data):
+        """Convert raw audio file to wav file.
+
+        @oaram input_file: The location of the raw file.
+        @param output_file: The location to place the resulting wav file.
+        @param test_data: The data for the file being converted.
+
+        @returns: True if conversion was successful, otherwise false.
+        """
+        return self._proxy.convert_raw_to_wav(input_file, output_file,
+                                              json.dumps(test_data))
+
+
     def get_primary_frequencies(self, audio_test_data, recording_device):
         """Get primary frequencies of the audio test file.
 

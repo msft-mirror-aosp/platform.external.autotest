@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -37,6 +38,10 @@ of DUT, based on pool assignments:
 
 # pylint: disable=missing-docstring
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import json
 import logging
 
@@ -45,6 +50,7 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.server import afe_utils
 from autotest_lib.server.hosts import repair_utils
+import six
 
 
 # _FIRMWARE_REPAIR_POOLS - The set of pools that should be
@@ -104,7 +110,7 @@ def _get_available_firmware(host, model):
 
     # The manifest is a JSON in .model.host.versions.rw
     data = json.loads(result.stdout) or {}
-    key = model if len(data) > 1 else next(data.iterkeys(), '')
+    key = model if len(data) > 1 else next(six.iterkeys(data), '')
     key += '.host.versions.rw'
     for k in key.split('.'):
         data = data.get(k, {})

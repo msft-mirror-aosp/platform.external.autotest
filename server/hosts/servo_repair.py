@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import sys
 import functools
@@ -13,6 +18,7 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import repair_utils
+import six
 
 try:
     from chromite.lib import metrics
@@ -69,7 +75,8 @@ class _UpdateVerifier(hosts.Verifier):
         # We don't want failure from update block DUT repair action.
         # See crbug.com/1029950.
         except Exception as e:
-            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
+            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+                        sys.exc_info()[2])
 
     @property
     def description(self):
@@ -282,7 +289,8 @@ class _ServodControlVerifier(hosts.Verifier):
         try:
             host.initialize_dut_for_servo()
         except Exception as e:
-            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
+            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+                        sys.exc_info()[2])
 
     @property
     def description(self):
@@ -366,7 +374,7 @@ class _CCDPowerDeliveryVerifier(hosts.Verifier):
             except Exception as e:
                 logging.error(
                     'setting power direction with retries failed %s',
-                    e.message,
+                    str(e),
                 )
             finally:
                 time.sleep(self.CHANGE_SERVO_ROLE_TIMEOUT)
@@ -412,7 +420,8 @@ class _PowerButtonVerifier(hosts.Verifier):
         try:
             button = host.get_servo().get('pwr_button')
         except Exception as e:
-            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
+            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+                        sys.exc_info()[2])
 
         if button != 'release':
             raise hosts.AutoservNonCriticalVerifyError(
@@ -434,7 +443,8 @@ class _LidVerifier(hosts.Verifier):
         try:
             lid_open = host.get_servo().get('lid_open')
         except Exception as e:
-            raise hosts.AutoservNonCriticalVerifyError, e.message, sys.exc_info()[2]
+            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+                        sys.exc_info()[2])
 
         if lid_open != 'yes' and lid_open != 'not_applicable':
             raise hosts.AutoservNonCriticalVerifyError(

@@ -5,14 +5,18 @@
 """Server side Bluetooth audio tests."""
 
 import logging
+import os
+import re
+import subprocess
 import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, HFP_WBS, HFP_NBS, audio_test_data)
+        A2DP, HFP_NBS, HFP_WBS, VISQOL_PATH, VISQOL_SIMILARITY_MODEL,
+        VISQOL_TEST_DIR, audio_test_data)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        BluetoothAdapterTests, test_retry_and_log)
+    BluetoothAdapterTests, test_retry_and_log)
 
 
 class BluetoothAdapterAudioTests(BluetoothAdapterTests):
@@ -21,6 +25,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     DEVICE_TYPE = 'BLUETOOTH_AUDIO'
     FREQUENCY_TOLERANCE_RATIO = 0.01
     WAIT_DAEMONS_READY_SECS = 1
+
+    # Useful constant for upsampling NBS files for compatibility with ViSQOL
+    MIN_VISQOL_SAMPLE_RATE = 16000
 
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
                                      test_profile):
@@ -398,6 +405,118 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         # Check if the audio frames in the recorded file are legitimate.
         return self._check_audio_frames_legitimacy(test_data,
                                                    'recorded_by_peer')
+
+
+    def parse_visqol_output(self, stdout, stderr):
+        """
+        Parse stdout and stderr string from VISQOL output and parse into
+        a float score.
+
+        On error, stderr will contain the error message, otherwise will be None.
+        On success, stdout will be a string, first line will be
+        VISQOL version, followed by indication of speech mode. Followed by
+        paths to reference and degraded file, and a float MOS-LQO score, which
+        is what we're interested in. Followed by more detailed charts about
+        specific scoring by segments of the files. Stdout is None on error.
+
+        @param stdout: The stdout bytes from commandline output of VISQOL.
+        @param stderr: The stderr bytes from commandline output of VISQOL.
+
+        @returns: A tuple of a float score and string representation of the
+                srderr or None if there was no error.
+        """
+        string_out = stdout or ''
+
+        # Log verbose VISQOL output:
+        log_file = os.path.join(VISQOL_TEST_DIR, 'VISQOL_LOG.txt')
+        with open(log_file, 'w+') as f:
+            f.write('String Error:\n{}\n'.format(stderr))
+            f.write('String Out:\n{}\n'.format(stdout))
+
+        # pattern matches first float or int after 'MOS-LQO:' in stdout,
+        # e.g. it would match the line 'MOS-LQO       2.3' in the stdout
+        score_pattern = re.compile(r'.*MOS-LQO:\s*(\d+.?\d*)')
+        score_search = re.search(score_pattern, string_out)
+
+        # re.search returns None if no pattern match found, otherwise the score
+        # would be in the match object's group 1 matches just the float score
+        score = float(score_search.group(1)) if score_search else -1.0
+        return stderr, score
+
+
+    def get_visqol_score(self, ref_file, deg_file, speech_mode=True,
+                         verbose=True):
+        """
+        Runs VISQOL using the subprocess library on the provided reference file
+        and degraded file and returns the VISQOL score.
+
+        @param ref_file: File path to the reference wav file.
+        @param deg_file: File path to the degraded wav file.
+        @param speech_mode: [Optional] Defaults to True, accepts 16k sample
+                rate files and ignores frequencies > 8kHz for scoring.
+        @param verbose: [Optional] Defaults to True, outputs more details.
+
+        @returns: A float score for the tested file.
+        """
+        visqol_cmd = [VISQOL_PATH]
+        visqol_cmd += ['--reference_file', ref_file]
+        visqol_cmd += ['--degraded_file', deg_file]
+        visqol_cmd += ['--similarity_to_quality_model', VISQOL_SIMILARITY_MODEL]
+
+        if speech_mode:
+            visqol_cmd.append('--use_speech_mode')
+        if verbose:
+            visqol_cmd.append('--verbose')
+
+        visqol_process = subprocess.Popen(visqol_cmd, stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+        stdout, stderr = visqol_process.communicate()
+
+        err, score = self.parse_visqol_output(stdout, stderr)
+
+        if err:
+            raise error.TestError(err)
+        elif score < 0.0:
+            raise error.TestError('Failed to parse score, got {}'.format(score))
+
+        return score
+
+
+    def get_ref_and_deg_files(self, trim_file, test_profile, test_data,
+                              deg_file):
+        """Return path for reference and degraded files to run visqol on.
+
+        @param trim_file: Path to the trimmed audio file on DUT.
+        @param test_profile: The test profile used HFP_WBS or HFP_NBS.
+        @param test_data: A dictionary about the audio test data defined in
+                client/cros/bluetooth/bluetooth_audio_test_data.py.
+        @param deg_file: The path to move degraded file on the autotest server.
+
+        @returns: A tuple of paths to the reference file and degraded file.
+        """
+        if test_profile == HFP_WBS:
+            self.host.get_file(trim_file, deg_file)
+            return test_data['file'], deg_file
+
+        # On NBS, degraded and reference files need to be upsampled to 16kHz
+        deg_on_dut = '{}_us{}'.format(*os.path.splitext(trim_file))
+        if not self.bluetooth_facade.convert_audio_sample_rate(
+                trim_file, deg_on_dut, test_data, self.MIN_VISQOL_SAMPLE_RATE):
+            logging.error('Failed to upsample degraded audio file')
+            return False, False
+
+        ref_file = '{}_us_ref{}'.format(*os.path.splitext(test_data['file']))
+        if not os.path.isfile(ref_file):
+            if not self.bluetooth_facade.convert_audio_sample_rate(
+                    test_data['file'], ref_file, test_data,
+                    self.MIN_VISQOL_SAMPLE_RATE):
+                logging.error('Failed to upsample reference file')
+                return True, False
+            self.host.get_file(ref_file, ref_file)
+
+        self.host.get_file(deg_on_dut, deg_file)
+
+        return ref_file, deg_file
 
 
     # ---------------------------------------------------------------

@@ -115,6 +115,25 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_NBS)
 
 
+    @test_wrapper('HFP WBS VISQOL test with dut as sink',
+                  devices={'BLUETOOTH_AUDIO':1})
+    def au_hfp_wbs_dut_as_sink_visqol_test(self):
+        """HFP WBS VISQOL test with audio streaming from peer to dut"""
+        self.check_wbs_capability()
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.test_hfp_dut_as_sink_visqol_score,
+                               HFP_WBS)
+
+
+    @test_wrapper('HFP WBS VISQOL test with dut as source',
+                  devices={'BLUETOOTH_AUDIO':1})
+    def au_hfp_wbs_dut_as_source_visqol_test(self):
+        """HFP WBS VISQOL test with audio streaming from dut to peer"""
+        self.check_wbs_capability()
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.test_hfp_dut_as_source_visqol_score,
+                               HFP_WBS)
+
 
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
@@ -165,6 +184,8 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.au_hfp_nbs_dut_as_sink_test()
         self.au_hfp_wbs_dut_as_source_test()
         self.au_hfp_wbs_dut_as_sink_test()
+        self.au_hfp_wbs_dut_as_source_visqol_test()
+        self.au_hfp_wbs_dut_as_sink_visqol_test()
         self.au_avrcp_command_test()
         self.au_avrcp_media_info_test()
 

@@ -13,8 +13,9 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, HFP_NBS, HFP_WBS, VISQOL_PATH, VISQOL_SIMILARITY_MODEL,
-        VISQOL_TEST_DIR, audio_test_data)
+        A2DP, HFP_NBS, HFP_WBS, AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH,
+        DATA_DIR, VISQOL_PATH, VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR,
+        audio_test_data, get_audio_test_data, get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
     BluetoothAdapterTests, test_retry_and_log)
 
@@ -482,46 +483,213 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return score
 
 
-    def get_ref_and_deg_files(self, trim_file, test_profile, test_data,
-                              deg_file):
+    def get_ref_and_deg_files(self, trimmed_file, test_profile, test_data):
         """Return path for reference and degraded files to run visqol on.
 
-        @param trim_file: Path to the trimmed audio file on DUT.
+        @param trimmed_file: Path to the trimmed audio file on DUT.
         @param test_profile: The test profile used HFP_WBS or HFP_NBS.
         @param test_data: A dictionary about the audio test data defined in
                 client/cros/bluetooth/bluetooth_audio_test_data.py.
-        @param deg_file: The path to move degraded file on the autotest server.
 
-        @returns: A tuple of paths to the reference file and degraded file.
+        @returns: A tuple of path to the reference file and degraded file if
+                they exist, otherwise False for the files that aren't available.
         """
+        # Path in autotest server in ViSQOL folder to store degraded file from
+        # retrieved from the DUT
+        deg_file = os.path.join(VISQOL_TEST_DIR, os.path.split(trimmed_file)[1])
+        played_file = test_data['file']
+        # If profile is WBS, no resampling required
         if test_profile == HFP_WBS:
-            self.host.get_file(trim_file, deg_file)
-            return test_data['file'], deg_file
+            self.host.get_file(trimmed_file, deg_file)
+            return played_file, deg_file
 
-        # On NBS, degraded and reference files need to be upsampled to 16kHz
-        deg_on_dut = '{}_us{}'.format(*os.path.splitext(trim_file))
-        if not self.bluetooth_facade.convert_audio_sample_rate(
-                trim_file, deg_on_dut, test_data, self.MIN_VISQOL_SAMPLE_RATE):
-            logging.error('Failed to upsample degraded audio file')
-            return False, False
-
-        ref_file = '{}_us_ref{}'.format(*os.path.splitext(test_data['file']))
+        # On NBS, degraded and reference files need to be resampled to 16 kHz
+        # Build path for the upsampled (us) reference (ref) file on DUT
+        ref_file = '{}_us_ref{}'.format(*os.path.splitext(played_file))
+        # If resampled ref file already exists, don't need to do it again
         if not os.path.isfile(ref_file):
             if not self.bluetooth_facade.convert_audio_sample_rate(
-                    test_data['file'], ref_file, test_data,
+                    played_file, ref_file, test_data,
                     self.MIN_VISQOL_SAMPLE_RATE):
-                logging.error('Failed to upsample reference file')
-                return True, False
+                return False, False
+            # Move upsampled reference file to autotest server
             self.host.get_file(ref_file, ref_file)
+
+        # Build path for resampled degraded file on DUT
+        deg_on_dut = '{}_us{}'.format(*os.path.splitext(trimmed_file))
+        # Resample degraded file to 16 kHz and move to autotest server
+        if not self.bluetooth_facade.convert_audio_sample_rate(
+                trimmed_file, deg_on_dut, test_data,
+                self.MIN_VISQOL_SAMPLE_RATE):
+            return ref_file, False
 
         self.host.get_file(deg_on_dut, deg_file)
 
         return ref_file, deg_file
 
 
+    def format_recorded_file(self, test_data, test_profile, recording_device):
+        """Format recorded files to be compatible with ViSQOL.
+
+        Convert raw files to wav if recorded file is a raw file, trim file to
+        duration, if required, resample the file, then lastly return the paths
+        for the reference file and degraded file on the autotest server.
+
+        @param test_data: A dictionary about the audio test data defined in
+                client/cros/bluetooth/bluetooth_audio_test_data.py.
+        @param test_profile: The test profile used, HFP_WBS or HFP_NBS.
+        @param recording_device: Which device recorded the audio, either
+                'recorded_by_dut' or 'recorded_by_peer'.
+
+        @returns: A tuple of path to the reference file and degraded file if
+                they exist, otherwise False for the files that aren't available.
+        """
+        # Path to recorded file either on DUT or BT peer
+        recorded_file = test_data[recording_device]
+        untrimmed_file = recorded_file
+        if recorded_file.endswith('.raw'):
+            # build path for file converted from raw to wav, i.e. change the ext
+            untrimmed_file = os.path.splitext(recorded_file)[0] + '.wav'
+            if not self.bluetooth_facade.convert_raw_to_wav(
+                    recorded_file, untrimmed_file, test_data):
+                raise error.TestError('Could not convert raw file to wav')
+
+        # Compute the duration of played file without added buffer
+        new_duration = test_data['duration'] - VISQOL_BUFFER_LENGTH
+        # build path for file resulting from trimming to desired duration
+        trimmed_file = '{}_t{}'.format(*os.path.splitext(untrimmed_file))
+        if not self.bluetooth_facade.trim_wav_file(
+                untrimmed_file, trimmed_file, new_duration, test_data):
+            raise error.TestError('Failed to trim recorded file')
+
+        return self.get_ref_and_deg_files(trimmed_file, test_profile, test_data)
+
+
     # ---------------------------------------------------------------
     # Definitions of all bluetooth audio test cases
     # ---------------------------------------------------------------
+
+
+    @test_retry_and_log(False)
+    def test_hfp_dut_as_source_visqol_score(self, device, test_profile):
+        """Test Case: hfp test files streaming from peer device to dut
+
+        @param device: the bluetooth peer device
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
+
+        @returns: True if the all the test files score at or above their
+                  source_passing_score value as defined in
+                  bluetooth_audio_test_data.py
+        """
+        # list of test wav files
+        hfp_test_data = audio_test_data[test_profile]
+        test_files = hfp_test_data['visqol_test_files']
+
+        get_visqol_binary()
+        get_audio_test_data()
+
+        # Download test data to DUT
+        self.host.send_file(AUDIO_DATA_TARBALL_PATH, AUDIO_DATA_TARBALL_PATH)
+        if not self.bluetooth_facade.unzip_audio_test_data(
+                AUDIO_DATA_TARBALL_PATH, DATA_DIR):
+            logging.error('Audio data directory not found in DUT')
+            raise error.TestError('Failed to unzip audio test data to DUT')
+
+        # Result of visqol test on all files
+        visqol_results = dict()
+
+        for test_file in test_files:
+            filename = os.path.split(test_file['file'])[1]
+            logging.debug('Testing file: {}'.format(filename))
+
+            # Set up hfp test to record on peer
+            self.initialize_hfp(device, test_profile, test_file,
+                                'recorded_by_peer',
+                                self._get_pulseaudio_bluez_source_hfp)
+            logging.debug('Initialized HFP')
+
+            if not self.hfp_record_on_peer(device, test_profile, test_file):
+                return False
+            logging.debug('Recorded {} successfully'.format(filename))
+
+            ref_file, deg_file = self.format_recorded_file(test_file,
+                                                           test_profile,
+                                                           'recorded_by_peer')
+            if not ref_file or not deg_file:
+                desc = 'Failed to get ref and deg file: ref {}, deg {}'.format(
+                        ref_file, deg_file)
+                raise error.TestError(desc)
+
+            score = self.get_visqol_score(ref_file, deg_file,
+                                          speech_mode=test_file['speech_mode'])
+
+            logging.info('{} scored {}, min passing score: {}'.format(
+                    filename, score, test_file['source_passing_score']))
+            passed = score >= test_file['source_passing_score']
+            visqol_results[filename] = passed
+
+            if not passed:
+                logging.warning('Failed: {}'.format(filename))
+
+        return all(visqol_results.values())
+
+
+    @test_retry_and_log(False)
+    def test_hfp_dut_as_sink_visqol_score(self, device, test_profile):
+        """Test Case: hfp test files streaming from peer device to dut
+
+        @param device: the bluetooth peer device
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
+
+        @returns: True if the all the test files score at or above their
+                  sink_passing_score value as defined in
+                  bluetooth_audio_test_data.py
+        """
+        # list of test wav files
+        hfp_test_data = audio_test_data[test_profile]
+        test_files = hfp_test_data['visqol_test_files']
+
+        get_visqol_binary()
+        get_audio_test_data()
+
+        # Result of visqol test on all files
+        visqol_results = dict()
+
+        for test_file in test_files:
+            filename = os.path.split(test_file['file'])[1]
+            logging.debug('Testing file: {}'.format(filename))
+
+            # Set up hfp test to record on dut
+            self.initialize_hfp(device, test_profile, test_file,
+                                'recorded_by_dut',
+                                self._get_pulseaudio_bluez_sink_hfp)
+            logging.debug('Initialized HFP')
+            # Record audio on dut played from pi, returns true if anything
+            # was successfully recorded, false otherwise
+            if not self.hfp_record_on_dut(device, test_profile, test_file):
+                return False
+            logging.debug('Recorded {} successfully'.format(filename))
+
+            ref_file, deg_file = self.format_recorded_file(test_file,
+                                                           test_profile,
+                                                           'recorded_by_dut')
+            if not ref_file or not deg_file:
+                desc = 'Failed to get ref and deg file: ref {}, deg {}'.format(
+                        ref_file, deg_file)
+                raise error.TestError(desc)
+
+            score = self.get_visqol_score(ref_file, deg_file,
+                                          speech_mode=test_file['speech_mode'])
+
+            logging.info('{} scored {}, min passing score: {}'.format(
+                    filename, score, test_file['sink_passing_score']))
+            passed = score >= test_file['sink_passing_score']
+            visqol_results[filename] = passed
+
+            if not passed:
+                logging.warning('Failed: {}'.format(filename))
+
+        return all(visqol_results.values())
 
 
     @test_retry_and_log(False)

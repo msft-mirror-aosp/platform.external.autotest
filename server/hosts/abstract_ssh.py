@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright (c) 2008 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import os, time, socket, shutil, glob, logging, tempfile, re
 import shlex
@@ -16,6 +21,8 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 from autotest_lib.server.hosts import rpc_server_tracker
 from autotest_lib.server.hosts import ssh_multiplex
+import six
+from six.moves import filter
 
 try:
     from chromite.lib import metrics
@@ -166,7 +173,7 @@ class AbstractSSHHost(remote.RemoteHost):
                          alive_interval=300, alive_count_max=3,
                          connection_attempts=1):
         """Composes SSH -o options."""
-        assert isinstance(connect_timeout, (int, long))
+        assert isinstance(connect_timeout, six.integer_types)
         assert connect_timeout > 0 # can't disable the timeout
 
         options = [("StrictHostKeyChecking", "no"),
@@ -359,7 +366,7 @@ class AbstractSSHHost(remote.RemoteHost):
         umask = os.umask(0)
         os.umask(umask)
 
-        max_privs = 0777 & ~umask
+        max_privs = 0o777 & ~umask
 
         def set_file_privs(filename):
             """Sets mode of |filename|.  Assumes |filename| exists."""
@@ -368,8 +375,8 @@ class AbstractSSHHost(remote.RemoteHost):
             file_privs = max_privs
             # if the original file permissions do not have at least one
             # executable bit then do not set it anywhere
-            if not file_stat.st_mode & 0111:
-                file_privs &= ~0111
+            if not file_stat.st_mode & 0o111:
+                file_privs &= ~0o111
 
             os.chmod(filename, file_privs)
 
@@ -434,7 +441,7 @@ class AbstractSSHHost(remote.RemoteHost):
         # Start a master SSH connection if necessary.
         self.start_master_ssh()
 
-        if isinstance(source, basestring):
+        if isinstance(source, six.string_types):
             source = [source]
         dest = os.path.abspath(dest)
 
@@ -450,7 +457,7 @@ class AbstractSSHHost(remote.RemoteHost):
                                              safe_symlinks)
                 utils.run(rsync)
                 try_scp = False
-            except error.CmdError, e:
+            except error.CmdError as e:
                 # retry on rsync exit values which may be caused by transient
                 # network problems:
                 #
@@ -489,7 +496,7 @@ class AbstractSSHHost(remote.RemoteHost):
                 scp = self._make_scp_cmd(remote_source, local_dest)
                 try:
                     utils.run(scp)
-                except error.CmdError, e:
+                except error.CmdError as e:
                     logging.debug('scp failed: %s', e)
                     raise error.AutoservRunError(e.args[0], e.args[1])
 
@@ -540,7 +547,7 @@ class AbstractSSHHost(remote.RemoteHost):
         # Start a master SSH connection if necessary.
         self.start_master_ssh()
 
-        if isinstance(source, basestring):
+        if isinstance(source, six.string_types):
             source = [source]
 
         local_sources = self._encode_local_paths(source)
@@ -561,7 +568,7 @@ class AbstractSSHHost(remote.RemoteHost):
                                              False, excludes=excludes)
                 utils.run(rsync)
                 try_scp = False
-            except error.CmdError, e:
+            except error.CmdError as e:
                 logging.warning("trying scp, rsync failed: %s", e)
 
         if try_scp:
@@ -586,7 +593,7 @@ class AbstractSSHHost(remote.RemoteHost):
                 scp = self._make_scp_cmd(sources, remote_dest)
                 try:
                     utils.run(scp)
-                except error.CmdError, e:
+                except error.CmdError as e:
                     logging.debug('scp failed: %s', e)
                     raise error.AutoservRunError(e.args[0], e.args[1])
             else:
@@ -636,7 +643,7 @@ class AbstractSSHHost(remote.RemoteHost):
         except error.AutoservSshPermissionDeniedError:
             #let AutoservSshPermissionDeniedError be visible to the callers
             raise
-        except error.AutoservRunError, e:
+        except error.AutoservRunError as e:
             # convert the generic AutoservRunError into something more
             # specific for this context
             raise error.AutoservSshPingHostError(e.description + '\n' +

@@ -49,6 +49,19 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         super(autoupdate_EndToEndTest, self).cleanup()
 
 
+    def _print_rerun_command(self, test_conf):
+        """Prints the command to rerun a test run from the lab at your desk."""
+        logging.debug('Rerun this test run at your desk using this command:')
+        rerun_cmd = ('test_that <DUT NAME>.cros autoupdate_EndToEndTest '
+                     '--args="update_type=%s source_release=%s '
+                     'source_payload_uri=%s target_release=%s '
+                     'target_payload_uri=%s"')
+        rerun_cmd = rerun_cmd % (
+                test_conf['update_type'], test_conf['source_release'],
+                test_conf['source_payload_uri'], test_conf['target_release'],
+                test_conf['target_payload_uri'])
+        logging.debug(rerun_cmd)
+
     def run_update_test(self, test_conf):
         """Runs the update test and checks it succeeded.
 
@@ -79,6 +92,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         logging.debug('The test configuration supplied: %s', test_conf)
+        self._print_rerun_command(test_conf)
         self._autotest_devserver = self._get_devserver_for_test(test_conf)
 
         afe_utils.clean_provision_labels(self._host)

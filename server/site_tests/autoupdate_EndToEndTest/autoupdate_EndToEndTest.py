@@ -5,7 +5,6 @@
 import logging
 import os
 
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server import afe_utils
@@ -32,9 +31,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     UpdateEngineTest: base class for comparing expected update events against
                       the events listed in the hostlog.
     UpdateEngineEvent: class representing a single expected update engine event.
-    ChromiumOSTestPlatform: A class representing the Chrome OS device we are
-                            updating. It has functions for things the DUT can
-                            do: get logs, reboot, start update etc
 
     """
     version = 1
@@ -53,28 +49,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         super(autoupdate_EndToEndTest, self).cleanup()
 
 
-    def _get_hostlog_file(self, filename, identifier):
-        """Return the hostlog file location.
-
-        This hostlog file contains the update engine events that were fired
-        during the update.
-
-        @param filename: The partial filename to look for.
-        @param identifier: A string that is appended to the logfile when it is
-                           saved so that multiple files with the same name can
-                           be differentiated.
-
-        """
-        hostlog = '%s_%s_%s' % (filename, self._host.hostname, identifier)
-        file_url = os.path.join(self.resultsdir,
-                                hostlog)
-        if os.path.exists(file_url):
-            logging.info('Hostlog file to be used for checking update '
-                         'steps: %s', file_url)
-            return file_url
-        raise error.TestFail('Could not find %s' % filename)
-
-
     def run_update_test(self, test_conf):
         """Runs the update test and checks it succeeded.
 
@@ -91,11 +65,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         self.update_device(test_conf['target_payload_uri'], tag='target')
 
         # Compare hostlog events from the update to the expected ones.
-        rootfs = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_ROOTFS,
-                                        'target')
-        reboot = self._get_hostlog_file(self._DEVSERVER_HOSTLOG_REBOOT,
-                                        'target')
-
+        rootfs, reboot = self._create_hostlog_files()
         self.verify_update_events(source_release, rootfs)
         self.verify_update_events(source_release, reboot, target_release)
         kernel_utils.verify_boot_expectations(inactive, host=self._host)

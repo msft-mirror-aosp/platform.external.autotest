@@ -88,6 +88,12 @@ class platform_BootPerfServer(test.test):
             host,
             lambda tmp_file: 'sed -i "s/$/ cros_bootchart/g" %s' % tmp_file)
 
+        # Run a login test to complete the OOBE flow, if we haven't already.
+        # This is so that we measure boot times for the stable state.
+        client_at = autotest.Autotest(host)
+        client_at.run_test('login_LoginSuccess', disable_sysinfo=True,
+                check_client_result=True)
+
     def cleanup(self, host):
         """After running the test, disable cros_bootchart by removing
         "cros_bootchart" from the kernel arg list.
@@ -129,15 +135,6 @@ class platform_BootPerfServer(test.test):
         """Runs the test once: reboot and collect boot metrics from DUT."""
         self.client = host
         self.client_test = 'platform_BootPerf'
-
-        # Run a login test to complete the OOBE flow, if we haven't already.
-        # This is so that we measure boot times for the stable state.
-        try:
-            self.client.run('ls /home/chronos/.oobe_completed')
-        except error.AutoservRunError:
-            logging.info('Taking client through OOBE.')
-            client_at = autotest.Autotest(self.client)
-            client_at.run_test('login_LoginSuccess', disable_sysinfo=True)
 
         # Reboot the client
         logging.info('BootPerfServer: reboot %s', self.client.hostname)

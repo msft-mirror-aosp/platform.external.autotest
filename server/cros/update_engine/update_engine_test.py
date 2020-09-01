@@ -658,7 +658,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         _, build = tools.get_devserver_build_from_package_url(
             self._job_repo_url)
 
-         # Setup local dir.
+        # Setup local dir.
         self._run(['mkdir', '-p', '-m', '1777', '/usr/local/tmp'])
 
         # Download and extract the stateful payload.
@@ -668,7 +668,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         cmd = ['curl', '--silent', '--max-time', '300',
                statefuldev_url, '|', 'tar', '--ignore-command-error',
                '--overwrite','--directory', '/mnt/stateful_partition', '-xz']
-        self._run(cmd)
+        try:
+            self._run(cmd)
+        except error.AutoservRunError as e:
+            err_str = 'Failed to restore the stateful partition'
+            raise error.TestFail('%s: %s' % (err_str, str(e)))
 
         # Touch a file so changes are picked up after reboot.
         update_file = '/mnt/stateful_partition/.update_available'

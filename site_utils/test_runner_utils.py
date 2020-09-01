@@ -634,39 +634,41 @@ def perform_local_run(afe, autotest_path, tests, remote, fast_mode,
     job_queue = afe.get_jobs()
     completed_job_ids = set()
     while job_queue:
-      logging.info('%s jobs in job queue', len(job_queue))
-      for job in job_queue:
-          suite = jobs_to_suites.get(job.id)
-          if not suite:
-              logging.error('Job %s not run, no associated suite.', job.id)
-          else:
-              logging.debug('Running job %s of test %s',
-                            job.id, suite.test_name_from_job(job.id))
-              code, abs_dir = run_job(
-                  job,
-                  remote,
-                  info,
-                  autotest_path,
-                  results_directory,
-                  fast_mode,
-                  job_id_digits,
-                  ssh_verbosity,
-                  ssh_options,
-                  args,
-                  pretend,
-                  autoserv_verbose,
-              )
-              codes.append(code)
-              logging.debug("Code: %s, Results in %s", code, abs_dir)
-              new_id = suite.handle_local_result(job.id, abs_dir, null_logger)
-              if new_id:
-                  jobs_to_suites[new_id] = jobs_to_suites[job.id]
-          completed_job_ids.add(job.id)
-      all_jobs = afe.get_jobs(not_yet_run=True, running=True)
-      new_jobs = set(job for job in all_jobs if job.id not in completed_job_ids)
-      logging.debug('%s incomplete jobs, %s jobs total',
-                    len(new_jobs), len(all_jobs))
-      job_queue = list(new_jobs)
+        logging.info('%s jobs in job queue', len(job_queue))
+        for job in job_queue:
+            suite = jobs_to_suites.get(job.id)
+            if not suite:
+                logging.error('Job %s not run, no associated suite.', job.id)
+            else:
+                logging.debug('Running job %s of test %s', job.id,
+                              suite.test_name_from_job(job.id))
+                code, abs_dir = run_job(
+                        job,
+                        remote,
+                        info,
+                        autotest_path,
+                        results_directory,
+                        fast_mode,
+                        job_id_digits,
+                        ssh_verbosity,
+                        ssh_options,
+                        args,
+                        pretend,
+                        autoserv_verbose,
+                )
+                codes.append(code)
+                logging.debug("Code: %s, Results in %s", code, abs_dir)
+                new_id = suite.handle_local_result(job.id, abs_dir,
+                                                   null_logger)
+                if new_id:
+                    jobs_to_suites[new_id] = jobs_to_suites[job.id]
+            completed_job_ids.add(job.id)
+        all_jobs = afe.get_jobs(not_yet_run=True, running=True)
+        new_jobs = set(job for job in all_jobs
+                       if job.id not in completed_job_ids)
+        logging.debug('%s incomplete jobs, %s jobs total', len(new_jobs),
+                      len(all_jobs))
+        job_queue = list(new_jobs)
     return codes
 
 
@@ -767,7 +769,8 @@ def create_results_directory(results_directory=None, board_name=None):
 
 def generate_report(directory,
                     whitelist_chrome_crashes=False,
-                    just_status_code=False, html_report=False):
+                    just_status_code=False,
+                    html_report=False):
     """Parse the test result files in the given directory into a report
 
     @param directory: string, the absolute path of the directory to look in
@@ -796,15 +799,25 @@ def generate_report(directory,
     return status_code
 
 
-def perform_run_from_autotest_root(autotest_path, argv, tests, remote,
-                                   build=NO_BUILD, board=NO_BOARD, args=None,
-                                   pretend=False, no_experimental=False,
+def perform_run_from_autotest_root(autotest_path,
+                                   argv,
+                                   tests,
+                                   remote,
+                                   build=NO_BUILD,
+                                   board=NO_BOARD,
+                                   args=None,
+                                   pretend=False,
+                                   no_experimental=False,
                                    ignore_deps=True,
-                                   results_directory=None, ssh_verbosity=0,
+                                   results_directory=None,
+                                   ssh_verbosity=0,
                                    ssh_options=None,
-                                   iterations=1, fast_mode=False, debug=False,
+                                   iterations=1,
+                                   fast_mode=False,
+                                   debug=False,
                                    whitelist_chrome_crashes=False,
-                                   host_attributes={}, job_retry=True):
+                                   host_attributes={},
+                                   job_retry=True):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -877,8 +890,9 @@ def perform_run_from_autotest_root(autotest_path, argv, tests, remote,
         return 0
 
     final_result = generate_report(
-        results_directory,
-        whitelist_chrome_crashes=whitelist_chrome_crashes, html_report=True)
+            results_directory,
+            whitelist_chrome_crashes=whitelist_chrome_crashes,
+            html_report=True)
     try:
         os.unlink(_LATEST_RESULTS_DIRECTORY)
     except OSError:

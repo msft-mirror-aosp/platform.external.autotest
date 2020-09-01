@@ -335,7 +335,7 @@ class ServoTypeLabelTests(unittest.TestCase):
 class DutStorageLabelTests(unittest.TestCase):
     """Unit tests for DutStorageLabel"""
     def test_update_for_task(self):
-        self.assertTrue(DutStorageLabel().update_for_task(''))
+        self.assertFalse(DutStorageLabel().update_for_task(''))
         self.assertFalse(DutStorageLabel().update_for_task('repair'))
         self.assertTrue(DutStorageLabel().update_for_task('deploy'))
 

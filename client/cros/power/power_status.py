@@ -791,8 +791,8 @@ def get_cpus_filepaths_for_suffix(cpus, suffix):
     for c in cpus:
         c_file_path = os.path.join(CPU_BASE_PATH, 'cpu%d' % c, suffix)
         if os.path.exists(c_file_path):
-          available_cpus.append(c)
-          available_paths.append(c_file_path)
+            available_cpus.append(c)
+            available_paths.append(c_file_path)
     return (available_cpus, available_paths)
 
 class CPUFreqStats(AbstractStats):
@@ -1378,7 +1378,7 @@ def read_cpu_set(filename):
         entry_data = entry.split('-')
         start = end = int(entry_data[0])
         if len(entry_data) > 1:
-          end = int(entry_data[1])
+            end = int(entry_data[1])
         ret |= set(range(start, end + 1))
     return ret
 
@@ -1976,18 +1976,18 @@ class MeasurementLogger(threading.Thread):
                           will be [fname]_[raw|summary].txt
         """
         if not fname_prefix:
-          fname_prefix = 'meas_results_%.0f' % time.time()
+            fname_prefix = 'meas_results_%.0f' % time.time()
         fname = '%s_summary.txt' % fname_prefix
         raw_fname = fname.replace('summary', 'raw')
         for name, data in [(fname, self._results),
                            (raw_fname, self._raw_results)]:
-          with open(os.path.join(resultsdir, name), 'wt') as f:
-              # First row contains the headers
-              f.write('%s\n' % '\t'.join(data[0]))
-              for row in data[1:]:
-                  # First column name, rest are numbers. See _calc_power()
-                  fmt_row = [row[0]] + ['%.2f' % x for x in row[1:]]
-                  f.write('%s\n' % '\t'.join(fmt_row))
+            with open(os.path.join(resultsdir, name), 'wt') as f:
+                # First row contains the headers
+                f.write('%s\n' % '\t'.join(data[0]))
+                for row in data[1:]:
+                    # First column name, rest are numbers. See _calc_power()
+                    fmt_row = [row[0]] + ['%.2f' % x for x in row[1:]]
+                    f.write('%s\n' % '\t'.join(fmt_row))
 
 
 class CPUStatsLogger(MeasurementLogger):
@@ -2678,13 +2678,14 @@ class RC6ResidencyStats(object):
         # Note that the max counter is bound for sysfs overflow, while the
         # accumulated residency here is the diff against the first reading.
         if current_stat < self._previous_stat:
-          if self._max_counter is None:
-            logging.warning('GPU: Detect rc6_residency_ms wraparound')
-            self._accumulated_stat += current_stat
-          else:
-            self._accumulated_stat += current_stat + (self._max_counter - self._previous_stat)
+            if self._max_counter is None:
+                logging.warning('GPU: Detect rc6_residency_ms wraparound')
+                self._accumulated_stat += current_stat
+            else:
+                self._accumulated_stat += current_stat + (self._max_counter -
+                                                          self._previous_stat)
         else:
-          self._accumulated_stat += current_stat - self._previous_stat
+            self._accumulated_stat += current_stat - self._previous_stat
 
         self._previous_stat = current_stat
         return self._accumulated_stat

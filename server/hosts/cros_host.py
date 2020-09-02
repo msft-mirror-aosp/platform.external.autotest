@@ -776,7 +776,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         with open(image, 'rb') as f:
             image_data = f.read()
-        match = re.findall(version_regex, image_data.decode('utf-8'))
+        match = re.findall(version_regex,
+                           image_data.decode('ISO-8859-1', errors='ignore'))
         if match:
             return match[0]
         else:

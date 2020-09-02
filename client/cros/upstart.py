@@ -5,6 +5,7 @@
 """Provides utility methods for interacting with upstart"""
 
 import os
+import re
 
 from autotest_lib.client.common_lib import utils
 
@@ -42,6 +43,19 @@ def is_running(service_name):
     """
     cmd = 'status %s' % service_name
     return utils.system_output(cmd).find('start/running') != -1
+
+
+def get_pid(service_name):
+    """
+    Returns integer of PID of |service_name| or None if not running.
+
+    @param service_name: name of service
+    """
+    res_str = utils.system_output('status %s' % service_name)
+    match = re.search('process ([0-9]+)', res_str)
+    if not match:
+        return None
+    return int(match.group(1))
 
 
 def restart_job(service_name):

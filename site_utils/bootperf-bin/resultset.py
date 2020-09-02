@@ -37,7 +37,9 @@ time.
 
 """
 
+from __future__ import division
 import math
+import six
 
 
 def _ListStats(list_):
@@ -112,7 +114,7 @@ class TestResultSet(object):
 
     """
 
-    for keyset in self._keysets.itervalues():
+    for keyset in six.itervalues(self._keysets):
       keyset.AddIterationResults(runkeys)
 
   def FinalizeResults(self):
@@ -126,7 +128,7 @@ class TestResultSet(object):
 
     """
 
-    for keyset in self._keysets.itervalues():
+    for keyset in six.itervalues(self._keysets):
       keyset.FinalizeResults()
 
   def KeySet(self, keytype):
@@ -171,7 +173,7 @@ class _KeySet(object):
     on failure return `None`.
 
     """
-    check = map(len, self._keyvals.values())
+    check = list(map(len, self._keyvals.values()))
     if not check:
       return None
     for i in range(1, len(check)):
@@ -184,7 +186,7 @@ class _KeySet(object):
 
     @param runkeys The dictionary of keyvals for the iteration.
     """
-    for key, value in runkeys.iteritems():
+    for key, value in six.iteritems(runkeys):
       if not key.startswith(self.PREFIX):
         continue
       shortkey = key[len(self.PREFIX):]
@@ -206,10 +208,10 @@ class _KeySet(object):
       self.markers = []
       return False
     self.num_iterations = count
-    keylist = map(lambda k: (sum(self._keyvals[k]), k),
-                  self._keyvals.keys())
+    keylist = list(map(lambda k: (sum(self._keyvals[k]), k),
+                  self._keyvals.keys()))
     keylist.sort(key=lambda tp: tp[0])
-    self.markers = map(lambda tp: tp[1], keylist)
+    self.markers = list(map(lambda tp: tp[1], keylist))
     return True
 
   def RawData(self, key):
@@ -227,9 +229,9 @@ class _KeySet(object):
     @param key1 Key of the subtractor vector.
 
     """
-    return map(lambda a, b: b - a,
+    return list(map(lambda a, b: b - a,
                self._keyvals[key0],
-               self._keyvals[key1])
+               self._keyvals[key1]))
 
   def Statistics(self, key):
     """Return the average and standard deviation for a key.
@@ -289,7 +291,7 @@ class _TimeKeySet(_KeySet):
 
     """
     v = int(round(value))
-    return ("%d" % v, v)
+    return ("{:d}".format(v), v)
 
 
 class _FirmwareKeySet(_TimeKeySet):
@@ -384,4 +386,4 @@ class _DiskKeySet(_KeySet):
 
     """
     v = round(value, 1)
-    return ("%.1fM" % v, v)
+    return ("{:.1f}M".format(v), v)

@@ -4,6 +4,7 @@
 
 """Routines for printing boot time performance test results."""
 
+from __future__ import division
 import resultset
 
 
@@ -23,17 +24,17 @@ def PrintRawData(reader, dirlist, keytype, keylist):
     keyset = results.KeySet(keytype)
     for i in range(0, keyset.num_iterations):
       if len(dirlist) > 1:
-        line = "%s %3d" % (results.name, i)
+        line = "{} {:3d}".format(results.name, i)
       else:
-        line = "%3d" % i
+        line = "{:3d}".format(i)
       if keylist is not None:
         markers = keylist
       else:
         markers = keyset.markers
       for stat in markers:
         (_, v) = keyset.PrintableStatistic(keyset.RawData(stat)[i])
-        line += " %5s" % str(v)
-      print line
+        line += " {!s:>5}".format(v)
+      print(line)
 
 
 def PrintStatisticsSummary(reader, dirlist, keytype, keylist):
@@ -49,13 +50,13 @@ def PrintStatisticsSummary(reader, dirlist, keytype, keylist):
   """
   if (keytype == resultset.TestResultSet.BOOTTIME_KEYSET or
       keytype == resultset.TestResultSet.FIRMWARE_KEYSET):
-    header = "%5s %3s  %5s %3s  %s" % (
+    header = "{:>5} {:>3}  {:>5} {:>3}  {}".format(
         "time", "s%", "dt", "s%", "event")
-    tformat = "%5s %2d%%  %5s %2d%%  %s"
+    tformat = "{:>5} {:2d}%  {:>5} {:2d}%  {}"
   else:
-    header = "%7s %3s  %7s %3s  %s" % (
+    header = "{:>7} {:>3}  {:>7} {:>3}  {}".format(
         "diskrd", "s%", "delta", "s%", "event")
-    tformat = "%7s %2d%%  %7s %2d%%  %s"
+    tformat = "{:>7} {:2d}%  {:>7} {:2d}%  {}"
   havedata = False
   for dir_ in dirlist:
     results = reader(dir_)
@@ -67,27 +68,27 @@ def PrintStatisticsSummary(reader, dirlist, keytype, keylist):
     if havedata:
       print
     if len(dirlist) > 1:
-      print "%s" % results.name,
-    print "(on %d cycles):" % keyset.num_iterations
-    print header
+      print("{}".format(results.name)),
+    print("(on {:d} cycles):".format(keyset.num_iterations))
+    print(header)
     prevvalue = 0
     prevstat = None
     for stat in markers:
       (valueavg, valuedev) = keyset.Statistics(stat)
-      valuepct = int(100 * valuedev / valueavg + 0.5)
+      valuepct = int(100.0 * valuedev / valueavg + 0.5)
       if prevstat:
         (deltaavg, deltadev) = keyset.DeltaStatistics(prevstat, stat)
-        if deltaavg == 0:
-          deltaavg=1
-          print "deltaavg is zero! (delta is %s to %s)" % (prevstat, stat)
+        if deltaavg == 0.0:
+          deltaavg = 1.0
+          print("deltaavg is zero! (delta is {} to {})".format(prevstat, stat))
 
-        deltapct = int(100 * deltadev / deltaavg + 0.5)
+        deltapct = int(100.0 * deltadev / deltaavg + 0.5)
       else:
         deltapct = valuepct
       (valstring, val_printed) = keyset.PrintableStatistic(valueavg)
       delta = val_printed - prevvalue
       (deltastring, _) = keyset.PrintableStatistic(delta)
-      print tformat % (valstring, valuepct, "+" + deltastring, deltapct, stat)
+      print(tformat.format(valstring, valuepct, "+" + deltastring, deltapct, stat))
       prevvalue = val_printed
       prevstat = stat
     havedata = True

@@ -17,7 +17,7 @@ class platform_StageAndRecover(test.test):
     _USB_PARTITION = '/dev/sda1'
     _MOUNT_PATH = '/media/removable'
     _VERIFY_STR = 'ChromeosChrootPostinst complete'
-    _RECOVERY_LOG = '/recovery_logs*/recovery.log'
+    _RECOVERY_LOG = '/USB\ Drive/recovery_logs*/recovery.log'
     _SET_DELAY = 2
 
     def cleanup(self):

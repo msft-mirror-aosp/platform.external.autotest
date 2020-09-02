@@ -31,16 +31,18 @@ class PDConsoleUtils(object):
         """
         self.console.send_command(cmd)
 
-    def send_pd_command_get_output(self, cmd, regexp):
+    def send_pd_command_get_output(self, cmd, regexp, debug_on=True):
         """Send command to PD console, wait for response
 
         @param cmd: pd command string
         @param regexp: regular expression for desired output
         """
         # Enable PD console debug mode to show control messages
-        self.enable_pd_console_debug()
+        if debug_on:
+            self.enable_pd_console_debug()
         output = self.console.send_command_get_output(cmd, regexp)
-        self.disable_pd_console_debug()
+        if debug_on:
+            self.disable_pd_console_debug()
         return output
 
     def send_pd_command_get_reply_msg(self, cmd):
@@ -104,8 +106,8 @@ class PDConsoleUtils(object):
         pd_cmd = cmd +" " + str(port) + " " + subcmd
         time.sleep(self.CURRENT_STATE_PROBE_DELAY)
         # Two FW versions for this command, get full line.
-        m = self.send_pd_command_get_output(pd_cmd,
-                                            ['(Port.*) - (Role:.*)\n'])
+        m = self.send_pd_command_get_output(pd_cmd, ['(Port.*) - (Role:.*)\n'],
+                                            debug_on=False)
 
         # Extract desired values from result string
         state_result = {}
@@ -164,8 +166,8 @@ class PDConsoleUtils(object):
         dualrole_values = self.DUALROLE_VALUES
         cmd = 'pd %d dualrole' % port
 
-        m = self.send_pd_command_get_output(cmd,
-                ['dual-role toggling:\s+([\w ]+)[\r\n]'])
+        m = self.send_pd_command_get_output(
+                cmd, ['dual-role toggling:\s+([\w ]+)[\r\n]'], debug_on=False)
         # Find the index according to the output of "pd dualrole" command
         dual_index = self.DUALROLE_CMD_RESULTS.index(m[0][1])
         # Map to a string which is the output of this method

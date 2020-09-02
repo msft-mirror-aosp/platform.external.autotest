@@ -130,10 +130,10 @@ def _parse_arguments_internal(argv):
                              'source tree changes not being reflected in the '
                              'run. If using --autotest_dir, this flag is '
                              'automatically applied.')
-    parser.add_argument('--whitelist-chrome-crashes',
+    parser.add_argument('--allow-chrome-crashes',
                         action='store_true',
                         default=False,
-                        dest='whitelist_chrome_crashes',
+                        dest='allow_chrome_crashes',
                         help='Ignore chrome crashes when producing test '
                         'report. This flag gets passed along to the '
                         'report generation tool.')
@@ -298,7 +298,7 @@ def _main_for_local_run(argv, arguments):
                 iterations=arguments.iterations,
                 fast_mode=arguments.fast_mode,
                 debug=arguments.debug,
-                whitelist_chrome_crashes=arguments.whitelist_chrome_crashes,
+                allow_chrome_crashes=arguments.allow_chrome_crashes,
                 pretend=arguments.pretend,
                 job_retry=arguments.retry)
 

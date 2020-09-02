@@ -153,15 +153,29 @@ class CrosDisksArchiveTester(CrosDisksTester):
             })
 
     def _test_need_password(self, mount_path):
-        want = FilesystemTestDirectory('', [
-            FilesystemTestFile('Secret.txt', 'This is my little secret\n')
+        fs1 = FilesystemTestDirectory('', [
+                FilesystemTestFile('Secret.txt', 'This is my little secret\n')
         ])
 
-        for archive_name in [
-                'Encrypted AES-128.zip',
-                'Encrypted AES-192.zip',
-                'Encrypted AES-256.zip',
-                'Encrypted ZipCrypto.zip',
+        fs2 = FilesystemTestDirectory('', [
+                FilesystemTestFile('ClearText.txt',
+                                   'This is not encrypted.\n'),
+                FilesystemTestFile('Encrypted AES-128.txt',
+                                   'This is encrypted with AES-128.\n'),
+                FilesystemTestFile('Encrypted AES-192.txt',
+                                   'This is encrypted with AES-192.\n'),
+                FilesystemTestFile('Encrypted AES-256.txt',
+                                   'This is encrypted with AES-256.\n'),
+                FilesystemTestFile('Encrypted ZipCrypto.txt',
+                                   'This is encrypted with ZipCrypto.\n'),
+        ])
+
+        for archive_name, want in [
+                ('Encrypted AES-128.zip', fs1),
+                ('Encrypted AES-192.zip', fs1),
+                ('Encrypted AES-256.zip', fs1),
+                ('Encrypted ZipCrypto.zip', fs1),
+                ('Encrypted Various.zip', fs2),
         ]:
             archive_path = os.path.join(mount_path, archive_name)
             logging.info('Mounting archive %r', archive_path)
@@ -225,6 +239,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'Encrypted AES-192.zip',
                     'Encrypted AES-256.zip',
                     'Encrypted ZipCrypto.zip',
+                    'Encrypted Various.zip',
                     'Invalid.rar',
                     'Invalid.zip',
                     'Format V4.rar',

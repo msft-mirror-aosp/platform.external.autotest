@@ -768,13 +768,13 @@ def create_results_directory(results_directory=None, board_name=None):
     return results_directory
 
 def generate_report(directory,
-                    whitelist_chrome_crashes=False,
+                    allow_chrome_crashes=False,
                     just_status_code=False,
                     html_report=False):
     """Parse the test result files in the given directory into a report
 
     @param directory: string, the absolute path of the directory to look in
-    @param whitelist_chrome_crashes: boolean, ignore Chrome crashes in the
+    @param allow_chrome_crashes: boolean, ignore Chrome crashes in the
     report. Default: False, report Chrome crashes.
     @param just_status_code: boolean, skip the report and only parse the files
     to determine whether there were failures. Default: False, generate report.
@@ -786,8 +786,8 @@ def generate_report(directory,
     if html_report:
         test_report_command.append('--html')
         test_report_command.append('--html-report-dir=%s' % directory)
-    if whitelist_chrome_crashes:
-        test_report_command.append('--whitelist_chrome_crashes')
+    if allow_chrome_crashes:
+        test_report_command.append('--allow_chrome_crashes')
     if just_status_code:
         test_report_command.append('--just_status_code')
     test_report_command.append(directory)
@@ -815,7 +815,7 @@ def perform_run_from_autotest_root(autotest_path,
                                    iterations=1,
                                    fast_mode=False,
                                    debug=False,
-                                   whitelist_chrome_crashes=False,
+                                   allow_chrome_crashes=False,
                                    host_attributes={},
                                    job_retry=True):
     """
@@ -848,7 +848,7 @@ def perform_run_from_autotest_root(autotest_path,
     @param iterations: int number of times to schedule tests.
     @param fast_mode: bool to use fast mode (disables slow autotest features).
     @param debug: Logging and autoserv verbosity.
-    @param whitelist_chrome_crashes: If True, whitelist chrome crashes.
+    @param allow_chrome_crashes: If True, allow chrome crashes.
     @param host_attributes: Dict of host attributes to pass into autoserv.
     @param job_retry: If False, tests will not be retried at all.
 
@@ -889,10 +889,9 @@ def perform_run_from_autotest_root(autotest_path,
         logging.info('Finished pretend run. Exiting.')
         return 0
 
-    final_result = generate_report(
-            results_directory,
-            whitelist_chrome_crashes=whitelist_chrome_crashes,
-            html_report=True)
+    final_result = generate_report(results_directory,
+                                   allow_chrome_crashes=allow_chrome_crashes,
+                                   html_report=True)
     try:
         os.unlink(_LATEST_RESULTS_DIRECTORY)
     except OSError:

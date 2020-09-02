@@ -175,7 +175,7 @@ hfp_nbs_test_data = {
     'rate': 8000,
     'channels': 1,
     'frequencies': (3500,),
-    'file': os.path.join(AUDIO_TEST_DATA_DIR,
+    'file': os.path.join(AUDIO_TEST_DIR,
                          'sine_3500hz_rate8000_ch1_5secs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
                                      'hfp_nbs_recorded_by_peer.wav'),
@@ -196,6 +196,10 @@ hfp_nbs_test_data = {
             'format': 'S16_LE',
             'encoding': 'signed-integer',
             'speech_mode': True,
+            # Passing scored are determined mostly experimentally, the DUT as
+            # sink direction has issues and so for now the score set low.
+            # Ideally both scores should be set to >= 4.0 in fully functioning
+            # scenario.
             'sink_passing_score': 0.0,
             'source_passing_score': 4.0,
         },
@@ -213,6 +217,11 @@ hfp_nbs_test_data = {
             'format': 'S16_LE',
             'encoding': 'signed-integer',
             'speech_mode': True,
+            # Sine tones don't work very well with ViSQOL on the NBS tests, both
+            # directions score fairly low, however I've kept it in as a test
+            # file because its a good for reference, makes it easy to see
+            # degradation and verify that this is transmitting the frequency
+            # range we would expect
             'sink_passing_score': 1.0,
             'source_passing_score': 2.0,
         }
@@ -227,7 +236,7 @@ hfp_wbs_test_data = {
     'channels': 1,
 
     'frequencies': (7000,),
-    'file': os.path.join(AUDIO_TEST_DATA_DIR,
+    'file': os.path.join(AUDIO_TEST_DIR,
                          'sine_7000hz_rate16000_ch1_5secs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
                                      'hfp_wbs_recorded_by_peer.wav'),
@@ -248,6 +257,10 @@ hfp_wbs_test_data = {
             'format': 'S16_LE',
             'encoding': 'signed-integer',
             'speech_mode': True,
+            # Passing scored are determined mostly experimentally, the DUT as
+            # sink direction has issues and so for now the score set low.
+            # Ideally both scores should be set to >= 4.0 in fully functioning
+            # scenario.
             'sink_passing_score': 0.0,
             'source_passing_score': 4.0,
         },
@@ -265,6 +278,10 @@ hfp_wbs_test_data = {
             'format': 'S16_LE',
             'encoding': 'signed-integer',
             'speech_mode': True,
+            # Passing scored are determined mostly experimentally, the DUT as
+            # sink direction has issues and so for now the score set low.
+            # Ideally both scores should be set to >= 4.0 in fully functioning
+            # scenario.
             'sink_passing_score': 0.0,
             'source_passing_score': 4.0,
         }
@@ -278,7 +295,7 @@ a2dp_test_data = {
     'rate': 48000,
     'channels': 2,
     'frequencies': (440, 20000),
-    'file': os.path.join(AUDIO_TEST_DATA_DIR,
+    'file': os.path.join(AUDIO_TEST_DIR,
                          'binaural_sine_440hz_20000hz_rate48000_5secs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
                                      'a2dp_recorded_by_peer.wav'),

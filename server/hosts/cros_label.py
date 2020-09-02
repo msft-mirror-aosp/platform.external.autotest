@@ -522,9 +522,9 @@ class DutStorageLabel(base_label.StringPrefixLabel):
         return [state]
 
     def update_for_task(self, task_name):
-        # This label is part of audit task, so updating it during deploy tasks
-        # update it or when no task name is mentioned.
-        return task_name in (DEPLOY_TASK_NAME, '')
+        # This label is part of audit task, so updating it only during
+        # deploy tasks to update it for new deployments.
+        return task_name == DEPLOY_TASK_NAME
 
 
 CROS_LABELS = [

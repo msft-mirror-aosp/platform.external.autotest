@@ -40,7 +40,9 @@ def is_running(service_name):
 
     @param service_name: name of service
     """
-    return utils.system_output('status %s' % service_name).find('start/running') != -1
+    cmd = 'status %s' % service_name
+    return utils.system_output(cmd).find('start/running') != -1
+
 
 def restart_job(service_name):
     """
@@ -54,6 +56,7 @@ def restart_job(service_name):
         utils.system_output('restart %s' % service_name)
     else:
         utils.system_output('start %s' % service_name)
+
 
 def stop_job(service_name):
     """

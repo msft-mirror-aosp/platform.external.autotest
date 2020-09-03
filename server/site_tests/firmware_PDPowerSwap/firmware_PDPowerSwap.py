@@ -138,6 +138,14 @@ class firmware_PDPowerSwap(FirmwareTest):
                      'in suspend mode. Expect to succeed.')
         if self._attempt_power_swap('rx') == False:
             raise error.TestFail('SRC-to-SNK power role swap failed.')
+
+        # If we define AC insertion as a wake source for this board, the
+        # SRC-to-SNK power role swap would wake up the DUT. In this case,
+        # we need to suspend the DUT again to proceed the test.
+        if self.wait_power_state(self.POWER_STATE_S0,
+                                 self.DEFAULT_PWR_RETRIES):
+            self.set_ap_off_power_mode('suspend')
+
         logging.info('Request a SNK-to-SRC power role swap to DUT PD port '
                      'in suspend mode. Expect to fail.')
         self._test_power_swap_reject()
@@ -248,4 +256,3 @@ class firmware_PDPowerSwap(FirmwareTest):
             # Expect behavior now is that DUT will reject power swap
             self._test_power_swap_reject()
             logging.info('Power Swap request rejected by DUT as expected')
-

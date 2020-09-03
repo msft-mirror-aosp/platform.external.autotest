@@ -23,13 +23,13 @@ VISQOL_TARBALL = os.path.join(DIST_FILES, 'visqol-binary.tar.gz')
 VISQOL_TARBALL_LOCAL_PATH = os.path.join(DATA_DIR,
                                          os.path.split(VISQOL_TARBALL)[1])
 VISQOL_FOLDER = os.path.join(DATA_DIR, 'visqol')
-VISQOL_PATH = os.path.join(VISQOL_FOLDER, 'bazel-bin', 'visqol')
+VISQOL_PATH = os.path.join(VISQOL_FOLDER, 'visqol')
 # There are several available models for VISQOL, since these VISQOL based tests
 # are primarily for voice quality, this model is more tuned for voice quality.
 # experimentally, the scores have been fairly similar to the default model
 # 'libsvm_nu_svr_model.txt'. Details: github.com/google/visqol/tree/master/model
 VISQOL_SIMILARITY_MODEL = os.path.join(
-        VISQOL_FOLDER, 'model',
+        VISQOL_FOLDER, 'visqol.runfiles', '__main__', 'model',
         'tcdvoip_nu.568_c5.31474325639_g3.17773760038_model.txt')
 VISQOL_TEST_DIR = os.path.join(VISQOL_FOLDER, 'bt-test-output')
 
@@ -127,8 +127,8 @@ def verify_visqol_extraction(stdout, stderr, process):
     return (not stderr and
             os.path.isdir(VISQOL_FOLDER) and
             os.path.isdir(VISQOL_TEST_DIR) and
-            os.path.isfile(VISQOL_PATH) and
-            os.path.isfile(VISQOL_SIMILARITY_MODEL))
+            os.path.exists(VISQOL_PATH) and
+            os.path.exists(VISQOL_SIMILARITY_MODEL))
 
 
 def get_visqol_binary():
@@ -137,9 +137,9 @@ def get_visqol_binary():
     If visqol binary not already available, download from DIST_FILES, otherwise
     skip this step.
     """
-    logging.info('Downloading ViSQOL binary on autotest server')
+    logging.debug('Downloading ViSQOL binary on autotest server')
     if verify_visqol_extraction(None, None, None):
-        logging.info('VISQOL binary already exists, skipping')
+        logging.debug('VISQOL binary already exists, skipping')
         return
 
     # download from VISQOL_TARBALL
@@ -157,7 +157,7 @@ def get_audio_test_data():
 
     Download and unzip audio files for audio tests from DIST_FILES.
     """
-    logging.info('Downloading audio test data on autotest server')
+    logging.debug('Downloading audio test data on autotest server')
 
     # download from AUDIO_TARBALL
     if not download_file_from_bucket(DATA_DIR, AUDIO_TARBALL,
@@ -194,6 +194,8 @@ hfp_nbs_test_data = {
             'duration': 26.112 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Passing scored are determined mostly experimentally, the DUT as
@@ -215,6 +217,8 @@ hfp_nbs_test_data = {
             'duration': 5.0 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Sine tones don't work very well with ViSQOL on the NBS tests, both
@@ -255,6 +259,8 @@ hfp_wbs_test_data = {
             'duration': 26.112 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Passing scored are determined mostly experimentally, the DUT as
@@ -276,6 +282,8 @@ hfp_wbs_test_data = {
             'duration': 5.0 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Passing scored are determined mostly experimentally, the DUT as

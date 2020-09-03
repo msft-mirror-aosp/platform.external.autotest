@@ -651,6 +651,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         get_visqol_binary()
         get_audio_test_data()
+        self.host.send_file(AUDIO_DATA_TARBALL_PATH, AUDIO_DATA_TARBALL_PATH)
+        if not self.bluetooth_facade.unzip_audio_test_data(
+                AUDIO_DATA_TARBALL_PATH, DATA_DIR):
+            logging.error('Audio data directory not found in DUT')
+            raise error.TestError('Failed to unzip audio test data to DUT')
 
         # Result of visqol test on all files
         visqol_results = dict()

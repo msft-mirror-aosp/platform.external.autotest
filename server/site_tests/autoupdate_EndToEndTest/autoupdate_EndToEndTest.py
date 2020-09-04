@@ -41,7 +41,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     def cleanup(self):
         """Save the logs from stateful_partition's preserved/log dir."""
         stateful_preserved_logs = os.path.join(self.resultsdir,
-                                               'stateful_preserved_logs')
+                                               '~stateful_preserved_logs')
         os.makedirs(stateful_preserved_logs)
         self._host.get_file(constants.AUTOUPDATE_PRESERVE_LOG,
                             stateful_preserved_logs, safe_symlinks=True,

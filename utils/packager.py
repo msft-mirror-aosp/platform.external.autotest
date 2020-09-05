@@ -28,7 +28,7 @@ def get_exclude_string(client_dir):
     For profilers we need to exclude everything except the __init__.py
     file so that the profilers can be imported.
     '''
-    exclude_string = ('--exclude="deps/*" --exclude="tests/*" '
+    exclude_string = ('--exclude="deps/*" --exclude="tests/*" --exclude=.git '
                       '--exclude="site_tests/*" --exclude="**.pyc"')
 
     # Get the profilers directory

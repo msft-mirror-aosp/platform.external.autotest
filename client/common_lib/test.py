@@ -44,7 +44,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as client_utils
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = client_utils.metrics_mock
 

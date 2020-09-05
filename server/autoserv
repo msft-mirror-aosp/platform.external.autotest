@@ -34,8 +34,8 @@ from autotest_lib.client.common_lib import seven
 from autotest_lib.server.cros.dynamic_suite import suite
 
 try:
-    from chromite.lib import metrics
-    from chromite.lib import cloud_trace
+    from autotest_lib.utils.frozen_chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import cloud_trace
 except ImportError:
     from autotest_lib.client.common_lib import utils as common_utils
     metrics = common_utils.metrics_mock

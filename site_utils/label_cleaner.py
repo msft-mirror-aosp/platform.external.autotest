@@ -34,8 +34,8 @@ import MySQLdb
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import logging_config
 from autotest_lib.server import frontend
-from chromite.lib import metrics
-from chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import metrics
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 
 
 _METRICS_PREFIX = 'chromeos/autotest/afe_db/admin/label_cleaner'

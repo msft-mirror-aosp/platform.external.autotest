@@ -10,7 +10,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.update_engine import update_engine_test
-from chromite.lib import retry_util
+from autotest_lib.utils.frozen_chromite.lib import retry_util
 
 class autoupdate_P2P(update_engine_test.UpdateEngineTest):
     """Tests a peer to peer (P2P) autoupdate."""

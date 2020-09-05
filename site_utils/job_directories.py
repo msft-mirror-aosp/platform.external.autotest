@@ -16,7 +16,7 @@ from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

@@ -20,8 +20,8 @@ from autotest_lib.server import frontend
 # pylint: disable=unused-import
 from autotest_lib.server import site_host_attributes
 from autotest_lib.site_utils import server_manager_utils
-from chromite.lib import metrics
-from chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import metrics
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 
 METRIC_ROOT = 'chromeos/autotest/blackbox/afe_rpc'
 METRIC_RPC_CALL_DURATIONS = METRIC_ROOT + '/rpc_call_durations'

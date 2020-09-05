@@ -10,7 +10,7 @@ import re
 import common
 
 from autotest_lib.client.common_lib import revision_control
-from chromite.lib import gob_util
+from autotest_lib.utils.frozen_chromite.lib import gob_util
 
 try:
     from skylab_inventory import text_manager

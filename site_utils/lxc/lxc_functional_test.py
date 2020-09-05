@@ -79,7 +79,7 @@ lxc.install_packages(['atop'], ['acora'])
 
 TEST_SCRIPT_CONTENT_TS_MON = """
 # Test ts_mon metrics can be set up.
-from chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 ts_mon_config.SetupTsMonGlobalState('some_test', suppress_exception=False)
 """
 

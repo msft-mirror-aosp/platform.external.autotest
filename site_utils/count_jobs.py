@@ -16,7 +16,7 @@ from autotest_lib.frontend.afe import models
 from autotest_lib.server import site_utils
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = site_utils.metrics_mock
 

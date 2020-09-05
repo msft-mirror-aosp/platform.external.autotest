@@ -17,8 +17,8 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.site_utils.stats import mysql_stats
 
 try:
-    from chromite.lib import metrics
-    from chromite.lib import ts_mon_config
+    from autotest_lib.utils.frozen_chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 except ImportError:
     metrics = utils.metrics_mock
     ts_mon_config = utils.metrics_mock

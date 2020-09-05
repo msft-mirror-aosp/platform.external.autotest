@@ -17,7 +17,7 @@ from autotest_lib.server.cros import provision
 from autotest_lib.server.cros import provisioner
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

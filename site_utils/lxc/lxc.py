@@ -15,7 +15,7 @@ from autotest_lib.server import utils as server_utils
 from autotest_lib.site_utils.lxc import constants
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = common_utils.metrics_mock
 

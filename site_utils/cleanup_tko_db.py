@@ -16,8 +16,8 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import logging_config
 
-from chromite.lib import metrics
-from chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import metrics
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 
 
 CONFIG = global_config.global_config

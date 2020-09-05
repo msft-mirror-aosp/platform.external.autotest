@@ -12,7 +12,7 @@ import unittest
 import mox
 
 # TODO(crbug.com/1050892): The unittests rely on apiclient in chromite.
-import chromite  # pylint: disable=unused-import
+import autotest_lib.utils.frozen_chromite  # pylint: disable=unused-import
 
 from apiclient import discovery
 from oauth2client.client import ApplicationDefaultCredentialsError

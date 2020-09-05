@@ -35,7 +35,7 @@ from autotest_lib.frontend import database_settings_helper
 import six
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

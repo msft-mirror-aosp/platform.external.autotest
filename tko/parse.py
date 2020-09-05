@@ -36,7 +36,7 @@ from autotest_lib.utils.side_effects import config_loader
 import six
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

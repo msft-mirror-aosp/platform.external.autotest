@@ -7,7 +7,7 @@ import os
 import string
 
 import common
-from chromite.lib import gce
+from autotest_lib.utils.frozen_chromite.lib import gce
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils

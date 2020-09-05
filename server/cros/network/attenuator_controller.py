@@ -8,7 +8,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.network import attenuator
 from autotest_lib.server.cros.network import attenuator_hosts
 
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 HOST_TO_FIXED_ATTENUATIONS = attenuator_hosts.HOST_FIXED_ATTENUATIONS
 

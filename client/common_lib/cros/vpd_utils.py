@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import error
-from chromite.lib import retry_util
+from autotest_lib.utils.frozen_chromite.lib import retry_util
 
 
 _VPD_BASE_CMD = 'vpd -i %s %s %s'

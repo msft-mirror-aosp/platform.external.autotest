@@ -15,7 +15,7 @@ from autotest_lib.server.crashcollect import collect_log_file
 from autotest_lib.server import utils
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = client_utils.metrics_mock
 

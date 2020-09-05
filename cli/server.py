@@ -33,7 +33,7 @@ from autotest_lib.client.common_lib import revision_control
 from autotest_lib.frontend import setup_django_environment
 from autotest_lib.site_utils import server_manager
 from autotest_lib.site_utils import server_manager_utils
-from chromite.lib import gob_util
+from autotest_lib.utils.frozen_chromite.lib import gob_util
 
 try:
     from skylab_inventory import text_manager

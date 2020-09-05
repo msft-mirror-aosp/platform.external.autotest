@@ -19,7 +19,7 @@ from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import cros_repair
 
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 import six
 
 AUTOTEST_INSTALL_DIR = global_config.global_config.get_config_value(

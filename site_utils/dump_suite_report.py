@@ -14,7 +14,7 @@ import sys
 
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.server.lib import suite_report
-from chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 
 def GetParser():
     """Creates the argparse parser."""

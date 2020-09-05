@@ -39,7 +39,7 @@ from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.server.cros.dynamic_suite import job_status
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 
@@ -723,9 +723,9 @@ def SetupTsMonGlobalState(*args, **kwargs):
         # 1-2 seconds to the module import time and most users of site_utils
         # don't need it. The correct fix is to break apart site_utils into more
         # meaningful chunks.
-        from chromite.lib import ts_mon_config
-    except ImportError:
-        logging.warn('Unable to import chromite. Monarch is disabled.')
+        from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
+    except ImportError as e:
+        logging.warn('Unable to import chromite. Monarch is disabled: %s', e)
         return TrivialContextManager()
 
     try:

@@ -15,7 +15,7 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib.cros import retry
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     from autotest_lib.client.bin.utils import metrics_mock as metrics
 

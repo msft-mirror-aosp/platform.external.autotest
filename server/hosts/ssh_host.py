@@ -30,7 +30,7 @@ import six
 # In case cros_host is being ran via SSP on an older Moblab version with an
 # older chromite version.
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

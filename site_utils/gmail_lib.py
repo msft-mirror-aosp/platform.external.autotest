@@ -45,10 +45,10 @@ except ImportError as e:
 # Note: These imports needs to come after the apiclient imports, because
 # of a sys.path war between chromite and autotest crbug.com/622988
 from autotest_lib.server import utils as server_utils
-from chromite.lib import retry_util
+from autotest_lib.utils.frozen_chromite.lib import retry_util
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

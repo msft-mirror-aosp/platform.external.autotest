@@ -28,10 +28,10 @@ from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
-from chromite.lib import auto_updater
-from chromite.lib import auto_updater_transfer
-from chromite.lib import remote_access
-from chromite.lib import retry_util
+from autotest_lib.utils.frozen_chromite.lib import auto_updater
+from autotest_lib.utils.frozen_chromite.lib import auto_updater_transfer
+from autotest_lib.utils.frozen_chromite.lib import remote_access
+from autotest_lib.utils.frozen_chromite.lib import retry_util
 
 
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):

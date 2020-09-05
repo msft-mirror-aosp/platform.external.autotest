@@ -31,7 +31,7 @@ from autotest_lib.client.common_lib.cros import retry
 # TODO(cmasone): redo this class using requests module; http://crosbug.com/30107
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 

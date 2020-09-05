@@ -22,7 +22,7 @@ from autotest_lib.site_utils.lxc.container import Container
 from autotest_lib.site_utils.lxc.container_factory import ContainerFactory
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
     from infra_libs import ts_mon
 except ImportError:
     import mock

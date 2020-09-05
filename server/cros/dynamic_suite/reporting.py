@@ -15,7 +15,7 @@ from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.site_utils import gmail_lib
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = site_utils.metrics_mock
 

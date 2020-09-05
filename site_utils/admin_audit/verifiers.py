@@ -20,7 +20,7 @@ from autotest_lib.server.cros import servo_keyboard_utils
 from autotest_lib.site_utils.admin_audit import rpm_validator
 
 try:
-    from chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError:
     metrics = client_utils.metrics_mock
 

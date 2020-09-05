@@ -32,8 +32,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import utils
 
-from chromite.lib import metrics
-from chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import metrics
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 from six.moves import range
 
 _ATTEMPTS = 3

@@ -51,7 +51,7 @@ from autotest_lib.tko import models
 from autotest_lib.utils import labellib
 from autotest_lib.utils import gslib
 from autotest_lib.utils.side_effects import config_loader
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 # Autotest requires the psutil module from site-packages, so it must be imported
 # after "import common".
@@ -61,11 +61,11 @@ try:
 except ImportError:
     psutil = None
 
-from chromite.lib import parallel
+from autotest_lib.utils.frozen_chromite.lib import parallel
 import six
 try:
-    from chromite.lib import metrics
-    from chromite.lib import ts_mon_config
+    from autotest_lib.utils.frozen_chromite.lib import metrics
+    from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
 except ImportError:
     metrics = utils.metrics_mock
     ts_mon_config = utils.metrics_mock

@@ -15,8 +15,8 @@ import urlparse
 
 import common
 
-from chromite.lib import ts_mon_config
-from chromite.lib import metrics
+from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
+from autotest_lib.utils.frozen_chromite.lib import metrics
 
 from autotest_lib.site_utils.stats import log_daemon_common
 # Not used, but needed for importing rpc_interface.

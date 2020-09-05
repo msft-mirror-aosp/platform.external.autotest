@@ -39,7 +39,7 @@ from autotest_lib.site_utils import job_directories_unittest as jd_test
 from autotest_lib.tko import models
 from autotest_lib.utils import gslib
 from autotest_lib.site_utils import pubsub_utils
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 from six.moves import range
 
 # Test value to use for `days_old`, if nothing else is required.

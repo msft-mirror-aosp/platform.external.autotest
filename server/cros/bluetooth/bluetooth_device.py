@@ -1023,6 +1023,24 @@ class BluetoothDevice(object):
         return self._proxy.select_input_device(device_name)
 
 
+    def select_output_node(self, node_type):
+        """Select the audio output node.
+
+        @param node_type: the node type of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return self._proxy.select_output_node(node_type)
+
+
+    def get_selected_output_device_type(self):
+        """Get the selected audio output node type.
+
+        @returns: the node type of the selected output device.
+        """
+        return self._proxy.get_selected_output_device_type()
+
+
     def read_characteristic(self, uuid, address):
         """Reads the value of a gatt characteristic.
 

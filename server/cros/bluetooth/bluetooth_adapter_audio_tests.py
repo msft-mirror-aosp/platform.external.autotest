@@ -30,6 +30,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # Useful constant for upsampling NBS files for compatibility with ViSQOL
     MIN_VISQOL_SAMPLE_RATE = 16000
 
+    # The node types of the bluetooth output nodes in cras are the same for both
+    # A2DP and HFP.
+    CRAS_BLUETOOTH_OUTPUT_NODE_TYPE = 'BLUETOOTH'
+    # The node types of the bluetooth input nodes in cras are different for WBS
+    # and NBS.
+    CRAS_HFP_BLUETOOTH_INPUT_NODE_TYPE = {HFP_WBS: 'BLUETOOTH',
+                                          HFP_NBS: 'BLUETOOTH_NB_MIC'}
+
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
                                      test_profile):
         """Get the specified bluez device number in the pulseaudio source list.
@@ -196,7 +204,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                      sleep_interval=sleep_interval,
                                      desc=desc)
         except Exception as e:
-            raise error.TestError('Exception occurred when %s' % desc)
+            raise error.TestError('Exception occurred when %s (%s)' % (desc, e))
 
 
     def initialize_bluetooth_audio(self, device, test_profile):
@@ -269,6 +277,28 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.UnexportMediaPlayer()
 
 
+    def select_audio_output_node(self):
+        """Select the audio output node through cras.
+
+        @raises: error.TestError if failed.
+        """
+        def bluetooth_type_selected(node_type):
+            """Check if the bluetooth node type is selected."""
+            selected = self.bluetooth_facade.get_selected_output_device_type()
+            logging.debug('active output node type: %s, expected %s',
+                          selected, node_type)
+            return selected == node_type
+
+        node_type = self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE
+        if not self.bluetooth_facade.select_output_node(node_type):
+            raise error.TestError('select_output_node failed')
+
+        desc='waiting for %s as active cras audio output node type' % node_type
+        logging.debug(desc)
+        self._poll_for_condition(lambda: bluetooth_type_selected(node_type),
+                                 desc=desc)
+
+
     def initialize_hfp(self, device, test_profile, test_data,
                        recording_device, bluez_function):
         """Initial set up for hfp tests.
@@ -296,6 +326,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self._poll_for_condition(
                 lambda: self.bluetooth_facade.select_input_device(device.name),
                 desc=desc)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.select_audio_output_node()
 
         # Enable HFP profile.
         logging.debug('Start recording audio on {}'.format(device_type))
@@ -715,6 +748,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self._poll_for_condition(
                 lambda: self._get_pulseaudio_bluez_source_a2dp(device, A2DP),
                 desc=desc)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.select_audio_output_node()
 
         # Start recording audio on the peer Bluetooth audio device.
         logging.debug('Start recording a2dp')

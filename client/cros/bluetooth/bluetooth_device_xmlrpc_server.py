@@ -2367,6 +2367,26 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
 
     @xmlrpc_server.dbus_safe(None)
+    def select_output_node(self, node_type):
+        """Select the audio output node.
+
+        @param node_type: the node type of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return cras_utils.set_single_selected_output_node(node_type)
+
+
+    @xmlrpc_server.dbus_safe(None)
+    def get_selected_output_device_type(self):
+        """Get the selected audio output node type.
+
+        @returns: the node type of the selected output device.
+        """
+        # Note: should convert the dbus.String to the regular string.
+        return str(cras_utils.get_selected_output_device_type())
+
+
     def get_gatt_attributes_map(self, address):
         """Return a JSON formatted string of the GATT attributes of a device,
         keyed by UUID

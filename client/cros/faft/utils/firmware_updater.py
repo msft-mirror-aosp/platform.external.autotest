@@ -725,8 +725,11 @@ class FirmwareUpdater(object):
         """Signs CBFS (bios.bin) and flashes it."""
         self.resign_firmware(work_path=self._cbfs_work_path)
         bios = self._get_handler('bios')
-        bios.new_image(os.path.join(self._cbfs_work_path, self._bios_path))
-        bios.write_whole()
+        bios_file = os.path.join(self._cbfs_work_path, self._bios_path)
+        bios.new_image(bios_file)
+        # futility makes sure to preserve important sections (HWID, GBB, VPD).
+        self.os_if.run_shell_command_get_result(
+                'futility update --mode=recovery -i %s' % bios_file)
         return True
 
     def copy_bios(self, filename):

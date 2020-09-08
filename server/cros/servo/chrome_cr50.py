@@ -98,7 +98,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         'FlashAP', 'FlashEC', 'OverrideWP', 'RebootECAP', 'GscFullConsole',
         'UnlockNoReboot', 'UnlockNoShortPP', 'OpenNoTPMWipe', 'OpenNoLongPP',
         'BatteryBypassPP', 'UpdateNoTPMWipe', 'I2C', 'FlashRead',
-        'OpenNoDevMode', 'OpenFromUSB'
+        'OpenNoDevMode', 'OpenFromUSB', 'OverrideBatt'
     ]
     # There are two capability formats. Match both.
     #  UartGscRxECTx   Y 3=IfOpened

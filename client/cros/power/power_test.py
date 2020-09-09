@@ -71,8 +71,8 @@ class power_Test(test.test):
         ifaces = [iface for iface in interface.get_interfaces()
                 if (not iface.is_wifi_device() and
                 iface.name.startswith('eth'))]
-        logging.debug('Ethernet interfaces include: ',
-                str([iface.name for iface in ifaces]))
+        logging.debug('Ethernet interfaces include: %s',
+                      str([iface.name for iface in ifaces]))
         for iface in ifaces:
             if check_network and iface.is_lower_up:
                 raise error.TestError('Ethernet interface is active. '
@@ -86,6 +86,9 @@ class power_Test(test.test):
 
         self._meas_logs = power_status.create_measurement_loggers(
                 seconds_period, self._checkpoint_logger)
+        logging.debug('measurement loggers (%d):', len(self._meas_logs))
+        for log in self._meas_logs:
+            logging.debug('%s: %s', type(log).__name__, ", ".join(log.domains))
 
         self._pdash_note = pdash_note
 

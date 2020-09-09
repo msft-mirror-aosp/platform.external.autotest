@@ -696,9 +696,7 @@ class AbstractStats(object):
             results['wavg_%s' % (name)] = wavg
 
 
-    def __init__(self, name=None, incremental=True):
-        if not name:
-            raise error.TestFail("Need to name AbstractStats instance please.")
+    def __init__(self, name, incremental=True):
         self.name = name
         self.incremental = incremental
         self._stats = self._read_stats()
@@ -837,7 +835,7 @@ class CPUFreqStats(AbstractStats):
                 self._available_freqs |= set(int(x) for x in
                                              utils.read_file(path).split())
 
-        super(CPUFreqStats, self).__init__(name=name)
+        super(CPUFreqStats, self).__init__(name)
 
 
     def _read_stats(self):
@@ -904,7 +902,7 @@ class CPUCStateStats(AbstractStats):
     """
     def __init__(self, name, non_c0_stat=''):
         self._non_c0_stat = non_c0_stat
-        super(CPUCStateStats, self).__init__(name=name)
+        super(CPUCStateStats, self).__init__(name)
 
 
     def to_percent(self, stats):
@@ -1061,7 +1059,7 @@ class DevFreqStats(AbstractStats):
     _DIR = '/sys/class/devfreq'
 
 
-    def __init__(self, f):
+    def __init__(self, path):
         """Constructs DevFreqStats Object that track frequency stats
         for the path of the given Devfreq device.
 
@@ -1073,15 +1071,17 @@ class DevFreqStats(AbstractStats):
         Example:
             /sys/class/devfreq/dmc
         """
-        self._path = os.path.join(self._DIR, f)
+        self._path = os.path.join(self._DIR, path)
         if not os.path.exists(self._path):
-            raise error.TestError('DevFreqStats: devfreq device does not exist')
+            raise error.TestError(
+                    'DevFreqStats: devfreq device does not exist: %s' %
+                    self._path)
 
         fname = os.path.join(self._path, 'available_frequencies')
         af = utils.read_one_line(fname).strip()
         self._available_freqs = sorted(af.split(), key=int)
 
-        super(DevFreqStats, self).__init__(name=f)
+        super(DevFreqStats, self).__init__(path)
 
     def _read_stats(self):
         stats = dict((freq, 0) for freq in self._available_freqs)
@@ -1237,7 +1237,7 @@ class GPUFreqStats(AbstractStats):
             logging.debug("Current GPU freq: %s", cur_mhz)
             logging.debug("All GPU freqs: %s", self._freqs)
 
-        super(GPUFreqStats, self).__init__(name='gpufreq', incremental=incremental)
+        super(GPUFreqStats, self).__init__('gpufreq', incremental=incremental)
 
 
     @classmethod
@@ -1339,7 +1339,7 @@ class USBSuspendStats(AbstractStats):
         self._file_paths = glob.glob(usb_stats_path)
         if not self._file_paths:
             logging.debug('USB stats path not found')
-        super(USBSuspendStats, self).__init__(name='usb')
+        super(USBSuspendStats, self).__init__('usb')
 
 
     def _read_stats(self):

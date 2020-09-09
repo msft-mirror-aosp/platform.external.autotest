@@ -29,6 +29,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import host_queue_entry_states
 from autotest_lib.client.common_lib import host_states
+from autotest_lib.client import seven
 from autotest_lib.server.cros.dynamic_suite import suite
 
 try:
@@ -140,7 +141,12 @@ def _stage_ssp(parser, resultsdir):
                  'isolate_hash': parser.options.isolate,
                  'image': parser.options.test_source_build}
     script_locals = {}
-    exec(compile(open(STAGE_SERVER_SIDE_PACKAGE_CONTROL_FILE, "rb").read(), STAGE_SERVER_SIDE_PACKAGE_CONTROL_FILE, 'exec'), namespace, script_locals)
+
+    seven.exec_file(
+        STAGE_SERVER_SIDE_PACKAGE_CONTROL_FILE,
+        globals_=namespace,
+        locals_=script_locals,
+    )
     ssp_url = script_locals['ssp_url']
     if not ssp_url:
         logging.error('Failed to stage SSP package: %s',

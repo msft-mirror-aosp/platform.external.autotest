@@ -1923,7 +1923,18 @@ class MeasurementLogger(threading.Thread):
 
         for i, domain_readings in enumerate(zip(*self.readings)):
             meas = numpy.array(domain_readings)
-            domain = self.domains[i]
+            try:
+                domain = self.domains[i]
+            except IndexError:
+                # TODO (evanbenn) temp logging for b:162610351
+                logging.debug('b:162610351 IndexError: %s, %d, %d, (%s)',
+                              type(self).__name__,
+                              len(self.readings),
+                              len(self.domains),
+                              ', '.join(str(len(r)) for r in self.readings))
+                logging.debug('b:162610351 domains: %s',
+                              ', '.join(self.domains))
+                raise
 
             for tname, tlist in self._checkpoint_logger.checkpoint_data.iteritems():
                 if tname:

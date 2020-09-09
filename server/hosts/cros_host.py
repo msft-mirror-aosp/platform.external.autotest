@@ -31,6 +31,7 @@ from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools, frontend_wrappers
+from autotest_lib.server.cros.device_health_profile import device_health_profile
 from autotest_lib.server.cros.servo import pdtester
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
@@ -348,6 +349,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             try_servo_repair=try_servo_repair,
             dut_host_info=self.host_info_store.get())
         self.set_servo_host(_servo_host, servo_state)
+        self.health_profile = None
         self._default_power_method = None
 
         # TODO(waihong): Do the simplication on Chameleon too.
@@ -1229,9 +1231,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if self._chameleon_host:
             self._chameleon_host.close()
 
+        if self.health_profile:
+            try:
+                self.health_profile.close()
+            except Exception as e:
+                logging.warning(
+                    'Failed to finalize device health profile; %s', e)
+
         if self._servo_host:
             self._servo_host.close()
-
 
     def get_power_supply_info(self):
         """Get the output of power_supply_info.
@@ -2746,3 +2754,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.debug('Fail to check %s to write in it', dir)
                 return False
         return True
+
+    def setup_device_health_profile(self):
+        """Setup device health profile for repair/provision task to consume.
+        """
+        if not self._servo_host:
+            logging.info('Servohost is not instantiated, skip device'
+                         ' health profile setup...')
+            return
+        # Also skip setup health profile if it's a task runs locally.
+        if self._servo_host.is_localhost():
+            logging.info('Servohost is a localhost, skip device'
+                         ' health profile setup...')
+            return
+        try:
+            self.health_profile = device_health_profile.DeviceHealthProfile(
+                self, self._servo_host)
+        except Exception as e:
+            logging.warning('Failed to setup device health profile; %s', e)

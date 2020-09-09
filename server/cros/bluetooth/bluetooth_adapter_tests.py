@@ -960,6 +960,9 @@ class BluetoothAdapterTests(test.test):
         # Re-disable cellular
         self.enable_disable_cellular(enable=False)
 
+        # Re-disable ui
+        self.enable_disable_ui(enable=False)
+
         self.start_new_btmon()
         self.start_new_usbmon()
 
@@ -1131,18 +1134,17 @@ class BluetoothAdapterTests(test.test):
         return 'start/running' in output
 
 
-    def enable_disable_cellular(self, enable):
-        """Enable cellular services on the DUT
+    def enable_disable_services(self, services, enable):
+        """Enable or disable service on the DUT
 
-        @param enable: True to enable cellular services
-                       False to disable cellular services
+        @param services: list of string service names
+        @param enable: True to enable services, False to disable
 
         @returns: True if services were set successfully, else False
         """
-        cellular_services = ['modemmanager', 'modemfwd']
         toggle_string = 'start' if enable else 'stop'
 
-        for service in cellular_services:
+        for service in services:
             # Some platforms will not support all services. In these cases,
             # no need to fail, since they won't interfere with our tests
             if not self.service_exists(service):
@@ -1159,12 +1161,38 @@ class BluetoothAdapterTests(test.test):
                               enable)
                 return False
 
-        if enable:
-            logging.info('Cellular enabled')
-        else:
-            logging.info('Cellular disabled')
+            if enable:
+                logging.info('Service {} enabled'.format(service))
+            else:
+                logging.info('Service {} disabled'.format(service))
 
         return True
+
+
+    def enable_disable_cellular(self, enable):
+        """Enable cellular services on the DUT
+
+        @param enable: True to enable cellular services
+                       False to disable cellular services
+
+        @returns: True if services were set successfully, else False
+        """
+        cellular_services = ['modemmanager', 'modemfwd']
+
+        return self.enable_disable_services(cellular_services, enable)
+
+
+    def enable_disable_ui(self, enable):
+        """Enable UI service on the DUT
+
+        @param enable: True to enable UI services
+                       False to disable UI services
+
+        @returns: True if services were set successfully, else False
+        """
+        ui_services = ['ui']
+
+        return self.enable_disable_services(ui_services, enable)
 
 
     def enable_disable_debug_log(self, enable):
@@ -4103,6 +4131,9 @@ class BluetoothAdapterTests(test.test):
 
             # Re-enable cellular services
             self.enable_disable_cellular(enable=True)
+
+            # Re-enable ui
+            self.enable_disable_ui(enable=True)
 
             if hasattr(self, 'host'):
                 # Stop btmon process

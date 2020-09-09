@@ -1811,10 +1811,8 @@ class MeasurementLogger(threading.Thread):
         self.readings = []
         self.times = []
 
-        self.domains = []
         self._measurements = measurements
-        for meas in self._measurements:
-            self.domains.append(meas.domain)
+        self.domains = [meas.domain for meas in self._measurements]
 
         self._checkpoint_logger = \
             checkpoint_logger if checkpoint_logger else CheckpointLogger()
@@ -1831,10 +1829,7 @@ class MeasurementLogger(threading.Thread):
         Returns:
             list of sampled data for every measurements.
         """
-        readings = []
-        for meas in self._measurements:
-            readings.append(meas.refresh())
-        return readings
+        return [meas.refresh() for meas in self._measurements]
 
     def run(self):
         """Threads run method."""

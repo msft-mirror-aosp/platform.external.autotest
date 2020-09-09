@@ -1205,7 +1205,7 @@ class GPUFreqStats(AbstractStats):
             events = self._I915_EVENTS
             with open(i915_path) as fd:
                 for ln in fd.readlines():
-                    logging.debug("ln = %s", ln)
+                    logging.debug("ln = %s", ln.strip())
                     result = re.findall(self._I915_CUR_FREQ_RE, ln)
                     if result:
                         cur_mhz = result[0]

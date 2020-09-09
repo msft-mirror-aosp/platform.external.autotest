@@ -793,9 +793,10 @@ def get_cpus_filepaths_for_suffix(cpus, suffix):
             available_paths.append(c_file_path)
     return (available_cpus, available_paths)
 
-class CPUFreqStats(AbstractStats):
+
+class CPUFreqStatsPState(AbstractStats):
     """
-    CPU Frequency statistics
+    CPU Frequency statistics for intel_pstate
     """
     MSR_PLATFORM_INFO = 0xce
     MSR_IA32_MPERF = 0xe7
@@ -803,20 +804,67 @@ class CPUFreqStats(AbstractStats):
 
     def __init__(self, cpus=None):
         name = 'cpufreq'
-        stats_suffix = 'cpufreq/stats/time_in_state'
-        key_suffix = 'cpufreq/scaling_available_frequencies'
-        cpufreq_driver = '/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver'
         if not cpus:
             cpus = get_online_cpus()
-        _, self._file_paths = get_cpus_filepaths_for_suffix(cpus,
-                                                            stats_suffix)
+        self._cpus = cpus
 
         if len(cpus) and len(cpus) < count_all_cpus():
             name = '%s_%s' % (name, '_'.join([str(c) for c in cpus]))
-        self._running_intel_pstate = False
+
         self._initial_perf = None
         self._current_perf = None
-        self._max_freq = 0
+
+        # max_freq is supposed to be the same for all CPUs and remain
+        # constant throughout. So, we set the entry only once.
+        # Note that this is max non-turbo frequency, some CPU can run at
+        # higher turbo frequency in some condition.
+        platform_info = utils.rdmsr(self.MSR_PLATFORM_INFO)
+        mul = platform_info >> 8 & 0xff
+        bclk = utils.get_intel_bclk_khz()
+        self._max_freq = mul * bclk
+
+        super(CPUFreqStatsPState, self).__init__(name)
+
+    def _read_stats(self):
+        aperf = 0
+        mperf = 0
+
+        for cpu in self._cpus:
+            aperf += utils.rdmsr(self.MSR_IA32_APERF, cpu)
+            mperf += utils.rdmsr(self.MSR_IA32_MPERF, cpu)
+
+        if not self._initial_perf:
+            self._initial_perf = (aperf, mperf)
+
+        self._current_perf = (aperf, mperf)
+
+        return {}
+
+    def _weighted_avg_fn(self):
+        if (self._current_perf
+                    and self._current_perf[1] != self._initial_perf[1]):
+            # Avg freq = max_freq * aperf_delta / mperf_delta
+            return self._max_freq * \
+                float(self._current_perf[0] - self._initial_perf[0]) / \
+                (self._current_perf[1] - self._initial_perf[1])
+        return 1.0
+
+
+class CPUFreqStats(AbstractStats):
+    """
+    CPU Frequency statistics
+    """
+
+    def __init__(self, cpus=None):
+        name = 'cpufreq'
+        stats_suffix = 'cpufreq/stats/time_in_state'
+        key_suffix = 'cpufreq/scaling_available_frequencies'
+        if not cpus:
+            cpus = get_online_cpus()
+        _, self._file_paths = get_cpus_filepaths_for_suffix(cpus, stats_suffix)
+
+        if len(cpus) and len(cpus) < count_all_cpus():
+            name = '%s_%s' % (name, '_'.join([str(c) for c in cpus]))
         self._cpus = cpus
         self._available_freqs = set()
 
@@ -824,44 +872,14 @@ class CPUFreqStats(AbstractStats):
             logging.debug('time_in_state file not found')
 
         # assumes cpufreq driver for CPU0 is the same as the others.
-        freq_driver = utils.read_one_line(cpufreq_driver)
-        if freq_driver == 'intel_pstate':
-            logging.debug('intel_pstate driver active')
-            self._running_intel_pstate = True
-        else:
-            _, cpufreq_key_paths = get_cpus_filepaths_for_suffix(cpus,
-                                                                 key_suffix)
-            for path in cpufreq_key_paths:
-                self._available_freqs |= set(int(x) for x in
-                                             utils.read_file(path).split())
+        _, cpufreq_key_paths = get_cpus_filepaths_for_suffix(cpus, key_suffix)
+        for path in cpufreq_key_paths:
+            self._available_freqs |= set(
+                    int(x) for x in utils.read_file(path).split())
 
         super(CPUFreqStats, self).__init__(name)
 
-
     def _read_stats(self):
-        if self._running_intel_pstate:
-            aperf = 0
-            mperf = 0
-
-            for cpu in self._cpus:
-                aperf += utils.rdmsr(self.MSR_IA32_APERF, cpu)
-                mperf += utils.rdmsr(self.MSR_IA32_MPERF, cpu)
-
-            # max_freq is supposed to be the same for all CPUs and remain
-            # constant throughout. So, we set the entry only once.
-            # Note that this is max non-turbo frequency, some CPU can run at
-            # higher turbo frequency in some condition.
-            if not self._max_freq:
-                platform_info = utils.rdmsr(self.MSR_PLATFORM_INFO)
-                mul = platform_info >> 8 & 0xff
-                bclk = utils.get_intel_bclk_khz()
-                self._max_freq = mul * bclk
-
-            if not self._initial_perf:
-                self._initial_perf = (aperf, mperf)
-
-            self._current_perf = (aperf, mperf)
-
         stats = dict((k, 0) for k in self._available_freqs)
         for path in self._file_paths:
             if not os.path.exists(path):
@@ -879,21 +897,8 @@ class CPUFreqStats(AbstractStats):
                     stats[freq] = timeunits
         return stats
 
-
     def _supports_automatic_weighted_average(self):
-        return not self._running_intel_pstate
-
-
-    def _weighted_avg_fn(self):
-        if not self._running_intel_pstate:
-            return None
-
-        if self._current_perf[1] != self._initial_perf[1]:
-            # Avg freq = max_freq * aperf_delta / mperf_delta
-            return self._max_freq * \
-                float(self._current_perf[0] - self._initial_perf[0]) / \
-                (self._current_perf[1] - self._initial_perf[1])
-        return 1.0
+        return True
 
 
 class CPUCStateStats(AbstractStats):
@@ -1409,11 +1414,19 @@ def get_available_cpu_stats():
     """Return CPUFreq/CPUIdleStats groups by big-small siblings groups."""
     ret = [CPUPackageStats()]
     cpu_sibling_groups = get_cpu_sibling_groups()
+
+    cpufreq_stat_class = CPUFreqStats
+    # assumes cpufreq driver for CPU0 is the same as the others.
+    cpufreq_driver = '/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver'
+    if utils.read_one_line(cpufreq_driver) == 'intel_pstate':
+        logging.debug('intel_pstate driver active')
+        cpufreq_stat_class = CPUFreqStatsPState
+
     if not cpu_sibling_groups:
-        ret.append(CPUFreqStats())
+        ret.append(cpufreq_stat_class())
         ret.append(CPUIdleStats())
     for cpu_group in cpu_sibling_groups:
-        ret.append(CPUFreqStats(cpu_group))
+        ret.append(cpufreq_stat_class(cpu_group))
         ret.append(CPUIdleStats(cpu_group))
     if has_rc6_support():
         ret.append(GPURC6Stats())

@@ -17,7 +17,7 @@ class platform_StageAndRecover(test.test):
     _USB_PARTITION = '/dev/sda1'
     _MOUNT_PATH = '/media/removable'
     _VERIFY_STR = 'ChromeosChrootPostinst complete'
-    _RECOVERY_LOG = '/USB\ Drive/recovery_logs*/recovery.log'
+    _RECOVERY_LOG = '/recovery_logs*/recovery.log'
     _SET_DELAY = 2
 
     def cleanup(self):
@@ -103,11 +103,18 @@ class platform_StageAndRecover(test.test):
     def verify_recovery_log(self):
         """ Mount USB partition to servo and verify the recovery log. """
         recovery_info = ''
-
+        self.host.servo.set('usb_mux_oe3', 'off')
+        time.sleep(self._SET_DELAY)
         self.host.servo.set('usb_mux_sel1', 'servo_sees_usbkey')
         time.sleep(self._SET_DELAY)
-        self.host.servo.system('mount -r %s %s'
-                               % (self._USB_PARTITION, self._MOUNT_PATH))
+        try:
+            self.host.servo.system('mount -r %s %s'
+                                   % (self._USB_PARTITION, self._MOUNT_PATH))
+        except error.AutoservRunError:
+            servo_disk = self.host.servo.system_output('fdisk -l', ignore_status=True)
+            logging.info('Servo disk info : %s', servo_disk)
+            raise error.TestError('Issue with servo USB mount path %s'
+                                  % (self._USB_PARTITION)
         recovery_info = self.host.servo.system_output('cat %s%s'
                 % (self._MOUNT_PATH, self._RECOVERY_LOG), ignore_status=True)
         if recovery_info:

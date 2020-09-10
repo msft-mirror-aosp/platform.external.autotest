@@ -109,16 +109,17 @@ class VerifyServoUsb(base._BaseServoVerifier):
         if not self.servo_is_up():
             logging.info('Servo not initialized; Skipping the verification')
             return
-        servo = self.get_host().get_servo()
-        usb = servo.probe_host_usb_dev()
+        try:
+            usb = self.get_host()._probe_and_validate_usb_dev()
+            logging.debug('USB path: %s', usb)
+        except Exception as e:
+            usb = ''
+            logging.debug('(Not critical) %s', e)
         if not usb:
-            logging.error('Usb not detected')
-            metrics.Counter(
-                'chromeos/autotest/servo/usb/not_detected'
-                ).increment(fields={'host': self._dut_host.hostname})
-            self._set_state(constants.HW_STATE_NEED_REPLACEMENT)
+            self._set_state(constants.HW_STATE_NOT_DETECTED)
             return
 
+        servo = self.get_host().get_servo()
         state = None
         try:
             # The USB will be format during checking to the bad blocks.

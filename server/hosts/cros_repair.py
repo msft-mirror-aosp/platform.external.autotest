@@ -25,6 +25,7 @@ from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.site_utils.admin_audit import constants as audit_const
 from six.moves import range
 
 try:
@@ -72,7 +73,7 @@ _DEV_MODE_ALWAYS_ALLOWED = global_config.global_config.get_config_value(
 # usb:
 #   - triggers: _CROS_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS +
 #               _CROS_PROVISION_TRIGGERS
-#   - no dependencies
+#   - depends on: _CROS_USB_DEPENDENCIES
 #
 # N.B. AC power detection depends on software on the DUT, and there
 # have been bugs where detection failed even though the DUT really
@@ -88,6 +89,7 @@ _CROS_PROVISION_TRIGGERS = ('power', 'rwfw', 'python', 'cros',
 _CROS_POWERWASH_TRIGGERS = ('tpm', 'good_provision', 'ext4',)
 _CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
 _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
+_CROS_USB_DEPENDENCIES = ('usb_drive', )
 
 
 class ACPowerVerifier(hosts.Verifier):
@@ -592,6 +594,53 @@ class StopStartUIVerifier(hosts.Verifier):
         return 'The DUT image works fine when stop ui/start ui.'
 
 
+class ServoUSBDriveVerifier(hosts.Verifier):
+    """Verify that USB drive on Servo is good to use.
+
+    Check if USB drive is detected on servo and verified on servohost and
+    USB is not marked for replacement.
+    """
+
+    def verify(self, host):
+        # pylint: disable=missing-docstring
+        usb_dev = ''
+        try:
+            usb_dev = host._servo_host._probe_and_validate_usb_dev()
+        except hosts.AutoservRepairError as e:
+            # We USB drive not detected by servod
+            logging.debug('(Not critical) %s', e)
+        host_info = host.host_info_store.get()
+        if not usb_dev:
+            host_info.set_version_label(audit_const.SERVO_USB_STATE_PREFIX,
+                                        audit_const.HW_STATE_NOT_DETECTED)
+            host.host_info_store.commit(host_info)
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'USB-drive is not detected or bad')
+
+        # Check if USB-drive marked for replacement.
+        usb_state = host_info.get_label_value(
+                audit_const.SERVO_USB_STATE_PREFIX)
+        if usb_state and usb_state == audit_const.HW_STATE_NEED_REPLACEMENT:
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'USB-drive marked for replacement')
+
+        if usb_state and usb_state == audit_const.HW_STATE_NOT_DETECTED:
+            # if previous state was NOT_DETECTED and now we can detect the USB
+            # then set state to UNKNOWN for future audit.
+            host_info.set_version_label(audit_const.SERVO_USB_STATE_PREFIX,
+                                        audit_const.HW_STATE_UNKNOWN)
+            host.host_info_store.commit(host_info)
+
+    def _is_applicable(self, host):
+        if host.servo:
+            return True
+        return False
+
+    @property
+    def description(self):
+        return 'Ensure USB drive on Servo is in good state.'
+
+
 class _ResetRepairAction(hosts.RepairAction):
     """Common handling for repair actions that reset a DUT."""
 
@@ -892,30 +941,29 @@ def _cros_verify_base_dag():
     FirmwareStatusVerifier = cros_firmware.FirmwareStatusVerifier
     FirmwareVersionVerifier = cros_firmware.FirmwareVersionVerifier
     verify_dag = (
-        (repair_utils.SshVerifier,        'ssh',        ()),
-        (DevDefaultBootVerifier,          'dev_default_boot', ('ssh',)),
-        (DevModeVerifier,                 'devmode',  ('ssh',)),
-        (EnrollmentStateVerifier,         'enrollment_state', ('ssh',)),
-        (HWIDVerifier,                    'hwid',     ('ssh',)),
-        (ACPowerVerifier,                 'power',    ('ssh',)),
-        (EXT4fsErrorVerifier,             'ext4',     ('ssh',)),
-        (WritableVerifier,                'writable', ('ssh',)),
-        (TPMStatusVerifier,               'tpm',      ('ssh',)),
-        (UpdateSuccessVerifier,           'good_provision',  ('ssh',)),
-        (FirmwareStatusVerifier,          'fwstatus', ('ssh',)),
-        (FirmwareVersionVerifier,         'rwfw',     ('ssh',)),
-        (PythonVerifier,                  'python',   ('ssh',)),
-        (repair_utils.LegacyHostVerifier, 'cros',     ('ssh',)),
-        (CrosVerisionVerifier,            'cros_version_label', ('ssh',)),
+            (repair_utils.SshVerifier, 'ssh', ()),
+            (ServoUSBDriveVerifier, 'usb_drive', ()),
+            (DevDefaultBootVerifier, 'dev_default_boot', ('ssh', )),
+            (DevModeVerifier, 'devmode', ('ssh', )),
+            (EnrollmentStateVerifier, 'enrollment_state', ('ssh', )),
+            (HWIDVerifier, 'hwid', ('ssh', )),
+            (ACPowerVerifier, 'power', ('ssh', )),
+            (EXT4fsErrorVerifier, 'ext4', ('ssh', )),
+            (WritableVerifier, 'writable', ('ssh', )),
+            (TPMStatusVerifier, 'tpm', ('ssh', )),
+            (UpdateSuccessVerifier, 'good_provision', ('ssh', )),
+            (FirmwareStatusVerifier, 'fwstatus', ('ssh', )),
+            (FirmwareVersionVerifier, 'rwfw', ('ssh', )),
+            (PythonVerifier, 'python', ('ssh', )),
+            (repair_utils.LegacyHostVerifier, 'cros', ('ssh', )),
+            (CrosVerisionVerifier, 'cros_version_label', ('ssh', )),
     )
     return verify_dag
 
 
 def _cros_verify_extended_dag():
     """Return the extended verification DAG for a `CrosHost`."""
-    return (
-        (StopStartUIVerifier, 'stop_start_ui', ('ssh',)),
-    )
+    return ((StopStartUIVerifier, 'stop_start_ui', ('ssh', )), )
 
 
 def _cros_basic_repair_actions(
@@ -956,7 +1004,8 @@ def _cros_basic_repair_actions(
 
 def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
                                   powerwash_triggers=_CROS_POWERWASH_TRIGGERS,
-                                  usb_triggers=_CROS_USB_TRIGGERS):
+                                  usb_triggers=_CROS_USB_TRIGGERS,
+                                  usb_dependencies=_CROS_USB_DEPENDENCIES):
     """Return the extended repair actions for a `CrosHost`"""
 
     # The dependencies and triggers for the 'provision', 'powerwash', and 'usb'
@@ -965,12 +1014,12 @@ def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
     # the progression.
 
     repair_actions = (
-        (ProvisionRepair, 'provision',
-                usb_triggers + powerwash_triggers, provision_triggers),
-        (PowerWashRepair, 'powerwash',
-                usb_triggers, powerwash_triggers + provision_triggers),
-        (ServoInstallRepair, 'usb',
-                (), usb_triggers + powerwash_triggers + provision_triggers),
+            (ProvisionRepair, 'provision', usb_triggers + powerwash_triggers,
+             provision_triggers),
+            (PowerWashRepair, 'powerwash', usb_triggers,
+             powerwash_triggers + provision_triggers),
+            (ServoInstallRepair, 'usb', usb_dependencies,
+             usb_triggers + powerwash_triggers + provision_triggers),
     )
     return repair_actions
 

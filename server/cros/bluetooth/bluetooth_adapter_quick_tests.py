@@ -309,6 +309,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                 try:
                     if not _is_enough_peers_present(self):
+                        logging.info('Not enough peer available')
                         raise error.TestNAError('Not enough peer available')
 
                     model = self.get_base_platform_name()

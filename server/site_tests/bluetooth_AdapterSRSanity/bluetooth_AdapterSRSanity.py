@@ -44,10 +44,6 @@ EXPECT_PEER_WAKE_SUSPEND_SEC = 60
 
 STRESS_ITERATIONS = 25
 
-# TODO(b/165410941) - Morphius EVT has a bug that makes all suspend/resume tests
-#                     unreliable. Skip them for now.
-MORPHIUS_EVT = ['morphius']
-
 class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                 BluetoothAdapterTests):
     """Server side bluetooth adapter suspend resume test with peer."""
@@ -124,9 +120,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             for _, device, __ in devtuples:
                 self.test_remove_pairing(device.address)
 
-    @test_wrapper('Reconnect Classic HID',
-                  devices={'MOUSE': 1},
-                  skip_models=MORPHIUS_EVT)
+    @test_wrapper('Reconnect Classic HID', devices={'MOUSE': 1})
     def sr_reconnect_classic_hid(self):
         """ Reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
@@ -134,9 +128,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         self.run_reconnect_device([(device_type, device,
                                     self.test_mouse_left_click)])
 
-    @test_wrapper('Reconnect LE HID',
-                  devices={'BLE_MOUSE': 1},
-                  skip_models=MORPHIUS_EVT)
+    @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
     def sr_reconnect_le_hid(self):
         """ Reconnects a LE HID device after suspend/resume. """
         device_type = 'BLE_MOUSE'
@@ -155,7 +147,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                           'MOUSE': 1,
                           'KEYBOARD': 1
                   },
-                  skip_models=MORPHIUS_EVT + ['hana'])
+                  skip_models=['hana'])
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [
@@ -169,8 +161,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_MOUSE': 1,
                           'BLE_KEYBOARD': 1
-                  },
-                  skip_models=MORPHIUS_EVT)
+                  })
     def sr_reconnect_multiple_le_hid(self):
         """ Reconnects multiple LE HID devices after suspend/resume. """
         devices = [
@@ -185,8 +176,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_MOUSE': 1,
                           'KEYBOARD': 1
-                  },
-                  skip_models=MORPHIUS_EVT)
+                  })
     def sr_reconnect_multiple_classic_le_hid(self):
         """ Reconnects one of each classic and LE HID devices after
             suspend/resume.
@@ -197,9 +187,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
 
-    @test_wrapper('Reconnect Classic HID Stress Test',
-                  devices={'MOUSE': 1},
-                  skip_models=MORPHIUS_EVT)
+    @test_wrapper('Reconnect Classic HID Stress Test', devices={'MOUSE': 1})
     def sr_reconnect_classic_hid_stress(self):
         """ Reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
@@ -208,9 +196,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                 [(device_type, device, self.test_mouse_left_click)],
                 iterations=STRESS_ITERATIONS)
 
-    @test_wrapper('Reconnect LE HID Stress Test',
-                  devices={'BLE_MOUSE': 1},
-                  skip_models=MORPHIUS_EVT)
+    @test_wrapper('Reconnect LE HID Stress Test', devices={'BLE_MOUSE': 1})
     def sr_reconnect_le_hid_stress(self):
         """ Reconnects a LE HID device after suspend/resume. """
         device_type = 'BLE_MOUSE'
@@ -296,7 +282,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + ['bob', 'dru'] + MORPHIUS_EVT,
+                  skip_models=TABLET_MODELS + ['bob', 'dru'],
                   skip_chipsets=['Realtek-RTL8822C-USB'])
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
@@ -306,10 +292,10 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
-    @test_wrapper('Peer wakeup LE HID', devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS +  ['bob', 'dru'] + MORPHIUS_EVT,
-                  skip_chipsets=['Realtek-RTL8822C-USB']
-                  )
+    @test_wrapper('Peer wakeup LE HID',
+                  devices={'BLE_MOUSE': 1},
+                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_chipsets=['Realtek-RTL8822C-USB'])
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]
@@ -326,8 +312,9 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     # ---------------------------------------------------------------
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
-    @test_wrapper('Suspend while discovering', devices={'BLE_MOUSE': 1},
-                  skip_models=['dru'] + MORPHIUS_EVT,
+    @test_wrapper('Suspend while discovering',
+                  devices={'BLE_MOUSE': 1},
+                  skip_models=['dru'],
                   skip_chipsets=['Realtek-RTL8822C-USB'])
     def sr_while_discovering(self):
         """ Suspend while discovering. """
@@ -355,8 +342,9 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         self.test_stop_discovery()
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
-    @test_wrapper('Suspend while advertising', devices={'MOUSE': 1},
-                  skip_models=['dru'] + MORPHIUS_EVT,
+    @test_wrapper('Suspend while advertising',
+                  devices={'MOUSE': 1},
+                  skip_models=['dru'],
                   skip_chipsets=['Realtek-RTL8822C-USB'])
     def sr_while_advertising(self):
         """ Suspend while advertising. """
@@ -385,9 +373,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     # Sanity checks
     # ---------------------------------------------------------------
 
-    @test_wrapper('Suspend while powered off',
-                  devices={'MOUSE': 1},
-                  skip_models=MORPHIUS_EVT)
+    @test_wrapper('Suspend while powered off', devices={'MOUSE': 1})
     def sr_while_powered_off(self):
         """ Suspend while adapter is powered off. """
         device = self.devices['MOUSE'][0]

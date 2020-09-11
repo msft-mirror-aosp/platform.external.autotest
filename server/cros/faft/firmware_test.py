@@ -990,11 +990,11 @@ class FirmwareTest(test.test):
         if enable:
             # Set write protect flag and reboot to take effect.
             self.ec.set_flash_write_protect(enable)
-            self.sync_and_ec_reboot()
+            self.sync_and_ec_reboot(flags='hard')
         else:
             # Reboot after deasserting hardware write protect pin to deactivate
             # write protect. And then remove software write protect flag.
-            self.sync_and_ec_reboot()
+            self.sync_and_ec_reboot(flags='hard')
             self.ec.set_flash_write_protect(enable)
 
     def _setup_ec_write_protect(self, ec_wp):

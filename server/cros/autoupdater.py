@@ -17,7 +17,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server import autotest
-from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
 
@@ -212,29 +211,6 @@ def get_update_failure_reason(exception):
         else:
             return 'Unknown Error: %s' % type(exception).__name__
     return None
-
-
-def _get_metric_fields(update_url):
-    """Return a dict of metric fields.
-
-    This is used for sending autoupdate metrics for the given update URL.
-
-    @param update_url  Metrics fields will be calculated from this URL.
-    """
-    build_name = url_to_image_name(update_url)
-    try:
-        board, build_type, milestone, _ = server_utils.ParseBuildName(
-            build_name)
-    except server_utils.ParseBuildNameException:
-        logging.warning('Unable to parse build name %s for metrics. '
-                        'Continuing anyway.', build_name)
-        board, build_type, milestone = ('', '', '')
-    return {
-        'dev_server': dev_server.get_resolved_hostname(update_url),
-        'board': board,
-        'build_type': build_type,
-        'milestone': milestone,
-    }
 
 
 class ChromiumOSUpdater(object):

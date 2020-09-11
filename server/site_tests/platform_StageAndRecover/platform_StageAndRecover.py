@@ -114,7 +114,7 @@ class platform_StageAndRecover(test.test):
             servo_disk = self.host.servo.system_output('fdisk -l', ignore_status=True)
             logging.info('Servo disk info : %s', servo_disk)
             raise error.TestError('Issue with servo USB mount path %s'
-                                  % (self._USB_PARTITION)
+                                  % (self._USB_PARTITION))
         recovery_info = self.host.servo.system_output('cat %s%s'
                 % (self._MOUNT_PATH, self._RECOVERY_LOG), ignore_status=True)
         if recovery_info:

@@ -4037,10 +4037,14 @@ class BluetoothAdapterTests(test.test):
                         device_address, 'RSSI')
 
                 if not found:
+                    logging.info('Failing with TEST_NA as peer %s was not'
+                                  ' discovered', device_address)
                     raise error.TestNAError(
                             'Peer {} not discovered'.format(device_address))
 
                 if not rssi or rssi < self.MIN_RSSI:
+                    logging.info('Failing with TEST_NA since RSSI (%s) is low ',
+                                  rssi)
                     raise error.TestNAError(
                             'Peer {} RSSI is too low: {}'.format(
                                     device_address, rssi))
@@ -4076,6 +4080,7 @@ class BluetoothAdapterTests(test.test):
                 if test_type == 'AVL':
                     raise error.TestFail(msg)
 
+                logging.info('Failing with TEST_NA due to %s', msg)
                 raise error.TestNAError(msg)
 
 

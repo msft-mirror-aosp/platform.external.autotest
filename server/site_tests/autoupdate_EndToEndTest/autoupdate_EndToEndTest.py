@@ -8,7 +8,7 @@ import os
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server import afe_utils
-from autotest_lib.server.cros import autoupdater
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -107,10 +107,9 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             logging.info('Installing source image with update url: %s',
                          update_url)
 
-            autoupdater.ChromiumOSUpdater(
-                update_url,
-                host=self._host,
-                is_release_bucket=True).run_update()
+            provisioner.ChromiumOSProvisioner(
+                    update_url, host=self._host,
+                    is_release_bucket=True).run_provision()
 
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')

@@ -13,8 +13,8 @@ from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server import hosts
 from autotest_lib.server import site_linux_router
 from autotest_lib.server import test
-from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import dnsname_mangler
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.network import wifi_test_context_manager
 
 
@@ -140,4 +140,5 @@ class network_WiFi_UpdateRouter(test.test):
             raise error.TestFail(str(e))
 
         url = self.get_update_url(ds.url(), desired.builder_version)
-        autoupdater.ChromiumOSUpdater(url, host=device_host).run_update()
+        provisioner.ChromiumOSProvisioner(url,
+                                          host=device_host).run_provision()

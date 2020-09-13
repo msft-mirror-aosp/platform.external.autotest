@@ -9,10 +9,10 @@ import unittest
 
 import common
 from autotest_lib.client.common_lib.cros import kernel_utils
-from autotest_lib.server.cros import autoupdater
+from autotest_lib.server.cros import provisioner
 
 
-class _StubUpdateError(autoupdater._AttributedUpdateError):
+class _StubUpdateError(provisioner._AttributedUpdateError):
     STUB_MESSAGE = 'Stub message'
     STUB_PATTERN = 'Stub pattern matched'
     _SUMMARY = 'Stub summary'
@@ -62,13 +62,13 @@ class TestErrorClassifications(unittest.TestCase):
 
     def test_host_update_error(self):
         """Sanity test the `HostUpdateError` classifier."""
-        exception = autoupdater.HostUpdateError(
+        exception = provisioner.HostUpdateError(
                 'chromeos6-row3-rack3-host19', 'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
     def test_image_install_error(self):
         """Sanity test the `ImageInstallError` classifier."""
-        exception = autoupdater.ImageInstallError(
+        exception = provisioner.ImageInstallError(
                 'chromeos6-row3-rack3-host19',
                 'chromeos4-devserver7.cros',
                 'Fake message')
@@ -76,20 +76,20 @@ class TestErrorClassifications(unittest.TestCase):
 
     def test_new_build_update_error(self):
         """Sanity test the `NewBuildUpdateError` classifier."""
-        exception = autoupdater.NewBuildUpdateError(
+        exception = provisioner.NewBuildUpdateError(
                 'R68-10621.0.0', 'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
 
-class TestAutoUpdater(mox.MoxTestBase):
-    """Test autoupdater module."""
+class TestProvisioner(mox.MoxTestBase):
+    """Test provisioner module."""
 
     def testParseBuildFromUpdateUrlwithUpdate(self):
         """Test that we properly parse the build from an update_url."""
         update_url = ('http://172.22.50.205:8082/update/lumpy-release/'
                       'R27-3837.0.0')
         expected_value = 'lumpy-release/R27-3837.0.0'
-        self.assertEqual(autoupdater.url_to_image_name(update_url),
+        self.assertEqual(provisioner.url_to_image_name(update_url),
                          expected_value)
 
 
@@ -100,12 +100,12 @@ class TestAutoUpdater(mox.MoxTestBase):
         script_name = 'fubar'
         local_script = '/usr/local/bin/%s' % script_name
         host = self.mox.CreateMockAnything()
-        updater = autoupdater.ChromiumOSUpdater(update_url, host=host)
+        cros_provisioner = provisioner.ChromiumOSProvisioner(update_url, host=host)
         host.path_exists(local_script).AndReturn(True)
 
         self.mox.ReplayAll()
         # Simple case:  file exists on DUT
-        self.assertEqual(updater._get_remote_script(script_name),
+        self.assertEqual(cros_provisioner._get_remote_script(script_name),
                          local_script)
         self.mox.VerifyAll()
 
@@ -121,29 +121,29 @@ class TestAutoUpdater(mox.MoxTestBase):
         self.mox.ReplayAll()
         # Complicated case:  script not on DUT, so try to download it.
         self.assertEqual(
-                updater._get_remote_script(script_name),
+                cros_provisioner._get_remote_script(script_name),
                 '%s %s' % (fake_shell, tmp_script))
         self.mox.VerifyAll()
 
 
-class TestAutoUpdater2(unittest.TestCase):
-    """Another test for autoupdater module that using mock."""
+class TestProvisioner2(unittest.TestCase):
+    """Another test for provisioner module that using mock."""
 
     def testAlwaysRunQuickProvision(self):
         """Tests that we call quick provsion for all kinds of builds."""
         image = 'foo-whatever/R65-1234.5.6'
         devserver = 'http://mock_devserver'
-        autoupdater.dev_server = mock.MagicMock()
-        autoupdater.metrics = mock.MagicMock()
+        provisioner.dev_server = mock.MagicMock()
+        provisioner.metrics = mock.MagicMock()
         host = mock.MagicMock()
         update_url = '%s/update/%s' % (devserver, image)
-        updater = autoupdater.ChromiumOSUpdater(update_url, host)
-        updater.check_update_status = mock.MagicMock()
+        cros_provisioner = provisioner.ChromiumOSProvisioner(update_url, host)
+        cros_provisioner.check_update_status = mock.MagicMock()
         kernel_utils.verify_kernel_state_after_update = mock.MagicMock()
         kernel_utils.verify_kernel_state_after_update.return_value = 3
         kernel_utils.verify_boot_expectations = mock.MagicMock()
 
-        updater.run_update()
+        cros_provisioner.run_provision()
         host.run.assert_any_call(
             '/usr/local/bin/quick-provision --noreboot %s '
             '%s/download/chromeos-image-archive' % (image, devserver))

@@ -21,7 +21,7 @@ from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import afe_utils
 from autotest_lib.server import crashcollect
-from autotest_lib.server.cros import autoupdater
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
@@ -284,7 +284,7 @@ class UpdateSuccessVerifier(hosts.Verifier):
     """
     def verify(self, host):
         # pylint: disable=missing-docstring
-        result = host.run('test -f %s' % autoupdater.PROVISION_FAILED,
+        result = host.run('test -f %s' % provisioner.PROVISION_FAILED,
                           ignore_status=True)
         if result.exit_status == 0:
             raise hosts.AutoservVerifyError(
@@ -1071,7 +1071,7 @@ def create_moblab_repair_strategy():
 
     'good_provision':  This verifier can't pass, because the Moblab provision
         procedure doesn't properly delete the PROVISION_FAILED file.
-        TODO(jrbarnette) We should refactor ChromiumOSUpdater so
+        TODO(jrbarnette) We should refactor ChromiumOSProvisioner so
         that it can be different for Moblab.
 
     'firmware':  Moblab DUTs shouldn't be in FAFT pools, so we don't try

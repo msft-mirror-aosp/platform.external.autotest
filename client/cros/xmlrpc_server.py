@@ -46,8 +46,8 @@ def terminate_old(script_name):
                 continue
             exe = proc.exe()
             args = proc.cmdline()
-        except psutil.AccessDenied:
-            logging.debug('AccessDenied: %s', proc)
+        except psutil.Error as e:
+            logging.debug('%s: %s', e, proc)
             continue
         try:
             if '/python' in exe and (script_name in args

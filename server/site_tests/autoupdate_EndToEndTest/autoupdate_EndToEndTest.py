@@ -108,9 +108,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                          update_url)
 
             provisioner.ChromiumOSProvisioner(
-                update_url,
-                host=self._host,
-                is_release_bucket=True).run_provision()
+                    update_url, host=self._host,
+                    is_release_bucket=True).run_provision()
 
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')

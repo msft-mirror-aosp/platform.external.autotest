@@ -34,7 +34,7 @@ _QUICK_PROVISION_SCRIPT = 'quick-provision'
 
 # PROVISION_FAILED - A flag file to indicate provision failures.  The
 # file is created at the start of any AU procedure (see
-# `ChromiumOSUpdater._prepare_host()`).  The file's location in
+# `ChromiumOSProvisioner._prepare_host()`).  The file's location in
 # stateful means that on successul update it will be removed.  Thus, if
 # this file exists, it indicates that we've tried and failed in a
 # previous attempt to update.
@@ -192,7 +192,7 @@ def get_update_failure_reason(exception):
     """Convert an exception into a failure reason for metrics.
 
     The passed in `exception` should be one raised by failure of
-    `ChromiumOSUpdater.run_update`.  The returned string will describe
+    `ChromiumOSProvisioner.run_provision`.  The returned string will describe
     the failure.  If the input exception value is not a truish value
     the return value will be `None`.
 
@@ -213,7 +213,7 @@ def get_update_failure_reason(exception):
     return None
 
 
-class ChromiumOSUpdater(object):
+class ChromiumOSProvisioner(object):
     """Chromium OS specific DUT update functionality."""
 
     def __init__(self, update_url, host=None, interactive=True,
@@ -495,12 +495,12 @@ class ChromiumOSUpdater(object):
             logging.debug('No autotest installed directory found.')
 
 
-    def run_update(self):
-        """Perform a full update of a DUT in the test lab.
+    def run_provision(self):
+        """Perform a full provision of a DUT in the test lab.
 
         This downloads and installs the root FS and stateful partition
         content needed for the update specified in `self.host` and
-        `self.update_url`.  The update is performed according to the
+        `self.update_url`.  The provision is performed according to the
         requirements for provisioning a DUT for testing the requested
         build.
 

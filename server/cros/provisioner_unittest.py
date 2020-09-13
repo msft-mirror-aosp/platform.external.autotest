@@ -17,13 +17,12 @@ class _StubUpdateError(provisioner._AttributedUpdateError):
     STUB_PATTERN = 'Stub pattern matched'
     _SUMMARY = 'Stub summary'
     _CLASSIFIERS = [
-        (STUB_MESSAGE, STUB_MESSAGE),
-        ('Stub .*', STUB_PATTERN),
+            (STUB_MESSAGE, STUB_MESSAGE),
+            ('Stub .*', STUB_PATTERN),
     ]
 
     def __init__(self, info, msg):
-        super(_StubUpdateError, self).__init__(
-            'Stub %s' % info, msg)
+        super(_StubUpdateError, self).__init__('Stub %s' % info, msg)
 
 
 class TestErrorClassifications(unittest.TestCase):
@@ -62,22 +61,21 @@ class TestErrorClassifications(unittest.TestCase):
 
     def test_host_update_error(self):
         """Sanity test the `HostUpdateError` classifier."""
-        exception = provisioner.HostUpdateError(
-                'chromeos6-row3-rack3-host19', 'Fake message')
+        exception = provisioner.HostUpdateError('chromeos6-row3-rack3-host19',
+                                                'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
     def test_image_install_error(self):
         """Sanity test the `ImageInstallError` classifier."""
         exception = provisioner.ImageInstallError(
-                'chromeos6-row3-rack3-host19',
-                'chromeos4-devserver7.cros',
+                'chromeos6-row3-rack3-host19', 'chromeos4-devserver7.cros',
                 'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
     def test_new_build_update_error(self):
         """Sanity test the `NewBuildUpdateError` classifier."""
-        exception = provisioner.NewBuildUpdateError(
-                'R68-10621.0.0', 'Fake message')
+        exception = provisioner.NewBuildUpdateError('R68-10621.0.0',
+                                                    'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
 
@@ -92,7 +90,6 @@ class TestProvisioner(mox.MoxTestBase):
         self.assertEqual(provisioner.url_to_image_name(update_url),
                          expected_value)
 
-
     def testGetRemoteScript(self):
         """Test _get_remote_script() behaviors."""
         update_url = ('http://172.22.50.205:8082/update/lumpy-chrome-perf/'
@@ -100,7 +97,8 @@ class TestProvisioner(mox.MoxTestBase):
         script_name = 'fubar'
         local_script = '/usr/local/bin/%s' % script_name
         host = self.mox.CreateMockAnything()
-        cros_provisioner = provisioner.ChromiumOSProvisioner(update_url, host=host)
+        cros_provisioner = provisioner.ChromiumOSProvisioner(update_url,
+                                                             host=host)
         host.path_exists(local_script).AndReturn(True)
 
         self.mox.ReplayAll()
@@ -120,9 +118,8 @@ class TestProvisioner(mox.MoxTestBase):
 
         self.mox.ReplayAll()
         # Complicated case:  script not on DUT, so try to download it.
-        self.assertEqual(
-                cros_provisioner._get_remote_script(script_name),
-                '%s %s' % (fake_shell, tmp_script))
+        self.assertEqual(cros_provisioner._get_remote_script(script_name),
+                         '%s %s' % (fake_shell, tmp_script))
         self.mox.VerifyAll()
 
 
@@ -145,8 +142,8 @@ class TestProvisioner2(unittest.TestCase):
 
         cros_provisioner.run_provision()
         host.run.assert_any_call(
-            '/usr/local/bin/quick-provision --noreboot %s '
-            '%s/download/chromeos-image-archive' % (image, devserver))
+                '/usr/local/bin/quick-provision --noreboot %s '
+                '%s/download/chromeos-image-archive' % (image, devserver))
 
 
 if __name__ == '__main__':

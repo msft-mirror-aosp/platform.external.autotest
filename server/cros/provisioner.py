@@ -40,13 +40,11 @@ _QUICK_PROVISION_SCRIPT = 'quick-provision'
 # previous attempt to update.
 PROVISION_FAILED = '/var/tmp/provision_failed'
 
-
 # A flag file used to enable special handling in lab DUTs.  Some
 # parts of the system in Chromium OS test images will behave in ways
 # convenient to the test lab when this file is present.  Generally,
 # we create this immediately after any update completes.
 _LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
-
 
 # _TARGET_VERSION - A file containing the new version to which we plan
 # to update.  This file is used by the CrOS shutdown code to detect and
@@ -59,13 +57,11 @@ _LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
 # code on the DUT knows how to prevent the powerwash.
 _TARGET_VERSION = '/run/update_target_version'
 
-
 # _REBOOT_FAILURE_MESSAGE - This is the standard message text returned
 # when the Host.reboot() method fails.  The source of this text comes
 # from `wait_for_restart()` in client/common_lib/hosts/base_classes.py.
 
 _REBOOT_FAILURE_MESSAGE = 'Host did not return from reboot'
-
 
 DEVSERVER_PORT = '8082'
 GS_CACHE_PORT = '8888'
@@ -75,8 +71,8 @@ class _AttributedUpdateError(error.TestFail):
     """Update failure with an attributed cause."""
 
     def __init__(self, attribution, msg):
-        super(_AttributedUpdateError, self).__init__(
-            '%s: %s' % (attribution, msg))
+        super(_AttributedUpdateError,
+              self).__init__('%s: %s' % (attribution, msg))
         self._message = msg
 
     def _classify(self):
@@ -107,13 +103,13 @@ class HostUpdateError(_AttributedUpdateError):
 
     _SUMMARY = 'DUT failed prior to update'
     _CLASSIFIERS = [
-        (DUT_DOWN, DUT_DOWN),
-        (_REBOOT_FAILURE_MESSAGE, 'Reboot failed'),
+            (DUT_DOWN, DUT_DOWN),
+            (_REBOOT_FAILURE_MESSAGE, 'Reboot failed'),
     ]
 
     def __init__(self, hostname, msg):
-        super(HostUpdateError, self).__init__(
-            'Error on %s prior to update' % hostname, msg)
+        super(HostUpdateError,
+              self).__init__('Error on %s prior to update' % hostname, msg)
 
 
 class ImageInstallError(_AttributedUpdateError):
@@ -129,8 +125,8 @@ class ImageInstallError(_AttributedUpdateError):
 
     def __init__(self, hostname, devserver, msg):
         super(ImageInstallError, self).__init__(
-            'Download and install failed from %s onto %s'
-            % (devserver, hostname), msg)
+                'Download and install failed from %s onto %s' %
+                (devserver, hostname), msg)
 
 
 class NewBuildUpdateError(_AttributedUpdateError):
@@ -146,13 +142,13 @@ class NewBuildUpdateError(_AttributedUpdateError):
 
     _SUMMARY = 'New build failed'
     _CLASSIFIERS = [
-        (CHROME_FAILURE, 'Chrome did not start'),
-        (ROLLBACK_FAILURE, ROLLBACK_FAILURE),
+            (CHROME_FAILURE, 'Chrome did not start'),
+            (ROLLBACK_FAILURE, ROLLBACK_FAILURE),
     ]
 
     def __init__(self, update_version, msg):
-        super(NewBuildUpdateError, self).__init__(
-            'Failure in build %s' % update_version, msg)
+        super(NewBuildUpdateError,
+              self).__init__('Failure in build %s' % update_version, msg)
 
     @property
     def failure_summary(self):
@@ -171,7 +167,8 @@ def _url_to_version(update_url):
     # http://.../update/.../0.14.755.0/au/0.14.754.0. In this case we want to
     # strip off the au section of the path before reading the version.
     return re.sub('/au/.*', '',
-                  six.moves.urllib.parse.urlparse(update_url).path).split('/')[-1].strip()
+                  six.moves.urllib.parse.urlparse(update_url).path).split(
+                          '/')[-1].strip()
 
 
 def url_to_image_name(update_url):
@@ -216,8 +213,12 @@ def get_update_failure_reason(exception):
 class ChromiumOSProvisioner(object):
     """Chromium OS specific DUT update functionality."""
 
-    def __init__(self, update_url, host=None, interactive=True,
-                 is_release_bucket=None, is_servohost=False):
+    def __init__(self,
+                 update_url,
+                 host=None,
+                 interactive=True,
+                 is_release_bucket=None,
+                 is_servohost=False):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
@@ -234,11 +235,9 @@ class ChromiumOSProvisioner(object):
         self._is_release_bucket = is_release_bucket
         self._is_servohost = is_servohost
 
-
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
         return self.host.run(cmd, *args, **kwargs)
-
 
     def _rootdev(self, options=''):
         """Returns the stripped output of rootdev <options>.
@@ -248,12 +247,10 @@ class ChromiumOSProvisioner(object):
         """
         return self._run('rootdev %s' % options).stdout.strip()
 
-
     def _reset_update_engine(self):
         """Resets the host to prepare for a clean update regardless of state."""
         self._run('stop ui || true')
         self._run('restart update-engine')
-
 
     def _reset_stateful_partition(self):
         """Clear any pending stateful update request."""
@@ -262,28 +259,26 @@ class ChromiumOSProvisioner(object):
             cmd += [os.path.join('/mnt/stateful_partition', f)]
         # TODO(b/165024723): This is a temporary measure until we figure out the
         # root cause of this bug.
-        cmd += ['/mnt/stateful_partition/dev_image/share/tast/data/chromiumos/'
-                'tast/local/bundles/']
+        cmd += [
+                '/mnt/stateful_partition/dev_image/share/tast/data/chromiumos/'
+                'tast/local/bundles/'
+        ]
         cmd += [_TARGET_VERSION, '2>&1']
         self._run(cmd)
-
 
     def _set_target_version(self):
         """Set the "target version" for the update."""
         # Version strings that come from release buckets do not have RXX- at the
         # beginning. So remove this prefix only if the version has it.
-        version_number = (self.update_version.split('-')[1]
-                          if '-' in self.update_version
-                          else self.update_version)
+        version_number = (self.update_version.split('-')[1] if
+                          '-' in self.update_version else self.update_version)
         self._run('echo %s > %s' % (version_number, _TARGET_VERSION))
-
 
     def _revert_boot_partition(self):
         """Revert the boot partition."""
         part = self._rootdev('-s')
         logging.warning('Reverting update; Boot partition will be %s', part)
         return self._run('/postinst %s 2>&1' % part)
-
 
     def _get_remote_script(self, script_name):
         """Ensure that `script_name` is present on the DUT.
@@ -310,7 +305,7 @@ class ChromiumOSProvisioner(object):
         server_name = six.moves.urllib.parse.urlparse(self.update_url)[1]
         script_url = 'http://%s/static/%s' % (server_name, script_name)
         fetch_script = 'curl -Ss -o %s %s && head -1 %s' % (
-            remote_tmp_script, script_url, remote_tmp_script)
+                remote_tmp_script, script_url, remote_tmp_script)
 
         first_line = self._run(fetch_script).stdout.strip()
 
@@ -338,8 +333,7 @@ class ChromiumOSProvisioner(object):
         #     to start properly, the status of the `update-engine` job
         #     will be uncertain.
         if not self.host.is_up():
-            raise HostUpdateError(self.host.hostname,
-                                  HostUpdateError.DUT_DOWN)
+            raise HostUpdateError(self.host.hostname, HostUpdateError.DUT_DOWN)
         self._reset_stateful_partition()
         # Servohost reboot logic is handled by themselves.
         if not self._is_servohost:
@@ -350,8 +344,7 @@ class ChromiumOSProvisioner(object):
         if not self._is_servohost:
             self._reset_update_engine()
         logging.info('Updating from version %s to %s.',
-                     self.host.get_release_version(),
-                     self.update_version)
+                     self.host.get_release_version(), self.update_version)
 
     def _quick_provision_with_gs_cache(self, provision_command, devserver_name,
                                        image_name):
@@ -365,10 +358,10 @@ class ChromiumOSProvisioner(object):
         # If enabled, GsCache server listion on different port on the
         # devserver.
         gs_cache_server = devserver_name.replace(DEVSERVER_PORT, GS_CACHE_PORT)
-        gs_cache_url = ('http://%s/download/%s'
-                        % (gs_cache_server,
-                           'chromeos-releases' if self._is_release_bucket
-                           else 'chromeos-image-archive'))
+        gs_cache_url = (
+                'http://%s/download/%s' %
+                (gs_cache_server, 'chromeos-releases'
+                 if self._is_release_bucket else 'chromeos-image-archive'))
 
         # Check if GS_Cache server is enabled on the server.
         self._run('curl -s -o /dev/null %s' % gs_cache_url)
@@ -376,9 +369,11 @@ class ChromiumOSProvisioner(object):
         command = '%s --noreboot %s %s' % (provision_command, image_name,
                                            gs_cache_url)
         self._run(command)
-        metrics.Counter(_metric_name('quick_provision')).increment(
-                fields={'devserver': devserver_name, 'gs_cache': True})
-
+        metrics.Counter(
+                _metric_name('quick_provision')).increment(fields={
+                        'devserver': devserver_name,
+                        'gs_cache': True
+                })
 
     def _quick_provision_with_devserver(self, provision_command,
                                         devserver_name, image_name):
@@ -390,12 +385,13 @@ class ChromiumOSProvisioner(object):
         """
         logging.info('Try quick provision with devserver.')
         ds = dev_server.ImageServer('http://%s' % devserver_name)
-        archive_url = ('gs://chromeos-releases/%s' %  image_name
-                       if self._is_release_bucket else None)
+        archive_url = ('gs://chromeos-releases/%s' %
+                       image_name if self._is_release_bucket else None)
         try:
-            ds.stage_artifacts(image_name, ['quick_provision', 'stateful',
-                                            'autotest_packages'],
-                               archive_url=archive_url)
+            ds.stage_artifacts(
+                    image_name,
+                    ['quick_provision', 'stateful', 'autotest_packages'],
+                    archive_url=archive_url)
         except dev_server.DevServerException as e:
             six.reraise(error.TestFail, str(e), sys.exc_info()[2])
 
@@ -403,9 +399,11 @@ class ChromiumOSProvisioner(object):
         command = '%s --noreboot %s %s' % (provision_command, image_name,
                                            static_url)
         self._run(command)
-        metrics.Counter(_metric_name('quick_provision')).increment(
-                fields={'devserver': devserver_name, 'gs_cache': False})
-
+        metrics.Counter(
+                _metric_name('quick_provision')).increment(fields={
+                        'devserver': devserver_name,
+                        'gs_cache': False
+                })
 
     def _install_update(self):
         """Install an updating using the `quick-provision` script.
@@ -415,8 +413,8 @@ class ChromiumOSProvisioner(object):
 
         @return The kernel expected to be booted next.
         """
-        logging.info('Installing image at %s onto %s',
-                     self.update_url, self.host.hostname)
+        logging.info('Installing image at %s onto %s', self.update_url,
+                     self.host.hostname)
         server_name = six.moves.urllib.parse.urlparse(self.update_url)[1]
         image_name = url_to_image_name(self.update_url)
 
@@ -427,8 +425,9 @@ class ChromiumOSProvisioner(object):
                 self._quick_provision_with_gs_cache(provision_command,
                                                     server_name, image_name)
             except Exception as e:
-                logging.error('Failed to quick-provision with gscache with '
-                              'error %s', e)
+                logging.error(
+                        'Failed to quick-provision with gscache with '
+                        'error %s', e)
                 self._quick_provision_with_devserver(provision_command,
                                                      server_name, image_name)
 
@@ -443,7 +442,6 @@ class ChromiumOSProvisioner(object):
             self._reset_stateful_partition()
             self._reset_update_engine()
             return None
-
 
     def _complete_update(self, expected_kernel):
         """Finish the update, and confirm that it succeeded.
@@ -465,8 +463,7 @@ class ChromiumOSProvisioner(object):
         # here is unexpected, and could signal a bug, the point of
         # the exercise is to paper over problems; allowing this to
         # fail would defeat the purpose.
-        self._run('crossystem clear_tpm_owner_request=1',
-                  ignore_status=True)
+        self._run('crossystem clear_tpm_owner_request=1', ignore_status=True)
         self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
 
         # Touch the lab machine file to leave a marker that
@@ -478,8 +475,8 @@ class ChromiumOSProvisioner(object):
         self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
         try:
             kernel_utils.verify_boot_expectations(
-                expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,
-                self.host)
+                    expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,
+                    self.host)
         except Exception:
             # When the system is rolled back, the provision_failed file is
             # removed. So add it back here and re-raise the exception.
@@ -493,7 +490,6 @@ class ChromiumOSProvisioner(object):
             self._run('rm -rf ' + installed_autodir)
         except autotest.AutodirNotFoundError:
             logging.debug('No autotest installed directory found.')
-
 
     def run_provision(self):
         """Perform a full provision of a DUT in the test lab.

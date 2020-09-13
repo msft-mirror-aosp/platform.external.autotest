@@ -140,4 +140,5 @@ class network_WiFi_UpdateRouter(test.test):
             raise error.TestFail(str(e))
 
         url = self.get_update_url(ds.url(), desired.builder_version)
-        provisioner.ChromiumOSProvisioner(url, host=device_host).run_provision()
+        provisioner.ChromiumOSProvisioner(url,
+                                          host=device_host).run_provision()

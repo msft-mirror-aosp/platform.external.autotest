@@ -90,7 +90,7 @@ def clean_provision_labels(host):
     info.clear_version_labels()
     attributes = host.get_attributes_to_clear_before_provision()
     for key in attributes:
-      info.attributes.pop(key, None)
+        info.attributes.pop(key, None)
 
     host.host_info_store.commit(info)
 

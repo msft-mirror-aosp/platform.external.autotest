@@ -304,8 +304,8 @@ class BaseServoHost(ssh_host.SSHHost):
                                             hostname=self.hostname)
         url = ds.get_update_url(target_build)
         cros_provisioner = provisioner.ChromiumOSProvisioner(update_url=url,
-                                                    host=self,
-                                                    is_servohost=True)
+                                                             host=self,
+                                                             is_servohost=True)
         logging.info('Using devserver url: %s to trigger update on '
                      'servo host %s, from %s to %s', url, self.hostname,
                      current_build_number, target_build_number)

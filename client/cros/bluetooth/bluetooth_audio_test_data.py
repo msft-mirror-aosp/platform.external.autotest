@@ -37,7 +37,8 @@ VISQOL_TEST_DIR = os.path.join(VISQOL_FOLDER, 'bt-test-output')
 AUDIO_TARBALL = os.path.join(DIST_FILES, 'chameleon-bundle',
                              'audio-test-data.tar.gz')
 AUDIO_TEST_DIR = '/usr/local/autotest/cros/audio/test_data'
-AUDIO_RECORD_DIR = DATA_DIR
+AUDIO_RECORD_DIR = os.path.join(DATA_DIR, 'audio')
+
 # AUDIO_TARBALL_NAME is the name of the tarball, i.e. audio-test-data.tar.gz
 AUDIO_TARBALL_NAME = os.path.split(AUDIO_TARBALL)[1]
 # AUDIO_TEST_DATA_DIR is the path of the audio-test-data directory,
@@ -48,6 +49,7 @@ AUDIO_DATA_TARBALL_PATH = os.path.join(DATA_DIR, AUDIO_TARBALL_NAME)
 
 
 A2DP = 'a2dp'
+A2DP_LONG = 'a2dp_long'
 AVRCP = 'avrcp'
 HFP_NBS = 'hfp_nbs'
 HFP_WBS = 'hfp_wbs'
@@ -304,15 +306,28 @@ a2dp_test_data = {
     'channels': 2,
     'frequencies': (440, 20000),
     'file': os.path.join(AUDIO_TEST_DIR,
-                         'binaural_sine_440hz_20000hz_rate48000_5secs.raw'),
+                         'binaural_sine_440hz_20000hz_rate48000_%dsecs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
-                                     'a2dp_recorded_by_peer.wav'),
+                                     'a2dp_recorded_by_peer_%d.wav'),
+    'chunk_in_secs': 5,
 }
 a2dp_test_data.update(common_test_data)
 
 
+# Audio test data for a2dp long test. The file and duration attributes
+# are dynamic and will be determined during run time.
+a2dp_long_test_data = a2dp_test_data.copy()
+a2dp_long_test_data.update({
+    'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
+                                     'a2dp_long_recorded_by_peer_%d.wav'),
+    'duration': 0,       # determined at run time
+    'chunk_in_secs': 1,
+})
+
+
 audio_test_data = {
     A2DP: a2dp_test_data,
+    A2DP_LONG: a2dp_long_test_data,
     HFP_WBS: hfp_wbs_test_data,
     HFP_NBS: hfp_nbs_test_data,
 }

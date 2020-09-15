@@ -28,7 +28,12 @@ class power_VideoCall(power_test.power_Test):
         self._username = power_load_util.get_username()
         self._password = power_load_util.get_password()
 
-    def run_once(self, duration=7200, preset=''):
+    def run_once(self,
+                 duration=7200,
+                 preset='',
+                 video_url='',
+                 num_video=5,
+                 multitask=True):
         """run_once method.
 
         @param duration: time in seconds to display url and measure power.
@@ -38,10 +43,19 @@ class power_VideoCall(power_test.power_Test):
                        'medium' : 720p24_vp8,
                        'low' :    360p24_vp8
                        If not supplied, preset will be determined automatically.
+        @param video_url: url of video call simulator.
+        @param num_video: number of video including camera preview.
+        @param multitask: boolean indicate Google Docs multitask enablement.
         """
 
-        if not preset:
+        if not preset and not video_url:
             preset = self._get_camera_preset()
+        if not video_url:
+            video_url = self.video_url
+
+        # Append preset to self.video_url for camera preset.
+        if preset:
+            video_url = '%s?preset=%s' % (video_url, preset)
 
         extra_browser_args = self.get_extra_browser_args_for_camera_test()
         with keyboard.Keyboard() as keys,\
@@ -55,26 +69,30 @@ class power_VideoCall(power_test.power_Test):
             # Move existing window to left half and open video page
             tab_left = cr.browser.tabs[0]
             tab_left.Activate()
-            keys.press_key('alt+[')
+            if multitask:
+                keys.press_key('alt+[')
+            elif not tab_left.EvaluateJavaScript(
+                    'document.webkitIsFullScreen'):
+                # Run in fullscreen when not multitask.
+                keys.press_key('f4')
 
-            # Append preset to self.video_url for camera preset.
-            video_url = '%s?preset=%s' % (self.video_url, preset)
             logging.info('Navigating left window to %s', video_url)
             tab_left.Navigate(video_url)
             tab_left.WaitForDocumentReadyStateToBeComplete()
             video_init_time = power_status.VideoFpsLogger.time_until_ready(
-                              tab_left, num_video=5)
+                    tab_left, num_video=num_video)
             self.keyvals['video_init_time'] = video_init_time
 
-            # Open Google Doc on right half
-            logging.info('Navigating right window to %s', self.doc_url)
-            cmd = 'chrome.windows.create({ url : "%s" });' % self.doc_url
-            cr.autotest_ext.EvaluateJavaScript(cmd)
-            tab_right = cr.browser.tabs[-1]
-            tab_right.Activate()
-            keys.press_key('alt+]')
-            tab_right.WaitForDocumentReadyStateToBeComplete()
-            time.sleep(5)
+            if multitask:
+                # Open Google Doc on right half
+                logging.info('Navigating right window to %s', self.doc_url)
+                cmd = 'chrome.windows.create({ url : "%s" });' % self.doc_url
+                cr.autotest_ext.EvaluateJavaScript(cmd)
+                tab_right = cr.browser.tabs[-1]
+                tab_right.Activate()
+                keys.press_key('alt+]')
+                tab_right.WaitForDocumentReadyStateToBeComplete()
+                time.sleep(5)
 
             self._vlog = power_status.VideoFpsLogger(tab_left,
                 seconds_period=self._seconds_period,
@@ -84,14 +102,19 @@ class power_VideoCall(power_test.power_Test):
             # Start typing number block
             self.start_measurements()
             while time.time() - self._start_time < duration:
-                keys.press_key('number_block')
+                if multitask:
+                    keys.press_key('number_block')
+                else:
+                    time.sleep(60)
                 self.status.refresh()
                 if self.status.is_low_battery():
                     logging.info(
                         'Low battery, stop test early after %.0f minutes',
                         (time.time() - self._start_time) / 60)
                     break
-            self.collect_keypress_latency(cr)
+
+            if multitask:
+                self.collect_keypress_latency(cr)
 
     def _get_camera_preset(self):
         """Return camera preset appropriate to hw spec.

@@ -43,6 +43,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import logging_manager
 from autotest_lib.client.common_lib import packages
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client import seven
 from autotest_lib.server import profilers
 from autotest_lib.server import site_gtest_runner
 from autotest_lib.server import subcommand
@@ -897,7 +898,7 @@ class server_job(base_job.base_job):
         if not self._sync_offload_dir:
             return ''
         if self._client:
-          return os.path.join(DUT_STATEFUL_PATH, self._sync_offload_dir)
+            return os.path.join(DUT_STATEFUL_PATH, self._sync_offload_dir)
         return os.path.join(self.resultdir, self._sync_offload_dir)
 
     def _maybe_retrieve_client_offload_dirs(self):
@@ -952,11 +953,11 @@ class server_job(base_job.base_job):
         """
         # Make the server-side directory regardless
         try:
-          # 2.7 makedirs doesn't have an option for pre-existing directories
-          os.makedirs(self._server_offload_dir_path())
+            # 2.7 makedirs doesn't have an option for pre-existing directories
+            os.makedirs(self._server_offload_dir_path())
         except OSError as e:
-          if e.errno != errno.EEXIST:
-            raise
+            if e.errno != errno.EEXIST:
+                raise
         if not self._client:
             offload_path = self._offload_dir_target_path()
             marker_string = "server %s%s" % (
@@ -1442,7 +1443,7 @@ class server_job(base_job.base_job):
                 existing_machines_text = None
             if machines_text != existing_machines_text:
                 utils.open_write_close(MACHINES_FILENAME, machines_text)
-        exec(compile(open(code_file, "rb").read(), code_file, 'exec'), namespace, namespace)
+        seven.exec_file(code_file, locals_=namespace, globals_=namespace)
 
 
     def preprocess_client_state(self):

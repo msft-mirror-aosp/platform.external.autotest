@@ -145,7 +145,8 @@ class CliqueDUTUpdater(object):
         url = self._get_update_url(ds.url(), image)
         logging.debug('Host: %s. Installing image from %s', dut_host, url)
         try:
-            provisioner.ChromiumOSProvisioner(url, host=dut_host).run_provision()
+            provisioner.ChromiumOSProvisioner(url,
+                                              host=dut_host).run_provision()
         except error.TestFail as e:
             error_str = 'Host: ' + dut_host + '. ' + e
             logging.error(error_str)

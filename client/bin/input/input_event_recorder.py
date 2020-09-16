@@ -90,7 +90,6 @@ class Event(object):
                 ev_value = int(result.group(4))
                 return Event(ev_type, ev_code, ev_value)
             else:
-                logging.warn('not an event: %s', ev_string)
                 return None
 
 

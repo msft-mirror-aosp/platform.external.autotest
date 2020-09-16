@@ -1178,6 +1178,27 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         servo_state_prefix = servo_constants.SERVO_STATE_LABEL_PREFIX
         return host_info.get_label_value(servo_state_prefix)
 
+    def get_servo_usb_state(self):
+        """Get the label value indicating the health of the USB drive.
+
+        @return: The label value if defined, otherwise '' (empty string).
+        @rtype: str
+        """
+        host_info = self.host_info_store.get()
+        servo_usb_state_prefix = audit_const.SERVO_USB_STATE_PREFIX
+        return host_info.get_label_value(servo_usb_state_prefix)
+
+    def is_servo_usb_usable(self):
+        """Check if the servo USB storage device is usable for FAFT.
+
+        @return: False if the label indicates a state that will break FAFT.
+                 True if state is okay, or if state is not defined.
+        @rtype: bool
+        """
+        usb_state = self.get_servo_usb_state()
+        return usb_state in ('', audit_const.HW_STATE_ACCEPTABLE,
+                             audit_const.HW_STATE_NORMAL,
+                             audit_const.HW_STATE_UNKNOWN)
 
     def _set_smart_usbhub_label(self, smart_usbhub_detected):
         if smart_usbhub_detected is None:

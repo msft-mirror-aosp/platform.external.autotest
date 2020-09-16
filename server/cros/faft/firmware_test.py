@@ -49,6 +49,9 @@ class FirmwareTest(test.test):
     """
     version = 1
 
+    # Set this to False in test classes that don't need working servo USB disk
+    needs_servo_usb = True
+
     # Mapping of partition number of kernel and rootfs.
     KERNEL_MAP = {'a':'2', 'b':'4', '2':'2', '4':'4', '3':'2', '5':'4'}
     ROOTFS_MAP = {'a':'3', 'b':'5', '2':'3', '4':'5', '3':'3', '5':'5'}
@@ -128,6 +131,8 @@ class FirmwareTest(test.test):
 
         This method interacts with the Servo, FAFT RPC client, FAFT Config,
         Mode Switcher, EC consoles, write-protection, GBB flags, and a lockfile.
+
+        @type host: autotest_lib.server.hosts.CrosHost
         """
         self.run_id = str(uuid.uuid4())
         self._client = host
@@ -208,6 +213,12 @@ class FirmwareTest(test.test):
                                       % (host.POWER_CONTROL_VALID_ARGS,
                                          self.power_control))
 
+        if self.needs_servo_usb and not host.is_servo_usb_usable():
+            usb_state = host.get_servo_usb_state()
+            raise error.TestWarn(
+                    "Servo USB disk unusable (%s); canceling test." %
+                    usb_state)
+
         if not self.faft_client.system.dev_tpm_present():
             raise error.TestError('/dev/tpm0 does not exist on the client')
 
@@ -237,7 +248,7 @@ class FirmwareTest(test.test):
                         # In this case, try doing a cold_reset instead
                         self.switcher.mode_aware_reboot(reboot_type='cold')
                     else:
-                      raise
+                        raise
 
         # Check flashrom before first use, to avoid xmlrpclib.Fault.
         if not self.faft_client.bios.is_available():

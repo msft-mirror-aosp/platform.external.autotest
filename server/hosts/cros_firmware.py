@@ -50,6 +50,9 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.server import afe_utils
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.server.hosts import cros_constants
+
+from chromite.lib import timeout_util
 import six
 
 
@@ -126,6 +129,7 @@ class FirmwareStatusVerifier(hosts.Verifier):
     appears that firmware should be re-flashed using servo.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if not _is_firmware_testing_device(host):
             return
@@ -314,6 +318,7 @@ class FirmwareVersionVerifier(hosts.Verifier):
             raise hosts.AutoservVerifyError(
                     message % (version_a, version_b))
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # Test 1 - The DUT is not excluded from updates.
         if not _is_firmware_update_supported(host):

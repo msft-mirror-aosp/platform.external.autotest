@@ -17,6 +17,7 @@ from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
+from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
 import six
 
@@ -24,6 +25,11 @@ try:
     from chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
+
+
+# TODO(gregorynisbet): will importing chromite always succeed in all contexts?
+from chromite.lib import timeout_util
+
 
 def ignore_exception_for_non_cros_host(func):
     """
@@ -56,6 +62,7 @@ class _UpdateVerifier(hosts.Verifier):
     up-to-date.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # First, only run this verifier if the host is in the physical lab.
         # Secondly, skip if the test is being run by test_that, because subnet
@@ -157,6 +164,7 @@ class _SerialConfigVerifier(_ConfigVerifier):
 
     ATTR = 'SERIAL'
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         """
         Test whether the `host` has a `SERIAL` setting configured.
@@ -194,6 +202,7 @@ class _BoardConfigVerifier(_ConfigVerifier):
 
     ATTR = 'BOARD'
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         """
         Test whether the `host` has a `BOARD` setting configured.
@@ -226,6 +235,7 @@ class _ServodJobVerifier(hosts.Verifier):
     Verifier to check that the `servod` upstart job is running.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if not host.is_cros_host():
             return
@@ -246,6 +256,7 @@ class _DiskSpaceVerifier(hosts.Verifier):
     Verifier to make sure there is enough disk space left on servohost.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # Check available space of stateful is greater than threshold, in Gib.
         host.check_diskspace('/mnt/stateful_partition', 0.5)
@@ -264,6 +275,7 @@ class _ServodConnectionVerifier(hosts.Verifier):
     CCD or servo_micro.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         host.initilize_servo()
 
@@ -285,6 +297,7 @@ class _ServodControlVerifier(hosts.Verifier):
     values.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         try:
             host.initialize_dut_for_servo()
@@ -307,6 +320,7 @@ class _CCDTestlabVerifier(hosts.Verifier):
     open. (go/ccd-setup)
     """
     @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if not host.get_servo().has_control('cr50_testlab'):
             raise hosts.AutoservVerifyError(
@@ -353,6 +367,7 @@ class _CCDPowerDeliveryVerifier(hosts.Verifier):
     # verifier/repair pair.
     CHANGE_SERVO_ROLE_TIMEOUT = 180
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if host.get_servo().get('servo_v4_role') == 'snk':
             logging.warning('The servo initlized with role snk while'
@@ -414,6 +429,7 @@ class _PowerButtonVerifier(hosts.Verifier):
     _BOARDS_WO_PWR_BUTTON = ['arkham', 'gale', 'mistral', 'storm', 'whirlwind']
 
     @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if host.servo_board in self._BOARDS_WO_PWR_BUTTON:
             return
@@ -439,6 +455,7 @@ class _LidVerifier(hosts.Verifier):
     """
 
     @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         try:
             lid_open = host.get_servo().get('lid_open')
@@ -461,6 +478,7 @@ class _EcBoardVerifier(hosts.Verifier):
     """
 
     @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if host.is_ec_supported():
             ec_board_name = ''
@@ -482,6 +500,7 @@ class _EcBoardVerifier(hosts.Verifier):
 class _RestartServod(hosts.RepairAction):
     """Restart `servod` with the proper BOARD setting."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         if not host.is_cros_host():
             raise hosts.AutoservRepairError(
@@ -505,6 +524,7 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
     labstation host multiple servos and need do an synchronized reboot.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         super(_ServoRebootRepair, self).repair(host)
         # restart servod for v3 after reboot.
@@ -536,6 +556,7 @@ class _ECRebootRepair(hosts.RepairAction):
     def _is_applicable(self, host):
         return (not host.is_localhost()) and host.is_ec_supported()
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         host.get_servo().ec_reboot()
 
@@ -553,6 +574,7 @@ class _DutRebootRepair(hosts.RepairAction):
     rebooting the DUT.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         host.get_servo().get_power_state_controller().reset()
         # Get the lid_open value which requires EC console.
@@ -575,6 +597,7 @@ class _DiskCleanupRepair(hosts.RepairAction):
     FILE_TO_REMOVE = ['/var/lib/metrics/uma-events',
                       '/var/spool/crash/*']
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         if host.is_localhost():
             # we don't want to remove anything from local testing.

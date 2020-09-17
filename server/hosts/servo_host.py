@@ -630,6 +630,10 @@ class ServoHost(base_servohost.BaseServoHost):
             if is_dual_setup:
                 cmd += ' DUAL_V4=1'
 
+            # Start servod with CONFIG=cr50.xml which required for some pools.
+            if self._require_cr50_servod_config():
+                cmd += ' CONFIG=cr50.xml'
+
         # Remove the symbolic links from the logs. This helps ensure that
         # a failed servod instantiation does not cause us to grab old logs
         # by mistake.
@@ -1361,6 +1365,16 @@ class ServoHost(base_servohost.BaseServoHost):
                         'issue on the DUT side.')
             return True
         logging.debug('The main device is detected')
+        return False
+
+    def _require_cr50_servod_config(self):
+        """Check whether we need start servod with CONFIG=cr50.xml"""
+        dut_host_info = self.get_dut_host_info()
+        if not dut_host_info:
+            return False
+        for pool in dut_host_info.pools:
+            if pool.startswith(servo_constants.CR50_CONFIG_POOL_PREFIX):
+                return True
         return False
 
     def get_verify_state(self, tag):

@@ -31,6 +31,9 @@ POOLS_SUPPORT_DUAL_V4 = {'faft_cr50_debug'
                          'faft-pd-debug',
                          'faft_pd_debug'}
 
+# Prefix of pools that require servod cr50 config.
+CR50_CONFIG_POOL_PREFIX = 'faft-cr50'
+
 ENABLE_SSH_TUNNEL_FOR_SERVO = _CONFIG.get_config_value(
         'CROS', 'enable_ssh_tunnel_for_servo', type=bool, default=False)
 

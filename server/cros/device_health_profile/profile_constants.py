@@ -26,6 +26,9 @@ FAFT_STABLE_VERSION_KEY = 'last_used_faft_stable_version'
 DEFAULT_STRING_VALUE = ''
 DEFAULT_TIMESTAMP = '1970-01-01 00:00:00'
 TIME_PATTERN = '%Y-%m-%d %H:%M:%S'
+DUT_STATE_READY = 'ready'
+DUT_STATE_REPAIR_FAILED = 'repair_failed'
+STATES_NEED_RESET_COUNTER = (DUT_STATE_READY, DUT_STATE_REPAIR_FAILED)
 
 # Please update profile version when you update any key name or template.
 PROFILE_VERSION = '0.0.1'

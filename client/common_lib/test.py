@@ -66,6 +66,9 @@ class base_test(object):
         self.srcdir = os.path.join(self.bindir, 'src')
         self.tmpdir = tempfile.mkdtemp("_" + self.tagged_testname,
                                        dir=job.tmpdir)
+        # The crash_reporter uses this file to determine which test is in
+        # progress.
+        self.test_in_prog_file = '/run/crash_reporter/test-in-prog'
         self._keyvals = []
         self._new_keyval = False
         self.failed_constraints = []
@@ -169,7 +172,7 @@ class base_test(object):
             with open(output_file, 'r') as fp:
                 contents = fp.read()
                 if contents:
-                     charts = json.loads(contents)
+                    charts = json.loads(contents)
 
         if graph:
             first_level = graph
@@ -184,9 +187,9 @@ class base_test(object):
         # representing numbers logged, attempt to convert them to numbers.
         # If a non number string is logged an exception will be thrown.
         if isinstance(value, list):
-          value = map(float, value)
+            value = map(float, value)
         else:
-          value = float(value)
+            value = float(value)
 
         result_type = 'scalar'
         value_key = 'value'
@@ -361,6 +364,15 @@ class base_test(object):
             logging.debug('before_iteration_hooks completed')
 
         finished = False
+
+        # Mark the current test in progress so that crash_reporter can report
+        # it in uploaded crashes.
+        # if the file already exists, truncate and overwrite.
+        crash_run_dir = os.path.dirname(self.test_in_prog_file)
+        if not os.path.exists(crash_run_dir):
+            os.mkdir(crash_run_dir, 0755)
+        with open(self.test_in_prog_file, 'w') as f:
+            f.write(self.tagged_testname)
         try:
             if profile_only:
                 if not self.job.profilers.present():
@@ -387,6 +399,14 @@ class base_test(object):
                           'after_iteration_hooks.', str(e))
             raise
         finally:
+            try:
+                # Unmark the test as running.
+                os.remove(self.test_in_prog_file)
+            except OSError:
+                # If something removed it, do nothing--we're in the desired
+                # state (the file is gone)
+                pass
+
             if not finished or not self.job.fast:
                 logging.debug('Starting after_iteration_hooks for %s',
                               self.tagged_testname)
@@ -757,10 +777,18 @@ def _call_test_function(func, *args, **dargs):
         raise error.UnhandledTestFail(e)
 
 
-def runtest(job, url, tag, args, dargs,
-            local_namespace={}, global_namespace={},
-            before_test_hook=None, after_test_hook=None,
-            before_iteration_hook=None, after_iteration_hook=None):
+def runtest(job,
+            url,
+            tag,
+            args,
+            dargs,
+            local_namespace={},
+            global_namespace={},
+            before_test_hook=None,
+            after_test_hook=None,
+            before_iteration_hook=None,
+            after_iteration_hook=None,
+            override_test_in_prog_file=None):
     local_namespace = local_namespace.copy()
     global_namespace = global_namespace.copy()
     # if this is not a plain test name then download and install the
@@ -822,6 +850,8 @@ def runtest(job, url, tag, args, dargs,
 
     try:
         mytest = global_namespace['mytest']
+        if override_test_in_prog_file:
+            mytest.test_in_prog_file = override_test_in_prog_file
         mytest.success = False
         if not job.fast and before_test_hook:
             logging.info('Starting before_hook for %s', mytest.tagged_testname)

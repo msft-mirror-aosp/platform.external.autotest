@@ -1382,6 +1382,7 @@ class ServoHost(base_servohost.BaseServoHost):
         start_servod = self.get_verify_state('servod_job')
         create_servo = self.get_verify_state('servod_connection')
         init_servo = self.get_verify_state('servod_control')
+        dut_connected = self.get_verify_state('dut_connected')
         pwr_button = self.get_verify_state('pwr_button')
         lid_open = self.get_verify_state('lid_open')
         ec_board = self.get_verify_state('ec_board')
@@ -1402,6 +1403,14 @@ class ServoHost(base_servohost.BaseServoHost):
                     return servo_constants.SERVO_STATE_NOT_CONNECTED
             elif self._is_servo_board_present_on_servo_v3() == False:
                 return servo_constants.SERVO_STATE_NOT_CONNECTED
+
+        if dut_connected == self.VERIFY_FAILED:
+            if pwr_button == self.VERIFY_SUCCESS:
+                # unexpected case
+                metrics.Counter(
+                        'chromeos/autotest/repair/servo_unexpected/pwr_button'
+                ).increment(fields=self._get_host_metrics_data())
+            return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
 
         if start_servod == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE

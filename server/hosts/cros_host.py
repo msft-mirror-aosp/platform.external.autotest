@@ -32,6 +32,7 @@ from autotest_lib.server.cros import provision
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools, frontend_wrappers
 from autotest_lib.server.cros.device_health_profile import device_health_profile
+from autotest_lib.server.cros.device_health_profile import profile_constants
 from autotest_lib.server.cros.servo import pdtester
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
@@ -1095,7 +1096,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                             'failed_to_boot_post_install')
 
 
-    def set_servo_host(self, host, servo_state = None):
+    def set_servo_host(self, host, servo_state=None):
         """Set our servo host member, and associated servo.
 
         @param host  Our new `ServoHost`.
@@ -1235,14 +1236,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         info = self.host_info_store.get()
         message %= (self.hostname, info.board, info.model)
         self.record('INFO', None, None, message)
+        profile_state = profile_constants.DUT_STATE_READY
         try:
             self._repair_strategy.repair(self)
         except hosts.AutoservVerifyDependencyError as e:
             # We don't want flag a DUT as failed if only non-critical
             # verifier(s) failed during the repair.
             if e.is_critical():
+                profile_state = profile_constants.DUT_STATE_REPAIR_FAILED
                 self.try_set_device_needs_manual_repair()
                 raise
+        finally:
+            self.set_health_profile_dut_state(profile_state)
 
 
     def close(self):
@@ -1854,7 +1859,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return self._ping_wait_for_status(self._PING_STATUS_DOWN, timeout)
 
     def _is_host_port_forwarded(self):
-      """Checks if the dut is connected over port forwarding.
+        """Checks if the dut is connected over port forwarding.
 
       N.B. This method does not detect all situations where port forwarding is
       occurring. Namely, running autotest on the dut may result in a
@@ -1864,11 +1869,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
       @return True if the dut is connected over port forwarding
               False otherwise
       """
-      is_localhost = self.hostname in ['localhost', '127.0.0.1']
-      is_forwarded = is_localhost and not self.is_default_port
-      if is_forwarded:
-          logging.info('Detected DUT connected by port forwarding')
-      return is_forwarded
+        is_localhost = self.hostname in ['localhost', '127.0.0.1']
+        is_forwarded = is_localhost and not self.is_default_port
+        if is_forwarded:
+            logging.info('Detected DUT connected by port forwarding')
+        return is_forwarded
 
     def test_wait_for_sleep(self, sleep_timeout=None):
         """Wait for the client to enter low-power sleep mode.
@@ -1901,9 +1906,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # for detecting the dut is down since a ping to localhost will always
         # succeed. In this case, fall back to wait_down() which uses SSH.
         if self._is_host_port_forwarded():
-          success = self.wait_down(timeout=sleep_timeout)
+            success = self.wait_down(timeout=sleep_timeout)
         else:
-          success = self.ping_wait_down(timeout=sleep_timeout)
+            success = self.ping_wait_down(timeout=sleep_timeout)
 
         if not success:
             raise error.TestFail(
@@ -1972,9 +1977,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             shutdown_timeout = self.SHUTDOWN_TIMEOUT
 
         if self._is_host_port_forwarded():
-          success = self.wait_down(timeout=shutdown_timeout)
+            success = self.wait_down(timeout=shutdown_timeout)
         else:
-          success = self.ping_wait_down(timeout=shutdown_timeout)
+            success = self.ping_wait_down(timeout=shutdown_timeout)
 
         if not success:
             raise error.TestFail(
@@ -2779,6 +2784,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def setup_device_health_profile(self):
         """Setup device health profile for repair/provision task to consume.
         """
+        if self.health_profile:
+            logging.info('Device health profile has already been initialized.')
         if not self._servo_host:
             logging.info('Servohost is not instantiated, skip device'
                          ' health profile setup...')
@@ -2793,3 +2800,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 self, self._servo_host)
         except Exception as e:
             logging.warning('Failed to setup device health profile; %s', e)
+
+    def set_health_profile_dut_state(self, state):
+        if not self.health_profile:
+            logging.debug('Device health profile is not initialized, skip'
+                          ' set dut state.')
+            return
+        reset_counters = state in profile_constants.STATES_NEED_RESET_COUNTER
+        self.health_profile.update_dut_state(state, reset_counters)

@@ -29,7 +29,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import host_queue_entry_states
 from autotest_lib.client.common_lib import host_states
-from autotest_lib.client import seven
+from autotest_lib.client.common_lib import seven
 from autotest_lib.server.cros.dynamic_suite import suite
 
 try:

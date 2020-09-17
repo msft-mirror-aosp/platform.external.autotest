@@ -171,7 +171,7 @@ class DeviceSkuLabelTests(unittest.TestCase):
 
     def test_update_for_task(self):
         self.assertTrue(DeviceSkuLabel().update_for_task(''))
-        self.assertFalse(DeviceSkuLabel().update_for_task('repair'))
+        self.assertTrue(DeviceSkuLabel().update_for_task('repair'))
         self.assertTrue(DeviceSkuLabel().update_for_task('deploy'))
 
 

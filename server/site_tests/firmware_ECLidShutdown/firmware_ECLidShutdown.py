@@ -74,6 +74,7 @@ class firmware_ECLidShutdown(FirmwareTest):
         self.switcher.simple_reboot(sync_before_boot=False)
         # Some boards may reset the lid_open state when AP reboot,
         # check b/137612865
+        time.sleep(self.faft_config.ec_boot_to_console)
         if self.servo.get('lid_open') != 'no':
             self.servo.set('lid_open', 'no')
             time.sleep(self.LID_POWER_STATE_DELAY)
@@ -111,6 +112,7 @@ class firmware_ECLidShutdown(FirmwareTest):
                     'with powerd ignoring lid state.  Maybe userspace power '
                     'management behaviors have changed.')
         self.switcher.simple_reboot(sync_before_boot=False)
+        time.sleep(self.faft_config.ec_boot_to_console)
         if self.servo.get('lid_open') != 'no':
             self.servo.set('lid_open', 'no')
             time.sleep(self.LID_POWER_STATE_DELAY)

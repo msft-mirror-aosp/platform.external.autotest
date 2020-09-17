@@ -18,8 +18,8 @@ import logging
 import traceback
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server import site_utils as server_utils
 
 
@@ -90,7 +90,7 @@ def clean_provision_labels(host):
     info.clear_version_labels()
     attributes = host.get_attributes_to_clear_before_provision()
     for key in attributes:
-      info.attributes.pop(key, None)
+        info.attributes.pop(key, None)
 
     host.host_info_store.commit(info)
 
@@ -124,9 +124,9 @@ def machine_install_and_update_labels(host, update_url, with_cheets=False,
     """
     clean_provision_labels(host)
 
-    logging.debug('Attempting to provision with autoupdater quick-provision.')
-    updater = autoupdater.ChromiumOSUpdater(update_url, host=host)
-    image_name, host_attributes = updater.run_update()
+    logging.debug('Attempting to provision with quick-provision.')
+    cros_provisioner = provisioner.ChromiumOSProvisioner(update_url, host=host)
+    image_name, host_attributes = cros_provisioner.run_provision()
 
     if with_cheets:
         image_name += provision.CHEETS_SUFFIX

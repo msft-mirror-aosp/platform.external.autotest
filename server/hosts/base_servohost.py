@@ -25,7 +25,7 @@ from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.server import autotest
 from autotest_lib.server import site_utils as server_utils
-from autotest_lib.server.cros import autoupdater
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.hosts import ssh_host
 from autotest_lib.site_utils.rpm_control_system import rpm_client
 
@@ -303,12 +303,13 @@ class BaseServoHost(ssh_host.SSHHost):
         ds = dev_server.ImageServer.resolve(self.hostname,
                                             hostname=self.hostname)
         url = ds.get_update_url(target_build)
-        updater = autoupdater.ChromiumOSUpdater(update_url=url, host=self,
-                                                is_servohost=True)
+        cros_provisioner = provisioner.ChromiumOSProvisioner(update_url=url,
+                                                             host=self,
+                                                             is_servohost=True)
         logging.info('Using devserver url: %s to trigger update on '
                      'servo host %s, from %s to %s', url, self.hostname,
                      current_build_number, target_build_number)
-        updater.run_update()
+        cros_provisioner.run_provision()
 
 
     def has_power(self):

@@ -647,17 +647,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
 
     def _restore_stateful(self):
-        """
-        Restore the stateful partition after a destructive test.
+        """Restore the stateful partition after a destructive test."""
+        # Stage stateful payload.
+        ds_url, build = tools.get_devserver_build_from_package_url(
+                self._job_repo_url)
+        self._autotest_devserver = dev_server.ImageServer(ds_url)
+        self._autotest_devserver.stage_artifacts(build, ['stateful'])
 
-        The stateful payload needs to already have been staged (e.g as part of
-        get_update_url_for_test()).
-
-        """
         logging.info('Restoring stateful partition...')
-        _, build = tools.get_devserver_build_from_package_url(
-            self._job_repo_url)
-
         # Setup local dir.
         self._run(['mkdir', '-p', '-m', '1777', '/usr/local/tmp'])
 
@@ -678,6 +675,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         update_file = '/mnt/stateful_partition/.update_available'
         self._run(['echo', '-n', 'clobber', '>', update_file])
         self._host.reboot()
+
+        # Make sure python is available again.
+        try:
+            self._run(['python', '--version'])
+        except error.AutoservRunError as e:
+            err_str = 'Python not available after restoring stateful.'
+            raise error.TestFail(err_str)
+
         logging.info('Stateful restored successfully.')
 
 

@@ -15,7 +15,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, HFP_NBS, HFP_WBS, AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH,
         DATA_DIR, VISQOL_PATH, VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR,
-        audio_test_data, get_audio_test_data, get_visqol_binary)
+        AUDIO_RECORD_DIR, audio_test_data, get_audio_test_data,
+        get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
     BluetoothAdapterTests, test_retry_and_log)
 
@@ -26,9 +27,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     DEVICE_TYPE = 'BLUETOOTH_AUDIO'
     FREQUENCY_TOLERANCE_RATIO = 0.01
     WAIT_DAEMONS_READY_SECS = 1
+    DEFAULT_CHUNK_IN_SECS = 1
+    IGNORE_LAST_FEW_CHUNKS = 2
 
     # Useful constant for upsampling NBS files for compatibility with ViSQOL
     MIN_VISQOL_SAMPLE_RATE = 16000
+
+    # The node types of the bluetooth output nodes in cras are the same for both
+    # A2DP and HFP.
+    CRAS_BLUETOOTH_OUTPUT_NODE_TYPE = 'BLUETOOTH'
+    # The node types of the bluetooth input nodes in cras are different for WBS
+    # and NBS.
+    CRAS_HFP_BLUETOOTH_INPUT_NODE_TYPE = {HFP_WBS: 'BLUETOOTH',
+                                          HFP_NBS: 'BLUETOOTH_NB_MIC'}
 
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
                                      test_profile):
@@ -107,7 +118,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 device.GetBluezSinkHFPDevice, device, test_profile)
 
 
-    def _check_audio_frames_legitimacy(self, audio_test_data, recording_device):
+    def _check_audio_frames_legitimacy(self, audio_test_data, recording_device,
+                                       recorded_file=None):
         """Check if audio frames in the recorded file are legitimate.
 
         For a wav file, a simple check is to make sure the recorded audio file
@@ -120,11 +132,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 defined in client/cros/bluetooth/bluetooth_audio_test_data.py
         @param recording_device: which device recorded the audio,
                 possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
 
         @returns: True if audio frames are legitimate.
         """
         result = self.bluetooth_facade.check_audio_frames_legitimacy(
-                audio_test_data, recording_device)
+                audio_test_data, recording_device, recorded_file)
         if not result:
             self.results = {'audio_frames_legitimacy': 'empty or all zeros'}
             logging.error('The recorded audio file is empty or all zeros.')
@@ -146,7 +159,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     def _check_primary_frequencies(self, test_profile, audio_test_data,
-                                   recording_device):
+                                   recording_device, recorded_file=None):
         """Check if the recorded frequencies meet expectation.
 
         @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
@@ -154,12 +167,13 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 defined in client/cros/bluetooth/bluetooth_audio_test_data.py
         @param recording_device: which device recorded the audio,
                 possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
 
         @returns: True if the recorded frequencies of all channels fall within
                 the tolerance of expected frequencies
         """
         recorded_frequencies = self.bluetooth_facade.get_primary_frequencies(
-                audio_test_data, recording_device)
+                audio_test_data, recording_device, recorded_file)
         expected_frequencies = audio_test_data['frequencies']
         final_result = True
         self.results = dict()
@@ -196,7 +210,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                      sleep_interval=sleep_interval,
                                      desc=desc)
         except Exception as e:
-            raise error.TestError('Exception occurred when %s' % desc)
+            raise error.TestError('Exception occurred when %s (%s)' % (desc, e))
 
 
     def initialize_bluetooth_audio(self, device, test_profile):
@@ -208,6 +222,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         """
+        if not self.bluetooth_facade.create_audio_record_directory(
+                AUDIO_RECORD_DIR):
+            raise error.TestError('Failed to create %s on the DUT' %
+                                  AUDIO_RECORD_DIR)
+
         if not device.StartPulseaudio(test_profile):
             raise error.TestError('Failed to start pulseaudio.')
         logging.debug('pulseaudio is started.')
@@ -269,6 +288,28 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.UnexportMediaPlayer()
 
 
+    def select_audio_output_node(self):
+        """Select the audio output node through cras.
+
+        @raises: error.TestError if failed.
+        """
+        def bluetooth_type_selected(node_type):
+            """Check if the bluetooth node type is selected."""
+            selected = self.bluetooth_facade.get_selected_output_device_type()
+            logging.debug('active output node type: %s, expected %s',
+                          selected, node_type)
+            return selected == node_type
+
+        node_type = self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE
+        if not self.bluetooth_facade.select_output_node(node_type):
+            raise error.TestError('select_output_node failed')
+
+        desc='waiting for %s as active cras audio output node type' % node_type
+        logging.debug(desc)
+        self._poll_for_condition(lambda: bluetooth_type_selected(node_type),
+                                 desc=desc)
+
+
     def initialize_hfp(self, device, test_profile, test_data,
                        recording_device, bluez_function):
         """Initial set up for hfp tests.
@@ -296,6 +337,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self._poll_for_condition(
                 lambda: self.bluetooth_facade.select_input_device(device.name),
                 desc=desc)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.select_audio_output_node()
 
         # Enable HFP profile.
         logging.debug('Start recording audio on {}'.format(device_type))
@@ -565,6 +609,59 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return self.get_ref_and_deg_files(trimmed_file, test_profile, test_data)
 
 
+    def handle_chunks(self, device, test_profile, test_data, duration):
+        """Handle chunks of recorded streams and verify the primary frequencies.
+
+        @param device: the bluetooth peer device
+        @param test_profile: the a2dp test profile;
+                             choices are A2DP and A2DP_LONG
+        @param test_data: the test data of the test profile
+        @param duration: the duration of the audio file to test
+
+        @returns: True if all chunks pass the frequencies check.
+        """
+        chunk_in_secs = test_data['chunk_in_secs']
+        if not bool(chunk_in_secs):
+            chunk_in_secs = self.DEFAULT_CHUNK_IN_SECS
+        nchunks = duration / chunk_in_secs
+        logging.info('Number of chunks: %d', nchunks)
+
+        all_chunks_test_result = True
+        for i in range(nchunks):
+            logging.info('Handle chunk %d', i)
+            if not device.HandleOneChunk(chunk_in_secs, i, test_profile):
+                raise error.TestError('Failed to handle chunk %d' % i)
+
+            # Copy the recorded audio file to the DUT for spectrum analysis.
+            logging.debug('Scp recorded file of chunk %d', i)
+            recorded_file = test_data['recorded_by_peer'] % i
+            device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+
+            # Check if the audio frames in the recorded file are legitimate.
+            if not self._check_audio_frames_legitimacy(
+                    test_data, 'recorded_by_peer', recorded_file=recorded_file):
+                if i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS:
+                    logging.info('empty chunk %d ignored for last %d chunks',
+                                 i, self.IGNORE_LAST_FEW_CHUNKS)
+                else:
+                    all_chunks_test_result = False
+                break
+
+            # Check if the primary frequencies of the recorded file
+            # meet expectation.
+            if not self._check_primary_frequencies(A2DP, test_data,
+                                                   'recorded_by_peer',
+                                                   recorded_file=recorded_file):
+                if i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS:
+                    msg = 'partially filled chunk %d ignored for last %d chunks'
+                    logging.info(msg, i, self.IGNORE_LAST_FEW_CHUNKS)
+                else:
+                    all_chunks_test_result = False
+                break
+
+        return all_chunks_test_result
+
+
     # ---------------------------------------------------------------
     # Definitions of all bluetooth audio test cases
     # ---------------------------------------------------------------
@@ -651,6 +748,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         get_visqol_binary()
         get_audio_test_data()
+        self.host.send_file(AUDIO_DATA_TARBALL_PATH, AUDIO_DATA_TARBALL_PATH)
+        if not self.bluetooth_facade.unzip_audio_test_data(
+                AUDIO_DATA_TARBALL_PATH, DATA_DIR):
+            logging.error('Audio data directory not found in DUT')
+            raise error.TestError('Failed to unzip audio test data to DUT')
 
         # Result of visqol test on all files
         visqol_results = dict()
@@ -693,34 +795,55 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     @test_retry_and_log(False)
-    def test_a2dp_sinewaves(self, device):
+    def test_a2dp_sinewaves(self, device, test_profile, duration):
         """Test Case: a2dp sinewaves
 
         @param device: the bluetooth peer device
+        @param test_profile: the a2dp test profile;
+                             choices are A2DP and A2DP_LONG
+        @param duration: the duration of the audio file to test
+                         0 means to use the default value in the test profile
 
         @returns: True if the recorded primary frequency is within the
                   tolerance of the playback sine wave frequency.
 
         """
-        a2dp_test_data = audio_test_data[A2DP]
+        test_data = audio_test_data[test_profile]
+        if bool(duration):
+            test_data['duration'] = duration
+        else:
+            duration = test_data['duration']
+
+        test_data['file'] %= duration
+        logging.info('%s test for %d seconds.', test_profile, duration)
 
         # Wait for pulseaudio a2dp bluez source
         desc = 'waiting for pulseaudio a2dp bluez source'
         logging.debug(desc)
         self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_a2dp(device, A2DP),
+                lambda: self._get_pulseaudio_bluez_source_a2dp(device,
+                                                               test_profile),
                 desc=desc)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.select_audio_output_node()
 
         # Start recording audio on the peer Bluetooth audio device.
         logging.debug('Start recording a2dp')
-        if not device.StartRecordingAudioSubprocess(A2DP, a2dp_test_data):
+        if not device.StartRecordingAudioSubprocess(test_profile, test_data):
             raise error.TestError(
                     'Failed to record on the peer Bluetooth audio device.')
 
-        # Play stereo audio on the DUT.
-        logging.debug('Play audio')
-        if not self.bluetooth_facade.play_audio(a2dp_test_data):
+        # Play audio on the DUT in a non-blocked way and check the recorded
+        # audio stream in a real-time manner.
+        logging.debug('Start playing audio')
+        if not self.bluetooth_facade.start_playing_audio_subprocess(test_data):
             raise error.TestError('DUT failed to play audio.')
+
+        # Handle chunks of recorded streams and verify the primary frequencies.
+        # This is a blocking call until all chunks are completed.
+        all_chunks_test_result = self.handle_chunks(device, test_profile,
+                                                    test_data, duration)
 
         # Stop recording audio on the peer Bluetooth audio device.
         logging.debug('Stop recording a2dp')
@@ -728,21 +851,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             msg = 'Failed to stop recording on the peer Bluetooth audio device'
             logging.error(msg)
 
-        # Copy the recorded audio file to the DUT for spectrum analysis.
-        logging.debug('Scp recorded file')
-        recorded_file = a2dp_test_data['recorded_by_peer']
-        device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+        # Stop playing audio on DUT.
+        logging.debug('Stop playing audio on DUT')
+        if not self.bluetooth_facade.stop_playing_audio_subprocess():
+            raise error.TestError('DUT failed to stop playing audio.')
 
-        # Check if the audio frames in the recorded file are legitimate.
-        if not self._check_audio_frames_legitimacy(a2dp_test_data,
-                                                   'recorded_by_peer'):
-            return False
-
-        # Check if the primary frequencies of recorded file meet expectation.
-        check_freq_result = self._check_primary_frequencies(
-                A2DP, a2dp_test_data, 'recorded_by_peer')
-        return check_freq_result
-
+        return all_chunks_test_result
 
     @test_retry_and_log(False)
     def test_hfp_dut_as_source(self, device, test_profile):

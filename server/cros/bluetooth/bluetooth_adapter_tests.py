@@ -509,6 +509,8 @@ def test_retry_and_log(test_method_or_retry_flag):
             test_result = False
             should_raise = hasattr(instance, 'fail_fast') and instance.fail_fast
 
+            instance.last_test_method = test_method.__name__
+
             try:
                 if callable(test_method_or_retry_flag
                             ) or test_method_or_retry_flag:
@@ -652,6 +654,29 @@ class BluetoothAdapterTests(test.test):
     AGENT_CAPABILITY = {
             'BLUETOOTH_AUDIO': 'NoInputNoOutput',
     }
+
+    def assert_on_fail(self, result, raiseNA=False):
+        """ If the called function returns a false-like value, raise an error.
+
+        Call test methods (i.e. with @test_retry_and_log) wrapped with this
+        function and failures will raise instead of continuing the test.
+
+        For example:
+            self.assert_on_fail(self.test_pairing(...))
+
+        @param result: Result of test method called.
+        @param raiseNA: Whether to raise TestNAError instead of TestFail
+
+        @raises error.TestNAError
+        @raises error.TestFail
+        """
+        if not result:
+            failure_msg = 'Assert on fail: {}'.format(self.last_test_method)
+            logging.error(failure_msg)
+            if raiseNA:
+                raise error.TestNAError(failure_msg)
+            else:
+                raise error.TestFail(failure_msg)
 
 
     # TODO(b/131170539) remove when sarien/arcada no longer have _signed
@@ -960,6 +985,9 @@ class BluetoothAdapterTests(test.test):
         # Re-disable cellular
         self.enable_disable_cellular(enable=False)
 
+        # Re-disable ui
+        self.enable_disable_ui(enable=False)
+
         self.start_new_btmon()
         self.start_new_usbmon()
 
@@ -1131,18 +1159,17 @@ class BluetoothAdapterTests(test.test):
         return 'start/running' in output
 
 
-    def enable_disable_cellular(self, enable):
-        """Enable cellular services on the DUT
+    def enable_disable_services(self, services, enable):
+        """Enable or disable service on the DUT
 
-        @param enable: True to enable cellular services
-                       False to disable cellular services
+        @param services: list of string service names
+        @param enable: True to enable services, False to disable
 
         @returns: True if services were set successfully, else False
         """
-        cellular_services = ['modemmanager', 'modemfwd']
         toggle_string = 'start' if enable else 'stop'
 
-        for service in cellular_services:
+        for service in services:
             # Some platforms will not support all services. In these cases,
             # no need to fail, since they won't interfere with our tests
             if not self.service_exists(service):
@@ -1159,12 +1186,38 @@ class BluetoothAdapterTests(test.test):
                               enable)
                 return False
 
-        if enable:
-            logging.info('Cellular enabled')
-        else:
-            logging.info('Cellular disabled')
+            if enable:
+                logging.info('Service {} enabled'.format(service))
+            else:
+                logging.info('Service {} disabled'.format(service))
 
         return True
+
+
+    def enable_disable_cellular(self, enable):
+        """Enable cellular services on the DUT
+
+        @param enable: True to enable cellular services
+                       False to disable cellular services
+
+        @returns: True if services were set successfully, else False
+        """
+        cellular_services = ['modemmanager', 'modemfwd']
+
+        return self.enable_disable_services(cellular_services, enable)
+
+
+    def enable_disable_ui(self, enable):
+        """Enable UI service on the DUT
+
+        @param enable: True to enable UI services
+                       False to disable UI services
+
+        @returns: True if services were set successfully, else False
+        """
+        ui_services = ['ui']
+
+        return self.enable_disable_services(ui_services, enable)
 
 
     def enable_disable_debug_log(self, enable):
@@ -3213,7 +3266,8 @@ class BluetoothAdapterTests(test.test):
         @returns: the input events received on the DUT.
 
         """
-        self.input_facade.initialize_input_recorder(device.name)
+        self.input_facade.initialize_input_recorder(device.name,
+                                                    uniq=device.address)
         self.input_facade.start_input_recorder(device.name)
         time.sleep(self.HID_REPORT_SLEEP_SECS)
         gesture()
@@ -4009,10 +4063,14 @@ class BluetoothAdapterTests(test.test):
                         device_address, 'RSSI')
 
                 if not found:
+                    logging.info('Failing with TEST_NA as peer %s was not'
+                                  ' discovered', device_address)
                     raise error.TestNAError(
                             'Peer {} not discovered'.format(device_address))
 
                 if not rssi or rssi < self.MIN_RSSI:
+                    logging.info('Failing with TEST_NA since RSSI (%s) is low ',
+                                  rssi)
                     raise error.TestNAError(
                             'Peer {} RSSI is too low: {}'.format(
                                     device_address, rssi))
@@ -4048,6 +4106,7 @@ class BluetoothAdapterTests(test.test):
                 if test_type == 'AVL':
                     raise error.TestFail(msg)
 
+                logging.info('Failing with TEST_NA due to %s', msg)
                 raise error.TestNAError(msg)
 
 
@@ -4068,6 +4127,17 @@ class BluetoothAdapterTests(test.test):
         else:
             self.fail_fast = default
 
+
+    def assert_discover_and_pair(self, device):
+        """ Discovers and pairs given device. Automatically connects too.
+
+        If any of the test expressions fail, it will raise an error so only call
+        this function as a setup for a test.
+        """
+        self.assert_on_fail(self.test_device_set_discoverable(device, True))
+        self.assert_on_fail(self.test_discover_device(device.address))
+        self.assert_on_fail(
+                self.test_pairing(device.address, device.pin, trusted=True))
 
     def run_once(self, *args, **kwargs):
         """This method should be implemented by children classes.
@@ -4103,6 +4173,9 @@ class BluetoothAdapterTests(test.test):
 
             # Re-enable cellular services
             self.enable_disable_cellular(enable=True)
+
+            # Re-enable ui
+            self.enable_disable_ui(enable=True)
 
             if hasattr(self, 'host'):
                 # Stop btmon process

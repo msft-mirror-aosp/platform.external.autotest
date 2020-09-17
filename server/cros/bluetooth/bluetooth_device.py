@@ -822,6 +822,16 @@ class BluetoothDevice(object):
         return self._proxy.reset_advertising()
 
 
+    def create_audio_record_directory(self, audio_record_dir):
+        """Create the audio recording directory.
+
+        @param audio_record_dir: the audio recording directory
+
+        @returns: True on success. False otherwise.
+        """
+        return self._proxy.create_audio_record_directory(audio_record_dir)
+
+
     def start_capturing_audio_subprocess(self, audio_data, recording_device):
         """Start capturing audio in a subprocess.
 
@@ -874,16 +884,18 @@ class BluetoothDevice(object):
         return self._proxy.play_audio(json.dumps(audio_data))
 
 
-    def check_audio_frames_legitimacy(self, audio_test_data, recording_device):
+    def check_audio_frames_legitimacy(self, audio_test_data, recording_device,
+                                      recorded_file):
         """Get the number of frames in the recorded audio file.
         @param audio_test_data: the audio test data
         @param recording_device: which device recorded the audio,
                 possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
 
         @returns: True if audio frames are legitimate.
         """
         return self._proxy.check_audio_frames_legitimacy(
-                json.dumps(audio_test_data), recording_device)
+                json.dumps(audio_test_data), recording_device, recorded_file)
 
 
     def convert_audio_sample_rate(self, input_file, out_file, test_data,
@@ -947,17 +959,19 @@ class BluetoothDevice(object):
                                               json.dumps(test_data))
 
 
-    def get_primary_frequencies(self, audio_test_data, recording_device):
+    def get_primary_frequencies(self, audio_test_data, recording_device,
+                                recorded_file):
         """Get primary frequencies of the audio test file.
 
         @param audio_test_data: the audio test data
         @param recording_device: which device recorded the audio,
                 possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
 
         @returns: a list of primary frequencies of channels in the audio file
         """
         return self._proxy.get_primary_frequencies(
-                json.dumps(audio_test_data), recording_device)
+                json.dumps(audio_test_data), recording_device, recorded_file)
 
 
     def enable_wbs(self, value):
@@ -1021,6 +1035,24 @@ class BluetoothDevice(object):
         @returns: True if the operation succeeds.
         """
         return self._proxy.select_input_device(device_name)
+
+
+    def select_output_node(self, node_type):
+        """Select the audio output node.
+
+        @param node_type: the node type of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return self._proxy.select_output_node(node_type)
+
+
+    def get_selected_output_device_type(self):
+        """Get the selected audio output node type.
+
+        @returns: the node type of the selected output device.
+        """
+        return self._proxy.get_selected_output_device_type()
 
 
     def read_characteristic(self, uuid, address):

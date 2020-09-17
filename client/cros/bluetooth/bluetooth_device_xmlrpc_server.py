@@ -2063,6 +2063,23 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                     'reset_advertising: failed: %s', str(error)))
 
 
+    def create_audio_record_directory(self, audio_record_dir):
+        """Create the audio recording directory.
+
+        @param audio_record_dir: the audio recording directory
+
+        @returns: True on success. False otherwise.
+        """
+        try:
+            if not os.path.exists(audio_record_dir):
+                os.makedirs(audio_record_dir)
+            return True
+        except Exception as e:
+            logging.error('Failed to create %s on the DUT: %s',
+                          audio_record_dir, e)
+            return False
+
+
     def start_capturing_audio_subprocess(self, audio_data, recording_device):
         """Start capturing audio in a subprocess.
 
@@ -2101,10 +2118,14 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             data_format = dict(file_type='raw', sample_format='S16_LE',
                                channel=audio_data['channels'],
                                rate=audio_data['rate'])
+
+            # Make the audio file a bit longer to handle any delay
+            # issue in capturing.
+            duration = audio_data['duration'] + 3
             audio_test_data_module.GenerateAudioTestData(
                     data_format=data_format,
                     path=audio_data['file'],
-                    duration_secs=audio_data['duration'],
+                    duration_secs=duration,
                     frequencies=audio_data['frequencies'])
             logging.debug("Raw file generated: %s", audio_data['file'])
 
@@ -2154,17 +2175,23 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                                            duration=audio_data['duration'])
 
 
-    def check_audio_frames_legitimacy(self, audio_test_data, recording_device):
+    def check_audio_frames_legitimacy(self, audio_test_data, recording_device,
+                                      recorded_file):
         """Get the number of frames in the recorded audio file.
 
         @param audio_test_data: the audio test data
         @param recording_device: which device recorded the audio,
                 possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
 
         @returns: True if audio frames are legitimate.
         """
-        audio_test_data = json.loads(audio_test_data)
-        recorded_filename = audio_test_data[recording_device]
+        if bool(recorded_file):
+            recorded_filename = recorded_file
+        else:
+            audio_test_data = json.loads(audio_test_data)
+            recorded_filename = audio_test_data[recording_device]
+
         if recorded_filename.endswith('.raw'):
             # Make sure that the recorded file does not contain all zeros.
             filesize = os.path.getsize(recorded_filename)
@@ -2178,7 +2205,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 return False
         else:
             # The recorded wav file should not be empty.
-            wav_file = check_quality.WaveFile(audio_test_data[recording_device])
+            wav_file = check_quality.WaveFile(recorded_filename)
             return wav_file.get_number_frames() > 0
 
 
@@ -2273,17 +2300,25 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return os.path.isfile(output_file)
 
 
-    def get_primary_frequencies(self, audio_test_data, recording_device):
+    def get_primary_frequencies(self, audio_test_data, recording_device,
+                                recorded_file):
         """Get primary frequencies of the audio test file.
 
         @param audio_test_data: the audio test data
         @param recording_device: which device recorded the audio,
                 possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
 
         @returns: a list of primary frequencies of channels in the audio file
         """
         audio_test_data = json.loads(audio_test_data)
-        args = CheckQualityArgsClass(filename=audio_test_data[recording_device],
+
+        if bool(recorded_file):
+            recorded_filename = recorded_file
+        else:
+            recorded_filename = audio_test_data[recording_device]
+
+        args = CheckQualityArgsClass(filename=recorded_filename,
                                      rate=audio_test_data['rate'],
                                      channel=audio_test_data['channels'],
                                      bit_width=16)
@@ -2367,6 +2402,26 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
 
     @xmlrpc_server.dbus_safe(None)
+    def select_output_node(self, node_type):
+        """Select the audio output node.
+
+        @param node_type: the node type of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return cras_utils.set_single_selected_output_node(node_type)
+
+
+    @xmlrpc_server.dbus_safe(None)
+    def get_selected_output_device_type(self):
+        """Get the selected audio output node type.
+
+        @returns: the node type of the selected output device.
+        """
+        # Note: should convert the dbus.String to the regular string.
+        return str(cras_utils.get_selected_output_device_type())
+
+
     def get_gatt_attributes_map(self, address):
         """Return a JSON formatted string of the GATT attributes of a device,
         keyed by UUID

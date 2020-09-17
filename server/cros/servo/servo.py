@@ -548,6 +548,19 @@ class Servo(object):
         else:
             logging.warning('Servod command \'usb_mux_oe1\' is not available. '
                             'Any USB drive related servo routines will fail.')
+        # Create a record of SBU voltages if this is running support servo (v4,
+        # v4p1).
+        # TODO(coconutruben): eventually, replace this with a metric to track
+        # SBU voltages wrt servo-hw/dut-hw
+        if self.has_control('servo_v4_sbu1_mv'):
+            for sbu in ['sbu1', 'sbu2']:
+                try:
+                    mv = int(self.get('servo_v4_%s_mv' % sbu))
+                    logging.info('%s voltage: %d mv', sbu, mv)
+                except error.TestFail as e:
+                    # This is a nice to have but if reading this fails, it
+                    # shouldn't interfere with the test.
+                    logging.info('Failed to read %s voltage', sbu)
         self._uart.start_capture()
         if cold_reset:
             if not self._power_state.supported:
@@ -558,14 +571,6 @@ class Servo(object):
         with self._wrap_socket_errors('initialize_dut->get_version()'):
             version = self._server.get_version()
         logging.debug('Servo initialized, version is %s', version)
-        if self.has_control('init_keyboard'):
-            # This indicates the servod version does not
-            # have explicit keyboard initialization yet.
-            # Ignore this.
-            # TODO(coconutruben): change this back to set() about a month
-            # after crrev.com/c/1586239 has been merged (or whenever that
-            # logic is in the labstation images).
-            self.set_nocheck('init_keyboard','on')
 
 
     def is_localhost(self):

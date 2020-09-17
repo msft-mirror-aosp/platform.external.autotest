@@ -69,9 +69,8 @@ class DeviceSkuLabel(base_label.StringPrefixLabel):
         return []
 
     def update_for_task(self, task_name):
-        # This label is stored in the lab config, so only deploy tasks update it
-        # or when no task name is mentioned.
-        return task_name in (DEPLOY_TASK_NAME, '')
+        # This label is stored in the lab config.
+        return task_name in (DEPLOY_TASK_NAME, REPAIR_TASK_NAME, '')
 
 
 class BrandCodeLabel(base_label.StringPrefixLabel):
@@ -522,9 +521,9 @@ class DutStorageLabel(base_label.StringPrefixLabel):
         return [state]
 
     def update_for_task(self, task_name):
-        # This label is part of audit task, so updating it during deploy tasks
-        # update it or when no task name is mentioned.
-        return task_name in (DEPLOY_TASK_NAME, '')
+        # This label is part of audit task, so updating it only during
+        # deploy tasks to update it for new deployments.
+        return task_name == DEPLOY_TASK_NAME
 
 
 CROS_LABELS = [

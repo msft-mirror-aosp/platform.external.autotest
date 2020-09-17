@@ -23,13 +23,13 @@ VISQOL_TARBALL = os.path.join(DIST_FILES, 'visqol-binary.tar.gz')
 VISQOL_TARBALL_LOCAL_PATH = os.path.join(DATA_DIR,
                                          os.path.split(VISQOL_TARBALL)[1])
 VISQOL_FOLDER = os.path.join(DATA_DIR, 'visqol')
-VISQOL_PATH = os.path.join(VISQOL_FOLDER, 'bazel-bin', 'visqol')
+VISQOL_PATH = os.path.join(VISQOL_FOLDER, 'visqol')
 # There are several available models for VISQOL, since these VISQOL based tests
 # are primarily for voice quality, this model is more tuned for voice quality.
 # experimentally, the scores have been fairly similar to the default model
 # 'libsvm_nu_svr_model.txt'. Details: github.com/google/visqol/tree/master/model
 VISQOL_SIMILARITY_MODEL = os.path.join(
-        VISQOL_FOLDER, 'model',
+        VISQOL_FOLDER, 'visqol.runfiles', '__main__', 'model',
         'tcdvoip_nu.568_c5.31474325639_g3.17773760038_model.txt')
 VISQOL_TEST_DIR = os.path.join(VISQOL_FOLDER, 'bt-test-output')
 
@@ -37,7 +37,8 @@ VISQOL_TEST_DIR = os.path.join(VISQOL_FOLDER, 'bt-test-output')
 AUDIO_TARBALL = os.path.join(DIST_FILES, 'chameleon-bundle',
                              'audio-test-data.tar.gz')
 AUDIO_TEST_DIR = '/usr/local/autotest/cros/audio/test_data'
-AUDIO_RECORD_DIR = DATA_DIR
+AUDIO_RECORD_DIR = os.path.join(DATA_DIR, 'audio')
+
 # AUDIO_TARBALL_NAME is the name of the tarball, i.e. audio-test-data.tar.gz
 AUDIO_TARBALL_NAME = os.path.split(AUDIO_TARBALL)[1]
 # AUDIO_TEST_DATA_DIR is the path of the audio-test-data directory,
@@ -48,6 +49,7 @@ AUDIO_DATA_TARBALL_PATH = os.path.join(DATA_DIR, AUDIO_TARBALL_NAME)
 
 
 A2DP = 'a2dp'
+A2DP_LONG = 'a2dp_long'
 AVRCP = 'avrcp'
 HFP_NBS = 'hfp_nbs'
 HFP_WBS = 'hfp_wbs'
@@ -127,8 +129,8 @@ def verify_visqol_extraction(stdout, stderr, process):
     return (not stderr and
             os.path.isdir(VISQOL_FOLDER) and
             os.path.isdir(VISQOL_TEST_DIR) and
-            os.path.isfile(VISQOL_PATH) and
-            os.path.isfile(VISQOL_SIMILARITY_MODEL))
+            os.path.exists(VISQOL_PATH) and
+            os.path.exists(VISQOL_SIMILARITY_MODEL))
 
 
 def get_visqol_binary():
@@ -137,9 +139,9 @@ def get_visqol_binary():
     If visqol binary not already available, download from DIST_FILES, otherwise
     skip this step.
     """
-    logging.info('Downloading ViSQOL binary on autotest server')
+    logging.debug('Downloading ViSQOL binary on autotest server')
     if verify_visqol_extraction(None, None, None):
-        logging.info('VISQOL binary already exists, skipping')
+        logging.debug('VISQOL binary already exists, skipping')
         return
 
     # download from VISQOL_TARBALL
@@ -157,7 +159,7 @@ def get_audio_test_data():
 
     Download and unzip audio files for audio tests from DIST_FILES.
     """
-    logging.info('Downloading audio test data on autotest server')
+    logging.debug('Downloading audio test data on autotest server')
 
     # download from AUDIO_TARBALL
     if not download_file_from_bucket(DATA_DIR, AUDIO_TARBALL,
@@ -175,7 +177,7 @@ hfp_nbs_test_data = {
     'rate': 8000,
     'channels': 1,
     'frequencies': (3500,),
-    'file': os.path.join(AUDIO_TEST_DATA_DIR,
+    'file': os.path.join(AUDIO_TEST_DIR,
                          'sine_3500hz_rate8000_ch1_5secs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
                                      'hfp_nbs_recorded_by_peer.wav'),
@@ -194,6 +196,8 @@ hfp_nbs_test_data = {
             'duration': 26.112 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Passing scored are determined mostly experimentally, the DUT as
@@ -215,6 +219,8 @@ hfp_nbs_test_data = {
             'duration': 5.0 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Sine tones don't work very well with ViSQOL on the NBS tests, both
@@ -236,7 +242,7 @@ hfp_wbs_test_data = {
     'channels': 1,
 
     'frequencies': (7000,),
-    'file': os.path.join(AUDIO_TEST_DATA_DIR,
+    'file': os.path.join(AUDIO_TEST_DIR,
                          'sine_7000hz_rate16000_ch1_5secs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
                                      'hfp_wbs_recorded_by_peer.wav'),
@@ -255,6 +261,8 @@ hfp_wbs_test_data = {
             'duration': 26.112 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Passing scored are determined mostly experimentally, the DUT as
@@ -276,6 +284,8 @@ hfp_wbs_test_data = {
             'duration': 5.0 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
+            # convenient way to differentiate ViSQOL tests from regular tests
+            'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
             # Passing scored are determined mostly experimentally, the DUT as
@@ -295,16 +305,29 @@ a2dp_test_data = {
     'rate': 48000,
     'channels': 2,
     'frequencies': (440, 20000),
-    'file': os.path.join(AUDIO_TEST_DATA_DIR,
-                         'binaural_sine_440hz_20000hz_rate48000_5secs.raw'),
+    'file': os.path.join(AUDIO_TEST_DIR,
+                         'binaural_sine_440hz_20000hz_rate48000_%dsecs.raw'),
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
-                                     'a2dp_recorded_by_peer.wav'),
+                                     'a2dp_recorded_by_peer_%d.wav'),
+    'chunk_in_secs': 5,
 }
 a2dp_test_data.update(common_test_data)
 
 
+# Audio test data for a2dp long test. The file and duration attributes
+# are dynamic and will be determined during run time.
+a2dp_long_test_data = a2dp_test_data.copy()
+a2dp_long_test_data.update({
+    'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
+                                     'a2dp_long_recorded_by_peer_%d.wav'),
+    'duration': 0,       # determined at run time
+    'chunk_in_secs': 1,
+})
+
+
 audio_test_data = {
     A2DP: a2dp_test_data,
+    A2DP_LONG: a2dp_long_test_data,
     HFP_WBS: hfp_wbs_test_data,
     HFP_NBS: hfp_nbs_test_data,
 }

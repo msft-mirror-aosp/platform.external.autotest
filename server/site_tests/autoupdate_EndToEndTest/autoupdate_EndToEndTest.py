@@ -8,7 +8,7 @@ import os
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server import afe_utils
-from autotest_lib.server.cros import autoupdater
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -41,13 +41,26 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     def cleanup(self):
         """Save the logs from stateful_partition's preserved/log dir."""
         stateful_preserved_logs = os.path.join(self.resultsdir,
-                                               'stateful_preserved_logs')
+                                               '~stateful_preserved_logs')
         os.makedirs(stateful_preserved_logs)
         self._host.get_file(constants.AUTOUPDATE_PRESERVE_LOG,
                             stateful_preserved_logs, safe_symlinks=True,
                             preserve_perm=False)
         super(autoupdate_EndToEndTest, self).cleanup()
 
+
+    def _print_rerun_command(self, test_conf):
+        """Prints the command to rerun a test run from the lab at your desk."""
+        logging.debug('Rerun this test run at your desk using this command:')
+        rerun_cmd = ('test_that <DUT NAME>.cros autoupdate_EndToEndTest '
+                     '--args="update_type=%s source_release=%s '
+                     'source_payload_uri=%s target_release=%s '
+                     'target_payload_uri=%s"')
+        rerun_cmd = rerun_cmd % (
+                test_conf['update_type'], test_conf['source_release'],
+                test_conf['source_payload_uri'], test_conf['target_release'],
+                test_conf['target_payload_uri'])
+        logging.debug(rerun_cmd)
 
     def run_update_test(self, test_conf):
         """Runs the update test and checks it succeeded.
@@ -79,6 +92,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         """
         logging.debug('The test configuration supplied: %s', test_conf)
+        self._print_rerun_command(test_conf)
         self._autotest_devserver = self._get_devserver_for_test(test_conf)
 
         afe_utils.clean_provision_labels(self._host)
@@ -93,10 +107,9 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             logging.info('Installing source image with update url: %s',
                          update_url)
 
-            autoupdater.ChromiumOSUpdater(
-                update_url,
-                host=self._host,
-                is_release_bucket=True).run_update()
+            provisioner.ChromiumOSProvisioner(
+                    update_url, host=self._host,
+                    is_release_bucket=True).run_provision()
 
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='source')

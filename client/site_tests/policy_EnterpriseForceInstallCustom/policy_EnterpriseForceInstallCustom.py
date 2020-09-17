@@ -105,7 +105,7 @@ class policy_EnterpriseForceInstallCustom(
             pol = self.policy_creator(case)
             self.setup_case(user_policies=pol,
                             arc_mode='enabled',
-                            use_clouddpc_test=True)
+                            use_clouddpc_test=False)
 
             self._verify_force_apps_list()
 
@@ -121,6 +121,7 @@ class policy_EnterpriseForceInstallCustom(
                'ArcPolicy':
                    {"installUnknownSourcesDisabled": False,
                     "playDeviceLocalPolicyEnabled": True,
+                    "availableAppSetPolicy": "WHITELIST",
                     "applications":
                         [{"packageName": self.PACKAGE1,
                           "defaultPermissionPolicy": "GRANT",

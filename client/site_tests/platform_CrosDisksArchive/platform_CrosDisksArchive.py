@@ -108,6 +108,9 @@ class CrosDisksArchiveTester(CrosDisksTester):
                                 utf8(u'Char U+1F602 is \U0001F602 ' +
                                      u'FACE WITH TEARS OF JOY\n')),
                 ]),
+                FilesystemTestFile(
+                        utf8(u'File 1F600 \U0001F600.txt'),
+                        utf8(u'Char U+1F600 is \U0001F600 GRINNING FACE\n')),
         ]
 
         self._test_archive(os.path.join(mount_path, 'Format V5.rar'),
@@ -115,6 +118,13 @@ class CrosDisksArchiveTester(CrosDisksTester):
 
         self._test_archive(os.path.join(mount_path, 'Unicode.zip'),
                            FilesystemTestDirectory('', want))
+
+    def _test_symlinks(self, mount_path):
+        self._test_archive(
+                os.path.join(mount_path, 'Symlinks.zip'),
+                FilesystemTestDirectory(
+                        '', [FilesystemTestFile('textfile', 'sample text\n')],
+                        strict=True))
 
     def _test_multipart(self, mount_path):
         # Test multipart RARs.
@@ -251,6 +261,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'Multipart New Style 03.rar',
                     'Nested.rar',
                     'Nested.zip',
+                    'Symlinks.zip',
                     'Unicode.zip',
             ]:
                 logging.debug('Copying %r', archive_name)
@@ -277,6 +288,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
 
             # Perform tests with the archive files in the mounted FAT filesystem.
             self._test_unicode(mount_path)
+            self._test_symlinks(mount_path)
             self._test_multipart(mount_path)
             self._test_invalid(mount_path)
             self._test_need_password(mount_path)

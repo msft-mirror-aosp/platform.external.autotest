@@ -193,6 +193,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # suspend/resume, i.e. b/161920740
         self.enable_disable_cellular(enable=False)
 
+        self.enable_disable_ui(enable=False)
+
         # Delete files created in previous run
         self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
                                                     self.BTMON_DIR_LOG_PATH))
@@ -307,6 +309,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                 try:
                     if not _is_enough_peers_present(self):
+                        logging.info('Not enough peer available')
                         raise error.TestNAError('Not enough peer available')
 
                     model = self.get_base_platform_name()

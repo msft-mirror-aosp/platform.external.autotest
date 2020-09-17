@@ -13,8 +13,8 @@ from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server import afe_utils
 from autotest_lib.server import test
 from autotest_lib.server import utils
-from autotest_lib.server.cros import autoupdater
 from autotest_lib.server.cros import provision
+from autotest_lib.server.cros import provisioner
 
 
 try:
@@ -66,10 +66,10 @@ def _emit_provision_metrics(update_url, dut_host_name,
     # includes retries in certain cases.  For that reason, the metrics
     # distinguish 'provision' metrics which summarizes across all
     # retries, and 'auto_update' which summarizes an individual update
-    # attempt.  ChromiumOSUpdater doesn't do retries, so we just report
+    # attempt.  ChromiumOSProvisioner doesn't do retries, so we just report
     # the same information twice.  We should replace the metrics with
     # something better tailored to the current implementation.
-    build_name = autoupdater.url_to_image_name(update_url)
+    build_name = provisioner.url_to_image_name(update_url)
     board, build_type = _get_build_metrics_fields(build_name)
     fields = {
         'board': board,
@@ -78,7 +78,7 @@ def _emit_provision_metrics(update_url, dut_host_name,
         'dev_server': dev_server.get_resolved_hostname(update_url),
         'success': not exception,
     }
-    failure_reason = autoupdater.get_update_failure_reason(exception)
+    failure_reason = provisioner.get_update_failure_reason(exception)
     _emit_updater_metrics('provision', build_name, failure_reason,
                           duration, fields)
     fields['attempt'] = 1

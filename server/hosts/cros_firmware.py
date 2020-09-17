@@ -50,6 +50,9 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.server import afe_utils
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.server.hosts import cros_constants
+
+from chromite.lib import timeout_util
 import six
 
 
@@ -126,6 +129,7 @@ class FirmwareStatusVerifier(hosts.Verifier):
     appears that firmware should be re-flashed using servo.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if not _is_firmware_testing_device(host):
             return
@@ -226,6 +230,11 @@ class GeneralFirmwareRepair(FirmwareRepair):
                       'however it\'s not found on the usbkey' % build,
                       'image not loaded on usbkey')
         ec_image, bios_image = host._servo_host.prepare_repair_firmware_image()
+
+        # Before flash firmware we want update the build into health profile.
+        if host.health_profile:
+            host.health_profile.set_firmware_stable_version(build)
+
         if ec_image:
             logging.info('Attempting to flash ec firmware...')
             host.servo.program_ec(ec_image, copy_image=False)
@@ -236,9 +245,46 @@ class GeneralFirmwareRepair(FirmwareRepair):
         logging.info('Cold resetting DUT through servo...')
         host.servo.get_power_state_controller().reset()
         host.wait_up(timeout=host.BOOT_TIMEOUT)
+        # flash firmware via servo will turn DUT into dev mode, so disable
+        # dev mode and reset gbb flag here.
+        host.run('/usr/share/vboot/bin/set_gbb_flags.sh 0', ignore_status=True)
+        host.run('crossystem disable_dev_request=1', ignore_status=True)
+        host.reboot()
 
     def _is_applicable(self, host):
-        return not _is_firmware_testing_device(host)
+        if _is_firmware_testing_device(host):
+            logging.info('GeneralFirmwareRepair is not applicable to DUTs'
+                         ' in faft pools.')
+            return False
+        if not host.servo:
+            logging.info(
+                    'The current servo state of %s is not met the'
+                    ' minimum requirement to flash firmware.', host.hostname)
+        # Flash firmware via servo is consider an expansive opertation, so we
+        # want to check repair data from previous repairs to determine if
+        # firmware repair is need.
+        dhp = host.health_profile
+        if not dhp:
+            logging.info('Device health profile is not available, cannot'
+                         ' determine if firmware repair is needed.')
+            return False
+        flashed_build = dhp.get_firmware_stable_version()
+        candidate_build = self._get_stable_build(host)
+        # If we had an success firmware flash in this repair loop,
+        # there is no need to retry flash the same firmware build.
+        if (dhp.get_succeed_repair_action(self.tag) > 0
+                    and flashed_build == candidate_build):
+            logging.info(
+                    'Firmware from %s has been already installed on %s,'
+                    ' no need to retry.', flashed_build, host.hostname)
+            return False
+        if (dhp.get_failed_repair_action(self.tag) > 2
+                    and flashed_build == candidate_build):
+            logging.info(
+                    'Firmware from %s has been attempted and failed 3 '
+                    'times, no need to retry.', flashed_build)
+            return False
+        return True
 
     @property
     def description(self):
@@ -314,6 +360,7 @@ class FirmwareVersionVerifier(hosts.Verifier):
             raise hosts.AutoservVerifyError(
                     message % (version_a, version_b))
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # Test 1 - The DUT is not excluded from updates.
         if not _is_firmware_update_supported(host):

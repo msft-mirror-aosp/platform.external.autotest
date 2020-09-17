@@ -29,4 +29,4 @@ subprocess32==3.2.7
 protobuf==3.0.0
 #Extra requirements for RTD TLS integration
 grpcio==1.31.0
-grpcio-tools=1.31.0
+grpcio-tools==1.31.0

@@ -81,7 +81,7 @@ class ServoHost(base_servohost.BaseServoHost):
     TS_GROUP = 'ts'
 
     # This regex is used to extract the timestamp from servod logs.
-             # files always start with log.
+    # files always start with log.
     TS_RE = (r'log.'
              # The timestamp is of format %Y-%m-%d--%H-%M-%S.MS
              r'(?P<%s>\d{4}(\-\d{2}){2}\-(-\d{2}){3}.\d{3})'
@@ -107,7 +107,7 @@ class ServoHost(base_servohost.BaseServoHost):
     #  <time> - <MCU> - EC3PO.Console - <LVL> - <file:line:func> - <pts> -
     #  <output>
     #
-              # The log format starts with a timestamp
+    # The log format starts with a timestamp
     MCU_RE = (r'[\d\-]+ [\d:,]+ '
               # The mcu that is logging this is next.
               r'- (?P<%s>\w+) - '
@@ -630,6 +630,10 @@ class ServoHost(base_servohost.BaseServoHost):
             if is_dual_setup:
                 cmd += ' DUAL_V4=1'
 
+            # Start servod with CONFIG=cr50.xml which required for some pools.
+            if self._require_cr50_servod_config():
+                cmd += ' CONFIG=cr50.xml'
+
         # Remove the symbolic links from the logs. This helps ensure that
         # a failed servod instantiation does not cause us to grab old logs
         # by mistake.
@@ -1096,7 +1100,7 @@ class ServoHost(base_servohost.BaseServoHost):
                                                      str(self.servo_port),
                                                      instance_ts))
         if old:
-          log_dir = '%s.%s' % (log_dir, self.OLD_LOG_SUFFIX)
+            log_dir = '%s.%s' % (log_dir, self.OLD_LOG_SUFFIX)
         logging.info('Saving servod logs to %r.', log_dir)
         os.mkdir(log_dir)
         # Now, get all files with that timestamp.
@@ -1191,7 +1195,19 @@ class ServoHost(base_servohost.BaseServoHost):
         if self._closed:
             logging.debug('ServoHost is already closed.')
             return
-        instance_ts = self.get_instance_logs_ts()
+
+        # Only attempt ssh related actions if servohost is sshable. We call
+        # check_cached_up_status() first because it's lightweighted and return
+        # much faster in the case servohost is down, however, we still want
+        # to call is_up() later since check_cached_up_status() is ping based check
+        # and not guarantee the servohost is sshable.
+        servo_host_ready = self.check_cached_up_status() and self.is_up()
+
+        if servo_host_ready:
+            instance_ts = self.get_instance_logs_ts()
+        else:
+            logging.info('Servohost is down, will skip servod log collecting.')
+            instance_ts = None
         # TODO(crbug.com/1011516): once enabled, remove the check against
         # localhost and instead check against log-rotiation enablement.
         logs_available = (instance_ts is not None and
@@ -1228,7 +1244,7 @@ class ServoHost(base_servohost.BaseServoHost):
                               'Forgiven. Please file a bug and fix or catch '
                               'in log grabbing function', str(e), exc_info=True)
 
-        if self._is_locked:
+        if self._is_locked and servo_host_ready:
             # Remove the lock if the servohost has been locked.
             try:
                 self._unlock()
@@ -1238,11 +1254,13 @@ class ServoHost(base_servohost.BaseServoHost):
                               ' the task.')
         # We want always stop servod after task to minimum the impact of bad
         # servod process interfere other servods.(see crbug.com/1028665)
-        try:
-            self.stop_servod()
-        except error.AutoservRunError as e:
-            logging.info("Failed to stop servod due to:\n%s\n"
-                         "This error is forgiven.", str(e))
+        if servo_host_ready:
+            try:
+                self.stop_servod()
+            except error.AutoservRunError as e:
+                logging.info(
+                        "Failed to stop servod due to:\n%s\n"
+                        "This error is forgiven.", str(e))
 
         super(ServoHost, self).close()
         # Mark closed.
@@ -1349,6 +1367,16 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.debug('The main device is detected')
         return False
 
+    def _require_cr50_servod_config(self):
+        """Check whether we need start servod with CONFIG=cr50.xml"""
+        dut_host_info = self.get_dut_host_info()
+        if not dut_host_info:
+            return False
+        for pool in dut_host_info.pools:
+            if pool.startswith(servo_constants.CR50_CONFIG_POOL_PREFIX):
+                return True
+        return False
+
     def get_verify_state(self, tag):
         """Return the state of servo verifier.
 
@@ -1368,6 +1396,7 @@ class ServoHost(base_servohost.BaseServoHost):
         start_servod = self.get_verify_state('servod_job')
         create_servo = self.get_verify_state('servod_connection')
         init_servo = self.get_verify_state('servod_control')
+        dut_connected = self.get_verify_state('dut_connected')
         pwr_button = self.get_verify_state('pwr_button')
         lid_open = self.get_verify_state('lid_open')
         ec_board = self.get_verify_state('ec_board')
@@ -1388,6 +1417,14 @@ class ServoHost(base_servohost.BaseServoHost):
                     return servo_constants.SERVO_STATE_NOT_CONNECTED
             elif self._is_servo_board_present_on_servo_v3() == False:
                 return servo_constants.SERVO_STATE_NOT_CONNECTED
+
+        if dut_connected == self.VERIFY_FAILED:
+            if pwr_button == self.VERIFY_SUCCESS:
+                # unexpected case
+                metrics.Counter(
+                        'chromeos/autotest/repair/servo_unexpected/pwr_button'
+                ).increment(fields=self._get_host_metrics_data())
+            return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
 
         if start_servod == self.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE

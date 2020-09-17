@@ -509,6 +509,8 @@ def test_retry_and_log(test_method_or_retry_flag):
             test_result = False
             should_raise = hasattr(instance, 'fail_fast') and instance.fail_fast
 
+            instance.last_test_method = test_method.__name__
+
             try:
                 if callable(test_method_or_retry_flag
                             ) or test_method_or_retry_flag:
@@ -652,6 +654,29 @@ class BluetoothAdapterTests(test.test):
     AGENT_CAPABILITY = {
             'BLUETOOTH_AUDIO': 'NoInputNoOutput',
     }
+
+    def assert_on_fail(self, result, raiseNA=False):
+        """ If the called function returns a false-like value, raise an error.
+
+        Call test methods (i.e. with @test_retry_and_log) wrapped with this
+        function and failures will raise instead of continuing the test.
+
+        For example:
+            self.assert_on_fail(self.test_pairing(...))
+
+        @param result: Result of test method called.
+        @param raiseNA: Whether to raise TestNAError instead of TestFail
+
+        @raises error.TestNAError
+        @raises error.TestFail
+        """
+        if not result:
+            failure_msg = 'Assert on fail: {}'.format(self.last_test_method)
+            logging.error(failure_msg)
+            if raiseNA:
+                raise error.TestNAError(failure_msg)
+            else:
+                raise error.TestFail(failure_msg)
 
 
     # TODO(b/131170539) remove when sarien/arcada no longer have _signed

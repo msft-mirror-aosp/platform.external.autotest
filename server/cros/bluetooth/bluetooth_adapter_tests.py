@@ -3241,7 +3241,8 @@ class BluetoothAdapterTests(test.test):
         @returns: the input events received on the DUT.
 
         """
-        self.input_facade.initialize_input_recorder(device.name)
+        self.input_facade.initialize_input_recorder(device.name,
+                                                    uniq=device.address)
         self.input_facade.start_input_recorder(device.name)
         time.sleep(self.HID_REPORT_SLEEP_SECS)
         gesture()

@@ -4128,6 +4128,17 @@ class BluetoothAdapterTests(test.test):
             self.fail_fast = default
 
 
+    def assert_discover_and_pair(self, device):
+        """ Discovers and pairs given device. Automatically connects too.
+
+        If any of the test expressions fail, it will raise an error so only call
+        this function as a setup for a test.
+        """
+        self.assert_on_fail(self.test_device_set_discoverable(device, True))
+        self.assert_on_fail(self.test_discover_device(device.address))
+        self.assert_on_fail(
+                self.test_pairing(device.address, device.pin, trusted=True))
+
     def run_once(self, *args, **kwargs):
         """This method should be implemented by children classes.
 

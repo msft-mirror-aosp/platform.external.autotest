@@ -43,7 +43,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import logging_manager
 from autotest_lib.client.common_lib import packages
 from autotest_lib.client.common_lib import utils
-from autotest_lib.client import seven
+from autotest_lib.client.common_lib import seven
 from autotest_lib.server import profilers
 from autotest_lib.server import site_gtest_runner
 from autotest_lib.server import subcommand

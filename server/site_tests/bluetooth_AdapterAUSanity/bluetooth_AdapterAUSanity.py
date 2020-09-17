@@ -6,7 +6,7 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, AVRCP, HFP_WBS, HFP_NBS)
+        A2DP, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -41,12 +41,33 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         self.cleanup_bluetooth_audio(device, test_profile)
 
 
+    def _au_a2dp_test(self, test_profile, duration=0):
+        """A2DP test with sinewaves on the two channels.
+
+        @param test_profile: which test profile is used, A2DP or A2DP_LONG.
+        @param duration: the duration to test a2dp. The unit is in seconds.
+                if duration is 0, use the default duration in test_profile.
+        """
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_run_method(device,
+                           lambda: self.test_a2dp_sinewaves(
+                                   device, test_profile, duration),
+                           test_profile)
+
+
     @test_wrapper('A2DP sinewave test', devices={'BLUETOOTH_AUDIO':1})
     def au_a2dp_test(self):
         """A2DP test with sinewaves on the two channels."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device, lambda: self.test_a2dp_sinewaves(device), A2DP)
+        self._au_a2dp_test(A2DP)
+
+
+    @test_wrapper('A2DP sinewave long test', devices={'BLUETOOTH_AUDIO':1})
+    def au_a2dp_long_test(self, duration=600):
+        """A2DP long test with sinewaves on the two channels.
+
+        @param duration: the duration to test a2dp. The unit is in seconds.
+        """
+        self._au_a2dp_test(A2DP_LONG, duration=duration)
 
 
     def check_wbs_capability(self):
@@ -197,6 +218,7 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
                 whole batch
         """
         self.au_a2dp_test()
+        self.au_a2dp_long_test()
         self.au_hfp_nbs_dut_as_source_test()
         self.au_hfp_nbs_dut_as_sink_test()
         self.au_hfp_wbs_dut_as_source_test()

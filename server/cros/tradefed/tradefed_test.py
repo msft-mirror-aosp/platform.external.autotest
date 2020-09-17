@@ -70,8 +70,8 @@ class TradefedTest(test.test):
     _num_media_bundles = 0
     _abilist = []
 
-    # A job will be aborted after 16h. Subtract 5m for setup/teardown.
-    _MAX_LAB_JOB_LENGTH_IN_SEC = 16 * 60 * 60 - 5 * 60
+    # A job will be aborted after 16h. Subtract 30m for setup/teardown.
+    _MAX_LAB_JOB_LENGTH_IN_SEC = 16 * 60 * 60 - 30 * 60
     _job_deadline = None
 
     def _log_java_version(self):

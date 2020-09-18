@@ -69,9 +69,8 @@ class DeviceSkuLabel(base_label.StringPrefixLabel):
         return []
 
     def update_for_task(self, task_name):
-        # This label is stored in the lab config, so only deploy tasks update it
-        # or when no task name is mentioned.
-        return task_name in (DEPLOY_TASK_NAME, '')
+        # This label is stored in the lab config.
+        return task_name in (DEPLOY_TASK_NAME, REPAIR_TASK_NAME, '')
 
 
 class BrandCodeLabel(base_label.StringPrefixLabel):

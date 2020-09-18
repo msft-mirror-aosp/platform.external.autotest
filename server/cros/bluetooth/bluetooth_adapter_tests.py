@@ -509,6 +509,8 @@ def test_retry_and_log(test_method_or_retry_flag):
             test_result = False
             should_raise = hasattr(instance, 'fail_fast') and instance.fail_fast
 
+            instance.last_test_method = test_method.__name__
+
             try:
                 if callable(test_method_or_retry_flag
                             ) or test_method_or_retry_flag:
@@ -652,6 +654,29 @@ class BluetoothAdapterTests(test.test):
     AGENT_CAPABILITY = {
             'BLUETOOTH_AUDIO': 'NoInputNoOutput',
     }
+
+    def assert_on_fail(self, result, raiseNA=False):
+        """ If the called function returns a false-like value, raise an error.
+
+        Call test methods (i.e. with @test_retry_and_log) wrapped with this
+        function and failures will raise instead of continuing the test.
+
+        For example:
+            self.assert_on_fail(self.test_pairing(...))
+
+        @param result: Result of test method called.
+        @param raiseNA: Whether to raise TestNAError instead of TestFail
+
+        @raises error.TestNAError
+        @raises error.TestFail
+        """
+        if not result:
+            failure_msg = 'Assert on fail: {}'.format(self.last_test_method)
+            logging.error(failure_msg)
+            if raiseNA:
+                raise error.TestNAError(failure_msg)
+            else:
+                raise error.TestFail(failure_msg)
 
 
     # TODO(b/131170539) remove when sarien/arcada no longer have _signed
@@ -3241,7 +3266,8 @@ class BluetoothAdapterTests(test.test):
         @returns: the input events received on the DUT.
 
         """
-        self.input_facade.initialize_input_recorder(device.name)
+        self.input_facade.initialize_input_recorder(device.name,
+                                                    uniq=device.address)
         self.input_facade.start_input_recorder(device.name)
         time.sleep(self.HID_REPORT_SLEEP_SECS)
         gesture()
@@ -4101,6 +4127,17 @@ class BluetoothAdapterTests(test.test):
         else:
             self.fail_fast = default
 
+
+    def assert_discover_and_pair(self, device):
+        """ Discovers and pairs given device. Automatically connects too.
+
+        If any of the test expressions fail, it will raise an error so only call
+        this function as a setup for a test.
+        """
+        self.assert_on_fail(self.test_device_set_discoverable(device, True))
+        self.assert_on_fail(self.test_discover_device(device.address))
+        self.assert_on_fail(
+                self.test_pairing(device.address, device.pin, trusted=True))
 
     def run_once(self, *args, **kwargs):
         """This method should be implemented by children classes.

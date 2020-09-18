@@ -997,29 +997,37 @@ def _cros_basic_repair_actions(
     and servo cr50 reboot repair.
     """
     repair_actions = (
-        # RPM cycling must precede Servo reset:  if the DUT has a dead
-        # battery, we need to reattach AC power before we reset via servo.
-        (repair_utils.RPMCycleRepair, 'rpm', (), ('ssh', 'power',)),
-        (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
-        (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
-        (ServoSysRqRepair, 'sysrq', (), ('ssh',)),
-        (LabelCleanupRepair, 'label_cleanup', (), ('cros_version_label',)),
+            # RPM cycling must precede Servo reset:  if the DUT has a dead
+            # battery, we need to reattach AC power before we reset via servo.
+            (repair_utils.RPMCycleRepair, 'rpm', (), (
+                    'ssh',
+                    'power',
+            )),
+            (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
+            (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
+            (ServoSysRqRepair, 'sysrq', (), ('ssh', )),
+            (LabelCleanupRepair, 'label_cleanup', ('ssh', ),
+             ('cros_version_label', )),
 
-        # N.B. FirmwareRepair can't fix a 'good_provision' failure directly,
-        # because it doesn't remove the flag file that triggers the
-        # failure.  We include it as a repair trigger because it's
-        # possible the the last update failed because of the firmware,
-        # and we want the repair steps below to be able to trust the
-        # firmware.
-        (cros_firmware.FaftFirmwareRepair,
-         'faft_firmware_repair', (), ('ssh', 'fwstatus', 'good_provision',)),
-
-        (DevDefaultBootRepair,
-         'set_default_boot', ('ssh',), ('dev_default_boot',)),
-
-        (CrosRebootRepair, 'reboot', ('ssh',), ('devmode', 'writable',)),
-        (EnrollmentCleanupRepair, 'cleanup_enrollment', ('ssh',),
-         ('enrollment_state',)),
+            # N.B. FaftFirmwareRepair can't fix a 'good_provision' failure
+            # directly, because it doesn't remove the flag file that triggers
+            # the failure.  We include it as a repair trigger because it's
+            # possible the the last update failed because of the firmware,
+            # and we want the repair steps below to be able to trust the
+            # firmware.
+            (cros_firmware.FaftFirmwareRepair, 'faft_firmware_repair', (), (
+                    'ssh',
+                    'fwstatus',
+                    'good_provision',
+            )),
+            (DevDefaultBootRepair, 'set_default_boot', ('ssh', ),
+             ('dev_default_boot', )),
+            (CrosRebootRepair, 'reboot', ('ssh', ), (
+                    'devmode',
+                    'writable',
+            )),
+            (EnrollmentCleanupRepair, 'cleanup_enrollment', ('ssh', ),
+             ('enrollment_state', )),
     )
     return repair_actions
 

@@ -65,8 +65,7 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
 
     def _test_chronos_crasher(self):
         """Test a user space crash when running as chronos is handled."""
-        contents = 'upload_var_in_progress_integration_test=logging_UserCrash'
-        self._check_crashing_process('chronos', extra_meta_contents=contents)
+        self._check_crashing_process('chronos')
 
 
     def _test_chronos_crasher_no_consent(self):

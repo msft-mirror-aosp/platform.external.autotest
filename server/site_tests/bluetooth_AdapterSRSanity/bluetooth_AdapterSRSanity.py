@@ -52,15 +52,8 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                 BluetoothAdapterTests):
     """Server side bluetooth adapter suspend resume test with peer."""
 
-
-    def test_discover_and_pair(self, device):
-        """ Discovers and pairs given device. Automatically connects too."""
-        self.test_device_set_discoverable(device, True)
-        self.test_discover_device(device.address)
-        self.test_pairing(device.address, device.pin, trusted=True)
-
     def _test_keyboard_with_string(self, device):
-        self.test_keyboard_input_from_trace(device, "simple_text")
+        return self.test_keyboard_input_from_trace(device, "simple_text")
 
     # ---------------------------------------------------------------
     # Reconnect after suspend tests
@@ -79,17 +72,20 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         boot_id = self.host.get_boot_id()
 
         try:
+            # Set up the device; any failures should assert
             for _, device, device_test in devtuples:
-                self.test_discover_and_pair(device)
-                self.test_device_set_discoverable(device, False)
-                self.test_connection_by_adapter(device.address)
+                self.assert_discover_and_pair(device)
+                self.assert_on_fail(
+                        self.test_device_set_discoverable(device, False))
+                self.assert_on_fail(
+                        self.test_connection_by_adapter(device.address))
 
                 # Profile connection may not have completed yet and this will
                 # race with a subsequent disconnection (due to suspend). Use the
                 # device test to force profile connect or wait if no test was
                 # given.
                 if device_test is not None:
-                    device_test(device)
+                    self.assert_on_fail(device_test(device))
                 else:
                     time.sleep(PROFILE_CONNECT_WAIT)
 
@@ -243,13 +239,21 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         self.test_adapter_set_wake_disabled()
 
         try:
-            self.test_discover_and_pair(device)
-            self.test_device_set_discoverable(device, False)
-
-            adapter_address = self.bluetooth_facade.address
+            self.assert_discover_and_pair(device)
+            self.assert_on_fail(
+                    self.test_device_set_discoverable(device, False))
 
             # Confirm connection completed
-            self.test_device_is_connected(device.address)
+            self.assert_on_fail(self.test_device_is_connected(device.address))
+
+            # Profile connection may not have completed yet and this will
+            # race with a subsequent disconnection (due to suspend). Use the
+            # device test to force profile connect or wait if no test was
+            # given.
+            if device_test is not None:
+                self.assert_on_fail(device_test(device))
+            else:
+                time.sleep(PROFILE_CONNECT_WAIT)
 
             # Wait until powerd marks adapter as wake enabled
             self.test_adapter_wake_enabled()
@@ -257,6 +261,8 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             # Trigger suspend, asynchronously trigger wake and wait for resume
             self.test_suspend_and_wait_for_sleep(
                 suspend, sleep_timeout=5)
+
+            adapter_address = self.bluetooth_facade.address
 
             # Trigger peer wakeup
             peer_wake = self.device_connect_async(device_type,
@@ -389,7 +395,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
 
         # Pair device so we have something to do in suspend
-        self.test_discover_and_pair(device)
+        self.assert_discover_and_pair(device)
 
         # Trigger power down and quickly suspend
         self.test_power_off_adapter()

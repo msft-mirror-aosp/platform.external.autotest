@@ -73,7 +73,9 @@ class platform_BootPerfServer(test.test):
             version = host.get_release_builder_path()
             # Force reimage to the current version to enable rootfs
             # verification.
-            self.job.run_test('provision_QuickProvision', host=host, value=version,
+            self.job.run_test('provision_QuickProvision',
+                              host=host,
+                              value=version,
                               force_update_engine=True)
 
         # Bootchart is shipped but disabled by default in the image. Before

@@ -16,17 +16,16 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros import provisioner
 
-
 try:
     from chromite.lib import metrics
 except ImportError:
     metrics = utils.metrics_mock
 
-
 _CONFIG = global_config.global_config
 # pylint: disable-msg=E1120
-_IMAGE_URL_PATTERN = _CONFIG.get_config_value(
-        'CROS', 'image_url_pattern', type=str)
+_IMAGE_URL_PATTERN = _CONFIG.get_config_value('CROS',
+                                              'image_url_pattern',
+                                              type=str)
 
 
 def _metric_name(base_name):
@@ -35,30 +34,30 @@ def _metric_name(base_name):
 
 def _get_build_metrics_fields(build_name):
     try:
-        return utils.ParseBuildName(build_name)[0 : 2]
+        return utils.ParseBuildName(build_name)[0:2]
     except utils.ParseBuildNameException:
-        logging.warning('Unable to parse build name %s for metrics. '
-                        'Continuing anyway.', build_name)
+        logging.warning(
+                'Unable to parse build name %s for metrics. '
+                'Continuing anyway.', build_name)
         return ('', '')
 
 
-def _emit_updater_metrics(name_prefix, build_name, failure_reason,
-                          duration, fields):
+def _emit_updater_metrics(name_prefix, build_name, failure_reason, duration,
+                          fields):
     # reset_after=True is required for String gauges events to ensure that
     # the metrics are not repeatedly emitted until the server restarts.
     metrics.String(_metric_name(name_prefix + '_build_by_devserver_dut'),
                    reset_after=True).set(build_name, fields=fields)
     if failure_reason:
-        metrics.String(
-                _metric_name(name_prefix + '_failure_reason_by_devserver_dut'),
-                reset_after=True).set(failure_reason, fields=fields)
+        metrics.String(_metric_name(name_prefix +
+                                    '_failure_reason_by_devserver_dut'),
+                       reset_after=True).set(failure_reason, fields=fields)
     metrics.SecondsDistribution(
             _metric_name(name_prefix + '_duration_by_devserver_dut')).add(
                     duration, fields=fields)
 
 
-def _emit_provision_metrics(update_url, dut_host_name,
-                          exception, duration):
+def _emit_provision_metrics(update_url, dut_host_name, exception, duration):
     # The following is high cardinality, but sparse.
     # Each DUT is of a single board type, and likely build type.
     #
@@ -72,18 +71,18 @@ def _emit_provision_metrics(update_url, dut_host_name,
     build_name = provisioner.url_to_image_name(update_url)
     board, build_type = _get_build_metrics_fields(build_name)
     fields = {
-        'board': board,
-        'build_type': build_type,
-        'dut_host_name': dut_host_name,
-        'dev_server': dev_server.get_resolved_hostname(update_url),
-        'success': not exception,
+            'board': board,
+            'build_type': build_type,
+            'dut_host_name': dut_host_name,
+            'dev_server': dev_server.get_resolved_hostname(update_url),
+            'success': not exception,
     }
     failure_reason = provisioner.get_update_failure_reason(exception)
-    _emit_updater_metrics('provision', build_name, failure_reason,
-                          duration, fields)
+    _emit_updater_metrics('provision', build_name, failure_reason, duration,
+                          fields)
     fields['attempt'] = 1
-    _emit_updater_metrics('auto_update', build_name, failure_reason,
-                          duration, fields)
+    _emit_updater_metrics('auto_update', build_name, failure_reason, duration,
+                          fields)
 
 
 class provision_QuickProvision(test.test):
@@ -104,12 +103,11 @@ class provision_QuickProvision(test.test):
         """
         if is_test_na:
             raise error.TestNAError(
-                'Test not available for test_that. chroot detected, '
-                'you are probably using test_that.')
+                    'Test not available for test_that. chroot detected, '
+                    'you are probably using test_that.')
         # We check value in initialize so that it fails faster.
         if not value:
             raise error.TestFail('No build version specified.')
-
 
     def run_once(self, host, value):
         """The method called by the control file to start the test.
@@ -150,12 +148,14 @@ class provision_QuickProvision(test.test):
         start_time = time.time()
         failure = None
         try:
-            afe_utils.machine_install_and_update_labels(
-                    host, url, with_cheets, staging_server=ds)
+            afe_utils.machine_install_and_update_labels(host,
+                                                        url,
+                                                        with_cheets,
+                                                        staging_server=ds)
         except BaseException as e:
             failure = e
             raise
         finally:
-            _emit_provision_metrics(
-                url, host.hostname, failure, time.time() - start_time)
+            _emit_provision_metrics(url, host.hostname, failure,
+                                    time.time() - start_time)
         logging.debug('Finished provisioning %s to %s', host, value)

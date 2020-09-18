@@ -23,6 +23,7 @@ from autotest_lib.server import afe_utils
 from autotest_lib.server import crashcollect
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
 from autotest_lib.site_utils.admin_audit import constants as audit_const
@@ -33,6 +34,8 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
+
+from chromite.lib import timeout_util
 
 MIN_BATTERY_LEVEL = 50.0
 
@@ -98,6 +101,7 @@ class ACPowerVerifier(hosts.Verifier):
     # Battery discharging state in power_supply_info file.
     BATTERY_DISCHARGING = 'Discharging'
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         info = self._load_info(host)
@@ -177,6 +181,8 @@ class CrosVerisionVerifier(hosts.Verifier):
     on the same host gets an unexpected OS version and yields false
     positive test result.
     """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         label_match = True
         try:
@@ -223,6 +229,7 @@ class WritableVerifier(hosts.Verifier):
     # encrypted stateful if unencrypted fails.
     _TEST_DIRECTORIES = ['/mnt/stateful_partition', '/var/tmp']
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         # This deliberately stops looking after the first error.
@@ -242,6 +249,8 @@ class EXT4fsErrorVerifier(hosts.Verifier):
     """
     Confirm we have not seen critical file system kernel errors.
     """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         # grep for stateful FS errors of the type "EXT4-fs error (device sda1):"
@@ -282,6 +291,8 @@ class UpdateSuccessVerifier(hosts.Verifier):
     The verifier tests for the existence of the marker file and fails if
     it still exists.
     """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         result = host.run('test -f %s' % provisioner.PROVISION_FAILED,
@@ -299,6 +310,7 @@ class UpdateSuccessVerifier(hosts.Verifier):
 class TPMStatusVerifier(hosts.Verifier):
     """Verify that the host's TPM is in a good state."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         if _is_virtual_machine(host):
@@ -341,6 +353,7 @@ class TPMStatusVerifier(hosts.Verifier):
 class PythonVerifier(hosts.Verifier):
     """Confirm the presence of a working Python interpreter."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         result = host.run('python -c "import json"',
@@ -363,6 +376,7 @@ class PythonVerifier(hosts.Verifier):
 class DevModeVerifier(hosts.Verifier):
     """Verify that the host is not in dev mode."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         # Some pools are allowed to be in dev mode
@@ -384,6 +398,7 @@ class DevModeVerifier(hosts.Verifier):
 class DevDefaultBootVerifier(hosts.Verifier):
     """Verify that the host is set to boot the internal disk by default."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         result = host.run('crossystem dev_default_boot', ignore_status=True)
@@ -402,6 +417,7 @@ class DevDefaultBootVerifier(hosts.Verifier):
 class HWIDVerifier(hosts.Verifier):
     """Verify that the host has HWID & serial number."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         try:
@@ -457,6 +473,7 @@ class EnrollmentStateVerifier(hosts.Verifier):
 
     VPD_CACHE = '/mnt/stateful_partition/unencrypted/cache/vpd/full-v2.txt'
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         if self._get_enrollment_state(host):
@@ -492,6 +509,7 @@ class JetstreamTpmVerifier(hosts.Verifier):
     """Verify that Jetstream TPM is in a good state."""
 
     @retry.retry(error.AutoservError, timeout_min=2, delay_sec=10)
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         try:
@@ -524,6 +542,7 @@ class JetstreamAttestationVerifier(hosts.Verifier):
     """Verify that Jetstream attestation client has a certificate."""
 
     @retry.retry(error.AutoservError, timeout_min=2, delay_sec=10)
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         try:
@@ -552,6 +571,7 @@ class JetstreamServicesVerifier(hosts.Verifier):
 
     # Retry for b/62576902
     @retry.retry(error.AutoservError, timeout_min=1, delay_sec=10)
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         try:
@@ -582,6 +602,8 @@ class StopStartUIVerifier(hosts.Verifier):
     this verifier to ensure it works and will trigger reimaging to a good
     version if it fails.
     """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         try:
             host.run('stop ui && start ui', ignore_status=True, timeout=10)

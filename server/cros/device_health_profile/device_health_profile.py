@@ -402,6 +402,8 @@ class DeviceHealthProfile(object):
         """
         if state == self.get_dut_state():
             logging.debug('The host is already in %s state.', state)
+            if state == DUT_STATE_REPAIR_FAILED:
+                self.increase_repair_fail_count()
             return
         # Reset some records when dut state changes.
         if reset_counters:

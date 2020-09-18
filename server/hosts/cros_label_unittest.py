@@ -18,7 +18,6 @@ from autotest_lib.server.hosts.cros_label import DeviceSkuLabel
 from autotest_lib.server.hosts.cros_label import AudioLoopbackDongleLabel
 from autotest_lib.server.hosts.cros_label import ChameleonConnectionLabel
 from autotest_lib.server.hosts.cros_label import ChameleonLabel
-from autotest_lib.server.hosts.cros_label import ChameleonPeripheralsLabel
 from autotest_lib.server.hosts.cros_label import ServoTypeLabel
 from autotest_lib.server.hosts.cros_label import DutStorageLabel
 from autotest_lib.server.hosts import host_info
@@ -293,13 +292,6 @@ class ChameleonLabelTests(unittest.TestCase):
         self.assertTrue(ChameleonLabel().update_for_task(''))
         self.assertTrue(ChameleonLabel().update_for_task('repair'))
         self.assertFalse(ChameleonLabel().update_for_task('deploy'))
-
-
-class ChameleonPeripheralsLabelTests(unittest.TestCase):
-    def test_update_for_task(self):
-        self.assertTrue(ChameleonPeripheralsLabel().update_for_task(''))
-        self.assertFalse(ChameleonPeripheralsLabel().update_for_task('repair'))
-        self.assertTrue(ChameleonPeripheralsLabel().update_for_task('deploy'))
 
 
 class ServoTypeLabelTests(unittest.TestCase):

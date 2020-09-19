@@ -7,6 +7,7 @@ These will be exposed via an xmlrpc server running on the DUT.
 
 @note: When adding categories, please also update server/cros/faft/rpc_proxy.pyi
 """
+import binascii
 import httplib
 import logging
 import os
@@ -1061,7 +1062,7 @@ class UpdaterServicer(object):
         """Return the hex string of the EC hash."""
         blob = self._updater.get_ec_hash()
         # Format it to a hex string
-        return ''.join('%02x' % ord(c) for c in blob)
+        return binascii.hexlify(blob)
 
     def resign_firmware(self, version):
         """Resign firmware with version.
@@ -1169,6 +1170,9 @@ class UpdaterServicer(object):
 
     def cbfs_get_chip_hash(self, fw_name):
         """Gets the chip firmware hash blob.
+
+        The hash data is returned as a list of stringified two-byte pieces:
+        \x12\x34...\xab\xcd\xef -> ['0x12', '0x34', ..., '0xab', '0xcd', '0xef']
 
         @param fw_name: Name of chip firmware whose hash blob to return.
         @return: Hex string of hash blob.

@@ -298,7 +298,7 @@ def run_provisioning_job(provision_label, host, info, autotest_path,
     """
     # TODO(fdeng): When running against a local DUT, autoserv
     # is still hitting the AFE in the lab.
-    # provision_AutoUpdate checks the current build of DUT by
+    # provision_QuickProvision checks the current build of DUT by
     # retrieving build info from AFE. crosbug.com/295178
     results_directory = os.path.join(results_directory, 'results-provision')
     _write_host_info(results_directory, _HOST_INFO_SUBDIR, host, info)

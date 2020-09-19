@@ -32,7 +32,7 @@ class network_WiFi_UpdateRouter(test.test):
     it is advantageous to write this as a test so that we can schedule it to
     run periodically via the same infrastructure we use to run tests.
 
-    Note that this test is very much patterned on provision_AutoUpdate.
+    Note that this test is very much patterned on provision_QuickProvision.
 
     """
     version = 1

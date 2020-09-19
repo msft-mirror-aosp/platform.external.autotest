@@ -193,7 +193,7 @@ class provision_CheetsUpdate(test.test):
                '--loglevel',
                'DEBUG']
         if self.sepolicy:
-          cmd.extend(['--sepolicy-artifacts-path', self.sepolicy])
+            cmd.extend(['--sepolicy-artifacts-path', self.sepolicy])
         try:
             logging.info('Running push to device:')
             logging.info(

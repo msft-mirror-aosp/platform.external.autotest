@@ -86,7 +86,7 @@ def _emit_provision_metrics(update_url, dut_host_name,
                           duration, fields)
 
 
-class provision_AutoUpdate(test.test):
+class provision_QuickProvision(test.test):
     """A test that can provision a machine to the correct ChromeOS version."""
     version = 1
 

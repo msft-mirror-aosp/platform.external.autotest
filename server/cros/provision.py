@@ -299,7 +299,7 @@ class Provision(_SpecialTaskAction):
     # don't need to hand-maintain a list of all of them.
     _actions = {
         CROS_VERSION_PREFIX: actionables.TestActionable(
-                'provision_AutoUpdate',
+                'provision_QuickProvision',
                 extra_kwargs={'disable_sysinfo': False,
                               'disable_before_test_sysinfo': False,
                               'disable_before_iteration_sysinfo': True,

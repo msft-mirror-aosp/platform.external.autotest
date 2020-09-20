@@ -571,14 +571,6 @@ class Servo(object):
         with self._wrap_socket_errors('initialize_dut->get_version()'):
             version = self._server.get_version()
         logging.debug('Servo initialized, version is %s', version)
-        if self.has_control('init_keyboard'):
-            # This indicates the servod version does not
-            # have explicit keyboard initialization yet.
-            # Ignore this.
-            # TODO(coconutruben): change this back to set() about a month
-            # after crrev.com/c/1586239 has been merged (or whenever that
-            # logic is in the labstation images).
-            self.set_nocheck('init_keyboard','on')
 
 
     def is_localhost(self):

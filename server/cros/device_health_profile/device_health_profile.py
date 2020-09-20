@@ -100,6 +100,10 @@ class DeviceHealthProfile(object):
     def _upload_profile(self):
         """Copy profile file from local path to remote profile host.
         """
+        # Make sure the device health profile directory exists on profile host.
+        self._profile_host.run('mkdir -p %s' % PROFILE_FILE_DIR,
+                               ignore_status=True)
+
         logging.debug('Uploading profile from local path: %s to remote %s:%s',
                       self._local_path,
                       self._profile_host.hostname,
@@ -402,6 +406,8 @@ class DeviceHealthProfile(object):
         """
         if state == self.get_dut_state():
             logging.debug('The host is already in %s state.', state)
+            if state == DUT_STATE_REPAIR_FAILED:
+                self.increase_repair_fail_count()
             return
         # Reset some records when dut state changes.
         if reset_counters:

@@ -209,17 +209,20 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     # Wake from suspend tests
     # ---------------------------------------------------------------
 
-    def run_peer_wakeup_device(self, device_type, device, device_test=None):
+    def run_peer_wakeup_device(self,
+                               device_type,
+                               device,
+                               device_test=None,
+                               iterations=1):
         """ Uses paired peer device to wake the device from suspend.
 
         @param device_type: the device type (used to determine if it's LE)
         @param device: the meta device with the paired device
         @param device_test: What to test to run after waking and connecting the
                             adapter/host
+        @param iterations: Number of suspend + peer wake loops to run
         """
         boot_id = self.host.get_boot_id()
-        suspend = self.suspend_async(
-            suspend_time=EXPECT_PEER_WAKE_SUSPEND_SEC, expect_bt_wake=True)
 
         # Clear wake before testing
         self.test_adapter_set_wake_disabled()
@@ -241,38 +244,47 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             else:
                 time.sleep(PROFILE_CONNECT_WAIT)
 
-            # Wait until powerd marks adapter as wake enabled
-            self.test_adapter_wake_enabled()
+            for it in xrange(iterations):
+                logging.info(
+                        'Running iteration {}/{} of suspend peer wake'.format(
+                                it + 1, iterations))
 
-            # Trigger suspend, asynchronously trigger wake and wait for resume
-            self.test_suspend_and_wait_for_sleep(
-                suspend, sleep_timeout=5)
+                # Start a new suspend instance
+                suspend = self.suspend_async(
+                        suspend_time=EXPECT_PEER_WAKE_SUSPEND_SEC,
+                        expect_bt_wake=True)
 
-            adapter_address = self.bluetooth_facade.address
+                # Wait until powerd marks adapter as wake enabled
+                self.test_adapter_wake_enabled()
 
-            # Trigger peer wakeup
-            peer_wake = self.device_connect_async(device_type,
-                                                  device,
-                                                  adapter_address,
-                                                  delay_wake=5)
-            peer_wake.start()
+                # Trigger suspend, asynchronously wake and wait for resume
+                self.test_suspend_and_wait_for_sleep(suspend, sleep_timeout=5)
 
-            # Expect a quick resume. If a timeout occurs, test fails. Since we
-            # delay sending the wake signal, we should accomodate that in our
-            # expected timeout.
-            self.test_wait_for_resume(
-                boot_id, suspend, resume_timeout=SUSPEND_SEC + 5,
-                fail_on_timeout=True)
+                # Trigger peer wakeup
+                adapter_address = self.bluetooth_facade.address
+                peer_wake = self.device_connect_async(device_type,
+                                                      device,
+                                                      adapter_address,
+                                                      delay_wake=5)
+                peer_wake.start()
 
-            # Finish peer wake process
-            peer_wake.join()
+                # Expect a quick resume. If a timeout occurs, test fails. Since
+                # we delay sending the wake signal, we should accommodate that
+                # in our expected timeout.
+                self.test_wait_for_resume(boot_id,
+                                          suspend,
+                                          resume_timeout=SUSPEND_SEC + 5,
+                                          fail_on_timeout=True)
 
-            # Make sure we're actually connected
-            self.test_device_is_connected(device.address)
-            self.test_hid_device_created(device.address)
+                # Finish peer wake process
+                peer_wake.join()
 
-            if device_test is not None:
-                device_test(device)
+                # Make sure we're actually connected
+                self.test_device_is_connected(device.address)
+                self.test_hid_device_created(device.address)
+
+                if device_test is not None:
+                    device_test(device)
 
         finally:
             self.test_remove_pairing(device.address)
@@ -301,6 +313,34 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.run_peer_wakeup_device(
             'BLE_MOUSE', device, device_test=self.test_mouse_left_click)
+
+    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
+    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
+    @test_wrapper('Peer wakeup Classic HID',
+                  devices={'MOUSE': 1},
+                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_chipsets=['Realtek-RTL8822C-USB'])
+    def sr_peer_wake_classic_hid_stress(self):
+        """ Use classic HID device to wake from suspend. """
+        device = self.devices['MOUSE'][0]
+        self.run_peer_wakeup_device('MOUSE',
+                                    device,
+                                    device_test=self.test_mouse_left_click,
+                                    iterations=STRESS_ITERATIONS)
+
+    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
+    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
+    @test_wrapper('Peer wakeup LE HID',
+                  devices={'BLE_MOUSE': 1},
+                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_chipsets=['Realtek-RTL8822C-USB'])
+    def sr_peer_wake_le_hid_stress(self):
+        """ Use LE HID device to wake from suspend. """
+        device = self.devices['BLE_MOUSE'][0]
+        self.run_peer_wakeup_device('BLE_MOUSE',
+                                    device,
+                                    device_test=self.test_mouse_left_click,
+                                    iterations=STRESS_ITERATIONS)
 
     @test_wrapper('Peer wakeup with A2DP should fail')
     def sr_peer_wake_a2dp_should_fail(self):

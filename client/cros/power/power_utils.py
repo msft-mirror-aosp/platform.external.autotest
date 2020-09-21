@@ -98,18 +98,6 @@ def has_powercap_support():
     return os.path.isdir('/sys/devices/virtual/powercap/intel-rapl/')
 
 
-def has_amd_rapl_support():
-    """Return True if CPU support AMD RAPL.
-
-    https://www.amd.com/system/files/TechDocs/56255_OSRR.pdf
-    """
-    cpuinfo = utils.get_cpuinfo()[0]
-    logging.info(repr(cpuinfo))
-    return (cpuinfo.get('vendor_id', '') == 'AuthenticAMD' and
-            int(cpuinfo.get('cpu family', 0)) == 0x17 and
-            0 <= int(cpuinfo.get('model', -1)) <= 0x2f)
-
-
 def has_lid():
     """
     Checks whether the device has lid.

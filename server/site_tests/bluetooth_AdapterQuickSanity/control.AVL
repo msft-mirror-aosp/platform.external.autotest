@@ -25,8 +25,9 @@ args_dict = utils.args_to_dict(args)
 btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)
 
 def run(machine):
-    host = hosts.create_host(machine, btpeer_args=btpeer_args)
+    host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterQuickSanity', host=host,
-                  num_iterations=5, flag='AVL')
+                 num_iterations=5, btpeer_args=btpeer_args,
+                 flag='AVL')
 
 parallel_simple(run, machines)

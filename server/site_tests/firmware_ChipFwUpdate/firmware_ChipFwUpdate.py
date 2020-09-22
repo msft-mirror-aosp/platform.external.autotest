@@ -133,7 +133,7 @@ class firmware_ChipFwUpdate(FirmwareTest):
                 continue
 
             hashblob = self.faft_client.updater.cbfs_get_chip_hash(
-                chip.fw_name)
+                chip.fw_name, chip.hash_extension)
             if not hashblob:
                 logging.warning('%s firmware hash not extracted from %s',
                                 chip.chip_name, self.BIOS)
@@ -184,7 +184,8 @@ class firmware_ChipFwUpdate(FirmwareTest):
                                fw_update.cbfs_bin_name))
 
             if not self.faft_client.updater.cbfs_replace_chip(
-                    fw_update.fw_name):
+                    fw_update.fw_name, fw_update.extension,
+                    fw_update.hash_extension):
                 raise error.TestFail('could not replace %s blobs in cbfs' %
                                      fw_update.chip_name)
 

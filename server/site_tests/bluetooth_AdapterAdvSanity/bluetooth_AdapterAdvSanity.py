@@ -93,14 +93,22 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
         self.adv_reboot_advertising_test()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None,
-                 flag='Quick Sanity', peer_required=True):
+    def run_once(self,
+                 host,
+                 num_iterations=1,
+                 btpeer_args=[],
+                 test_name=None,
+                 flag='Quick Sanity',
+                 peer_required=True):
         """Run the batch of Bluetooth advertising sanity tests
 
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         """
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_btpeer=peer_required, flag=flag)
+        self.quick_test_init(host,
+                             use_btpeer=peer_required,
+                             flag=flag,
+                             btpeer_args=btpeer_args)
         self.adv_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

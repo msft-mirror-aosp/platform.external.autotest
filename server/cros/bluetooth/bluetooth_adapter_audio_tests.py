@@ -808,7 +808,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                   tolerance of the playback sine wave frequency.
 
         """
-        test_data = audio_test_data[test_profile]
+        # Make a copy since the test_data may be formatted with distinct
+        # arguments in the follow-up tests.
+        test_data = audio_test_data[test_profile].copy()
         if bool(duration):
             test_data['duration'] = duration
         else:

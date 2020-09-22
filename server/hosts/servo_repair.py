@@ -574,6 +574,8 @@ class _PowerButtonVerifier(hosts.Verifier):
             raise hosts.AutoservNonCriticalVerifyError(
                 'Check ribbon cable: \'pwr_button\' is stuck')
 
+    def _is_applicable(self, host):
+        return host.get_servo().main_device_is_flex()
 
     @property
     def description(self):
@@ -762,10 +764,10 @@ def create_servo_repair_strategy():
             (_ServodConnectionVerifier, 'servod_connection', ['servod_job']),
             (_ServodControlVerifier, 'servod_control', ['servod_connection']),
             (_DUTConnectionVerifier, 'dut_connected', ['servod_connection']),
-            (_PowerButtonVerifier, 'pwr_button', ['servod_connection']),
-            (_LidVerifier, 'lid_open', ['servod_connection']),
-            (_EcBoardVerifier, 'ec_board', ['servod_connection']),
-            (_CCDTestlabVerifier, 'ccd_testlab', ['servod_connection']),
+            (_PowerButtonVerifier, 'pwr_button', ['dut_connected']),
+            (_LidVerifier, 'lid_open', ['dut_connected']),
+            (_EcBoardVerifier, 'ec_board', ['dut_connected']),
+            (_CCDTestlabVerifier, 'ccd_testlab', ['dut_connected']),
             (_CCDPowerDeliveryVerifier, 'power_delivery',
              ['servod_connection']),
     ]

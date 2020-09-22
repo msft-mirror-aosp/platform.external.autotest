@@ -14,7 +14,9 @@
 
 import logging
 import os
+import subprocess
 
+from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.server import utils
 from autotest_lib.server.cros.tradefed import tradefed_test
 
@@ -58,6 +60,21 @@ class cheets_CTS_Instant(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
+            # Apply this PATH change only for chroot environment
+            if not client_utils.is_moblab():
+                try:
+                    os.environ['JAVA_HOME'] = '/opt/icedtea-bin-3.4.0'
+                    os.environ['PATH'] = os.environ['JAVA_HOME']\
+                                       + '/bin:' + os.environ['PATH']
+                    logging.info(
+                            subprocess.check_output(['java', '-version'],
+                                                    stderr=subprocess.STDOUT))
+                    # TODO(jiyounha): remove once crbug.com/1105515 is resolved.
+                    logging.info(
+                            subprocess.check_output(['whereis', 'java'],
+                                                    stderr=subprocess.STDOUT))
+                except OSError:
+                    logging.error('Can\'t change current PATH directory')
         return cmd
 
     def _get_default_bundle_url(self, bundle):

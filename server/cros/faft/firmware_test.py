@@ -1227,13 +1227,6 @@ class FirmwareTest(test.test):
         self.clear_set_gbb_flags(0xffffffff, flags_to_set)
         self.mark_setup_done('gbb_flags')
 
-    def drop_backup_gbb_flags(self):
-        """Drops the backup GBB flags.
-
-        This can be used when a test intends to permanently change GBB flags.
-        """
-        self._backup_gbb_flags = None
-
     def _restore_gbb_flags(self):
         """Restore GBB flags to their original state."""
         if self._backup_gbb_flags is None:
@@ -1777,10 +1770,6 @@ class FirmwareTest(test.test):
         """
         return bool(self._backup_firmware_identity)
 
-    def clear_saved_firmware(self):
-        """Clear the firmware saved by the method backup_firmware."""
-        self._backup_firmware_identity = {}
-
     def restore_firmware(self, suffix='.original', restore_ec=True):
         """Restore firmware from host in resultsdir.
 
@@ -1897,10 +1886,6 @@ class FirmwareTest(test.test):
         @return: True if the kernel is saved; otherwise, False.
         """
         return len(self._backup_kernel_sha) != 0
-
-    def clear_saved_kernel(self):
-        """Clear the kernel saved by backup_kernel()."""
-        self._backup_kernel_sha = dict()
 
     def restore_kernel(self, suffix='.original'):
         """Restore kernel from host in resultsdir.

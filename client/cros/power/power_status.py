@@ -2095,8 +2095,6 @@ class PowerLogger(MeasurementLogger):
             measurements += power_rapl.create_powercap()
         elif power_utils.has_rapl_support():
             measurements += power_rapl.create_rapl()
-        elif power_utils.has_amd_rapl_support():
-            measurements += power_rapl.create_amd_rapl()
         return measurements
 
     def save_results(self, resultsdir, fname_prefix=None):

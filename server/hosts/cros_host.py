@@ -1011,8 +1011,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/boot_duration'):
-            self.servo.install_recovery_image(image_url)
+            need_snk = self.require_snk_mode_in_recovery()
+            self.servo.install_recovery_image(image_url, snk_mode=need_snk)
             if not self.wait_up(timeout=usb_boot_timeout):
+                if need_snk:
+                    # Attempt to restore servo_v4 role to 'src' mode.
+                    self.servo.set_servo_v4_role('src')
                 raise hosts.AutoservRepairError(
                         'DUT failed to boot from USB after %d seconds' %
                         usb_boot_timeout, 'failed_to_boot_pre_install')
@@ -1072,6 +1076,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.info('Power cycling DUT through servo.')
                 self.servo.get_power_state_controller().power_off()
                 self.servo.switch_usbkey('off')
+                if need_snk:
+                    # Attempt to restore servo_v4 role to 'src' mode.
+                    self.servo.set_servo_v4_role('src')
                 # N.B. The Servo API requires that we use power_on() here
                 # for two reasons:
                 #  1) After turning on a DUT in recovery mode, you must turn
@@ -2808,3 +2815,36 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             return
         reset_counters = state in profile_constants.STATES_NEED_RESET_COUNTER
         self.health_profile.update_dut_state(state, reset_counters)
+
+    def require_snk_mode_in_recovery(self):
+        """Check whether we need to switch servo_v4 role to snk when
+        booting into recovery mode. (See crbug.com/1129165)
+        """
+        info = self.host_info_store.get()
+        if info.get_label_value('power') != 'battery':
+            logging.info(
+                    '%s does not has battery, snk mode is not needed'
+                    ' for recovery.', self.hostname)
+            return False
+        if not self.servo.supports_built_in_pd_control():
+            logging.info('Power delivery is not supported on this servo, snk'
+                         ' mode is not needed for recovery.')
+            return False
+        try:
+            #TODO(xianuowang@) move MIN_BATTERY_LEVEL to cros_constant
+            battery_percent = self.servo.get('battery_charge_percent')
+            if battery_percent < cros_repair.MIN_BATTERY_LEVEL:
+                logging.info(
+                        'Current battery level %s%% below %s%% threshold, we'
+                        ' will attempt to boot host in recovery mode without'
+                        ' changing servo to snk mode. Please note the host may'
+                        ' not able to see usb drive in recovery mode later due'
+                        ' to servo not in snk mode.', battery_percent,
+                        cros_repair.MIN_BATTERY_LEVEL)
+                return False
+        except Exception as e:
+            logging.info(
+                    'Unexpected error occurred when getting'
+                    ' battery_charge_percent from servo; %s', str(e))
+            return False
+        return True

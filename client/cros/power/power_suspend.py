@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections, logging, os, re, shutil, time
+import collections, logging, os, re, subprocess, time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -577,21 +577,25 @@ class Suspender(object):
                     # might be another error, we check for it ourselves below
                     alarm = self._ALARM_FORCE_EARLY_WAKEUP
 
-                if os.path.exists('/sys/firmware/log'):
-                    for msg in re.findall(r'^.*ERROR.*$',
-                            utils.read_file('/sys/firmware/log'), re.M):
-                        for board, pattern in sys_power.FirmwareError.ALLOWLIST:
-                            if (re.search(board, utils.get_board()) and
-                                    re.search(pattern, msg)):
-                                logging.info('Allowlisted FW error: ' + msg)
-                                break
-                        else:
-                            firmware_log = os.path.join(self._logdir,
-                                    'firmware.log.' + str(iteration))
-                            shutil.copy('/sys/firmware/log', firmware_log)
-                            logging.info('Saved firmware log: ' + firmware_log)
-                            raise sys_power.FirmwareError(msg.strip('\r\n '))
+                log_data = subprocess.check_output(['cbmem',
+                                                    '-1']).decode('utf-8')
 
+                for msg in re.findall(r'^.*ERROR.*$', log_data, re.M):
+                    for board, pattern in sys_power.FirmwareError.ALLOWLIST:
+                        if (re.search(board, utils.get_board())
+                                    and re.search(pattern, msg)):
+                            logging.info('Allowlisted FW error: %s', msg)
+                            break
+                    else:
+                        firmware_log = os.path.join(self._logdir,
+                                'firmware.log.' + str(iteration))
+                        with open(firmware_log, 'w') as f:
+                            f.write(log_data)
+                            logging.info('Saved firmware log: %s',
+                                         firmware_log)
+
+                        raise sys_power.FirmwareError(
+                                    msg.strip('\r\n '))
 
                 if not self._check_resume_finished():
                     if not self._aborted_due_to_locking():

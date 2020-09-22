@@ -3,7 +3,6 @@ H# Copyright 2020 The Chromium OS Authors. All rights reserved.
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
-from autotest_lib.server.cros.bluetooth import bluetooth_test
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterMTBF.typical_use_cases_test'

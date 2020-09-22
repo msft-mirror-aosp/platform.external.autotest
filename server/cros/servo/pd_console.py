@@ -163,8 +163,20 @@ class PDConsoleUtils(object):
         @param port: Type C PD port 0/1
         @returns: current PD dualrole setting, one of (on, off, snk, src)
         """
+
+        if self.per_port_dualrole_setting is True:
+            cmd = 'pd %d dualrole' % port
+        elif self.per_port_dualrole_setting is False:
+            cmd = 'pd dualrole'
+        else:
+            try:
+                self.per_port_dualrole_setting = True
+                return self.get_pd_dualrole(port)
+            except:
+                self.per_port_dualrole_setting = False
+                return self.get_pd_dualrole(port)
+
         dualrole_values = self.DUALROLE_VALUES
-        cmd = 'pd %d dualrole' % port
 
         m = self.send_pd_command_get_output(
                 cmd, ['dual-role toggling:\s+([\w ]+)[\r\n]'], debug_on=False)
@@ -532,7 +544,13 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
         # Get string required for console command
         dual_index = dualrole_values.index(value)
         # Create console command
-        cmd = 'pd %d dualrole %s' % (port, self.DUALROLE_CMD_ARGS[dual_index])
+        if self.per_port_dualrole_setting is True:
+            cmd = 'pd %d dualrole %s' % (port, self.DUALROLE_CMD_ARGS[dual_index])
+        elif self.per_port_dualrole_setting is False:
+            cmd = 'pd dualrole %s' % (self.DUALROLE_CMD_ARGS[dual_index])
+        else:
+            raise error.TestFail("dualrole error")
+
         self.console.send_command(cmd)
         time.sleep(self.DUALROLE_QUERY_DELAY)
         # Get current setting to verify that command was successful

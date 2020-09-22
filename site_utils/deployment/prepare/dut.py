@@ -234,16 +234,22 @@ def verify_boot_into_rec_mode(host):
     host.servo.get_power_state_controller().power_off()
     time.sleep(host.SHUTDOWN_TIMEOUT)
     logging.info("Booting DUT into recovery mode...")
-    host.servo.boot_in_recovery_mode()
-
-    if not host.wait_up(timeout=host.USB_BOOT_TIMEOUT):
-        raise Exception('DUT failed to boot into recovery mode.')
-
-    logging.info('Resetting the TPM status')
+    need_snk = host.require_snk_mode_in_recovery()
+    host.servo.boot_in_recovery_mode(snk_mode=need_snk)
     try:
-        host.run('chromeos-tpm-recovery')
-    except error.AutoservRunError:
-        logging.warn('chromeos-tpm-recovery is too old.')
+        if not host.wait_up(timeout=host.USB_BOOT_TIMEOUT):
+            raise Exception('DUT failed to boot into recovery mode.')
+
+        logging.info('Resetting the TPM status')
+        try:
+            host.run('chromeos-tpm-recovery')
+        except error.AutoservRunError:
+            logging.warn('chromeos-tpm-recovery is too old.')
+    finally:
+        # Restore the servo_v4 role to src if we called boot_in_recovery_mode
+        # method with snk_mode=True earlier.
+        if need_snk:
+            host.servo.set_servo_v4_role('src')
 
     logging.info("Rebooting host into normal mode.")
     power_cycle_via_servo(host)

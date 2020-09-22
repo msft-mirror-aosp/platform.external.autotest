@@ -303,9 +303,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def _initialize(self, hostname, chameleon_args=None, servo_args=None,
                     pdtester_args=None, try_lab_servo=False,
-                    try_servo_repair=False, btpeer_args=[],
-                    ssh_verbosity_flag='', ssh_options='',
-                    *args, **dargs):
+                    try_servo_repair=False, ssh_verbosity_flag='',
+                    ssh_options='', *args, **dargs):
         """Initialize superclasses, |self.chameleon|, and |self.servo|.
 
         This method will attempt to create the test-assistant object
@@ -362,11 +361,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         else:
             self.chameleon = None
 
-        # Initialize Bluetooth peers.
-        try:
-            self.initialize_btpeer(btpeer_args)
-        except Exception as e:
-            logging.error('Exception %s in initialize_btpeer', str(e))
+        # Bluetooth peers will be populated by the test if needed
+        self._btpeer_host_list = []
+        self.btpeer_list = []
+        self.btpeer = None
 
         # Add pdtester host if pdtester args were added on command line
         self._pdtester_host = pdtester_host.create_pdtester_host(
@@ -382,7 +380,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.pdtester = None
 
 
-    def initialize_btpeer(self, btpeer_args):
+    def initialize_btpeer(self, btpeer_args=[]):
         """ Initialize the Bluetooth peers
 
         Initialize Bluetooth peer devices given in the arguments. Bluetooth peer
@@ -391,12 +389,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                             a ChameleonHost. See chameleon_host for details.
 
         """
-        #TODO (b:142486063) Remove the try..except
+        logging.debug('Attempting to initialize bluetooth peers if available')
         try:
-            self._btpeer_host_list = []
-            self.btpeer_list = []
-            self.btpeer = None
-
             if type(btpeer_args) is list:
                 btpeer_args_list = btpeer_args
             else:
@@ -1237,6 +1231,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         message %= (self.hostname, info.board, info.model)
         self.record('INFO', None, None, message)
         profile_state = profile_constants.DUT_STATE_READY
+        # Initialize bluetooth peers
+        self.initialize_btpeer()
         try:
             self._repair_strategy.repair(self)
         except hosts.AutoservVerifyDependencyError as e:

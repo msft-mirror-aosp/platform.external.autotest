@@ -453,6 +453,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     def run_once(self,
                  host,
                  num_iterations=1,
+                 btpeer_args=[],
                  test_name=None,
                  flag='Quick Sanity'):
         """Running Bluetooth adapter suspend resume with peer autotest.
@@ -465,6 +466,9 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_btpeer=True, flag=flag)
+        self.quick_test_init(host,
+                             use_btpeer=True,
+                             flag=flag,
+                             btpeer_args=btpeer_args)
         self.sr_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

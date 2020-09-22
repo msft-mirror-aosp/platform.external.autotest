@@ -5,10 +5,12 @@ import logging
 import os
 import re
 import shutil
-import StringIO
 import sys
 import tempfile
 import unittest
+
+from six.moves import range
+import six
 
 import common
 from autotest_lib.client.bin import job, sysinfo, harness
@@ -133,7 +135,7 @@ class test_base_job(unittest.TestCase):
         self.jobtag = "jobtag"
 
         # get rid of stdout and logging
-        sys.stdout = StringIO.StringIO()
+        sys.stdout = six.StringIO()
         logging_manager.configure_logging(logging_config.TestingConfig())
         logging.disable(logging.CRITICAL)
         def dummy_configure_logging(*args, **kwargs):
@@ -462,7 +464,7 @@ class test_base_job(unittest.TestCase):
         # record
         job.partition_lib.get_partition_list.expect_call(
                 self.job, exclude_swap=False).and_return(part_list)
-        for i in xrange(len(part_list)):
+        for i in range(len(part_list)):
             part_list[i].get_mountpoint.expect_call().and_return(mount_list[i])
         if cpu_count is not None:
             utils.count_cpus.expect_call().and_return(cpu_count)

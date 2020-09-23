@@ -199,6 +199,9 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
        messages exchange for authorizing the peer device before unlocking
        the Chromebook.
     """
+    if rx_object_path is None or tx_object_path is None:
+        logging.error('Invalid object path')
+        return False
 
     self.test_message_exchange(
         rx_object_path,

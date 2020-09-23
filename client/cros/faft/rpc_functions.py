@@ -7,6 +7,7 @@ These will be exposed via an xmlrpc server running on the DUT.
 
 @note: When adding categories, please also update server/cros/faft/rpc_proxy.pyi
 """
+import binascii
 import httplib
 import logging
 import os
@@ -1061,7 +1062,7 @@ class UpdaterServicer(object):
         """Return the hex string of the EC hash."""
         blob = self._updater.get_ec_hash()
         # Format it to a hex string
-        return ''.join('%02x' % ord(c) for c in blob)
+        return binascii.hexlify(blob)
 
     def resign_firmware(self, version):
         """Resign firmware with version.
@@ -1141,13 +1142,17 @@ class UpdaterServicer(object):
         """Sets up cbfstool work directory."""
         return self._updater.cbfs_setup_work_dir()
 
-    def cbfs_extract_chip(self, fw_name):
+    def cbfs_extract_chip(self,
+                          fw_name,
+                          extension='.bin',
+                          hash_extension='.hash'):
         """Runs cbfstool to extract chip firmware.
 
         @param fw_name: Name of chip firmware to extract.
         @return: Boolean success status.
         """
-        return self._updater.cbfs_extract_chip(fw_name)
+        return self._updater.cbfs_extract_chip(fw_name, extension,
+                                               hash_extension)
 
     def cbfs_extract_diagnostics(self, diag_name, local_filename):
         """Runs cbfstool to extract a diagnostics image.
@@ -1167,21 +1172,29 @@ class UpdaterServicer(object):
         """
         self._updater.cbfs_replace_diagnostics(diag_name, local_filename)
 
-    def cbfs_get_chip_hash(self, fw_name):
+    def cbfs_get_chip_hash(self, fw_name, hash_extension='.hash'):
         """Gets the chip firmware hash blob.
+
+        The hash data is returned as a list of stringified two-byte pieces:
+        \x12\x34...\xab\xcd\xef -> ['0x12', '0x34', ..., '0xab', '0xcd', '0xef']
 
         @param fw_name: Name of chip firmware whose hash blob to return.
         @return: Hex string of hash blob.
         """
-        return self._updater.cbfs_get_chip_hash(fw_name)
+        return self._updater.cbfs_get_chip_hash(fw_name, hash_extension)
 
-    def cbfs_replace_chip(self, fw_name):
+    def cbfs_replace_chip(self,
+                          fw_name,
+                          extension='.bin',
+                          hash_extension='.hash',
+                          regions=('a', 'b')):
         """Runs cbfstool to replace chip firmware.
 
         @param fw_name: Name of chip firmware to extract.
         @return: Boolean success status.
         """
-        return self._updater.cbfs_replace_chip(fw_name)
+        return self._updater.cbfs_replace_chip(fw_name, extension,
+                                               hash_extension, regions)
 
     def cbfs_sign_and_flash(self):
         """Runs cbfs signer and flash it.

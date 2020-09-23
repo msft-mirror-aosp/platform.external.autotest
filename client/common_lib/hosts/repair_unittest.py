@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -5,6 +6,10 @@
 """Unit tests for the `repair` module."""
 
 # pylint: disable=missing-docstring
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import functools
 import logging
@@ -15,6 +20,7 @@ from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib.hosts import repair
 from autotest_lib.server import constants
 from autotest_lib.server.hosts import host_info
+from six.moves import range
 
 
 class _GoodVerifier(hosts.Verifier):

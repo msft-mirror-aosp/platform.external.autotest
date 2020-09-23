@@ -100,6 +100,10 @@ class DeviceHealthProfile(object):
     def _upload_profile(self):
         """Copy profile file from local path to remote profile host.
         """
+        # Make sure the device health profile directory exists on profile host.
+        self._profile_host.run('mkdir -p %s' % PROFILE_FILE_DIR,
+                               ignore_status=True)
+
         logging.debug('Uploading profile from local path: %s to remote %s:%s',
                       self._local_path,
                       self._profile_host.hostname,

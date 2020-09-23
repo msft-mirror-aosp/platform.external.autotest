@@ -1770,11 +1770,13 @@ class FirmwareTest(test.test):
         """
         return bool(self._backup_firmware_identity)
 
-    def restore_firmware(self, suffix='.original', restore_ec=True):
+    def restore_firmware(self, suffix='.original', restore_ec=True,
+                         reboot_ec=False):
         """Restore firmware from host in resultsdir.
 
         @param suffix: a string appended to backup file name
         @param restore_ec: True to restore the ec firmware; False not to do.
+        @param reboot_ec: True to reboot EC after restore (if it was restored)
         @return: True if firmware needed to be restored
         """
         if not self.is_firmware_changed():
@@ -1805,8 +1807,13 @@ class FirmwareTest(test.test):
             except error.GenericHostRunError:
                 logging.warn("DUT command failed during EC restore")
                 logging.debug("Full exception:", exc_info=True)
-
-        self.switcher.mode_aware_reboot()
+            if reboot_ec:
+                self.switcher.mode_aware_reboot(
+                        'custom', lambda: self.sync_and_ec_reboot('hard'))
+            else:
+                self.switcher.mode_aware_reboot()
+        else:
+            self.switcher.mode_aware_reboot()
         logging.info('Successfully restored firmware.')
         return True
 

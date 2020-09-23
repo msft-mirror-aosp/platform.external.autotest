@@ -8,7 +8,6 @@ import time
 
 from autotest_lib.server import test
 from autotest_lib.client.common_lib import error, utils
-from autotest_lib.server.cros import gsutil_wrapper
 
 
 class FingerprintTest(test.test):
@@ -670,27 +669,6 @@ class FingerprintTest(test.test):
                 and
                 self.get_rollback_rw_version() ==
                 self._ROLLBACK_INITIAL_RW_VERSION)
-
-    def _download_firmware(self, gs_path, dut_file_path):
-        """Downloads firmware from Google Storage bucket."""
-        bucket = os.path.dirname(gs_path)
-        filename = os.path.basename(gs_path)
-        logging.info('Downloading firmware, '
-                     'bucket: %s, filename: %s, dest: %s',
-                     bucket, filename, dut_file_path)
-        gsutil_wrapper.copy_private_bucket(host=self.host,
-                                           bucket=bucket,
-                                           filename=filename,
-                                           destination=dut_file_path)
-        return os.path.join(dut_file_path, filename)
-
-    def flash_rw_firmware(self, fw_path):
-        """Flashes the RW (read-write) firmware."""
-        flash_cmd = os.path.join(self._dut_working_dir,
-                                 'flash_fp_rw.sh' + ' ' + fw_path)
-        result = self.run_cmd(flash_cmd)
-        if result.exit_status != 0:
-            raise error.TestFail('Flashing RW firmware failed')
 
     def flash_rw_ro_firmware(self, fw_path):
         """Flashes *all* firmware (both RO and RW)."""

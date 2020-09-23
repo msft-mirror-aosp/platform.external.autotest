@@ -30,8 +30,8 @@ NO_CONTROL_RE = re.compile(r'No control named (\w*\.?\w*)')
 # Please see servo/drv/pty_driver.py for error messages to match.
 
 # This common prefix can apply to all subtypes of console errors.
-                     # The first portion is an optional qualifier of the type
-                     # of error that occurred. Each error is or'd.
+# The first portion is an optional qualifier of the type
+# of error that occurred. Each error is or'd.
 CONSOLE_COMMON_RE = (r'((Timeout waiting for response|'
                      r'Known error [\w\'\".\s]+). )?'
                      # The second portion is an optional name for the console
@@ -332,10 +332,10 @@ class _Uart(object):
                 logging.warning('Failed to set %s to %s. %s. Ignoring.',
                                 uart_cmd, target_level, str(e))
             if level == target_level:
-              logging.debug('Managed to set %s to %s.', uart_cmd, level)
+                logging.debug('Managed to set %s to %s.', uart_cmd, level)
             else:
-              logging.debug('Failed to set %s to %s. Got %s.', uart_cmd,
-                            target_level, level)
+                logging.debug('Failed to set %s to %s. Got %s.', uart_cmd,
+                              target_level, level)
         return level == target_level
 
     def start_capture(self):
@@ -1171,19 +1171,33 @@ class Servo(object):
                                   'Please take a look at Servo Logs.',
                                   str(e))
 
-    def boot_in_recovery_mode(self):
-        """Boot host DUT in recovery mode."""
+    def boot_in_recovery_mode(self, snk_mode=False):
+        """Boot host DUT in recovery mode.
+
+        @param snk_mode: If True, switch servo_v4 role to 'snk' mode before
+                         boot DUT into recovery mode.
+        """
         # This call has a built-in delay to ensure that we wait a timeout
         # for the stick to enumerate and settle on the DUT side.
         self.switch_usbkey('dut')
+        # Switch servo_v4 mode to snk as the DUT won't able to see usb drive
+        # in recovery mode if the servo is in src mode(see crbug.com/1129165).
+        if snk_mode:
+            logging.info('Setting servo_v4 role to snk mode in order to make'
+                         ' the DUT can see usb drive while in recovery mode.')
+            self.set_servo_v4_role('snk')
+
         try:
             self._power_state.power_on(rec_mode=self._power_state.REC_ON)
         except error.TestFail as e:
+            self.set_servo_v4_role('src')
             logging.error('Failed to boot DUT in recovery mode. %s.', str(e))
             raise error.AutotestError('Failed to boot DUT in recovery mode.')
 
-    def install_recovery_image(self, image_path=None,
-                               make_image_noninteractive=False):
+    def install_recovery_image(self,
+                               image_path=None,
+                               make_image_noninteractive=False,
+                               snk_mode=False):
         """Install the recovery image specified by the path onto the DUT.
 
         This method uses google recovery mode to install a recovery image
@@ -1191,17 +1205,23 @@ class Servo(object):
         board specified by the usb_dev.  If no image path is specified
         we use the recovery image already on the usb image.
 
+        This method will switch servo_v4 role to 'snk' mode in order to make
+        the DUT can see the usb drive plugged on servo, the caller should
+        set servo_v4 role back to 'src' mode one the DUT exit recovery mode.
+
         @param image_path: Path on the host to the recovery image.
         @param make_image_noninteractive: Make the recovery image
                 noninteractive, therefore the DUT will reboot automatically
                 after installation.
+        @param snk_mode: If True, switch servo_v4 role to 'snk' mode before
+                         boot DUT into recovery mode.
         """
         self.image_to_servo_usb(image_path, make_image_noninteractive)
         # Give the DUT some time to power_off if we skip
         # download image to usb. (crbug.com/982993)
         if not image_path:
             time.sleep(10)
-        self.boot_in_recovery_mode()
+        self.boot_in_recovery_mode(snk_mode=snk_mode)
 
 
     def _scp_image(self, image_path):
@@ -1547,14 +1567,21 @@ class Servo(object):
 
         @param role: Power role for DUT port on servo v4, either 'src' or 'snk'.
         """
-        if self._servo_type.startswith('servo_v4'):
-            value = self.get('servo_v4_role')
-            if value != role:
-                self.set_nocheck('servo_v4_role', role)
-            else:
-                logging.debug('Already in the role: %s.', role)
-        else:
+        if not self._servo_type.startswith('servo_v4'):
             logging.debug('Not a servo v4, unable to set role to %s.', role)
+            return
+
+        if not self.has_control('servo_v4_role'):
+            logging.debug(
+                    'Servo does not has servo_v4_role control, unable'
+                    ' to set role to %s.', role)
+            return
+
+        value = self.get('servo_v4_role')
+        if value != role:
+            self.set_nocheck('servo_v4_role', role)
+        else:
+            logging.debug('Already in the role: %s.', role)
 
     def set_servo_v4_pd_comm(self, en):
         """Set the PD communication of servo v4, either 'on' or 'off'.
@@ -1745,6 +1772,15 @@ class Servo(object):
 
     def close(self, outdir=None):
         """Close the servo object."""
+        # We want to ensure that servo_v4 is in src mode to avoid DUTs
+        # left in discharge state after a task.
+        try:
+            self.set_servo_v4_role('src')
+        except Exception as e:
+            logging.info(
+                    'Unexpected error while setting servo_v4 role'
+                    ' to src; %s', e)
+
         self._uart.stop_capture()
         self.record_uart_capture(outdir)
 

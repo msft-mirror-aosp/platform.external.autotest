@@ -3709,6 +3709,10 @@ class BluetoothAdapterTests(test.test):
         @returns: The test results.
 
         """
+        if object_path is None:
+            logging.error('Invalid object path')
+            return False
+
         start_notify = self.bluetooth_facade.start_notify(
             object_path, cccd_value)
         is_notifying = self._wait_for_condition(
@@ -3731,6 +3735,10 @@ class BluetoothAdapterTests(test.test):
         @returns: The test results.
 
         """
+        if object_path is None:
+            logging.error('Invalid object path')
+            return False
+
         stop_notify = self.bluetooth_facade.stop_notify(object_path)
         is_not_notifying = self._wait_for_condition(
             lambda: not self.bluetooth_facade.is_notifying(

@@ -97,7 +97,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     def quick_test_init(self, host, use_btpeer=True, use_chameleon=False,
-                        flag='Quick Sanity', start_browser=False):
+                        flag='Quick Sanity', btpeer_args=[],
+                        start_browser=False):
         """Inits the test batch"""
         self.host = host
         self.start_browser = start_browser
@@ -131,6 +132,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # TODO(b:149637050) Remove use_chameleon
         self.use_btpeer = use_btpeer or use_chameleon
         if self.use_btpeer:
+            self.host.initialize_btpeer(btpeer_args=btpeer_args)
             self.input_facade = self.factory.create_input_facade()
             self.check_btpeer()
 

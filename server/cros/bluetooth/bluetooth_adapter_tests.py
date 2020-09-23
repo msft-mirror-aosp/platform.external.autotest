@@ -3257,7 +3257,7 @@ class BluetoothAdapterTests(test.test):
         return True
 
 
-    def _record_input_events(self, device, gesture):
+    def _record_input_events(self, device, gesture, address=None):
         """Record the input events.
 
         @param device: the bluetooth HID device.
@@ -3266,8 +3266,7 @@ class BluetoothAdapterTests(test.test):
         @returns: the input events received on the DUT.
 
         """
-        self.input_facade.initialize_input_recorder(device.name,
-                                                    uniq=device.address)
+        self.input_facade.initialize_input_recorder(device.name, uniq=address)
         self.input_facade.start_input_recorder(device.name)
         time.sleep(self.HID_REPORT_SLEEP_SECS)
         gesture()
@@ -3301,7 +3300,9 @@ class BluetoothAdapterTests(test.test):
         else:
             raise error.TestError('Button (%s) is not valid.' % button)
 
-        actual_events = self._record_input_events(device, gesture)
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
 
         linux_input_button = {'LEFT': BTN_LEFT, 'RIGHT': BTN_RIGHT}
         expected_events = [
@@ -3358,7 +3359,9 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.Move(delta_x, delta_y)
-        actual_events = self._record_input_events(device, gesture)
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
 
         events_x = [Event(EV_REL, REL_X, delta_x)] if delta_x else []
         events_y = [Event(EV_REL, REL_Y, delta_y)] if delta_y else []
@@ -3424,7 +3427,9 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.Scroll(units)
-        recorded_events = self._record_input_events(device, gesture)
+        recorded_events = self._record_input_events(device,
+                                                    gesture,
+                                                    address=device.address)
 
         # Since high-speed scrolling events are inserted after they are passed
         # through bluetooth module, we ignore these events since they are
@@ -3491,7 +3496,9 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.ClickAndDrag(delta_x, delta_y)
-        actual_events = self._record_input_events(device, gesture)
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
 
         button = 'LEFT'
         expected_events = (
@@ -3533,7 +3540,9 @@ class BluetoothAdapterTests(test.test):
 
         gesture = lambda: device.KeyboardSendString(string_to_send)
 
-        actual_events = self._record_input_events(device, gesture)
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
 
         resulting_string = bluetooth_test_utils.reconstruct_string(
                            actual_events)
@@ -3571,7 +3580,9 @@ class BluetoothAdapterTests(test.test):
 
         # Create and run this trace as a gesture
         gesture = lambda: device.KeyboardSendTrace(input_scan_codes)
-        rec_events = self._record_input_events(device, gesture)
+        rec_events = self._record_input_events(device,
+                                               gesture,
+                                               address=device.address)
 
         # Filter out any input events that were not from the keyboard
         rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]

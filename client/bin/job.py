@@ -587,9 +587,9 @@ class base_client_job(base_job.base_job):
         """
         Install the test package and return the control file path.
 
-        @param url The name of the test, e.g. dummy_Pass.  This is the
+        @param url The name of the test, e.g. login_LoginSuccess.  This is the
             string passed to run_test in the client test control file:
-            job.run_test('dummy_Pass')
+            job.run_test('login_LoginSuccess')
             This name can also be something like 'camera_HAL3.jea',
             which corresponds to a test package containing multiple
             control files, each with calls to:

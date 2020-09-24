@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,10 +8,16 @@ Server side bluetooth tests on adapter pairing and connecting to a bluetooth
 HID device.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import time
 
+import common
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from six.moves import range
 
 
 class BluetoothAdapterPairingTests(
@@ -167,7 +174,7 @@ class BluetoothAdapterPairingTests(
         self.test_disconnection_by_adapter(device.address)
         total_duration_by_adapter = 0
         loop_cnt = 0
-        for i in xrange(0, loops):
+        for i in range(0, loops):
 
             # Verify device didn't connect automatically
             time.sleep(2)
@@ -214,7 +221,7 @@ class BluetoothAdapterPairingTests(
 
         total_reconnection_duration = 0
         loop_cnt = 0
-        for i in xrange(loops):
+        for i in range(loops):
             # Restart either the adapter or the peer
             if restart_adapter:
                 self.test_power_off_adapter()

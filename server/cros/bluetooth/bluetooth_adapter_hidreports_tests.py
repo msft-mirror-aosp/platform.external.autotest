@@ -4,9 +4,12 @@
 
 """Server side bluetooth tests about sending bluetooth HID reports."""
 
+from __future__ import absolute_import
+
 import logging
 import time
 
+import common
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
 

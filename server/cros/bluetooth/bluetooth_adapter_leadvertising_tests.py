@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -29,13 +30,20 @@ if min advertising interval is set to an expected value" or
 
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import copy
 import logging
 import re
 import time
 
+import common
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from six.moves import range
+from six.moves import zip
 
 test_case_log = bluetooth_adapter_tests.test_case_log
 test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
@@ -62,7 +70,7 @@ class bluetooth_AdapterLEAdvertising(
         @param advertisements: a list of advertisements.
 
         """
-        return range(1, len(advertisements) + 1)
+        return list(range(1, len(advertisements) + 1))
 
 
     def register_advertisements(self, advertisements, min_adv_interval_ms,
@@ -250,7 +258,7 @@ class bluetooth_AdapterLEAdvertising(
 
         # We locate the advertisement by searching for the ServiceData
         # attribute we configured.
-        data_to_match = advertisement['ServiceData'].keys()[0]
+        data_to_match = list(advertisement['ServiceData'].keys())[0]
 
         # TODO Reduce discovery time once b/153027105 is resolved
         advertising_wait_time = 120
@@ -1315,7 +1323,7 @@ class bluetooth_AdapterLEAdvertising(
 
         elif test_type == 'suspend_resume':
             # Run all test cases for suspend resume stress testing.
-            for i in xrange(num_iterations):
+            for i in range(num_iterations):
                 logging.info('Starting suspend resume loop #%d', i+1)
                 self.test_case_SI200_RA3_CD_SR_CD_UA3()
                 self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()
@@ -1324,7 +1332,7 @@ class bluetooth_AdapterLEAdvertising(
 
         elif test_type == 'reboot':
             # Run all test cases for reboot stress testing.
-            for i in xrange(num_iterations):
+            for i in range(num_iterations):
                 logging.info('Starting reboot loop #%d', i+1)
                 self.test_case_SI200_RA3_CD_PC_CD_UA3()
                 self.test_case_RA3_CD_SI200_CD_PC_CD_UA3()

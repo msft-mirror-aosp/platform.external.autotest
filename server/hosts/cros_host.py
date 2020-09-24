@@ -1791,11 +1791,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 (i.e. both True or both False).
 
         """
-        ping_val = utils.ping(self.hostname,
-                              tries=1,
-                              deadline=1,
-                              timeout=2,
-                              ignore_timeout=True)
+        ping_val = utils.ping(self.hostname, tries=1, deadline=1)
         return not (status ^ (ping_val == 0))
 
     def _ping_wait_for_status(self, status, timeout):

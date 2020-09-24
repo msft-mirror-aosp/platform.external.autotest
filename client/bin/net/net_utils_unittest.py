@@ -752,7 +752,7 @@ class TestNetUtils(unittest.TestCase):
           'eth0      Link encap:Ethernet  HWaddr 00:0E:0C:C3:7D:A8\n'\
           '          inet addr:%s  Bcast:10.246.90.255'\
           ' Mask:255.255.255.0\n'\
-          '          UP BROADCAST RUNNING MASTER MULTICAST  MTU:1500'\
+          '          UP BROADCAST RUNNING MAIN MULTICAST  MTU:1500'\
           ' Metric:1\n'\
           '          RX packets:463070 errors:0 dropped:0 overruns:0'\
           ' frame:0\n'\
@@ -799,7 +799,7 @@ class TestNetUtils(unittest.TestCase):
           'eth0      Link encap:Ethernet  HWaddr 00:0E:0C:C3:7D:A8\n'\
           '          inet addr:1.2.3.4  Bcast:10.246.90.255'\
           ' Mask:255.255.255.0\n'\
-          '          %s BROADCAST RUNNING MASTER MULTICAST  MTU:1500'\
+          '          %s BROADCAST RUNNING MAIN MULTICAST  MTU:1500'\
           ' Metric:1\n'\
           '          RX packets:463070 errors:0 dropped:0 overruns:0'\
           ' frame:0\n'\
@@ -967,8 +967,8 @@ class TestNetUtils(unittest.TestCase):
         self.god.check_playback()
 
 
-    def test_bonding_get_slave_interfaces(self):
-        self.assertEquals(net_utils.bond().get_slave_interfaces(), [])
+    def test_bonding_get_agent_interfaces(self):
+        self.assertEquals(net_utils.bond().get_agent_interfaces(), [])
         self.god.check_playback()
 
 

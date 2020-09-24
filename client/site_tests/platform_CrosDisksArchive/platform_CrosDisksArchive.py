@@ -231,6 +231,34 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.info('Unmounting archive')
             self.cros_disks.unmount(mount_path, [])
 
+    def _test_duplicated_filenames(self, mount_path):
+        want = [
+                FilesystemTestFile(b'Simple.txt', b'Simple 1\n'),
+                FilesystemTestFile(b'Simple (1).txt', b'Simple 2 \n'),
+                FilesystemTestFile(b'Simple (2).txt', b'Simple 3  \n'),
+                FilesystemTestFile(b'Suspense...', b'Suspense 1\n'),
+                FilesystemTestFile(b'Suspense... (1)', b'Suspense 2 \n'),
+                FilesystemTestFile(b'Suspense... (2)', b'Suspense 3  \n'),
+                FilesystemTestFile(b'No Dot', b'No Dot 1\n'),
+                FilesystemTestFile(b'No Dot (1)', b'No Dot 2 \n'),
+                FilesystemTestFile(b'No Dot (2)', b'No Dot 3  \n'),
+                FilesystemTestFile(b'.Hidden', b'Hidden 1\n'),
+                FilesystemTestFile(b'.Hidden (1)', b'Hidden 2 \n'),
+                FilesystemTestFile(b'.Hidden (2)', b'Hidden 3  \n'),
+        ]
+
+        self._test_archive(
+                os.path.join(mount_path, 'Duplicate Filenames.zip'),
+                FilesystemTestDirectory(
+                        '',
+                        [
+                                FilesystemTestDirectory(
+                                        'Folder', want, strict=True),
+                                FilesystemTestDirectory(
+                                        'With.Dot', want, strict=True)
+                        ] + want,
+                        strict=True))
+
     def _test_archives(self):
         # Create a FAT filesystem containing all our test archive files.
         logging.info('Creating FAT filesystem holding test archive files')
@@ -244,6 +272,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
 
             logging.debug('Copying archive files to %r', image.mount_dir)
             for archive_name in [
+                    'Duplicate Filenames.zip',
                     'Encrypted.rar',
                     'Encrypted AES-128.zip',
                     'Encrypted AES-192.zip',
@@ -293,6 +322,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
             self._test_invalid(mount_path)
             self._test_need_password(mount_path)
             self._test_nested(mount_path)
+            self._test_duplicated_filenames(mount_path)
 
             logging.info('Unmounting FAT filesystem')
             self.cros_disks.unmount(mount_path, [])

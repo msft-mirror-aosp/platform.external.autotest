@@ -108,7 +108,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             'AUTOSERV', 'min_version_support_ssp', type=int)
 
     USE_FSFREEZE = CONFIG.get_config_value(
-            'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
+            'CROS', 'enable_fs_freeze', type=bool, default=False)
 
     # REBOOT_TIMEOUT: How long to wait for a reboot.
     #

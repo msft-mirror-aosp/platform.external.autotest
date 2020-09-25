@@ -2268,6 +2268,30 @@ class BluetoothFacadeNative(object):
                 dbus.UInt16(min_adv_interval_ms),
                 dbus.UInt16(max_adv_interval_ms))
 
+    def get_advertisement_property(self, adv_path, prop_name):
+        """Grab property of an advertisement registered on the DUT
+
+        The service on the DUT registers a dbus object and holds it. During the
+        test, some properties on the object may change, so this allows the test
+        access to the properties at run-time.
+
+        @param adv_path: string path of the dbus object
+        @param prop_name: string name of the property required
+
+        @returns: the value of the property in standard (non-dbus) type if the
+                    property exists, else None
+        """
+        for adv in self.advertisements:
+            if str(adv.get_path()) == adv_path:
+                adv_props = adv.GetAll('org.bluez.LEAdvertisement1')
+                prop_val = adv_props.get(prop_name, None)
+
+                # Dbus types can't be sent across the xmlrpc connection, so
+                # it is converted back to a primitive type first
+                return dbus_util.dbus2primitive(prop_val)
+
+        return None
+
     def reset_advertising(self):
         """Reset advertising.
 

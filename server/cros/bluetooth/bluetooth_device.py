@@ -1119,6 +1119,23 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def get_advertisement_property(self, adv_path, prop_name):
+        """Grab property of an advertisement registered on the DUT
+
+        The service on the DUT registers a dbus object and holds it. During the
+        test, some properties on the object may change, so this allows the test
+        access to the properties at run-time.
+
+        @param adv_path: string path of the dbus object
+        @param prop_name: string name of the property required
+
+        @returns: the value of the property in standard (non-dbus) type if the
+                    property exists, else None
+        """
+
+        return self._proxy.get_advertisement_property(adv_path, prop_name)
+
+    @proxy_thread_safe
     def reset_advertising(self):
         """Reset advertising.
 

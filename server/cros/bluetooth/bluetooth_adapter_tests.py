@@ -2903,6 +2903,54 @@ class BluetoothAdapterTests(test.test):
         return platform in EXT_ADV_MODELS
 
 
+    def _verify_adv_tx_power(self, advertising_data):
+        """ Verify that advertisement uses Tx Power correctly via the following:
+
+            1. Confirm the correct Tx Power is propagated in both MGMT and
+                HCI commands.
+            2. Validate that the Tx Power selected by the controller is
+                returned to the client via dbus.
+
+        @param: advertising_data: dictionary of advertising data properties
+            used to register the advertisement
+
+        @returns: True if the above requirements are met, False otherwise
+        """
+
+        # If we aren't using TxPower in this advertisement, success
+        if not self.ext_adv_enabled() or 'TxPower' not in advertising_data:
+            return True
+
+        # Make sure the correct Tx power was passed in both MGMT and HCI
+        # commands by searching for two instances of search string
+        search_str = 'TX power: {} dbm'.format(advertising_data['TxPower'])
+        contents = self.bluetooth_le_facade.btmon_get(search_str=search_str,
+                                                      start_str='')
+        if len(contents) < 2:
+            logging.error('Could not locate correct Tx power in MGMT and HCI')
+            return False
+
+        # Locate tx power selected by controller
+        search_str = 'TX power \(selected\)'
+        contents = self.bluetooth_le_facade.btmon_get(search_str=search_str,
+                                                      start_str='')
+
+        if not contents:
+            logging.error('No Tx Power selected event found, failing')
+            return False
+
+        # The line we want has the following structure:
+        # 'TX power (selected): -5 dbm (0x07)'
+        # We locate the number before 'dbm'
+        items = contents[0].split(' ')
+        selected_tx_power = int(items[items.index('dbm') - 1])
+
+        # Validate that client's advertisement was updated correctly.
+        new_tx_prop = self.bluetooth_le_facade.get_advertisement_property(
+                advertising_data['Path'], 'TxPower')
+
+        return new_tx_prop == selected_tx_power
+
     @test_retry_and_log(False)
     def test_register_advertisement(self, advertisement_data, instance_id,
                                     min_adv_interval_ms, max_adv_interval_ms):
@@ -2915,6 +2963,7 @@ class BluetoothAdapterTests(test.test):
         - service data
         - advertising intervals
         - advertising enabled
+        - Tx power set (if extended advertising available)
 
         @param advertisement_data: the data of an advertisement to register.
         @param instance_id: the instance id which starts at 1.
@@ -2994,6 +3043,8 @@ class BluetoothAdapterTests(test.test):
         advertising_enabled = self.bluetooth_le_facade.btmon_find(
                 'Advertising: Enabled (0x01)')
 
+        tx_power_correct = self._verify_adv_tx_power(advertisement_data)
+
         self.results = {
                 'advertisement_added': advertisement_added,
                 'manufacturer_data_found': manufacturer_data_found,
@@ -3003,6 +3054,7 @@ class BluetoothAdapterTests(test.test):
                 'max_adv_interval_ms_found': max_adv_interval_ms_found,
                 'scan_rsp_correct': scan_rsp_correct,
                 'advertising_enabled': advertising_enabled,
+                'tx_power_correct' : tx_power_correct,
         }
         return all(self.results.values())
 

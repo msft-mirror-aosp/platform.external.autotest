@@ -40,7 +40,7 @@ UNSHRINKABLE_PATH_PATTERNS = [
         # and trimming them further would be detrimental to debugging. If
         # they're too large, let other throttlers (e.g., zip_file_ or
         # delete_file_) deal with them.
-        # Only blacklist a few known-useful log_diff's.
+        # Only blocklist a few known-useful log_diff's.
         '/log_diff/messages$',
         '/log_diff/net\.log$',
         # Ramoops files are small but relatively important.

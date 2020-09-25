@@ -107,6 +107,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     MIN_VERSION_SUPPORT_SSP = CONFIG.get_config_value(
             'AUTOSERV', 'min_version_support_ssp', type=int)
 
+    USE_FSFREEZE = CONFIG.get_config_value(
+            'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
+
     # REBOOT_TIMEOUT: How long to wait for a reboot.
     #
     # We have a long timeout to ensure we don't flakily fail due to other
@@ -2857,6 +2860,29 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.debug('Fail to check %s to write in it', dir)
                 return False
         return True
+
+    def blocking_sync(self, freeze_for_reset=False):
+        """Sync root device and internal device, via script.
+
+        The actual calls end up logged by the run() call, since they're printed
+        to stdout/stderr in the script.
+
+        @param freeze_for_reset: if True, prepare for reset by blocking writes
+                                 (only if enable_fs_sync_fsfreeze=True)
+        """
+
+        if freeze_for_reset and self.USE_FSFREEZE:
+            logging.info('Blocking sync and freeze')
+        elif freeze_for_reset:
+            logging.info('Blocking sync for reset')
+        else:
+            logging.info('Blocking sync')
+
+        # client/bin is installed on the DUT as /usr/local/autotest/bin
+        sync_cmd = '/usr/local/autotest/bin/fs_sync.py'
+        if freeze_for_reset and self.USE_FSFREEZE:
+            sync_cmd += ' --freeze'
+        return self.run(sync_cmd)
 
     def setup_device_health_profile(self):
         """Setup device health profile for repair/provision task to consume.

@@ -169,8 +169,6 @@ class FirmwareTest(test.test):
 
         self._use_sync_script = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_script', type=bool, default=False)
-        self._use_fsfreeze = global_config.global_config.get_config_value(
-                'CROS', 'enable_fs_sync_fsfreeze', type=bool, default=False)
 
         self.servo.initialize_dut()
         self.faft_client = RPCProxy(host)
@@ -1369,22 +1367,10 @@ class FirmwareTest(test.test):
         """
 
         if self._use_sync_script:
-            if freeze_for_reset and self._use_fsfreeze:
+            if freeze_for_reset:
                 self.faft_client.quit()
-                logging.info('Blocking sync and freeze')
-            elif freeze_for_reset:
-                self.faft_client.quit()
-                logging.info('Blocking sync for reset')
-            else:
-                logging.info('Blocking sync')
-
             try:
-                # client/bin is installed on the DUT as /usr/local/autotest/bin
-                sync_cmd = '/usr/local/autotest/bin/fs_sync.py'
-                if freeze_for_reset and self._use_fsfreeze:
-                    sync_cmd += ' --freeze'
-                self._client.run(sync_cmd)
-                return
+                return self._client.blocking_sync(freeze_for_reset)
             except (AttributeError, ImportError, error.AutoservRunError) as e:
                 logging.warn(
                         'Falling back to old sync method due to error: %s', e)

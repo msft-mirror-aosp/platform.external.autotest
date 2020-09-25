@@ -706,8 +706,8 @@ class BluetoothAdapterTests(test.test):
     CLASS_OF_DEVICE_MASK = 0x001FFF
 
     # Constants about advertising.
-    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 181.25
-    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 181.25
+    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 200
+    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 200
     ADVERTISING_INTERVAL_UNIT = 0.625
 
     # Error messages about advertising dbus methods.

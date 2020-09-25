@@ -653,6 +653,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     timeout_mins * 60, self.mtbf_timeout)
                 mtbf_timer.start()
                 start_time = time.time()
+                board = self.host.get_board().split(':')[1]
                 model = self.host.get_model_from_cros_config()
                 build = self.host.get_release_version()
                 milestone = 'M' + self.host.get_chromeos_release_milestone()
@@ -663,7 +664,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         if self.mtbf_end:
                             self.report_mtbf_result(
                                 True, start_time, test_name, model, build,
-                                milestone, in_lab)
+                                milestone, board, in_lab)
                             break
                     try:
                         batch_method(self, *args, **kwargs)
@@ -671,7 +672,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         logging.info("Caught a failure: %r", e)
                         self.report_mtbf_result(
                             False, start_time, test_name, model, build,
-                            milestone, in_lab)
+                            milestone, board, in_lab)
                         # Don't report the test run as failed for MTBF
                         self.fails = []
                         break
@@ -690,7 +691,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     def report_mtbf_result(self, success, start_time, test_name, model, build,
-        milestone, in_lab):
+        milestone, board, in_lab):
         """Report MTBF result by uploading it to GCS"""
         duration_secs = int(time.time() - start_time)
         start_time = int(start_time)
@@ -699,9 +700,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                            time.strftime('%Y-%m-%d/', gm_time_struct) + \
                            time.strftime('%H-%M-%S.csv', gm_time_struct)
 
-        mtbf_result = '{0},{1},{2},{3},{4},{5},{6}'.format(
+        mtbf_result = '{0},{1},{2},{3},{4},{5},{6},{7}'.format(
             model, build, milestone, start_time * 1000000, duration_secs,
-            success, test_name)
+            success, test_name, board)
         with tempfile.NamedTemporaryFile() as tmp_file:
             tmp_file.write(mtbf_result)
             tmp_file.flush()

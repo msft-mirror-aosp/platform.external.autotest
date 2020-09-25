@@ -827,7 +827,7 @@ class virtual_partition:
         @param file_img: Path to the desired disk image file.
         @param file_size: Size of the desired image in Bytes.
         """
-        logging.debug('Sanity check before attempting to create virtual '
+        logging.debug('Quick check before attempting to create virtual '
                       'partition')
         try:
             os_dep.commands('dd', 'losetup', 'truncate')

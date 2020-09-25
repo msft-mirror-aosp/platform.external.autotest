@@ -95,6 +95,8 @@ class Server(dbmodels.Model, model_logic.ModelExtensions):
 class ServerRole(dbmodels.Model, model_logic.ModelExtensions):
     """Role associated with hosts."""
     # Valid roles for a server.
+    # TODO b:169251326 terms below are set outside of this codebase
+    # and should be updated when possible.
     ROLE_LIST = [
             'afe',
             'crash_server',

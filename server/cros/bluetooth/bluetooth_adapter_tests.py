@@ -3043,6 +3043,10 @@ class BluetoothAdapterTests(test.test):
         advertising_enabled = self.bluetooth_le_facade.btmon_find(
                 'Advertising: Enabled (0x01)')
 
+        # Verify new APIs were used
+        new_apis_used = self.bluetooth_le_facade.btmon_find(
+                'MGMT Command: Add Ext Adv Params')
+
         tx_power_correct = self._verify_adv_tx_power(advertisement_data)
 
         self.results = {
@@ -3054,7 +3058,8 @@ class BluetoothAdapterTests(test.test):
                 'max_adv_interval_ms_found': max_adv_interval_ms_found,
                 'scan_rsp_correct': scan_rsp_correct,
                 'advertising_enabled': advertising_enabled,
-                'tx_power_correct' : tx_power_correct,
+                'new_apis_used': new_apis_used,
+                'tx_power_correct': tx_power_correct,
         }
         return all(self.results.values())
 

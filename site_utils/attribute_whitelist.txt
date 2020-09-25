@@ -83,6 +83,7 @@ suite:crosbolt_perf_perbuild
 suite:crosbolt_perf_weekly
 suite:cts_P
 suite:cups_weekly
+suite:debug_kernel_testing
 suite:dev_drone_image_test
 suite:dummy
 suite:dummy_server

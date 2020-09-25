@@ -142,14 +142,19 @@ class TradefedTest(test.test):
 
         # If use_jdk9 is set true, use jdk9 than default jdk8.
         if use_jdk9:
-            logging.info('Using JDK9')
-            try:
-                os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
-                os.environ['PATH'] = os.environ['JAVA_HOME']\
-                                  + '/bin:' + os.environ['PATH']
-                logging.info(subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT))
-            except OSError:
-                logging.error('Can\'t change current PATH directory')
+            if utils.is_in_container() and not client_utils.is_moblab():
+                logging.info('Lab: switching to JDK9')
+                try:
+                    os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
+                    os.environ['PATH'] = os.environ['JAVA_HOME']\
+                                      + '/bin:' + os.environ['PATH']
+                    logging.info(
+                            subprocess.check_output(['java', '-version'],
+                                                    stderr=subprocess.STDOUT))
+                except OSError:
+                    logging.error('Can\'t change current PATH directory')
+            else:
+                logging.info('Non-lab environment: should be using JDK9+')
 
         # Install the tradefed bundle.
         bundle_install_path = self._install_bundle(

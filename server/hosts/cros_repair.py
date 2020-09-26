@@ -34,7 +34,6 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
-
 from chromite.lib import timeout_util
 
 MIN_BATTERY_LEVEL = 50.0
@@ -623,6 +622,7 @@ class ServoUSBDriveVerifier(hosts.Verifier):
     USB is not marked for replacement.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # pylint: disable=missing-docstring
         usb_dev = ''
@@ -703,6 +703,7 @@ class ServoSysRqRepair(_ResetRepairAction):
     the kernel logs in console ramoops.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         repair_utils.require_servo(host, ignore_state=True)
@@ -729,6 +730,7 @@ class ServoSysRqRepair(_ResetRepairAction):
 class ServoResetRepair(_ResetRepairAction):
     """Repair a Chrome device by resetting it with servo."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         repair_utils.require_servo(host, ignore_state=True)
@@ -748,6 +750,7 @@ class ServoCr50RebootRepair(_ResetRepairAction):
     Reset cr50 which is ec+ccd reset.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         try:
@@ -775,6 +778,7 @@ class ServoCr50RebootRepair(_ResetRepairAction):
 class DevDefaultBootRepair(hosts.RepairAction):
     """Repair a CrOS target by setting dev_default_boot to 'disk'"""
 
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         host.run('crossystem dev_default_boot=disk', ignore_status=True)
@@ -788,6 +792,7 @@ class DevDefaultBootRepair(hosts.RepairAction):
 class CrosRebootRepair(repair_utils.RebootRepair):
     """Repair a CrOS target by clearing dev mode and rebooting it."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         # N.B. We need to reboot regardless of whether clearing
@@ -814,6 +819,8 @@ class LabelCleanupRepair(hosts.RepairAction):
     # cached result from it's trigger list. (example: trigger verifiers can
     # be access via self._trigger_list, and we can tell which verifier failed
     # by check Verifier._is_good() method.)
+
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         logging.info('Removing %s label from the host', host.VERSION_PREFIX)
         info = host.host_info_store.get()
@@ -829,6 +836,7 @@ class LabelCleanupRepair(hosts.RepairAction):
 class EnrollmentCleanupRepair(hosts.RepairAction):
     """Cleanup enrollment state on ChromeOS device"""
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # Reset VPD enrollment state.
         host.run('/usr/sbin/update_rw_vpd check_enrollment 0')
@@ -856,6 +864,7 @@ class ProvisionRepair(hosts.RepairAction):
     standard procedure for installing a new test image via quick provision.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.LONG_REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         image_name = host.get_cros_repair_image_name()
@@ -880,6 +889,7 @@ class PowerWashRepair(ProvisionRepair):
     for `ProvisionRepair`.
     """
 
+    @timeout_util.TimeoutDecorator(cros_constants.LONG_REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         host.run('echo "fast safe" > '
@@ -901,6 +911,10 @@ class ServoInstallRepair(hosts.RepairAction):
     from servo-attached USB storage.
     """
 
+    # Timeout value for this repair action is specially configured as we need
+    # stage image to usb drive, install chromeos image and potentially run
+    # bad block check on usb drive.
+    @timeout_util.TimeoutDecorator(60 * 60)
     def repair(self, host):
         # pylint: disable=missing-docstring
         repair_utils.require_servo(host)
@@ -925,6 +939,7 @@ class ServoInstallRepair(hosts.RepairAction):
 class JetstreamTpmRepair(hosts.RepairAction):
     """Repair by resetting TPM and rebooting."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         host.run('rm -f /var/cache/ap/setup-network', ignore_status=True)
@@ -943,6 +958,7 @@ class JetstreamTpmRepair(hosts.RepairAction):
 class JetstreamServiceRepair(hosts.RepairAction):
     """Repair by restarting Jetstream services."""
 
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         # pylint: disable=missing-docstring
         host.cleanup_services()

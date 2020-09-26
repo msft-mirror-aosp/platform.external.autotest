@@ -338,7 +338,7 @@ class ServoHost(base_servohost.BaseServoHost):
         one. This method assumes the image_usbkey_direction is already set
         to servo side.
 
-        @param: usbkey_dev  usbkey dev path(e.g. /dev/sdb).
+        @param usbkey_dev: usbkey dev path(e.g. /dev/sdb).
 
         @returns: image_name on the usbkey, e.g. nami-release/R82.10138.0.0,
                   or empty string if no test image detected, or unexpected
@@ -373,7 +373,7 @@ class ServoHost(base_servohost.BaseServoHost):
         """Extract firmware images from the usbkey on servo, this method
         assumes there is already a ChromeOS test image staged on servo.
 
-        @param: fw_dst  the path that we'll copy firmware images to.
+        @param fw_dst: the path that we'll copy firmware images to.
 
         @returns: a json format string of firmware manifest data.
         """
@@ -403,8 +403,8 @@ class ServoHost(base_servohost.BaseServoHost):
         """Prepare firmware image on the servohost for auto repair process
         to consume.
 
-        @param: fw_dst  the path that we want to store firmware image on
-                        the servohost.
+        @param fw_dst: the path that we want to store firmware image on
+                       the servohost.
 
         @returns: A tuple that containes ec firmware image path and bios
                   firmware image path on the servohost, or None if type of
@@ -439,6 +439,20 @@ class ServoHost(base_servohost.BaseServoHost):
             raise hosts.AutoservRepairError('Could not find any firmware image'
                       ' for model:%s' % model, 'cannot find firmware image')
         return ec_image, bios_image
+
+    def flash_ap_firmware_via_servo(self, image):
+        """Flash AP firmware by use a provided image.
+
+        This is will be a short term enhanment for infra repair use, it use
+        'futility update' which will automatically determine various parameters
+        needed for flashrom, and will preserve the GBB, VPD, and HWID for
+        AP firmware update.
+        @TODO(xianuowang@) Remove this method once b/148403277 implemented.
+
+        @param image: the firmware image path on servohost.
+        """
+        cmd = 'futility update -i %s --servo_port=%s'
+        self.run(cmd % (image, self.servo_port), timeout=900)
 
     def _probe_and_validate_usb_dev(self):
         """This method probe the usb dev path by talking to servo, and then

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,21 +10,27 @@
    the test case to be used as both part of a MTBF batch and a normal batch.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import threading
 import time
 
+import common
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import \
-    BluetoothAdapterAudioTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
+        BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_better_together \
-    import BluetoothAdapterBetterTogether
+        import BluetoothAdapterBetterTogether
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
-    import BluetoothAdapterHIDReportTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
-    BluetoothAdapterQuickTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
-    TABLET_MODELS
+        import BluetoothAdapterHIDReportTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        TABLET_MODELS)
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
+from six.moves import range
 
 # Iterations to run the mouse report test, this equals about 10 mins
 MOUSE_TEST_ITERATION = 15

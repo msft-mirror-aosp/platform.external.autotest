@@ -107,6 +107,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     MIN_VERSION_SUPPORT_SSP = CONFIG.get_config_value(
             'AUTOSERV', 'min_version_support_ssp', type=int)
 
+    USE_FSFREEZE = CONFIG.get_config_value(
+            'CROS', 'enable_fs_freeze', type=bool, default=False)
+
     # REBOOT_TIMEOUT: How long to wait for a reboot.
     #
     # We have a long timeout to ensure we don't flakily fail due to other
@@ -1103,12 +1106,13 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param host  Our new `ServoHost`.
         """
         self._servo_host = host
+        self.servo = None
+        self.servo_pwr_supported = None
         if self._servo_host is not None:
             self.servo = self._servo_host.get_servo()
+            self.servo_pwr_supported = self.servo.has_control('power_state')
             servo_state = self._servo_host.get_servo_state()
             self._set_smart_usbhub_label(self._servo_host.smart_usbhub)
-        else:
-            self.servo = None
         self.set_servo_type()
         self.set_servo_state(servo_state)
 
@@ -2101,7 +2105,80 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                             POWER_CONTROL_VALID_ARGS, or None to use default.
 
         """
+        self._sync_if_up()
         self._set_power('OFF', power_method)
+
+    def _check_supported(self):
+        """Throw an error if dts mode control is not supported."""
+        if not self.servo_pwr_supported:
+            raise error.TestFail('power_state controls not supported')
+
+    def _sync_if_up(self):
+        """Run sync on the DUT and wait for completion if the DUT is up.
+
+        Additionally, try to sync and ignore status if its not up.
+
+        Useful prior to reboots to ensure files are written to disc.
+
+        """
+        if self.is_up_fast():
+            self.run("sync")
+            return
+        # If it is not up, attempt to sync in the rare event the DUT is up but
+        # doesn't respond to a ping. Ignore any errors.
+        try:
+            self.run("sync", ignore_status=True, timeout=1)
+        except Exception:
+            pass
+
+    def power_off_via_servo(self):
+        """Force the DUT to power off.
+
+        The DUT is guaranteed to be off at the end of this call,
+        regardless of its previous state, provided that there is
+        working EC and boot firmware.  There is no requirement for
+        working OS software.
+
+        """
+        self._check_supported()
+        self._sync_if_up()
+        self.servo.set_nocheck('power_state', 'off')
+
+    def power_on_via_servo(self, rec_mode='on'):
+        """Force the DUT to power on.
+
+        Prior to calling this function, the DUT must be powered off,
+        e.g. with a call to `power_off()`.
+
+        At power on, recovery mode is set as specified by the
+        corresponding argument.  When booting with recovery mode on, it
+        is the caller's responsibility to unplug/plug in a bootable
+        external storage device.
+
+        If the DUT requires a delay after powering on but before
+        processing inputs such as USB stick insertion, the delay is
+        handled by this method; the caller is not responsible for such
+        delays.
+
+        @param rec_mode Setting of recovery mode to be applied at
+                        power on. default: REC_OFF aka 'off'
+
+        """
+        self._check_supported()
+        self.servo.set_nocheck('power_state', rec_mode)
+
+    def reset_via_servo(self):
+        """Force the DUT to reset.
+
+        The DUT is guaranteed to be on at the end of this call,
+        regardless of its previous state, provided that there is
+        working OS software. This also guarantees that the EC has
+        been restarted.
+
+        """
+        self._check_supported()
+        self._sync_if_up()
+        self.servo.set_nocheck('power_state', 'reset')
 
 
     def power_on(self, power_method=None):
@@ -2783,6 +2860,29 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.debug('Fail to check %s to write in it', dir)
                 return False
         return True
+
+    def blocking_sync(self, freeze_for_reset=False):
+        """Sync root device and internal device, via script.
+
+        The actual calls end up logged by the run() call, since they're printed
+        to stdout/stderr in the script.
+
+        @param freeze_for_reset: if True, prepare for reset by blocking writes
+                                 (only if enable_fs_sync_fsfreeze=True)
+        """
+
+        if freeze_for_reset and self.USE_FSFREEZE:
+            logging.info('Blocking sync and freeze')
+        elif freeze_for_reset:
+            logging.info('Blocking sync for reset')
+        else:
+            logging.info('Blocking sync')
+
+        # client/bin is installed on the DUT as /usr/local/autotest/bin
+        sync_cmd = '/usr/local/autotest/bin/fs_sync.py'
+        if freeze_for_reset and self.USE_FSFREEZE:
+            sync_cmd += ' --freeze'
+        return self.run(sync_cmd)
 
     def setup_device_health_profile(self):
         """Setup device health profile for repair/provision task to consume.

@@ -470,16 +470,16 @@ class HeartbeatOnlyAllowedInShardModeException(Exception):
     """Raised when a heartbeat is attempted but not allowed."""
 
 
-class UnallowedRecordsSentToMaster(Exception):
-    """Raised when an illegal record was sent from shard to master."""
+class UnallowedRecordsSentToMain(Exception):
+    """Raised when an illegal record was sent from shard to main."""
 
 
-class IgnorableUnallowedRecordsSentToMaster(UnallowedRecordsSentToMaster):
+class IgnorableUnallowedRecordsSentToMain(UnallowedRecordsSentToMain):
     """Raised when non-fatal illegal record was sent from shard.
 
-    This exception may be raised by rpc model logic on master, but will
+    This exception may be raised by rpc model logic on main, but will
     not be returned back to heartbeat client. It indicates that some records
-    may have been illegal, but the master is ignoring those records and
+    may have been illegal, but the main is ignoring those records and
     proceeding with the rest of the heartbeat handling.
     """
 

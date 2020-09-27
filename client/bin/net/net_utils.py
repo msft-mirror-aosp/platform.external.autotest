@@ -447,7 +447,7 @@ class bonding(object):
         return []
 
 
-    def get_slave_interfaces(self):
+    def get_agent_interfaces(self):
         return []
 
 

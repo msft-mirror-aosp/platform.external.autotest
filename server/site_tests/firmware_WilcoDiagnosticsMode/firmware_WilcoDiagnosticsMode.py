@@ -45,7 +45,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
         self.switcher.setup_mode('normal')
 
     def cleanup(self):
-        self.servo.get_power_state_controller().reset()
+        self._client.reset_via_servo()
 
         super(firmware_WilcoDiagnosticsMode, self).cleanup()
 
@@ -102,7 +102,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
                 self.faft_config.delay_reboot_to_ping)
         self.switcher.wait_for_client_offline(timeout=5)
         logging.info('DUT offline after entering diagnostics mode')
-        self.servo.get_power_state_controller().reset()
+        self._client.reset_via_servo()
         self.switcher.wait_for_client()
 
         # Corrupt the diagnostics image, try to reboot into diagnostics mode,

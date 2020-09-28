@@ -1235,6 +1235,15 @@ class TradefedTest(test.test):
             steps += 1
             keep_media = media_asset and media_asset.uri and steps >= 1
             self._run_commands(login_precondition_commands, ignore_status=True)
+            # TODO(kinaba): Make it a general config (per-model choice
+            # of tablet,clamshell,default) if the code below works.
+            if utils.is_in_container() and not client_utils.is_moblab():
+                # Force all hatch devices run the test in laptop mode,
+                # regardless of their physical placement.
+                if board == 'hatch' or board == 'hatch-arc-r':
+                    self._run_commands(
+                        ['inject_powerd_input_event --code=tablet --value=0'],
+                        ignore_status=True)
             with login.login_chrome(
                     hosts=self._hosts,
                     board=board,

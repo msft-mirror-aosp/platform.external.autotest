@@ -96,7 +96,10 @@ CONFIG['SMOKE'] = []
 
 CONFIG['BVT_ARC'] = []
 
-CONFIG['BVT_PERBUILD'] = []
+CONFIG['BVT_PERBUILD'] = [
+        'CtsAccelerationTestCases',
+        'CtsMidiTestCases',
+]
 
 CONFIG['NEEDS_POWER_CYCLE'] = []
 

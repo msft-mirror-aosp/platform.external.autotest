@@ -49,8 +49,9 @@ class FirmwareTest(test.test):
     """
     version = 1
 
-    # Set this to False in test classes that don't need working servo USB disk
-    needs_servo_usb = True
+    # Set this to True in test classes that need to boot from the USB stick.
+    # When True, initialize() will raise TestWarn if USB stick is marked bad.
+    NEEDS_SERVO_USB = False
 
     # Mapping of partition number of kernel and rootfs.
     KERNEL_MAP = {'a':'2', 'b':'4', '2':'2', '4':'4', '3':'2', '5':'4'}
@@ -211,7 +212,7 @@ class FirmwareTest(test.test):
                                       % (host.POWER_CONTROL_VALID_ARGS,
                                          self.power_control))
 
-        if self.needs_servo_usb and not host.is_servo_usb_usable():
+        if self.NEEDS_SERVO_USB and not host.is_servo_usb_usable():
             usb_state = host.get_servo_usb_state()
             raise error.TestWarn(
                     "Servo USB disk unusable (%s); canceling test." %

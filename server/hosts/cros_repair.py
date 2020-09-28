@@ -91,6 +91,7 @@ _CROS_PROVISION_TRIGGERS = ('power', 'rwfw', 'python', 'cros',
 _CROS_POWERWASH_TRIGGERS = ('tpm', 'good_provision', 'ext4',)
 _CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
 _JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
+_CROS_FIRMWARE_TRIGGERS = ('ssh', )
 _CROS_USB_DEPENDENCIES = ('usb_drive', )
 
 
@@ -1070,10 +1071,20 @@ def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
     return repair_actions
 
 
+def _cros_dedicated_repair_actions(firmware_triggers=_CROS_FIRMWARE_TRIGGERS,
+                                   usb_dependencies=_CROS_USB_DEPENDENCIES):
+    """Return the repair actions that only works for `CrosHost`"""
+
+    repair_actions = ((cros_firmware.GeneralFirmwareRepair, 'general_firmware',
+                       usb_dependencies, firmware_triggers), )
+    return repair_actions
+
+
 def _cros_repair_actions():
     """Return the repair actions for a `CrosHost`."""
     repair_actions = (_cros_basic_repair_actions() +
-                      _cros_extended_repair_actions())
+                      _cros_extended_repair_actions() +
+                      _cros_dedicated_repair_actions())
     return repair_actions
 
 

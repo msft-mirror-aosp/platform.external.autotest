@@ -20,6 +20,7 @@ from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.server.hosts import servo_constants
 import six
 
 try:
@@ -681,6 +682,72 @@ class _ServoRebootRepair(repair_utils.RebootRepair):
         return 'Reboot the servo host.'
 
 
+class _ToggleCCLineRepair(hosts.RepairAction):
+    """Try repair servod by toggle cc.
+
+    When cr50 is not enumerated we can try to recover it by toggle cc line.
+    Repair action running from servohost.
+    We using usb_console temporally witch required stop servod.
+
+    TODO(otabek@) review the logic when b/159755652 implemented
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        host.stop_servod()
+        self._reset_usbc_pigtail_connection(host)
+        host.restart_servod()
+
+    def _is_applicable(self, host):
+        if host.is_localhost() or not host.is_labstation():
+            return False
+        if not host.servo_serial:
+            return False
+        return self._is_type_c(host)
+
+    def _is_type_c(self, host):
+        if host.get_dut_host_info():
+            servo_type = host.get_dut_host_info().get_label_value(
+                    servo_constants.SERVO_TYPE_LABEL_PREFIX)
+            return 'ccd_cr50' in servo_type
+        return False
+
+    def _reset_usbc_pigtail_connection(self, host):
+        """Reset USBC pigtail connection on servo board.
+
+        To reset need to run 'cc off' and then 'cc srcdts' in usb_console.
+        """
+        logging.debug('Starting reset USBC pigtail connection.')
+
+        def _run_command(cc_command):
+            """Run configuration channel commands.
+
+            @returns: True if pas successful and False if fail.
+            """
+            try:
+                cmd = (r"echo 'cc %s' | usb_console -d 18d1:501b -s %s" %
+                       (cc_command, host.servo_serial))
+                resp = host.run(cmd, timeout=host.DEFAULT_TERMINAL_TIMEOUT)
+                return True
+            except Exception as e:
+                logging.info('(Non-critical) %s.', e)
+            return False
+
+        logging.info('Turn off configuration channel. And wait 5 seconds.')
+        if _run_command('off'):
+            # wait till command will be effected
+            time.sleep(5)
+            logging.info('Turn on configuration channel. '
+                         'And wait 15 seconds.')
+            if _run_command('srcdts'):
+                # wait till command will be effected
+                time.sleep(15)
+
+    @property
+    def description(self):
+        return 'Toggle cc lines'
+
+
 class _ECRebootRepair(hosts.RepairAction):
     """
     Reboot EC on DUT from servo.
@@ -777,16 +844,14 @@ def create_servo_repair_strategy():
             'dut_connected', 'pwr_button'
     ]
     repair_actions = [
-        (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space']),
-        (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
-        (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
-        (
-            _DutRebootRepair, 'dut_reboot', ['servod_connection'],
-            ['servod_control', 'lid_open', 'ec_board']
-        ),
-        (
-            _ECRebootRepair, 'ec_reboot', ['servod_connection'],
-            ['servod_control', 'lid_open', 'ec_board']
-        ),
+            (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space'
+                                                                 ]),
+            (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
+            (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
+            (_ToggleCCLineRepair, 'servo_cc', ['servo_ssh'], servod_deps),
+            (_DutRebootRepair, 'dut_reboot', ['servod_connection'],
+             ['servod_control', 'lid_open', 'ec_board']),
+            (_ECRebootRepair, 'ec_reboot', ['servod_connection'],
+             ['servod_control', 'lid_open', 'ec_board']),
     ]
     return hosts.RepairStrategy(verify_dag, repair_actions, 'servo')

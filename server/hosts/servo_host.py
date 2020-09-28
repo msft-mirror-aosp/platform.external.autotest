@@ -423,16 +423,19 @@ class ServoHost(base_servohost.BaseServoHost):
         self.run('mkdir -p %s' % fw_dst)
 
         manifest = json.loads(self._extract_firmware_image_from_usbkey(fw_dst))
-        model_manifest = manifest.get(model)
-        if not model_manifest:
+        # For models that have packed $MODEL_signed variant, we want use the
+        # 'signed' variant once we get DVT devices, so try to read manifest
+        # from $MODEL_signed first.
+        build = manifest.get('%s_signed' % model) or manifest.get(model)
+        if not build:
             raise hosts.AutoservRepairError('Could not find firmware manifest'
                       ' for model:%s' % model, 'model manifest not found')
         try:
-            ec_image = os.path.join(fw_dst, model_manifest['ec']['image'])
+            ec_image = os.path.join(fw_dst, build['ec']['image'])
         except KeyError:
             ec_image = None
         try:
-            bios_image = os.path.join(fw_dst, model_manifest['host']['image'])
+            bios_image = os.path.join(fw_dst, build['host']['image'])
         except KeyError:
             bios_image = None
         if not ec_image and not bios_image:

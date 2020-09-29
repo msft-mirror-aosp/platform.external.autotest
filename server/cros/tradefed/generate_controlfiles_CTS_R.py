@@ -211,7 +211,6 @@ CONFIG['EXTRA_MODULES'] = {
                         'CtsWindowManager.R',
                         'CtsWindowManager.S',
                         'CtsWindowManager.T',
-                        'CtsWindowManager.Vr',
                         'CtsWindowManager.Window',
                         'CtsWindowManager.intent',
                         'CtsWindowManager.lifecycle',
@@ -681,10 +680,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                'CtsWindowManagerDeviceTestCases android.server.wm.ToastWindowTest',
                '--include-filter',
                'CtsWindowManagerDeviceTestCases android.server.wm.TransitionSelectionTests',
-        ],
-        'CtsWindowManager.Vr': [
-               '--include-filter',
-               'CtsWindowManagerDeviceTestCases android.server.wm.VrDisplayTests',
         ],
         'CtsWindowManager.Window': [
                '--include-filter',

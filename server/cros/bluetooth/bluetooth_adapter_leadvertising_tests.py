@@ -89,24 +89,21 @@ class bluetooth_AdapterLEAdvertising(
         @param min_adv_interval_ms: min_adv_interval in milliseconds.
         @param max_adv_interval_ms: max_adv_interval in milliseconds.
         @param instance_ids: the list of instance IDs to register.
-
         """
         if instance_ids is None:
             instance_ids = self.get_instance_ids(advertisements)
 
         for instance_id, advertisement in zip(instance_ids, advertisements):
-            self.test_register_advertisement(advertisement,
-                                             instance_id,
-                                             min_adv_interval_ms,
-                                             max_adv_interval_ms)
+            advertisement['MinInterval'] = min_adv_interval_ms
+            advertisement['MaxInterval'] = max_adv_interval_ms
+
+            self.test_register_advertisement(advertisement, instance_id)
 
 
     def unregister_advertisements(self, advertisements, instance_ids=None):
         """Register multiple advertisements.
 
         @param advertisements: a list of advertisement instances.
-        @param min_adv_interval_ms: min_adv_interval in milliseconds.
-        @param max_adv_interval_ms: max_adv_interval in milliseconds.
         @param instance_ids: the list of instance IDs to unregister.
 
         """
@@ -529,9 +526,6 @@ class bluetooth_AdapterLEAdvertising(
 
         self.test_reset_advertising()
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
-
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
 
@@ -553,9 +547,6 @@ class bluetooth_AdapterLEAdvertising(
         one_more_advertisement = [self.sixth_advertisement]
 
         self.test_reset_advertising()
-
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
 
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
@@ -604,9 +595,6 @@ class bluetooth_AdapterLEAdvertising(
 
         self.test_reset_advertising()
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
-
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
 
@@ -626,9 +614,6 @@ class bluetooth_AdapterLEAdvertising(
         advertisements = copy.copy(self.three_advertisements)
 
         self.test_reset_advertising()
-
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
 
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
@@ -665,9 +650,6 @@ class bluetooth_AdapterLEAdvertising(
         number_advs2 = len(advertisements2)
 
         self.test_reset_advertising()
-
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
 
         self.register_advertisements(advertisements1, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
@@ -717,9 +699,6 @@ class bluetooth_AdapterLEAdvertising(
 
         self.test_reset_advertising()
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
-
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
 
@@ -752,9 +731,6 @@ class bluetooth_AdapterLEAdvertising(
 
         self.test_reset_advertising()
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
-
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
 
@@ -782,9 +758,6 @@ class bluetooth_AdapterLEAdvertising(
         advertisements = self.three_advertisements
 
         self.test_reset_advertising()
-
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
 
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
@@ -822,8 +795,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -851,8 +825,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -881,8 +856,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -924,15 +900,19 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_small_min_adv_interval_ms,
-                                            new_small_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements,
+                                     new_small_min_adv_interval_ms,
+                                     new_small_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_small_min_adv_interval_ms,
                                                new_small_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_large_min_adv_interval_ms,
-                                            new_large_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements,
+                                     new_large_min_adv_interval_ms,
+                                     new_large_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_large_min_adv_interval_ms,
                                                new_large_max_adv_interval_ms,
@@ -961,8 +941,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1009,8 +990,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1061,8 +1043,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1101,8 +1084,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                number_advs)
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1129,9 +1113,6 @@ class bluetooth_AdapterLEAdvertising(
 
         self.test_reset_advertising()
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
-
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
 
@@ -1150,8 +1131,6 @@ class bluetooth_AdapterLEAdvertising(
         advertisements = [self.first_advertisement]
 
         self.test_reset_advertising()
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
 
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
@@ -1171,9 +1150,6 @@ class bluetooth_AdapterLEAdvertising(
         advertisements = [self.sixth_advertisement]
 
         self.test_reset_advertising()
-
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
 
         self.register_advertisements(advertisements, new_min_adv_interval_ms,
                                      new_max_adv_interval_ms)
@@ -1213,9 +1189,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                len(advertisements))
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
-
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1241,8 +1217,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                len(advertisements))
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1272,8 +1249,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                len(advertisements))
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1320,8 +1298,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                len(advertisements))
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1362,8 +1341,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                len(advertisements))
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1398,8 +1378,9 @@ class bluetooth_AdapterLEAdvertising(
                                                orig_max_adv_interval_ms,
                                                len(advertisements))
 
-        self.test_set_advertising_intervals(new_min_adv_interval_ms,
-                                            new_max_adv_interval_ms)
+        self.unregister_advertisements(advertisements)
+        self.register_advertisements(advertisements, new_min_adv_interval_ms,
+                                     new_max_adv_interval_ms)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,

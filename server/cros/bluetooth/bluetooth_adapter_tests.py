@@ -2778,7 +2778,7 @@ class BluetoothAdapterTests(test.test):
 
         self.results = {
                 'check_duration': check_duration,
-                'max_adv_interval_ms_found': max_adv_interval_ms_found,
+                'min_adv_interval_ms_found': min_adv_interval_ms_found,
                 'max_adv_interval_ms_found': max_adv_interval_ms_found,
         }
         return all(self.results.values())
@@ -2952,8 +2952,7 @@ class BluetoothAdapterTests(test.test):
         return new_tx_prop == selected_tx_power
 
     @test_retry_and_log(False)
-    def test_register_advertisement(self, advertisement_data, instance_id,
-                                    min_adv_interval_ms, max_adv_interval_ms):
+    def test_register_advertisement(self, advertisement_data, instance_id):
         """Verify that an advertisement is registered correctly.
 
         This test verifies the following data:
@@ -2967,13 +2966,22 @@ class BluetoothAdapterTests(test.test):
 
         @param advertisement_data: the data of an advertisement to register.
         @param instance_id: the instance id which starts at 1.
-        @param min_adv_interval_ms: min_adv_interval in milliseconds.
-        @param max_adv_interval_ms: max_adv_interval in milliseconds.
 
         @returns: True if the advertisement is registered correctly.
                   False otherwise.
 
         """
+
+        # We need to know the intervals used to verify later. If advertisement
+        # structure contains it, use them. Otherwise, use bluez's defaults
+        if set(advertisement_data) >= {'MinInterval', 'MaxInterval'}:
+            min_adv_interval_ms = advertisement_data['MinInterval']
+            max_adv_interval_ms = advertisement_data['MaxInterval']
+
+        else:
+            min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+            max_adv_interval_ms = self.DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS
+
         # When registering a new advertisement, it is possible that another
         # instance is advertising. It may need to wait for all other
         # advertisements to complete advertising once.
@@ -3363,10 +3371,6 @@ class BluetoothAdapterTests(test.test):
         if not advertisement_removed:
             logging.error('Failed to remove advertisement')
 
-        # Verify that "Reset Advertising Intervals" command has been issued.
-        reset_advertising_intervals = self.bluetooth_le_facade.btmon_find(
-                'bluetoothd: Reset Advertising Intervals')
-
         # Verify the advertising is disabled.
         advertising_disabled_observied = self.bluetooth_le_facade.btmon_find(
                 'Advertising: Disabled')
@@ -3377,7 +3381,6 @@ class BluetoothAdapterTests(test.test):
 
         self.results = {
                 'advertisement_removed': advertisement_removed,
-                'reset_advertising_intervals': reset_advertising_intervals,
                 'advertising_disabled': advertising_disabled,
         }
         return all(self.results.values())

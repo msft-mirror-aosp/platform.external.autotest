@@ -142,8 +142,7 @@ class bluetooth_AdapterControllerRoleTests(
         self.test_set_advertising_intervals(DEFAULT_MIN_ADV_INTERVAL,
                                             DEFAULT_MAX_ADV_INTERVAL)
         self.test_register_advertisement(advertisements_data.ADVERTISEMENTS[0],
-                                         1, DEFAULT_MIN_ADV_INTERVAL,
-                                         DEFAULT_MAX_ADV_INTERVAL)
+                                         1)
 
         # Discover DUT from peer
         self.test_discover_by_device(primary_device)
@@ -228,9 +227,8 @@ class bluetooth_AdapterControllerRoleTests(
         # For now, advertise connectable advertisement. If we use a broadcast
         # advertisement, the Pi can't resolve the address and
         # test_discover_by_device will fail
-        self.test_register_advertisement(
-            advertisements_data.ADVERTISEMENTS[0], 1,
-            DEFAULT_MIN_ADV_INTERVAL, DEFAULT_MAX_ADV_INTERVAL)
+        self.test_register_advertisement(advertisements_data.ADVERTISEMENTS[0],
+                                         1)
 
         # Second thread runs on peer, delays, discovers DUT, and then advertises
         # itself back
@@ -332,8 +330,7 @@ class bluetooth_AdapterControllerRoleTests(
         self.test_set_advertising_intervals(DEFAULT_MIN_ADV_INTERVAL,
                                             DEFAULT_MAX_ADV_INTERVAL)
         self.test_register_advertisement(advertisements_data.ADVERTISEMENTS[0],
-                                         1, DEFAULT_MIN_ADV_INTERVAL,
-                                         DEFAULT_MAX_ADV_INTERVAL)
+                                         1)
 
         # If test requires it, connect and test secondary device
         if secondary_info is not None and device_use == 'mid':

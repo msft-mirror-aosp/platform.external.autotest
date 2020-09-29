@@ -6,12 +6,16 @@
 """Wrapper class to store size related information of test results.
 """
 
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+
 import contextlib
 import json
 import os
 
-import result_info_lib
-import utils_lib
+from . import result_info_lib
+from . import utils_lib
 
 
 class ResultInfoError(Exception):

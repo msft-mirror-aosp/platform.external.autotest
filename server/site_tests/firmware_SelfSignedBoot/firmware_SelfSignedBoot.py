@@ -21,6 +21,7 @@ class firmware_SelfSignedBoot(FirmwareTest):
     should boot to the USB disk.
     """
     version = 1
+    NEEDS_SERVO_USB = True
 
     def initialize(self, host, cmdline_args, ec_wp=None):
         super(firmware_SelfSignedBoot, self).initialize(host, cmdline_args,

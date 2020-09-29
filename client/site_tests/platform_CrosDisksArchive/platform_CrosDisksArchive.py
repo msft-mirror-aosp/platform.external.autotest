@@ -146,7 +146,6 @@ class CrosDisksArchiveTester(CrosDisksTester):
         for archive_name in [
                 'Invalid.rar',
                 'Invalid.zip',
-                'Encrypted.rar',
                 'Not There.rar',
                 'Not There.zip',
         ]:
@@ -181,6 +180,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
         ])
 
         for archive_name, want in [
+                ('Encrypted Full V4.rar', fs1),
+                ('Encrypted Full V5.rar', fs1),
+                ('Encrypted Partial V4.rar', fs1),
+                ('Encrypted Partial V5.rar', fs1),
                 ('Encrypted AES-128.zip', fs1),
                 ('Encrypted AES-192.zip', fs1),
                 ('Encrypted AES-256.zip', fs1),
@@ -273,7 +276,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.debug('Copying archive files to %r', image.mount_dir)
             for archive_name in [
                     'Duplicate Filenames.zip',
-                    'Encrypted.rar',
+                    'Encrypted Full V4.rar',
+                    'Encrypted Full V5.rar',
+                    'Encrypted Partial V4.rar',
+                    'Encrypted Partial V5.rar',
                     'Encrypted AES-128.zip',
                     'Encrypted AES-192.zip',
                     'Encrypted AES-256.zip',

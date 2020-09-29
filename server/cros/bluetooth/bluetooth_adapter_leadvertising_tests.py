@@ -1279,12 +1279,18 @@ class bluetooth_AdapterLEAdvertising(
             self.test_case_SI200_RA3_CD_RS()
             self.test_case_SI200_RA3_CD_UA1_CD_RS()
             self.test_case_SI200_RA3_CD_UA1_CD_RA2_CD_UA4()
-            self.test_case_SI200_RA5_CD_FRA1_CD_UA5()
+            # TODO (b/169603469) this test will fail on platforms supporting
+            # >5 advertising slots due to new advertising feature, so disable
+            # until test can be refactored.
+            # self.test_case_SI200_RA5_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_RS()
             self.test_case_RA3_CD_SI200_CD_UA1_CD_RS()
             self.test_case_RA3_CD_SI200_CD_SI2000_CD_UA3()
-            self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
+            # TODO (b/169603469) this test will fail on platforms supporting
+            # >5 advertising slots due to new advertising feature, so disable
+            # until test can be refactored.
+            # self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_FSI10_CD_FSI20000_CD_UA3()
             self.test_case_SI200_RA3_CD_SR_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()

@@ -146,7 +146,6 @@ class CrosDisksArchiveTester(CrosDisksTester):
         for archive_name in [
                 'Invalid.rar',
                 'Invalid.zip',
-                'Encrypted.rar',
                 'Not There.rar',
                 'Not There.zip',
         ]:
@@ -181,6 +180,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
         ])
 
         for archive_name, want in [
+                ('Encrypted Full V4.rar', fs1),
+                ('Encrypted Full V5.rar', fs1),
+                ('Encrypted Partial V4.rar', fs1),
+                ('Encrypted Partial V5.rar', fs1),
                 ('Encrypted AES-128.zip', fs1),
                 ('Encrypted AES-192.zip', fs1),
                 ('Encrypted AES-256.zip', fs1),
@@ -207,6 +210,20 @@ class CrosDisksArchiveTester(CrosDisksTester):
             # Mounting archive with right password should work.
             self._test_archive(os.path.join(mount_path, archive_name), want,
                                'password')
+
+    def _test_strict_password(self, mount_path):
+        """Tests that an invalid password is not accidentally accepted.
+           https://crbug.com/1127752
+        """
+        archive_path = os.path.join(mount_path, 'Strict Password.zip')
+        logging.info('Mounting archive %r', archive_path)
+
+        # Trying to mount archive with a wrong password should fail.
+        self.cros_disks.mount(archive_path,
+                              os.path.splitext(archive_path)[1],
+                              [b'password=sample'])
+        self.cros_disks.expect_mount_completion(
+                {'status': 13})  # MOUNT_ERROR_NEED_PASSWORD
 
     def _test_nested(self, incoming_mount_path):
         for archive_name in ['Nested.rar', 'Nested.zip']:
@@ -273,7 +290,10 @@ class CrosDisksArchiveTester(CrosDisksTester):
             logging.debug('Copying archive files to %r', image.mount_dir)
             for archive_name in [
                     'Duplicate Filenames.zip',
-                    'Encrypted.rar',
+                    'Encrypted Full V4.rar',
+                    'Encrypted Full V5.rar',
+                    'Encrypted Partial V4.rar',
+                    'Encrypted Partial V5.rar',
                     'Encrypted AES-128.zip',
                     'Encrypted AES-192.zip',
                     'Encrypted AES-256.zip',
@@ -290,6 +310,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'Multipart New Style 03.rar',
                     'Nested.rar',
                     'Nested.zip',
+                    'Strict Password.zip',
                     'Symlinks.zip',
                     'Unicode.zip',
             ]:
@@ -321,6 +342,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
             self._test_multipart(mount_path)
             self._test_invalid(mount_path)
             self._test_need_password(mount_path)
+            self._test_strict_password(mount_path)
             self._test_nested(mount_path)
             self._test_duplicated_filenames(mount_path)
 

@@ -60,8 +60,9 @@ class bluetooth_AdapterAUSanity(BluetoothAdapterQuickTests,
         """A2DP test with sinewaves on the two channels."""
         self._au_a2dp_test(A2DP)
 
-
-    @test_wrapper('A2DP sinewave long test', devices={'BLUETOOTH_AUDIO':1})
+    # The A2DP long test is a stress test. Exclude it from the AVL.
+    @test_wrapper('A2DP sinewave long test', devices={'BLUETOOTH_AUDIO':1},
+                  flags=['Quick Sanity'])
     def au_a2dp_long_test(self, duration=600):
         """A2DP long test with sinewaves on the two channels.
 

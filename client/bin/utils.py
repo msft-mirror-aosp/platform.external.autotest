@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,6 +8,10 @@ Convenience functions for use by tests or whomever.
 """
 
 # pylint: disable=missing-docstring
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import base64
 import collections
@@ -33,6 +38,10 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import cros_config
 
 from autotest_lib.client.common_lib.utils import *
+import six
+from six.moves import map
+from six.moves import range
+from six.moves import zip
 
 
 def grep(pattern, file):
@@ -495,7 +504,7 @@ def get_meminfo():
                 else:
                     name = m.group(1)
                 info[name] = int(m.group(3))
-    return collections.namedtuple('MemInfo', info.keys())(**info)
+    return collections.namedtuple('MemInfo', list(info.keys()))(**info)
 
 
 def sysctl(key, value=None):
@@ -542,8 +551,8 @@ def dump_object(object):
 
     kind of like dir()
     """
-    for item in object.__dict__.iteritems():
-        print item
+    for item in six.iteritems(object.__dict__):
+        print(item)
         try:
             (key, value) = item
             dump_object(value)
@@ -553,7 +562,7 @@ def dump_object(object):
 
 def environ(env_key):
     """return the requested environment variable, or '' if unset"""
-    if (os.environ.has_key(env_key)):
+    if (env_key in os.environ):
         return os.environ[env_key]
     else:
         return ''
@@ -668,7 +677,9 @@ def get_disk_size(disk_name):
     @param disk_name: disk name to find size
     """
     device = os.path.basename(disk_name)
-    for line in file('/proc/partitions'):
+    with open('/proc/partitions') as f:
+        lines = f.readlines()
+    for line in lines:
         try:
             _, _, blocks, name = re.split(r' +', line.strip())
         except ValueError:
@@ -884,7 +895,7 @@ def get_storage_statistics(device=None):
     match = _IOSTAT_RE.search(output)
     if not match:
         raise ValueError('Unable to get iostat for %s' % device)
-    return dict(zip(_IOSTAT_FIELDS, map(float, match.groups())))
+    return dict(list(zip(_IOSTAT_FIELDS, list(map(float, match.groups())))))
 
 
 def load_module(module_name, params=None):
@@ -1197,7 +1208,9 @@ def save_vm_state(checkpoint):
 
 def mounts():
     ret = []
-    for line in file('/proc/mounts'):
+    with open('/proc/mounts') as f:
+        lines = f.readlines()
+    for line in lines:
         m = re.match(
             r'(?P<src>\S+) (?P<dest>\S+) (?P<type>\S+) (?P<opts>\S+).*', line)
         if m:
@@ -1335,9 +1348,9 @@ def compute_active_cpu_time(cpu_usage_start, cpu_usage_end):
     to calculate usage given two /proc/stat snapshots.
     """
     idle_cols = ('idle', 'iowait')  # All other cols are calculated as active.
-    time_active_start = sum([x[1] for x in cpu_usage_start.iteritems()
+    time_active_start = sum([x[1] for x in six.iteritems(cpu_usage_start)
                              if x[0] not in idle_cols])
-    time_active_end = sum([x[1] for x in cpu_usage_end.iteritems()
+    time_active_end = sum([x[1] for x in six.iteritems(cpu_usage_end)
                            if x[0] not in idle_cols])
     total_time_start = sum(cpu_usage_start.values())
     total_time_end = sum(cpu_usage_end.values())
@@ -1828,7 +1841,7 @@ def get_mem_total():
     mem_total = _get_float_from_file(_MEMINFO, 'MemTotal:', 'MemTotal:', ' kB')
     # Sanity check, all Chromebooks have at least 1GB of memory.
     assert mem_total > 256 * 1024, 'Unreasonable amount of memory.'
-    return mem_total / 1024
+    return int(mem_total / 1024)
 
 
 def get_mem_total_gb():
@@ -1843,7 +1856,7 @@ def get_mem_free():
     Returns the currently free memory in the system in MBytes.
     """
     mem_free = _get_float_from_file(_MEMINFO, 'MemFree:', 'MemFree:', ' kB')
-    return mem_free / 1024
+    return int(mem_free / 1024)
 
 def get_mem_free_plus_buffers_and_cached():
     """
@@ -2261,7 +2274,7 @@ def base64_recursive_encode(obj):
 
     @return: the base64 encoded object.
     """
-    encode_types = (basestring, bytearray)
+    encode_types = (six.string_types, bytearray)
     return recursive_func(obj, base64.standard_b64encode, encode_types)
 
 
@@ -2272,6 +2285,6 @@ def base64_recursive_decode(obj):
 
     @return: the base64 decoded object.
     """
-    decode_types = (basestring,)
+    decode_types = (six.string_types,)
     return recursive_func(obj, base64.standard_b64decode, decode_types,
                           fix_num_key=True)

@@ -4,6 +4,7 @@
 
 AUTHOR = "puthik"
 NAME = "ThermalQual.full"
+ATTRIBUTES = "suite:thermal_qual_full"
 TIME = "LENGTHY"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "suite"

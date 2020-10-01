@@ -399,9 +399,14 @@ class Verifier(_DependencyNode):
         @param host     The host to be tested for a problem.
         @param silent   If true, don't log host status records.
         """
-        if not self._is_applicable(host):
-            logging.info('Verfy %s is not applicable to %s, skipping...',
-                         self.description, host.hostname)
+        try:
+            if not self._is_applicable(host):
+                logging.info('Verify %s is not applicable to %s, skipping...',
+                             self.description, host.hostname)
+                return
+        except Exception as e:
+            logging.error('Skipping %s verifier due to unexpect error during'
+                          ' check applicability; %s', self.tag, e)
             return
 
         if self._result is not None:
@@ -423,6 +428,10 @@ class Verifier(_DependencyNode):
             logging.exception(message, self.description)
             self._result = e
             self._record_fail(host, silent, e)
+            # Increase verifier fail count if device health profile is
+            # available to the host class.
+            if hasattr(host, 'health_profile') and host.health_profile:
+                host.health_profile.insert_failed_verifier(self.tag)
             raise
         finally:
             logging.debug('Finished verify task: %s.', type(self).__name__)
@@ -626,14 +635,18 @@ class RepairAction(_DependencyNode):
         #
         # If we're blocked by a failed dependency, we exit with an
         # exception.  So set status to 'blocked' first.
-        self.status = 'blocked'
-
-        if not self._is_applicable(host):
-            logging.info('RepairAction is not applicable, skipping repair: %s',
-                         self.description)
-            self.status = 'skipped'
+        self.status = 'skipped'
+        try:
+            if not self._is_applicable(host):
+                logging.info('RepairAction is not applicable, skipping repair: %s',
+                             self.description)
+                return
+        except Exception as e:
+            logging.error('Skipping %s repair action due to unexpect error'
+                          ' during check applicability; %s', self.tag, e)
             return
 
+        self.status = 'blocked'
         try:
             self._verify_dependencies(host, silent)
         except Exception as e:
@@ -653,11 +666,19 @@ class RepairAction(_DependencyNode):
             self._record_start(host, silent)
             try:
                 self.repair(host)
+                # Increase action success count if device health profile is
+                # available to the host class.
+                if hasattr(host, 'health_profile') and host.health_profile:
+                    host.health_profile.insert_succeed_repair_action(self.tag)
             except Exception as e:
                 logging.exception('Repair failed: %s', self.description)
                 self._record_fail(host, silent, e)
                 self._record_end_fail(host, silent, 'repair_failure')
                 self._send_failure_metrics(host, e, 'repair')
+                # Increase action fail count if device health profile is
+                # available to the host class.
+                if hasattr(host, 'health_profile') and host.health_profile:
+                    host.health_profile.insert_failed_repair_action(self.tag)
                 raise
             try:
                 for v in self._trigger_list:

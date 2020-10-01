@@ -20,6 +20,7 @@ from autotest_lib.client.cros import constants
 from autotest_lib.server import autotest
 from autotest_lib.server import site_linux_system
 from autotest_lib.server.cros.network import wpa_cli_proxy
+from autotest_lib.server.cros.network import wpa_mon
 from autotest_lib.server.hosts import cast_os_host
 
 # Wake-on-WiFi feature strings
@@ -363,6 +364,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
                     self.host, self._wifi_if)
             self._raise_logging_level()
         self._interface = interface.Interface(self._wifi_if, host=self.host)
+        self._wpa_mon = wpa_mon.WpaMon(self.host, self.wifi_if)
         logging.debug('WiFi interface is: %r',
                       self._interface.device_description)
         self._firewall_rules = []
@@ -714,6 +716,18 @@ class WiFiClient(site_linux_system.LinuxSystem):
         logging.info('Suspending DUT (in background) for %d seconds...',
                      seconds)
         self._shill_proxy.do_suspend_bg(seconds)
+
+
+    def flush_bss(self, age=0):
+        """Flush supplicant's cached BSS on the DUT.
+
+        @param age: BSS older than |age| seconds will be removed from the cache.
+        """
+        result = self._wpa_cli_proxy.run_wpa_cli_cmd('bss_flush %d' % age,
+                                                     check_result=False);
+        logging.info('wpa_cli bss_flush %d: out:%r err:%r', age, result.stdout,
+                     result.stderr)
+        return result.stdout, result.stderr
 
 
     def clear_supplicant_blacklist(self):

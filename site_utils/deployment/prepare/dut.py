@@ -102,13 +102,38 @@ def download_image_to_servo_usb(host, build):
     host.servo.image_to_servo_usb(update_url)
 
 
-def power_cycle_via_servo(host):
+def try_reset_by_servo(host):
+    """Reboot the DUT by run cold_reset by servo.
+
+    Cold reset implemented as
+    `dut-control -p <SERVO-PORT> power_state:reset`.
+
+    @params host: CrosHost instance with initialized servo instance.
+    """
+    logging.info('Attempting reset via servo...')
+    host.servo.get_power_state_controller().reset()
+
+    logging.info('Waiting for DUT to come back up.')
+    if not host.wait_up(timeout=host.BOOT_TIMEOUT):
+        raise error.AutoservError(
+            'DUT failed to come back after %d seconds' % host.BOOT_TIMEOUT)
+
+
+def power_cycle_via_servo(host, recover_src=False):
     """Power cycle a host though it's attached servo.
 
-    @param host   A server.hosts.Host object.
+    @param host: A server.hosts.Host object.
+    @param recover_src: Indicate if we need switch servo_v4_role
+           back to src mode.
     """
-    logging.info("Shutting down the host...")
-    host.halt()
+    try:
+        logging.info('Shutting down %s from via ssh.', host.hostname)
+        host.halt()
+    except Exception as e:
+        logging.info('Unable to shutdown DUT via ssh; %s', str(e))
+
+    if recover_src:
+        host.servo.set_servo_v4_role('src')
 
     logging.info('Power cycling DUT through servo...')
     host.servo.get_power_state_controller().power_off()
@@ -162,6 +187,46 @@ def verify_ccd_testlab_enable(host):
                 'testlab mode is required for all DUTs that support CR50.')
 
 
+def verify_labstation_RPM_config_unsafe(host):
+    """Verify that we can power cycle a labstation with its RPM information.
+    Any host without RPM information will be safely skipped.
+
+    @param host: any host
+
+    This procedure is intended to catch inaccurate RPM info when the
+    host is deployed.
+
+    If the RPM config information is wrong, then this command will fail.
+
+    Note that we do not cleanly stop servod as part of power-cycling the DUT;
+    therefore calling this function is not safe in general.
+
+    """
+    host_info = host.host_info_store.get()
+
+    powerunit_hostname = host_info.attributes.get('powerunit_hostname')
+    powerunit_outlet   = host_info.attributes.get('powerunit_outlet')
+
+    powerunit_hasinfo = (bool(powerunit_hostname), bool(powerunit_outlet))
+
+    if powerunit_hasinfo == (True, True):
+        pass
+    elif powerunit_hasinfo == (False, False):
+        logging.info("intentionally skipping labstation %s", host.hostname)
+        return
+    else:
+        msg = "inconsistent power info: %s %s" % (
+            powerunit_hostname, powerunit_outlet
+        )
+        logging.error(msg)
+        raise Exception(msg)
+
+    logging.info("Shutting down labstation...")
+    host.rpm_power_off_and_wait()
+    host.rpm_power_on_and_wait()
+    logging.info("RPM Check Successful")
+
+
 def verify_boot_into_rec_mode(host):
     """Verify that we can boot into USB when in recover mode, and reset tpm.
 
@@ -172,24 +237,38 @@ def verify_boot_into_rec_mode(host):
 
     @param host   servers.host.Host object.
     """
-    logging.info("Shutting down DUT...")
-    host.halt()
+    try:
+        # The DUT could be start with un-sshable state, so do shutdown from
+        # DUT side in a try block.
+        logging.info('Shutting down %s from via ssh.', host.hostname)
+        host.halt()
+    except Exception as e:
+        logging.info('Unable to shutdown DUT via ssh; %s', str(e))
+
     host.servo.get_power_state_controller().power_off()
     time.sleep(host.SHUTDOWN_TIMEOUT)
     logging.info("Booting DUT into recovery mode...")
-    host.servo.boot_in_recovery_mode()
-
-    if not host.wait_up(timeout=host.USB_BOOT_TIMEOUT):
-        raise Exception('DUT failed to boot into recovery mode.')
-
-    logging.info('Resetting the TPM status')
+    need_snk = host.require_snk_mode_in_recovery()
+    host.servo.boot_in_recovery_mode(snk_mode=need_snk)
     try:
-        host.run('chromeos-tpm-recovery')
-    except error.AutoservRunError:
-        logging.warn('chromeos-tpm-recovery is too old.')
+        if not host.wait_up(timeout=host.USB_BOOT_TIMEOUT):
+            raise Exception('DUT failed to boot into recovery mode.')
+
+        logging.info('Resetting the TPM status')
+        try:
+            host.run('chromeos-tpm-recovery')
+        except error.AutoservRunError:
+            logging.warn('chromeos-tpm-recovery is too old.')
+    except Exception:
+        # Restore the servo_v4 role to src if we called boot_in_recovery_mode
+        # method with snk_mode=True earlier. If no exception raise, recover
+        # src mode will be handled by power_cycle_via_servo() method.
+        if need_snk:
+            host.servo.set_servo_v4_role('src')
+        raise
 
     logging.info("Rebooting host into normal mode.")
-    power_cycle_via_servo(host)
+    power_cycle_via_servo(host, recover_src=need_snk)
     logging.info("Verify boot into recovery mode completed successfully.")
 
 
@@ -264,6 +343,7 @@ def install_firmware(host):
 
     @param host   Host instance to use for servo and ssh operations.
     """
+    logging.info("Started install firmware on the DUT.")
     # Disable software-controlled write-protect for both FPROMs, and
     # install the RO firmware.
     for fprom in ['host', 'ec']:
@@ -284,9 +364,13 @@ def install_firmware(host):
              ignore_status=True)
 
     logging.info("Rebooting DUT in normal mode(non-dev).")
-    power_cycle_via_servo(host)
-    logging.info("Install firmware completed successfully.")
+    try:
+        host.reboot()
+    except Exception as e:
+        logging.debug('Failed to reboot from host side; %s', e)
+        try_reset_by_servo(host)
 
+    logging.info("Install firmware completed successfully.")
 
 
 def _start_firmware_update(host, result_file):

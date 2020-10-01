@@ -34,7 +34,6 @@ class SecurityConfig(xmlrpc_types.XmlRpcStruct):
 
     """
     SERVICE_PROPERTY_PASSPHRASE = 'Passphrase'
-    SERVICE_PROPERTY_FT_ENABLED = 'WiFi.FTEnabled'
 
     def __init__(self, security='none'):
         super(SecurityConfig, self).__init__()
@@ -284,8 +283,6 @@ class WPAConfig(SecurityConfig):
     def get_shill_service_properties(self):
         """@return dict of shill service properties."""
         ret = {self.SERVICE_PROPERTY_PASSPHRASE: self.psk}
-        if self.ft_mode & self.FT_MODE_PURE:
-            ret[self.SERVICE_PROPERTY_FT_ENABLED] = True
         return ret
 
 
@@ -469,8 +466,6 @@ class EAPConfig(SecurityConfig):
                     '%s:%s' % (self.client_key_slot_id, self.client_key_id))
         if self.use_system_cas is not None:
             ret[self.SERVICE_PROPERTY_USE_SYSTEM_CAS] = self.use_system_cas
-        if self.ft_mode & WPAConfig.FT_MODE_PURE:
-            ret[self.SERVICE_PROPERTY_FT_ENABLED] = True
         if self.altsubject_match:
             ret[self.SERVICE_PROPERTY_ALTSUBJECT_MATCH] = self.altsubject_match
         return ret

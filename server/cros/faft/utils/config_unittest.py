@@ -236,5 +236,25 @@ class IndirectSelfInheritanceTestCase(_MockConfigTestCaseBaseClass):
             config.Config('indirectloop3')
 
 
+class FindMostSpecificConfigTestCase(_MockConfigTestCaseBaseClass):
+    """Ensure that configs named like $BOARD-kernelnext load $BOARD.json."""
+
+    mock_configs = {
+            'DEFAULTS': {},
+            'samus': {},
+            'veyron': {},
+            'minnie': {'parent': 'veyron'},
+    }
+
+    def runTest(self):
+        cfg = config.Config('samus-kernelnext')
+        self.assertEqual(config.Config('samus-kernelnext').platform, 'samus')
+        self.assertEqual(config.Config('samus-arc-r').platform, 'samus')
+        self.assertEqual(config.Config('veyron_minnie').platform, 'minnie')
+        self.assertEqual(config.Config('veyron_monroe').platform, 'veyron')
+        self.assertEqual(config.Config('veyron_minnie-arc-r').platform, 'minnie')
+        self.assertEqual(config.Config('veyron_monroe-arc-r').platform, 'veyron')
+
+
 if __name__ == '__main__':
     unittest.main()

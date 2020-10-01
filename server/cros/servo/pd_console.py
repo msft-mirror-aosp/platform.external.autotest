@@ -31,16 +31,18 @@ class PDConsoleUtils(object):
         """
         self.console.send_command(cmd)
 
-    def send_pd_command_get_output(self, cmd, regexp):
+    def send_pd_command_get_output(self, cmd, regexp, debug_on=True):
         """Send command to PD console, wait for response
 
         @param cmd: pd command string
         @param regexp: regular expression for desired output
         """
         # Enable PD console debug mode to show control messages
-        self.enable_pd_console_debug()
+        if debug_on:
+            self.enable_pd_console_debug()
         output = self.console.send_command_get_output(cmd, regexp)
-        self.disable_pd_console_debug()
+        if debug_on:
+            self.disable_pd_console_debug()
         return output
 
     def send_pd_command_get_reply_msg(self, cmd):
@@ -78,14 +80,14 @@ class PDConsoleUtils(object):
 
         @returns: version of PD stack, one of (1, 2)
         """
-        l = self.send_pd_command_get_output('help pd', ['\s+(.+)'])
-        m = re.search("pd version", l[0][0])
-        if m != None:
-            v = self.send_pd_command_get_output('pd version', ['\s+(\d)'])
-            pd_version = int(v[0][1])
-        else:
-            pd_version = 1
-        return pd_version
+        # Match a number or an error ("Wrong number of params")
+        matches = self.console.send_command_get_output('pd version',
+                                                       [r'\s+(\d+|Wrong.*)'])
+        if matches:
+            result = matches[0][1]
+            if result[0].isdigit():
+                return int(result)
+        return 1
 
     def execute_pd_state_cmd(self, port):
         """Get PD state for specified channel
@@ -104,8 +106,8 @@ class PDConsoleUtils(object):
         pd_cmd = cmd +" " + str(port) + " " + subcmd
         time.sleep(self.CURRENT_STATE_PROBE_DELAY)
         # Two FW versions for this command, get full line.
-        m = self.send_pd_command_get_output(pd_cmd,
-                                            ['(Port.*) - (Role:.*)\n'])
+        m = self.send_pd_command_get_output(pd_cmd, ['(Port.*) - (Role:.*)\n'],
+                                            debug_on=False)
 
         # Extract desired values from result string
         state_result = {}
@@ -161,11 +163,23 @@ class PDConsoleUtils(object):
         @param port: Type C PD port 0/1
         @returns: current PD dualrole setting, one of (on, off, snk, src)
         """
-        dualrole_values = self.DUALROLE_VALUES
-        cmd = 'pd %d dualrole' % port
 
-        m = self.send_pd_command_get_output(cmd,
-                ['dual-role toggling:\s+([\w ]+)[\r\n]'])
+        if self.per_port_dualrole_setting is True:
+            cmd = 'pd %d dualrole' % port
+        elif self.per_port_dualrole_setting is False:
+            cmd = 'pd dualrole'
+        else:
+            try:
+                self.per_port_dualrole_setting = True
+                return self.get_pd_dualrole(port)
+            except:
+                self.per_port_dualrole_setting = False
+                return self.get_pd_dualrole(port)
+
+        dualrole_values = self.DUALROLE_VALUES
+
+        m = self.send_pd_command_get_output(
+                cmd, ['dual-role toggling:\s+([\w ]+)[\r\n]'], debug_on=False)
         # Find the index according to the output of "pd dualrole" command
         dual_index = self.DUALROLE_CMD_RESULTS.index(m[0][1])
         # Map to a string which is the output of this method
@@ -363,7 +377,6 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
     passed in and stored when this object is created.
 
     """
-
     SRC_CONNECT = ('SRC_READY',)
     SNK_CONNECT = ('SNK_READY',)
     SRC_DISC = 'SRC_DISCONNECTED'
@@ -385,7 +398,7 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
     DUALROLE_CMD_RESULTS = ['on', 'off', 'force sink', 'force source']
 
     # Some old firmware uses a single dualrole setting for all ports; while
-    # some new firmware uses a per port dualrole settting. This flag will be
+    # some new firmware uses a per port dualrole setting. This flag will be
     # initialized to True or False.
     # TODO: Remove this flag when the old setting phases out
     per_port_dualrole_setting = None
@@ -531,7 +544,13 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
         # Get string required for console command
         dual_index = dualrole_values.index(value)
         # Create console command
-        cmd = 'pd %d dualrole %s' % (port, self.DUALROLE_CMD_ARGS[dual_index])
+        if self.per_port_dualrole_setting is True:
+            cmd = 'pd %d dualrole %s' % (port, self.DUALROLE_CMD_ARGS[dual_index])
+        elif self.per_port_dualrole_setting is False:
+            cmd = 'pd dualrole %s' % (self.DUALROLE_CMD_ARGS[dual_index])
+        else:
+            raise error.TestFail("dualrole error")
+
         self.console.send_command(cmd)
         time.sleep(self.DUALROLE_QUERY_DELAY)
         # Get current setting to verify that command was successful
@@ -592,6 +611,12 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
     DUALROLE_CMD_ARGS = ['on', 'off', 'sink', 'source']
     # Strings returned from the console command "pd dualrole"
     DUALROLE_CMD_RESULTS = ['on', 'off', 'force sink', 'force source']
+
+    # Some old firmware uses a single dualrole setting for all ports; while
+    # some new firmware uses a per port dualrole setting. This flag will be
+    # initialized to True or False.
+    # TODO: Remove this flag when the old setting phases out
+    per_port_dualrole_setting = None
 
     # Dictionary for 'pd 0/1 state' parsing
     PD_STATE_DICT = {
@@ -789,4 +814,6 @@ def create_pd_console_utils(console):
     }
 
     version = PDConsoleUtils(console).get_pd_version()
-    return pd_console_utils[version](console)
+    logging.debug('%s is TCPM v%s', console, version)
+    cls = pd_console_utils[version]
+    return cls(console)

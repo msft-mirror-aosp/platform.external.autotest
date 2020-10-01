@@ -414,7 +414,7 @@ class telemetry_AFDOGenerate(test.test):
         @returns nothing.
         """
         GS_GCC_DEST = 'gs://chromeos-prebuilt/afdo-job/canonicals/%s'
-        GS_LLVM_DEST = 'gs://chromeos-prebuilt/afdo-job/llvm/%s'
+        GS_LLVM_DEST = 'gs://chromeos-toolchain-artifacts/afdo/unvetted/benchmark/%s'
         GS_LLVM_ASYNC_DEST = \
             'gs://chromeos-throw-away-bucket/afdo-job/llvm/benchmarks/%s'
         GS_TEST_DEST = 'gs://chromeos-throw-away-bucket/afdo-job/canonicals/%s'

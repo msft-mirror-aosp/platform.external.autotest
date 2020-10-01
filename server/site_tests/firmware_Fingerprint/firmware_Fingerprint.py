@@ -16,7 +16,7 @@ class firmware_Fingerprint(FingerprintTest):
     """
     version = 1
 
-    def run_once(self, host, test_exe, test_exe_args=None,
+    def run_once(self, test_exe, test_exe_args=None,
                  use_dev_signed_fw=False,
                  enable_hardware_write_protect=True,
                  enable_software_write_protect=True,
@@ -28,7 +28,7 @@ class firmware_Fingerprint(FingerprintTest):
 
         # Initialize DUT state and set up tmp working directory on device.
         self.setup_test(
-            host, test_dir, use_dev_signed_fw, enable_hardware_write_protect,
+            test_dir, use_dev_signed_fw, enable_hardware_write_protect,
             enable_software_write_protect, force_firmware_flashing,
             init_entropy)
 

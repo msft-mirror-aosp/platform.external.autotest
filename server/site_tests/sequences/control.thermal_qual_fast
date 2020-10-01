@@ -4,6 +4,7 @@
 
 AUTHOR = "puthik"
 NAME = "ThermalQual.fast"
+ATTRIBUTES = "suite:thermal_qual_fast"
 TIME = "SHORT"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "suite"

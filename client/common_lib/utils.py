@@ -95,7 +95,7 @@ STDERR_PREFIX = '[stderr] '
 # safe characters for the shell (do not need quoting)
 _SHELL_QUOTING_ALLOWLIST = frozenset(string.ascii_letters +
                                     string.digits +
-                                    '_-+=>')
+                                    '_-+=>|')
 
 def custom_warning_handler(message, category, filename, lineno, file=None,
                            line=None):
@@ -226,6 +226,12 @@ class BgJob(object):
             executable = '/bin/bash'
 
         with open('/dev/null', 'w') as devnull:
+            # TODO b/169678884. close_fds was reverted to False, as there is a
+            # large performance hit due to a docker + python2 bug. Eventually
+            # update (everything) to python3. Moving this call to subprocess32
+            # is also an option, but will require new packages to the drone/lxc
+            # containers.
+
             self.sp = subprocess.Popen(
                 command,
                 stdin=stdin,
@@ -233,8 +239,7 @@ class BgJob(object):
                 stderr=devnull if stderr_tee == DEVNULL else subprocess.PIPE,
                 preexec_fn=self._reset_sigpipe,
                 shell=shell, executable=executable,
-                env=env, close_fds=True)
-
+                env=env, close_fds=False)
         self._cleanup_called = False
         self._stdout_file = (
             None if stdout_tee == DEVNULL else StringIO.StringIO())

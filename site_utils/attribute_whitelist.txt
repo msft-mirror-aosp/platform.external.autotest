@@ -83,6 +83,7 @@ suite:crosbolt_perf_perbuild
 suite:crosbolt_perf_weekly
 suite:cts_P
 suite:cups_weekly
+suite:debug_kernel_testing
 suite:dev_drone_image_test
 suite:dummy
 suite:dummy_server
@@ -115,7 +116,6 @@ suite:faft_ec_fw_qual
 suite:faft_ec_tot
 suite:faft_ec_wp
 suite:faft_experimental
-suite:faft_framework
 suite:faft_lab
 suite:faft_lv1
 suite:faft_lv2
@@ -200,12 +200,15 @@ suite:storage_qual_cq
 suite:storage_qual_external
 suite:storage_qual_quick
 suite:storage_qual_temp
+suite:storage_qual_v2_quick
 suite:storagequal
 suite:stress
 suite:syzkaller
 suite:telemetry_unit
 suite:telemetry_unit_server
 suite:tendo_experimental
+suite:thermal_qual_fast
+suite:thermal_qual_full
 suite:toolchain-tests
 suite:touch
 suite:video

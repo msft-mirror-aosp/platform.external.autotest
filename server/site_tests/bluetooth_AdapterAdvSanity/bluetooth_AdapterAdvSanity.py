@@ -30,7 +30,7 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Multiple LE advertising test',
-                  skip_models=['dru', 'druwl'])
+                  skip_models=REALTEK_MODELS + ['dru', 'druwl'])
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(
@@ -93,14 +93,22 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
         self.adv_reboot_advertising_test()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None,
-                 flag='Quick Sanity', peer_required=True):
+    def run_once(self,
+                 host,
+                 num_iterations=1,
+                 btpeer_args=[],
+                 test_name=None,
+                 flag='Quick Sanity',
+                 peer_required=True):
         """Run the batch of Bluetooth advertising sanity tests
 
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         """
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host, use_btpeer=peer_required, flag=flag)
+        self.quick_test_init(host,
+                             use_btpeer=peer_required,
+                             flag=flag,
+                             btpeer_args=btpeer_args)
         self.adv_sanity_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

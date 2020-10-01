@@ -738,6 +738,9 @@ REL_HWHEEL          = 0x06
 REL_DIAL            = 0x07
 REL_WHEEL           = 0x08
 REL_MISC            = 0x09
+REL_RESERVED        = 0x0a
+REL_WHEEL_HI_RES    = 0x0b
+REL_HWHEEL_HI_RES   = 0x0c
 REL_MAX             = 0x0f
 REL_CNT             = (REL_MAX + 1)
 
@@ -796,7 +799,7 @@ ABS_CNT             = (ABS_MAX + 1)
 SW_LID                  = 0x00  # set = lid shut
 SW_TABLET_MODE          = 0x01  # set = tablet mode
 SW_HEADPHONE_INSERT     = 0x02  # set = inserted
-SW_RFKILL_ALL           = 0x03  # rfkill master switch, type "any"
+SW_RFKILL_ALL           = 0x03  # rfkill main switch, type "any"
                                 # set = radio enabled
 SW_RADIO = SW_RFKILL_ALL        # deprecated
 SW_MICROPHONE_INSERT    = 0x04  # set = inserted

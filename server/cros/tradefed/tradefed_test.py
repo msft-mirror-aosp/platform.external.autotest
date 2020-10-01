@@ -25,7 +25,9 @@ import pipes
 import re
 import shutil
 import stat
+import subprocess
 import tempfile
+import time
 import urlparse
 
 from autotest_lib.client.bin import utils as client_utils
@@ -38,6 +40,7 @@ from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 from autotest_lib.server.cros.tradefed import tradefed_utils
 from autotest_lib.server.cros.tradefed import tradefed_prerequisite
+from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
@@ -67,6 +70,10 @@ class TradefedTest(test.test):
     _num_media_bundles = 0
     _abilist = []
 
+    # A job will be aborted after 16h. Subtract 30m for setup/teardown.
+    _MAX_LAB_JOB_LENGTH_IN_SEC = 16 * 60 * 60 - 30 * 60
+    _job_deadline = None
+
     def _log_java_version(self):
         """Quick sanity and spew of java version installed on the server."""
         utils.run(
@@ -89,6 +96,9 @@ class TradefedTest(test.test):
                    hard_reboot_on_failure=False,
                    use_jdk9=False):
         """Sets up the tools and binary bundles for the test."""
+        if utils.is_in_container() and not client_utils.is_moblab():
+            self._job_deadline = time.time() + self._MAX_LAB_JOB_LENGTH_IN_SEC
+
         self._install_paths = []
         # TODO(pwang): Remove host if we enable multiple hosts everywhere.
         self._hosts = [host] if host else hosts
@@ -132,14 +142,19 @@ class TradefedTest(test.test):
 
         # If use_jdk9 is set true, use jdk9 than default jdk8.
         if use_jdk9:
-            logging.info('Using JDK9')
-            try:
-                os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
-                os.environ['PATH'] = os.environ['JAVA_HOME']\
-                                  + '/bin:' + os.environ['PATH']
-                os.system('java -version')
-            except OSError:
-                logging.error('Can\'t change current PATH directory')
+            if utils.is_in_container() and not client_utils.is_moblab():
+                logging.info('Lab: switching to JDK9')
+                try:
+                    os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'
+                    os.environ['PATH'] = os.environ['JAVA_HOME']\
+                                      + '/bin:' + os.environ['PATH']
+                    logging.info(
+                            subprocess.check_output(['java', '-version'],
+                                                    stderr=subprocess.STDOUT))
+                except OSError:
+                    logging.error('Can\'t change current PATH directory')
+            else:
+                logging.info('Non-lab environment: should be using JDK9+')
 
         # Install the tradefed bundle.
         bundle_install_path = self._install_bundle(
@@ -162,14 +177,55 @@ class TradefedTest(test.test):
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
     def postprocess(self):
-        """Postprocess: output performance values."""
-        path = tradefed_utils.get_test_result_xml_path(
-            os.path.join(self.resultsdir,
-                         self._get_tradefed_base_dir()))
+        """Postprocess: synchronous offloads and performance data"""
+        self._output_perf()
+        self._prepare_synchronous_offloads()
+
+    def _output_perf(self):
+        """Output performance values."""
+        base = self._default_tradefed_base_dir()
+        path = tradefed_utils.get_test_result_xml_path(base)
         if path:
             for metric in tradefed_utils.get_perf_metrics_from_test_result_xml(
                 path, self.resultsdir):
                 self.output_perf_value(**metric)
+
+    def _prepare_synchronous_offloads(self):
+        """
+        Copy files needed for APFE to synchronous offload dir,  with some
+        structure to make the post-job postprocessing simpler.
+        """
+        testname = os.path.basename(self.outputdir)
+        # This is yyyy.mm.dd_hh.mm.ss  (start time)
+        timestamp_pattern = ("[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]" +
+                             "_[0-9][0-9].[0-9][0-9].[0-9][0-9]")
+        time_glob = os.path.join(
+            self._default_tradefed_base_dir(), timestamp_pattern
+        )
+        for dirpath in glob.glob(time_glob):
+            timestamp = os.path.basename(dirpath)
+            locs = [os.path.join(dirpath, f) for f in ["test_result.xml",
+                                                       "testResult.xml"]]
+            for f in locs:
+                if os.path.exists(f):
+                    subdirs = self._subdirs(f, testname, timestamp)
+                    self._copy_to_offload_dir(f, subdirs)
+        for z in glob.glob(time_glob+".zip"):
+            self._copy_to_offload_dir(z, self._subdirs(z, testname))
+
+    def _copy_to_offload_dir(self, src_path, subdirs, recursive=True):
+        target = os.path.join(os.getenv(OFFLOAD_ENVVAR), *subdirs)
+        self._safe_makedirs(target)
+        if not recursive or os.path.isfile(src_path):
+            return shutil.copy2(src_path, str(target))
+        return shutil.copytree(src_path, str(target))
+
+    def _subdirs(self, path, testname, timestamp=""):
+        # CTS results from bvt-arc suites need to be sent to the
+        # specially-designated bucket for early EDI entries in APFE,
+        # but only there.
+        dest = "BVT" if 'bvt-arc' in path else "CTS"
+        return ["APFE", dest, testname, timestamp]
 
     def cleanup(self):
         """Cleans up any dirtied state."""
@@ -588,7 +644,13 @@ class TradefedTest(test.test):
             logging.info('Not in lab. Downloading %s directly to %s.',
                          uri, output)
             # b/17445576: gsutil rsync of individual files is not implemented.
-            utils.run('gsutil', args=('cp', uri, output), verbose=True)
+            res = utils.run('gsutil',
+                            args=('cp', uri, output),
+                            verbose=True,
+                            ignore_status=True)
+            if not res or res.exit_status != 0:
+                logging.warning('Retrying download...')
+                utils.run('gsutil', args=('cp', uri, output), verbose=True)
             return output
 
         # We are in the moblab. Because the machine cannot access the storage
@@ -949,8 +1011,7 @@ class TradefedTest(test.test):
                 self._clean_download_cache_if_needed(force=True)
             raise
 
-        result_destination = os.path.join(self.resultsdir,
-                                          self._get_tradefed_base_dir())
+        result_destination = self._default_tradefed_base_dir()
         # Gather the global log first. Datetime parsing below can abort the test
         # if tradefed startup had failed. Even then the global log is useful.
         self._collect_tradefed_global_log(output, result_destination)
@@ -975,8 +1036,7 @@ class TradefedTest(test.test):
         """
         logging.info('Setting up tradefed results and logs directories.')
 
-        results_destination = os.path.join(self.resultsdir,
-                                           self._get_tradefed_base_dir())
+        results_destination = self._default_tradefed_base_dir()
         logs_destination = os.path.join(results_destination, 'logs')
         directory_mapping = [
             (os.path.join(self._repository, 'results'), results_destination),
@@ -988,6 +1048,9 @@ class TradefedTest(test.test):
                 shutil.rmtree(tradefed_path)
             self._safe_makedirs(final_path)
             os.symlink(final_path, tradefed_path)
+
+    def _default_tradefed_base_dir(self):
+        return os.path.join(self.resultsdir, self._get_tradefed_base_dir())
 
     def _install_plan(self, subplan):
         """Copy test subplan to CTS-TF.
@@ -1111,6 +1174,15 @@ class TradefedTest(test.test):
 
     def _run_tradefed(self, command):
         timeout = self._timeout * self._timeout_factor
+        if self._job_deadline is not None:
+            clipped = int(min(timeout, self._job_deadline - time.time()))
+            # Even the shortest tradefed run takes 1.5 minutes. Took 2x'ed
+            # value as a threshold that a meaningful test can run.
+            if clipped < 3 * 60:
+                raise error.TestError(
+                        'Hitting job time limit: only %s seconds left' %
+                        clipped)
+            timeout = clipped
         return self._run_tradefed_with_timeout(command, timeout)
 
     def _run_tradefed_with_retries(self,
@@ -1169,6 +1241,15 @@ class TradefedTest(test.test):
             steps += 1
             keep_media = media_asset and media_asset.uri and steps >= 1
             self._run_commands(login_precondition_commands, ignore_status=True)
+            # TODO(kinaba): Make it a general config (per-model choice
+            # of tablet,clamshell,default) if the code below works.
+            if utils.is_in_container() and not client_utils.is_moblab():
+                # Force all hatch devices run the test in laptop mode,
+                # regardless of their physical placement.
+                if board == 'hatch' or board == 'hatch-arc-r':
+                    self._run_commands(
+                        ['inject_powerd_input_event --code=tablet --value=0'],
+                        ignore_status=True)
             with login.login_chrome(
                     hosts=self._hosts,
                     board=board,

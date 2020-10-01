@@ -295,12 +295,12 @@ class flashrom_util(object):
         # For MTD devices, this will fail: need both --wp-range and --wp-enable.
         # See: https://crrev.com/c/275381
 
-        cmd = 'flashrom %s --wp-enable' % self._target_command
+        cmd = 'flashrom %s --verbose --wp-enable' % self._target_command
         self.os_if.run_shell_command(cmd, modifies_device=True)
 
     def disable_write_protect(self):
         """Disable the write protection of the flash chip."""
-        cmd = 'flashrom %s --wp-disable' % self._target_command
+        cmd = 'flashrom %s --verbose --wp-disable' % self._target_command
         self.os_if.run_shell_command(cmd, modifies_device=True)
 
     def set_write_protect_region(self, image_file, region, enabled=None):
@@ -314,7 +314,7 @@ class flashrom_util(object):
         @param region: Region to set (usually WP_RO)
         @param enabled: if True, run --wp-enable; if False, run --wp-disable.
         """
-        cmd = 'flashrom %s --image %s --wp-region %s' % (
+        cmd = 'flashrom %s --verbose --image %s --wp-region %s' % (
                 self._target_command, image_file, region)
         if enabled is not None:
             cmd += ' '
@@ -331,7 +331,7 @@ class flashrom_util(object):
         @param enabled: If True, run --wp-enable; if False, run --wp-disable.
                         If None (default), don't specify either one.
         """
-        cmd = 'flashrom %s --wp-range %s %s' % (
+        cmd = 'flashrom %s --verbose --wp-range %s %s' % (
                 self._target_command, start, length)
         if enabled is not None:
             cmd += ' '

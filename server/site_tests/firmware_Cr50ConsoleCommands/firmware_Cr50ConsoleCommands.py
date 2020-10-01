@@ -95,7 +95,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         """Return the cr50 console output"""
         old_output = []
         output = self.cr50.send_command_retry_get_output(
-                cmd, [regexp], safe=True, compare_output=True)[0][1].strip()
+                cmd, [regexp], safe=True, compare_output=True,
+                retries=10)[0][1].strip()
 
         # Record the original command output
         results_path = os.path.join(self.resultsdir, cmd)

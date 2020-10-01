@@ -184,9 +184,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     # after reset.
     ADAPTER_TIMEOUT = 30
 
-    # How long to wait for uhid device
-    UHID_TIMEOUT = 15
-    UHID_CHECK_SECS = 2
+    # How long to wait for hid device
+    HID_TIMEOUT = 15
+    HID_CHECK_SECS = 2
 
     # How long we should wait for property update signal before we cancel it
     PROPERTY_UPDATE_TIMEOUT_MILLI_SECS = 5000
@@ -819,37 +819,42 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self._set_wake_enabled(value)
 
-    def wait_for_uhid_device(self, device_address):
-        """Waits for uhid device with given device address.
+    def wait_for_hid_device(self, device_address):
+        """Waits for hid device with given device address.
 
         Args:
             device_address: Peripheral address
         """
-        def match_uhid_to_device(uhidpath, device_address):
-            """Check if given uhid syspath is for the given device address """
+
+        def match_hid_to_device(hidpath, device_address):
+            """Check if given hid syspath is for the given device address """
             # If the syspath has a uniq property that matches the peripheral
             # device's address, then it has matched
-            props = UdevadmInfo.GetProperties(uhidpath)
+            props = UdevadmInfo.GetProperties(hidpath)
             if props.get('uniq', '').lower() == device_address.lower():
-                logging.info('Found uhid device for address {} at {}'.format(
-                        device_address, uhidpath))
+                logging.info('Found hid device for address {} at {}'.format(
+                        device_address, hidpath))
                 return True
+            else:
+                logging.info('Path {} is not right device.'.format(hidpath))
 
             return False
 
         start = datetime.now()
 
-        # Keep scanning udev for correct uhid device
-        while (datetime.now() - start).seconds <= self.UHID_TIMEOUT:
+        # Keep scanning udev for correct hid device
+        while (datetime.now() - start).seconds <= self.HID_TIMEOUT:
             existing_inputs = UdevadmTrigger(
                     subsystem_match=['input']).DryRun()
             for entry in existing_inputs:
-                logging.info('udevadm trigger entry: {}'.format(entry))
-                if 'uhid' in entry and match_uhid_to_device(
-                        entry, device_address):
+                bt_hid = any([t in entry for t in ['uhid', 'hci']])
+                logging.info('udevadm trigger entry is {}: {}'.format(
+                        bt_hid, entry))
+
+                if bt_hid and match_hid_to_device(entry, device_address):
                     return True
 
-            time.sleep(self.UHID_CHECK_SECS)
+            time.sleep(self.HID_CHECK_SECS)
 
         return False
 

@@ -644,7 +644,13 @@ class TradefedTest(test.test):
             logging.info('Not in lab. Downloading %s directly to %s.',
                          uri, output)
             # b/17445576: gsutil rsync of individual files is not implemented.
-            utils.run('gsutil', args=('cp', uri, output), verbose=True)
+            res = utils.run('gsutil',
+                            args=('cp', uri, output),
+                            verbose=True,
+                            ignore_status=True)
+            if not res or res.exit_status != 0:
+                logging.warning('Retrying download...')
+                utils.run('gsutil', args=('cp', uri, output), verbose=True)
             return output
 
         # We are in the moblab. Because the machine cannot access the storage

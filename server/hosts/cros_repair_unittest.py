@@ -44,15 +44,13 @@ CROS_REPAIR_ACTIONS = (
         (cros_repair.ServoResetRepair, 'servoreset', (), (
                 'ssh',
                 'stop_start_ui',
+                'power',
         )),
         (
                 cros_repair.ServoCr50RebootRepair,
                 'cr50_reset',
                 (),
-                (
-                        'ssh',
-                        'stop_start_ui',
-                ),
+                ('ssh', 'stop_start_ui', 'power'),
         ),
         (cros_repair.ServoSysRqRepair, 'sysrq', (), ('ssh', )),
         (cros_repair.LabelCleanupRepair, 'label_cleanup', ('ssh', ),

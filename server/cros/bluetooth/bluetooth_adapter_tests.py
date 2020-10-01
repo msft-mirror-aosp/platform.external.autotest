@@ -3921,7 +3921,8 @@ class BluetoothAdapterTests(test.test):
 
         @param device_address: Address of peripheral device
         """
-        device_found = self.bluetooth_facade.wait_for_uhid_device(device_address)
+        device_found = self.bluetooth_facade.wait_for_hid_device(
+                device_address)
         self.results = {
                 'device_found': device_found
         }

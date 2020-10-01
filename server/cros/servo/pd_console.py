@@ -398,7 +398,7 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
     DUALROLE_CMD_RESULTS = ['on', 'off', 'force sink', 'force source']
 
     # Some old firmware uses a single dualrole setting for all ports; while
-    # some new firmware uses a per port dualrole settting. This flag will be
+    # some new firmware uses a per port dualrole setting. This flag will be
     # initialized to True or False.
     # TODO: Remove this flag when the old setting phases out
     per_port_dualrole_setting = None
@@ -611,6 +611,12 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
     DUALROLE_CMD_ARGS = ['on', 'off', 'sink', 'source']
     # Strings returned from the console command "pd dualrole"
     DUALROLE_CMD_RESULTS = ['on', 'off', 'force sink', 'force source']
+
+    # Some old firmware uses a single dualrole setting for all ports; while
+    # some new firmware uses a per port dualrole setting. This flag will be
+    # initialized to True or False.
+    # TODO: Remove this flag when the old setting phases out
+    per_port_dualrole_setting = None
 
     # Dictionary for 'pd 0/1 state' parsing
     PD_STATE_DICT = {

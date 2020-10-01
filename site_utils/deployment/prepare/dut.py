@@ -119,13 +119,21 @@ def try_reset_by_servo(host):
             'DUT failed to come back after %d seconds' % host.BOOT_TIMEOUT)
 
 
-def power_cycle_via_servo(host):
+def power_cycle_via_servo(host, recover_src=False):
     """Power cycle a host though it's attached servo.
 
-    @param host   A server.hosts.Host object.
+    @param host: A server.hosts.Host object.
+    @param recover_src: Indicate if we need switch servo_v4_role
+           back to src mode.
     """
-    logging.info("Shutting down the host...")
-    host.halt()
+    try:
+        logging.info('Shutting down %s from via ssh.', host.hostname)
+        host.halt()
+    except Exception as e:
+        logging.info('Unable to shutdown DUT via ssh; %s', str(e))
+
+    if recover_src:
+        host.servo.set_servo_v4_role('src')
 
     logging.info('Power cycling DUT through servo...')
     host.servo.get_power_state_controller().power_off()
@@ -229,8 +237,14 @@ def verify_boot_into_rec_mode(host):
 
     @param host   servers.host.Host object.
     """
-    logging.info("Shutting down DUT...")
-    host.halt()
+    try:
+        # The DUT could be start with un-sshable state, so do shutdown from
+        # DUT side in a try block.
+        logging.info('Shutting down %s from via ssh.', host.hostname)
+        host.halt()
+    except Exception as e:
+        logging.info('Unable to shutdown DUT via ssh; %s', str(e))
+
     host.servo.get_power_state_controller().power_off()
     time.sleep(host.SHUTDOWN_TIMEOUT)
     logging.info("Booting DUT into recovery mode...")
@@ -245,14 +259,16 @@ def verify_boot_into_rec_mode(host):
             host.run('chromeos-tpm-recovery')
         except error.AutoservRunError:
             logging.warn('chromeos-tpm-recovery is too old.')
-    finally:
+    except Exception:
         # Restore the servo_v4 role to src if we called boot_in_recovery_mode
-        # method with snk_mode=True earlier.
+        # method with snk_mode=True earlier. If no exception raise, recover
+        # src mode will be handled by power_cycle_via_servo() method.
         if need_snk:
             host.servo.set_servo_v4_role('src')
+        raise
 
     logging.info("Rebooting host into normal mode.")
-    power_cycle_via_servo(host)
+    power_cycle_via_servo(host, recover_src=need_snk)
     logging.info("Verify boot into recovery mode completed successfully.")
 
 

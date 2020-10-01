@@ -324,30 +324,35 @@ class CrosDisksArchiveTester(CrosDisksTester):
             # archive files on a removable drive, and ensures they are in a
             # location CrosDisks expects them to be in.
             loop_device = image.loop_device
-            logging.info('Mounting FAT filesystem from %r via CrosDisks',
-                         loop_device)
-            self.cros_disks.mount(loop_device, '',
-                                  ["ro", "nodev", "noexec", "nosuid"])
-            mount_result = self.cros_disks.expect_mount_completion({
-                    'status': 0,
-                    'source_path': loop_device,
-            })
+            self.cros_disks.add_loopback_to_allowlist(loop_device)
+            try:
+                logging.info('Mounting FAT filesystem from %r via CrosDisks',
+                             loop_device)
+                self.cros_disks.mount(loop_device, '',
+                                      ["ro", "nodev", "noexec", "nosuid"])
+                mount_result = self.cros_disks.expect_mount_completion({
+                        'status': 0,
+                        'source_path': loop_device,
+                })
 
-            mount_path = utf8(mount_result['mount_path'])
-            logging.info('FAT filesystem mounted at %r', mount_path)
+                mount_path = utf8(mount_result['mount_path'])
+                logging.info('FAT filesystem mounted at %r', mount_path)
 
-            # Perform tests with the archive files in the mounted FAT filesystem.
-            self._test_unicode(mount_path)
-            self._test_symlinks(mount_path)
-            self._test_multipart(mount_path)
-            self._test_invalid(mount_path)
-            self._test_need_password(mount_path)
-            self._test_strict_password(mount_path)
-            self._test_nested(mount_path)
-            self._test_duplicated_filenames(mount_path)
+                # Perform tests with the archive files in the mounted FAT
+                # filesystem.
+                self._test_unicode(mount_path)
+                self._test_symlinks(mount_path)
+                self._test_multipart(mount_path)
+                self._test_invalid(mount_path)
+                self._test_need_password(mount_path)
+                self._test_strict_password(mount_path)
+                self._test_nested(mount_path)
+                self._test_duplicated_filenames(mount_path)
 
-            logging.info('Unmounting FAT filesystem')
-            self.cros_disks.unmount(mount_path, [])
+                logging.info('Unmounting FAT filesystem')
+                self.cros_disks.unmount(mount_path, [])
+            finally:
+                self.cros_disks.remove_loopback_from_allowlist(loop_device)
 
     def get_tests(self):
         return [self._test_archives]

@@ -126,5 +126,8 @@ DEVICE_POLICY_DICT = {
     'DeviceBatteryChargeCustomStartCharging': 'device_battery_charge_mode.custom_charge_start',
     'DeviceBatteryChargeCustomStopCharging': 'device_battery_charge_mode.custom_charge_stop',
     'DeviceScheduledUpdateCheck': 'device_scheduled_update_check.device_scheduled_update_check_settings',
-    'DevicePowerwashAllowed': 'device_powerwash_allowed.device_powerwash_allowed'
-  }
+    'DevicePrinters': 'device_printers.external_policy',
+    'DevicePrintersAccessMode': 'device_printers_access_mode.access_mode',
+    'DevicePrintersBlocklist': 'device_printers_blocklist.blocklist',
+    'DevicePrintersAllowlist': 'device_printers_allowlist.allowlist'
+}

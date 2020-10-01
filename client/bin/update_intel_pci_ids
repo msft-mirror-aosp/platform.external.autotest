@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import subprocess as sp
+from six.moves import range
 
 
 def map_gpu_name(mesa_name):

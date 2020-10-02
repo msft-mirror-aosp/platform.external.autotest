@@ -1696,7 +1696,6 @@ class FirmwareTest(test.test):
         @return: Current firmware checksums and fwids, as a dict
         """
 
-        # TODO(dgoyette): add a way to avoid hardcoding the keys (section names)
         current_checksums = {
             'VBOOTA': self.faft_client.bios.get_sig_sha('a'),
             'FVMAINA': self.faft_client.bios.get_body_sha('a'),

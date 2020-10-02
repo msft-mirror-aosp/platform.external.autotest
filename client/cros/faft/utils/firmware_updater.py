@@ -400,7 +400,6 @@ class FirmwareUpdater(object):
         if manifest_text:
             return json.loads(manifest_text)
         else:
-            # TODO(dgoyette): Perhaps raise an exception for empty manifest?
             return None
 
     def _detect_image_paths(self, shellball=None):

@@ -800,6 +800,18 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         return all(visqol_results.values())
 
+    @test_retry_and_log(False)
+    def test_device_a2dp_connected(self, device, timeout=15):
+        """ Tests a2dp profile is connected on device. """
+        self.results = {}
+        check_connection = lambda: self._get_pulseaudio_bluez_source_a2dp(
+                device, A2DP)
+        is_connected = self._wait_for_condition(check_connection,
+                                                'test_device_a2dp_connected',
+                                                timeout=timeout)
+        self.results['peer a2dp connected'] = is_connected
+
+        return all(self.results.values())
 
     @test_retry_and_log(False)
     def test_a2dp_sinewaves(self, device, test_profile, duration):

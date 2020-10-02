@@ -1094,6 +1094,10 @@ def write_moblab_controlfiles(modules, abi, revision, build, uri, is_public):
     less relative overhead spinning up jobs than the lab.
     """
     for module in modules:
+        # No need to generate control files with extra suffix, since --module
+        # option will cover variants with optional parameters.
+        if "[" in module:
+            continue
         write_controlfile(module, set([module]), abi, revision, build, uri,
                           [CONFIG['MOBLAB_SUITE_NAME']], is_public)
 

@@ -1413,16 +1413,16 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def wait_for_uhid_device(self, device_address):
-        """Wait for uhid device with given device address.
+    def wait_for_hid_device(self, device_address):
+        """Wait for hid device with given device address.
 
         Args:
             device_address: Peripheral Address
 
         Returns:
-            True if uhid device is found.
+            True if hid device is found.
         """
-        return self._proxy.wait_for_uhid_device(device_address)
+        return self._proxy.wait_for_hid_device(device_address)
 
 
     @proxy_thread_safe
@@ -1482,7 +1482,7 @@ class BluetoothDevice(object):
         self._proxy.reset_on()
         # This kills the RPC server.
         if close_host:
-          self.host.close()
+            self.host.close()
         else:
-          self.host.rpc_server_tracker.disconnect(
-              constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT)
+            self.host.rpc_server_tracker.disconnect(
+                    constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT)

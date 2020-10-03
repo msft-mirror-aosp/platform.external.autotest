@@ -190,15 +190,18 @@ class BluetoothAdapterPairingTests(
                 logging.info('%d: Connection establishment duration %f sec',
                              i, time_diff)
             else:
-               break
+                break
 
         if not bool(self.fails):
             logging.info('Average duration (by adapter) %f sec',
                          total_duration_by_adapter/loop_cnt)
 
 
-    def auto_reconnect_loop(self, device, loops,
-                            check_connected_method=lambda device: True):
+    def auto_reconnect_loop(self,
+                            device,
+                            loops,
+                            check_connected_method=lambda device: True,
+                            restart_adapter=False):
         """Running a loop to verify the paired peer can auto reconnect"""
 
         # Let the adapter pair, and connect to the target device first
@@ -212,9 +215,15 @@ class BluetoothAdapterPairingTests(
         total_reconnection_duration = 0
         loop_cnt = 0
         for i in xrange(loops):
-            # Restart and clear peer HID device
-            self.restart_peers()
-            start_time = time.time()
+            # Restart either the adapter or the peer
+            if restart_adapter:
+                self.test_power_off_adapter()
+                self.test_power_on_adapter()
+                start_time = time.time()
+            else:
+                # Restart and clear peer HID device
+                self.restart_peers()
+                start_time = time.time()
 
             # Verify that the device is reconnected. Wait for the input device
             # to become available before checking the profile connection.
@@ -230,7 +239,7 @@ class BluetoothAdapterPairingTests(
                 loop_cnt += 1
                 logging.info('%d: Reconnection duration %f sec', i, time_diff)
             else:
-               break
+                break
 
         if not bool(self.fails):
             logging.info('Average Reconnection duration %f sec',

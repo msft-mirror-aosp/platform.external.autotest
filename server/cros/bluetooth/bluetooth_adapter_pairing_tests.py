@@ -203,13 +203,11 @@ class BluetoothAdapterPairingTests(
 
         # Let the adapter pair, and connect to the target device first
         self.test_discover_device(device.address)
-        # self.bluetooth_facade.is_discovering() doesn't work as expected:
-        # crbug:905374
-        # self.test_stop_discovery()
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+
+        # Verify device is now connected
         self.test_connection_by_adapter(device.address)
+        self.test_hid_device_created(device.address)
 
         total_reconnection_duration = 0
         loop_cnt = 0
@@ -218,13 +216,11 @@ class BluetoothAdapterPairingTests(
             self.restart_peers()
             start_time = time.time()
 
-            # Verify that the device is reconnecting
+            # Verify that the device is reconnected. Wait for the input device
+            # to become available before checking the profile connection.
             self.test_device_is_connected(device.address)
+            self.test_hid_device_created(device.address)
 
-            # With raspberry pi peer, it takes a moment before the device is
-            # registered as an input device. Without delay, the input recorder
-            # doesn't find the device
-            time.sleep(1)
             check_connected_method(device)
             end_time = time.time()
             time_diff = end_time - start_time

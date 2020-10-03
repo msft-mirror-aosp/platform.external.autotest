@@ -51,7 +51,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                                     'servo flex')
 
         # Reset the device
-        self.host.reset_via_servo()
+        self.servo.get_power_state_controller().reset()
 
         # Save the original version, so we can make sure cr50 doesn't rollback.
         self.original_cr50_version = self.cr50.get_active_version_info()
@@ -114,7 +114,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
         for i in range(suspend_count):
             # Power off the device
-            self.host.power_off_via_servo()
+            self.servo.get_power_state_controller().power_off()
             time.sleep(self.MIN_SUSPEND)
 
             # Power on the device
@@ -159,7 +159,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
         # TODO(b/135147658): Raise an error once CCD disable is fixed.
         logging.info('Resetting DUT')
-        self.host.reset_via_servo()
+        self.servo.get_power_state_controller().reset()
         if not self._dut_is_responsive():
             return msg
 

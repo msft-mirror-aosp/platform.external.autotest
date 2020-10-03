@@ -63,7 +63,6 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.connect_disconnect_loop(device=device, loops=3)
 
-
     @test_wrapper('Mouse Reports', devices={'BLE_MOUSE':1})
     def le_mouse_reports(self):
         """Run all bluetooth mouse reports tests"""
@@ -103,10 +102,27 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
         """LE reconnection loop by reseting HID and check reconnection"""
 
         device = self.devices['BLE_MOUSE'][0]
-        self.auto_reconnect_loop(device=device,
-                                 loops=3,
-                                 check_connected_method=\
-                                 self.test_mouse_left_click)
+        self.auto_reconnect_loop(
+                device=device,
+                loops=3,
+                check_connected_method=self.test_mouse_left_click)
+
+    # TODO(b/165690676) - Test is disabled for AVL while it stabilizes in flaky
+    #                     suite. Remove flags once it's in stable suite.
+    @test_wrapper('Power toggle and Connect Loop',
+                  devices={'BLE_MOUSE': 1},
+                  flags=['Quick Sanity'])
+    def le_power_toggle_connect_loop(self):
+        """Run autoconnect loop and cycle adapter power between runs.
+           The test makes sure the peer can reconnect after an adapter power
+           cycle.
+        """
+        device = self.devices['BLE_MOUSE'][0]
+        self.auto_reconnect_loop(
+                device=device,
+                loops=3,
+                check_connected_method=self.test_mouse_left_click,
+                restart_adapter=True)
 
 
     @test_wrapper('GATT Client', devices={'BLE_KEYBOARD':1})
@@ -338,6 +354,7 @@ class bluetooth_AdapterLESanity(BluetoothAdapterQuickTests,
                              whole batch
         """
         self.le_connect_disconnect_loop()
+        self.le_power_toggle_connect_loop()
         self.le_mouse_reports()
         self.le_keyboard_reports()
         self.le_auto_reconnect()

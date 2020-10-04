@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 """The main job wrapper
 
 This is the core infrastructure.
@@ -21,8 +20,6 @@ import time
 import traceback
 import types
 import weakref
-
-import six
 
 import common
 from autotest_lib.client.bin import client_logging_config
@@ -133,7 +130,7 @@ class base_client_job(base_job.base_job):
         self._pre_record_init(control, options)
         try:
             self._post_record_init(control, options, drop_caches)
-        except Exception as err:
+        except Exception, err:
             self.record(
                     'ABORT', None, None,'client.bin.job.__init__ failed: %s' %
                     str(err))
@@ -482,10 +479,9 @@ class base_client_job(base_job.base_job):
                 raise error.TestError("Dependency %s does not exist" % dep)
 
             os.chdir(dep_dir)
-            if os.path.exists("%s.py" % dep):
+            if execfile('%s.py' % dep, {}) is None:
                 logging.info('Dependency %s successfuly built', dep)
-            else:
-                raise error.TestError("Dependency %s.py does not exist" % dep)
+
 
     def _runtest(self, url, tag, timeout, args, dargs):
         try:
@@ -499,7 +495,7 @@ class base_client_job(base_job.base_job):
             raise
         except error.JobError:
             raise  # Caught further up and turned into an ABORT.
-        except Exception as e:
+        except Exception, e:
             # Converts all other exceptions thrown by the test regardless
             # of phase into a TestError(TestBaseException) subclass that
             # reports them with their full stack trace.
@@ -549,7 +545,7 @@ class base_client_job(base_job.base_job):
         def group_func():
             try:
                 self._runtest(url, tag, timeout, args, dargs)
-            except error.TestBaseException as detail:
+            except error.TestBaseException, detail:
                 # The error is already classified, record it properly.
                 self.record(detail.exit_status, subdir, testname, str(detail))
                 raise
@@ -627,7 +623,7 @@ class base_client_job(base_job.base_job):
         try:
             self._rungroup(subdir, testname, group_func, timeout)
             return 'GOOD'
-        except error.TestBaseException as detail:
+        except error.TestBaseException, detail:
             return detail.exit_status
 
 
@@ -658,13 +654,13 @@ class base_client_job(base_job.base_job):
                 result = function(*args, **dargs)
                 self.record('END GOOD', subdir, testname)
                 return result
-            except error.TestBaseException as e:
+            except error.TestBaseException, e:
                 self.record('END %s' % e.exit_status, subdir, testname)
                 raise
-            except error.JobError as e:
+            except error.JobError, e:
                 self.record('END ABORT', subdir, testname)
                 raise
-            except Exception as e:
+            except Exception, e:
                 # This should only ever happen due to a bug in the given
                 # function's code.  The common case of being called by
                 # run_test() will never reach this.  If a control file called
@@ -701,7 +697,7 @@ class base_client_job(base_job.base_job):
             raise
         # If there was a different exception, turn it into a TestError.
         # It will be caught by step_engine or _run_step_fn.
-        except Exception as e:
+        except Exception, e:
             raise error.UnhandledTestError(e)
 
 
@@ -851,7 +847,7 @@ class base_client_job(base_job.base_job):
             # wait for the task to finish
             try:
                 self._forkwait(pid, kwargs.get('timeout'))
-            except Exception as e:
+            except Exception, e:
                 logging.info('pid %d completed with error', pid)
                 exceptions.append(e)
             # copy the logs from the subtask into the main log
@@ -883,7 +879,7 @@ class base_client_job(base_job.base_job):
         # write out a job HTML report
         try:
             html_report.create_report(self.resultdir)
-        except Exception as e:
+        except Exception, e:
             logging.error("Error writing job HTML report: %s", e)
 
         # We are about to exit 'complete' so clean up the control file.
@@ -950,7 +946,7 @@ class base_client_job(base_job.base_job):
         # defined globally can be used as a next step.
         if callable(fn):
             fn = fn.__name__
-        if not isinstance(fn, six.string_types):
+        if not isinstance(fn, types.StringTypes):
             raise StepError("Next steps must be functions or "
                             "strings containing the function name")
         ancestry = copy.copy(self._current_step_ancestry)
@@ -994,9 +990,9 @@ class base_client_job(base_job.base_job):
             return local_vars['__ret']
         except SystemExit:
             raise  # Send error.JobContinue and JobComplete on up to runjob.
-        except error.TestNAError as detail:
+        except error.TestNAError, detail:
             self.record(detail.exit_status, None, fn, str(detail))
-        except Exception as detail:
+        except Exception, detail:
             raise error.UnhandledJobError(detail)
 
 
@@ -1066,13 +1062,12 @@ class base_client_job(base_job.base_job):
                                'args': self.args}
         exec(JOB_PREAMBLE, global_control_vars, global_control_vars)
         try:
-            exec(compile(open(self.control, "rb").read(), self.control, 'exec'),
-                 global_control_vars, global_control_vars)
-        except error.TestNAError as detail:
+            execfile(self.control, global_control_vars, global_control_vars)
+        except error.TestNAError, detail:
             self.record(detail.exit_status, None, self.control, str(detail))
         except SystemExit:
             raise  # Send error.JobContinue and JobComplete on up to runjob.
-        except Exception as detail:
+        except Exception, detail:
             # Syntax errors or other general Python exceptions coming out of
             # the top level of the control file itself go through here.
             raise error.UnhandledJobError(detail)
@@ -1228,7 +1223,7 @@ def runjob(control, drop_caches, options):
     except error.JobComplete:
         sys.exit(1)
 
-    except error.JobError as instance:
+    except error.JobError, instance:
         logging.error("JOB ERROR: " + str(instance))
         if myjob:
             command = None
@@ -1241,7 +1236,7 @@ def runjob(control, drop_caches, options):
         else:
             sys.exit(1)
 
-    except Exception as e:
+    except Exception, e:
         # NOTE: job._run_step_fn and job.step_engine will turn things into
         # a JobError for us.  If we get here, its likely an autotest bug.
         msg = str(e) + '\n' + traceback.format_exc()

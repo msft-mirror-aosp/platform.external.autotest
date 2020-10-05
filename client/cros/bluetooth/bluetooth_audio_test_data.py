@@ -27,6 +27,8 @@ VISQOL_PATH = os.path.join(VISQOL_FOLDER, 'visqol')
 # There are several available models for VISQOL, since these VISQOL based tests
 # are primarily for voice quality, this model is more tuned for voice quality.
 # experimentally, the scores have been fairly similar to the default model
+# TODO b:169251326 terms below are set outside of this codebase
+# and should be updated when possible. ("master" -> "main")
 # 'libsvm_nu_svr_model.txt'. Details: github.com/google/visqol/tree/master/model
 VISQOL_SIMILARITY_MODEL = os.path.join(
         VISQOL_FOLDER, 'visqol.runfiles', '__main__', 'model',

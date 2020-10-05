@@ -72,8 +72,8 @@ class OutputRecorder(object):
         self._stop_recording_thread_event = threading.Event()
 
         # Use pseudo terminal to prevent buffering of the program output.
-        self._master, self._slave = pty.openpty()
-        self._output = os.fdopen(self._master)
+        self._main, self._node = pty.openpty()
+        self._output = os.fdopen(self._main)
 
         # Set non-blocking flag.
         fcntl.fcntl(self._output, fcntl.F_SETFL, os.O_NONBLOCK)
@@ -84,7 +84,7 @@ class OutputRecorder(object):
         logging.info('Recording output of "%s".', self.cmd)
         try:
             self._recorder = subprocess.Popen(
-                    self.cmd, stdout=self._slave, stderr=self._slave)
+                    self.cmd, stdout=self._node, stderr=self._node)
         except:
             raise OutputRecorderError('Failed to run "%s"' % self.cmd)
 

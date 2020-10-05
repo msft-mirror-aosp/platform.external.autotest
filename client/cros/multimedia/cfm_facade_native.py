@@ -188,13 +188,13 @@ class CFMFacadeNative(object):
                     logging.info('Webview query: "%s"', url_query)
                     params = urlparse.parse_qs(url_query,
                                                keep_blank_values = True)
-                    is_oobe_slave_screen = (
+                    is_oobe_node_screen = (
                         # Hangouts Classic
                         ('nooobestatesync' in params and 'oobedone' in params)
                         # Hangouts Meet
                         or ('oobesecondary' in url_path))
-                    if is_oobe_slave_screen:
-                        # Skip the oobe slave screen. Not doing this can cause
+                    if is_oobe_node_screen:
+                        # Skip the oobe node screen. Not doing this can cause
                         # the wrong webview context to be returned.
                         continue
                     if 'screen' in params and params['screen'][0] == screen:

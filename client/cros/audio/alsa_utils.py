@@ -97,6 +97,8 @@ def _get_soundcard_scontrols(card_id):
     @param card_id: Soundcard ID.
     @raise RuntimeError: If failed to get soundcard simple mixer controls.
 
+    # TODO b:169251326 terms below are set outside of this codebase
+    # and should be updated when possible. ("Master" -> "Main")
     Simple mixer controls for a soundcard is retrieved by 'amixer scontrols'
     command.  amixer output format:
 

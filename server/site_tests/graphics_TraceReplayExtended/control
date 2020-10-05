@@ -7,7 +7,7 @@ NAME = "graphics_TraceReplayExtended"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Performance"
 TEST_CLASS = "graphics"
-ATTRIBUTES = "suite:graphics_perbuild"
+ATTRIBUTES = "suite:graphics_per-build"
 TEST_TYPE = "server"
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

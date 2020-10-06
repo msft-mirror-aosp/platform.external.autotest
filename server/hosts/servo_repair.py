@@ -852,8 +852,11 @@ class _DiskCleanupRepair(hosts.RepairAction):
     """
     KEEP_LOGS_MAX_DAYS = 5
 
-    FILE_TO_REMOVE = ['/var/lib/metrics/uma-events',
-                      '/var/spool/crash/*']
+    FILE_TO_REMOVE = [
+            '/var/lib/metrics/uma-events', '/var/spool/crash/*',
+            '/var/log/chrome/*', '/var/log/ui/*',
+            '/home/chronos/BrowserMetrics/*'
+    ]
 
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):

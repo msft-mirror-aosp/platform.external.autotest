@@ -1255,6 +1255,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         finally:
             self.set_health_profile_dut_state(profile_state)
 
+    def get_verifier_state(self, tag):
+        """Return the state of servo verifier.
+
+        @returns: bool or None
+        """
+        return self._repair_strategy.verifier_is_good(tag)
 
     def close(self):
         """Close connection."""

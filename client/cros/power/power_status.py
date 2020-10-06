@@ -19,14 +19,14 @@ import threading
 import time
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import enum
+from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.utils import poll_for_condition_ex
 from autotest_lib.client.cros import kernel_trace
 from autotest_lib.client.cros.power import power_utils
 
-BatteryDataReportType = enum.Enum('CHARGE', 'ENERGY')
+BatteryDataReportType = autotest_enum.AutotestEnum('CHARGE', 'ENERGY')
 
 # For devices whose full capacity is significantly lower than design full
 # capacity, scale down their design full capacity.

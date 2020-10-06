@@ -19,7 +19,7 @@ import warnings
 import common
 
 from autotest_lib.frontend.afe.json_rpc import proxy
-from autotest_lib.client.common_lib import enum
+from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import priorities
@@ -88,8 +88,8 @@ class RetryHandler(object):
                      the suite can't exceed _max_retries.
     """
 
-    States = enum.Enum('NOT_ATTEMPTED', 'ATTEMPTED', 'RETRIED',
-                       start_value=1, step=1)
+    States = autotest_enum.AutotestEnum('NOT_ATTEMPTED', 'ATTEMPTED', 'RETRIED',
+                                        start_value=1, step=1)
 
     def __init__(self, initial_jobs_to_tests, retry_level='WARN',
                  max_retries=None):

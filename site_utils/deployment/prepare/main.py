@@ -17,14 +17,14 @@ import os
 import sys
 
 import common
-from autotest_lib.client.common_lib import enum
+from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.server import afe_utils
 from autotest_lib.server.hosts import file_store
 from autotest_lib.site_utils.deployment.prepare import dut as preparedut
 from autotest_lib.server.hosts import factory
 
 
-RETURN_CODES = enum.Enum(
+RETURN_CODES = autotest_enum.AutotestEnum(
         'OK',
         'STAGE_USB_FAILURE',
         'INSTALL_FIRMWARE_FAILURE',

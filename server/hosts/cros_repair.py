@@ -39,7 +39,11 @@ from chromite.lib import timeout_util
 
 MIN_BATTERY_LEVEL = 50.0
 
-DEFAULT_SERVO_RESET_TRIGGER = ('ssh', 'stop_start_ui')
+DEFAULT_SERVO_RESET_TRIGGER = (
+        'ssh',
+        'stop_start_ui',
+        'power',
+)
 
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
@@ -696,7 +700,12 @@ class _ResetRepairAction(hosts.RepairAction):
 
     def _check_reset_success(self, host):
         """Check whether reset succeeded, and gather logs if possible."""
+        # Waiting to boot device after repair action.
         if host.wait_up(host.BOOT_TIMEOUT):
+            if host.get_verifier_state('ssh') == hosts.VERIFY_SUCCESS:
+                logging.debug(
+                        'Skip collection logs due DUT was sshable before')
+                return
             try:
                 # Collect logs once we regain ssh access before
                 # clobbering them.
@@ -710,8 +719,8 @@ class _ResetRepairAction(hosts.RepairAction):
                                   self.tag)
             return
         raise hosts.AutoservRepairError(
-                'Host %s is still offline after %s.' %
-                (host.hostname, self.tag), 'failed_to_boot_after_' + self.tag)
+                'Host %s is offline after %s.' % (host.hostname, self.tag),
+                'failed_to_boot_after_' + self.tag)
 
 
 class ServoSysRqRepair(_ResetRepairAction):

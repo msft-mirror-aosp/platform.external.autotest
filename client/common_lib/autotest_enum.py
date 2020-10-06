@@ -1,17 +1,10 @@
-"""\
-Generic enumeration support.
-"""
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
-__author__ = 'showard@google.com (Steve Howard)'
 
-class Enum(object):
+class AutotestEnum(object):
     """
-
-    TODO: b/170215553, this file will be delete prior to completion of Python 3
-    migrations in Q4 2020/ Q1 2021. Instead import/use
-    autotest_lib.client.common_lib.autotest_enum.AutotestEnum.
-
-
     Utility class to implement Enum-like functionality.
 
     >>> e = Enum('String one', 'String two')
@@ -36,6 +29,7 @@ class Enum(object):
     >>> e.TWO
     2
     """
+
     def __init__(self, *names, **kwargs):
         self.string_values = kwargs.get('string_values')
         start_value = kwargs.get('start_value', 0)
@@ -78,3 +72,5 @@ class Enum(object):
             raise ValueError('Value %s not in this enum' % value)
         index = self.values.index(value)
         return self.names[index]
+
+Enum = AutotestEnum

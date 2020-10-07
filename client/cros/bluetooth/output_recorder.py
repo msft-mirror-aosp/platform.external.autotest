@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -5,6 +6,9 @@
 """This module provides an object to record the output of command-line program.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import fcntl
 import logging
 import os
@@ -204,4 +208,4 @@ if __name__ == '__main__':
         recorder.stop()
 
     for line in recorder.get_contents():
-        print line
+        print(line)

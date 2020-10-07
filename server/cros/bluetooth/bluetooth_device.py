@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+
 import base64
 import functools
 import json
@@ -9,6 +11,7 @@ import logging
 import threading
 from datetime import datetime
 
+import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server import autotest

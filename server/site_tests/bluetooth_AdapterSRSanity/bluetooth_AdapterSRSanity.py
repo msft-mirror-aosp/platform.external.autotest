@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -26,13 +27,18 @@ Multiple btpeer tests:
     - Two classic HID
     - Two classic LE
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import time
 
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
-     BluetoothAdapterTests, TABLET_MODELS
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
-     BluetoothAdapterQuickTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        BluetoothAdapterTests, TABLET_MODELS)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
+from six.moves import range
 
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
@@ -244,7 +250,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             else:
                 time.sleep(PROFILE_CONNECT_WAIT)
 
-            for it in xrange(iterations):
+            for it in range(iterations):
                 logging.info(
                         'Running iteration {}/{} of suspend peer wake'.format(
                                 it + 1, iterations))

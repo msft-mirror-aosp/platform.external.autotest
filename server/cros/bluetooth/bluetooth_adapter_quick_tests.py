@@ -112,22 +112,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
         # server, which log out the user.
 
-        try:
-            self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                    no_chrome=not self.start_browser,
-                    disable_arc=True)
-            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
-
-        # For b:142276989, catch 'object_path' fault and reboot to prevent
-        # failures from continuing into future tests
-        except Exception as e:
-            if (e.__class__.__name__ == 'Fault' and
-                """object has no attribute 'object_path'""" in str(e)):
-
-                logging.error('Caught b/142276989, rebooting DUT')
-                self.reboot()
-            # Raise the original exception
-            raise
+        self.factory = remote_facade_factory.RemoteFacadeFactory(
+                host, no_chrome=not self.start_browser, disable_arc=True)
+        self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
 
         # Common list to track old/new Bluetooth peers
         # Adding chameleon to btpeer_list causes issue in cros_labels
@@ -360,6 +347,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()
+        self.test_is_adapter_valid()
 
         # Reset the adapter
         self.test_reset_on_adapter()

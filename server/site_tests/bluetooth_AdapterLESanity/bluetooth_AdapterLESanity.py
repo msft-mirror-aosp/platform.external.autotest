@@ -7,15 +7,15 @@
 import time
 
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
-     import bluetooth_AdapterControllerRoleTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
-     BluetoothAdapterQuickTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import \
-     BluetoothAdapterPairingTests
+        import bluetooth_AdapterControllerRoleTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import (
+        BluetoothAdapterPairingTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
-     import BluetoothAdapterHIDReportTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
-     EXT_ADV_MODELS
+        import BluetoothAdapterHIDReportTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        EXT_ADV_MODELS)
 
 
 # TODO(b/161174805) - veyron_fievel and veyron_mickey experiencing an

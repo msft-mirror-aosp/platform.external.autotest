@@ -64,6 +64,12 @@ CHIPSET_TO_VIDPID = { 'BRCM-4354':[('0x002d','0x4354')],
                                       ('0x8086','0x095b')],
                       'Realtek-RTL8822C-USB':[('0x10ec','0xc822')] }
 
+# We have a number of chipsets that are no longer supported. Known issues
+# related to firmware will be ignored on these devices (b/169328792).
+UNSUPPORTED_CHIPSETS = [
+        'BRCM-4354', 'MVL-8897', 'MVL-8997', 'Intel-AC7260', 'Intel-AC7265'
+]
+
 # Location of data traces relative to this (bluetooth_adapter_tests.py) file
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
@@ -1426,6 +1432,38 @@ class BluetoothAdapterTests(test.test):
         }
         return all(self.results.values())
 
+
+    @test_retry_and_log(False)
+    def test_is_adapter_valid(self):
+        """Verify the bluetooth adapter is retrievable at test start
+
+        @raises: error.TestNAError if we fail to retrieve the adapter on
+                    an unsupported chipset
+                 error.TestFail if we fail to retrieve the adapter on any other
+                    platform
+
+        @returns: True if the adapter was located properly
+        """
+
+        if not self.bluetooth_facade.has_adapter():
+            logging.error('No adapter available, rebooting to recover')
+
+            self.reboot()
+
+            chipset = self.get_chipset_name()
+
+            if not chipset:
+                raise error.TestFail('Unknown adapter is missing')
+
+            # A missing adapter is a rare but known issue on several platforms
+            # that have no vendor support (b/169328792). Since there is no fix
+            # possible, we forgive these failures by raising a TestNA.
+            if chipset in UNSUPPORTED_CHIPSETS:
+                raise error.TestNAError('Unsupported adapter is missing')
+
+            raise error.TestFail('Adapter is missing')
+
+        return True
 
     @test_retry_and_log
     def test_UUIDs(self):

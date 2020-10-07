@@ -10,7 +10,6 @@ suite:arc-cts-unibuild
 suite:arc-cts-unibuild-hw
 suite:arc-gts
 suite:arc-gts-qual
-suite:arc-unit-test
 suite:audio
 suite:audio_advanced
 suite:audio_basic

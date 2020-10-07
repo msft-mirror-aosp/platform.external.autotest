@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,6 +8,8 @@ This class provides wrapper functions for Bluetooth quick sanity test
 batches or packages
 """
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import functools
@@ -15,11 +18,13 @@ import tempfile
 import threading
 import time
 
+import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.client.bin import utils
+from six.moves import range
 
 class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     """This class provide wrapper function for Bluetooth quick sanity test
@@ -496,7 +501,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 """
                 if test_name is not None:
                     single_test_method = getattr(self,  test_name)
-                    for iter in xrange(1,num_iterations+1):
+                    for iter in range(1,num_iterations+1):
                         self.test_iter = iter
                         single_test_method()
 
@@ -510,7 +515,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         else:
                             raise error.TestFail(self.fails)
                 else:
-                    for iter in xrange(1,num_iterations+1):
+                    for iter in range(1,num_iterations+1):
                         self.quick_test_batch_start(batch_name, iter)
                         batch_method(self, num_iterations, test_name)
                         self.quick_test_batch_end()
@@ -704,7 +709,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             model, build, milestone, start_time * 1000000, duration_secs,
             success, test_name, board)
         with tempfile.NamedTemporaryFile() as tmp_file:
-            tmp_file.write(mtbf_result)
+            tmp_file.write(mtbf_result.encode('utf-8'))
             tmp_file.flush()
             cmd = 'gsutil cp {0} {1}'.format(tmp_file.name, output_file_name)
             logging.info('Result to upload %s %s', mtbf_result, cmd)

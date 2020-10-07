@@ -1,16 +1,22 @@
+# Lint as: python2, python3
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """A Batch of Bluetooth stand alone sanity tests"""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
-     BluetoothAdapterQuickTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth import bluetooth_dbus_api_tests
 from autotest_lib.server.cros.bluetooth import bluetooth_default_state_test
 from autotest_lib.server.cros.bluetooth import bluetooth_valid_address_test
+from six.moves import range
 
 
 class bluetooth_AdapterSASanity(BluetoothAdapterQuickTests,
@@ -143,7 +149,7 @@ class bluetooth_AdapterSASanity(BluetoothAdapterQuickTests,
             self.test_bluetoothd_running()
 
         NUM_ITERATIONS = 3
-        for i in xrange(NUM_ITERATIONS):
+        for i in range(NUM_ITERATIONS):
             logging.debug('Starting reboot test loop number #%d', i)
             test_case_adapter_on_reboot()
             test_case_adapter_off_reboot()

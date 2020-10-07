@@ -65,6 +65,14 @@
       "servo_serial": "C1903143985",
       "servo_port": "9995",
       "mac_address": "F4:F5:E8:50:E2:FF"
+    },
+    {
+      "hostname": "chromeos1-row4-rack9-host6",
+      "board": "sarien",
+      "model": "sarien",
+      "servo_serial": "C1903143516",
+      "servo_port": "9994",
+      "mac_address": "F4:F5:E8:50:E1:2A"
     }
   ]
 }

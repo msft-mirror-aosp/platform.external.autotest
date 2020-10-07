@@ -688,6 +688,10 @@ class FingerprintTest(test.test):
         self.set_hardware_write_protect(True)
         if result.exit_status != 0:
             raise error.TestFail('Flashing RW/RO firmware failed')
+        # Zork cannot rebind cros-ec-uart after flashing, so an AP reboot is
+        # needed to talk to FPMCU. See b/170213489.
+        if self.get_host_board() == 'zork':
+            self.host.reboot()
 
     def is_hardware_write_protect_enabled(self):
         """Returns state of hardware write protect."""

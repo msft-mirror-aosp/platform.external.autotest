@@ -1049,7 +1049,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             the value False otherwise.
 
         """
-        if self._bluez:
+        if self._bluez and self._adapter:
             objects = self._bluez.GetManagedObjects(
                     dbus_interface=self.BLUEZ_MANAGER_IFACE)
             props = objects[self._adapter.object_path][self.BLUEZ_ADAPTER_IFACE]

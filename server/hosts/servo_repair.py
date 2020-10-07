@@ -10,6 +10,7 @@ from __future__ import print_function
 import sys
 import functools
 import logging
+import math
 import time
 
 import common
@@ -583,6 +584,63 @@ class _PowerButtonVerifier(hosts.Verifier):
         return 'pwr_button control is normal'
 
 
+class _BatteryVerifier(hosts.Verifier):
+    """Collect battery info for analysis."""
+
+    @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        try:
+            servo = host.get_servo()
+            charging = False
+            if servo.has_control('battery_is_charging'):
+                charging = servo.get('battery_is_charging')
+            level = -1
+            if servo.has_control('battery_charge_percent'):
+                level = servo.get('battery_charge_percent')
+            design_mah = servo.get('battery_full_design_mah')
+            charge_mah = servo.get('battery_full_charge_mah')
+            logging.info('Charging: %s', charging)
+            logging.info('Percentage: %s', level)
+            logging.info('Full charge max: %s', charge_mah)
+            logging.info('Full design max: %s', design_mah)
+            # based on analysis of ratio we can find out what is
+            # the level when we can say that battery is dead
+            ratio = int(math.floor(charge_mah / design_mah * 100.0))
+            logging.info('Ratio: %s', ratio)
+            data = {
+                    'board': host.servo_board or 'unknown',
+                    'model': host.servo_model or 'unknown',
+                    'ratio': ratio
+            }
+            metrics.Counter('chromeos/autotest/battery/ratio').increment(
+                    fields=data)
+        except Exception as e:
+            # Keeping it with info level because we do not expect it.
+            logging.info('(Not critical) %s', e)
+
+    def _is_applicable(self, host):
+        if not host.is_ec_supported():
+            logging.info('The board not support EC')
+            return False
+        dut_info = host.get_dut_host_info()
+        if dut_info:
+            host_info = host.get_dut_host_info()
+            if host_info.get_label_value('power') != 'battery':
+                logging.info('The board does not have battery')
+                return False
+        servo = host.get_servo()
+        if (not servo.has_control('battery_full_design_mah')
+                    or not servo.has_control('battery_full_charge_mah')):
+            logging.info('The board is not supported battery controls...')
+            return False
+        return True
+
+    @property
+    def description(self):
+        return 'Logs battery levels'
+
+
 class _LidVerifier(hosts.Verifier):
     """
     Verifier to check sanity of the `lid_open` signal.
@@ -794,8 +852,11 @@ class _DiskCleanupRepair(hosts.RepairAction):
     """
     KEEP_LOGS_MAX_DAYS = 5
 
-    FILE_TO_REMOVE = ['/var/lib/metrics/uma-events',
-                      '/var/spool/crash/*']
+    FILE_TO_REMOVE = [
+            '/var/lib/metrics/uma-events', '/var/spool/crash/*',
+            '/var/log/chrome/*', '/var/log/ui/*',
+            '/home/chronos/BrowserMetrics/*'
+    ]
 
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
@@ -832,6 +893,7 @@ def create_servo_repair_strategy():
             (_ServodControlVerifier, 'servod_control', ['servod_connection']),
             (_DUTConnectionVerifier, 'dut_connected', ['servod_connection']),
             (_PowerButtonVerifier, 'pwr_button', ['dut_connected']),
+            (_BatteryVerifier, 'battery', ['dut_connected']),
             (_LidVerifier, 'lid_open', ['dut_connected']),
             (_EcBoardVerifier, 'ec_board', ['dut_connected']),
             (_CCDTestlabVerifier, 'ccd_testlab', ['dut_connected']),

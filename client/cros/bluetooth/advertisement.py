@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,6 +10,9 @@ Much of this module refers to the code of test/example-advertisement in
 bluez project.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import dbus
 import dbus.mainloop.glib
 import dbus.service
@@ -164,4 +168,4 @@ if __name__ == '__main__':
     bus = dbus.SystemBus()
 
     adv = example_advertisement()
-    print adv.GetAll(LE_ADVERTISEMENT_IFACE)
+    print(adv.GetAll(LE_ADVERTISEMENT_IFACE))

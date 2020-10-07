@@ -142,14 +142,6 @@ class ServoHost(base_servohost.BaseServoHost):
         'servo_v3':['18d1:5004', '0403:6014'],
     }
 
-    # States of verifiers
-    # True - verifier run and passed
-    # False - verifier run and failed
-    # None - verifier did not run or dependency failed
-    VERIFY_SUCCESS = True
-    VERIFY_FAILED = False
-    VERIFY_NOT_RUN = None
-
     def _init_attributes(self):
         self._servo_state = None
         self.servo_port = None
@@ -1323,7 +1315,7 @@ class ServoHost(base_servohost.BaseServoHost):
                 return True
         return False
 
-    def get_verify_state(self, tag):
+    def get_verifier_state(self, tag):
         """Return the state of servo verifier.
 
         @returns: bool or None
@@ -1337,22 +1329,22 @@ class ServoHost(base_servohost.BaseServoHost):
         The state detecting based on first fail verifier or collecting of
         them.
         """
-        ssh = self.get_verify_state('servo_ssh')
-        disk_space = self.get_verify_state('disk_space')
-        start_servod = self.get_verify_state('servod_job')
-        create_servo = self.get_verify_state('servod_connection')
-        init_servo = self.get_verify_state('servod_control')
-        dut_connected = self.get_verify_state('dut_connected')
-        pwr_button = self.get_verify_state('pwr_button')
-        lid_open = self.get_verify_state('lid_open')
-        ec_board = self.get_verify_state('ec_board')
-        ccd_testlab = self.get_verify_state('ccd_testlab')
+        ssh = self.get_verifier_state('servo_ssh')
+        disk_space = self.get_verifier_state('disk_space')
+        start_servod = self.get_verifier_state('servod_job')
+        create_servo = self.get_verifier_state('servod_connection')
+        init_servo = self.get_verifier_state('servod_control')
+        dut_connected = self.get_verifier_state('dut_connected')
+        pwr_button = self.get_verifier_state('pwr_button')
+        lid_open = self.get_verifier_state('lid_open')
+        ec_board = self.get_verifier_state('ec_board')
+        ccd_testlab = self.get_verifier_state('ccd_testlab')
 
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH
 
-        if (start_servod == self.VERIFY_FAILED
-            or create_servo == self.VERIFY_FAILED):
+        if (start_servod == hosts.VERIFY_FAILED
+                    or create_servo == hosts.VERIFY_FAILED):
             # sometimes servo can start with out present servo
             if self.is_labstation():
                 if not self.servo_serial:
@@ -1364,18 +1356,18 @@ class ServoHost(base_servohost.BaseServoHost):
             elif self._is_servo_board_present_on_servo_v3() == False:
                 return servo_constants.SERVO_STATE_NOT_CONNECTED
 
-        if dut_connected == self.VERIFY_FAILED:
-            if pwr_button == self.VERIFY_SUCCESS:
+        if dut_connected == hosts.VERIFY_FAILED:
+            if pwr_button == hosts.VERIFY_SUCCESS:
                 # unexpected case
                 metrics.Counter(
                         'chromeos/autotest/repair/servo_unexpected/pwr_button'
                 ).increment(fields=self._get_host_metrics_data())
             return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
 
-        if start_servod == self.VERIFY_FAILED:
+        if start_servod == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
 
-        if create_servo == self.VERIFY_FAILED:
+        if create_servo == hosts.VERIFY_FAILED:
             if (self.is_labstation()
                 and self._is_main_device_not_detected_on_servo_v4()):
                 servo_type = None
@@ -1398,18 +1390,18 @@ class ServoHost(base_servohost.BaseServoHost):
                 pass
 
         # one of the reason why servo can not initialized
-        if ccd_testlab == self.VERIFY_FAILED:
+        if ccd_testlab == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_CCD_TESTLAB_ISSUE
 
-        if (create_servo == self.VERIFY_FAILED
-            or init_servo == self.VERIFY_FAILED):
+        if (create_servo == hosts.VERIFY_FAILED
+                    or init_servo == hosts.VERIFY_FAILED):
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
 
-        if ec_board == self.VERIFY_FAILED:
+        if ec_board == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_EC_BROKEN
-        if pwr_button == self.VERIFY_FAILED:
+        if pwr_button == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_BAD_RIBBON_CABLE
-        if lid_open == self.VERIFY_FAILED:
+        if lid_open == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_LID_OPEN_FAILED
 
         metrics.Counter(

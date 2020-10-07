@@ -10,6 +10,7 @@ from __future__ import print_function
 import json
 import logging
 import time
+import math
 
 import common
 from autotest_lib.client.common_lib import error
@@ -38,7 +39,11 @@ from chromite.lib import timeout_util
 
 MIN_BATTERY_LEVEL = 50.0
 
-DEFAULT_SERVO_RESET_TRIGGER = ('ssh', 'stop_start_ui')
+DEFAULT_SERVO_RESET_TRIGGER = (
+        'ssh',
+        'stop_start_ui',
+        'power',
+)
 
 
 # _DEV_MODE_ALLOW_POOLS - The set of pools that are allowed to be
@@ -100,6 +105,9 @@ class ACPowerVerifier(hosts.Verifier):
 
     # Battery discharging state in power_supply_info file.
     BATTERY_DISCHARGING = 'Discharging'
+    # Power controller can discharge battery any time till 90% for any model.
+    # Setting level to 85% in case we have wearout of it.
+    BATTERY_DISCHARGE_MIN = 85
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
@@ -129,7 +137,21 @@ class ACPowerVerifier(hosts.Verifier):
     def _validate_battery(self, host, info):
         try:
             charging_state = info['Battery']['state']
-            if charging_state == self.BATTERY_DISCHARGING:
+            battery_level = float(info['Battery']['percentage'])
+
+            # Collect info to determine which battery level is better to call
+            # as MIN_BATTERY_LEVEL for DUTs in the lab.
+            battery_level_by_10 = int(math.floor(battery_level / 10.0)) * 10
+            metrics_data = {
+                    'model': host.host_info_store.get().model,
+                    'level': battery_level_by_10,
+                    'mode': charging_state
+            }
+            metrics.Counter('chromeos/autotest/battery/state').increment(
+                    fields=metrics_data)
+
+            if (charging_state == self.BATTERY_DISCHARGING
+                        and battery_level < self.BATTERY_DISCHARGE_MIN):
                 logging.debug('Try to fix discharging state of the battery. '
                               'Possible that a test left wrong state.')
                 # Here is the chance that battery is discharging because
@@ -137,19 +159,20 @@ class ACPowerVerifier(hosts.Verifier):
                 # We are going to try to fix it by set charging to normal.
                 host.run('ectool chargecontrol normal', ignore_status=True)
                 # wait to change state.
-                time.sleep(5)
+                time.sleep(10)
                 info = self._load_info(host)
                 charging_state = info['Battery']['state']
                 fixed = charging_state != self.BATTERY_DISCHARGING
                 # TODO (@otabek) remove metrics after research
-                metrics_data = {'host': host.hostname,
-                                'model': host.host_info_store.get().model,
-                                'fixed': fixed}
+                logging.debug('Fixed battery discharge mode.')
+                metrics_data = {
+                        'model': host.host_info_store.get().model,
+                        'fixed': fixed
+                }
                 metrics.Counter(
                     'chromeos/autotest/repair/chargecontrol_fixed'
                 ).increment(fields=metrics_data)
 
-            battery_level = float(info['Battery']['percentage'])
             if (battery_level < MIN_BATTERY_LEVEL and
                 charging_state == self.BATTERY_DISCHARGING):
                 # TODO(@xianuowang) remove metrics here once we have device
@@ -677,7 +700,12 @@ class _ResetRepairAction(hosts.RepairAction):
 
     def _check_reset_success(self, host):
         """Check whether reset succeeded, and gather logs if possible."""
+        # Waiting to boot device after repair action.
         if host.wait_up(host.BOOT_TIMEOUT):
+            if host.get_verifier_state('ssh') == hosts.VERIFY_SUCCESS:
+                logging.debug(
+                        'Skip collection logs due DUT was sshable before')
+                return
             try:
                 # Collect logs once we regain ssh access before
                 # clobbering them.
@@ -691,8 +719,8 @@ class _ResetRepairAction(hosts.RepairAction):
                                   self.tag)
             return
         raise hosts.AutoservRepairError(
-                'Host %s is still offline after %s.' %
-                (host.hostname, self.tag), 'failed_to_boot_after_' + self.tag)
+                'Host %s is offline after %s.' % (host.hostname, self.tag),
+                'failed_to_boot_after_' + self.tag)
 
 
 class ServoSysRqRepair(_ResetRepairAction):

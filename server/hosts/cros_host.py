@@ -1255,6 +1255,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         finally:
             self.set_health_profile_dut_state(profile_state)
 
+    def get_verifier_state(self, tag):
+        """Return the state of servo verifier.
+
+        @returns: bool or None
+        """
+        return self._repair_strategy.verifier_is_good(tag)
 
     def close(self):
         """Close connection."""
@@ -1798,7 +1804,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 (i.e. both True or both False).
 
         """
-        ping_val = utils.ping(self.hostname, tries=1, deadline=1)
+        ping_val = utils.ping(self.hostname,
+                              tries=1,
+                              deadline=1,
+                              timeout=2,
+                              ignore_timeout=True)
         return not (status ^ (ping_val == 0))
 
     def _ping_wait_for_status(self, status, timeout):

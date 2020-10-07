@@ -20,7 +20,7 @@ import common
 from autotest_lib.frontend.afe import model_logic, model_attributes
 from autotest_lib.frontend.afe import rdb_model_extensions
 from autotest_lib.frontend import settings, thread_local
-from autotest_lib.client.common_lib import enum, error, host_protections
+from autotest_lib.client.common_lib import autotest_enum, error, host_protections
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import host_queue_entry_states
 from autotest_lib.client.common_lib import control_data, priorities, decorators
@@ -1038,7 +1038,8 @@ class Test(dbmodels.Model, model_logic.ModelExtensions):
     test_retry: Number of times to retry test if the test did not complete
                 successfully. (optional, default: 0)
     """
-    TestTime = enum.Enum('SHORT', 'MEDIUM', 'LONG', start_value=1)
+    TestTime = autotest_enum.AutotestEnum('SHORT', 'MEDIUM', 'LONG',
+                                          start_value=1)
 
     name = dbmodels.CharField(max_length=255, unique=True)
     author = dbmodels.CharField(max_length=255)
@@ -2174,8 +2175,8 @@ class SpecialTask(dbmodels.Model, model_logic.ModelExtensions):
     queue_entry: Host queue entry waiting on this task (or None, if task was not
                  started in preparation of a job)
     """
-    Task = enum.Enum('Verify', 'Cleanup', 'Repair', 'Reset', 'Provision',
-                     string_values=True)
+    Task = autotest_enum.AutotestEnum('Verify', 'Cleanup', 'Repair', 'Reset',
+                                      'Provision', string_values=True)
 
     host = dbmodels.ForeignKey(Host, blank=False, null=False)
     task = dbmodels.CharField(max_length=64, choices=Task.choices(),

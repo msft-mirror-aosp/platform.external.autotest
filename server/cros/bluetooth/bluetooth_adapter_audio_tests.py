@@ -1,8 +1,13 @@
+# Lint as: python2, python3
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """Server side Bluetooth audio tests."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import logging
 import os
@@ -10,6 +15,7 @@ import re
 import subprocess
 import time
 
+import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
@@ -19,6 +25,7 @@ from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
     BluetoothAdapterTests, test_retry_and_log)
+from six.moves import range
 
 
 class BluetoothAdapterAudioTests(BluetoothAdapterTests):
@@ -623,7 +630,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         chunk_in_secs = test_data['chunk_in_secs']
         if not bool(chunk_in_secs):
             chunk_in_secs = self.DEFAULT_CHUNK_IN_SECS
-        nchunks = duration / chunk_in_secs
+        nchunks = duration // chunk_in_secs
         logging.info('Number of chunks: %d', nchunks)
 
         all_chunks_test_result = True
@@ -1025,7 +1032,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         # The AVRCP time information is in the unit of microseconds but with
         # milliseconds resolution. Convert both send and received length into
         # milliseconds for comparison.
-        result_length = bool(expected_length / 1000 == actual_length / 1000)
+        result_length = bool(expected_length // 1000 == actual_length // 1000)
 
         self.results = {'status': result_status, 'album': result_album,
                         'artist': result_artist, 'title': result_title,

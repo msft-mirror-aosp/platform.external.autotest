@@ -80,10 +80,13 @@ class FingerprintTest(test.test):
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4277-9f652bb3',
-        _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
-        _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
-        _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
+            _FP_BOARD_NAME_BLOONCHIPPER: {
+                    'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
+                    'zork': 'bloonchipper_v2.0.4478-22ad3ce2',
+            },
+            _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
+            _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
+            _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
     }
 
     _FIRMWARE_VERSION_SHA256SUM = 'sha256sum'
@@ -395,6 +398,10 @@ class FingerprintTest(test.test):
                 'Unable to get fingerprint board with cros_config')
         return result.stdout.rstrip()
 
+    def get_host_board(self):
+        """Returns name of the host board."""
+        return self.host.get_board().split(':')[-1]
+
     def get_build_fw_file(self):
         """Returns full path to build FW file on DUT."""
         ls_cmd = 'ls %s/%s*.bin' % (
@@ -599,6 +606,8 @@ class FingerprintTest(test.test):
         """Returns RO firmware version used in factory."""
         board = self.get_fp_board()
         golden_version = self._GOLDEN_RO_FIRMWARE_VERSION_MAP.get(board)
+        if isinstance(golden_version, dict):
+            golden_version = golden_version.get(self.get_host_board())
         if golden_version is None:
             raise error.TestFail('Unable to get golden RO version for board: %s'
                                  % board)
@@ -679,6 +688,10 @@ class FingerprintTest(test.test):
         self.set_hardware_write_protect(True)
         if result.exit_status != 0:
             raise error.TestFail('Flashing RW/RO firmware failed')
+        # Zork cannot rebind cros-ec-uart after flashing, so an AP reboot is
+        # needed to talk to FPMCU. See b/170213489.
+        if self.get_host_board() == 'zork':
+            self.host.reboot()
 
     def is_hardware_write_protect_enabled(self):
         """Returns state of hardware write protect."""

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,6 +8,8 @@ This class provides wrapper functions for Bluetooth quick sanity test
 batches or packages
 """
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import functools
@@ -15,11 +18,13 @@ import tempfile
 import threading
 import time
 
+import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.client.bin import utils
+from six.moves import range
 
 class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     """This class provide wrapper function for Bluetooth quick sanity test
@@ -107,22 +112,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
         # server, which log out the user.
 
-        try:
-            self.factory = remote_facade_factory.RemoteFacadeFactory(host,
-                    no_chrome=not self.start_browser,
-                    disable_arc=True)
-            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
-
-        # For b:142276989, catch 'object_path' fault and reboot to prevent
-        # failures from continuing into future tests
-        except Exception as e:
-            if (e.__class__.__name__ == 'Fault' and
-                """object has no attribute 'object_path'""" in str(e)):
-
-                logging.error('Caught b/142276989, rebooting DUT')
-                self.reboot()
-            # Raise the original exception
-            raise
+        self.factory = remote_facade_factory.RemoteFacadeFactory(
+                host, no_chrome=not self.start_browser, disable_arc=True)
+        self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
 
         # Common list to track old/new Bluetooth peers
         # Adding chameleon to btpeer_list causes issue in cros_labels
@@ -355,6 +347,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()
+        self.test_is_adapter_valid()
 
         # Reset the adapter
         self.test_reset_on_adapter()
@@ -496,7 +489,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 """
                 if test_name is not None:
                     single_test_method = getattr(self,  test_name)
-                    for iter in xrange(1,num_iterations+1):
+                    for iter in range(1,num_iterations+1):
                         self.test_iter = iter
                         single_test_method()
 
@@ -510,7 +503,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         else:
                             raise error.TestFail(self.fails)
                 else:
-                    for iter in xrange(1,num_iterations+1):
+                    for iter in range(1,num_iterations+1):
                         self.quick_test_batch_start(batch_name, iter)
                         batch_method(self, num_iterations, test_name)
                         self.quick_test_batch_end()
@@ -704,7 +697,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             model, build, milestone, start_time * 1000000, duration_secs,
             success, test_name, board)
         with tempfile.NamedTemporaryFile() as tmp_file:
-            tmp_file.write(mtbf_result)
+            tmp_file.write(mtbf_result.encode('utf-8'))
             tmp_file.flush()
             cmd = 'gsutil cp {0} {1}'.format(tmp_file.name, output_file_name)
             logging.info('Result to upload %s %s', mtbf_result, cmd)

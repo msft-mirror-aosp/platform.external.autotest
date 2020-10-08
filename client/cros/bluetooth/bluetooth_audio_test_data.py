@@ -8,7 +8,7 @@ import logging
 import os
 import subprocess
 
-
+import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.bin import utils
 

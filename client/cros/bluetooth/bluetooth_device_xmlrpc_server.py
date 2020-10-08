@@ -4,6 +4,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import base64
 import collections
 from datetime import datetime
@@ -37,6 +41,9 @@ from autotest_lib.client.cros.audio.sox_utils import (
 from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import output_recorder
 from autotest_lib.client.cros.power import sys_power
+import six
+from six.moves import map
+from six.moves import range
 
 
 CheckQualityArgsClass = collections.namedtuple(
@@ -304,11 +311,11 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             @returns : 'vid:pid' or None
             """
             try:
-                for i in output.split('\n'):
-                    if 'Network controller' in i:
+                for i in output.split(b'\n'):
+                    if 'Network controller' in i.decode('utf-8'):
                         logging.debug('Got line %s', i)
-                        if 'Intel Corporation' in i:
-                            return i.split('[')[2].split(']')[0]
+                        if 'Intel Corporation' in i.decode('utf-8'):
+                            return i.split(b'[')[2].split(b']')[0]
                 return None
             except Exception as e:
                 logging.debug('Exception in _get_lspci_vidpid %s', str(e))
@@ -320,7 +327,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             vid_pid = _get_lspci_vid_pid(output)
             logging.debug("got vid_pid %s", vid_pid)
             if vid_pid is not None:
-                if vid_pid in vid_pid_dict.values():
+                if vid_pid in list(vid_pid_dict.values()):
                     return True
         except Exception as e:
             logging.error('is_intel_adapter  failed with %s', cmd, str(e))
@@ -393,8 +400,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
               'hcitool 01 8C FC 00 28 01 ===> 58 <===='
 
            """
-            last_line  = [i for i in ddc_read_result.split('\n') if i != ''][-1]
-            last_byte = [i for i in last_line.split(' ') if i != ''][-1]
+            last_line  = [i for i in ddc_read_result.strip().split(b'\n')
+                          if i != ''][-1]
+            last_byte = [i for i in last_line.split(b' ') if i != ''][-1]
             processed_byte= hex(int(last_byte, 16) | 0x40).split('0x')[1]
             cmd = ddc_write_cmd_prefix + ' ' + processed_byte
             logging.debug('ddc_write_cmd is %s', cmd)
@@ -735,8 +743,8 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         objects = self._bluez.GetManagedObjects(
                 dbus_interface=self.BLUEZ_MANAGER_IFACE)
-        for path, ifaces in objects.iteritems():
-            logging.debug('%s -> %r', path, ifaces.keys())
+        for path, ifaces in six.iteritems(objects):
+            logging.debug('%s -> %r', path, list(ifaces.keys()))
             if self.BLUEZ_ADAPTER_IFACE in ifaces:
                 logging.debug('using adapter %s', path)
                 adapter = self._system_bus.get_object(
@@ -880,7 +888,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=True)
 
         devices = []
-        for path, ifaces in objects.iteritems():
+        for path, ifaces in six.iteritems(objects):
             if self.BLUEZ_DEVICE_IFACE in ifaces:
                 devices.append(objects[path][self.BLUEZ_DEVICE_IFACE])
 
@@ -1041,7 +1049,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             the value False otherwise.
 
         """
-        if self._bluez:
+        if self._bluez and self._adapter:
             objects = self._bluez.GetManagedObjects(
                     dbus_interface=self.BLUEZ_MANAGER_IFACE)
             props = objects[self._adapter.object_path][self.BLUEZ_ADAPTER_IFACE]
@@ -1072,7 +1080,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             return None
 
         # Walk up parents and try to find one with 'power/wakeup'
-        for _ in xrange(search_at.count('/') - 1):
+        for _ in range(search_at.count('/') - 1):
             search_at = os.path.normpath(os.path.join(search_at, '..'))
             try:
                 path = os.path.join(search_at, 'power', 'wakeup')
@@ -1218,7 +1226,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         objects = self._bluez.GetManagedObjects(
                 dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=True)
         devices = []
-        for path, ifaces in objects.iteritems():
+        for path, ifaces in six.iteritems(objects):
             if self.BLUEZ_DEVICE_IFACE in ifaces:
                 devices.append(objects[path][self.BLUEZ_DEVICE_IFACE])
         return devices
@@ -1513,7 +1521,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 logging.info('Device found at {}'.format(device_path))
                 return device_path
 
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             log_msg = 'Couldn\'t reach device: {}'.format(str(e))
             logging.debug(log_msg)
 
@@ -1544,7 +1552,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                             self.AGENT_PATH)
             agent_manager.RegisterAgent(agent_obj,
                                         dbus.String(self._capability))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if e.get_dbus_name() == self.BLUEZ_ERROR_ALREADY_EXISTS:
                 logging.info('Unregistering old agent and registering the new')
                 agent_manager.UnregisterAgent(agent_obj)
@@ -2605,7 +2613,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         attr_map = {}
 
         if object_path:
-            for path, ifaces in objects.iteritems():
+            for path, ifaces in six.iteritems(objects):
                 if (dbus_interface in ifaces and
                   path.startswith(object_path)):
                     uuid = ifaces[dbus_interface]['UUID'].lower()
@@ -2684,7 +2692,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             objects = self._bluez.GetManagedObjects(
                 dbus_interface=self.BLUEZ_MANAGER_IFACE, byte_arrays=False)
 
-            for path, ifaces in objects.iteritems():
+            for path, ifaces in six.iteritems(objects):
                 if (self.BLUEZ_GATT_CHAR_IFACE in ifaces and
                     path.startswith(device_path)):
                     uuid = ifaces[self.BLUEZ_GATT_CHAR_IFACE]['UUID'].lower()

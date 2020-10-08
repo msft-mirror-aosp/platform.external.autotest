@@ -156,6 +156,30 @@ def power_cycle_via_servo(host, recover_src=False):
                                   host.BOOT_TIMEOUT)
 
 
+def verify_battery_status(host):
+    """Verify that battery status.
+
+    If DUT battery still in the factory mode then DUT required re-work.
+
+    @param host server.hosts.CrosHost object.
+    @raise Exception: if status as unexpected value.
+    """
+    logging.info("Started to verify battery status")
+    host_info = host.host_info_store.get()
+    if host_info.get_label_value('power') != 'battery':
+        logging.info("Skepping due DUT does not have the battery")
+        return
+    power_info = host.get_power_supply_info()
+    battery_path = power_info['Battery']['path']
+    cmd = 'cat %s/status' % battery_path
+    status = host.run(cmd, timeout=30, ignore_status=True).stdout.strip()
+    if status not in ['Charging', 'Discharging', 'Full']:
+        raise Exception(
+                'Unexpected battery status. Please verify that DUT prepared '
+                'for deployment.')
+    logging.info("Battery status verification passed!")
+
+
 def verify_ccd_testlab_enable(host):
     """Verify that ccd testlab enable when DUT support cr50.
 

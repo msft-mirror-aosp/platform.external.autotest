@@ -1,15 +1,18 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """Server side bluetooth adapter subtests."""
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 from datetime import datetime, timedelta
 import errno
 import functools
-import httplib
+import six.moves.http_client
 import inspect
 import logging
 import multiprocessing
@@ -19,14 +22,14 @@ from socket import error as SocketError
 import threading
 import time
 
-import bluetooth_peer_update
-import bluetooth_test_utils
-
+import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
+from autotest_lib.server.cros.bluetooth import bluetooth_peer_update
+from autotest_lib.server.cros.bluetooth import bluetooth_test_utils
 from autotest_lib.server import test
 
 from autotest_lib.client.bin.input.linux_input import (
@@ -36,6 +39,10 @@ from autotest_lib.client.bin.input.linux_input import (
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
         GATT_ClientFacade, GATT_Application, GATT_HIDApplication)
 from autotest_lib.server.cros.multimedia import remote_facade_factory
+import six
+from six.moves import map
+from six.moves import range
+from six.moves import zip
 
 
 Event = recorder.Event
@@ -56,6 +63,12 @@ CHIPSET_TO_VIDPID = { 'BRCM-4354':[('0x002d','0x4354')],
                       'Intel-AC7265':[('0x8086','0x095a'),  # StP2
                                       ('0x8086','0x095b')],
                       'Realtek-RTL8822C-USB':[('0x10ec','0xc822')] }
+
+# We have a number of chipsets that are no longer supported. Known issues
+# related to firmware will be ignored on these devices (b/169328792).
+UNSUPPORTED_CHIPSETS = [
+        'BRCM-4354', 'MVL-8897', 'MVL-8997', 'Intel-AC7260', 'Intel-AC7265'
+]
 
 # Location of data traces relative to this (bluetooth_adapter_tests.py) file
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
@@ -788,7 +801,7 @@ class BluetoothAdapterTests(test.test):
             if str(errno.ECONNRESET) not in str(e):
                 raise
 
-        except httplib.BadStatusLine as e:
+        except six.moves.http_client.BadStatusLine as e:
             # BadStatusLine occurs occasionally when chameleon
             # is restarted. We ignore it here
             logging.error('Ignoring badstatusline exception')
@@ -1419,6 +1432,38 @@ class BluetoothAdapterTests(test.test):
         }
         return all(self.results.values())
 
+
+    @test_retry_and_log(False)
+    def test_is_adapter_valid(self):
+        """Verify the bluetooth adapter is retrievable at test start
+
+        @raises: error.TestNAError if we fail to retrieve the adapter on
+                    an unsupported chipset
+                 error.TestFail if we fail to retrieve the adapter on any other
+                    platform
+
+        @returns: True if the adapter was located properly
+        """
+
+        if not self.bluetooth_facade.has_adapter():
+            logging.error('No adapter available, rebooting to recover')
+
+            self.reboot()
+
+            chipset = self.get_chipset_name()
+
+            if not chipset:
+                raise error.TestFail('Unknown adapter is missing')
+
+            # A missing adapter is a rare but known issue on several platforms
+            # that have no vendor support (b/169328792). Since there is no fix
+            # possible, we forgive these failures by raising a TestNA.
+            if chipset in UNSUPPORTED_CHIPSETS:
+                raise error.TestNAError('Unsupported adapter is missing')
+
+            raise error.TestFail('Adapter is missing')
+
+        return True
 
     @test_retry_and_log
     def test_UUIDs(self):
@@ -2540,11 +2585,11 @@ class BluetoothAdapterTests(test.test):
         expected_timespan = duration * number_advertisements
 
         check_duration = True
-        for manufacturer_id, values in adv_timestamps.iteritems():
+        for manufacturer_id, values in six.iteritems(adv_timestamps):
             logging.debug('manufacturer_id %s: %s', manufacturer_id, values)
             timespans = [values[i] - values[i - 1]
-                         for i in xrange(1, len(values))]
-            errors = [timespans[i] for i in xrange(len(timespans))
+                         for i in range(1, len(values))]
+            errors = [timespans[i] for i in range(len(timespans))
                       if not within_tolerance(expected_timespan, timespans[i])]
             logging.debug('timespans: %s', timespans)
             logging.debug('errors: %s', errors)
@@ -2691,7 +2736,7 @@ class BluetoothAdapterTests(test.test):
             # A service data looks like
             #   Service Data (UUID 0x9999): 0001020304
             # while uuid is '9999' and data is [0x00, 0x01, 0x02, 0x03, 0x04]
-            data_str = ''.join(map(lambda n: '%02x' % n, data))
+            data_str = ''.join(['%02x' % n for n in data])
             if not self.bluetooth_le_facade.btmon_find(
                     'Service Data (UUID 0x%s): %s' % (uuid, data_str)):
                 service_data_found = False
@@ -3316,8 +3361,8 @@ class BluetoothAdapterTests(test.test):
                 recorder.SYN_EVENT]
 
         self.results = {
-                'actual_events': map(str, actual_events),
-                'expected_events': map(str, expected_events)}
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))}
         return actual_events == expected_events
 
 
@@ -3368,8 +3413,8 @@ class BluetoothAdapterTests(test.test):
         expected_events = events_x + events_y + [recorder.SYN_EVENT]
 
         self.results = {
-                'actual_events': map(str, actual_events),
-                'expected_events': map(str, expected_events)}
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))}
         return actual_events == expected_events
 
 
@@ -3439,8 +3484,8 @@ class BluetoothAdapterTests(test.test):
 
         expected_events = [Event(EV_REL, REL_WHEEL, units), recorder.SYN_EVENT]
         self.results = {
-                'scroll_events': map(str, scroll_events),
-                'expected_events': map(str, expected_events)}
+                'scroll_events': list(map(str, scroll_events)),
+                'expected_events': list(map(str, expected_events))}
         return scroll_events == expected_events
 
 
@@ -3516,8 +3561,8 @@ class BluetoothAdapterTests(test.test):
                  recorder.SYN_EVENT])
 
         self.results = {
-                'actual_events': map(str, actual_events),
-                'expected_events': map(str, expected_events)}
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))}
         return actual_events == expected_events
 
 

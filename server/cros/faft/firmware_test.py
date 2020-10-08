@@ -103,6 +103,8 @@ class FirmwareTest(test.test):
     # CCD password used by tests.
     CCD_PASSWORD = 'Password'
 
+    RESPONSE_TIMEOUT = 180
+
     @classmethod
     def check_setup_done(cls, label):
         """Check if the given setup is done.

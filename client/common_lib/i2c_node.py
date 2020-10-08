@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""A base class to interact with I2C slave device.
+"""A base class to interact with I2C node device.
 
 Dependency
  - This library depends on a new C shared library called "libsmogcheck.so".
@@ -22,8 +22,8 @@ class I2cError(Exception):
     """Base class for all errors in this module."""
 
 
-class I2cSlave(object):
-    """A generic I2C slave object that supports basic I2C bus input/output."""
+class I2cNode(object):
+    """A generic I2C node object that supports basic I2C bus input/output."""
 
     def __init__(self, adapter_nr=None, load_lib=None):
         """Constructor.
@@ -33,12 +33,12 @@ class I2cSlave(object):
           fd: file descriptor to communicate with I2C bus.
           lib_obj: ctypes library object to interface with SMOGCHECK_C_LIB.
           load_lib: a string, name of C shared library object to load.
-          slave_addr: slave address to set. Default: None.
+          node_addr: node address to set. Default: None.
 
         Args:
           lib: a string, name of C shared library object to load.
         """
-        self.slave_addr = None
+        self.node_addr = None
 
         if adapter_nr is None:
             adapter_nr = I2C_BUS
@@ -88,8 +88,8 @@ class I2cSlave(object):
         logging.info('Got device file for adapter %s', self.adapter_nr)
         return fd
 
-    def setSlaveAddress(self, addr):
-        """Sets slave address on I2C bus to be communicated with.
+    def setNodeAddress(self, addr):
+        """Sets node address on I2C bus to be communicated with.
 
         TODO(tgao): add retry loop and raise error if all retries fail.
         (so that caller does not have to check self.err for status)
@@ -99,28 +99,28 @@ class I2cSlave(object):
         See - http://www.i2c-bus.org/addressing/
 
         Args:
-          addr: a (positive) integer, 7-bit I2C slave address.
+          addr: a (positive) integer, 7-bit I2C node address.
 
         Raises:
-          I2cError: if slave address is invalid or can't be set.
+          I2cError: if node address is invalid or can't be set.
         """
-        if self.slave_addr == addr:
-            logging.info('Slave address already set, noop: %s', addr)
+        if self.node_addr == addr:
+            logging.info('Node address already set, noop: %s', addr)
             return
 
         if addr < 0x8 or addr > 0x77:
-            raise I2cError('Error: invalid I2C slave address %s', addr)
+            raise I2cError('Error: invalid I2C node address %s', addr)
 
-        logging.info('Attempt to set slave address: %s', addr)
+        logging.info('Attempt to set node address: %s', addr)
         if not self.fd:
             self.fd = self._getDeviceFile()
 
-        ret = self.lib_obj.SetSlaveAddress(self.fd, addr)
+        ret = self.lib_obj.setNodeAddress(self.fd, addr)
         if ret < 0:
-            raise I2cError('Error communicating to slave address %s' % addr)
+            raise I2cError('Error communicating to node address %s' % addr)
 
-        self.slave_addr = addr
-        logging.info('Slave address set to: %s', addr)
+        self.node_addr = addr
+        logging.info('node address set to: %s', addr)
 
     def writeByte(self, reg, byte):
         """Writes a byte to a specific register.

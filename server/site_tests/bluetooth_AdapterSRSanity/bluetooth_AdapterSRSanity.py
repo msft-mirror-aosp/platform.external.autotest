@@ -71,7 +71,10 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     # Reconnect after suspend tests
     # ---------------------------------------------------------------
 
-    def run_reconnect_device(self, devtuples, iterations=1, auto_reconnect=False):
+    def run_reconnect_device(self,
+                             devtuples,
+                             iterations=1,
+                             auto_reconnect=False):
         """ Reconnects a device after suspend/resume.
 
         @param devtuples: array of tuples consisting of the following
@@ -232,7 +235,8 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                device_type,
                                device,
                                device_test=None,
-                               iterations=1):
+                               iterations=1,
+                               should_wake=True):
         """ Uses paired peer device to wake the device from suspend.
 
         @param device_type: the device type (used to determine if it's LE)
@@ -240,8 +244,23 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         @param device_test: What to test to run after waking and connecting the
                             adapter/host
         @param iterations: Number of suspend + peer wake loops to run
+        @param should_wake: Whether wakeup should occur on this test. With HID
+                            peers, this should be True. With non-HID peers, this
+                            should be false.
         """
         boot_id = self.host.get_boot_id()
+
+        if should_wake:
+            sleep_time = EXPECT_PEER_WAKE_SUSPEND_SEC
+            resume_time = SUSPEND_SEC
+            resume_slack = 5  # Allow 5s slack for resume timeout
+        else:
+            sleep_time = EXPECT_NO_WAKE_SUSPEND_SEC
+            resume_time = EXPECT_NO_WAKE_SUSPEND_SEC
+            # Negative resume slack lets us wake a bit earlier than expected
+            # If suspend takes a while to enter, this may be necessary to get
+            # the timings right.
+            resume_slack = -5
 
         # Clear wake before testing
         self.test_adapter_set_wake_disabled()
@@ -269,12 +288,15 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                 it + 1, iterations))
 
                 # Start a new suspend instance
-                suspend = self.suspend_async(
-                        suspend_time=EXPECT_PEER_WAKE_SUSPEND_SEC,
-                        expect_bt_wake=True)
+                suspend = self.suspend_async(suspend_time=sleep_time,
+                                             expect_bt_wake=should_wake)
 
-                # Wait until powerd marks adapter as wake enabled
-                self.test_adapter_wake_enabled()
+                if should_wake:
+                    self.test_device_wake_allowed(device.address)
+                    # Also wait until powerd marks adapter as wake enabled
+                    self.test_adapter_wake_enabled()
+                else:
+                    self.test_device_wake_not_allowed(device.address)
 
                 # Trigger suspend, asynchronously wake and wait for resume
                 self.test_suspend_and_wait_for_sleep(suspend, sleep_timeout=5)
@@ -284,7 +306,8 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                 peer_wake = self.device_connect_async(device_type,
                                                       device,
                                                       adapter_address,
-                                                      delay_wake=5)
+                                                      delay_wake=5,
+                                                      should_wake=should_wake)
                 peer_wake.start()
 
                 # Expect a quick resume. If a timeout occurs, test fails. Since
@@ -292,17 +315,24 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                 # in our expected timeout.
                 self.test_wait_for_resume(boot_id,
                                           suspend,
-                                          resume_timeout=SUSPEND_SEC + 5,
-                                          fail_on_timeout=True)
+                                          resume_timeout=resume_time,
+                                          resume_slack=resume_slack,
+                                          fail_on_timeout=should_wake,
+                                          fail_early_wake=not should_wake)
 
                 # Finish peer wake process
                 peer_wake.join()
 
-                # Make sure we're actually connected
-                self.test_device_is_connected(device.address)
+                # Only check peer device connection state if we expected to wake
+                # from it. Otherwise, we may or may not be connected based on
+                # the specific profile's reconnection policy.
+                if should_wake:
+                    # Make sure we're actually connected
+                    self.test_device_is_connected(device.address)
 
-                if device_test is not None:
-                    device_test(device)
+                    # Verify the profile is working
+                    if device_test is not None:
+                        device_test(device)
 
         finally:
             self.test_remove_pairing(device.address)
@@ -361,10 +391,18 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                     device_test=self._test_mouse_left_click,
                                     iterations=STRESS_ITERATIONS)
 
-    @test_wrapper('Peer wakeup with A2DP should fail')
+    @test_wrapper('Peer wakeup with A2DP should fail',
+                  devices={'BLUETOOTH_AUDIO': 1})
     def sr_peer_wake_a2dp_should_fail(self):
         """ Use A2DP device to wake from suspend and fail. """
-        raise NotImplementedError()
+        device_type = 'BLUETOOTH_AUDIO'
+        device = self.devices[device_type][0]
+        self.initialize_bluetooth_audio(device, A2DP)
+        self.run_peer_wakeup_device(
+                device_type,
+                device,
+                device_test=self.test_device_a2dp_connected,
+                should_wake=False)
 
     # ---------------------------------------------------------------
     # Suspend while discovering and advertising

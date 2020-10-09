@@ -539,6 +539,9 @@ def test_retry_and_log(test_method_or_retry_flag):
                             test_method.__name__, str(instance.results))
                     logging.error(fail_msg)
                     instance.fails.append(fail_msg)
+            # Do not catch TestError or TestNA since those are intended to skip
+            # out of the testcase entirely (and shouldn't indicate a single
+            # expression failed)
             except error.TestFail as e:
                 fail_msg = '[--- failed {} ({})]'.format(
                         test_method.__name__, str(e))

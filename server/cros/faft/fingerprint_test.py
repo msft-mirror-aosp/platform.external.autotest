@@ -7,6 +7,7 @@ import os
 import time
 
 from autotest_lib.server import test
+from autotest_lib.server.cros import filesystem_util
 from autotest_lib.client.common_lib import error, utils
 
 
@@ -16,6 +17,8 @@ class FingerprintTest(test.test):
 
     # Location of firmware from the build on the DUT
     _FINGERPRINT_BUILD_FW_DIR = '/opt/google/biod/fw'
+
+    _DISABLE_FP_UPDATER_FILE = '.disable_fp_updater'
 
     _GENIMAGES_SCRIPT_NAME = 'gen_test_images.sh'
     _GENIMAGES_OUTPUT_DIR_NAME = 'images'
@@ -200,6 +203,17 @@ class FingerprintTest(test.test):
         self.fp_board = self.get_fp_board()
         self._build_fw_file = self.get_build_fw_file()
 
+        if filesystem_util.is_rootfs_writable(self.host):
+            if self.get_host_board() == 'zork':
+                logging.warning('rootfs is writable')
+            else:
+                raise error.TestFail('rootfs is writable')
+
+        if not self.fp_updater_is_enabled():
+            raise error.TestFail(
+                    'Fingerprint firmware updater is disabled at the beginning of test'
+            )
+
     def setup_test(self, test_dir, use_dev_signed_fw=False,
                    enable_hardware_write_protect=True,
                    enable_software_write_protect=True,
@@ -245,6 +259,7 @@ class FingerprintTest(test.test):
 
         self._initialize_running_fw_version(use_dev_signed_fw,
                                             force_firmware_flashing)
+
         if init_entropy:
             self._initialize_fw_entropy()
 
@@ -257,6 +272,9 @@ class FingerprintTest(test.test):
         # original firmware (not dev version) and potentially reset rollback.
         self._initialize_running_fw_version(use_dev_signed_fw=False,
                                             force_firmware_flashing=False)
+        if (self.get_host_board() == 'zork'
+                    and not self.fp_updater_is_enabled()):
+            self.enable_fp_updater()
         self._initialize_fw_entropy()
         self._initialize_hw_and_sw_write_protect(
             enable_hardware_write_protect=True,
@@ -679,8 +697,58 @@ class FingerprintTest(test.test):
                 self.get_rollback_rw_version() ==
                 self._ROLLBACK_INITIAL_RW_VERSION)
 
+    def fp_updater_is_enabled(self):
+        """Returns whether the fingerprint firmware updater is disabled."""
+        cmd = 'test -f %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                                          self._DISABLE_FP_UPDATER_FILE)
+        result = self.run_cmd(cmd)
+        # If the magic file isn't there, the updater is enabled.
+        if result.exit_status == 0:
+            logging.info('fp firmware updater is disabled')
+            return False
+        else:
+            logging.info('fp firmware updater is enabled')
+            return True
+
+    def disable_fp_updater(self):
+        """Disable the fingerprint firmware updater."""
+        filesystem_util.make_rootfs_writable(self.host)
+        touch_cmd = 'touch %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                                              self._DISABLE_FP_UPDATER_FILE)
+        logging.info('Disabling fp firmware updater')
+        result = self.run_cmd(touch_cmd)
+        if result.exit_status != 0:
+            raise error.TestFail(
+                    'Unable to write file to disable fp updater:'
+                    ' command failed (rc=%s): %s' %
+                    (result.exit_status, result.stderr.strip() or touch_cmd))
+        self.run_cmd('sync')
+
+    def enable_fp_updater(self):
+        """
+        Enable the fingerprint firmware updater. Must be called only after
+        disable_fp_updater().
+        """
+        filesystem_util.make_rootfs_writable(self.host)
+        rm_cmd = 'rm %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                                        self._DISABLE_FP_UPDATER_FILE)
+        logging.info('Enabling fp firmware updater')
+        result = self.run_cmd(rm_cmd)
+        if result.exit_status != 0:
+            raise error.TestFail(
+                    'Unable to rm .disable_fp_updater:'
+                    ' command failed (rc=%s): %s' %
+                    (result.exit_status, result.stderr.strip() or rm_cmd))
+        self.run_cmd('sync')
+
     def flash_rw_ro_firmware(self, fw_path):
         """Flashes *all* firmware (both RO and RW)."""
+        # Disabling the updater should happen before flash_fp_mcu because
+        # removing rootfs verification requires a reboot, which allows the
+        # updater to run.
+        if self.get_host_board() == 'zork' and self.fp_updater_is_enabled():
+            self.disable_fp_updater()
+
         self.set_hardware_write_protect(False)
         flash_cmd = 'flash_fp_mcu' + ' ' + fw_path
         logging.info('Running flash cmd: %s', flash_cmd)
@@ -688,10 +756,16 @@ class FingerprintTest(test.test):
         self.set_hardware_write_protect(True)
         if result.exit_status != 0:
             raise error.TestFail('Flashing RW/RO firmware failed')
+
         # Zork cannot rebind cros-ec-uart after flashing, so an AP reboot is
         # needed to talk to FPMCU. See b/170213489.
         if self.get_host_board() == 'zork':
             self.host.reboot()
+            if self.fp_updater_is_enabled():
+                raise error.TestFail(
+                        'Fp updater was not disabled when firmware is flashed')
+            # If we just re-enable fp updater, it can still update (race
+            # condition), so do it later in cleanup.
 
     def is_hardware_write_protect_enabled(self):
         """Returns state of hardware write protect."""

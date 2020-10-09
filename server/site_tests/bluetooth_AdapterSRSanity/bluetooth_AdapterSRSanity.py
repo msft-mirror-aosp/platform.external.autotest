@@ -50,6 +50,7 @@ EXPECT_PEER_WAKE_SUSPEND_SEC = 60
 
 STRESS_ITERATIONS = 25
 
+
 class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                 BluetoothAdapterTests):
     """Server side bluetooth adapter suspend resume test with peer."""
@@ -156,11 +157,10 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                   skip_models=['hana'])
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
-        devices = [
-                ('MOUSE', self.devices['MOUSE'][0], self.test_mouse_left_click),
-                ('KEYBOARD', self.devices['KEYBOARD'][0],
-                    self._test_keyboard_with_string)
-        ]
+        devices = [('MOUSE', self.devices['MOUSE'][0],
+                    self.test_mouse_left_click),
+                   ('KEYBOARD', self.devices['KEYBOARD'][0],
+                    self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
 
     @test_wrapper('Reconnect Multiple LE HID',
@@ -170,12 +170,10 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                   })
     def sr_reconnect_multiple_le_hid(self):
         """ Reconnects multiple LE HID devices after suspend/resume. """
-        devices = [
-                ('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
-                 self.test_mouse_left_click),
-                ('BLE_KEYBOARD', self.devices['BLE_KEYBOARD'][0],
-                 self._test_keyboard_with_string)
-        ]
+        devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
+                    self.test_mouse_left_click),
+                   ('BLE_KEYBOARD', self.devices['BLE_KEYBOARD'][0],
+                    self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
 
     @test_wrapper('Reconnect one of each classic+LE HID',
@@ -295,7 +293,6 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         finally:
             self.test_remove_pairing(device.address)
 
-
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
@@ -305,8 +302,9 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
-        self.run_peer_wakeup_device(
-            'MOUSE', device, device_test=self.test_mouse_left_click)
+        self.run_peer_wakeup_device('MOUSE',
+                                    device,
+                                    device_test=self.test_mouse_left_click)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -317,8 +315,9 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]
-        self.run_peer_wakeup_device(
-            'BLE_MOUSE', device, device_test=self.test_mouse_left_click)
+        self.run_peer_wakeup_device('BLE_MOUSE',
+                                    device,
+                                    device_test=self.test_mouse_left_click)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -375,12 +374,13 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
         self.test_start_discovery()
         self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
+                suspend, sleep_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # If discovery events wake us early, we will raise and suspend.exitcode
         # will be non-zero
-        self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
+        self.test_wait_for_resume(boot_id,
+                                  suspend,
+                                  resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         # Discovering should restore after suspend
         self.test_is_discovering()
@@ -399,8 +399,8 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
 
         self.test_discoverable()
-        self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=SUSPEND_SEC)
+        self.test_suspend_and_wait_for_sleep(suspend,
+                                             sleep_timeout=SUSPEND_SEC)
 
         # Peer device should not be able to discover us in suspend
         self.test_discover_by_device_fails(device)
@@ -431,11 +431,10 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
         # Trigger power down and quickly suspend
         self.test_power_off_adapter()
-        self.test_suspend_and_wait_for_sleep(
-            suspend, sleep_timeout=SUSPEND_SEC)
+        self.test_suspend_and_wait_for_sleep(suspend,
+                                             sleep_timeout=SUSPEND_SEC)
         # Suspend and resume should succeed
-        self.test_wait_for_resume(
-            boot_id, suspend, resume_timeout=SUSPEND_SEC)
+        self.test_wait_for_resume(boot_id, suspend, resume_timeout=SUSPEND_SEC)
 
         # We should be able to power it back on
         self.test_power_on_adapter()

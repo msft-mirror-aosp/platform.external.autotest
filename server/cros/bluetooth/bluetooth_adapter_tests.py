@@ -655,7 +655,10 @@ class BluetoothAdapterTests(test.test):
             'GAP_UUID': '00001800-0000-1000-8000-00805f9b34fb'}
 
     # Board list for name/ID test check. These devices don't need to be tested
-    REFERENCE_BOARDS = ['rambi', 'nyan', 'oak', 'reef', 'yorp', 'bip']
+    REFERENCE_BOARDS = [
+            'rambi', 'nyan', 'oak', 'reef', 'yorp', 'bip', 'volteer',
+            'volteer2'
+    ]
 
     # Path for btmon logs
     BTMON_DIR_LOG_PATH = '/var/log/btmon'

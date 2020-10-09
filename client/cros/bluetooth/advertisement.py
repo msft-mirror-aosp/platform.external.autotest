@@ -77,6 +77,7 @@ class Advertisement(dbus.service.Object):
 
         self.include_tx_power = advertisement_data.get('IncludeTxPower')
 
+        self.scan_response = advertisement_data.get('ScanResponseData')
 
     def get_path(self):
         """Get the dbus object path of the advertisement.
@@ -118,6 +119,17 @@ class Advertisement(dbus.service.Object):
                                                         signature='sv')
         if self.include_tx_power is not None:
             properties['IncludeTxPower'] = dbus.Boolean(self.include_tx_power)
+
+        # Note here: Scan response data is an int (tag) -> array (value) mapping
+        # but autotest's xmlrpc server can only accept string keys. For this
+        # reason, the scan response key is encoded as a hex string, and then
+        # re-mapped here before the advertisement is registered.
+        if self.scan_response is not None:
+            scan_rsp = dbus.Dictionary({}, signature='yv')
+            for key, value in self.scan_response.items():
+                scan_rsp[int(key, 16)] = dbus.Array(value, signature='y')
+
+            properties['ScanResponseData'] = scan_rsp
 
         return properties
 

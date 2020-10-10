@@ -34,10 +34,14 @@ from __future__ import print_function
 import logging
 import time
 
+from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        BluetoothAdapterTests, TABLET_MODELS)
+        TABLET_MODELS)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
+        BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
+
 from six.moves import range
 
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
@@ -52,17 +56,22 @@ STRESS_ITERATIONS = 25
 
 
 class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
-                                BluetoothAdapterTests):
+                                BluetoothAdapterAudioTests):
     """Server side bluetooth adapter suspend resume test with peer."""
 
     def _test_keyboard_with_string(self, device):
+        self.test_hid_device_created(device.address)
         return self.test_keyboard_input_from_trace(device, "simple_text")
+
+    def _test_mouse_left_click(self, device):
+        self.test_hid_device_created(device.address)
+        return self.test_mouse_left_click(device)
 
     # ---------------------------------------------------------------
     # Reconnect after suspend tests
     # ---------------------------------------------------------------
 
-    def run_reconnect_device(self, devtuples, iterations=1):
+    def run_reconnect_device(self, devtuples, iterations=1, auto_reconnect=False):
         """ Reconnects a device after suspend/resume.
 
         @param devtuples: array of tuples consisting of the following
@@ -71,6 +80,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                             * device_test: Optional; test function to run w/
                                            device (for example, mouse click)
         @params iterations: number of suspend/resume + reconnect iterations
+        @params auto_reconnect: Expect host to automatically reconnect to peer
         """
         boot_id = self.host.get_boot_id()
 
@@ -108,18 +118,18 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
                                           resume_timeout=SUSPEND_SEC)
 
                 for device_type, device, device_test in devtuples:
-                    if 'BLE' in device_type:
-                        # LE can't reconnect without advertising/discoverable
-                        self.test_device_set_discoverable(device, True)
-                        # Make sure we're actually connected
-                        self.test_device_is_connected(device.address)
-                    else:
-                        # Classic requires peer to initiate a connection to wake up
-                        # the dut
-                        self.test_connection_by_device(device)
+                    # Only reconnect if we don't expect automatic reconnect
+                    if not auto_reconnect:
+                        if 'BLE' in device_type:
+                            # LE can't reconnect without advertising/discoverable
+                            self.test_device_set_discoverable(device, True)
+                            # Make sure we're actually connected
+                            self.test_device_is_connected(device.address)
+                        else:
+                            # Classic requires peer to initiate a connection to
+                            # wake up the dut
+                            self.test_connection_by_device(device)
 
-                    # Make sure hid device was created before using it
-                    self.test_hid_device_created(device.address)
                     if device_test is not None:
                         device_test(device)
 
@@ -133,7 +143,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device,
-                                    self.test_mouse_left_click)])
+                                    self._test_mouse_left_click)])
 
     @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
     def sr_reconnect_le_hid(self):
@@ -141,12 +151,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device,
-                                    self.test_mouse_left_click)])
-
-    @test_wrapper('Reconnect A2DP', devices={})
-    def sr_reconnect_a2dp(self):
-        """ Reconnects an A2DP device after suspend/resume. """
-        raise NotImplementedError()
+                                    self._test_mouse_left_click)])
 
     # TODO(b/163143005) - Hana can't handle two concurrent HID connections
     @test_wrapper('Reconnect Multiple Classic HID',
@@ -158,7 +163,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [('MOUSE', self.devices['MOUSE'][0],
-                    self.test_mouse_left_click),
+                    self._test_mouse_left_click),
                    ('KEYBOARD', self.devices['KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -171,7 +176,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
     def sr_reconnect_multiple_le_hid(self):
         """ Reconnects multiple LE HID devices after suspend/resume. """
         devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
-                    self.test_mouse_left_click),
+                    self._test_mouse_left_click),
                    ('BLE_KEYBOARD', self.devices['BLE_KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -186,7 +191,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
             suspend/resume.
         """
         devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
-                    self.test_mouse_left_click),
+                    self._test_mouse_left_click),
                    ('KEYBOARD', self.devices['KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -197,7 +202,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device(
-                [(device_type, device, self.test_mouse_left_click)],
+                [(device_type, device, self._test_mouse_left_click)],
                 iterations=STRESS_ITERATIONS)
 
     @test_wrapper('Reconnect LE HID Stress Test', devices={'BLE_MOUSE': 1})
@@ -206,8 +211,18 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device(
-                [(device_type, device, self.test_mouse_left_click)],
+                [(device_type, device, self._test_mouse_left_click)],
                 iterations=STRESS_ITERATIONS)
+
+    @test_wrapper('Reconnect A2DP', devices={'BLUETOOTH_AUDIO': 1})
+    def sr_reconnect_a2dp(self):
+        """ Reconnects an A2DP device after suspend/resume. """
+        device_type = 'BLUETOOTH_AUDIO'
+        device = self.devices[device_type][0]
+        self.initialize_bluetooth_audio(device, A2DP)
+        self.run_reconnect_device(
+                [(device_type, device, self.test_device_a2dp_connected)],
+                auto_reconnect=True)
 
     # ---------------------------------------------------------------
     # Wake from suspend tests
@@ -285,7 +300,6 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
 
                 # Make sure we're actually connected
                 self.test_device_is_connected(device.address)
-                self.test_hid_device_created(device.address)
 
                 if device_test is not None:
                     device_test(device)
@@ -304,7 +318,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device('MOUSE',
                                     device,
-                                    device_test=self.test_mouse_left_click)
+                                    device_test=self._test_mouse_left_click)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -317,7 +331,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.run_peer_wakeup_device('BLE_MOUSE',
                                     device,
-                                    device_test=self.test_mouse_left_click)
+                                    device_test=self._test_mouse_left_click)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -330,7 +344,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device('MOUSE',
                                     device,
-                                    device_test=self.test_mouse_left_click,
+                                    device_test=self._test_mouse_left_click,
                                     iterations=STRESS_ITERATIONS)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
@@ -344,7 +358,7 @@ class bluetooth_AdapterSRSanity(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.run_peer_wakeup_device('BLE_MOUSE',
                                     device,
-                                    device_test=self.test_mouse_left_click,
+                                    device_test=self._test_mouse_left_click,
                                     iterations=STRESS_ITERATIONS)
 
     @test_wrapper('Peer wakeup with A2DP should fail')

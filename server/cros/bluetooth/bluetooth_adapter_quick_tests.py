@@ -324,6 +324,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                                shared_devices_count)
 
                     test_method(self)
+                except error.TestError as e:
+                    self.fails.append('[--- error {} ({})]'.format(
+                            test_method.__name__, str(e)))
                 except error.TestFail as e:
                     if not bool(self.fails):
                         self.fails.append('[--- failed {} ({})]'.format(

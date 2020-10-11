@@ -539,6 +539,9 @@ def test_retry_and_log(test_method_or_retry_flag):
                             test_method.__name__, str(instance.results))
                     logging.error(fail_msg)
                     instance.fails.append(fail_msg)
+            # Do not catch TestError or TestNA since those are intended to skip
+            # out of the testcase entirely (and shouldn't indicate a single
+            # expression failed)
             except error.TestFail as e:
                 fail_msg = '[--- failed {} ({})]'.format(
                         test_method.__name__, str(e))
@@ -655,7 +658,10 @@ class BluetoothAdapterTests(test.test):
             'GAP_UUID': '00001800-0000-1000-8000-00805f9b34fb'}
 
     # Board list for name/ID test check. These devices don't need to be tested
-    REFERENCE_BOARDS = ['rambi', 'nyan', 'oak', 'reef', 'yorp', 'bip']
+    REFERENCE_BOARDS = [
+            'rambi', 'nyan', 'oak', 'reef', 'yorp', 'bip', 'volteer',
+            'volteer2'
+    ]
 
     # Path for btmon logs
     BTMON_DIR_LOG_PATH = '/var/log/btmon'
@@ -1342,6 +1348,28 @@ class BluetoothAdapterTests(test.test):
 
         self.results = { 'wake_enabled': wake_enabled }
         return any(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_device_wake_allowed(self, device_address):
+        """Test that given device can wake the system."""
+        self.results = {
+                'Wake allowed':
+                self.bluetooth_facade.get_device_property(
+                        device_address, 'WakeAllowed')
+        }
+
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_device_wake_not_allowed(self, device_address):
+        """Test that given device cannot wake the system."""
+        self.results = {
+                'Wake not allowed':
+                not self.bluetooth_facade.get_device_property(
+                        device_address, 'WakeAllowed')
+        }
+
+        return all(self.results.values())
 
     @test_retry_and_log(False)
     def test_adapter_set_wake_disabled(self):
@@ -3864,21 +3892,28 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_wait_for_resume(
-        self, boot_id, suspend, resume_timeout, fail_on_timeout=False):
+    def test_wait_for_resume(self,
+                             boot_id,
+                             suspend,
+                             resume_timeout,
+                             resume_slack=RESUME_DELTA,
+                             fail_on_timeout=False,
+                             fail_early_wake=False):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id
         @param suspend: Sub-process that does actual suspend call.
         @param resume_timeout: Expect device to resume in given timeout.
+        @param resume_slack: Allow some slack on resume timeout.
         @param fail_on_timeout: Fails if timeout is reached
+        @param fail_early_wake: Fails if timeout isn't reached
 
         @return True if suspend sub-process completed without error.
         """
         success = True
 
         # Sometimes it takes longer to resume from suspend; give some leeway
-        resume_timeout = resume_timeout + RESUME_DELTA
+        resume_timeout = resume_timeout + resume_slack
         try:
             start = datetime.now()
 
@@ -3891,7 +3926,9 @@ class BluetoothAdapterTests(test.test):
             # a failure here instead by checking against the start time.
             delta = datetime.now() - start
             if delta > timedelta(seconds=resume_timeout):
-                success = False if fail_on_timeout else True
+                success = not fail_on_timeout
+            else:
+                success = not fail_early_wake
         except error.TestFail as e:
             success = False
             logging.error('wait_for_resume: %s', e)
@@ -3929,8 +3966,12 @@ class BluetoothAdapterTests(test.test):
         return proc
 
 
-    def device_connect_async(self, device_type, device, adapter_address,
-                             delay_wake=1):
+    def device_connect_async(self,
+                             device_type,
+                             device,
+                             adapter_address,
+                             delay_wake=1,
+                             should_wake=True):
         """ Connects peer device asynchronously with DUT.
 
         This function uses a thread instead of a subprocess so that the test
@@ -3941,6 +3982,7 @@ class BluetoothAdapterTests(test.test):
         @param device: the meta device with the peer device
         @param adapter_address: the address of the adapter
         @param delay_wake: delay wakeup by this many seconds
+        @param should_wake: Should this cause a wakeup?
 
         @returns threading.Thread object with device connect task
         """
@@ -3954,7 +3996,13 @@ class BluetoothAdapterTests(test.test):
             else:
                 # Classic requires peer to initiate a connection to wake up the
                 # dut
-                self.test_connection_by_device_only(device, adapter_address)
+                connect_func = self.test_connection_by_device_only
+                if should_wake:
+                    connect_func(device, adapter_address)
+                else:
+                    # If we're not expecting wake, this connect attempt will
+                    # probably fail.
+                    self.ignore_failure(connect_func, device, adapter_address)
 
         thread = threading.Thread(target=_action_device_connect)
         return thread

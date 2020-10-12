@@ -4,6 +4,10 @@
 Internal global error types
 """
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import sys, traceback
 from traceback import format_exception
 
@@ -506,7 +510,7 @@ class AutoservDiskSizeUnknownError(AutoservHostError):
 
 # This MUST remain at the end of the file.
 # Limit 'from error import *' to only import the exception instances.
-for _name, _thing in locals().items():
+for _name, _thing in list(locals().items()):
     try:
         if issubclass(_thing, Exception):
             __all__.append(_name)

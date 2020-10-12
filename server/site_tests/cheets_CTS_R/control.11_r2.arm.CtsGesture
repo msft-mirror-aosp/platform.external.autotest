@@ -27,7 +27,7 @@ def run_TS(machine):
         target_module='CtsGesture',
         target_plan=None,
         bundle='arm',
-        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6885055-linux_x86-arm.zip',
+        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6896666-linux_x86-arm.zip',
         use_jdk9=True,
         timeout=7200)
 

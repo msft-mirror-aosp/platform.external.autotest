@@ -27,7 +27,7 @@ def run_TS(machine):
         target_module='CtsSuspendApps',
         target_plan=None,
         bundle='x86',
-        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6885055-linux_x86-x86.zip',
+        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6896666-linux_x86-x86.zip',
         use_jdk9=True,
         timeout=9000)
 

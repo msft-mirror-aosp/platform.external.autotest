@@ -31,7 +31,7 @@ logging.info(
 cts_abi = 'arm'
 cts_module = ''
 cts_retry = 5
-cts_revision = '6885055'  # TODO(kinaba): Set this default value from generator.
+cts_revision = '6896666'  # TODO(kinaba): Set this default value from generator.
 cts_test = ''
 cts_timeout = 600
 

@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -118,6 +120,17 @@ class CrosDisksArchiveTester(CrosDisksTester):
 
         self._test_archive(os.path.join(mount_path, 'Unicode.zip'),
                            FilesystemTestDirectory('', want))
+
+    def _test_macos_utf8(self, mount_path):
+        self._test_archive(
+                os.path.join(mount_path, 'MacOS UTF-8 (Bug 903664).zip'),
+                FilesystemTestDirectory('', [
+                        FilesystemTestFile('ファイル.dat', 'This is a file.\n'),
+                        FilesystemTestDirectory('日本語フォルダ', [
+                                FilesystemTestFile('新しいテキストドキュメント.txt',
+                                                   '新しいテキストドキュメントです。\n')
+                        ])
+                ]))
 
     def _test_symlinks(self, mount_path):
         self._test_archive(
@@ -313,6 +326,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
                     'Strict Password.zip',
                     'Symlinks.zip',
                     'Unicode.zip',
+                    'MacOS UTF-8 (Bug 903664).zip',
             ]:
                 logging.debug('Copying %r', archive_name)
                 shutil.copy(os.path.join(self._data_dir, archive_name),
@@ -341,6 +355,7 @@ class CrosDisksArchiveTester(CrosDisksTester):
                 # Perform tests with the archive files in the mounted FAT
                 # filesystem.
                 self._test_unicode(mount_path)
+                self._test_macos_utf8(mount_path)
                 self._test_symlinks(mount_path)
                 self._test_multipart(mount_path)
                 self._test_invalid(mount_path)

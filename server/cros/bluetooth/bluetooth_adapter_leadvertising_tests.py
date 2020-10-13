@@ -1251,6 +1251,30 @@ class bluetooth_AdapterLEAdvertising(
 
         self.unregister_advertisements(advertisements)
 
+    @test_case_log
+    def test_case_nearby_mediums_fast(self):
+        """Verify minimal test case for nearby sharing"""
+        orig_min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_max_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+
+        # We set a specific advertisement with fields required by Nearby
+        # sharing service
+        advertisements = [advertisements_data.NEARBY_MEDIUMS_FAST_ADV]
+
+        self.bluetooth_le_facade = self.bluetooth_facade
+        self.test_reset_advertising()
+
+        # Nearby share requires general discoverable advertising flag be set.
+        # Bluez sets this flag based on the adapter's Discoverable property,
+        # so we apply this setting here
+        self.bluetooth_facade.set_discoverable(True)
+
+        self.register_advertisements(advertisements, orig_min_adv_interval_ms,
+                                     orig_max_adv_interval_ms)
+
+        # Ensure that our discoverable flag is advertised
+        self.test_advertising_flags(['Advertise as Discoverable'])
+
     def run_le_advertising_test(self, host, advertisements, test_type, \
                                 num_iterations=1):
         """Running Bluetooth adapter LE advertising autotest.

@@ -644,7 +644,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             # Check if the audio frames in the recorded file are legitimate.
             if not self._check_audio_frames_legitimacy(
                     test_data, 'recorded_by_peer', recorded_file=recorded_file):
-                if i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS:
+                if (i > self.IGNORE_LAST_FEW_CHUNKS and
+                        i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
                     logging.info('empty chunk %d ignored for last %d chunks',
                                  i, self.IGNORE_LAST_FEW_CHUNKS)
                 else:
@@ -656,7 +657,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             if not self._check_primary_frequencies(A2DP, test_data,
                                                    'recorded_by_peer',
                                                    recorded_file=recorded_file):
-                if i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS:
+                if (i > self.IGNORE_LAST_FEW_CHUNKS and
+                        i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
                     msg = 'partially filled chunk %d ignored for last %d chunks'
                     logging.info(msg, i, self.IGNORE_LAST_FEW_CHUNKS)
                 else:

@@ -876,3 +876,282 @@ class BluetoothAdapterAdvMonitorTests(
 
         # Terminate the test app instance.
         self.test_exit_app(app1)
+
+
+    def advmon_test_pattern_filter_1(self):
+        """Test case: PATTERN_FILTER_1
+
+        Verify matching of advertisements w.r.t. various pattern values and
+        different AD Data Types - Local Name Service UUID and Device Type.
+
+        """
+        self.test_setup_peer_devices()
+
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_rssi([-60, 3, -80, 3])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        monitor1.update_patterns([
+                [5, 0x09, '_REF'],
+        ])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Local name 'KEYBD_REF' should match.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=1)
+
+        # Local name 'MOUSE_REF' should match.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor1, count=2)
+
+        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+        self.test_remove_monitor(monitor1)
+
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Service UUID 0x1812 should match.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=1)
+
+        # Service UUID 0x1812 should match.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor1, count=2)
+
+        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+        self.test_remove_monitor(monitor1)
+
+        monitor1.update_patterns([
+                [0, 0x19, [0xc1, 0x03]],
+                [0, 0x09, 'MOUSE'],
+        ])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Device type 0xc103 should match.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=1)
+
+        # Local name 'MOUSE_REF' should match.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor1, count=2)
+
+        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+        self.test_remove_monitor(monitor1)
+
+        monitor1.update_patterns([
+                [0, 0x19, [0xc1, 0x03]],
+                [0, 0x19, [0xc3, 0x03]],
+        ])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Device type 0xc103 should match.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=1)
+
+        # Device type 0xc203 should not match.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor1, count=1)
+
+        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+        self.test_remove_monitor(monitor1)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)
+
+
+    def advmon_test_rssi_filter_1(self):
+        """Test case: RSSI_FILTER_1
+
+        Verify unset RSSI filter and filter with no matching RSSI values.
+
+        """
+        self.test_setup_peer_devices()
+
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        monitor1.update_rssi([127, 0, 127, 0])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Unset RSSI filter, adv should match multiple times.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
+
+        # Unset RSSI filter, DeviceLost should not get triggered.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_lost(monitor1, count=0)
+
+        self.test_remove_monitor(monitor1)
+
+        monitor1.update_rssi([-10, 5, -20, 5])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Adv RSSI lower than RSSI filter, DeviceFound should not get triggered.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=10)
+        self.test_device_found(monitor1, count=0)
+
+        # No device was found earlier, so DeviceLost should not get triggered.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=10)
+        self.test_device_lost(monitor1, count=0)
+
+        self.test_remove_monitor(monitor1)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)
+
+
+    def advmon_test_rssi_filter_2(self):
+        """Test case: RSSI_FILTER_2
+
+        Verify RSSI filter matching with multiple peer devices.
+
+        """
+        self.test_setup_peer_devices()
+
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        monitor1.update_rssi([-60, 3, -80, 3])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # DeviceFound should get triggered only once per device.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=10)
+        self.test_device_found(monitor1, count=1)
+
+        # DeviceFound should get triggered for another device.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=10)
+        self.test_device_found(monitor1, count=2)
+
+        # DeviceLost should get triggered only once per device.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=10)
+        self.test_device_lost(monitor1, count=1)
+
+        # DeviceLost should get triggered for another device.
+        self.test_stop_peer_device_adv(self.peer_mouse, duration=10)
+        self.test_device_lost(monitor1, count=2)
+
+        self.test_remove_monitor(monitor1)
+
+        monitor1.update_rssi([-60, 10, -80, 10])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Device was online for short period of time, so DeviceFound should
+        # not get triggered.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=0)
+
+        # Device did not come back online, DeviceFound should not get triggered.
+        # No device was found earlier, so DeviceLost should not get triggered.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=15)
+        self.test_device_found(monitor1, count=0)
+        self.test_device_lost(monitor1, count=0)
+
+        self.test_remove_monitor(monitor1)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)
+
+
+    def advmon_test_rssi_filter_3(self):
+        """Test case: RSSI_FILTER_3
+
+        Verify reset of RSSI timers based on advertisements.
+
+        """
+        self.test_setup_peer_devices()
+
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        monitor1.update_rssi([-60, 10, -80, 10])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # DeviceFound should not get triggered before timeout.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=0)
+
+        # DeviceFound should not get triggered as device went offline.
+        # No device was found earlier, so DeviceLost should not get triggered.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=10)
+        self.test_device_found(monitor1, count=0)
+        self.test_device_lost(monitor1, count=0)
+
+        # Timer should get reset, so DeviceFound should not get triggered.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=0)
+
+        # DeviceFound should get triggered once timer completes.
+        self.test_device_found(monitor1, count=1, delay=10)
+
+        # DeviceLost should not get triggered before timeout.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_lost(monitor1, count=0)
+
+        # Timer should get reset, so DeviceLost should not get triggered.
+        # DeviceFound should not get triggered as device is not lost yet.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_lost(monitor1, count=0)
+        self.test_device_found(monitor1, count=1)
+
+        # Timer should get reset, so DeviceLost should not get triggered.
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_lost(monitor1, count=0)
+
+        # DeviceLost should get triggered once timer completes.
+        self.test_device_lost(monitor1, count=1, delay=10)
+
+        self.test_remove_monitor(monitor1)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)

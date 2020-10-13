@@ -2595,6 +2595,103 @@ class S0ixResidencyStats(object):
         return parse_pmc_s0ix_residency_info() - self._initial_residency
 
 
+class S2IdleStateStats(object):
+    """
+    Usage stats of an s2idle state.
+    """
+
+    def __init__(self, usage, time):
+        self.usage = usage
+        self.time = time
+
+
+def get_s2idle_path(cpu, state):
+    path = os.path.join(CPU_BASE_PATH,
+                        "cpu{}/cpuidle/{}/s2idle".format(cpu, state))
+    if not os.path.exists(path):
+        return None
+
+    return path
+
+
+def get_s2idle_stats_for_state(cpu, state):
+    """
+    Returns the s2idle stats for a given idle state of a CPU.
+    """
+    s2idle_path = get_s2idle_path(cpu, state)
+
+    path = os.path.join(s2idle_path, 'usage')
+    if not os.path.exists(path):
+        raise error.TestFail("File not found: {}" % path)
+
+    usage = int(utils.read_one_line(path))
+
+    path = os.path.join(s2idle_path, 'time')
+    if not os.path.exists(path):
+        raise error.TestFail("File not found: {}" % path)
+
+    time = int(utils.read_one_line(path))
+
+    return S2IdleStateStats(usage, time)
+
+
+def get_cpuidle_states(cpu):
+    """
+    Returns the cpuidle states of a CPU.
+    """
+    cpuidle_path = os.path.join(CPU_BASE_PATH, "cpu{}/cpuidle".format(cpu))
+
+    pattern = os.path.join(cpuidle_path, 'state*')
+    state_paths = glob.glob(pattern)
+
+    return [s.split('/')[-1] for s in state_paths]
+
+
+def get_s2idle_stats_for_cpu(cpu):
+    """
+    Returns the s2idle stats for a CPU.
+    """
+    return {s: get_s2idle_stats_for_state(cpu, s)
+            for s in get_cpuidle_states(cpu)
+            if get_s2idle_path(cpu, s) is not None}
+
+
+def get_s2idle_stats():
+    """
+    Returns the s2idle stats for all CPUs.
+    """
+    return {cpu: get_s2idle_stats_for_cpu(cpu) for cpu in get_online_cpus()}
+
+
+def get_s2idle_residency_total_usecs():
+    """
+    Get total s2idle residency time for all CPUs and states.
+    """
+    total_usecs = 0
+
+    all_stats = get_s2idle_stats()
+    for stats in all_stats.itervalues():
+        for st in stats.itervalues():
+            total_usecs += st.time
+
+    return total_usecs
+
+
+class S2IdleResidencyStats(object):
+    """
+    Measures the s2idle residency of a given board over time.
+    """
+
+    def __init__(self):
+        self._initial_residency = get_s2idle_residency_total_usecs()
+
+    def get_accumulated_residency_usecs(self):
+        """
+        @returns s2idle residency since the class has been initialized.
+        """
+        return get_s2idle_residency_total_usecs() - self._initial_residency
+
+
 class DMCFirmwareStats(object):
     """
     Collect DMC firmware stats of Intel based system (SKL+), (APL+).

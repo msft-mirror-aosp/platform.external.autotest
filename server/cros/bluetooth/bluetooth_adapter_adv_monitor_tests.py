@@ -1155,3 +1155,90 @@ class BluetoothAdapterAdvMonitorTests(
 
         # Terminate the test app instance.
         self.test_exit_app(app1)
+
+
+    def advmon_test_fg_bg_combination(self):
+        """Test case: FG_BG_COMBINATION
+
+        Verify background scanning and foreground scanning do not interfere
+        working of each other.
+
+        """
+        self.test_setup_peer_devices()
+
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+        monitor1.update_rssi([127, 0, 127, 0])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        # Activate should get invoked.
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Pair/connect LE Mouse.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+        self.test_discover_device(self.peer_mouse.address)
+        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+        self.test_pairing(self.peer_mouse.address, self.peer_mouse.pin)
+        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+        self.test_connection_by_adapter(self.peer_mouse.address)
+        self.test_connection_by_device(self.peer_mouse)
+
+        # DeviceFound should get triggered for keyboard.
+        self.test_reset_event_count(monitor1)
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
+        self.test_stop_peer_device_adv(self.peer_keybd)
+
+        # Start foreground scanning.
+        self.test_start_discovery()
+
+        # Disconnect LE mouse.
+        self.test_disconnection_by_device(self.peer_mouse)
+
+        # Remove the monitor.
+        self.test_remove_monitor(monitor1)
+
+        # Activate should get invoked.
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Connect LE mouse.
+        self.test_connection_by_device(self.peer_mouse)
+
+        # DeviceFound should get triggered for keyboard.
+        self.test_reset_event_count(monitor1)
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
+        self.test_stop_peer_device_adv(self.peer_keybd)
+
+        # Stop foreground scanning.
+        self.test_stop_discovery()
+
+        # Disconnect LE mouse.
+        self.test_disconnection_by_device(self.peer_mouse)
+
+        # DeviceFound should get triggered for keyboard.
+        self.test_reset_event_count(monitor1)
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
+        self.test_stop_peer_device_adv(self.peer_keybd)
+
+        # Remove the monitor.
+        self.test_remove_monitor(monitor1)
+
+        # Connect LE mouse.
+        self.test_connection_by_device(self.peer_mouse)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)

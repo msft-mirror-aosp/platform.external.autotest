@@ -852,6 +852,139 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def advmon_read_supported_types(self):
+        """Read the Advertisement Monitor supported monitor types.
+
+        @returns: List of supported advertisement monitor types.
+
+        """
+        return self._proxy.advmon_read_supported_types()
+
+
+    @proxy_thread_safe
+    def advmon_read_supported_features(self):
+        """Read the Advertisement Monitor supported features.
+
+        @returns: List of supported advertisement monitor features.
+
+        """
+        return self._proxy.advmon_read_supported_features()
+
+
+    @proxy_thread_safe
+    def advmon_create_app(self):
+        """Create an advertisement monitor app.
+
+        @returns: app id, once the app is created.
+
+        """
+        return self._proxy.advmon_create_app()
+
+
+    @proxy_thread_safe
+    def advmon_exit_app(self, app_id):
+        """Exit an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_exit_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_kill_app(self, app_id):
+        """Kill an advertisement monitor app by sending SIGKILL.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_kill_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_register_app(self, app_id):
+        """Register an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_register_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_unregister_app(self, app_id):
+        """Unregister an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_unregister_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_add_monitor(self, app_id, monitor_data):
+        """Create an Advertisement Monitor object.
+
+        @param app_id: the app id.
+        @param monitor_data: the list containing monitor type, RSSI filter
+                             values and patterns.
+
+        @returns: monitor id, once the monitor is created, None otherwise.
+
+        """
+        return self._proxy.advmon_add_monitor(app_id, monitor_data)
+
+
+    @proxy_thread_safe
+    def advmon_remove_monitor(self, app_id, monitor_id):
+        """Remove the Advertisement Monitor object.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_remove_monitor(app_id, monitor_id)
+
+
+    @proxy_thread_safe
+    def advmon_get_event_count(self, app_id, monitor_id, event):
+        """Read the count of a particular event on the given monitor.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param event: name of the specific event or 'All' for all events.
+
+        @returns: count of the specific event or dict of counts of all events.
+
+        """
+        return self._proxy.advmon_get_event_count(app_id, monitor_id, event)
+
+
+    @proxy_thread_safe
+    def advmon_reset_event_count(self, app_id, monitor_id, event):
+        """Reset the count of a particular event on the given monitor.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param event: name of the specific event or 'All' for all events.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_reset_event_count(app_id, monitor_id, event)
+
+
+    @proxy_thread_safe
     def register_advertisement(self, advertisement_data):
         """Register an advertisement.
 

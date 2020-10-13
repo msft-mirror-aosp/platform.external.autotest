@@ -29,6 +29,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import constants
+from autotest_lib.client.cros import dbus_util
 from autotest_lib.client.cros.udev_helpers import UdevadmInfo, UdevadmTrigger
 from autotest_lib.client.cros import xmlrpc_server
 from autotest_lib.client.cros.audio import (
@@ -39,6 +40,7 @@ from autotest_lib.client.cros.audio.sox_utils import (
         convert_format, convert_raw_file, get_file_length,
         trim_silence_from_wav_file)
 from autotest_lib.client.cros.bluetooth import advertisement
+from autotest_lib.client.cros.bluetooth import adv_monitor_helper
 from autotest_lib.client.cros.bluetooth import output_recorder
 from autotest_lib.client.cros.power import sys_power
 import six
@@ -175,6 +177,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     BLUEZ_GATT_CHAR_IFACE = 'org.bluez.GattCharacteristic1'
     BLUEZ_GATT_DESC_IFACE = 'org.bluez.GattDescriptor1'
     BLUEZ_LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
+    BLUEZ_ADV_MONITOR_MANAGER_IFACE = 'org.bluez.AdvertisementMonitorManager1'
     BLUEZ_AGENT_MANAGER_PATH = '/org/bluez'
     BLUEZ_AGENT_MANAGER_IFACE = 'org.bluez.AgentManager1'
     BLUEZ_PROFILE_MANAGER_PATH = '/org/bluez'
@@ -236,6 +239,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._update_bluez()
         self._update_adapter()
         self._update_advertising()
+        self._update_adv_monitor_manager()
 
         # The agent to handle pin code request, which will be
         # created when user calls pair_legacy_device method.
@@ -254,6 +258,12 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._timeout_id = 0
         self._signal_watch = None
         self._dbus_mainloop = gobject.MainLoop()
+
+        # Create an Advertisement Monitor Helper App Manager instance.
+        self.advmon_appmgr = adv_monitor_helper.AdvMonitorAppMgr(
+                self._system_bus,
+                self._dbus_mainloop,
+                self._adv_monitor_manager)
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -734,6 +744,33 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         return bool(self._advertising)
 
 
+    def _update_adv_monitor_manager(self):
+        """Store a D-Bus proxy for the local advertisement monitor manager.
+
+        This may be called repeatedly in a loop until True is returned;
+        otherwise we wait for bluetoothd to start. After bluetoothd starts, we
+        check the existence of a local adapter and proceed to get the
+        advertisement monitor manager interface.
+
+        Since not all devices will have adapters, this will also return True
+        in the case where there is no adapter.
+
+        @return True on success, including if there is no local adapter,
+                False otherwise.
+
+        """
+        self._adv_monitor_manager = None
+        if self._bluez is None:
+            logging.warning('Bluez not found!')
+            return False
+        if not self._has_adapter:
+            logging.debug('Device has no adapter; returning without '
+                          'advertisement monitor manager')
+            return True
+        self._adv_monitor_manager = self._get_adv_monitor_manager()
+        return bool(self._adv_monitor_manager)
+
+
     @xmlrpc_server.dbus_safe(False)
     def _get_adapter(self):
         """Get the D-Bus proxy for the local adapter.
@@ -765,6 +802,17 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return dbus.Interface(self._adapter,
                               self.BLUEZ_LE_ADVERTISING_MANAGER_IFACE)
+
+
+    @xmlrpc_server.dbus_safe(False)
+    def _get_adv_monitor_manager(self):
+        """Get the D-Bus proxy for the local advertisement monitor manager.
+
+        @return the advertisement monitor manager interface object.
+
+        """
+        return dbus.Interface(self._adapter,
+                              self.BLUEZ_ADV_MONITOR_MANAGER_IFACE)
 
 
     @xmlrpc_server.dbus_safe(False)
@@ -1961,6 +2009,140 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._dbus_mainloop.run()
 
         return self.dbus_cb_msg
+
+
+    def advmon_read_supported_types(self):
+        """Read the Advertisement Monitor supported monitor types.
+
+        Reads the value of 'SupportedMonitorTypes' property of the
+        AdvertisementMonitorManager1 interface on the adapter.
+
+        @returns: the list of the supported monitor types.
+
+        """
+        types = self._adapter.Get(self.BLUEZ_ADV_MONITOR_MANAGER_IFACE,
+                                  'SupportedMonitorTypes',
+                                  dbus_interface=self.DBUS_PROP_IFACE)
+        return dbus_util.dbus2primitive(types)
+
+
+    def advmon_read_supported_features(self):
+        """Read the Advertisement Monitor supported features.
+
+        Reads the value of 'SupportedFeatures' property of the
+        AdvertisementMonitorManager1 interface on the adapter.
+
+        @returns: the list of the supported features.
+
+        """
+        features = self._adapter.Get(self.BLUEZ_ADV_MONITOR_MANAGER_IFACE,
+                                     'SupportedFeatures',
+                                     dbus_interface=self.DBUS_PROP_IFACE)
+        return dbus_util.dbus2primitive(features)
+
+
+    def advmon_create_app(self):
+        """Create an advertisement monitor app.
+
+        @returns: app id, once the app is created.
+
+        """
+        return self.advmon_appmgr.create_app()
+
+
+    def advmon_exit_app(self, app_id):
+        """Exit an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.advmon_appmgr.exit_app(app_id)
+
+
+    def advmon_kill_app(self, app_id):
+        """Kill an advertisement monitor app by sending SIGKILL.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.advmon_appmgr.kill_app(app_id)
+
+
+    def advmon_register_app(self, app_id):
+        """Register an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.advmon_appmgr.register_app(app_id)
+
+
+    def advmon_unregister_app(self, app_id):
+        """Unregister an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.advmon_appmgr.unregister_app(app_id)
+
+
+    def advmon_add_monitor(self, app_id, monitor_data):
+        """Create an Advertisement Monitor object.
+
+        @param app_id: the app id.
+        @param monitor_data: the list containing monitor type, RSSI filter
+                             values and patterns.
+
+        @returns: monitor id, once the monitor is created, None otherwise.
+
+        """
+        return self.advmon_appmgr.add_monitor(app_id, monitor_data)
+
+
+    def advmon_remove_monitor(self, app_id, monitor_id):
+        """Remove the Advertisement Monitor object.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.advmon_appmgr.remove_monitor(app_id, monitor_id)
+
+
+    def advmon_get_event_count(self, app_id, monitor_id, event):
+        """Read the count of a particular event on the given monitor.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param event: name of the specific event or 'All' for all events.
+
+        @returns: count of the specific event or dict of counts of all events.
+
+        """
+        return self.advmon_appmgr.get_event_count(app_id, monitor_id, event)
+
+
+    def advmon_reset_event_count(self, app_id, monitor_id, event):
+        """Reset the count of a particular event on the given monitor.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param event: name of the specific event or 'All' for all events.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.advmon_appmgr.reset_event_count(app_id, monitor_id, event)
 
 
     def register_advertisement(self, advertisement_data):

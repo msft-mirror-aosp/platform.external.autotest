@@ -10,6 +10,7 @@ PURPOSE = ('batch of Bluetooth Advertisement Monitor tests')
 CRITERIA = 'All tests should pass'
 TIME = 'LONG'  # ~10 minutes
 TEST_CATEGORY = 'Functional'
+ATTRIBUTES = 'suite:bluetooth_flaky'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
@@ -21,9 +22,10 @@ DOC = """
     methods to start and end a test and a batch of tests.
 
     This class can be called to run the entire test batch or to run a specific
-    test only.
+    test only. More information about the tests can be found here:
+    go/bt-advmon-api-test-plan
 
-    TODO: Add support for running individual tests - please see b/169677632
+    TODO(b/169677632) - Add support for running individual tests.
 
     """
 
@@ -31,7 +33,10 @@ args_dict = utils.args_to_dict(args)
 btpeer_args = hosts.CrosHost.get_btpeer_arguments(args_dict)
 
 def run(machine):
-    host = hosts.create_host(machine, btpeer_args=btpeer_args)
-    job.run_test('bluetooth_AdapterAdvMonitor', host=host, num_iterations=1)
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAdvMonitor',
+                 host=host,
+                 num_iterations=1,
+                 btpeer_args=btpeer_args)
 
 parallel_simple(run, machines)

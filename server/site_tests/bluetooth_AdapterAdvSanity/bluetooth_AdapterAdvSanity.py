@@ -73,6 +73,12 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
         self.advertising_peer_test(device)
 
 
+    @test_wrapper('Advertising Nearby test')
+    def adv_nearby_test(self):
+        """Verify minimal Nearby advertising requirements"""
+
+        self.test_case_nearby_mediums_fast()
+
     @batch_wrapper('Advertising Sanity')
     def adv_sanity_batch_run(self, num_iterations=1, test_name=None):
         """Run the advertising sanity test batch or a specific given test.
@@ -91,6 +97,7 @@ class bluetooth_AdapterAdvSanity(BluetoothAdapterQuickTests,
         self.adv_single_advertising_test()
         self.adv_suspend_resume_advertising_test()
         self.adv_reboot_advertising_test()
+        self.adv_nearby_test()
 
 
     def run_once(self,

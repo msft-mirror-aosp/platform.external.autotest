@@ -593,21 +593,6 @@ class FirmwareTest(test.test):
             for cmd in ('umount -l %s' % tmpd, 'sync', 'rm -rf %s' % tmpd):
                 self.servo.system(cmd)
 
-        kernel_a = '%s%s' % (usb_dev, self.KERNEL_MAP['a'])
-        logging.debug(
-                'Making sure kernel A(%s) on the USB stick can be booted '
-                'in recovery mode', kernel_a)
-        kernel_verify = self.servo.system_output('futility vbutil_kernel '
-                                                 '--verify %s' % kernel_a)
-        # Example output when recovery flag is enabled:
-        #  Flags:               11  !DEV DEV REC
-        # Example output when recovery flag is disabled:
-        #  Flags:               7  !DEV DEV !REC
-        if not re.search(r'Flags:.*[^!]REC', kernel_verify):
-            raise error.TestError(
-                    'Kernel A(%s) on the USB stick does not have '
-                    'the recovery flag set' % kernel_a)
-
         self.mark_setup_done('usb_check')
 
     def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True,

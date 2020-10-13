@@ -26,14 +26,6 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    #@test_wrapper('AdvMonitor Dummy Tests')
-    @test_wrapper('AdvMonitor Dummy Tests',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
-    def advmon_monitor_dummy_tests(self):
-        """Tests advertisement monitor test framework."""
-        self.advmon_dummy_test()
-
-
     @test_wrapper('Monitor Object Sanity Tests')
     def advmon_monitor_sanity_tests(self):
         """Tests advertisement monitor object sanity."""
@@ -72,7 +64,6 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                              whole batch.
 
         """
-        self.advmon_monitor_dummy_tests()
         self.advmon_monitor_sanity_tests()
         self.advmon_single_client_tests()
         self.advmon_fg_bg_combination_tests()

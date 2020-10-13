@@ -703,3 +703,176 @@ class BluetoothAdapterAdvMonitorTests(
 
         # Terminate the test app instance.
         self.test_exit_app(app1)
+
+
+    def advmon_test_monitor_creation(self):
+        """Test case: MONITOR_CREATION
+
+        Validate register/unregister app and create/remove monitor.
+
+        """
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_rssi([-40, 5, -60, 5])
+        monitor1.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+        ])
+
+        monitor2 = TestMonitor(app1)
+        monitor2.update_type('or_patterns')
+        monitor2.update_rssi([-40, 10, -60, 10])
+        monitor2.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+
+        # Read supported types and features, should not fail.
+        self.test_supported_types()
+        self.test_supported_features()
+
+        # Activate/Release should not get called.
+        self.test_add_monitor(monitor1,
+                              expected_activate=False,
+                              expected_release=False)
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        # Already registered app path, should fail with AlreadyExists.
+        self.test_register_app(app1, expected=False)
+
+        # Activate should get called for the monitor added before register app.
+        self.test_monitor_activate(monitor1, expected=True)
+
+        # Correct monitor parameters, activate should get called.
+        self.test_add_monitor(monitor2, expected_activate=True)
+
+        # Remove a monitor, should not fail.
+        self.test_remove_monitor(monitor1)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Already unregistered app path, should fail with DoesNotExists.
+        self.test_unregister_app(app1, expected=False)
+
+        # Release should get called for a monitor not removed before unregister.
+        self.test_monitor_release(monitor2, expected=True)
+
+        # Remove another monitor, should not fail.
+        self.test_remove_monitor(monitor2)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)
+
+
+    def advmon_test_monitor_validity(self):
+        """Test case: MONITOR_VALIDITY
+
+        Validate monitor parameters - monitor type, patterns, RSSI filter
+        values.
+
+        """
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('incorrect_pattern')
+        monitor1.update_rssi([-40, 5, -60, 5])
+        monitor1.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+        ])
+
+        monitor2 = TestMonitor(app1)
+        monitor2.update_type('or_patterns')
+        monitor2.update_rssi([-40, 10, -60, 10])
+        monitor2.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        # Incorrect monitor type, release should get called.
+        self.test_add_monitor(monitor1, expected_release=True)
+
+        # Incorrect rssi parameters, release should get called.
+        monitor2.update_rssi([-40, 0, -60, 10])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([-40, 10, -60, 0])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([40, 10, -60, 10])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([-140, 10, -60, 10])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([-40, 10, 60, 10])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([-40, 10, -160, 10])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([-60, 10, -40, 10])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        # Unset the rssi filter parameters.
+        monitor2.update_rssi([127, 0, 127, 0])
+
+        # Incorrect pattern parameters, release should get called.
+        monitor2.update_patterns([
+                [32, 0x09, 'MOUSE'],
+        ])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_patterns([
+                [0, 0x00, 'MOUSE'],
+        ])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_patterns([
+                [0, 0x40, 'MOUSE'],
+        ])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_patterns([
+                [0, 0x09, '0123456789ABCDEF0123456789ABCDEF0'],
+        ])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_patterns([
+                [32, 0x09, [0xc2, 0x03]],
+                [0, 3, [0x12, 0x18]],
+        ])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+                [0, 0x00, [0x12, 0x18]],
+        ])
+        self.test_add_monitor(monitor2, expected_release=True)
+
+        # Correct pattern parameters, activate should get called.
+        monitor2.update_patterns([
+                [0, 0x09, 'MOUSE'],
+        ])
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
+
+        monitor2.update_rssi([-40, 10, -60, 10])
+        monitor2.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+                [0, 0x03, [0x12, 0x18]],
+        ])
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)

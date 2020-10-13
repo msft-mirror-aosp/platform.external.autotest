@@ -41,6 +41,16 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_monitor_validity()
 
 
+    @test_wrapper('Single Client Tests',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_single_client_tests(self):
+        """Tests monitor functionality for single client."""
+        self.advmon_test_pattern_filter_1()
+        self.advmon_test_rssi_filter_1()
+        self.advmon_test_rssi_filter_2()
+        self.advmon_test_rssi_filter_3()
+
+
     @batch_wrapper('Advertisement Monitor API')
     def advmon_batch_run(self, num_iterations=1, test_name=None):
         """Run the Advertisement Monitor test batch or a specific given test.
@@ -57,6 +67,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """
         self.advmon_monitor_dummy_tests()
         self.advmon_monitor_sanity_tests()
+        self.advmon_single_client_tests()
 
 
     def run_once(self,

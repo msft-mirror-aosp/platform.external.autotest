@@ -670,12 +670,11 @@ class ServoUSBDriveVerifier(hosts.Verifier):
             raise hosts.AutoservNonCriticalVerifyError(
                     'USB-drive marked for replacement')
 
-        if usb_state and usb_state == audit_const.HW_STATE_NOT_DETECTED:
-            # if previous state was NOT_DETECTED and now we can detect the USB
-            # then set state to UNKNOWN for future audit.
-            host_info.set_version_label(audit_const.SERVO_USB_STATE_PREFIX,
-                                        audit_const.HW_STATE_UNKNOWN)
-            host.host_info_store.commit(host_info)
+        # The USB-drive detected and was not mark for replacement.
+        # Set as normal for future audit.
+        host_info.set_version_label(audit_const.SERVO_USB_STATE_PREFIX,
+                                    audit_const.HW_STATE_NORMAL)
+        host.host_info_store.commit(host_info)
 
     def _is_applicable(self, host):
         if host.servo:

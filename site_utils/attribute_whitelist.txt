@@ -33,6 +33,7 @@ suite:bluetooth_mtbf
 suite:bluetooth_qualification
 suite:bluetooth_sanity
 suite:bluetooth_standalone
+suite:bluetooth_standalone_cq
 suite:bluetooth_stress
 suite:bluetooth_wifi_coex
 suite:brillo-bvt

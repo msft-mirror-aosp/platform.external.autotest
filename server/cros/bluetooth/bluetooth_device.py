@@ -102,7 +102,7 @@ class BluetoothDevice(object):
                 self._proxy.log_message(msg)
 
             if peer:
-                for btpeer in self.host.peer_list:
+                for btpeer in self.host.btpeer_list:
                     btpeer.log_message(msg)
         except Exception as e:
             logging.error("Exception '%s' in log_message '%s'", str(e), msg)

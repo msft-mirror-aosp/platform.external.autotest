@@ -65,7 +65,7 @@ class _UpdateVerifier(hosts.Verifier):
     up-to-date.
     """
 
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.LONG_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # First, only run this verifier if the host is in the physical lab.
         # Secondly, skip if the test is being run by test_that, because subnet
@@ -167,7 +167,7 @@ class _SerialConfigVerifier(_ConfigVerifier):
 
     ATTR = 'SERIAL'
 
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         """
         Test whether the `host` has a `SERIAL` setting configured.
@@ -205,7 +205,7 @@ class _BoardConfigVerifier(_ConfigVerifier):
 
     ATTR = 'BOARD'
 
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         """
         Test whether the `host` has a `BOARD` setting configured.
@@ -238,7 +238,7 @@ class _ServodJobVerifier(hosts.Verifier):
     Verifier to check that the `servod` upstart job is running.
     """
 
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if not host.is_cros_host():
             return
@@ -259,7 +259,7 @@ class _DiskSpaceVerifier(hosts.Verifier):
     Verifier to make sure there is enough disk space left on servohost.
     """
 
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # Check available space of stateful is greater than threshold, in Gib.
         host.check_diskspace('/mnt/stateful_partition', 0.5)
@@ -439,6 +439,7 @@ class _DUTConnectionVerifier(hosts.Verifier):
     MIN_PPDUT5_MV_WHEN_CONNECTED = 4000
 
     @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if self._is_servo_v4_type_a(host):
             if not self._is_ribbon_cable_connected(host):
@@ -562,7 +563,7 @@ class _PowerButtonVerifier(hosts.Verifier):
     _BOARDS_WO_PWR_BUTTON = ['arkham', 'gale', 'mistral', 'storm', 'whirlwind']
 
     @ignore_exception_for_non_cros_host
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if host.servo_board in self._BOARDS_WO_PWR_BUTTON:
             return
@@ -647,7 +648,7 @@ class _LidVerifier(hosts.Verifier):
     """
 
     @ignore_exception_for_non_cros_host
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         try:
             lid_open = host.get_servo().get('lid_open')
@@ -670,7 +671,7 @@ class _EcBoardVerifier(hosts.Verifier):
     """
 
     @ignore_exception_for_non_cros_host
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if host.is_ec_supported():
             ec_board_name = ''
@@ -858,7 +859,7 @@ class _DiskCleanupRepair(hosts.RepairAction):
             '/home/chronos/BrowserMetrics/*'
     ]
 
-    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.SHORT_REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         if host.is_localhost():
             # we don't want to remove anything from local testing.

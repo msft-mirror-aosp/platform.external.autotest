@@ -8,7 +8,9 @@ DEVICE_STATE_NEEDS_REPLACEMENT = 'needs_replacement'
 DEVICE_STATE_NEEDS_MANUAL_REPAIR = 'needs_manual_repair'
 
 # Timeout for verifiers.
+SHORT_VERIFY_TIMEOUT_SEC = 60
 VERIFY_TIMEOUT_SEC = 60 * 5
+LONG_VERIFY_TIMEOUT_SEC = 60 * 20
 
 # Timeout for repair actions.
 SHORT_REPAIR_TIMEOUT_SEC = 60

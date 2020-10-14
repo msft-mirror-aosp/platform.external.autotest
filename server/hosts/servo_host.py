@@ -148,6 +148,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_board = None
         self.servo_model = None
         self.servo_serial = None
+        self.servo_setup = None
         # The flag that indicate if a servo is connected to a smart usbhub.
         # TODO(xianuowang@) remove this flag once all usbhubs in the lab
         # get replaced.
@@ -162,10 +163,16 @@ class ServoHost(base_servohost.BaseServoHost):
         # Per-thread local data
         self._local = threading.local()
 
-    def _initialize(self, servo_host='localhost',
-                    servo_port=DEFAULT_PORT, servo_board=None,
-                    servo_model=None, servo_serial=None, is_in_lab=None,
-                    *args, **dargs):
+    def _initialize(self,
+                    servo_host='localhost',
+                    servo_port=DEFAULT_PORT,
+                    servo_board=None,
+                    servo_model=None,
+                    servo_serial=None,
+                    servo_setup=None,
+                    is_in_lab=None,
+                    *args,
+                    **dargs):
         """Initialize a ServoHost instance.
 
         A ServoHost instance represents a host that controls a servo.
@@ -177,6 +184,8 @@ class ServoHost(base_servohost.BaseServoHost):
                            otherwise 9999.
         @param servo_board: Board that the servo is connected to.
         @param servo_model: Model that the servo is connected to.
+        @param servo_serial: Serial number of the servo device.
+        @param servo_setup: Type of servo setup, e.g. REGULAR or DUAL_V4.
         @param is_in_lab: True if the servo host is in Cros Lab. Default is set
                           to None, for which utils.host_is_in_lab_zone will be
                           called to check if the servo host is in Cros lab.
@@ -189,6 +198,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_board = servo_board
         self.servo_model = servo_model
         self.servo_serial = servo_serial
+        self.servo_setup = servo_setup
 
         # The location of the log files on the servo host for this instance.
         self.remote_log_dir = '%s_%s' % (self.SERVOD_LOG_PREFIX,
@@ -619,28 +629,13 @@ class ServoHost(base_servohost.BaseServoHost):
         if self.servo_serial:
             cmd += ' SERIAL=%s' % self.servo_serial
 
-        # Start servod with dual_v4 if the DUT/servo from designated pools.
-        dut_host_info = self.get_dut_host_info()
-        if dut_host_info:
-            # DUAL_V4: servo setup includes servo_micro and ccd_cr50
-            # connection to the DUT
-            is_dual_setup = False
-            if bool(dut_host_info.pools &
-                    servo_constants.POOLS_SUPPORT_DUAL_V4):
-                logging.debug('The DUT is detected in following designated'
-                              ' pools %s,starting servod with DUAL_V4 option.',
-                              servo_constants.POOLS_SUPPORT_DUAL_V4)
-                is_dual_setup = True
-            elif dut_host_info.attributes.get('servo_setup') == 'DUAL_V4':
-                logging.debug('The DUT servo setup specified in config as '
-                              ' "DUAL_V4"')
-                is_dual_setup = True
-            if is_dual_setup:
-                cmd += ' DUAL_V4=1'
+        # Start servod with dual_v4 based on servo_setup.
+        if self.servo_setup == servo_constants.SERVO_SETUP_VALUE_DUAL_V4:
+            cmd += ' DUAL_V4=1'
 
-            # Start servod with CONFIG=cr50.xml which required for some pools.
-            if self._require_cr50_servod_config():
-                cmd += ' CONFIG=cr50.xml'
+        # Start servod with CONFIG=cr50.xml which required for some pools.
+        if self._require_cr50_servod_config():
+            cmd += ' CONFIG=cr50.xml'
 
         # Remove the symbolic links from the logs. This helps ensure that
         # a failed servod instantiation does not cause us to grab old logs

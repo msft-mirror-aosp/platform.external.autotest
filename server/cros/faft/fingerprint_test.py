@@ -752,13 +752,12 @@ class FingerprintTest(test.test):
         self.set_hardware_write_protect(False)
         flash_cmd = 'flash_fp_mcu' + ' ' + fw_path
         logging.info('Running flash cmd: %s', flash_cmd)
-        result = self.run_cmd(flash_cmd)
+        flash_result = self.run_cmd(flash_cmd)
         self.set_hardware_write_protect(True)
-        if result.exit_status != 0:
-            raise error.TestFail('Flashing RW/RO firmware failed')
 
         # Zork cannot rebind cros-ec-uart after flashing, so an AP reboot is
         # needed to talk to FPMCU. See b/170213489.
+        # We have to do this even if flashing failed.
         if self.get_host_board() == 'zork':
             self.host.reboot()
             if self.fp_updater_is_enabled():
@@ -766,6 +765,9 @@ class FingerprintTest(test.test):
                         'Fp updater was not disabled when firmware is flashed')
             # If we just re-enable fp updater, it can still update (race
             # condition), so do it later in cleanup.
+
+        if flash_result.exit_status != 0:
+            raise error.TestFail('Flashing RW/RO firmware failed')
 
     def is_hardware_write_protect_enabled(self):
         """Returns state of hardware write protect."""

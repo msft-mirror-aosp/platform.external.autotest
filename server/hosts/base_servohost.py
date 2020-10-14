@@ -14,6 +14,7 @@ import six.moves.http_client
 import logging
 import socket
 import six.moves.xmlrpc_client
+import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotest_enum
@@ -557,3 +558,25 @@ class BaseServoHost(ssh_host.SSHHost):
         """
         result = self.run('umount %s' % mount_path, ignore_status=True)
         return result.exit_status == 0
+
+    def wait_ready(self, required_uptime=300):
+        """Wait ready for a servohost if it has been rebooted recently.
+
+        It may take a few minutes until all servos and their componments
+        re-enumerated and become ready after a servohost(especially labstation
+        as it supports multiple servos) reboot, so we need to make sure the
+        servohost has been up for a given a mount of time before trying to
+        start any actions.
+
+        @param required_uptime: Minimum uptime in seconds that we can
+                                consdier a servohost be ready.
+        """
+        uptime = float(self.check_uptime())
+        # To prevent unexpected output from check_uptime() that causes long
+        # sleep, make sure the maximum wait time <= required_uptime.
+        diff = min(required_uptime - uptime, required_uptime)
+        if diff > 0:
+            logging.info(
+                    'The servohost was just rebooted, wait %s'
+                    ' seconds for it to become ready', diff)
+            time.sleep(diff)

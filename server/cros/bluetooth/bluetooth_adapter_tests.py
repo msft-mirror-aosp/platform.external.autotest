@@ -2689,6 +2689,64 @@ class BluetoothAdapterTests(test.test):
         return min_adv_interval_ms_found, max_adv_interval_ms_found
 
 
+    def _verify_scan_response_data(self, adv_data):
+        """Verify advertisement's scan response data is correct
+
+        Unlike the other fixed advertising fields, Scan Response Data is set
+        in a tag-value data format. This function helps verify the data format
+        for specific tag values to ensure scan response was propagated correctly
+
+        @param adv_data: Dictionary defining advertising fields to be registered
+                with bluetoothd daemon's RegisterAdvertisement interface
+
+        @returns: True if all Registered Scan Response tags were located in
+                btmon trace, False otherwise
+        """
+
+        scan_rsp = adv_data.get('ScanResponseData')
+        if not scan_rsp:
+            return True
+
+        for tag, data in scan_rsp.items():
+            # Validate 16 bit Service Data tag
+            if int(tag, 16) == 0x16:
+                # First two bytes of data are endian-corrected UUID, followed
+                # by service data
+                uuid = '%x%x' % (data[1], data[0])
+                data_str = ''.join(
+                        ['%02x' % data[i] for i in range(2, len(data))])
+
+                # Service data has the following format in btmon trace:
+                # Service Data (UUID 0xfef3): 01020304
+                search_str = 'Service Data (UUID 0x{}): {}'.format(
+                        uuid, data_str)
+
+                # Fail if data can't be located in btmon trace
+                if not self.bluetooth_le_facade.btmon_find(search_str):
+                    return False
+
+        return True
+
+    def test_advertising_flags(self, flag_strs=[]):
+        """Verify that advertising flags are set in registered advertisement
+
+        Each flag has a specific descriptor that appears in btmon trace. This
+        simple checker validates that the desired flag descriptors appear in
+        btmon trace when the advertisement was registered.
+
+        @param flag_strs: Flag string descriptors expected in btmon trace
+
+        #returns: True if all flag descriptors were located, False otherwise
+        """
+
+        for flag_str in flag_strs:
+            if not self.bluetooth_le_facade.btmon_find(flag_str):
+                logging.info(
+                        'Flag descriptor not located: {}'.format(flag_str))
+                return False
+
+        return True
+
     def ext_adv_enabled(self):
         """ Check if platform supports extended advertising
 
@@ -2738,6 +2796,7 @@ class BluetoothAdapterTests(test.test):
 
         # Verify that the manufacturer data could be found.
         manufacturer_data = advertisement_data.get('ManufacturerData', '')
+        manufacturer_data_found = True
         for manufacturer_id in manufacturer_data:
             # The 'not assigned' text below means the manufacturer id
             # is not actually assigned to any real manufacturer.
@@ -2775,6 +2834,8 @@ class BluetoothAdapterTests(test.test):
                 self._verify_advertising_intervals(min_adv_interval_ms,
                                                    max_adv_interval_ms))
 
+        scan_rsp_correct = self._verify_scan_response_data(advertisement_data)
+
         # Verify advertising is enabled.
         advertising_enabled = self.bluetooth_le_facade.btmon_find(
                 'Advertising: Enabled (0x01)')
@@ -2786,6 +2847,7 @@ class BluetoothAdapterTests(test.test):
                 'service_data_found': service_data_found,
                 'min_adv_interval_ms_found': min_adv_interval_ms_found,
                 'max_adv_interval_ms_found': max_adv_interval_ms_found,
+                'scan_rsp_correct': scan_rsp_correct,
                 'advertising_enabled': advertising_enabled,
         }
         return all(self.results.values())

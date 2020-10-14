@@ -636,18 +636,16 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         all_chunks_test_result = True
         for i in range(nchunks):
             logging.info('Handle chunk %d', i)
-            if not device.HandleOneChunk(chunk_in_secs, i, test_profile):
+            recorded_file = device.HandleOneChunk(chunk_in_secs, i,
+                                                  test_profile, self.host.ip)
+            if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
-
-            # Copy the recorded audio file to the DUT for spectrum analysis.
-            logging.debug('Scp recorded file of chunk %d', i)
-            recorded_file = test_data['recorded_by_peer'] % i
-            device.ScpToDut(recorded_file, recorded_file, self.host.ip)
 
             # Check if the audio frames in the recorded file are legitimate.
             if not self._check_audio_frames_legitimacy(
                     test_data, 'recorded_by_peer', recorded_file=recorded_file):
-                if i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS:
+                if (i > self.IGNORE_LAST_FEW_CHUNKS and
+                        i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
                     logging.info('empty chunk %d ignored for last %d chunks',
                                  i, self.IGNORE_LAST_FEW_CHUNKS)
                 else:
@@ -659,7 +657,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             if not self._check_primary_frequencies(A2DP, test_data,
                                                    'recorded_by_peer',
                                                    recorded_file=recorded_file):
-                if i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS:
+                if (i > self.IGNORE_LAST_FEW_CHUNKS and
+                        i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
                     msg = 'partially filled chunk %d ignored for last %d chunks'
                     logging.info(msg, i, self.IGNORE_LAST_FEW_CHUNKS)
                 else:

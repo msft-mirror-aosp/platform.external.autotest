@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,14 +7,13 @@
 # prompt, such as within the Chromium OS development chroot.
 
 import ast
-import httplib
 import logging
 import os
 import re
-import time
-import xmlrpclib
-
 import six
+import six.moves.xmlrpc_client
+import six.moves.http_client
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -74,7 +74,7 @@ class ResponsiveConsoleError(ConsoleError):
     pass
 
 
-class ServodBadResponse(httplib.BadStatusLine):
+class ServodBadResponse(six.moves.http_client.BadStatusLine):
     """Indicates a bad HTTP response from servod"""
 
     def __init__(self, when, line):
@@ -173,7 +173,7 @@ class _WrapServoErrors(object):
                         'Wrapped exception:',
                         exc_info=(exc_type, exc_val, exc_tb))
 
-            if isinstance(exc_val, httplib.BadStatusLine):
+            if isinstance(exc_val, six.moves.http_client.BadStatusLine):
                 if exc_val.line in ('', "''"):
                     err = ServodEmptyResponse(self.description, exc_val.line)
                 else:
@@ -185,7 +185,7 @@ class _WrapServoErrors(object):
                                             exc_val.args[1], self.servo_name)
                 six.reraise(err.__class__, err, exc_tb)
 
-            if isinstance(exc_val, xmlrpclib.Fault):
+            if isinstance(exc_val, six.moves.xmlrpc_client.Fault):
                 err_str = self._get_xmlrpclib_exception(exc_val)
                 err_msg = '%s :: %s' % (self.description, err_str)
                 unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
@@ -968,7 +968,7 @@ class Servo(object):
         try:
             with _WrapServoErrors(servo=self, description='get_base_board()'):
                 return self._server.get_base_board()
-        except  xmlrpclib.Fault as e:
+        except six.moves.xmlrpc_client.Fault as e:
             # TODO(waihong): Remove the following compatibility check when
             # the new versions of hdctools are deployed.
             if 'not supported' in str(e):

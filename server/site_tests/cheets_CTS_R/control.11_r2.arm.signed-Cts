@@ -12,7 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
-DOC = 'Run module signed-CtsOmapiTestCases, signed-CtsOmapiTestCases[instant], signed-CtsOmapiTestCases[secondary_user], signed-CtsSecureElementAccessControlTestCases1, signed-CtsSecureElementAccessControlTestCases1[instant], signed-CtsSecureElementAccessControlTestCases1[secondary_user], signed-CtsSecureElementAccessControlTestCases2, signed-CtsSecureElementAccessControlTestCases2[instant], signed-CtsSecureElementAccessControlTestCases2[secondary_user], signed-CtsSecureElementAccessControlTestCases3, signed-CtsSecureElementAccessControlTestCases3[instant], signed-CtsSecureElementAccessControlTestCases3[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
+DOC = 'Run module signed-CtsOmapiTestCases, signed-CtsOmapiTestCases[secondary_user], signed-CtsSecureElementAccessControlTestCases1, signed-CtsSecureElementAccessControlTestCases1[secondary_user], signed-CtsSecureElementAccessControlTestCases2, signed-CtsSecureElementAccessControlTestCases2[secondary_user], signed-CtsSecureElementAccessControlTestCases3, signed-CtsSecureElementAccessControlTestCases3[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
@@ -22,13 +22,13 @@ def run_TS(machine):
         iterations=1,
         tag='11_r2.arm.signed-Cts',
         test_name='cheets_CTS_R.11_r2.arm.signed-Cts',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'signed-CtsOmapiTestCases', '--include-filter', 'signed-CtsOmapiTestCases[instant]', '--include-filter', 'signed-CtsOmapiTestCases[secondary_user]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases1', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases1[instant]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases1[secondary_user]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases2', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases2[instant]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases2[secondary_user]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases3', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases3[instant]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases3[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'signed-CtsOmapiTestCases', '--include-filter', 'signed-CtsOmapiTestCases[secondary_user]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases1', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases1[secondary_user]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases2', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases2[secondary_user]', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases3', '--include-filter', 'signed-CtsSecureElementAccessControlTestCases3[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='signed-Cts',
         target_plan=None,
         bundle='arm',
-        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6896666-linux_x86-arm.zip',
+        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6906931-linux_x86-arm.zip',
         use_jdk9=True,
-        timeout=23400)
+        timeout=16200)
 
 parallel_simple(run_TS, machines)

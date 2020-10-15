@@ -104,6 +104,12 @@ class S0ixResidencyNotChanged(SuspendFailure):
     pass
 
 
+class S2IdleResidencyNotChanged(SuspendFailure):
+    """power_SuspendStress test found CPU/SoC is unable to idle properly
+    when suspended to s2idle. """
+    pass
+
+
 def prepare_wakeup(seconds):
     """Prepare the device to wake up from an upcoming suspend.
 

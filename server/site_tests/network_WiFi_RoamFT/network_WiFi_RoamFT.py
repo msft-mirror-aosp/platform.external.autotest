@@ -5,7 +5,6 @@
 import logging
 from autotest_lib.server import site_linux_system
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 from autotest_lib.server.cros.network import wifi_cell_test_base
@@ -182,19 +181,13 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
                 raise error.TestFail('Failed to roam')
 
             # We've roamed at the 802.11 layer, but make sure Shill brings the
-            # connection up completely (DHCP). Note that we ping the client from
-            # the router with the bridge interface we are connected to because
-            # the bridge setup prevents us from pinging the router from the
-            # client.
-            # TODO(matthewmwang): the bridge setup is hacky. Figure out a
-            # different setup so that we can ping the router from the client.
+            # connection up completely (DHCP).
+            # TODO(https://crbug.com/1070321): Note that we don't run any ping
+            # test.
             # Check that we don't disconnect along the way here, in case we're
             # ping-ponging around APs -- and after the first (failed) roam, the
             # second re-connection will not be testing FT at all.
             self.context.client.wait_for_connection(router_ssid)
-            ping_config = ping_runner.PingConfig(self.context.client.wifi_ip,
-                                                 source_iface=br1)
-            self.context.router.ping(ping_config)
             curr = self.context.client.iw_runner.get_current_bssid(interface)
             if curr != bssid1:
                 raise error.TestFail(

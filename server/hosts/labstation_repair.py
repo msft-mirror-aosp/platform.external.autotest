@@ -7,6 +7,7 @@ import logging
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.client.common_lib import utils
 
 from chromite.lib import timeout_util
 
@@ -29,7 +30,7 @@ class _LabstationUpdateVerifier(hosts.Verifier):
     up-to-date.
     """
 
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    @timeout_util.TimeoutDecorator(cros_constants.LONG_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         """First, only run this verifier if the host is in the physical lab.
         Secondly, skip if the test is being run by test_that, because subnet

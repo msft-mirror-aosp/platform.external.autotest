@@ -2734,26 +2734,25 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         # ignore the logic if state present
         # state can be set by any cros repair actions
-        if self.get_device_repair_state():
+        if self.get_device_repair_state() or not self._repair_strategy:
             return
-
-        # set need manual attention if servo has hardware issue
+        dut_ssh_verifier = self._repair_strategy.verifier_is_good('ssh')
+        if dut_ssh_verifier == hosts.VERIFY_SUCCESS:
+            # DUT us sshable and we still have many options to repair it.
+            return
+        # when we cannot ssh to the DUT and we have hardware or set-up
+        # issues with servo then we need request manual repair for this DUT.
         servo_state_required_manual_fix = [
-            servo_constants.SERVO_STATE_NOT_CONNECTED,
-            servo_constants.SERVO_STATE_NEED_REPLACEMENT,
-            servo_constants.SERVO_STATE_LID_OPEN_FAILED,
-            servo_constants.SERVO_STATE_BAD_RIBBON_CABLE,
-            servo_constants.SERVO_STATE_EC_BROKEN,
+                servo_constants.SERVO_STATE_DUT_NOT_CONNECTED,
+                servo_constants.SERVO_STATE_NEED_REPLACEMENT,
         ]
         if self.get_servo_state() in servo_state_required_manual_fix:
-            data = {'host': self.hostname,
-                    'state': cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR}
-            metrics.Counter(
-                'chromeos/autotest/repair/special_dut_state'
-                ).increment(fields=data)
-            # TODO (otabek) unblock when be sure that we do not have flakiness
-            # self.set_device_repair_state(
-            #   cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR)
+            logging.info(
+                    'DUT required manual repair because it is not sshable'
+                    ' and possible have setup issue with Servo. Please verify'
+                    ' all connections and present of devices.')
+            self.set_device_repair_state(
+                    cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR)
 
     def is_file_system_writable(self, testdirs=None):
         """Check is the file systems are writable.

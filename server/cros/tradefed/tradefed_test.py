@@ -1375,8 +1375,7 @@ class TradefedTest(test.test):
                 waived = last_waived
                 session_id, passed, failed, all_done  = result
                 if (not all_done and executable_test_count != None and
-                        (passed + failed ==
-                         executable_test_count * self._test_count_factor)):
+                        (passed + failed in executable_test_count)):
                     logging.warning('Overwriting all_done as True, since the '
                                     'explicitly set executable_test_count '
                                     'tests have run.')

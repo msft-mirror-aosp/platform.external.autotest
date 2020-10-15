@@ -108,6 +108,78 @@ def dbus_print_error(default_return_value=False):
     return decorator
 
 
+class LogRecorder:
+    """The LogRecorder class helps to collect logs without a listening thread"""
+
+    class LoggingException(Exception):
+        """A dummy exception class for LogRecorder class."""
+        pass
+
+    def __init__(self, log_path):
+        """Initialize log recorder object
+
+        @param log_path: string path to log file to record
+
+        @raises: LogRecorder.LoggingException on non-existent log file
+        """
+        if not os.path.isfile(log_path):
+            msg = 'Requested log file {} does not exist'.format(log_path)
+            raise LogRecorder.LoggingException(msg)
+
+        self.log_path = log_path
+
+        self.initial_log_size = -1
+        self.log_contents = []
+
+    def StartRecording(self):
+        """Mark initial log size for later comparison"""
+
+        self.initial_log_size = os.path.getsize(self.log_path)
+        self.log_contents = []
+
+    def StopRecording(self):
+        """Gather the logs since StartRecording was called
+
+        @raises: LogRecorder.LoggingException if:
+                - Log file disappeared since StartRecording was called
+                - Log file is smaller than when logging began
+                - StartRecording was never called
+        """
+        if not os.path.isfile(self.log_path):
+            msg = 'File {} disappeared unexpectedly'.format(self.log_path)
+            raise LogRecorder.LoggingException(msg)
+
+        if os.path.getsize(self.log_path) < self.initial_log_size:
+            msg = 'Log became smaller unexpectedly'
+            raise LogRecorder.LoggingException(msg)
+
+        if self.initial_log_size < 0:
+            msg = 'Recording stopped before it started'
+            raise LogRecorder.LoggingException(msg)
+
+        with open(self.log_path, 'r') as mf:
+            # Skip to the point where we started recording
+            mf.seek(self.initial_log_size)
+
+            for line in mf.readlines():
+                self.log_contents.append(line)
+
+    def LogContains(self, search_str):
+        """Performs simple string checking on each line from the collected log
+
+        @param search_str: string to be located within log contents. This arg
+                is expected to not span between lines in the logs
+
+        @returns: True if search_str was located in the collected log contents,
+                False otherwise
+        """
+
+        for line in self.log_contents:
+            if search_str in line:
+                return True
+
+        return False
+
 
 class PairingAgent(dbus.service.Object):
     """The agent handling the authentication process of bluetooth pairing.
@@ -250,6 +322,9 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         # Initailize a btmon object to record bluetoothd's activity.
         self.btmon = output_recorder.OutputRecorder(
                 'btmon', stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
+
+        # Initialize a messages object to record general logging.
+        self.messages = LogRecorder('/var/log/messages')
 
         self._cras_test_client = cras_utils.CrasTestClient()
 
@@ -1968,6 +2043,46 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self.btmon.find(pattern_str)
 
+
+    def messages_start(self):
+        """Start messages monitoring.
+
+        @returns: True if logging started successfully, else False
+        """
+
+        try:
+            self.messages.StartRecording()
+            return True
+
+        except Exception as e:
+            logging.error('Failed to start log recording with error: %s', e)
+
+        return False
+
+    def messages_stop(self):
+        """Stop messages monitoring.
+
+        @returns: True if logs were successfully gathered since logging started,
+                else False
+        """
+        try:
+            self.messages.StopRecording()
+            return True
+
+        except Exception as e:
+            logging.error('Failed to stop log recording with error: %s', e)
+
+        return False
+
+    def messages_find(self, pattern_str):
+        """Find if a pattern string exists in messages output.
+
+        @param pattern_str: the pattern string to find.
+
+        @returns: True on success. False otherwise.
+
+        """
+        return self.messages.LogContains(pattern_str)
 
     @xmlrpc_server.dbus_safe(False)
     def dbus_async_method(self, dbus_method,

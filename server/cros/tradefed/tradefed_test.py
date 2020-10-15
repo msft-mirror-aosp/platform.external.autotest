@@ -75,7 +75,7 @@ class TradefedTest(test.test):
     _job_deadline = None
 
     def _log_java_version(self):
-        """Quick sanity and spew of java version installed on the server."""
+        """Log java version to debug failures due to version mismatch."""
         utils.run(
             'java',
             args=('-version',),

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "graphics_TraceReplayExtended"
+NAME = "graphics_TraceReplayExtended.glxgears_1minute"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Performance"
 TEST_CLASS = "graphics"
@@ -21,7 +21,8 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test("graphics_TraceReplayExtended", host=host,
                  client_tast_test='graphics.TraceReplayExtended.glxgears_1minute',
+                 tast_build_bundle='cros',
                  tast_command_arg=args,
-                 max_duration_minutes=5)
+                 max_duration_minutes=10)
 
 parallel_simple(run, machines)

@@ -284,16 +284,18 @@ class FingerprintTest(test.test):
 
     def cleanup(self):
         """Restores original state."""
-        if self._dut_needs_reboot:
-            if not self.biod_upstart_job_enabled():
-                self.enable_biod_upstart_job()
-            if not self.fp_updater_is_enabled():
-                self.enable_fp_updater()
         # Once the tests complete we need to make sure we're running the
         # original firmware (not dev version) and potentially reset rollback.
         self._initialize_running_fw_version(use_dev_signed_fw=False,
                                             force_firmware_flashing=False)
         self._initialize_fw_entropy()
+        # Re-enable biod and updater after flashing and initializing entropy so
+        # that they don't interfere if there was a reboot.
+        if hasattr(self, '_dut_needs_reboot') and self._dut_needs_reboot:
+            if not self.biod_upstart_job_enabled():
+                self.enable_biod_upstart_job()
+            if not self.fp_updater_is_enabled():
+                self.enable_fp_updater()
         self._initialize_hw_and_sw_write_protect(
             enable_hardware_write_protect=True,
             enable_software_write_protect=True)

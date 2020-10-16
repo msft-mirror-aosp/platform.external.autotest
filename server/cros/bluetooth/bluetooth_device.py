@@ -983,6 +983,26 @@ class BluetoothDevice(object):
         """
         return self._proxy.advmon_reset_event_count(app_id, monitor_id, event)
 
+    @proxy_thread_safe
+    def messages_start(self):
+        """Start messages monitoring."""
+        self._proxy.messages_start()
+
+    @proxy_thread_safe
+    def messages_stop(self):
+        """Stop messages monitoring."""
+        self._proxy.messages_stop()
+
+    @proxy_thread_safe
+    def messages_find(self, pattern_str):
+        """Find if a pattern string exists in messages output.
+
+        @param pattern_str: the pattern string to find.
+
+        @returns: True on success. False otherwise.
+
+        """
+        return self._proxy.messages_find(pattern_str)
 
     @proxy_thread_safe
     def register_advertisement(self, advertisement_data):

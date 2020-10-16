@@ -9,8 +9,8 @@ to Python 3, but aren't present in the six library.
 """
 
 import six
+import six.moves.configparser
 import socket
-
 if six.PY3:
     import builtins
     SOCKET_ERRORS = (builtins.ConnectionError, socket.timeout, socket.gaierror,
@@ -45,3 +45,14 @@ def exec_file(filename, globals_, locals_):
                 dont_inherit=1,
         )
     return six.exec_(code_obj, globals_, locals_)
+
+
+def config_parser():
+    """config_parser returns a non-strict config parser.
+
+    Unfortunately, in six configparser is not same between 2/3. For our .ini's
+    we do not want it to be strict (ie, error upon duplicates).
+    """
+    if six.PY3:
+        return six.moves.configparser.ConfigParser(strict=False)
+    return six.moves.configparser.ConfigParser()

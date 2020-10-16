@@ -942,7 +942,7 @@ def pushd(d):
 def unzip(filename, destination):
     """Unzips a zip file to the destination directory."""
     with pushd(destination):
-        # We are trusting Android to have a sane zip file for us.
+        # We are trusting Android to have a valid zip file for us.
         with zipfile.ZipFile(filename) as zf:
             zf.extractall()
 

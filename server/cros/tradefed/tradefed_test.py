@@ -1350,6 +1350,15 @@ class TradefedTest(test.test):
                 self.summary += msg
                 logging.info('RESULT: %s %s', msg, result)
 
+                # Overwrite last_all_done if the executed test count is equal
+                # to the known test count of the job.
+                if (not last_all_done and executable_test_count != None and
+                    (last_passed + last_failed in executable_test_count)):
+                    logging.warning('Overwriting all_done as True, since the '
+                                    'explicitly set executable_test_count '
+                                    'tests have run.')
+                    last_all_done = True
+
                 # Check for no-test modules. We use the "all_done" indicator
                 # provided by list_results to decide if there are outstanding
                 # modules to iterate over (similar to missing tests just on a
@@ -1372,14 +1381,10 @@ class TradefedTest(test.test):
                         current_login.need_reboot()
                     continue
 
+                # After the no-test check, commit the pass/fail count.
                 waived = last_waived
-                session_id, passed, failed, all_done  = result
-                if (not all_done and executable_test_count != None and
-                        (passed + failed in executable_test_count)):
-                    logging.warning('Overwriting all_done as True, since the '
-                                    'explicitly set executable_test_count '
-                                    'tests have run.')
-                    all_done = True
+                session_id, passed, failed, all_done =\
+                    last_session_id, last_passed, last_failed, last_all_done
 
                 # Check if all the tests passed.
                 if failed <= waived and all_done:

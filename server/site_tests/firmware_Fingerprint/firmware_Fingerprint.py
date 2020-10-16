@@ -44,11 +44,15 @@ class firmware_Fingerprint(FingerprintTest):
                 image_args.append(getattr(self, arg))
         self._test_exe_args = image_args
 
-        if self.get_host_board() == 'zork' and self._test_exe == 'rdp1.sh':
-            # TODO(b/170770251): Move the rdp1 test logic to another file.
+        if self.get_host_board() == 'zork':
+            # TODO(b/170770251): Move the rdp1 and rdp0 tests to separate files
             #
-            # Zork's RDP1 test requires an AP reboot, so do it in this class
-            self.test_rdp1()
+            # Zork's RDP1 and RDP0 tests requires an AP reboot, so do it in
+            # this class
+            if self._test_exe == 'rdp1.sh':
+                self.test_rdp1()
+            elif self._test_exe == 'rdp0.sh':
+                self.test_rdp0()
         else:
             logging.info('Running test: %s', self._test_exe)
             self.run_test(self._test_exe, *self._test_exe_args)
@@ -91,6 +95,39 @@ class firmware_Fingerprint(FingerprintTest):
         self.test_rdp1_without_modifying_rdp_level()
         self.test_rdp1_while_setting_rdp_level_0()
 
+    def test_rdp0(self):
+        """
+        Validate initial state for the RDP0 test. The test tries to read from
+        flash while maintaining RDP level 0. Then it tries to read from flash
+        while setting RDP level to 0.
+        """
+        _HW_AND_SW_WP_OFF = (
+                'Flash protect flags: 0x00000000\n'
+                'Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT\n'
+                'Writable flags:      0x00000001 ro_at_boot\n')
+
+        logging.info('Running test to validate RDP level 0')
+        original_fw_file = self._test_exe_args[0]
+        self.check_file_exists(original_fw_file)
+
+        logging.info('Making sure all write protect is disabled')
+        flashprotect_result = self._run_ectool_cmd('flashprotect')
+        if flashprotect_result.stdout != _HW_AND_SW_WP_OFF:
+            raise error.TestFail('Incorrect flashprotect state')
+
+        logging.info('Validating initial state')
+        # TODO(yichengli): Check that we are running MP-signed RO and RW by
+        # checking the key id.
+        if self.get_running_firmware_type() != self._FIRMWARE_TYPE_RW:
+            raise error.TestFail('Not running RW copy of firmware')
+        if not self.is_rollback_unset():
+            raise error.TestFail('Rollback should be unset.')
+
+        self.check_firmware_is_functional()
+
+        self.test_rdp0_without_modifying_rdp_level()
+        self.test_rdp0_while_setting_rdp_level_0()
+
     def test_rdp1_without_modifying_rdp_level(self):
         """
         Given:
@@ -123,13 +160,7 @@ class firmware_Fingerprint(FingerprintTest):
         if self.get_host_board() == 'zork':
             self.host.reboot()
 
-        logging.info('Checking that firmware is still functional')
-        # Catch exception to show better error message.
-        try:
-            self.get_running_firmware_type()
-        except error.TestFail:
-            raise error.TestFail(
-                    'Firmware is not functional after reading flash')
+        self.check_firmware_is_functional()
 
     def test_rdp1_while_setting_rdp_level_0(self):
         """
@@ -176,6 +207,74 @@ class firmware_Fingerprint(FingerprintTest):
             raise error.TestFail(
                     'Firmware should not be responding to commands')
 
+    def test_rdp0_without_modifying_rdp_level(self):
+        """
+        Given:
+           * Hardware write protect is disabled
+           * Software write protect is disabled
+           * RDP is at level 0
+
+        Then:
+           * Reading from flash without changing the RDP level should succeed
+             (we're already at level 0). Thus we should be able to read the
+             entire firmware out of flash and it should exactly match the
+             firmware that we flashed for testing.
+        """
+        logging.info('Reading firmware without modifying RDP level')
+
+        file_read_from_flash = os.path.join(self._dut_working_dir,
+                                            'test_keep_rdp.bin')
+        cmd = 'flash_fp_mcu --read --noremove_flash_read_protect %s' % file_read_from_flash
+        result = self.run_cmd(cmd)
+        if result.exit_status != 0:
+            raise error.TestFail('Failed to read from flash')
+
+        logging.info('Checking that value read matches the flashed version')
+        original_fw_file = self._test_exe_args[0]
+        if not self.files_match(file_read_from_flash, original_fw_file):
+            raise error.TestFail(
+                    'File read from flash does not match original fw file')
+
+        # On zork, an AP reboot is needed after using flash_fp_mcu.
+        if self.get_host_board() == 'zork':
+            self.host.reboot()
+
+        self.check_firmware_is_functional()
+
+    def test_rdp0_while_setting_rdp_level_0(self):
+        """
+        Given:
+           * Hardware write protect is disabled
+           * Software write protect is disabled
+           * RDP is at level 0
+
+        Then:
+           * Changing the RDP level to 0 should have no effect
+             (we're already at level 0). Thus we should be able to read the
+             entire firmware out of flash and it should exactly match the
+             firmware that we flashed for testing.
+        """
+        logging.info('Reading firmware while setting RDP to level 0')
+
+        file_read_from_flash = os.path.join(self._dut_working_dir,
+                                            'test_change_rdp.bin')
+        cmd = 'flash_fp_mcu --read %s' % file_read_from_flash
+        result = self.run_cmd(cmd)
+        if result.exit_status != 0:
+            raise error.TestFail('Failed to read from flash')
+
+        logging.info('Checking that value read matches the flashed version')
+        original_fw_file = self._test_exe_args[0]
+        if not self.files_match(file_read_from_flash, original_fw_file):
+            raise error.TestFail(
+                    'File read from flash does not match original fw file')
+
+        # On zork, an AP reboot is needed after using flash_fp_mcu.
+        if self.get_host_board() == 'zork':
+            self.host.reboot()
+
+        self.check_firmware_is_functional()
+
     def check_file_exists(self, filename):
         """Checks that |filename| exists on DUT. Fails the test otherwise."""
         if not self.host.is_file_exists(filename):
@@ -205,3 +304,14 @@ class firmware_Fingerprint(FingerprintTest):
         if not re.match(regex, result.stdout):
             raise error.TestFail('%s does not contain all 0xFF bytes' %
                                  file_to_check)
+
+    def check_firmware_is_functional(self):
+        """
+        Returns true if AP can talk to FPMCU firmware. Fails the test otherwise
+        """
+        logging.info('Checking that firmware is functional')
+        # Catch exception to show better error message.
+        try:
+            self.get_running_firmware_type()
+        except error.TestFail:
+            raise error.TestFail('Firmware is not functional')

@@ -148,23 +148,29 @@ class firmware_ECWakeSource(FirmwareTest):
                 self.suspend_and_dont_wake(
                         self.suspend, lambda: self.ec.key_press('<enter>'))
 
-        logging.info('Suspend and wake by USB HID key press.')
+        if not self.faft_config.usb_hid_wake_enabled:
+            logging.info('Device does not support wake by USB HID. '
+                         'Skip suspend and wake by USB HID key press.')
+        else:
+            logging.info('Suspend and wake by USB HID key press.')
 
-        logging.debug('Initializing HID keyboard emulator.')
-        self.servo.set_nocheck('init_usb_keyboard', 'on')
-        time.sleep(self.USB_PRESENT_DELAY)
+            logging.debug('Initializing HID keyboard emulator.')
+            self.servo.set_nocheck('init_usb_keyboard', 'on')
+            time.sleep(self.USB_PRESENT_DELAY)
 
-        try:
-            self.suspend_and_wake(self.suspend,
-                    lambda:self.servo.set_nocheck('usb_keyboard_enter_key',
-                                                  'press'))
-        except ConnectionError:
-            raise error.TestFail('USB HID suspend/resume fails. Maybe try to '
-                    'update firmware for Atmel USB KB emulator by running '
-                    'firmware_FlashServoKeyboardMap test and then try again?')
+            try:
+                self.suspend_and_wake(self.suspend,
+                        lambda:self.servo.set_nocheck('usb_keyboard_enter_key',
+                                                      'press'))
+            except ConnectionError:
+                raise error.TestFail(
+                        'USB HID suspend/resume fails. Maybe try to '
+                        'update firmware for Atmel USB KB emulator by running '
+                        'firmware_FlashServoKeyboardMap test and then try again?'
+                )
 
-        logging.debug('Turning off HID keyboard emulator.')
-        self.servo.set_nocheck('init_usb_keyboard', 'off')
+            logging.debug('Turning off HID keyboard emulator.')
+            self.servo.set_nocheck('init_usb_keyboard', 'off')
 
         if not self.check_ec_capability(['lid']):
             logging.info('The device has no lid. '

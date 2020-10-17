@@ -114,7 +114,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         self.factory = remote_facade_factory.RemoteFacadeFactory(
                 host, no_chrome=not self.start_browser, disable_arc=True)
-        self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+        try:
+            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+        except Exception as e:
+            logging.error('Exception %s while creating bluetooth_facade',
+                          str(e))
+            raise error.TestFail('Unable to create bluetooth_facade')
+
 
         # Common list to track old/new Bluetooth peers
         # Adding chameleon to btpeer_list causes issue in cros_labels

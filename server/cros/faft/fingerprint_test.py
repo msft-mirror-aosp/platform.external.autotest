@@ -89,7 +89,7 @@ class FingerprintTest(test.test):
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
             _FP_BOARD_NAME_BLOONCHIPPER: {
                     'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
-                    'zork': 'bloonchipper_v2.0.4478-22ad3ce2',
+                    'zork': 'bloonchipper_v2.0.5762-157d30f9',
             },
             _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
             _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
@@ -115,9 +115,9 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
-            'bloonchipper_v2.0.4478-22ad3ce2-RO_v2.0.5762-157d30f9-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '3e796aa11fb7dbe40a09a9327e359e75ef5b1fa1d7a7d94604a7fb7361f411cc',
-                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4478-22ad3ce2',
+            'bloonchipper_v2.0.5762-157d30f9.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '0d17b94db65a69136ed3ef575920334306fcdd903d144a6338c8dba398b55910',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.5762-157d30f9',
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.5762-157d30f9',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
@@ -284,16 +284,18 @@ class FingerprintTest(test.test):
 
     def cleanup(self):
         """Restores original state."""
-        if self._dut_needs_reboot:
-            if not self.biod_upstart_job_enabled():
-                self.enable_biod_upstart_job()
-            if not self.fp_updater_is_enabled():
-                self.enable_fp_updater()
         # Once the tests complete we need to make sure we're running the
         # original firmware (not dev version) and potentially reset rollback.
         self._initialize_running_fw_version(use_dev_signed_fw=False,
                                             force_firmware_flashing=False)
         self._initialize_fw_entropy()
+        # Re-enable biod and updater after flashing and initializing entropy so
+        # that they don't interfere if there was a reboot.
+        if hasattr(self, '_dut_needs_reboot') and self._dut_needs_reboot:
+            if not self.biod_upstart_job_enabled():
+                self.enable_biod_upstart_job()
+            if not self.fp_updater_is_enabled():
+                self.enable_fp_updater()
         self._initialize_hw_and_sw_write_protect(
             enable_hardware_write_protect=True,
             enable_software_write_protect=True)

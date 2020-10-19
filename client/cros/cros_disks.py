@@ -1,16 +1,25 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import dbus, gobject, logging, os, stat
 from dbus.mainloop.glib import DBusGMainLoop
+import six
+from six.moves import zip
 
 import common
+
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp, error
 from autotest_lib.client.cros import dbus_util
-from mainloop import ExceptionForward
-from mainloop import GenericTesterMainLoop
+from autotest_lib.client.cros.mainloop import ExceptionForward
+from autotest_lib.client.cros.mainloop import GenericTesterMainLoop
 
 
 """This module contains several helper classes for writing tests to verify the
@@ -162,7 +171,7 @@ class DBusClient(object):
         actual_content = self.wait_for_signal(signal_name)
         logging.debug("%s signal: expected=%s actual=%s",
                       signal_name, expected_content, actual_content)
-        for argument, expected_value in expected_content.iteritems():
+        for argument, expected_value in six.iteritems(expected_content):
             if argument not in actual_content:
                 raise error.TestFail(
                     ('%s signal missing "%s": expected=%s, actual=%s') %
@@ -433,10 +442,10 @@ class CrosDisksTester(GenericTesterMainLoop):
         """Exercises each test method in the list returned by get_tests.
         """
         tests = self.get_tests()
-        self.remaining_requirements = set([test.func_name for test in tests])
+        self.remaining_requirements = set([test.__name__ for test in tests])
         for test in tests:
             test()
-            self.requirement_completed(test.func_name)
+            self.requirement_completed(test.__name__)
 
     def reconnect_client(self, timeout_seconds=None):
         """"Reconnect the CrosDisks DBus client.

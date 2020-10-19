@@ -18,6 +18,7 @@
 
 #pylint: disable=C0111
 
+import errno
 import fcntl
 import json
 import logging
@@ -66,6 +67,9 @@ class base_test(object):
         self.srcdir = os.path.join(self.bindir, 'src')
         self.tmpdir = tempfile.mkdtemp("_" + self.tagged_testname,
                                        dir=job.tmpdir)
+        # The crash_reporter uses this file to determine which test is in
+        # progress.
+        self.test_in_prog_file = '/run/crash_reporter/test-in-prog'
         self._keyvals = []
         self._new_keyval = False
         self.failed_constraints = []
@@ -169,7 +173,7 @@ class base_test(object):
             with open(output_file, 'r') as fp:
                 contents = fp.read()
                 if contents:
-                     charts = json.loads(contents)
+                    charts = json.loads(contents)
 
         if graph:
             first_level = graph
@@ -184,9 +188,9 @@ class base_test(object):
         # representing numbers logged, attempt to convert them to numbers.
         # If a non number string is logged an exception will be thrown.
         if isinstance(value, list):
-          value = map(float, value)
+            value = map(float, value)
         else:
-          value = float(value)
+            value = float(value)
 
         result_type = 'scalar'
         value_key = 'value'
@@ -361,6 +365,43 @@ class base_test(object):
             logging.debug('before_iteration_hooks completed')
 
         finished = False
+
+        # Mark the current test in progress so that crash_reporter can report
+        # it in uploaded crashes.
+        # if the file already exists, truncate and overwrite.
+        # TODO(mutexlox): Determine what to do if the file already exists, which
+        # could happen for a few reasons:
+        #   * An earlier tast or autotest run crashed before removing the
+        #     test-in-prog file. In this case, we would ideally overwrite the
+        #     existing test name and _not_ restore it.
+        #   * An autotest ran another autotest (e.g. logging_GenerateCrashFiles
+        #     runs desktopui_SimpleLogin). In this case, arguably it makes sense
+        #     to attribute the crash to logging_GenerateCrashFiles and not to
+        #     desktopui_SimpleLogin (or to attribute it to both), since the
+        #     context in which it's running is different than if it were run on
+        #     its own.
+        #   * Every tast test is kicked off by the 'tast' autotest (see
+        #     server/site_tests/tast/tast.py), so the file will always be
+        #     populated when the tast suite starts running. In this case, we
+        #     want to attribute crashes that happen during a specific test to
+        #     that test, but if the tast infra causes a crash we should
+        #     attribute the crash to it (e.g. to the 'tast.critical-system'
+        #     "autotest").  For this case, we should save the contents of the
+        #     file before a test and restore it after.
+        if 'host' in dargs:
+            dargs['host'].run('echo %s > %s' %
+                              (self.tagged_testname, self.test_in_prog_file),
+                              ignore_status=True)
+        else:
+            crash_run_dir = os.path.dirname(self.test_in_prog_file)
+            try:
+                # Only try to create the file if the directory already exists
+                # (otherwise, we may not be on a CrOS device)
+                if os.path.exists(crash_run_dir):
+                    with open(self.test_in_prog_file, 'w') as f:
+                        f.write(self.tagged_testname)
+            except:  # Broad 'except' because we don't want this to block tests
+                logging.warning('failed to write in progress test name')
         try:
             if profile_only:
                 if not self.job.profilers.present():
@@ -387,6 +428,20 @@ class base_test(object):
                           'after_iteration_hooks.', str(e))
             raise
         finally:
+            if 'host' in dargs:
+                dargs['host'].run('rm -f %s' % self.test_in_prog_file)
+            else:
+                try:
+                    # Unmark the test as running.
+                    os.remove(self.test_in_prog_file)
+                except OSError as e:
+                    # If something removed it, do nothing--we're in the desired
+                    # state (the file is gone). Otherwise, log.
+                    if e.errno != errno.ENOENT:
+                        logging.warning(
+                                "Couldn't remove test-in-prog file: %s",
+                                traceback.format_exc())
+
             if not finished or not self.job.fast:
                 logging.debug('Starting after_iteration_hooks for %s',
                               self.tagged_testname)
@@ -757,10 +812,18 @@ def _call_test_function(func, *args, **dargs):
         raise error.UnhandledTestFail(e)
 
 
-def runtest(job, url, tag, args, dargs,
-            local_namespace={}, global_namespace={},
-            before_test_hook=None, after_test_hook=None,
-            before_iteration_hook=None, after_iteration_hook=None):
+def runtest(job,
+            url,
+            tag,
+            args,
+            dargs,
+            local_namespace={},
+            global_namespace={},
+            before_test_hook=None,
+            after_test_hook=None,
+            before_iteration_hook=None,
+            after_iteration_hook=None,
+            override_test_in_prog_file=None):
     local_namespace = local_namespace.copy()
     global_namespace = global_namespace.copy()
     # if this is not a plain test name then download and install the
@@ -822,6 +885,8 @@ def runtest(job, url, tag, args, dargs,
 
     try:
         mytest = global_namespace['mytest']
+        if override_test_in_prog_file:
+            mytest.test_in_prog_file = override_test_in_prog_file
         mytest.success = False
         if not job.fast and before_test_hook:
             logging.info('Starting before_hook for %s', mytest.tagged_testname)

@@ -759,7 +759,7 @@ class BluetoothAdapterTests(test.test):
             # Create copy of btpeer_group
             self.btpeer_group_copy[device_type] = list()
 
-        for idx,btpeer in enumerate(self.host.peer_list):
+        for idx, btpeer in enumerate(self.host.btpeer_list):
             for device_type,gen_device_func in SUPPORTED_DEVICE_TYPES.items():
                 try:
                     device = gen_device_func(btpeer)()
@@ -866,11 +866,11 @@ class BluetoothAdapterTests(test.test):
 
         logging.info("in get_device_rasp %s onstart %s", device_num, on_start)
         total_num_devices = sum(device_num.values())
-        if total_num_devices > len(self.host.peer_list):
-            logging.error('Total number of devices %s is greater than the'
-                          ' number of Bluetooth peers %s',
-                          total_num_devices,
-                          len(self.host.peer_list))
+        if total_num_devices > len(self.host.btpeer_list):
+            logging.error(
+                    'Total number of devices %s is greater than the'
+                    ' number of Bluetooth peers %s', total_num_devices,
+                    len(self.host.btpeer_list))
             return False
 
         for device_type, number in device_num.items():
@@ -975,7 +975,7 @@ class BluetoothAdapterTests(test.test):
         """
         devices_available = {}
         for device_type in SUPPORTED_DEVICE_TYPES:
-            for btpeer in self.host.peer_list:
+            for btpeer in self.host.btpeer_list:
                 if self.is_device_available(btpeer, device_type):
                     devices_available[device_type] = \
                         devices_available.get(device_type, 0) + 1
@@ -4136,33 +4136,6 @@ class BluetoothAdapterTests(test.test):
         self.count_advertisements = 0
 
 
-    def check_btpeer(self):
-        """Check the existence of Bluetooth peer
-
-        The Bluetooth peer can be specified in --args as follows
-
-        (cr) $ test_that --args "btpeer_host=$BTPEER_IP" "$DUT_IP" <test>
-
-        OR
-
-        (cr) $ test_that --args "btpeer_host_list=$BTPEER1_IP,$BTPEER2_IP"
-               "$DUT_IP" <test>
-
-
-        Note: During a transition period Bluetooth peer can also be specified as
-        follows
-
-        The chameleon_host is specified in --args as follows
-
-        (cr) $ test_that --args "chameleon_host=$CHAMELEON_IP" "$DUT_IP" <test>
-
-        """
-        # TODO(b:149637050). Remove chameleon part after the M83 is in stable.
-        logging.debug('labels: %s', self.host.get_labels())
-        if self.host.chameleon is None and self.host.btpeer_list == []:
-            raise error.TestError('Have to specify a working Bluetooth peer')
-
-
     def update_btpeer(self):
         """ Check and update the chameleond bundle on Bluetooth peer
         Latest chameleond bundle and git commit is stored in the google cloud
@@ -4175,7 +4148,7 @@ class BluetoothAdapterTests(test.test):
         """
         def _update_btpeer():
             status = {}
-            for peer in self.host.peer_list:
+            for peer in self.host.btpeer_list:
                 status[peer] = {}
                 status[peer]['update_needed'] = \
                     bluetooth_peer_update.is_update_needed(peer, commit)
@@ -4192,7 +4165,7 @@ class BluetoothAdapterTests(test.test):
                 return False
 
             # TODO(b:160782273) Make this parallel
-            for peer in self.host.peer_list:
+            for peer in self.host.btpeer_list:
                 if status[peer]['update_needed']:
                     status[peer]['updated'], status[peer]['reason'] = \
                         bluetooth_peer_update.update_peer(peer, commit)

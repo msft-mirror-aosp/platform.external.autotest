@@ -60,7 +60,7 @@ class servo_LabstationVerification(test.test):
             if 'No control named' in e:
                 serial = servo_proxy.get('serialname')
             else:
-              raise e
+                raise e
         ctrl_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                  'serial_to_mac_map.json')
         with open(ctrl_path, 'r') as f:
@@ -275,13 +275,15 @@ class servo_LabstationVerification(test.test):
                                            'autoserv')
         return dut_ipv4
 
-    def _set_dut_stable_version(self, dut_host):
+    def _set_dut_stable_version(self, dut_host, stable_version=None):
         """Helper method to set stable_version in DUT host.
 
         @param dut_host: CrosHost object representing the DUT.
         """
-        logging.info('Setting stable_version to %s for DUT host.',
-                     self.cros_version)
+        if not stable_version:
+            stable_version = self.cros_version
+        logging.info('Setting stable_version to %s for DUT %s.',
+                     stable_version, dut_host.hostname)
         host_info = dut_host.host_info_store.get()
         host_info.stable_versions['cros'] = self.cros_version
         dut_host.host_info_store.commit(host_info)
@@ -369,7 +371,8 @@ class servo_LabstationVerification(test.test):
             # consume.
             # TODO(xianuowang@): remove this logic once we figured out how to
             # propagate DUT's stable_version to the test.
-            self._set_dut_stable_version(dut_host)
+            stable_version_from_config = dut_info.get('stable_version')
+            self._set_dut_stable_version(dut_host, stable_version_from_config)
             # Store |dut_host| in |machine_dict| so that parallel running can
             # find the host.
             self.machine_dict[dut_host.hostname] = dut_host
@@ -454,6 +457,8 @@ class servo_LabstationVerification(test.test):
         # debugging failures is cleaner given multiple setups.
 
     def cleanup(self):
-        """Clean up by stopping the servod instance again."""
-        for servo_host in self.servo_hosts:
-            servo_host.close()
+        """Clean up by calling close for dut host, which will also take care
+        of servo cleanup.
+        """
+        for _, dut in self.machine_dict.items():
+            dut.close()

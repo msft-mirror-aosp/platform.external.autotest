@@ -548,10 +548,12 @@ class FilesystemTestDirectory(FilesystemTestObject):
         if not os.path.isdir(path):
             return False
 
+        result = True
         seen = set()
+
         for content in self._content:
             if not content.verify(path):
-                return False
+                result = False
             seen.add(content._path)
 
         if self._strict:
@@ -559,17 +561,30 @@ class FilesystemTestDirectory(FilesystemTestObject):
                 if child not in seen:
                     logging.error('Unexpected filesystem entry "%s"',
                                   os.path.join(path, child))
-                    return False
+                    result = False
 
-        return True
+        return result
 
 
 class FilesystemTestFile(FilesystemTestObject):
     """A filesystem test object that represents a file."""
 
-    def __init__(self, path, content, mode=stat.S_IRUSR|stat.S_IWUSR| \
-                 stat.S_IRGRP|stat.S_IROTH):
+    def __init__(self,
+                 path,
+                 content,
+                 mode=stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP \
+                 | stat.S_IROTH,
+                 mtime=None):
+        """Initializes the file.
+
+        Args:
+            path: The name of this file.
+            content: A byte string with the expected file contents.
+            mode: The file permissions given to this file.
+            mtime: If set, the expected file modification timestamp.
+        """
         super(FilesystemTestFile, self).__init__(path, content, mode)
+        self._mtime = mtime
 
     def _create(self, base_dir):
         path = os.path.join(base_dir, self._path)
@@ -584,8 +599,25 @@ class FilesystemTestFile(FilesystemTestObject):
     def _verify(self, base_dir):
         path = os.path.join(base_dir, self._path)
         with ExceptionSuppressor(IOError):
-            with open(path, 'rb') as f:
-                return f.read() == self._content
+            result = True
+
+            if self._content is not None:
+                with open(path, 'rb') as f:
+                    if f.read() != self._content:
+                        logging.error('Mismatched file contents for "%s"',
+                                      path)
+                        result = False
+
+            if self._mtime is not None:
+                st = os.stat(path)
+                if st.st_mtime != self._mtime:
+                    logging.error(
+                            'Mismatched file modification time for "%s": ' +
+                            'want %d, got %d', path, self._mtime, st.st_mtime)
+                    result = False
+
+            return result
+
         return False
 
 

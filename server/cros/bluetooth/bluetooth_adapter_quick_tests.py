@@ -4,7 +4,7 @@
 # found in the LICENSE file.
 
 """
-This class provides wrapper functions for Bluetooth quick sanity test
+This class provides wrapper functions for Bluetooth quick health test
 batches or packages
 """
 
@@ -27,7 +27,7 @@ from autotest_lib.client.bin import utils
 from six.moves import range
 
 class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
-    """This class provide wrapper function for Bluetooth quick sanity test
+    """This class provide wrapper function for Bluetooth quick health test
     batches or packages.
     The Bluetooth quick test infrastructure provides a way to quickly run a set
     of tests. As for today, auto-test ramp up time per test is about 90-120
@@ -104,7 +104,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     def quick_test_init(self,
                         host,
                         use_btpeer=True,
-                        flag='Quick Sanity',
+                        flag='Quick Health',
                         btpeer_args=[],
                         start_browser=False):
         """Inits the test batch"""
@@ -216,7 +216,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                              in the following test.
            @param flags: list of string to describe who should run the
                          test. The string could be one of the following:
-                         ['AVL', 'Quick Sanity', 'All'].
+                         ['AVL', 'Quick Health', 'All'].
            @param model_testNA: If the current platform is in this list,
                                 failures are emitted as TestNAError.
            @param model_testWarn: If the current platform is in this list,

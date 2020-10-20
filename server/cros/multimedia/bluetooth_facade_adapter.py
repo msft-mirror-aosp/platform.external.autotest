@@ -22,5 +22,5 @@ class BluetoothFacadeRemoteAdapter(BluetoothDevice):
 
         """
         self._client = host
-        self._proxy = remote_facade_proxy
-        super(BluetoothFacadeRemoteAdapter, self).__init__(host)
+        super(BluetoothFacadeRemoteAdapter,
+              self).__init__(host, remote_facade_proxy)

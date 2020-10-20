@@ -26,9 +26,9 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    @test_wrapper('Monitor Object Sanity Tests')
-    def advmon_monitor_sanity_tests(self):
-        """Tests advertisement monitor object sanity."""
+    @test_wrapper('Monitor Object Health Tests')
+    def advmon_monitor_health_tests(self):
+        """Tests advertisement monitor object health."""
         self.advmon_test_monitor_creation()
         self.advmon_test_monitor_validity()
 
@@ -64,7 +64,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                              whole batch.
 
         """
-        self.advmon_monitor_sanity_tests()
+        self.advmon_monitor_health_tests()
         self.advmon_single_client_tests()
         self.advmon_fg_bg_combination_tests()
 
@@ -74,7 +74,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                  num_iterations=1,
                  btpeer_args=[],
                  test_name=None,
-                 flag='Quick Sanity'):
+                 flag='Quick Health'):
         """Run the batch of Bluetooth Advertisement Monitor API tests.
 
         @param host: the DUT, usually a chromebook.

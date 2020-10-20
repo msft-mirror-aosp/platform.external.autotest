@@ -258,7 +258,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param build: build string e.g eve-release/R85-13265.0.0.
         @param full_payload: True for full payload. False for delta.
-        @param is_dlc: True to get the payload URL for dummy-dlc.
+        @param is_dlc: True to get the payload URL for sample-dlc.
 
         @returns the payload URL.
 
@@ -276,8 +276,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # chromeos_R85-13265.0.0_eve_full_dev.bin
         # chromeos_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
         # Example payload names (DLC):
-        # dlc_dummy-dlc_package_R85-13265.0.0_eve_full_dev.bin
-        # dlc_dummy-dlc_package_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
+        # dlc_sample-dlc_package_R85-13265.0.0_eve_full_dev.bin
+        # dlc_sample-dlc_package_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
         if is_dlc:
             payload_prefix = 'dlc_*%s*_%s_*' % (build.rpartition('/')[2], '%s')
         else:
@@ -437,7 +437,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             #       version="13265.0.0" track=...>
             #     <event eventtype="13" eventresult="1"></event>
             #   </app>
-            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_dummy-dlc"
+            #   <app appid="{DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_sample-dlc"
             #       version="0.0.0.0" track=...>
             #     <event eventtype="13" eventresult="1"></event>
             #   </app>
@@ -477,7 +477,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 # by checking the appid. For platform, the appid looks like:
                 #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}
                 # For DLCs, it is the platform app ID + _ + the DLC ID:
-                #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_dummy-dlc
+                #     {DB5199C7-358B-4E1F-B4F6-AF6D2DD01A38}_sample-dlc
                 id_segments = app.attrib.get('appid').split('_')
                 if len(id_segments) > 1:
                     dlc_id = id_segments[1]
@@ -776,7 +776,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: True for full, False for delta.
-        @param is_dlc: True to get the payload URL for dummy-dlc.
+        @param is_dlc: True to get the payload URL for sample-dlc.
 
         """
         self._job_repo_url = self._get_job_repo_url(job_repo_url)
@@ -796,7 +796,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
         @param public_bucket: True to return a payload on a public bucket.
-        @param is_dlc: True to get the payload URL for dummy-dlc.
+        @param is_dlc: True to get the payload URL for sample-dlc.
 
         @returns string URL of a payload staged on a lab devserver.
 

@@ -91,3 +91,10 @@ def ensure_text(s, encoding='utf-8', errors='strict'):
         return s
     else:
         raise TypeError("not expecting type '%s'" % type(s))
+
+
+def ensure_long(n):
+    """ensure_long returns a long if py2, or int if py3."""
+    if six.PY2:
+        return long(n)
+    return int(n)

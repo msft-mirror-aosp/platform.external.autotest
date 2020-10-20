@@ -330,11 +330,14 @@ class servo_LabstationVerification(test.test):
             port = dut.get('servo_port')
             serial = dut.get('servo_serial')
             servo_args = {
-                servo_constants.SERVO_HOST_ATTR: self.labstation_host.hostname,
-                servo_constants.SERVO_PORT_ATTR: port,
-                servo_constants.SERVO_SERIAL_ATTR: serial,
-                servo_constants.SERVO_BOARD_ATTR: board,
-                'is_in_lab': False,
+                    servo_constants.SERVO_HOST_ATTR:
+                    self.labstation_host.hostname,
+                    servo_constants.SERVO_PORT_ATTR: port,
+                    servo_constants.SERVO_SERIAL_ATTR: serial,
+                    servo_constants.SERVO_BOARD_ATTR: board,
+                    servo_constants.SERVO_SETUP_ATTR:
+                    servo_constants.SERVO_SETUP_VALUE_DUAL_V4,
+                    'is_in_lab': False,
             }
 
             logging.info('Setting up servod for port %s', port)
@@ -345,7 +348,8 @@ class servo_LabstationVerification(test.test):
                 servo_host.run_grep(validate_cmd,
                     stdout_err_regexp='No servod scratch entry found.')
             except error.AutoservRunError:
-                raise error.TestFail('Servod did not come up on labstation.')
+                raise error.TestFail('Servod of port %s did not come up on'
+                                     ' labstation.' % port)
 
             self.servo_hosts.append(servo_host)
 

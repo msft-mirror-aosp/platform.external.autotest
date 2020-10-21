@@ -285,7 +285,7 @@ class servo_LabstationVerification(test.test):
         logging.info('Setting stable_version to %s for DUT %s.',
                      stable_version, dut_host.hostname)
         host_info = dut_host.host_info_store.get()
-        host_info.stable_versions['cros'] = self.cros_version
+        host_info.stable_versions['cros'] = stable_version
         dut_host.host_info_store.commit(host_info)
 
     def _get_dut_info_from_config(self):

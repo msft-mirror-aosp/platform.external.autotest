@@ -528,6 +528,44 @@ class EnrollmentStateVerifier(hosts.Verifier):
         return 'The enrollment state is clean on the host'
 
 
+class FirmwareTpmVerifier(hosts.Verifier):
+    """Verifier that firmware tpm info is correct.
+
+    For dev-signed firmware, tpm_fwver and tpm_kernver reported from
+    crossystem should always be 0x10001. Firmware update on DUTs with
+    incorrect tmp_fwver or tpm_kernver may fail due to firmware
+    rollback protection.
+    """
+    # A list of field we want check from crossystem and expected value.
+    CHECK_LIST = [
+            ('tpm_fwver', '0x00010001'),
+            ('tpm_kernver', '0x00010001'),
+    ]
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        # pylint: disable=missing-docstring
+        for field, expected_value in self.CHECK_LIST:
+            result = host.run('crossystem %s' % field, ignore_status=True)
+            if result.exit_status != 0:
+                raise hosts.AutoservNonCriticalVerifyError(
+                        'Unable to get %s from crossystem.' % field)
+            if result.stdout != expected_value:
+                raise hosts.AutoservNonCriticalVerifyError(
+                        'Unexpected %s value: %s, expected: %s. This error'
+                        ' may cause firmware provision fail due to the'
+                        ' rollback protection.' %
+                        (field, result.stdout, expected_value))
+
+    def _is_applicable(self, host):
+        return cros_firmware._is_firmware_testing_device(host)
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Firmware tpm info is correct in crossystem.'
+
+
 class JetstreamTpmVerifier(hosts.Verifier):
     """Verify that Jetstream TPM is in a good state."""
 
@@ -949,7 +987,7 @@ class ServoInstallRepair(hosts.RepairAction):
         image_name = host.get_cros_repair_image_name()
         update_url = None
         if host._servo_host.validate_image_usbkey() != image_name:
-            logging.info('Downloading %s to usbkey.', image_name)
+            logging.info('Staging image: %s on caching server.', image_name)
             _, update_url = host.stage_image_for_servo()
         else:
             logging.info('Required image %s is already on usbkey,'
@@ -1018,6 +1056,7 @@ def _cros_verify_base_dag():
             (WritableVerifier, 'writable', ('ssh', )),
             (TPMStatusVerifier, 'tpm', ('ssh', )),
             (UpdateSuccessVerifier, 'good_provision', ('ssh', )),
+            (FirmwareTpmVerifier, 'faft_tpm', ('ssh', )),
             (FirmwareStatusVerifier, 'fwstatus', ('ssh', )),
             (FirmwareVersionVerifier, 'rwfw', ('ssh', )),
             (PythonVerifier, 'python', ('ssh', )),
@@ -1092,8 +1131,18 @@ def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
              provision_triggers),
             (PowerWashRepair, 'powerwash', usb_triggers,
              powerwash_triggers + provision_triggers),
-            (ServoInstallRepair, 'usb', usb_dependencies,
-             usb_triggers + powerwash_triggers + provision_triggers),
+            (
+                    ServoInstallRepair,
+                    'usb',
+                    usb_dependencies,
+                    # faft_tpm is a trigger of usb repair action but should not be
+                    # dependence of provision and powerwash repair action, due to
+                    # restriction of current structure, we hardcode it here instead
+                    # of put it into _CROS_USB_TRIGGERS. TODO(xianuowang@) refactor
+                    # the logic to create action/verifier DAG for different host
+                    # type after we decouple infra from test autotest repo.
+                    usb_triggers + powerwash_triggers + provision_triggers +
+                    ('faft_tpm', )),
     )
     return repair_actions
 

@@ -2612,6 +2612,30 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                  os.path.basename(device)).stdout.strip())
         return removable == 1
 
+    def is_boot_from_external_device(self):
+        """Check if DUT is boot from external storage.
+
+        @return: True if DUT is boot from external storage.
+        """
+        boot_device = self.run('rootdev -s -d', ignore_status=True,
+                               timeout=60).stdout.strip()
+        if not boot_device:
+            logging.debug('Boot storage not detected on the host.')
+            return False
+        main_storage_cmd = ('. /usr/sbin/write_gpt.sh;'
+                            ' . /usr/share/misc/chromeos-common.sh;'
+                            ' load_base_vars; get_fixed_dst_drive')
+        main_storage = self.run(main_storage_cmd,
+                                ignore_status=True,
+                                timeout=60).stdout.strip()
+        if not main_storage:
+            logging.debug('Main storage not detected on the host.')
+            return False
+        if boot_device == main_storage:
+            logging.debug('Device booted from main storage.')
+            return False
+        logging.debug('Device booted from external storage storage.')
+        return True
 
     def read_from_meminfo(self, key):
         """Return the memory info from /proc/meminfo

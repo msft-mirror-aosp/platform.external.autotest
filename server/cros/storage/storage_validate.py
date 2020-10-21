@@ -256,9 +256,9 @@ class StorageStateValidator(object):
             raise StorageError('Storage state cannot be detected')
         if used_value < 91:
             return STORAGE_STATE_NORMAL
-        if used_value < 99:
-            return STORAGE_STATE_WARNING
-        return STORAGE_STATE_CRITICAL
+        # Stop mark device as bad when they reached 100% usage
+        # TODO(otabek) crbug.com/1140507 re-evaluate the max usage
+        return STORAGE_STATE_WARNING
 
     def _get_storage_path(self):
         """Find and return the path to the device storage.

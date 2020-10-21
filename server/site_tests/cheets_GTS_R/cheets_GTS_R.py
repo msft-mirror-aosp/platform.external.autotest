@@ -51,8 +51,7 @@ class cheets_GTS_R(tradefed_test.TradefedTest):
         if not utils.is_in_container():
             logging.info('Running outside of lab, adding extra debug options.')
             cmd.append('--log-level-display=DEBUG')
-        # See b/150418360. This is needed to get the output our parser expects.
-        cmd.append('--quiet-output=false')
+
         return cmd
 
     def _get_default_bundle_url(self, bundle):

@@ -200,7 +200,12 @@ suite:storage_qual_cq
 suite:storage_qual_external
 suite:storage_qual_quick
 suite:storage_qual_temp
+suite:storage_qual_v2_l
+suite:storage_qual_v2_m
 suite:storage_qual_v2_quick
+suite:storage_qual_v2_s
+suite:storage_qual_v2_xl
+suite:storage_qual_v2_xs
 suite:storagequal
 suite:stress
 suite:syzkaller

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Shell class for a test, inherited by all individual tests
 #
 # Methods:
@@ -18,6 +19,10 @@
 
 #pylint: disable=C0111
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import errno
 import fcntl
 import json
@@ -25,6 +30,9 @@ import logging
 import os
 import re
 import shutil
+import six
+from six.moves import map
+from six.moves import range
 import stat
 import sys
 import tempfile
@@ -101,7 +109,7 @@ class base_test(object):
     @staticmethod
     def _append_type_to_keys(dictionary, typename):
         new_dict = {}
-        for key, value in dictionary.iteritems():
+        for key, value in six.iteritems(dictionary):
             new_key = "%s{%s}" % (key, typename)
             new_dict[new_key] = value
         return new_dict
@@ -188,7 +196,7 @@ class base_test(object):
         # representing numbers logged, attempt to convert them to numbers.
         # If a non number string is logged an exception will be thrown.
         if isinstance(value, list):
-            value = map(float, value)
+            value = list(map(float, value))
         else:
             value = float(value)
 
@@ -268,7 +276,7 @@ class base_test(object):
             utils.write_keyval(self.resultsdir, perf_dict, type_tag="perf")
 
         keyval_path = os.path.join(self.resultsdir, "keyval")
-        print >> open(keyval_path, "a"), ""
+        print("", file=open(keyval_path, "a"))
 
 
     def analyze_perf_constraints(self, constraints):
@@ -517,7 +525,7 @@ class base_test(object):
             if iterations > 1:
                 logging.debug('Test started. Specified %d iterations',
                               iterations)
-            for self.iteration in xrange(1, iterations + 1):
+            for self.iteration in range(1, iterations + 1):
                 if iterations > 1:
                     logging.debug('Executing iteration %d of %d',
                                   self.iteration, iterations)
@@ -611,7 +619,7 @@ class base_test(object):
             keyvals['version'] = self.version
             for i, arg in enumerate(args):
                 keyvals['param-%d' % i] = repr(arg)
-            for name, arg in dargs.iteritems():
+            for name, arg in six.iteritems(dargs):
                 keyvals['param-%s' % name] = repr(arg)
             self.write_test_keyval(keyvals)
 
@@ -684,7 +692,7 @@ class base_test(object):
                     # actions fail.
                     self.job.logging.restore()
                     try:
-                        raise exc_info[0], exc_info[1], exc_info[2]
+                        six.reraise(exc_info[0], exc_info[1], exc_info[2])
                     finally:
                         # http://docs.python.org/library/sys.html#sys.exc_info
                         # Be nice and prevent a circular reference.
@@ -699,7 +707,7 @@ class base_test(object):
         except error.AutotestError:
             # Pass already-categorized errors on up.
             raise
-        except Exception, e:
+        except Exception as e:
             # Anything else is an ERROR in our own code, not execute().
             raise error.UnhandledTestError(e)
 
@@ -740,8 +748,8 @@ def _validate_args(args, dargs, *funcs):
     all_co_flags = 0
     all_varnames = ()
     for func in funcs:
-        all_co_flags |= func.func_code.co_flags
-        all_varnames += func.func_code.co_varnames[:func.func_code.co_argcount]
+        all_co_flags |= func.__code__.co_flags
+        all_varnames += func.__code__.co_varnames[:func.__code__.co_argcount]
 
     # Check if given args belongs to at least one of the methods below.
     if len(args) > 0:
@@ -771,7 +779,7 @@ def _installtest(job, url):
     # considered for import.
     if not os.path.exists(group_dir):
         os.makedirs(group_dir)
-        f = file(os.path.join(group_dir, '__init__.py'), 'w+')
+        f = open(os.path.join(group_dir, '__init__.py'), 'w+')
         f.close()
 
     logging.debug("%s: installing test url=%s", name, url)
@@ -806,7 +814,7 @@ def _call_test_function(func, *args, **dargs):
         return func(*args, **dargs)
     except error.AutotestError:
         raise
-    except Exception, e:
+    except Exception as e:
         # Other exceptions must be treated as a FAIL when
         # raised during the test functions
         raise error.UnhandledTestFail(e)

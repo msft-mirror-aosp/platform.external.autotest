@@ -2,6 +2,10 @@
 #pylint: disable-msg=C0111
 """Unit Tests for autotest.client.common_lib.test"""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 __author__ = 'gps@google.com (Gregory P. Smith)'
 
 import json
@@ -11,8 +15,11 @@ import common
 import mock as pymock
 import os
 import shutil
+from six.moves import range
+
 from autotest_lib.client.common_lib import test
 from autotest_lib.client.common_lib.test_utils import mock
+
 
 class TestTestCase(unittest.TestCase):
     class _neutered_base_test(test.base_test):
@@ -120,7 +127,7 @@ class Test_base_test_execute(TestTestCase):
         self.test.postprocess.expect_call()
         self.test.process_failed_constraints.expect_call()
 
-        fake_time = iter(xrange(4)).next
+        fake_time = iter(range(4)).next
         self.test.execute(iterations=1, test_length=3, _get_time=fake_time)
         self.god.check_playback()
 
@@ -170,7 +177,7 @@ class Test_base_test_execute(TestTestCase):
     def test_execute_default_profile_only(self):
         # test that profile_only=True works.
         self.god.stub_function(self.test, 'drop_caches_between_iterations')
-        for _ in xrange(3):
+        for _ in range(3):
             self.test.drop_caches_between_iterations.expect_call()
             self.test.run_once_profiling.expect_call(None)
         self.test.postprocess.expect_call()

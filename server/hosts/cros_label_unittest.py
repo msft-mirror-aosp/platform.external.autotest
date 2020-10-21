@@ -336,7 +336,7 @@ class DutStorageLabelTests(unittest.TestCase):
     def test_return_state_labels_when_has_servo(self, validator):
         storage_validator = mock.Mock()
         storage_validator.get_type.return_value = 'some_servo'
-        storage_validator.get_state.return_value = 'warming'
+        storage_validator.get_state.return_value = 'warning'
         validator.return_value = storage_validator
         host = MockHost([])
         host.servo = mock.Mock()

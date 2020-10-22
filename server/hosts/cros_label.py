@@ -23,8 +23,6 @@ from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import common_label
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.site_utils import hwid_lib
-from autotest_lib.site_utils.admin_audit import verifiers as audit_verify
-from autotest_lib.site_utils.admin_audit import constants as audit_const
 from six.moves import zip
 
 # pylint: disable=missing-docstring
@@ -442,26 +440,6 @@ class HWIDLabel(base_label.StringLabel):
         return all_hwid_labels, all_hwid_labels
 
 
-class DutStorageLabel(base_label.StringPrefixLabel):
-    """Return the DUT storage label."""
-
-    _NAME = audit_const.DUT_STORAGE_STATE_PREFIX
-
-    def exists(self, host):
-        return host.servo is not None
-
-    def generate_labels(self, host):
-        verifier = audit_verify.VerifyDutStorage(host)
-        verifier.verify(set_label=False)
-        state = verifier.get_state()
-        return [state]
-
-    def update_for_task(self, task_name):
-        # This label is part of audit task, so updating it only during
-        # deploy tasks to update it for new deployments.
-        return task_name == DEPLOY_TASK_NAME
-
-
 CROS_LABELS = [
     AudioLoopbackDongleLabel(), #STATECONFIG
     BluetoothPeerLabel(), #STATECONFIG
@@ -476,7 +454,6 @@ CROS_LABELS = [
     # See crbug.com/1057719 for future tracking.
     Cr50Label(),
     Cr50ROKeyidLabel(),
-    DutStorageLabel(), #STATECONFIG
 ]
 
 LABSTATION_LABELS = [

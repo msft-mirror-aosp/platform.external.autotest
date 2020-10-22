@@ -161,7 +161,7 @@ class platform_ServoPowerStateController(test.test):
         """Run test when USB stick is plugged in to servo."""
 
         logging.info('Power off DUT')
-        self.controller.power_off_via_servo()
+        self.host.power_off_via_servo()
         self.assert_dut_off('power_state:off did not turn DUT off.')
         # Servo V4 needs to be in snk role to allow booting from USB in
         # recovery mode (b/161464597).

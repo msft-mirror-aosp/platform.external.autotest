@@ -88,7 +88,7 @@ class tast(test.test):
     _SSP_REMOTE_BUNDLE_DIR = os.path.join(_SSP_ROOT, 'bundles/remote')
     _SSP_REMOTE_DATA_DIR = os.path.join(_SSP_ROOT, 'data')
     _SSP_REMOTE_TEST_RUNNER_PATH = os.path.join(_SSP_ROOT, 'remote_test_runner')
-    _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars/private')
+    _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars')
 
     # Prefix added to Tast test names when writing their results to TKO
     # status.log files.

@@ -1017,8 +1017,11 @@ class TradefedTest(test.test):
         self._collect_tradefed_global_log(output, result_destination)
         # Result parsing must come after all other essential operations as test
         # warnings, errors and failures can be raised here.
-        return tradefed_utils.parse_tradefed_result(output.stdout,
-                                                    self._waivers)
+        base = self._default_tradefed_base_dir()
+        path = tradefed_utils.get_test_result_xml_path(base)
+        return tradefed_utils.parse_tradefed_testresults_xml(
+            test_result_xml_path=path,
+            waivers=self._waivers)
 
     def _setup_result_directories(self):
         """Sets up the results and logs directories for tradefed.

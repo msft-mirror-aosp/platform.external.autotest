@@ -862,6 +862,8 @@ class FingerprintTest(test.test):
         """Copies files from server to DUT."""
         logging.info('Copying files from (%s) to (%s).', src_dir, dst_dir)
         self.host.send_file(src_dir, dst_dir, delete_dest=True)
+        # Sync the filesystem in case we need to reboot the AP soon.
+        self.run_cmd('sync')
 
     def run_server_cmd(self, command, timeout=60):
         """Runs command on server; return result with output and exit code."""

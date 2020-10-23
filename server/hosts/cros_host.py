@@ -839,7 +839,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         if model is None or model == '':
             try:
-                model = self.get_platform_from_fwid()
+                model = self.get_platform()
             except Exception as e:
                 logging.warn('Dut is unresponsive: %s', str(e))
 
@@ -869,6 +869,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # Extract EC image from tarball
             logging.info('Extracting EC image.')
             ec_image = self.servo.extract_ec_image(board, model, local_tarball)
+            logging.info('Extracted: %s', ec_image)
 
         bios_image = None
         if install_bios:
@@ -876,6 +877,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.info('Extracting BIOS image.')
             bios_image = self.servo.extract_bios_image(board, model,
                                                        local_tarball)
+            logging.info('Extracted: %s', bios_image)
 
         if not bios_image and not ec_image:
             raise error.TestError('No firmware installation was processed.')

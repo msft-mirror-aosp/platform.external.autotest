@@ -707,6 +707,25 @@ class FirmwareTest(test.test):
         if self._needed_restore_servo_v4_role:
             self.servo.set_servo_v4_role('src')
 
+    def set_dut_low_power_idle_delay(self, delay):
+        """Set EC low power idle delay
+
+        @param delay: Delay in seconds
+        """
+        if not self.ec.has_command('dsleep'):
+            logging.info("Can't set low power idle delay.")
+            return
+        self._previous_ec_low_power_delay = int(
+                self.ec.send_command_get_output("dsleep",
+                ["timeout:\s+(\d+)\ssec"])[0][1])
+        self.ec.send_command("dsleep " + str(delay))
+
+    def restore_dut_low_power_idle_delay(self):
+        """Restore EC low power idle delay"""
+        if getattr(self, '_previous_ec_low_power_delay', None):
+            self.ec.send_command("dsleep " + str(
+                    self._previous_ec_low_power_delay))
+
     def get_usbdisk_path_on_dut(self):
         """Get the path of the USB disk device plugged-in the servo on DUT.
 

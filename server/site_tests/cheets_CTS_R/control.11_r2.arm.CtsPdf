@@ -27,7 +27,7 @@ def run_TS(machine):
         target_module='CtsPdf',
         target_plan=None,
         bundle='arm',
-        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6906931-linux_x86-arm.zip',
+        uri='gs://chromeos-arc-images/cts/bundle/R/android-cts-6922707-linux_x86-arm.zip',
         use_jdk9=True,
         timeout=7200)
 

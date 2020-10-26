@@ -200,6 +200,29 @@ class ChromeConsole(object):
         return rv
 
 
+    def is_dfp(self, port=0):
+        """This function checks if EC is DFP
+
+        Args:
+          port: Port of EC to check
+
+        Returns:
+          True: if EC is DFP
+          False: if EC is not DFP
+        """
+        is_dfp = None
+        try:
+            # After reboot, EC should be UFP, but workaround in servod
+            # can perform PD Data Swap in workaroud so check that
+            ret = self.send_command_get_output("pd %d state" % port, ["DFP"])
+            is_dfp = True
+        except Exception as e:
+            # EC is UFP
+            is_dfp = False
+
+        return is_dfp
+
+
 class ChromeEC(ChromeConsole):
     """Manages control of a Chrome EC.
 

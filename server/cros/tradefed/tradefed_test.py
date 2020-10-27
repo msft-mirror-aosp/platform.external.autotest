@@ -158,7 +158,8 @@ class TradefedTest(test.test):
 
         # Install the tradefed bundle.
         bundle_install_path = self._install_bundle(
-            uri or self._get_default_bundle_url(bundle))
+                self._get_latest_bundle_url(bundle) if uri == 'LATEST' else (
+                        uri or self._get_default_bundle_url(bundle)))
         self._repository = os.path.join(bundle_install_path,
                                         self._get_tradefed_base_dir())
 

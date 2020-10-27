@@ -131,7 +131,7 @@ class ClasslessStaticRoutesOption(Option):
             byte_string += chr(prefix_size)
             # Encode only the significant octets of the destination
             # that fall within the prefix.
-            destination_address_count = (prefix_size + 7) / 8
+            destination_address_count = (prefix_size + 7) // 8
             destination_address = socket.inet_aton(destination)
             byte_string += destination_address[:destination_address_count]
             byte_string += socket.inet_aton(router)
@@ -144,7 +144,7 @@ class ClasslessStaticRoutesOption(Option):
         offset = 0
         while offset < len(byte_string):
             prefix_size = ord(byte_string[offset])
-            destination_address_count = (prefix_size + 7) / 8
+            destination_address_count = (prefix_size + 7) // 8
             entry_end = offset + 1 + destination_address_count + 4
             if entry_end > len(byte_string):
                 raise Exception("Classless domain list is corrupted.")

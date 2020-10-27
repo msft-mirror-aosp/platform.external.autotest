@@ -1879,7 +1879,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             elif not self._is_connected(device):
                 logging.info('Device is already paired. Connect.')
                 device.Connect(reply_handler=connect_reply,
-                               reply_error=connect_error,
+                               error_handler=connect_error,
                                timeout=timeout * 1000)
                 mainloop.run()
         except Exception as e:

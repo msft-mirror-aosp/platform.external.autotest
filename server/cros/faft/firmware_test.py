@@ -179,10 +179,10 @@ class FirmwareTest(test.test):
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
         self.checkers = FAFTCheckers(self)
-        self.switcher = mode_switcher.create_mode_switcher(self)
 
         if self.faft_config.chrome_ec:
             self.ec = chrome_ec.ChromeEC(self.servo)
+        self.switcher = mode_switcher.create_mode_switcher(self)
         # Check for presence of a USBPD console
         if self.faft_config.chrome_usbpd:
             self.usbpd = chrome_ec.ChromeUSBPD(self.servo)

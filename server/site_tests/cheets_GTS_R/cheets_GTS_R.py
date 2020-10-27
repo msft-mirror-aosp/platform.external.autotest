@@ -30,6 +30,9 @@ _GTS_MEDIA_URI = ('https://storage.googleapis.com/youtube-test-media/gts/' +
                   'GtsYouTubeTestCases-media-1.2.zip')
 _GTS_MEDIA_LOCALPATH = '/tmp/android-gts-media/GtsYouTubeTestCases'
 
+# Internal uprev for all GTS modules.
+_GTS_LATEST_URI = 'gs://chromeos-arc-images/cts/bundle/android-gts-8-R1-R-6720564.zip'
+
 
 class cheets_GTS_R(tradefed_test.TradefedTest):
     """Sets up tradefed to run GTS tests."""
@@ -56,6 +59,9 @@ class cheets_GTS_R(tradefed_test.TradefedTest):
 
     def _get_default_bundle_url(self, bundle):
         return _PARTNER_GTS_LOCATION
+
+    def _get_latest_bundle_url(self, bundle):
+        return _GTS_LATEST_URI
 
     def _get_default_authkey(self):
         return _PARTNER_GTS_AUTHKEY

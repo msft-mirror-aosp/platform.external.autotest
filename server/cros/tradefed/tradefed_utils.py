@@ -128,10 +128,6 @@ def parse_tradefed_testresults_xml(test_result_xml_path, waivers=None):
                                 waived_count.get(test_name, 0) + 1)
                         else:
                             failed_tests.add(test_name)
-                            logging.debug('error message %s\n',
-                                      failed_message)
-                            logging.debug('>>>> stacktrace %s\n',
-                                      failed_stacktrace)
 
         # Check for test completion.
         for summary in root.iter('Summary'):
@@ -139,7 +135,7 @@ def parse_tradefed_testresults_xml(test_result_xml_path, waivers=None):
             modules_total = summary.get('modules_total')
 
         if failed_tests:
-            logging.error('Failed (but not waived) tests:\n %s',
+            logging.error('Failed (but not waived) tests:\n%s',
                           '\n'.join(sorted(failed_tests)))
 
         waived = []

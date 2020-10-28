@@ -581,13 +581,15 @@ class ServoHost(base_servohost.BaseServoHost):
             and not error.is_critical()):
             logging.warning('Non-critical verify failure(s) detected during'
                             ' verify/repair servo, servo connection will'
-                            ' still up but may not fully functional.'
-                            ' Some repair actions and servo depended'
+                            ' still be up but may not be fully functional.'
+                            ' Some repair actions and servo dependent'
                             ' tests may not run.')
             return False
-        logging.info('Critical verify failure(s) detected during repair/verify'
-                     ' servo. Disconnecting servo and stop servod, all repair '
-                     'action and tests that depends on servo will not run.')
+        logging.info(
+                'Critical verify failure(s) detected during repair/verify '
+                'servo. Disconnecting servo and running `stop servod`, all'
+                ' repair actions and tests that depends on servo will not '
+                'run.')
         return True
 
     def get_servo(self):

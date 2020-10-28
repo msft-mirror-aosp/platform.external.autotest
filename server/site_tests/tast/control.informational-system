@@ -45,6 +45,7 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              'informational && '
+                             '!"name:crostini.*" && '
                              '!"dep:chrome" && '
                              '!"dep:android*"'
                              ')'],

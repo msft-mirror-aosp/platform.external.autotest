@@ -34,6 +34,7 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              'informational && '
+                             '!"name:crostini.*" && '
                              '"dep:android*"'
                              ')'],
                  ignore_test_failures=True,

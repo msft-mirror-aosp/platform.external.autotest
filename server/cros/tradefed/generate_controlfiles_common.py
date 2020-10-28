@@ -1264,32 +1264,32 @@ def main(config):
         description='Create control files for a CTS bundle on GS.',
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
-        'uris',
-        nargs='+',
-        help='List of Google Storage URIs to CTS bundles. Example:\n'
-        'gs://chromeos-arc-images/cts/bundle/P/'
-        'android-cts-9.0_r9-linux_x86-x86.zip')
+            'uris',
+            nargs='+',
+            help='List of Google Storage URIs to CTS bundles. Example:\n'
+            'gs://chromeos-arc-images/cts/bundle/P/'
+            'android-cts-9.0_r9-linux_x86-x86.zip')
     parser.add_argument(
-        '--is_public',
-        dest='is_public',
-        default=False,
-        action='store_true',
-        help='Generate the public control files for CTS, default generate'
-        ' the internal control files')
+            '--is_public',
+            dest='is_public',
+            default=False,
+            action='store_true',
+            help='Generate the public control files for CTS, default generate'
+            ' the internal control files')
     parser.add_argument(
-        '--is_latest',
-        dest='is_latest',
-        default=False,
-        action='store_true',
-        help='Generate the control files for CTS from the latest CTS bundle'
-        ' stored in the internal storage')
+            '--is_latest',
+            dest='is_latest',
+            default=False,
+            action='store_true',
+            help='Generate the control files for CTS from the latest CTS bundle'
+            ' stored in the internal storage')
     parser.add_argument(
-        '--cache_dir',
-        dest='cache_dir',
-        default=None,
-        action='store',
-        help='Cache directory for downloaded bundle file. Uses the cached '
-             'bundle file if exists, or caches a downloaded file to this '
-             'directory if not.')
+            '--cache_dir',
+            dest='cache_dir',
+            default=None,
+            action='store',
+            help='Cache directory for downloaded bundle file. Uses the cached '
+            'bundle file if exists, or caches a downloaded file to this '
+            'directory if not.')
     args = parser.parse_args()
     run(args.uris, args.is_public, args.is_latest, args.cache_dir)

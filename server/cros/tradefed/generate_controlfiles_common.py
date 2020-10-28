@@ -772,6 +772,7 @@ def get_controlfile_content(combined,
                             uri,
                             suites=None,
                             is_public=False,
+                            is_latest=False,
                             led_provision=None,
                             camera_facing=None,
                             whole_module_set=None):
@@ -793,7 +794,7 @@ def get_controlfile_content(combined,
     if not suites:
         suites = get_suites(modules, abi, is_public, camera_facing)
     attributes = ', '.join(suites)
-    uri = None if is_public else uri
+    uri = 'LATEST' if is_latest else (None if is_public else uri)
     target_module = None
     if (combined not in get_collect_modules(is_public) and combined != _ALL):
         target_module = combined
@@ -1068,6 +1069,7 @@ def write_controlfile(name,
                       uri,
                       suites,
                       is_public,
+                      is_latest=False,
                       whole_module_set=None):
     """Write a single control file."""
     filename = get_controlfile_name(name, abi, revision, is_public)
@@ -1079,6 +1081,7 @@ def write_controlfile(name,
                                       uri,
                                       suites,
                                       is_public,
+                                      is_latest,
                                       whole_module_set=whole_module_set)
     with open(filename, 'w') as f:
         f.write(content)
@@ -1103,7 +1106,7 @@ def write_moblab_controlfiles(modules, abi, revision, build, uri, is_public):
 
 
 def write_regression_controlfiles(modules, abi, revision, build, uri,
-                                  is_public):
+                                  is_public, is_latest):
     """Write all control files for stainless/ToT regression lab coverage.
 
     Regression coverage on tot currently relies heavily on watching stainless
@@ -1115,7 +1118,7 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
     combined = combine_modules_by_common_word(set(modules))
     for key in combined:
         write_controlfile(key, combined[key], abi, revision, build, uri, None,
-                          is_public)
+                          is_public, is_latest)
 
 
 def write_qualification_controlfiles(modules, abi, revision, build, uri,
@@ -1154,7 +1157,8 @@ def write_qualification_and_regression_controlfile(modules, abi, revision,
                           whole_module_set=module_set)
 
 
-def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public):
+def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public,
+                               is_latest):
     """Write all control files for test collection used as reference to
 
     compute completeness (missing tests) on the CTS dashboard.
@@ -1166,7 +1170,7 @@ def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public):
                + CONFIG.get('QUAL_SUITE_NAMES', [])
     for module in get_collect_modules(is_public):
         write_controlfile(module, set([module]), abi, revision, build, uri,
-                          suites, is_public)
+                          suites, is_public, is_latest)
 
 
 def write_extra_controlfiles(_modules, abi, revision, build, uri,
@@ -1197,7 +1201,7 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
                 f.write(content)
 
 
-def run(uris, is_public, cache_dir):
+def run(uris, is_public, is_latest, cache_dir):
     """Downloads each bundle in |uris| and generates control files for each
 
     module as reported to us by tradefed.
@@ -1231,8 +1235,9 @@ def run(uris, is_public, cache_dir):
                     write_qualification_and_regression_controlfile(
                             modules, abi, revision, build, uri, is_public)
                 else:
-                    write_regression_controlfiles(modules, abi, revision, build,
-                                                  uri, is_public)
+                    write_regression_controlfiles(modules, abi, revision,
+                                                  build, uri, is_public,
+                                                  is_latest)
                     write_qualification_controlfiles(modules, abi, revision,
                                                      build, uri, is_public)
 
@@ -1241,7 +1246,7 @@ def run(uris, is_public, cache_dir):
                                                     is_public)
 
             write_collect_controlfiles(modules, abi, revision, build, uri,
-                                       is_public)
+                                       is_public, is_latest)
 
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
                 write_extra_controlfiles(None, abi, revision, build, uri,
@@ -1272,6 +1277,13 @@ def main(config):
         help='Generate the public control files for CTS, default generate'
         ' the internal control files')
     parser.add_argument(
+        '--is_latest',
+        dest='is_latest',
+        default=False,
+        action='store_true',
+        help='Generate the control files for CTS from the latest CTS bundle'
+        ' stored in the internal storage')
+    parser.add_argument(
         '--cache_dir',
         dest='cache_dir',
         default=None,
@@ -1280,4 +1292,4 @@ def main(config):
              'bundle file if exists, or caches a downloaded file to this '
              'directory if not.')
     args = parser.parse_args()
-    run(args.uris, args.is_public, args.cache_dir)
+    run(args.uris, args.is_public, args.is_latest, args.cache_dir)

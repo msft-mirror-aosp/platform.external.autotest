@@ -146,11 +146,13 @@ class LogRecorder(object):
                 - Log file is smaller than when logging began
                 - StartRecording was never called
         """
+        now_size = os.path.getsize(self.log_path)
+
         if not os.path.isfile(self.log_path):
             msg = 'File {} disappeared unexpectedly'.format(self.log_path)
             raise LogRecorder.LoggingException(msg)
 
-        if os.path.getsize(self.log_path) < self.initial_log_size:
+        if now_size < self.initial_log_size:
             msg = 'Log became smaller unexpectedly'
             raise LogRecorder.LoggingException(msg)
 
@@ -162,8 +164,8 @@ class LogRecorder(object):
             # Skip to the point where we started recording
             mf.seek(self.initial_log_size)
 
-            for line in mf.readlines():
-                self.log_contents.append(line)
+            readsize = now_size - self.initial_log_size
+            self.log_contents = mf.read(readsize).split('\n')
 
     def LogContains(self, search_str):
         """Performs simple string checking on each line from the collected log

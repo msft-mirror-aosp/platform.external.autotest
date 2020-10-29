@@ -829,8 +829,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param payload_uri: The payload with which the device should be updated.
         @param clobber_stateful: Boolean that determines whether the stateful
-                                 of the device should be force updated. By
-                                 default, set to False
+                                 of the device should be force updated and the
+                                 TPM ownership should be cleared. By default,
+                                 set to False.
         @param tag: An identifier string added to each log filename.
 
         @raise error.TestFail if anything goes wrong with the update.
@@ -844,13 +845,17 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         with remote_access.ChromiumOSDeviceHandler(
             self._host.hostname, base_dir=cros_preserved_path) as device:
             updater = auto_updater.ChromiumOSUpdater(
-                device, build_name, build_name,
-                yes=True,
-                payload_filename=payload_filename,
-                clobber_stateful=clobber_stateful,
-                do_stateful_update=True,
-                staging_server=self._autotest_devserver.url(),
-                transfer_class=auto_updater_transfer.LabEndToEndPayloadTransfer)
+                    device,
+                    build_name,
+                    build_name,
+                    yes=True,
+                    payload_filename=payload_filename,
+                    clobber_stateful=clobber_stateful,
+                    clear_tpm_owner=clobber_stateful,
+                    do_stateful_update=True,
+                    staging_server=self._autotest_devserver.url(),
+                    transfer_class=auto_updater_transfer.
+                    LabEndToEndPayloadTransfer)
 
             try:
                 updater.RunUpdate()

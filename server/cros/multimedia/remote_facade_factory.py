@@ -83,8 +83,12 @@ class RemoteFacadeProxy(object):
     XMLRPC_RETRY_DELAY = 10
     REBOOT_TIMEOUT = 60
 
-    def __init__(self, host, no_chrome, extra_browser_args=None,
-                 disable_arc=False, retry_rpc=True):
+    def __init__(self,
+                 host,
+                 no_chrome,
+                 extra_browser_args=None,
+                 disable_arc=False,
+                 retry_rpc=True):
         """Construct a RemoteFacadeProxy.
 
         @param host: Host object representing a remote host.
@@ -323,8 +327,13 @@ class RemoteFacadeFactory(object):
 
     """
 
-    def __init__(self, host, no_chrome=False, install_autotest=True,
-                 results_dir=None, extra_browser_args=None, disable_arc=False,
+    def __init__(self,
+                 host,
+                 no_chrome=False,
+                 install_autotest=True,
+                 results_dir=None,
+                 extra_browser_args=None,
+                 disable_arc=False,
                  retry_rpc=True):
         """Construct a RemoteFacadeFactory.
 
@@ -420,8 +429,8 @@ class RemoteFacadeFactory(object):
 
 
     def create_kiosk_facade(self):
-         """"Creates a kiosk facade object."""
-         return kiosk_facade_adapter.KioskFacadeRemoteAdapter(
+        """"Creates a kiosk facade object."""
+        return kiosk_facade_adapter.KioskFacadeRemoteAdapter(
                 self._client, self._proxy)
 
 

@@ -23,6 +23,7 @@ import os
 import subprocess
 import functools
 import time
+import re
 
 import common
 from autotest_lib.client.bin import utils
@@ -108,7 +109,7 @@ def dbus_print_error(default_return_value=False):
     return decorator
 
 
-class LogRecorder:
+class LogRecorder(object):
     """The LogRecorder class helps to collect logs without a listening thread"""
 
     class LoggingException(Exception):
@@ -179,6 +180,78 @@ class LogRecorder:
                 return True
 
         return False
+
+
+class InterleaveLogger(LogRecorder):
+    """LogRecorder class that focus on interleave scan"""
+
+    SYSLOG_PATH = '/var/log/messages'
+    KERNEL_LOG_PATTERN = ('[^ ]+ DEBUG kernel: \[(.*)\] Bluetooth: '
+                          '{FUNCTION}\(\) hci0: {LOG_STR}')
+    STATE_PATTERN = KERNEL_LOG_PATTERN.format(
+            FUNCTION='add_le_interleave_adv_monitor_scan',
+            LOG_STR='next state: (.+)')
+    CANCEL_PATTERN = KERNEL_LOG_PATTERN.format(
+            FUNCTION='cancel_interleave_scan',
+            LOG_STR='hci0 cancelling interleave scan')
+
+    def __init__(self):
+        """ Initialize object
+        """
+        self.reset()
+        self.state_pattern = re.compile(self.STATE_PATTERN)
+        self.cancel_pattern = re.compile(self.CANCEL_PATTERN)
+        super(InterleaveLogger, self).__init__(self.SYSLOG_PATH)
+
+    def reset(self):
+        """ Clear data between each log collection attempt
+        """
+        self.records = []
+        self.cancel_events = []
+
+    def StartRecording(self):
+        """ Reset the previous data and start recording.
+        """
+        self.reset()
+        super(InterleaveLogger, self).StartRecording()
+
+    def StopRecording(self):
+        """ Stop recording and parse logs
+            The following data will be set after this call
+
+            - self.records: a dictionary where each item is a record of
+                            interleave |state| and the |time| the state starts.
+                            |state| could be {'no filter', 'allowlist'}
+                            |time| is kernel time in sec
+
+            - self.cancel_events: a list of |time| when a interleave cancel
+                                  event log was found
+                                  |time| is kernel time in sec
+
+            @returns: True if StopRecording success, False otherwise
+
+        """
+        try:
+            super(InterleaveLogger, self).StopRecording()
+        except Exception as e:
+            logging.error(e)
+            return False
+
+        last_ktime = None
+        for line in self.log_contents:
+            line = line.strip().replace('\\r\\n', '')
+            state_pattern = self.state_pattern.search(line)
+            cancel_pattern = self.cancel_pattern.search(line)
+
+            if cancel_pattern:
+                ktime = float(cancel_pattern.groups()[0])
+                self.cancel_events.append(ktime)
+
+            if state_pattern:
+                ktime, state = state_pattern.groups()
+                ktime = float(ktime)
+                self.records.append({'time': ktime, 'state': state})
+        return True
 
 
 class PairingAgent(dbus.service.Object):
@@ -329,6 +402,7 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self._cras_test_client = cras_utils.CrasTestClient()
 
         self.advertisements = []
+        self.advmon_interleave_logger = InterleaveLogger()
         self._chrc_property = None
         self._timeout_id = 0
         self._signal_watch = None
@@ -2259,6 +2333,41 @@ class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self.advmon_appmgr.reset_event_count(app_id, monitor_id, event)
 
+
+    def advmon_interleave_scan_logger_start(self):
+        """ Start interleave logger recording
+        """
+        self.advmon_interleave_logger.StartRecording()
+
+    def advmon_interleave_scan_logger_stop(self):
+        """ Stop interleave logger recording
+
+        @returns: True if logs were successfully collected,
+                  False otherwise.
+
+        """
+        return self.advmon_interleave_logger.StopRecording()
+
+    def advmon_interleave_scan_logger_get_records(self):
+        """ Get records in previous log collections
+
+        @returns: a list of records, where each item is a record of
+                  interleave |state| and the |time| the state starts.
+                  |state| could be {'no filter', 'allowlist'}
+                  |time| is kernel time in sec
+
+        """
+        return self.advmon_interleave_logger.records
+
+    def advmon_interleave_scan_logger_get_cancel_events(self):
+        """ Get cancel events in previous log collections
+
+        @returns: a list of cancel |time| when a interleave cancel event log
+                  was found.
+                  |time| is kernel time in sec
+
+        """
+        return self.advmon_interleave_logger.cancel_events
 
     def register_advertisement(self, advertisement_data):
         """Register an advertisement.

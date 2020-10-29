@@ -678,11 +678,11 @@ class Servo(object):
         """Returns the servod version."""
         # TODO: use system_output once servod --sversion prints to stdout
         try:
-            result = self._servo_host.run('servod --sversion')
+            result = self._servo_host.run('servod --sversion 2>&1')
         except error.AutoservRunError as e:
             if 'command execution error' in str(e):
                 # Fall back to version if sversion is not supported yet.
-                result = self._servo_host.run('servod --version')
+                result = self._servo_host.run('servod --version 2>&1')
                 return result.stdout.strip() or result.stderr.strip()
             # An actually unexpected error occurred, just raise.
             raise e

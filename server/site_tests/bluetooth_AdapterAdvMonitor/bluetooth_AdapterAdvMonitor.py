@@ -50,6 +50,11 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_fg_bg_combination()
 
 
+    @test_wrapper('Interleave Scan Tests', devices={'BLE_MOUSE': 1})
+    def advmon_interleaved_scan(self):
+        """Tests interleave scan."""
+        self.advmon_test_interleaved_scan()
+
     @batch_wrapper('Advertisement Monitor API')
     def advmon_batch_run(self, num_iterations=1, test_name=None):
         """Run the Advertisement Monitor test batch or a specific given test.
@@ -67,7 +72,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_monitor_health_tests()
         self.advmon_single_client_tests()
         self.advmon_fg_bg_combination_tests()
-
+        self.advmon_interleaved_scan()
 
     def run_once(self,
                  host,

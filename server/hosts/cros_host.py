@@ -292,6 +292,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         servo_attrs = (servo_constants.SERVO_HOST_ATTR,
                        servo_constants.SERVO_PORT_ATTR,
+                       servo_constants.SERVO_SERIAL_ATTR,
                        servo_constants.SERVO_BOARD_ATTR,
                        servo_constants.SERVO_MODEL_ATTR)
         servo_args = {key: args_dict[key]
@@ -1123,6 +1124,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.servo_pwr_supported = False
         self.set_servo_type()
         self.set_servo_state(servo_state)
+        self._set_servo_topology()
 
 
     def repair_servo(self):
@@ -2989,3 +2991,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     ' battery_charge_percent from servo; %s', str(e))
             return False
         return True
+
+    def _set_servo_topology(self):
+        """Set servo-topology info to the host-info."""
+        logging.debug('Try to save servo topology to host-info.')
+        if not self._servo_host:
+            logging.info('Servo host is not initilized.')
+            return
+        if not self._servo_host.is_servo_topology_supported():
+            logging.info('Servo-topology is not supported.')
+            return
+        servo_topology = self._servo_host.get_topology()
+        if not servo_topology or servo_topology.is_empty():
+            logging.info('Servo topology is empty')
+            return
+        servo_topology.save(self.host_info_store)

@@ -511,6 +511,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         rootfs update and for the post reboot update check.
 
         """
+        # Check that update logs exist for the update that just happened.
+        if len(self._get_update_engine_logs()) < 2:
+            err_msg = 'update_engine logs are missing. Cannot verify update.'
+            raise error.TestFail(err_msg)
+
         # Each time we reboot in the middle of an update we ping omaha again
         # for each update event. So parse the list backwards to get the final
         # events.

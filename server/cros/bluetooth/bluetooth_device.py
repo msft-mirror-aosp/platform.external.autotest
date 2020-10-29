@@ -984,6 +984,45 @@ class BluetoothDevice(object):
         return self._proxy.advmon_reset_event_count(app_id, monitor_id, event)
 
     @proxy_thread_safe
+    def advmon_interleave_scan_logger_start(self):
+        """ Start interleave logger recording
+        """
+        self._proxy.advmon_interleave_scan_logger_start()
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_stop(self):
+        """ Stop interleave logger recording
+
+        @returns: True if logs were successfully collected,
+                  False otherwise.
+
+        """
+        return self._proxy.advmon_interleave_scan_logger_stop()
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_get_records(self):
+        """ Get records in previous log collections
+
+        @returns: a list of records, where each item is a record of
+                  interleave |state| and the |time| the state starts.
+                  |state| could be {'no filter', 'allowlist'}
+                  |time| is kernel time in sec
+
+        """
+        return self._proxy.advmon_interleave_scan_logger_get_records()
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_get_cancel_events(self):
+        """ Get cancel events in previous log collections
+
+        @returns: a list of cancel |time| when a interleave cancel event log
+                  was found.
+                  |time| is kernel time in sec
+
+        """
+        return self._proxy.advmon_interleave_scan_logger_get_cancel_events()
+
+    @proxy_thread_safe
     def messages_start(self):
         """Start messages monitoring."""
         self._proxy.messages_start()

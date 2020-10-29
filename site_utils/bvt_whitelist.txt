@@ -1,3 +1,4 @@
+autoupdate_Basic
 cheets_CTS*
 cheets_GTS*
 cheets_KeyboardTest
@@ -15,5 +16,4 @@ platform_DMVerityBitCorruption
 platform_DMVerityCorruption
 platform_MemCheck
 platform_ToolchainOptions
-provision_QuickProvision
 tast

@@ -109,9 +109,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
     # TODO(b/165690676) - Test is disabled for AVL while it stabilizes in flaky
     #                     suite. Remove flags once it's in stable suite.
-    @test_wrapper('Power toggle and Connect Loop',
-                  devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'])
+    @test_wrapper('Power toggle and Connect Loop', devices={'BLE_MOUSE': 1})
     def le_power_toggle_connect_loop(self):
         """Run autoconnect loop and cycle adapter power between runs.
            The test makes sure the peer can reconnect after an adapter power

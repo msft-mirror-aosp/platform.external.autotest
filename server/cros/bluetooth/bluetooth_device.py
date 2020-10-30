@@ -38,29 +38,26 @@ class BluetoothDevice(object):
 
     XMLRPC_BRINGUP_TIMEOUT_SECONDS = 60
     XMLRPC_LOG_PATH = '/var/log/bluetooth_xmlrpc_device.log'
+    XMLRPC_REQUEST_TIMEOUT_SECONDS = 180
 
-    def __init__(self, device_host):
+    def __init__(self, device_host, remote_facade_proxy = None):
         """Construct a BluetoothDevice.
 
         @param device_host: host object representing a remote host.
 
         """
         self.host = device_host
+        self._remote_proxy = remote_facade_proxy
+
         # Make sure the client library is on the device so that the proxy code
         # is there when we try to call it.
         client_at = autotest.Autotest(self.host)
         client_at.install()
         self._proxy_lock = threading.Lock()
-        # Start up the XML-RPC proxy on the client.
-        self._proxy = self.host.rpc_server_tracker.xmlrpc_connect(
-                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_COMMAND,
-                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT,
-                command_name=
-                  constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_CLEANUP_PATTERN,
-                ready_test_name=
-                  constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_READY_METHOD,
-                timeout_seconds=self.XMLRPC_BRINGUP_TIMEOUT_SECONDS,
-                logfile=self.XMLRPC_LOG_PATH)
+
+        # If remote facade wasn't already created, connect directly here
+        if not self._remote_proxy:
+            self._connect_xmlrpc_directly()
 
         # Get some static information about the bluetooth adapter.
         properties = self.get_adapter_properties()
@@ -68,6 +65,41 @@ class BluetoothDevice(object):
         self.address = properties.get('Address')
         self.bluetooth_class = properties.get('Class')
         self.UUIDs = properties.get('UUIDs')
+
+    def _connect_xmlrpc_directly(self):
+        """Connects to the bluetooth native facade directly via xmlrpc."""
+        proxy = self.host.rpc_server_tracker.xmlrpc_connect(
+                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_COMMAND,
+                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT,
+                command_name=constants.
+                BLUETOOTH_DEVICE_XMLRPC_SERVER_CLEANUP_PATTERN,
+                ready_test_name=constants.
+                BLUETOOTH_DEVICE_XMLRPC_SERVER_READY_METHOD,
+                timeout_seconds=self.XMLRPC_BRINGUP_TIMEOUT_SECONDS,
+                logfile=self.XMLRPC_LOG_PATH,
+                request_timeout_seconds=self.XMLRPC_REQUEST_TIMEOUT_SECONDS)
+
+        self._bt_direct_proxy = proxy
+        return proxy
+
+    @property
+    def _proxy(self):
+        """Gets the proxy to the DUT bluetooth facade.
+
+        @return XML RPC proxy to DUT bluetooth facade.
+
+        """
+        # When the xmlrpc server is already created (using the
+        # RemoteFacadeFactory), we will use the BluetoothNativeFacade inside the
+        # remote proxy. Otherwise, we will use the xmlrpc server started from
+        # this class. Currently, there are a few users outside of the Bluetooth
+        # autotests that use this and this can be removed once those users
+        # migrate to using the RemoteFacadeFactory to generate the xmlrpc
+        # connection.
+        if self._remote_proxy:
+            return self._remote_proxy.bluetooth
+        else:
+            return self._bt_direct_proxy
 
     @proxy_thread_safe
     def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
@@ -1678,6 +1710,6 @@ class BluetoothDevice(object):
         # This kills the RPC server.
         if close_host:
             self.host.close()
-        else:
+        elif self._bt_direct_proxy:
             self.host.rpc_server_tracker.disconnect(
                     constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT)

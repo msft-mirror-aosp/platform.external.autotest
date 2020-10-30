@@ -21,7 +21,7 @@ from autotest_lib.client.cros import constants
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.multimedia import assistant_facade_adapter
 from autotest_lib.server.cros.multimedia import audio_facade_adapter
-from autotest_lib.server.cros.multimedia import bluetooth_hid_facade_adapter
+from autotest_lib.server.cros.multimedia import bluetooth_facade_adapter
 from autotest_lib.server.cros.multimedia import browser_facade_adapter
 from autotest_lib.server.cros.multimedia import cfm_facade_adapter
 from autotest_lib.server.cros.multimedia import display_facade_adapter
@@ -395,9 +395,9 @@ class RemoteFacadeFactory(object):
         return browser_facade_adapter.BrowserFacadeRemoteAdapter(self._proxy)
 
 
-    def create_bluetooth_hid_facade(self):
-        """"Creates a bluetooth hid facade object."""
-        return bluetooth_hid_facade_adapter.BluetoothHIDFacadeRemoteAdapter(
+    def create_bluetooth_facade(self):
+        """"Creates a bluetooth facade object."""
+        return bluetooth_facade_adapter.BluetoothFacadeRemoteAdapter(
                 self._client, self._proxy)
 
 

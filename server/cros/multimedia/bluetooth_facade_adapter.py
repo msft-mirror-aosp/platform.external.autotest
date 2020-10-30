@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """An adapter to remotely access the bluetooth facade on DUT."""
 
 from autotest_lib.server.cros.bluetooth.bluetooth_device import BluetoothDevice
@@ -14,6 +13,7 @@ class BluetoothFacadeRemoteAdapter(BluetoothDevice):
     class on initialization, can be accessed from its _client property.
 
     """
+
     def __init__(self, host, remote_facade_proxy):
         """Construct an BluetoothFacadeRemoteAdapter.
 

@@ -379,8 +379,15 @@ def install_firmware(host):
     _wait_firmware_update_process(host, pid)
     _check_firmware_update_result(host, fw_update_log)
 
-    # Get us out of dev-mode and clear GBB flags.  GBB flags are
-    # non-zero because boot from USB was enabled.
+    try:
+        host.reboot()
+    except Exception as e:
+        logging.debug('Failed to reboot the DUT after update firmware; %s', e)
+        try_reset_by_servo(host)
+
+    # Once we confirmed DUT can boot from new firmware, get us out of
+    # dev-mode and clear GBB flags.  GBB flags are non-zero because
+    # boot from USB was enabled.
     logging.info("Resting gbb flags and disable dev mode.")
     host.run('/usr/share/vboot/bin/set_gbb_flags.sh 0',
              ignore_status=True)
@@ -391,9 +398,10 @@ def install_firmware(host):
     try:
         host.reboot()
     except Exception as e:
-        logging.debug('Failed to reboot from host side; %s', e)
+        logging.debug(
+                'Failed to reboot the DUT after switch to'
+                ' non-dev mode; %s', e)
         try_reset_by_servo(host)
-
     logging.info("Install firmware completed successfully.")
 
 

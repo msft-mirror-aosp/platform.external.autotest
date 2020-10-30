@@ -983,8 +983,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 tmpd.clean()
 
 
-    def servo_install(self, image_url=None, usb_boot_timeout=USB_BOOT_TIMEOUT,
-                      install_timeout=INSTALL_TIMEOUT):
+    def servo_install(self,
+                      image_url=None,
+                      usb_boot_timeout=USB_BOOT_TIMEOUT,
+                      install_timeout=INSTALL_TIMEOUT,
+                      is_repair=False):
         """
         Re-install the OS on the DUT by:
         1) installing a test image on a USB storage device attached to the Servo
@@ -999,6 +1002,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 cros images.
         @param install_timeout: The timeout to use when installing the chromeos
                 image. Factory images need a longer install_timeout.
+        @param is_repair: Indicates if the method is called from a repair task.
 
         @raises AutoservError if the image fails to boot.
 
@@ -1069,8 +1073,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         'need_replacement, please check debug log '
                         'for details.')
                 else:
-                    # DUT will be marked for replacement if storage is bad.
-                    audit_verify.VerifyDutStorage(self).verify()
+                    if is_repair:
+                        # DUT will be marked for replacement if storage is bad.
+                        audit_verify.VerifyDutStorage(self).verify()
 
                     logging.debug('Fail install image from USB; %s', e)
                     raise error.AutoservError(

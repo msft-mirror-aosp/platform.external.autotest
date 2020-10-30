@@ -40,7 +40,7 @@ class BluetoothDevice(object):
     XMLRPC_LOG_PATH = '/var/log/bluetooth_xmlrpc_device.log'
     XMLRPC_REQUEST_TIMEOUT_SECONDS = 180
 
-    def __init__(self, device_host, remote_facade_proxy = None):
+    def __init__(self, device_host, remote_facade_proxy=None):
         """Construct a BluetoothDevice.
 
         @param device_host: host object representing a remote host.

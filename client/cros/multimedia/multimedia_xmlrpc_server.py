@@ -49,24 +49,34 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
             arc_res = arc_resource.ArcResource()
 
         self._facades = {
-            'assistant' : assistant_facade_native.AssistantFacadeNative(
-                    resource),
-            'audio': audio_facade_native.AudioFacadeNative(
-                    resource, arc_resource=arc_res),
-            'bluetooth': bluetooth_facade_native.BluetoothFacadeNative(),
-            'video': video_facade_native.VideoFacadeNative(
-                    resource, arc_resource=arc_res),
-            'display': display_facade_native.DisplayFacadeNative(resource),
-            'system': system_facade_native.SystemFacadeNative(),
-            'usb': usb_facade_native.USBFacadeNative(),
-            'browser': browser_facade_native.BrowserFacadeNative(resource),
-            'input': input_facade_native.InputFacadeNative(),
-            'cfm_main_screen': cfm_facade_native.CFMFacadeNative(
-                              resource, 'hotrod'),
-            'cfm_mimo_screen': cfm_facade_native.CFMFacadeNative(
-                              resource, 'control'),
-            'kiosk': kiosk_facade_native.KioskFacadeNative(resource),
-            'graphics': graphics_facade_native.GraphicsFacadeNative()
+                'assistant':
+                assistant_facade_native.AssistantFacadeNative(resource),
+                'audio':
+                audio_facade_native.AudioFacadeNative(resource,
+                                                      arc_resource=arc_res),
+                'bluetooth':
+                bluetooth_facade_native.BluetoothFacadeNative(),
+                'video':
+                video_facade_native.VideoFacadeNative(resource,
+                                                      arc_resource=arc_res),
+                'display':
+                display_facade_native.DisplayFacadeNative(resource),
+                'system':
+                system_facade_native.SystemFacadeNative(),
+                'usb':
+                usb_facade_native.USBFacadeNative(),
+                'browser':
+                browser_facade_native.BrowserFacadeNative(resource),
+                'input':
+                input_facade_native.InputFacadeNative(),
+                'cfm_main_screen':
+                cfm_facade_native.CFMFacadeNative(resource, 'hotrod'),
+                'cfm_mimo_screen':
+                cfm_facade_native.CFMFacadeNative(resource, 'control'),
+                'kiosk':
+                kiosk_facade_native.KioskFacadeNative(resource),
+                'graphics':
+                graphics_facade_native.GraphicsFacadeNative()
         }
 
 

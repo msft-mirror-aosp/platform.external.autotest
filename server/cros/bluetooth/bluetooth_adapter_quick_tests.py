@@ -312,6 +312,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                 test_method.__name__, str(e)))
                 except error.TestNAError as e:
                     self.fails.append('[--- SKIPPED: {}]'.format(str(e)))
+                except Exception as e:
+                    self.fails.append('[--- unknown error {} ({})]'.format(
+                            test_method.__name__, str(e)))
 
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn)

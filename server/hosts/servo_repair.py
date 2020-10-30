@@ -22,6 +22,7 @@ from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
 from autotest_lib.server.hosts import servo_constants
+from autotest_lib.server.cros.servo.topology import servo_topology
 import six
 
 try:
@@ -550,6 +551,37 @@ class _DUTConnectionVerifier(hosts.Verifier):
         return 'Ensure the Servo connected to the DUT.'
 
 
+class _TopologyVerifier(hosts.Verifier):
+    """Verifier that all servo component is presented."""
+
+    @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        topology = servo_topology.ServoTopology(host)
+        topology.read(host.get_dut_host_info())
+        try:
+            topology.validate(raise_error=True,
+                              dual_set=host.is_dual_setup(),
+                              compare=True)
+        except servo_topology.ServoTopologyError as e:
+            six.reraise(hosts.AutoservVerifyError, str(e), sys.exc_info()[2])
+
+    def _is_applicable(self, host):
+        if host.is_localhost():
+            logging.info('Target servo is not in a lab,'
+                         ' action is not applicable.')
+            return False
+        if not host.is_servo_topology_supported():
+            logging.info('Target servo-topology is not supported,'
+                         ' action is not applicable.')
+            return False
+        return True
+
+    @property
+    def description(self):
+        return 'Ensure all Servo component present.'
+
+
 class _PowerButtonVerifier(hosts.Verifier):
     """
     Verifier to check sanity of the `pwr_button` signal.
@@ -890,6 +922,7 @@ def create_servo_repair_strategy():
             (_BoardConfigVerifier, 'brd_config', ['servo_ssh']),
             (_SerialConfigVerifier, 'ser_config', ['servo_ssh']),
             (_ServodJobVerifier, 'servod_job', config + ['disk_space']),
+            (_TopologyVerifier, 'servo_topology', ['servod_job']),
             (_ServodConnectionVerifier, 'servod_connection', ['servod_job']),
             (_ServodControlVerifier, 'servod_control', ['servod_connection']),
             (_DUTConnectionVerifier, 'dut_connected', ['servod_connection']),
@@ -903,8 +936,8 @@ def create_servo_repair_strategy():
     ]
 
     servod_deps = [
-            'servod_job', 'servod_connection', 'servod_control',
-            'dut_connected', 'pwr_button'
+            'servod_job', 'servo_topology', 'servod_connection',
+            'servod_control', 'dut_connected', 'pwr_button'
     ]
     repair_actions = [
             (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space'

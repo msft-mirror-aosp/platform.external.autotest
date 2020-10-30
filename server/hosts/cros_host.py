@@ -1031,6 +1031,13 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         'DUT failed to boot from USB after %d seconds' %
                         usb_boot_timeout, 'failed_to_boot_pre_install')
 
+        # Make sure the DUT is boot from an external device.
+        if not self.is_boot_from_external_device():
+            raise hosts.AutoservRepairError(
+                    'DUT is expected to boot from an external device(e.g. '
+                    'a usb stick), however it seems still boot from an'
+                    ' internal storage.', 'boot_from_internal_storage')
+
         # The new chromeos-tpm-recovery has been merged since R44-7073.0.0.
         # In old CrOS images, this command fails. Skip the error.
         logging.info('Resetting the TPM status')

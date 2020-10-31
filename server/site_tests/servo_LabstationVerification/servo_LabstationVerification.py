@@ -13,9 +13,12 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server import utils as server_utils
+from autotest_lib.server import site_utils
 from autotest_lib.server.hosts import servo_host as _servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.hosts import factory
+from autotest_lib.server.hosts import host_info
+
 
 class servo_LabstationVerification(test.test):
     """Wrapper test to run verifications on a labstation image.
@@ -284,9 +287,9 @@ class servo_LabstationVerification(test.test):
             stable_version = self.cros_version
         logging.info('Setting stable_version to %s for DUT %s.',
                      stable_version, dut_host.hostname)
-        host_info = dut_host.host_info_store.get()
-        host_info.stable_versions['cros'] = stable_version
-        dut_host.host_info_store.commit(host_info)
+        info = dut_host.host_info_store.get()
+        info.stable_versions['cros'] = stable_version
+        dut_host.host_info_store.commit(info)
 
     def _get_dut_info_from_config(self):
         """Get DUT info from json config file.
@@ -341,8 +344,7 @@ class servo_LabstationVerification(test.test):
             }
 
             logging.info('Setting up servod for port %s', port)
-            servo_host, servo_state = _servo_host.create_servo_host(
-                None, servo_args)
+            servo_host, _ = _servo_host.create_servo_host(None, servo_args)
             try:
                 validate_cmd = 'servodutil show -p %s' % port
                 servo_host.run_grep(validate_cmd,
@@ -367,8 +369,19 @@ class servo_LabstationVerification(test.test):
                              'static config or command-line. Will attempt '
                              'to infer through hardware address.')
                 dut_hostname = self.get_dut_on_servo_ip(servo_host)
-            logging.info('Running the DUT side on DUT %r', dut_hostname)
-            dut_host = factory.create_host(dut_hostname)
+            labels = []
+            if dut_info.get('board'):
+                labels.append('board:%s' % dut_info.get('board'))
+            if dut_info.get('model'):
+                labels.append('model:%s' % dut_info.get('model'))
+            info = host_info.HostInfo(labels=labels)
+            host_info_store = host_info.InMemoryHostInfoStore(info=info)
+            machine = {
+                    'hostname': dut_hostname,
+                    'host_info_store': host_info_store,
+                    'afe_host': site_utils.EmptyAFEHost()
+            }
+            dut_host = factory.create_host(machine)
             dut_host.set_servo_host(servo_host)
 
             # Copy labstation's stable_version to dut_host for later test

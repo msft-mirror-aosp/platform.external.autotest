@@ -69,7 +69,7 @@ class power_WakeSources(test.test):
         """
         if wake_source in ['BASE_ATTACH', 'BASE_DETACH']:
             self._force_base_state(BASE_STATE.RESET)
-        if wake_source in ['TABLET_MODE_ON', 'TABLET_MODE_OFF']:
+        elif wake_source in ['TABLET_MODE_ON', 'TABLET_MODE_OFF']:
             self._force_tablet_mode(TABLET_MODE.RESET)
 
     def _before_suspend(self, wake_source):
@@ -82,26 +82,21 @@ class power_WakeSources(test.test):
         if wake_source == 'BASE_ATTACH':
             # Force detach before suspend so that attach won't be ignored.
             self._force_base_state(BASE_STATE.DETACH)
-            return True
-        if wake_source == 'BASE_DETACH':
+        elif wake_source == 'BASE_DETACH':
             # Force attach before suspend so that detach won't be ignored.
             self._force_base_state(BASE_STATE.ATTACH)
-            return True
-        if wake_source == 'LID_OPEN':
+        elif wake_source == 'LID_OPEN':
             # Set the power policy for lid closed action to suspend.
             return self._host.run(
                 'set_power_policy --lid_closed_action suspend',
                 ignore_status=True).exit_status == 0
-        if wake_source == 'USB_KB':
+        elif wake_source == 'USB_KB':
             # Initialize USB keyboard.
             self._host.servo.set_nocheck('init_usb_keyboard', 'on')
-            return True
-        if wake_source == 'TABLET_MODE_ON':
+        elif wake_source == 'TABLET_MODE_ON':
             self._force_tablet_mode(TABLET_MODE.OFF)
-            return True
-        if wake_source == 'TABLET_MODE_OFF':
+        elif wake_source == 'TABLET_MODE_OFF':
             self._force_tablet_mode(TABLET_MODE.ON)
-            return True
         return True
 
     def _force_tablet_mode(self, mode):
@@ -140,9 +135,9 @@ class power_WakeSources(test.test):
         @param wake_source: wake source to verify.
         @return: False if |wake_source| is not valid for DUT, True otherwise
         """
-        if wake_source.startswith('BASE'):
+        if wake_source in ['BASE_ATTACH', 'BASE_DETACH']:
             return self._ec.has_command('basestate')
-        if wake_source.startswith('TABLET_MODE'):
+        if wake_source in ['TABLET_MODE_ON', 'TABLET_MODE_OFF']:
             return self._ec.has_command('tabletmode')
         if wake_source == 'LID_OPEN':
             return self._dr_utils.host_has_lid()

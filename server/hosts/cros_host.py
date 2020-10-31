@@ -2973,12 +2973,25 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Check whether we need to switch servo_v4 role to snk when
         booting into recovery mode. (See crbug.com/1129165)
         """
-        info = self.host_info_store.get()
-        if info.get_label_value('power') != 'battery':
+        has_battery = True
+        # Determine if the host has battery based on host_info first.
+        power_info = self.host_info_store.get().get_label_value('power')
+        if power_info:
+            has_battery = power_info == 'battery'
+        elif self.is_up_fast():
+            # when running local tests host_info is not available, so we
+            # need to determine whether the host has battery by checking
+            # from host side.
+            logging.debug('Label `power` is not found in host_info, checking'
+                          ' if the host has battery from host side.')
+            has_battery = self.has_battery()
+
+        if not has_battery:
             logging.info(
                     '%s does not has battery, snk mode is not needed'
                     ' for recovery.', self.hostname)
             return False
+
         if not self.servo.supports_built_in_pd_control():
             logging.info('Power delivery is not supported on this servo, snk'
                          ' mode is not needed for recovery.')

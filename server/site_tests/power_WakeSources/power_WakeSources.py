@@ -324,7 +324,7 @@ class power_WakeSources(test.test):
             test_keyval.update({ws: 'SKIPPED'})
         self.write_test_keyval(test_keyval)
 
-        if len(passed_ws):
+        if passed_ws:
             logging.info('[%s] woke the device as expected.',
                          ''.join(str(elem) + ', ' for elem in passed_ws))
         if skipped_ws:
@@ -333,7 +333,7 @@ class power_WakeSources(test.test):
                 'Please test manually if not the case.',
                 ''.join(str(elem) + ', ' for elem in skipped_ws))
 
-        if len(failed_ws):
+        if failed_ws:
             raise error.TestFail(
                 '[%s] wake sources did not behave as expected.' %
                 (''.join(str(elem) + ', ' for elem in failed_ws)))

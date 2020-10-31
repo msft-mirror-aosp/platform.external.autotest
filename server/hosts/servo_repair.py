@@ -336,11 +336,6 @@ class _CCDTestlabVerifier(hosts.Verifier):
         if status == 'on':
             # ccd testlab enabled
             return
-        data = {'port': host.servo_port,
-                'host': host.get_dut_hostname() or host.hostname,
-                'board': host.servo_board or ''}
-        metrics.Counter(
-            'chromeos/autotest/repair/ccd_testlab').increment(fields=data)
         raise hosts.AutoservNonCriticalVerifyError(
             'The ccd testlab is disabled; DUT requires manual work '
             'to enable it (go/ccd-setup).')

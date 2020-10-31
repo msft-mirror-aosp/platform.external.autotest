@@ -38,6 +38,18 @@ HOSTEVENT_INVALID           = 0x80000000
 # Time to wait after sending keypress commands.
 KEYPRESS_RECOVERY_TIME = 0.5
 
+# Wakemask types, copied from:
+#     ec/include/ec_commands.h
+EC_HOST_EVENT_MAIN = 0
+EC_HOST_EVENT_B = 1
+EC_HOST_EVENT_SCI_MASK = 2
+EC_HOST_EVENT_SMI_MASK = 3
+EC_HOST_EVENT_ALWAYS_REPORT_MASK = 4
+EC_HOST_EVENT_ACTIVE_WAKE_MASK = 5
+EC_HOST_EVENT_LAZY_WAKE_MASK_S0IX = 6
+EC_HOST_EVENT_LAZY_WAKE_MASK_S3 = 7
+EC_HOST_EVENT_LAZY_WAKE_MASK_S5 = 8
+
 
 class ChromeConsole(object):
     """Manages control of a Chrome console.

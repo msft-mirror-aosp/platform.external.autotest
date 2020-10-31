@@ -117,9 +117,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # server, which log out the user.
 
         self.factory = remote_facade_factory.RemoteFacadeFactory(
-                host, no_chrome=not self.start_browser, disable_arc=True)
+                host,
+                no_chrome=not self.start_browser,
+                disable_arc=True,
+                retry_rpc=False)
         try:
-            self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+            self.bluetooth_facade = self.factory.create_bluetooth_facade()
         except Exception as e:
             logging.error('Exception %s while creating bluetooth_facade',
                           str(e))
@@ -311,6 +314,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                 test_method.__name__, str(e)))
                 except error.TestNAError as e:
                     self.fails.append('[--- SKIPPED: {}]'.format(str(e)))
+                except Exception as e:
+                    self.fails.append('[--- unknown error {} ({})]'.format(
+                            test_method.__name__, str(e)))
 
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn)

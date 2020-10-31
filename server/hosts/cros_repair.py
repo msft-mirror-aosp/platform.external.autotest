@@ -1020,7 +1020,7 @@ class ServoInstallRepair(hosts.RepairAction):
             logging.info('Required image %s is already on usbkey,'
                          ' skipping download.', image_name)
         afe_utils.clean_provision_labels(host)
-        host.servo_install(update_url)
+        host.servo_install(update_url, is_repair=True)
         afe_utils.add_provision_labels(host, host.VERSION_PREFIX, image_name)
 
     @property

@@ -500,7 +500,9 @@ def retry(test_method, instance, *args, **kwargs):
                                       instance, *args, **kwargs))
 
 
-def test_retry_and_log(test_method_or_retry_flag):
+def test_retry_and_log(test_method_or_retry_flag,
+                       messages_start=True,
+                       messages_stop=True):
     """A decorator that logs test results, collects error messages, and retries
        on request.
 
@@ -515,6 +517,10 @@ def test_retry_and_log(test_method_or_retry_flag):
         3. the retry flag is False. Do not retry the test_method.
             This occurs with
             @test_retry_and_log(False)
+
+    @param messages_start: Start collecting messages before running the test
+    @param messages_stop: Stop collecting messages after running the test and
+                          analyze the results.
 
     @returns: a wrapper of the test_method with test log. The retry mechanism
         would depend on the retry flag.
@@ -544,17 +550,21 @@ def test_retry_and_log(test_method_or_retry_flag):
             should_raise = hasattr(instance, 'fail_fast') and instance.fail_fast
 
             instance.last_test_method = test_method.__name__
+            syslog_captured = False
 
             try:
-                # Grab /var/log/messages output during test run
-                instance.bluetooth_facade.messages_start()
+                if messages_start:
+                    # Grab /var/log/messages output during test run
+                    instance.bluetooth_facade.messages_start()
+
                 if callable(test_method_or_retry_flag
                             ) or test_method_or_retry_flag:
                     test_result = retry(test_method, instance, *args, **kwargs)
                 else:
                     test_result = test_method(instance, *args, **kwargs)
 
-                syslog_captured = instance.bluetooth_facade.messages_stop()
+                if messages_stop:
+                    syslog_captured = instance.bluetooth_facade.messages_stop()
 
                 if test_result:
                     logging.info('[*** passed: {}]'.format(
@@ -1018,10 +1028,12 @@ class BluetoothAdapterTests(test.test):
             del self.bluetooth_facade
         if hasattr(self, 'input_facade'):
             del self.input_facade
-        self.factory = remote_facade_factory.RemoteFacadeFactory(self.host,
+        self.factory = remote_facade_factory.RemoteFacadeFactory(
+                self.host,
                 disable_arc=True,
-                no_chrome=not self.start_browser)
-        self.bluetooth_facade = self.factory.create_bluetooth_hid_facade()
+                no_chrome=not self.start_browser,
+                retry_rpc=False)
+        self.bluetooth_facade = self.factory.create_bluetooth_facade()
         self.input_facade = self.factory.create_input_facade()
 
         # Re-enable debugging verbose since Chrome will set it to
@@ -3961,7 +3973,7 @@ class BluetoothAdapterTests(test.test):
                 is not None)
 
 
-    @test_retry_and_log(False)
+    @test_retry_and_log(False, messages_stop=False)
     def test_suspend_and_wait_for_sleep(self, suspend, sleep_timeout):
         """ Suspend the device and wait until it is sleeping.
 
@@ -3980,7 +3992,7 @@ class BluetoothAdapterTests(test.test):
         return True
 
 
-    @test_retry_and_log(False)
+    @test_retry_and_log(False, messages_start=False)
     def test_wait_for_resume(self,
                              boot_id,
                              suspend,
@@ -4320,7 +4332,7 @@ class BluetoothAdapterTests(test.test):
         Typically, the run_once() method would look like:
 
         factory = remote_facade_factory.RemoteFacadeFactory(host)
-        self.bluetooth_facade = factory.create_bluetooth_hid_facade()
+        self.bluetooth_facade = factory.create_bluetooth_facade()
 
         self.test_bluetoothd_running()
         # ...

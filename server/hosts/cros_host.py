@@ -292,6 +292,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         servo_attrs = (servo_constants.SERVO_HOST_ATTR,
                        servo_constants.SERVO_PORT_ATTR,
+                       servo_constants.SERVO_SERIAL_ATTR,
                        servo_constants.SERVO_BOARD_ATTR,
                        servo_constants.SERVO_MODEL_ATTR)
         servo_args = {key: args_dict[key]
@@ -982,8 +983,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 tmpd.clean()
 
 
-    def servo_install(self, image_url=None, usb_boot_timeout=USB_BOOT_TIMEOUT,
-                      install_timeout=INSTALL_TIMEOUT):
+    def servo_install(self,
+                      image_url=None,
+                      usb_boot_timeout=USB_BOOT_TIMEOUT,
+                      install_timeout=INSTALL_TIMEOUT,
+                      is_repair=False):
         """
         Re-install the OS on the DUT by:
         1) installing a test image on a USB storage device attached to the Servo
@@ -998,6 +1002,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 cros images.
         @param install_timeout: The timeout to use when installing the chromeos
                 image. Factory images need a longer install_timeout.
+        @param is_repair: Indicates if the method is called from a repair task.
 
         @raises AutoservError if the image fails to boot.
 
@@ -1068,8 +1073,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         'need_replacement, please check debug log '
                         'for details.')
                 else:
-                    # DUT will be marked for replacement if storage is bad.
-                    audit_verify.VerifyDutStorage(self).verify()
+                    if is_repair:
+                        # DUT will be marked for replacement if storage is bad.
+                        audit_verify.VerifyDutStorage(self).verify()
 
                     logging.debug('Fail install image from USB; %s', e)
                     raise error.AutoservError(
@@ -1123,6 +1129,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.servo_pwr_supported = False
         self.set_servo_type()
         self.set_servo_state(servo_state)
+        self._set_servo_topology()
 
 
     def repair_servo(self):
@@ -1191,6 +1198,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         host_info = self.host_info_store.get()
         servo_state_prefix = servo_constants.SERVO_STATE_LABEL_PREFIX
         return host_info.get_label_value(servo_state_prefix)
+
+    def is_servo_in_working_state(self):
+        """Validate servo is in WORKING state."""
+        servo_state = self.get_servo_state()
+        return servo_state == servo_constants.SERVO_STATE_WORKING
 
     def get_servo_usb_state(self):
         """Get the label value indicating the health of the USB drive.
@@ -2961,12 +2973,25 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Check whether we need to switch servo_v4 role to snk when
         booting into recovery mode. (See crbug.com/1129165)
         """
-        info = self.host_info_store.get()
-        if info.get_label_value('power') != 'battery':
+        has_battery = True
+        # Determine if the host has battery based on host_info first.
+        power_info = self.host_info_store.get().get_label_value('power')
+        if power_info:
+            has_battery = power_info == 'battery'
+        elif self.is_up_fast():
+            # when running local tests host_info is not available, so we
+            # need to determine whether the host has battery by checking
+            # from host side.
+            logging.debug('Label `power` is not found in host_info, checking'
+                          ' if the host has battery from host side.')
+            has_battery = self.has_battery()
+
+        if not has_battery:
             logging.info(
                     '%s does not has battery, snk mode is not needed'
                     ' for recovery.', self.hostname)
             return False
+
         if not self.servo.supports_built_in_pd_control():
             logging.info('Power delivery is not supported on this servo, snk'
                          ' mode is not needed for recovery.')
@@ -2989,3 +3014,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     ' battery_charge_percent from servo; %s', str(e))
             return False
         return True
+
+    def _set_servo_topology(self):
+        """Set servo-topology info to the host-info."""
+        logging.debug('Try to save servo topology to host-info.')
+        if not self._servo_host:
+            logging.info('Servo host is not initilized.')
+            return
+        if not self._servo_host.is_servo_topology_supported():
+            logging.info('Servo-topology is not supported.')
+            return
+        servo_topology = self._servo_host.get_topology()
+        if not servo_topology or servo_topology.is_empty():
+            logging.info('Servo topology is empty')
+            return
+        servo_topology.save(self.host_info_store)

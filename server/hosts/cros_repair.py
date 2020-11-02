@@ -1082,7 +1082,6 @@ def _cros_verify_base_dag():
             (ACPowerVerifier, 'power', ('ssh', )),
             (EXT4fsErrorVerifier, 'ext4', ('ssh', )),
             (WritableVerifier, 'writable', ('ssh', )),
-            (DUTStorageVerifier, 'storage', ('ssh', )),
             (TPMStatusVerifier, 'tpm', ('ssh', )),
             (UpdateSuccessVerifier, 'good_provision', ('ssh', )),
             (FirmwareTpmVerifier, 'faft_tpm', ('ssh', )),
@@ -1097,7 +1096,10 @@ def _cros_verify_base_dag():
 
 def _cros_verify_extended_dag():
     """Return the extended verification DAG for a `CrosHost`."""
-    return ((StopStartUIVerifier, 'stop_start_ui', ('ssh', )), )
+    return (
+            (StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
+            (DUTStorageVerifier, 'storage', ('ssh', )),
+    )
 
 
 def _cros_basic_repair_actions(

@@ -196,7 +196,7 @@ class _WrapServoErrors(object):
                     # The error message for unavailable controls is huge, since
                     # it reports all known controls.  Don't log the full text.
                     unknown_ctrl_name = unknown_ctrl.group('name')
-                    logging.error('%s :: No control named %r',
+                    logging.debug('%s :: No control named %r',
                                   self.description, unknown_ctrl_name)
                     err = ControlUnavailableError(
                             'No control named %r' % unknown_ctrl_name)

@@ -83,21 +83,21 @@ RPC_METHOD_ARGUMENT = 'method'
 # We can't just include the endpoint because it will cause a cardinality
 # explosion.
 ALLOWLISTED_ENDPOINTS = frozenset((
-    '/',
-    '/afe/',
-    '/new_tko/server/rpc/',
-    '/afe/server/rpc/',
-    '/___rPc_sWiTcH___',
-    '*',
-    '/afe/server/noauth/rpc/',
+        '/',
+        '/afe/',
+        '/new_tko/server/rpc/',
+        '/afe/server/rpc/',
+        '/___rPc_sWiTcH___',
+        '*',
+        '/afe/server/noauth/rpc/',
 ))
 
 
 # A bad actor could DOS Monarch by requesting millions of different RPC methods,
 # each of which would create a different stream. Only allow an allowlist of
 # methods to be recorded in Monarch.
-ALLOWLISTED_METHODS = (frozenset(dir(rpc_interface)) |
-                       frozenset(dir(moblab_rpc_interface)))
+ALLOWLISTED_METHODS = (frozenset(dir(rpc_interface))
+                       | frozenset(dir(moblab_rpc_interface)))
 
 
 def EmitRequestMetrics(m):
@@ -114,14 +114,14 @@ def EmitRequestMetrics(m):
     send_rpc_metrics = (
         '?' in m.group('endpoint') and '/rpc' in m.group('endpoint'))
     if send_rpc_metrics:
-      EmitRPCMetrics(m)
+        EmitRPCMetrics(m)
 
     # Request seconds and bytes sent are both extremely high cardinality, so
     # they must be the VAL of a metric, not a metric field.
     if m.group('response_seconds'):
-      response_seconds = int(m.group('response_seconds'))
-      metrics.SecondsDistribution(ACCESS_TIME_METRIC).add(
-          response_seconds, fields=fields)
+        response_seconds = int(m.group('response_seconds'))
+        metrics.SecondsDistribution(ACCESS_TIME_METRIC).add(response_seconds,
+                                                            fields=fields)
 
     bytes_sent = int(m.group('bytes_sent'))
     metrics.CumulativeDistribution(ACCESS_BYTES_METRIC).add(
@@ -129,31 +129,31 @@ def EmitRequestMetrics(m):
 
 
 def EmitRPCMetrics(m):
-  """Emit a special metric including the method when the request was an RPC."""
-  fields = {
-      'request_method': m.groupdict().get('request_method', ''),
-      'rpc_method': ParseRPCMethod(m.group('endpoint')),
-      'response_code': int(m.group('response_code')),
-  }
+    """Emit a special metric including the method when the request was an RPC."""
+    fields = {
+            'request_method': m.groupdict().get('request_method', ''),
+            'rpc_method': ParseRPCMethod(m.group('endpoint')),
+            'response_code': int(m.group('response_code')),
+    }
 
-  if m.group('response_seconds'):
-    response_seconds = int(m.group('response_seconds'))
-    metrics.SecondsDistribution(RPC_ACCESS_TIME_METRIC).add(
-        response_seconds, fields=fields)
+    if m.group('response_seconds'):
+        response_seconds = int(m.group('response_seconds'))
+        metrics.SecondsDistribution(RPC_ACCESS_TIME_METRIC).add(
+                response_seconds, fields=fields)
 
-  bytes_sent = int(m.group('bytes_sent'))
-  metrics.CumulativeDistribution(RPC_ACCESS_BYTES_METRIC).add(
-    bytes_sent, fields=fields)
+    bytes_sent = int(m.group('bytes_sent'))
+    metrics.CumulativeDistribution(RPC_ACCESS_BYTES_METRIC).add(bytes_sent,
+                                                                fields=fields)
 
 
 def ParseRPCMethod(url):
-  """Parses the RPC method from an RPC query string.
+    """Parses the RPC method from an RPC query string.
 
   Args:
     url: The URL requested.
   """
-  query = urlparse.urlparse(url).query
-  return urlparse.parse_qs(query)[RPC_METHOD_ARGUMENT][-1]
+    query = urlparse.urlparse(url).query
+    return urlparse.parse_qs(query)[RPC_METHOD_ARGUMENT][-1]
 
 
 def SanitizeEndpoint(endpoint):
@@ -195,7 +195,7 @@ def Main():
 
     with ts_mon_config.SetupTsMonGlobalState('apache_access_log_metrics',
                                              **ts_mon_args):
-      log_daemon_common.RunMatchers(sys.stdin, MATCHERS)
+        log_daemon_common.RunMatchers(sys.stdin, MATCHERS)
 
 
 if __name__ == '__main__':

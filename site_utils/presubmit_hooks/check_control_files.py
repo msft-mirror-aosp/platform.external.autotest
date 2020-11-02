@@ -168,19 +168,19 @@ def CheckValidAttr(ctrl_data, attr_allowlist, bvt_allowlist, test_name):
     if not (attr_allowlist >= ctrl_data.attributes):
         attribute_diff = ctrl_data.attributes - attr_allowlist
         raise ControlFileCheckerError(
-            'Attribute(s): %s not in the allowlist in control file for test '
-            'named %s. If this is a new attribute, please add it into '
-            'AUTOTEST_DIR/site_utils/attribute_allowlist.txt file'
-            % (attribute_diff, test_name))
+                'Attribute(s): %s not in the allowlist in control file for test '
+                'named %s. If this is a new attribute, please add it into '
+                'AUTOTEST_DIR/site_utils/attribute_allowlist.txt file' %
+                (attribute_diff, test_name))
     if ctrl_data.attributes & BVT_ATTRS:
         for pattern in bvt_allowlist:
             if fnmatch.fnmatch(test_name, pattern):
                 break
         else:
             raise ControlFileCheckerError(
-                '%s not in the BVT allowlist. New BVT tests should be written '
-                'in Tast, not in Autotest. See: %s'
-                % (test_name, TAST_PSA_URL))
+                    '%s not in the BVT allowlist. New BVT tests should be written '
+                    'in Tast, not in Autotest. See: %s' %
+                    (test_name, TAST_PSA_URL))
 
 
 def CheckSuiteLineRemoved(ctrl_file_path):
@@ -251,12 +251,17 @@ def main():
                                        'site_utils/attribute_allowlist.txt')
     with open(path_attr_allowlist, 'r') as f:
         attr_allowlist = {
-            line.strip() for line in f.readlines() if line.strip()}
+                line.strip()
+                for line in f.readlines() if line.strip()
+        }
 
     path_bvt_allowlist = os.path.join(common.autotest_dir,
                                       'site_utils/bvt_allowlist.txt')
     with open(path_bvt_allowlist, 'r') as f:
-        bvt_allowlist = {line.strip() for line in f.readlines() if line.strip()}
+        bvt_allowlist = {
+                line.strip()
+                for line in f.readlines() if line.strip()
+        }
 
     # Delay getting the useflags. The call takes long time, so init useflags
     # only when needed, i.e., the script needs to check any control file.

@@ -1173,8 +1173,8 @@ def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public,
                           suites, is_public, is_latest)
 
 
-def write_extra_controlfiles(_modules, abi, revision, build, uri,
-                             is_public):
+def write_extra_controlfiles(_modules, abi, revision, build, uri, is_public,
+                             is_latest):
     """Write all extra control files as specified in config.
 
     This is used by moblab to load balance large modules like Deqp, as well as
@@ -1183,8 +1183,9 @@ def write_extra_controlfiles(_modules, abi, revision, build, uri,
     """
     for module, config in get_extra_modules_dict(is_public, abi).items():
         for submodule in config['SUBMODULES']:
-            write_controlfile(submodule, set([submodule]), abi, revision, build,
-                              uri, config['SUITES'], is_public)
+            write_controlfile(submodule, set([submodule]), abi, revision,
+                              build, uri, config['SUITES'], is_public,
+                              is_latest)
 
 
 def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
@@ -1250,7 +1251,7 @@ def run(uris, is_public, is_latest, cache_dir):
 
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
                 write_extra_controlfiles(None, abi, revision, build, uri,
-                                         is_public)
+                                         is_public, is_latest)
 
 
 def main(config):

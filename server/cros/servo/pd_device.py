@@ -341,27 +341,31 @@ class PDConsoleDevice(PDDevice):
         """
         # Create Try.SRC pd command
         cmd = 'pd trysrc %d' % int(enable)
+        # TCPMv1 indicates Try.SRC is on by returning 'on'
+        # TCPMv2 indicates Try.SRC is on by returning 'Forced ON'
+        on_vals = ('on', 'Forced ON')
+        # TCPMv1 indicates Try.SRC is off by returning 'off'
+        # TCPMv2 indicates Try.SRC is off by returning 'Forced OFF'
+        off_vals = ('off', 'Forced OFF')
+
         # Try.SRC on/off is output, if supported feature
-        regex = ['Try\.SRC(\s([\w]+)\s([\w]+)|\s([\w]+))|(Parameter)']
+        regex = ['Try\.SRC\s(%s)|(Parameter)' % ('|'.join(on_vals + off_vals))]
         m = self.utils.send_pd_command_get_output(cmd, regex)
+
         # Determine if Try.SRC feature is supported
-        trysrc = re.search('Try\.SRC(\s([\w]+)\s([\w]+)|\s([\w]+))', m[0][0])
-        if not trysrc:
+        if 'Try.SRC' not in m[0][0]:
             logging.warn('Try.SRC not supported on this PD device')
             return False
-        # TrySRC is supported on this PD device, verify setting.
-        logging.info('Try.SRC mode = %s', trysrc.group(1))
-        if enable:
-            # TCPMv1 indicates Try.SRC is on by returning 'on'
-            # TCPMv2 indicates Try.SRC is on by returning 'Forced ON'
-            vals = ('on', 'Forced ON')
-        else:
-            # TCPMv1 indicates Try.SRC is off by returning 'off'
-            # TCPMv2 indicates Try.SRC is off by returning 'Forced OFF'
-            vals = ('off', 'Forced OFF')
 
-        trysrc_val = str(m[0][1]).strip()
-        return bool(trysrc_val in vals)
+        # TrySRC is supported on this PD device, verify setting.
+        trysrc_val = m[0][1]
+        logging.info('Try.SRC mode = %s', trysrc_val)
+        if enable:
+            vals = on_vals
+        else:
+            vals = off_vals
+
+        return trysrc_val in vals
 
     def soft_reset(self):
         """Initates a PD soft reset sequence

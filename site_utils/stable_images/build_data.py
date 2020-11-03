@@ -87,7 +87,7 @@ _FIRMWARE_UPGRADE_DENYLIST = set([
         'x86-alex',
         'x86-mario',
         'x86-zgb',
-    ])
+])
 
 
 def _read_gs_json_data(gs_uri):

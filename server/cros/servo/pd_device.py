@@ -133,17 +133,26 @@ class PDDevice(object):
         @param disc_time_sec: Time in seconds between disconnect and reconnect
         """
         raise NotImplementedError(
-                'drp_disconnect_reconnect should be implemented in \
-                derived class')
+                'drp_disconnect_connect should be implemented in derived class'
+        )
 
     def cc_disconnect_connect(self, disc_time_sec):
-        """Force PD disconnect/connect using PDTester fw command
+        """Force PD disconnect/connect
 
         @param disc_time_sec: Time in seconds between disconnect and reconnect
         """
         raise NotImplementedError(
-                'cc_disconnect_reconnect should be implemented in \
-                derived class')
+                'cc_disconnect_connect should be implemented in derived class')
+
+    def get_connected_state_after_cc_reconnect(self, disc_time_sec):
+        """Get the connected state after disconnect/reconnect
+
+        @param disc_time_sec: Time in seconds for disconnect period.
+        @returns: The connected PD state.
+        """
+        raise NotImplementedError(
+                'get_connected_state_after_cc_reconnect should be implemented'
+                'in derived class')
 
 
 class PDConsoleDevice(PDDevice):
@@ -514,6 +523,25 @@ class PDTesterDevice(PDConsoleDevice):
                                               disc_time_sec * 1000)
         self.utils.send_pd_command(disc_cmd)
 
+    def get_connected_state_after_cc_reconnect(self, disc_time_sec):
+        """Get the connected state after disconnect/reconnect using PDTester
+
+        PDTester supports a feature which simulates a USB Type C disconnect
+        and reconnect. It returns the first connected state (either source or
+        sink) after reconnect.
+
+        @param disc_time_sec: Time in seconds for disconnect period.
+        @returns: The connected PD state.
+        """
+        DISC_DELAY = 100
+        disc_cmd = 'fakedisconnect %d %d' % (DISC_DELAY, disc_time_sec * 1000)
+        src_connected_tuple = self.utils.get_src_connect_states()
+        snk_connected_tuple = self.utils.get_snk_connect_states()
+        connected_exp = '|'.join(src_connected_tuple + snk_connected_tuple)
+        reply_exp = ['(.*)(C%d)\s+[\w]+:?\s(%s)' % (self.port, connected_exp)]
+        m = self.utils.send_pd_command_get_output(disc_cmd, reply_exp)
+        return m[0][3]
+
     def drp_disconnect_connect(self, disc_time_sec):
         """Disconnect/reconnect using PDTester
 
@@ -872,4 +900,3 @@ class PDPortPartner(object):
                     return [tester, dut]
 
         return []
-

@@ -114,6 +114,8 @@ class platform_ServoPowerStateController(test.test):
 
     def cleanup(self):
         """Clean up DUT after servo actions."""
+        # Ensure DUTs with type_c servo are in src mode.
+        self.host.servo.set_servo_v4_role('src')
         if not self.host.is_up():
             # Power off, then power on DUT from internal storage.
             self.host.power_off_via_servo()

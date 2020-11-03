@@ -5,7 +5,7 @@
 # found in the LICENSE file.
 
 """Method to add or modify ATTRIBUTES in the test control files whose
-ATTRIBUTES either not match to SUITE or not in the attribute whitelist."""
+ATTRIBUTES either not match to SUITE or not in the attribute allowlist."""
 
 import argparse
 import logging
@@ -33,23 +33,23 @@ def main(argv):
 
   # When execute is True, run the script to seed attributes in control files.
   if args.execute:
-    # Get the whitelist path, hardcode the path currently
-    path_whitelist = os.path.join(common.autotest_dir,
-                                  'site_utils/attribute_whitelist.txt')
+    # Get the allowlist path, hardcode the path currently
+    path_allowlist = os.path.join(common.autotest_dir,
+                                  'site_utils/attribute_allowlist.txt')
 
     # Go through all control file, check whether attribute matches suite. Return
     # a changelist which contains the paths to the control files not match.
     fs_getter = Suite.create_fs_getter(common.autotest_dir)
     changelist = AttrSuiteMatch(
-        fs_getter.get_control_file_list(), path_whitelist)
+        fs_getter.get_control_file_list(), path_allowlist)
     count = len(changelist)
 
-    logging.info('Starting to seed attributes in %d control files...' % count)
+    logging.info('Starting to seed attributes in %d control files...', count)
     # Modify attributes based on suite for the control files not match.
     for path in changelist:
-      logging.info('Seeding ATTRIBUTES in %s' % path)
+      logging.info('Seeding ATTRIBUTES in %s', path)
       count = count - 1
-      logging.info('%d files remaining...' % count)
+      logging.info('%d files remaining...', count)
       SeedAttributes(path)
 
     logging.info('Finished seeding attributes.')
@@ -60,30 +60,30 @@ def main(argv):
                  'please add \'--execute\' argument when run the script.')
 
 
-def AttrSuiteMatch(path_list, path_whitelist):
-  """Check whether attributes are in the attribute whitelist and match with the
+def AttrSuiteMatch(path_list, path_allowlist):
+  """Check whether attributes are in the attribute allowlist and match with the
   suites in the control files.
 
   Args:
     @param path_list: a list of path to the control files to be checked.
-    @param path_whitelist: path to the attribute whitelist.
+    @param path_allowlist: path to the attribute allowlist.
 
   Returns:
     A list of paths to the control files that failed at checking.
   """
   unmatch_pathlist = []
 
-  # Read the whitelist to a set, if path is invalid, throw IOError.
-  with open(path_whitelist, 'r') as f:
-    whitelist = {line.strip() for line in f.readlines() if line.strip()}
+  # Read the allowlist to a set, if path is invalid, throw IOError.
+  with open(path_allowlist, 'r') as f:
+    allowlist = {line.strip() for line in f.readlines() if line.strip()}
 
-  # Read the attr in the control files, check with whitelist and suite.
+  # Read the attr in the control files, check with allowlist and suite.
   for path in path_list:
     cd = control_data.parse_control(path, True)
     cd_attrs = cd.attributes
 
-    # Test whether attributes in the whitelist
-    if not (whitelist >= cd_attrs):
+    # Test whether attributes in the allowlist
+    if not (allowlist >= cd_attrs):
       unmatch_pathlist.append(path)
     # Test when suite exists, whether attributes match suites
     if hasattr(cd, 'suite'):

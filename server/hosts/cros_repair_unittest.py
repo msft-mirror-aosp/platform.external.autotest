@@ -26,7 +26,6 @@ CROS_VERIFY_DAG = (
         (cros_repair.ACPowerVerifier, 'power', ('ssh', )),
         (cros_repair.EXT4fsErrorVerifier, 'ext4', ('ssh', )),
         (cros_repair.WritableVerifier, 'writable', ('ssh', )),
-        (cros_repair.DUTStorageVerifier, 'storage', ('ssh', )),
         (cros_repair.TPMStatusVerifier, 'tpm', ('ssh', )),
         (cros_repair.UpdateSuccessVerifier, 'good_provision', ('ssh', )),
         (cros_repair.FirmwareTpmVerifier, 'faft_tpm', ('ssh', )),
@@ -36,6 +35,7 @@ CROS_VERIFY_DAG = (
         (repair_utils.LegacyHostVerifier, 'cros', ('ssh', )),
         (cros_repair.CrosVerisionVerifier, 'cros_version_label', ('ssh', )),
         (cros_repair.StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
+        (cros_repair.DUTStorageVerifier, 'storage', ('ssh', )),
 )
 
 CROS_REPAIR_ACTIONS = (
@@ -104,7 +104,6 @@ JETSTREAM_VERIFY_DAG = (
         (cros_repair.ACPowerVerifier, 'power', ('ssh', )),
         (cros_repair.EXT4fsErrorVerifier, 'ext4', ('ssh', )),
         (cros_repair.WritableVerifier, 'writable', ('ssh', )),
-        (cros_repair.DUTStorageVerifier, 'storage', ('ssh', )),
         (cros_repair.TPMStatusVerifier, 'tpm', ('ssh', )),
         (cros_repair.UpdateSuccessVerifier, 'good_provision', ('ssh', )),
         (cros_repair.FirmwareTpmVerifier, 'faft_tpm', ('ssh', )),

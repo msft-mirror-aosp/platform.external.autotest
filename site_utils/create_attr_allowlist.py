@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""This script creates a whitelist of test attributes based on the 'suite' read
+"""This script creates a allowlist of test attributes based on the 'suite' read
 from test control files.
 """
 import argparse
@@ -17,10 +17,10 @@ from autotest_lib.server.cros.dynamic_suite.suite import Suite
 def main():
   """main script."""
   # Parse filepath from cmd line.
-  parser = argparse.ArgumentParser(description='Create attribute whitelist.')
-  parser.add_argument('path', metavar='WHITELIST_FILE_PATH',
-                      help='Path to the file whitelist is written to. E.g. '
-                           './attribute_whitelist.txt')
+  parser = argparse.ArgumentParser(description='Create attribute allowlist.')
+  parser.add_argument('path', metavar='ALLOWLIST_FILE_PATH',
+                      help='Path to the file allowlist is written to. E.g. '
+                           './attribute_allowlist.txt')
   args = parser.parse_args()
 
   # Get all the suites from current test control files, and order them.
@@ -30,22 +30,22 @@ def main():
   suite_list.sort(key = str.lower)
 
   # Parse attributes from suites, and write to a file
-  whitelist = ['suite:' + x for x in suite_list]
-  _WriteToFile(whitelist, args.path)
+  allowlist = ['suite:' + x for x in suite_list]
+  _WriteToFile(allowlist, args.path)
 
 
-def _WriteToFile(whitelist, path):
-  """"Write the whitelist to a file under the path.
+def _WriteToFile(allowlist, path):
+  """"Write the allowlist to a file under the path.
 
   The format of the file used here is a list, which can be easily read to a list
   by using ast.literal_eval.
 
   Args:
-    whitelist: a list contains all the allowed attributes.
+    allowlist: a list contains all the allowed attributes.
     path: path to the file.
   """
   with open(path, 'wb') as attr_file:
-    attr_file.write('\n'.join(whitelist))
+    attr_file.write('\n'.join(allowlist))
 
 
 if __name__ == '__main__':

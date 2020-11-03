@@ -82,7 +82,7 @@ RPC_METHOD_ARGUMENT = 'method'
 # TODO(phobbs) use a memory-efficient structure to detect non-unique paths.
 # We can't just include the endpoint because it will cause a cardinality
 # explosion.
-WHITELISTED_ENDPOINTS = frozenset((
+ALLOWLISTED_ENDPOINTS = frozenset((
     '/',
     '/afe/',
     '/new_tko/server/rpc/',
@@ -94,9 +94,9 @@ WHITELISTED_ENDPOINTS = frozenset((
 
 
 # A bad actor could DOS Monarch by requesting millions of different RPC methods,
-# each of which would create a different stream. Only allow a whitelist of
+# each of which would create a different stream. Only allow an allowlist of
 # methods to be recorded in Monarch.
-WHITELISTED_METHODS = (frozenset(dir(rpc_interface)) |
+ALLOWLISTED_METHODS = (frozenset(dir(rpc_interface)) |
                        frozenset(dir(moblab_rpc_interface)))
 
 
@@ -157,11 +157,11 @@ def ParseRPCMethod(url):
 
 
 def SanitizeEndpoint(endpoint):
-    """Returns empty string if endpoint is not whitelisted.
+    """Returns empty string if endpoint is not allowlisted.
 
     @param endpoint: The endpoint to sanitize.
     """
-    if endpoint in WHITELISTED_ENDPOINTS:
+    if endpoint in ALLOWLISTED_ENDPOINTS:
         return endpoint
     else:
         return ''

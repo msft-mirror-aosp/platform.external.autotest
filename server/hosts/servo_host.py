@@ -1359,6 +1359,7 @@ class ServoHost(base_servohost.BaseServoHost):
         pwr_button = self.get_verifier_state('pwr_button')
         lid_open = self.get_verifier_state('lid_open')
         ec_board = self.get_verifier_state('ec_board')
+        cr50_console = self.get_verifier_state('cr50_console')
         ccd_testlab = self.get_verifier_state('ccd_testlab')
 
         if not ssh:
@@ -1414,6 +1415,8 @@ class ServoHost(base_servohost.BaseServoHost):
                 pass
 
         # one of the reason why servo can not initialized
+        if cr50_console == hosts.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_CR50_CONSOLE_MISSING
         if ccd_testlab == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_CCD_TESTLAB_ISSUE
 

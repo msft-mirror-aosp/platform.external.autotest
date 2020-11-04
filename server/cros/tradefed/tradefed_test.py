@@ -639,47 +639,17 @@ class TradefedTest(test.test):
                 verbose=True)
             return output
 
-        if not client_utils.is_moblab():
-            # If the machine can access to the storage server directly,
-            # defer to "gsutil" for downloading.
-            logging.info('Not in lab. Downloading %s directly to %s.',
-                         uri, output)
-            # b/17445576: gsutil rsync of individual files is not implemented.
-            res = utils.run('gsutil',
-                            args=('cp', uri, output),
-                            verbose=True,
-                            ignore_status=True)
-            if not res or res.exit_status != 0:
-                logging.warning('Retrying download...')
-                utils.run('gsutil', args=('cp', uri, output), verbose=True)
-            return output
-
-        # We are in the moblab. Because the machine cannot access the storage
-        # server directly, use dev server to proxy.
-        logging.info('In lab. Downloading %s by staging to %s.',
-                     uri, output)
-
-        dirname = os.path.dirname(parsed.path)
-        archive_url = '%s://%s%s' % (parsed.scheme, parsed.netloc, dirname)
-
-        # First, request the devserver to download files into the lab network.
-        # TODO(ihf): Switch stage_artifacts to honor rsync. Then we don't have
-        # to shuffle files inside of tarballs.
-        info = self._hosts[0].host_info_store.get()
-        ds = dev_server.ImageServer.resolve(info.build)
-        ds.stage_artifacts(
-            info.build, files=[filename], archive_url=archive_url)
-
-        # Then download files from the dev server.
-        # TODO(ihf): use rsync instead of wget. Are there 3 machines involved?
-        # Itself, dev_server plus DUT? Or is there just no rsync in moblab?
-        ds_src = '/'.join([ds.url(), 'static', dirname, filename])
-        logging.info('dev_server URL: %s', ds_src)
-        # Calls into DUT to pull uri from dev_server.
-        utils.run(
-            'wget',
-            args=('--report-speed=bits', '-O', output, ds_src),
-            verbose=True)
+        # If the machine can access to the storage server directly,
+        # defer to "gsutil" for downloading.
+        logging.info('Downloading %s directly to %s.', uri, output)
+        # b/17445576: gsutil rsync of individual files is not implemented.
+        res = utils.run('gsutil',
+                        args=('cp', uri, output),
+                        verbose=True,
+                        ignore_status=True)
+        if not res or res.exit_status != 0:
+            logging.warning('Retrying download...')
+            utils.run('gsutil', args=('cp', uri, output), verbose=True)
         return output
 
     def _instance_copyfile(self, cache_path):

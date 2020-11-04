@@ -1217,16 +1217,17 @@ class BluetoothAdapterTests(test.test):
         return 'start/running' in output
 
 
-    def enable_disable_services(self, services, enable):
-        """Enable or disable service on the DUT
+    def _initctl_services(self, services, command):
+        """Use initctl to control service on the DUT
 
         @param services: list of string service names
-        @param enable: True to enable services, False to disable
+        @param command: initctl command on the services
+                        'start': to start the service
+                        'stop': to stop the service
+                        'restart': to restart the service
 
         @returns: True if services were set successfully, else False
         """
-        toggle_string = 'start' if enable else 'stop'
-
         for service in services:
             # Some platforms will not support all services. In these cases,
             # no need to fail, since they won't interfere with our tests
@@ -1236,20 +1237,47 @@ class BluetoothAdapterTests(test.test):
 
             # A sample call to enable or disable a service is as follows:
             # "initctl stop modemfwd"
-            if self.service_enabled(service) != enable:
-                self.host.run('initctl {} {}'.format(toggle_string, service))
+            if command in ['start', 'stop']:
+                enable = command == 'start'
+                if self.service_enabled(service) != enable:
+                    self.host.run('initctl {} {}'.format(command, service))
 
-            if self.service_enabled(service) != enable:
-                logging.error('Failed to set initctl service to state %d',
-                              enable)
+                if self.service_enabled(service) != enable:
+                    logging.error('Failed to set initctl service to state %d',
+                                  enable)
+                    return False
+
+                if enable:
+                    logging.info('Service {} enabled'.format(service))
+                else:
+                    logging.info('Service {} disabled'.format(service))
+
+            elif command == 'restart':
+                if self.service_enabled(service):
+                    self.host.run('initctl {} {}'.format(command, service))
+                else:
+                    # Just start a stopped job.
+                    self.host.run('initctl {} {}'.format('start', service))
+                logging.info('Service {} restarted'.format(service))
+
+            else:
+                logging.error('unknown command {} on services {}'.format(
+                              command, services))
                 return False
 
-            if enable:
-                logging.info('Service {} enabled'.format(service))
-            else:
-                logging.info('Service {} disabled'.format(service))
-
         return True
+
+
+    def enable_disable_services(self, services, enable):
+        """Enable or disable service on the DUT
+
+        @param services: list of string service names
+        @param enable: True to enable services, False to disable
+
+        @returns: True if services were set successfully, else False
+        """
+        command = 'start' if enable else 'stop'
+        return self._initctl_services(services, command)
 
 
     def enable_disable_cellular(self, enable):
@@ -1276,6 +1304,24 @@ class BluetoothAdapterTests(test.test):
         ui_services = ['ui']
 
         return self.enable_disable_services(ui_services, enable)
+
+
+    def restart_services(self, services):
+        """Restart a service on the DUT
+
+        @param services: the services, e.g., ['cras',]
+
+        @returns: True if services were set successfully, else False
+        """
+        return self._initctl_services(services, 'restart')
+
+
+    def restart_cras(self):
+        """Restart the cras service on the DUT
+
+        @returns: True if cras was restart successfully, else False
+        """
+        return self.restart_services(['cras', ])
 
 
     def enable_disable_debug_log(self, enable):

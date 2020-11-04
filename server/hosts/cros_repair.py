@@ -38,7 +38,7 @@ except ImportError:
 
 from chromite.lib import timeout_util
 
-MIN_BATTERY_LEVEL = 50.0
+MIN_BATTERY_LEVEL = 80.0
 
 DEFAULT_SERVO_RESET_TRIGGER = (
         'ssh',
@@ -107,8 +107,8 @@ class ACPowerVerifier(hosts.Verifier):
     # Battery discharging state in power_supply_info file.
     BATTERY_DISCHARGING = 'Discharging'
     # Power controller can discharge battery any time till 90% for any model.
-    # Setting level to 85% in case we have wearout of it.
-    BATTERY_DISCHARGE_MIN = 85
+    # Setting level to 90% in case we have wearout of it.
+    BATTERY_DISCHARGE_MIN = 90
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
@@ -142,14 +142,15 @@ class ACPowerVerifier(hosts.Verifier):
 
             # Collect info to determine which battery level is better to call
             # as MIN_BATTERY_LEVEL for DUTs in the lab.
-            battery_level_by_10 = int(math.floor(battery_level / 10.0)) * 10
-            metrics_data = {
-                    'model': host.host_info_store.get().model,
-                    'level': battery_level_by_10,
-                    'mode': charging_state
-            }
-            metrics.Counter('chromeos/autotest/battery/state').increment(
-                    fields=metrics_data)
+            if battery_level < MIN_BATTERY_LEVEL:
+                level_by_10 = int(math.floor(battery_level / 10.0)) * 10
+                metrics_data = {
+                        'host': host.get_dut_hostname() or 'None',
+                        'level': level_by_10,
+                        'mode': charging_state
+                }
+                metrics.Counter('chromeos/autotest/battery/state2').increment(
+                        fields=metrics_data)
 
             if (charging_state == self.BATTERY_DISCHARGING
                         and battery_level < self.BATTERY_DISCHARGE_MIN):
@@ -1081,7 +1082,6 @@ def _cros_verify_base_dag():
             (ACPowerVerifier, 'power', ('ssh', )),
             (EXT4fsErrorVerifier, 'ext4', ('ssh', )),
             (WritableVerifier, 'writable', ('ssh', )),
-            (DUTStorageVerifier, 'storage', ('ssh', )),
             (TPMStatusVerifier, 'tpm', ('ssh', )),
             (UpdateSuccessVerifier, 'good_provision', ('ssh', )),
             (FirmwareTpmVerifier, 'faft_tpm', ('ssh', )),
@@ -1096,7 +1096,10 @@ def _cros_verify_base_dag():
 
 def _cros_verify_extended_dag():
     """Return the extended verification DAG for a `CrosHost`."""
-    return ((StopStartUIVerifier, 'stop_start_ui', ('ssh', )), )
+    return (
+            (StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
+            (DUTStorageVerifier, 'storage', ('ssh', )),
+    )
 
 
 def _cros_basic_repair_actions(

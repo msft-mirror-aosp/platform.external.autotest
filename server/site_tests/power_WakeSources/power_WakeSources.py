@@ -176,6 +176,11 @@ class power_WakeSources(test.test):
 
                 return False
         if wake_source in ['AC_CONNECTED', 'AC_DISCONNECTED']:
+            if not self._chg_manager:
+                logging.warning(
+                    'Unable to test AC connect/disconnect with this '
+                    'servo setup')
+                return False
             # Check both the S0ix and S3 wake masks.
             s0ix_wake_mask = int(self._host.run(
                     'ectool hostevent get %d' %
@@ -302,8 +307,14 @@ class power_WakeSources(test.test):
         self._ec = chrome_ec.ChromeEC(self._host.servo)
         self._faft_config = FAFTConfig(self._host.get_platform())
         self._kstr = host.get_kernel_version()
-        self._chg_manager = servo_charger.ServoV4ChargeManager(
+        # TODO(b/168939843) : Look at implementing AC plug/unplug w/ non-PD RPMs
+        # in the lab.
+        try:
+            self._chg_manager = servo_charger.ServoV4ChargeManager(
                 host, host.servo)
+        except error.TestNAError:
+            logging.warning('Servo does not support AC switching.')
+            self._chg_manager = None
 
     def run_once(self):
         """Body of the test."""

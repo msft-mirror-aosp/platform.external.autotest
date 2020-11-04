@@ -338,13 +338,16 @@ class servo_LabstationVerification(test.test):
                     servo_constants.SERVO_PORT_ATTR: port,
                     servo_constants.SERVO_SERIAL_ATTR: serial,
                     servo_constants.SERVO_BOARD_ATTR: board,
-                    servo_constants.SERVO_SETUP_ATTR:
-                    servo_constants.SERVO_SETUP_VALUE_DUAL_V4,
+                    servo_constants.ADDITIONAL_SERVOD_ARGS: 'DUAL_V4=1',
                     'is_in_lab': False,
             }
 
             logging.info('Setting up servod for port %s', port)
-            servo_host, _ = _servo_host.create_servo_host(None, servo_args)
+            # We need try_lab_servo option here, so servo firmware will get
+            # updated before run tests.
+            servo_host, _ = _servo_host.create_servo_host(None,
+                                                          servo_args,
+                                                          try_lab_servo=True)
             try:
                 validate_cmd = 'servodutil show -p %s' % port
                 servo_host.run_grep(validate_cmd,

@@ -25,6 +25,9 @@ SERVO_ATTR_KEYS = (
         SERVO_SETUP_ATTR,
 )
 
+# Additional args that will be appended to servod start command.
+ADDITIONAL_SERVOD_ARGS = 'additional_servod_args'
+
 # Timeout value for stop/start servod process.
 SERVOD_TEARDOWN_TIMEOUT = 3
 SERVOD_QUICK_STARTUP_TIMEOUT = 20

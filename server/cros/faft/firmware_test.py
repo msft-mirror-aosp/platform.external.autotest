@@ -1423,7 +1423,8 @@ class FirmwareTest(test.test):
                       reboot command, including:
                           default: EC soft reboot;
                           'hard': EC cold/hard reboot.
-        @param extra_sleep: Optional, an int for extra wait time for EC reboot.
+        @param extra_sleep: Optional, int or float for extra wait time for EC
+                            reboot in seconds.
         """
         self.blocking_sync(freeze_for_reset=True)
         self.ec.reboot(flags)

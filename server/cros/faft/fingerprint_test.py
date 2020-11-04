@@ -90,7 +90,7 @@ class FingerprintTest(test.test):
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
             _FP_BOARD_NAME_BLOONCHIPPER: {
                     'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
-                    'zork': 'bloonchipper_v2.0.5762-157d30f9',
+                    'zork': 'bloonchipper_v2.0.5938-197506c1',
             },
             _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
             _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
@@ -116,10 +116,10 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
-            'bloonchipper_v2.0.5762-157d30f9.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '0d17b94db65a69136ed3ef575920334306fcdd903d144a6338c8dba398b55910',
-                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.5762-157d30f9',
-                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.5762-157d30f9',
+            'bloonchipper_v2.0.5938-197506c1.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'dc62e4b05eaf4fa8ab5546dcf18abdb30c8e64e9bf0fbf377ebc85155c7c3a47',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.5938-197506c1',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.5938-197506c1',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
         },

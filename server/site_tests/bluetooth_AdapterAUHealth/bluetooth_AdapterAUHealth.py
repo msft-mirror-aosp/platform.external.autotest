@@ -4,6 +4,8 @@
 
 """A Batch of Bluetooth AUdio Health tests"""
 
+import time
+
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS)
@@ -77,23 +79,45 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @raises: TestNAError if the dut does not support wbs.
         """
         capabilities, err = self.bluetooth_facade.get_supported_capabilities()
-        if not (err is None and bool(capabilities.get('wide band speech'))):
-            raise error.TestNAError(
-                    'The DUT does not support WBS. Skip the test.')
+        return err is None and bool(capabilities.get('wide band speech'))
 
 
     def au_hfp_run_method(self, device, test_method, test_profile):
-        """HFP WBS test with the specified test method.
+        """Run an HFP test with the specified test method.
 
         @param device: the bt peer device
         @param test_method: the specific HFP WBS test method
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
         """
-        # Enable/disable WBS per test_profile.
-        wbs_flag = test_profile == HFP_WBS
-        if not self.bluetooth_facade.enable_wbs(wbs_flag):
-            raise error.TestError('failed to %s wbs',
-                                  'enable' if wbs_flag else 'disable')
+        if self.check_wbs_capability():
+            if test_profile == HFP_WBS:
+                # Restart cras to ensure that cras goes back to the default
+                # selection of either WBS or NBS.
+                # Any board that supports WBS should use WBS by default, unless
+                # it's overridden by CRAS' config.
+                # Do not enable WBS explicitly in the test so we can catch if
+                # the default selection goes wrong.
+                self.restart_cras()
+                # The audio team suggests a simple 2-second sleep.
+                time.sleep(2)
+            elif test_profile == HFP_NBS:
+                # Cras may be in either WBS or NBS mode. Disable WBS explicitly.
+                if not self.bluetooth_facade.enable_wbs(False):
+                    raise error.TestError('failed to disable wbs')
+        else:
+            if test_profile == HFP_WBS:
+                # Skip the WBS test on a board that does not support WBS.
+                raise error.TestNAError(
+                        'The DUT does not support WBS. Skip the test.')
+            elif test_profile == HFP_NBS:
+                # Restart cras to ensure that cras goes back to the default
+                # selection of either WBS or NBS.
+                # Any board that does not support WBS should use NBS by default.
+                # Do not enable NBS explicitly in the test so we can catch if
+                # the default selection goes wrong.
+                self.restart_cras()
+                # The audio team suggests a simple 2-second sleep.
+                time.sleep(2)
 
         self.au_run_method(
                 device, lambda: test_method(device, test_profile), test_profile)
@@ -105,7 +129,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_source_test(self):
         """HFP WBS test with sinewave streaming from dut to peer."""
-        self.check_wbs_capability()
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_WBS)
 
@@ -116,7 +139,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""
-        self.check_wbs_capability()
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_WBS)
 
@@ -141,7 +163,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_sink_visqol_test(self):
         """HFP WBS VISQOL test with audio streaming from peer to dut"""
-        self.check_wbs_capability()
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_hfp_run_method(device, self.test_hfp_dut_as_sink_visqol_score,
                                HFP_WBS)
@@ -151,7 +172,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                   devices={'BLUETOOTH_AUDIO':1})
     def au_hfp_wbs_dut_as_source_visqol_test(self):
         """HFP WBS VISQOL test with audio streaming from dut to peer"""
-        self.check_wbs_capability()
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_hfp_run_method(device, self.test_hfp_dut_as_source_visqol_score,
                                HFP_WBS)

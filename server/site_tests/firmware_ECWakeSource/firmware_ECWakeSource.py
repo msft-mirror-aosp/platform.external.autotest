@@ -136,7 +136,7 @@ class firmware_ECWakeSource(FirmwareTest):
         else:
             result = self.ec.send_command_get_output(
                     'ksstate',
-                    ['Keyboard scan disable mask: 0x([0-9a-fA-F]*)'])
+                    ['Keyboard scan disable mask: 0x([0-9a-fA-F]{8})'])
             kb_scan_disable_mask = int(result[0][1], 16)
             if kb_scan_disable_mask == 0:
                 logging.info('Suspend and wake by internal key press.')

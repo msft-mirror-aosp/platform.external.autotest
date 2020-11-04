@@ -1021,7 +1021,9 @@ class FirmwareTest(test.test):
         if enable:
             # Set write protect flag and reboot to take effect.
             self.ec.set_flash_write_protect(enable)
-            self.sync_and_ec_reboot(flags='hard')
+            self.sync_and_ec_reboot(
+                    flags='hard',
+                    extra_sleep=self.faft_config.ec_boot_to_wp_en)
         else:
             # Reboot after deasserting hardware write protect pin to deactivate
             # write protect. And then remove software write protect flag.
@@ -1414,17 +1416,18 @@ class FirmwareTest(test.test):
             internal_dev = self.faft_client.system.get_internal_device()
             self.do_blocking_sync(internal_dev)
 
-    def sync_and_ec_reboot(self, flags=''):
+    def sync_and_ec_reboot(self, flags='', extra_sleep=0):
         """Request the client sync and do a EC triggered reboot.
 
         @param flags: Optional, a space-separated string of flags passed to EC
                       reboot command, including:
                           default: EC soft reboot;
                           'hard': EC cold/hard reboot.
+        @param extra_sleep: Optional, an int for extra wait time for EC reboot.
         """
         self.blocking_sync(freeze_for_reset=True)
         self.ec.reboot(flags)
-        time.sleep(self.faft_config.ec_boot_to_console)
+        time.sleep(self.faft_config.ec_boot_to_console + extra_sleep)
         self.check_lid_and_power_on()
 
     def reboot_and_reset_tpm(self):

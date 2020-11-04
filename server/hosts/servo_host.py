@@ -150,6 +150,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_model = None
         self.servo_serial = None
         self.servo_setup = None
+        self.additional_servod_args = None
         # The flag that indicate if a servo is connected to a smart usbhub.
         # TODO(xianuowang@) remove this flag once all usbhubs in the lab
         # get replaced.
@@ -172,6 +173,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     servo_model=None,
                     servo_serial=None,
                     servo_setup=None,
+                    additional_servod_args=None,
                     is_in_lab=None,
                     *args,
                     **dargs):
@@ -188,6 +190,8 @@ class ServoHost(base_servohost.BaseServoHost):
         @param servo_model: Model that the servo is connected to.
         @param servo_serial: Serial number of the servo device.
         @param servo_setup: Type of servo setup, e.g. REGULAR or DUAL_V4.
+        @param additional_servod_args: Additional args that will append to
+                                       servod start command.
         @param is_in_lab: True if the servo host is in Cros Lab. Default is set
                           to None, for which utils.host_is_in_lab_zone will be
                           called to check if the servo host is in Cros lab.
@@ -201,6 +205,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_model = servo_model
         self.servo_serial = servo_serial
         self.servo_setup = servo_setup
+        self.additional_servod_args = additional_servod_args
 
         if self.is_servo_topology_supported():
             self._topology = servo_topology.ServoTopology(self)
@@ -653,6 +658,10 @@ class ServoHost(base_servohost.BaseServoHost):
         # Start servod with CONFIG=cr50.xml which required for some pools.
         if self._require_cr50_servod_config():
             cmd += ' CONFIG=cr50.xml'
+
+        # Adding customized args if any.
+        if self.additional_servod_args:
+            cmd += ' ' + self.additional_servod_args
 
         # Remove the symbolic links from the logs. This helps ensure that
         # a failed servod instantiation does not cause us to grab old logs

@@ -18,7 +18,7 @@ import logging
 import multiprocessing
 import os
 import re
-from socket import error as SocketError
+import socket
 import threading
 import time
 
@@ -834,7 +834,7 @@ class BluetoothAdapterTests(test.test):
         try:
             device.ResetStack()
 
-        except SocketError as e:
+        except socket.error as e:
             # Ignore conn reset, expected during stack reset
             if e.errno != errno.ECONNRESET:
                 raise
@@ -4103,7 +4103,17 @@ class BluetoothAdapterTests(test.test):
         """
 
         def _action_suspend():
-            self.bluetooth_facade.do_suspend(suspend_time, expect_bt_wake)
+            try:
+                self.bluetooth_facade.do_suspend(suspend_time, expect_bt_wake)
+            except socket.error as e:
+                # Socket errors may occur after suspend if the underlying
+                # connection is lost during suspend (happens if usb-ethernet
+                # disconnects and reconnects on resume). Catch all these errors
+                # and swallow them.
+                logging.warning(
+                        'Socket error on suspend. Swallowing error: %s',
+                        str(e))
+            return 0
 
         proc = multiprocessing.Process(target=_action_suspend)
         proc.daemon = True

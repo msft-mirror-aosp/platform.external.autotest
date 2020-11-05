@@ -1977,7 +1977,7 @@ class BluetoothAdapterTests(test.test):
     def _test_discover_by_device(self, device):
         return device.Discover(self.bluetooth_facade.address)
 
-    @test_retry_and_log(False)
+    @test_retry_and_log(False, messages_start=False, messages_stop=False)
     def test_discover_by_device(self, device):
         """Test that the device could discover the adapter address.
 
@@ -2014,7 +2014,7 @@ class BluetoothAdapterTests(test.test):
         }
         return any(self.results.values())
 
-    @test_retry_and_log(False)
+    @test_retry_and_log(False, messages_start=False, messages_stop=False)
     def test_discover_by_device_fails(self, device):
         """Test that the device could not discover the adapter address.
 
@@ -2027,7 +2027,7 @@ class BluetoothAdapterTests(test.test):
         }
         return not any(self.results.values())
 
-    @test_retry_and_log(False)
+    @test_retry_and_log(False, messages_start=False, messages_stop=False)
     def test_device_set_discoverable(self, device, discoverable):
         """Test that we could set the peer device to discoverable. """
         try:
@@ -2279,7 +2279,7 @@ class BluetoothAdapterTests(test.test):
                 'connection_seen_by_adapter': connection_seen_by_adapter}
         return all(self.results.values())
 
-    @test_retry_and_log
+    @test_retry_and_log(True, messages_start=False, messages_stop=False)
     def test_connection_by_device_only(self, device, adapter_address):
         """Test that the device could connect to adapter successfully.
 

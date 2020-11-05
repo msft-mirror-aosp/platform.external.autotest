@@ -65,21 +65,21 @@ class firmware_ECUsbPorts(FirmwareTest):
         port_enable_param = (self.USB_CHARGE_MODE_SDP2
             if self._smart_usb_charge else self.USB_CHARGE_MODE_ENABLED)
         ports_on_cmd = for_all_ports_cmd % (self._port_count, port_enable_param)
-        cmd = ("(sleep %d; %s; sleep %d; %s)&" %
-                (self.RPC_DELAY, ports_off_cmd,
-                 self.REBOOT_DELAY,
-                 ports_on_cmd))
-        self.faft_client.system.run_shell_command(cmd)
+        cmd = ("sleep %d; %s; sleep %d; %s" %
+               (self.RPC_DELAY, ports_off_cmd, self.REBOOT_DELAY,
+                ports_on_cmd))
+        block = False
+        self.faft_client.system.run_shell_command(cmd, block)
         self.faft_client.disconnect()
 
     def __get_usb_enable_name(self, idx):
-      """Returns the USB enable signal name for a given index"""
-      if self.faft_config.custom_usb_enable_names:
-        if idx >= len(self.faft_config.custom_usb_enable_names):
-          raise error.TestFail('No USB enable for index %d' % idx)
-        return self.faft_config.custom_usb_enable_names[idx]
-      else:
-        return "USB%d_ENABLE" % (idx + 1)
+        """Returns the USB enable signal name for a given index"""
+        if self.faft_config.custom_usb_enable_names:
+            if idx >= len(self.faft_config.custom_usb_enable_names):
+                raise error.TestFail('No USB enable for index %d' % idx)
+            return self.faft_config.custom_usb_enable_names[idx]
+        else:
+            return "USB%d_ENABLE" % (idx + 1)
 
     def get_port_count(self):
         """Get the number of USB ports."""
@@ -87,12 +87,11 @@ class firmware_ECUsbPorts(FirmwareTest):
         limit = 10
         while limit > 0:
             try:
-              gpio_name = self.__get_usb_enable_name(cnt)
-              self.ec.send_command_get_output(
-                      "gpioget %s" % gpio_name,
-                      ["[01].\s*%s" % gpio_name])
-              cnt = cnt + 1
-              limit = limit - 1
+                gpio_name = self.__get_usb_enable_name(cnt)
+                self.ec.send_command_get_output("gpioget %s" % gpio_name,
+                                                ["[01].\s*%s" % gpio_name])
+                cnt = cnt + 1
+                limit = limit - 1
             except error.TestFail:
                 logging.info("Found %d USB ports", cnt)
                 return cnt

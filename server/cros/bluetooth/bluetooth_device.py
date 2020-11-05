@@ -1671,7 +1671,8 @@ class BluetoothDevice(object):
             suspend. If true, we expect this resume will occur early
         """
 
-        return self._proxy.do_suspend(seconds, expect_bt_wake)
+        # Do not retry this RPC if it fails or times out
+        return self._proxy.do_suspend(seconds, expect_bt_wake, __no_retry=True)
 
 
     @proxy_thread_safe

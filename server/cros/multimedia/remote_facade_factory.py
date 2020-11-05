@@ -181,6 +181,9 @@ class RemoteFacadeProxy(object):
 
             return value
 
+        # Pop the no_retry flag (since rpcs won't expect it)
+        no_retry = dargs.pop('__no_retry', False)
+
         try:
             # TODO(ihf): This logs all traffic from server to client. Make
             # the spew optional.
@@ -201,9 +204,15 @@ class RemoteFacadeProxy(object):
                             reconnect=True, retry=False,
                             extra_browser_args=self._extra_browser_args,
                             disable_arc=self._disable_arc)
-                # Try again.
-                logging.warning('Retrying RPC %s.', rpc)
-                return call_rpc_with_log()
+
+                # Try again unless we explicitly disable retry for this rpc.
+                # If we're not retrying, re-raise the exception
+                if no_retry:
+                    logging.warning('Not retrying RPC %s.', rpc)
+                    raise
+                else:
+                    logging.warning('Retrying RPC %s.', rpc)
+                    return call_rpc_with_log()
         except:
             # Process the log if any. It is helpful for debug.
             process_log()

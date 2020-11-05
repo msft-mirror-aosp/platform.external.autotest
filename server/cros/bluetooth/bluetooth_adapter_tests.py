@@ -4028,8 +4028,9 @@ class BluetoothAdapterTests(test.test):
         suspend.start()
         try:
             self.host.test_wait_for_sleep(sleep_timeout)
-        except:
+        except Exception as e:
             suspend.join()
+            self.results = {'exception': str(e)}
             return False
 
         return True
@@ -4055,9 +4056,11 @@ class BluetoothAdapterTests(test.test):
         @return True if suspend sub-process completed without error.
         """
         success = True
+        results = {}
 
         # Sometimes it takes longer to resume from suspend; give some leeway
         resume_timeout = resume_timeout + resume_slack
+        results['resume timeout'] = resume_timeout
         try:
             start = datetime.now()
 
@@ -4066,14 +4069,18 @@ class BluetoothAdapterTests(test.test):
             self.host.test_wait_for_resume(
                 boot_id, resume_timeout=self.RESUME_INTERNAL_TIMEOUT_SECS)
 
+            results['device accessible on resume'] = True
+
             # As of now, a timeout in test_wait_for_resume doesn't raise. Force
             # a failure here instead by checking against the start time.
             delta = datetime.now() - start
+            results['time taken to resume'] = delta.total_seconds()
             if delta > timedelta(seconds=resume_timeout):
                 success = not fail_on_timeout
             else:
                 success = not fail_early_wake
         except error.TestFail as e:
+            results['device accessible on resume'] = False
             success = False
             logging.error('wait_for_resume: %s', e)
 
@@ -4084,12 +4091,11 @@ class BluetoothAdapterTests(test.test):
         finally:
             suspend.join()
 
-        self.results = {
-            'resume_success': success,
-            'suspend_result': suspend.exitcode == 0
-        }
+        results['success'] = success
+        results['suspend exit code'] = suspend.exitcode
+        self.results = results
 
-        return all(self.results.values())
+        return all([success, suspend.exitcode == 0])
 
 
     def suspend_async(self, suspend_time, expect_bt_wake=False):

@@ -4055,8 +4055,51 @@ class BluetoothAdapterTests(test.test):
 
         @return True if suspend sub-process completed without error.
         """
-        success = True
+        success = False
         results = {}
+
+        def _check_timeout(delta):
+            if delta > timedelta(seconds=resume_timeout):
+                return not fail_on_timeout
+            else:
+                return not fail_early_wake
+
+        def _check_suspend_attempt_or_raise(wait_from, wake_at):
+            """Make sure suspend attempt was recent or raise TestNA.
+
+            If we're looking at a previous suspend attempt, it means the test
+            didn't trigger a suspend properly (i.e. no powerd call)
+
+            @param wait_from: When we started waiting for resume.
+            @param wake_at: When powerd suspend resumed.
+
+            @raises: error.TestNAError if found suspend occurred before we
+                     started waiting for resume.
+            """
+            if wake_at < wait_from:
+                raise error.TestNAError(
+                        'No recent suspend attempt found. '
+                        'Start waiting at {} but last suspend ended at {}'.
+                        format(wait_from, wake_at))
+
+            return True
+
+        def _check_retcode_or_raise(retcode):
+            """Make sure powerd return was successful.
+
+            @param retcode: Return code of powerd_suspend.
+
+            @raises: error.TestNAError if failed suspend due to non-BT
+            @return: False if BT woke us, True otherwise
+            """
+            if retcode:
+                if self.bluetooth_facade.bt_caused_last_resume():
+                    return False
+                else:
+                    raise error.TestNAError(
+                            'Failed suspend due to non-BT wake')
+
+            return True
 
         # Sometimes it takes longer to resume from suspend; give some leeway
         resume_timeout = resume_timeout + resume_slack
@@ -4071,14 +4114,32 @@ class BluetoothAdapterTests(test.test):
 
             results['device accessible on resume'] = True
 
-            # As of now, a timeout in test_wait_for_resume doesn't raise. Force
-            # a failure here instead by checking against the start time.
-            delta = datetime.now() - start
-            results['time taken to resume'] = delta.total_seconds()
-            if delta > timedelta(seconds=resume_timeout):
-                success = not fail_on_timeout
+            # As of now, a timeout in test_wait_for_resume doesn't raise. Start
+            # by first measuring the delta until network is back up to the dut.
+            network_delta = datetime.now() - start
+
+            # Use powerd logs to see how much time we actually spent in suspend
+            # If the network went down during suspend, we will have spent less
+            # time in suspend than expected. If we can't find info via powerd,
+            # we can use measured time instead.
+            info = self.bluetooth_facade.find_last_suspend_via_powerd_logs()
+            if info:
+                (start_suspend_at, end_suspend_at, retcode) = info
+                actual_delta = end_suspend_at - start_suspend_at
+                results['powerd time to resume'] = actual_delta.total_seconds()
+                results['powerd retcode'] = retcode
+
+                # Resume is successful if suspend occurred correctly and woke up
+                # within the timeout. One significant caveat is that we only
+                # fail here if BT blocked suspend, not if we woke spuriously.
+                # This is by design (we depend on the timeout to check for
+                # spurious wakeup).
+                success = _check_suspend_attempt_or_raise(
+                        start, end_suspend_at) and _check_retcode_or_raise(
+                                retcode) and _check_timeout(actual_delta)
             else:
-                success = not fail_early_wake
+                results['time to resume'] = network_delta.total_seconds()
+                success = _check_timeout(network_delta)
         except error.TestFail as e:
             results['device accessible on resume'] = False
             success = False

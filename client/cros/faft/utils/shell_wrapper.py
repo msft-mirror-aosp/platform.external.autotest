@@ -32,6 +32,11 @@ class LocalShell(object):
         """
         stdout = None
         stderr = None
+        if cmd and cmd.rstrip()[-1] == '&' and block:
+            errormsg = ('Remove & from command \'%s\', '
+                        'use block=True instead, '
+                        'refer to b/172325331 for more details' % cmd)
+            raise UnsupportedSuccessToken(errormsg)
         self._os_if.log('Executing: %s' % cmd)
         process = subprocess.Popen(
                 cmd,

@@ -145,7 +145,7 @@ class ACPowerVerifier(hosts.Verifier):
             if battery_level < MIN_BATTERY_LEVEL:
                 level_by_10 = int(math.floor(battery_level / 10.0)) * 10
                 metrics_data = {
-                        'host': host.get_dut_hostname() or 'None',
+                        'host': host.hostname,
                         'level': level_by_10,
                         'mode': charging_state
                 }

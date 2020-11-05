@@ -417,7 +417,7 @@ class Autotest(installable_object.InstallableObject):
         logging.info('Installing updated global_config.ini.')
         destination = os.path.join(self.host.get_autodir(),
                                    'global_config.ini')
-        with tempfile.NamedTemporaryFile() as client_config:
+        with tempfile.NamedTemporaryFile(mode='w') as client_config:
             config = global_config.global_config
             client_section = config.get_section_values('CLIENT')
             client_section.write(client_config)

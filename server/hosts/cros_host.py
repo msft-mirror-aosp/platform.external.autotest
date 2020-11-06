@@ -1422,8 +1422,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                           'cleanup through the RPM Infrastructure.')
 
             battery_percentage = self.get_battery_percentage()
-            if (battery_percentage and
-                battery_percentage < cros_repair.MIN_BATTERY_LEVEL):
+            if (
+                    battery_percentage
+                    and battery_percentage < cros_constants.MIN_BATTERY_LEVEL):
                 raise
             elif self.is_ac_connected():
                 logging.info('The device has power adapter connected and '
@@ -3004,16 +3005,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                          ' mode is not needed for recovery.')
             return False
         try:
-            #TODO(xianuowang@) move MIN_BATTERY_LEVEL to cros_constant
             battery_percent = self.servo.get('battery_charge_percent')
-            if battery_percent < cros_repair.MIN_BATTERY_LEVEL:
+            if battery_percent < cros_constants.MIN_BATTERY_LEVEL:
                 logging.info(
                         'Current battery level %s%% below %s%% threshold, we'
                         ' will attempt to boot host in recovery mode without'
                         ' changing servo to snk mode. Please note the host may'
                         ' not able to see usb drive in recovery mode later due'
                         ' to servo not in snk mode.', battery_percent,
-                        cros_repair.MIN_BATTERY_LEVEL)
+                        cros_constants.MIN_BATTERY_LEVEL)
                 return False
         except Exception as e:
             logging.info(

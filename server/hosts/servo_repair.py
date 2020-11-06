@@ -340,10 +340,10 @@ class _Cr50ConsoleVerifier(hosts.Verifier):
                         sys.exc_info()[2])
 
     def _is_applicable(self, host):
-        if host.get_servo():
-            # Only when DUT connect by type-c.
-            return host.get_servo().get_main_servo_device() == 'ccd_cr50'
-        return False
+        # Only when DUT is running through ccd.
+        # TODO(coconutruben): replace with ccd API when available in servo.py
+        return (host.get_servo()
+                and host.get_servo().get_main_servo_device() == 'ccd_cr50')
 
     @property
     def description(self):
@@ -377,10 +377,10 @@ class _CCDTestlabVerifier(hosts.Verifier):
             'to enable it (go/ccd-setup).')
 
     def _is_applicable(self, host):
-        if host.get_servo():
-            # Only when DUT connect by type-c.
-            return host.get_servo().get_main_servo_device() == 'ccd_cr50'
-        return False
+        # Only when DUT is running through ccd.
+        # TODO(coconutruben): replace with ccd API when available in servo.py
+        return (host.get_servo()
+                and host.get_servo().get_main_servo_device() == 'ccd_cr50')
 
     @property
     def description(self):

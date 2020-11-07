@@ -175,12 +175,8 @@ def verify_battery_status(host):
     status = host.run(cmd, timeout=30, ignore_status=True).stdout.strip()
     if status not in ['Charging', 'Discharging', 'Full']:
         raise Exception(
-                'Unexpected battery status. Please verify that DUT prepared'
-                ' for deployment.')
-    if status in ['Discharging']:
-        raise Exception(
-                'Unexpected battery status. Please verify that DUT connected'
-                ' to power and charging.')
+                'Unexpected battery status. Please verify that DUT prepared '
+                'for deployment.')
     logging.info("Battery status verification passed!")
 
 

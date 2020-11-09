@@ -547,6 +547,9 @@ class Servo(object):
     # extract firmware on the lab host machines (b/149419503).
     EXTRACT_TIMEOUT_SECS = 180
 
+    # The VBUS voltage threshold used to detect if VBUS is supplied
+    VBUS_THRESHOLD = 3000.0
+
     def __init__(self, servo_host, servo_serial=None):
         """Sets up the servo communication infrastructure.
 
@@ -1790,3 +1793,16 @@ class Servo(object):
         self.set_nocheck('ec_uart_flush', 'off')
         self.set_nocheck('ec_uart_cmd', 'reboot')
         self.set_nocheck('ec_uart_flush', 'on')
+
+    def get_vbus_voltage(self):
+        """Get the voltage of VBUS'.
+
+        @returns The voltage of VBUS, if vbus_voltage is supported.
+                 None               , if vbus_voltage is not supported.
+        """
+        if not self.has_control('vbus_voltage'):
+            logging.debug('Servo does not have vbus_voltage control,'
+                          'unable to get vbus voltage')
+            return None
+
+        return self.get('vbus_voltage')

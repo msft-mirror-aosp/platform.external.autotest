@@ -111,6 +111,15 @@ class platform_ServoPowerStateController(test.test):
         """Initialize DUT for testing."""
         pass
 
+    # This is used as detection of b/159938441 occurrence
+    def check_vbus(self):
+        """Check if Vbus is supplied"""
+        # Check the issue occurs - VBUS is not supplied.
+        mv = self.host.servo.get_vbus_voltage()
+        if mv is not None and mv < self.host.servo.VBUS_THRESHOLD:
+            return False
+        # If vbus voltage monitoring isn't supported, does not signal the issue
+        return True
 
     def cleanup(self):
         """Clean up DUT after servo actions."""
@@ -191,9 +200,15 @@ class platform_ServoPowerStateController(test.test):
 
         self.host.servo.switch_usbkey('dut')
         time.sleep(30)
-        self.assert_dut_on(rec_on=True)
+        if self.check_vbus():
+            self.assert_dut_on(rec_on=True)
+            logging.info('Power off DUT which is up in recovery mode.')
+        else:
+            logging.error('EC/RO bug(b:159938441) present.'
+                          'The check for power_state:rec with USB plugged'
+                          'omitted for this board.')
+            logging.info('Power off DUT at recovery screen.')
 
-        logging.info('Power off DUT which is up in recovery mode.')
         self.host.power_off_via_servo()
         self.assert_dut_off('power_state:off failed after boot from external '
                             'USB stick.')

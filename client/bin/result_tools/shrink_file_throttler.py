@@ -15,6 +15,7 @@ UNSHRINKABLE_EXTENSIONS = set([
         '.bin',
         '.data',
         '.devcore',
+        '.diff',
         '.dmp',
         '.gz',
         '.htm',
@@ -25,14 +26,18 @@ UNSHRINKABLE_EXTENSIONS = set([
         '.jpg',
         '.json',
         '.pcap',
+        '.pclm',
+        '.pdf',
         '.png',
+        '.ps',
+        '.pwg',
         '.tar',
         '.tgz',
-        '.trc', # TODO: unify with .pcap?
+        '.trc',  # TODO: unify with .pcap?
         '.xml',
         '.xz',
         '.zip',
-        ])
+])
 
 # Regex for paths that should not be shrunk.
 UNSHRINKABLE_PATH_PATTERNS = [

@@ -57,6 +57,13 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_fg_bg_combination()
 
 
+    @test_wrapper('Suspend Resume Tests',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_suspend_resume_tests(self):
+        """Tests working of background scanning with suspend resume."""
+        self.advmon_test_suspend_resume()
+
+
     @test_wrapper('Interleave Scan Tests', devices={'BLE_MOUSE': 1})
     def advmon_interleaved_scan(self):
         """Tests interleave scan."""
@@ -80,6 +87,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_single_client_tests()
         self.advmon_multi_client_tests()
         self.advmon_fg_bg_combination_tests()
+        self.advmon_suspend_resume_tests()
         self.advmon_interleaved_scan()
 
     def run_once(self,

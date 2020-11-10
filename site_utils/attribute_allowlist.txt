@@ -50,6 +50,7 @@ suite:bvt-tast-android-pfq
 suite:bvt-tast-chrome-pfq
 suite:bvt-tast-cq
 suite:bvt-tast-informational
+suite:camera-postsubmit
 suite:camerabox_facing-back
 suite:camerabox_facing-front
 suite:cellular_endtoend

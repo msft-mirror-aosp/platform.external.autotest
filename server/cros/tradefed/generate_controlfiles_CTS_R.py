@@ -9,7 +9,7 @@ CONFIG = {}
 
 CONFIG['TEST_NAME'] = 'cheets_CTS_R'
 CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
-CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_R'
+CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts'
 CONFIG['COPYRIGHT_YEAR'] = 2020
 CONFIG['AUTHKEY'] = ''
 

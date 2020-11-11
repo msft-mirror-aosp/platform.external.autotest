@@ -171,27 +171,21 @@ class platform_ServoPowerStateController(test.test):
     def test_with_usb_plugged_in(self):
         """Run test when USB stick is plugged in to servo."""
 
+        # Servo V4 needs to be in snk role to allow booting from USB in
+        # recovery mode (b/161464597).
+        # TODO(waihong): Add a check to see if the battery level is too
+        # low and sleep for a while for charging.
+        if self.host.get_board().split(':')[1] == 'grunt':
+            # Skip on Grunt to avoid breaking CCD (b/170167166).
+            # TODO: Remove this once Grunt FW is fixed.
+            logging.info('Grunt: Do not put servo_v4 into snk role')
+        else:
+            logging.info('Put servo_v4 into snk role')
+            self.host.servo.set_servo_v4_role('snk')
+
         logging.info('Power off DUT')
         self.host.power_off_via_servo()
         self.assert_dut_off('power_state:off did not turn DUT off.')
-        # Servo V4 needs to be in snk role to allow booting from USB in
-        # recovery mode (b/161464597).
-        # TODO(b/169191422): this has to be _after_ turning the DUT off to
-        # avoid triggering a ccd detection failure on grunt. After the root
-        # cause is addresses this _can_ be moved above the `power_off` though
-        # might not need to be.
-        # TODO(waihong): Add a check to see if the battery level is too
-        # low and sleep for a while for charging.
-
-        # Defensively sleep before setting servo state to src, defensively.
-        time.sleep(10)
-        logging.info('Put servo_v4 into snk role')
-        self.host.servo.set_servo_v4_role('src')
-        # Defensively sleep before setting servo state to snk.
-        time.sleep(10)
-        self.host.servo.set_servo_v4_role('snk')
-        # Defensively sleep after setting servo state before booting DUT.
-        time.sleep(10)
 
         logging.info('Power DUT on in recovery mode, DUT shall boot from USB.')
         self.host.servo.switch_usbkey('off')

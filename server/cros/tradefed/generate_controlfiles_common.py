@@ -1192,9 +1192,16 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
         for led_provision in ['led', 'noled']:
             name = get_controlfile_name(module, abi,
                                         revision, is_public, led_provision, facing)
-            content = get_controlfile_content(module, set([module]), abi,
-                                              revision, build, uri,
-                                              None, is_public, led_provision, facing)
+            content = get_controlfile_content(module,
+                                              set([module]),
+                                              abi,
+                                              revision,
+                                              build,
+                                              uri,
+                                              None,
+                                              is_public,
+                                              led_provision=led_provision,
+                                              camera_facing=facing)
             with open(name, 'w') as f:
                 f.write(content)
 

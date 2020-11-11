@@ -247,9 +247,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if 'btpeer_host_list' in args_dict:
             result = []
             for btpeer in args_dict['btpeer_host_list'].split(','):
+                # IPv6 addresses including a port number should be enclosed in
+                # square brackets.
+                delimiter = ']:' if re.search(r':.*:', btpeer) else ':'
                 result.append({key: value for key,value in
                     zip(('btpeer_host','btpeer_port'),
-                    btpeer.split(':'))})
+                    btpeer.strip('[]').split(delimiter))})
             return result
         else:
             return {key: args_dict[key]

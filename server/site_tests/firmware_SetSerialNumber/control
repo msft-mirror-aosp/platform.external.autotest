@@ -18,7 +18,6 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-JOB_RETRIES = 1
 
 DOC = """
 Test that setting the serial number in firmware during an onsite RMA works.

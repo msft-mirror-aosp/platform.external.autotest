@@ -78,6 +78,13 @@ class _UpdateVerifier(hosts.Verifier):
                              " by labstation AdminRepair task.")
                 return
             if host.is_in_lab() and host.job and host.job.in_lab:
+                if (
+                        not host.get_dut_host_info() or
+                        not host.get_dut_host_info().servo_cros_stable_version
+                ):
+                    logging.info('Servo stable version missed.'
+                                 ' Skip update check action.')
+                    return
                 # We have seen cases that invalid GPT headers/entries block
                 # v3s from been update, so always try to repair here.
                 # See crbug.com/994396, crbug.com/1057302.

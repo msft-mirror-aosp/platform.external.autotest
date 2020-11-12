@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 AUTHOR = "kalin"
-NAME = "platform_test_nightly"
-PURPOSE = "Test suite for platform team nightly tests."
+NAME = "platform_test"
+PURPOSE = "Test suite for platform team nightly and perbuild tests."
 
 TIME = "LENGTHY"
 TEST_CATEGORY = "General"

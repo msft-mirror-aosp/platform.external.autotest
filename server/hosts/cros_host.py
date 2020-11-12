@@ -247,9 +247,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if 'btpeer_host_list' in args_dict:
             result = []
             for btpeer in args_dict['btpeer_host_list'].split(','):
+                # IPv6 addresses including a port number should be enclosed in
+                # square brackets.
+                delimiter = ']:' if re.search(r':.*:', btpeer) else ':'
                 result.append({key: value for key,value in
                     zip(('btpeer_host','btpeer_port'),
-                    btpeer.split(':'))})
+                    btpeer.strip('[]').split(delimiter))})
             return result
         else:
             return {key: args_dict[key]
@@ -2866,17 +2869,31 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if dut_ssh_verifier == hosts.VERIFY_SUCCESS:
             # DUT us sshable and we still have many options to repair it.
             return
-        # when we cannot ssh to the DUT and we have hardware or set-up
-        # issues with servo then we need request manual repair for this DUT.
-        servo_state_required_manual_fix = [
-                servo_constants.SERVO_STATE_DUT_NOT_CONNECTED,
-                servo_constants.SERVO_STATE_NEED_REPLACEMENT,
-        ]
-        if self.get_servo_state() in servo_state_required_manual_fix:
+        needs_manual_repair = False
+        dhp = self.health_profile
+        if dhp and dhp.get_repair_fail_count() > 168:
+            # 168 = 24 times during 7 days.
             logging.info(
-                    'DUT required manual repair because it is not sshable'
-                    ' and possible have setup issue with Servo. Please verify'
-                    ' all connections and present of devices.')
+                    'DUT is not sshable and fail %s times.'
+                    ' Limit to try repair is 168 times',
+                    dhp.get_repair_fail_count())
+            needs_manual_repair = True
+
+        if not needs_manual_repair:
+            # We cannot ssh to the DUT and we have hardware or set-up issues
+            # with servo then we need request manual repair for the DUT.
+            servo_state_required_manual_fix = [
+                    servo_constants.SERVO_STATE_DUT_NOT_CONNECTED,
+                    servo_constants.SERVO_STATE_NEED_REPLACEMENT,
+            ]
+            if self.get_servo_state() in servo_state_required_manual_fix:
+                logging.info(
+                        'DUT required manual repair because it is not sshable'
+                        ' and possible have setup issue with Servo. Please'
+                        ' verify all connections and present of devices.')
+                needs_manual_repair = True
+
+        if needs_manual_repair:
             self.set_device_repair_state(
                     cros_constants.DEVICE_STATE_NEEDS_MANUAL_REPAIR)
 

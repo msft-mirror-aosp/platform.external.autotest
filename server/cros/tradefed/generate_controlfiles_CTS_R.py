@@ -122,14 +122,29 @@ CONFIG['ENABLE_DEFAULT_APPS'] = [
 _EJECT_REMOVABLE_DISK_COMMAND = (
         "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")
 
+_WIFI_CONNECT_COMMANDS = [
+        # These needs to be in order.
+        "'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass)",
+        "'/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi'"
+]
+
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {}
 CONFIG['LOGIN_PRECONDITION'] = {}
 
 # Preconditions applicable to public tests.
-CONFIG['PUBLIC_PRECONDITION'] = {}
-
-CONFIG['PUBLIC_DEPENDENCIES'] = {}
+CONFIG['PUBLIC_PRECONDITION'] = {
+        'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS,
+        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsStatsdHostTestCases': _WIFI_CONNECT_COMMANDS,
+}
+CONFIG['PUBLIC_DEPENDENCIES'] = {
+        'CtsCameraTestCases': ['lighting'],
+        'CtsMediaTestCases': ['noloopback'],
+}
 
 # This information is changed based on regular analysis of the failure rate on
 # partner moblabs.

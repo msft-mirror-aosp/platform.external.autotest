@@ -137,6 +137,7 @@ suite:gts
 suite:hotrod
 suite:hotrod-remora
 suite:hwqual
+suite:infra_qual
 suite:jailed_build
 suite:kernel_daily_benchmarks
 suite:kernel_daily_regression

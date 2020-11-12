@@ -135,8 +135,11 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         self.test_gatt_browse(device.address)
 
 
-    @test_wrapper('LE secondary Test', devices={'BLE_KEYBOARD':1},
-                  skip_models=LAB_VEYRON_MODELS)
+    # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
+    # connection is initiated by slave. Skip the test until 2021 uprev
+    @test_wrapper('LE secondary Test',
+                  devices={'BLE_KEYBOARD': 1},
+                  skip_models=LAB_VEYRON_MODELS + ['bob'])
     def le_role_secondary(self):
         """Tests connection as secondary"""
 
@@ -254,8 +257,11 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
-    @test_wrapper('LE Receiver Role Test', devices={'BLE_KEYBOARD':1},
-                  skip_models=LAB_VEYRON_MODELS)
+    # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
+    # connection is initiated by slave. Skip the test until 2021 uprev
+    @test_wrapper('LE Receiver Role Test',
+                  devices={'BLE_KEYBOARD': 1},
+                  skip_models=LAB_VEYRON_MODELS + ['bob'])
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 

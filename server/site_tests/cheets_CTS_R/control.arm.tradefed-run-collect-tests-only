@@ -10,8 +10,9 @@ ATTRIBUTES = 'suite:cts'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
-TIME = 'MEDIUM'
+TIME = 'LENGTHY'
 MAX_RESULT_SIZE_KB = 1024000
+PRIORITY = 70
 DOC = 'Run all of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):
@@ -31,6 +32,6 @@ def run_TS(machine):
         retry_manual_tests=True,
         use_jdk9=True,
         warn_on_test_retry=False,
-        timeout=3600)
+        timeout=9000)
 
 parallel_simple(run_TS, machines)

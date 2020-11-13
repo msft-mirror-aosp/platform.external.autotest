@@ -161,6 +161,13 @@ class _WrapServoErrors(object):
         """
         return re.sub('^.*>:', '', xmlexc.faultString)
 
+    @staticmethod
+    def _log_exception(exc_type, exc_val, exc_tb):
+        """Log exception information"""
+        if exc_val is not None:
+            logging.debug(
+                    'Wrapped exception:', exc_info=(exc_type, exc_val, exc_tb))
+
     def __enter__(self):
         """Enter the context"""
         return self
@@ -168,12 +175,8 @@ class _WrapServoErrors(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the context, handling the exception if there was one"""
         try:
-            if exc_val is not None:
-                logging.debug(
-                        'Wrapped exception:',
-                        exc_info=(exc_type, exc_val, exc_tb))
-
             if isinstance(exc_val, six.moves.http_client.BadStatusLine):
+                self._log_exception(exc_type, exc_val, exc_tb)
                 if exc_val.line in ('', "''"):
                     err = ServodEmptyResponse(self.description, exc_val.line)
                 else:
@@ -181,6 +184,7 @@ class _WrapServoErrors(object):
                 six.reraise(err.__class__, err, exc_tb)
 
             if isinstance(exc_val, seven.SOCKET_ERRORS):
+                self._log_exception(exc_type, exc_val, exc_tb)
                 err = ServodConnectionError(self.description, exc_val.args[0],
                                             exc_val.args[1], self.servo_name)
                 six.reraise(err.__class__, err, exc_tb)
@@ -191,6 +195,7 @@ class _WrapServoErrors(object):
                 unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
                 if not unknown_ctrl:
                     # Log the full text for errors, except unavailable controls.
+                    self._log_exception(exc_type, exc_val, exc_tb)
                     logging.debug(err_msg)
                 if unknown_ctrl:
                     # The error message for unavailable controls is huge, since

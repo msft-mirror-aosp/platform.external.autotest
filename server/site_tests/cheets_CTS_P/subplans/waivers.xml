@@ -7,4 +7,6 @@
     of test cases is confused. See b/151779432.
   -->
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFlashControl" />
+  <Entry include="CtsGraphicsTestCases android.graphics.cts.BitmapTest#testHardwareBitmapNotLeaking" />
+  <Entry include="CtsGraphicsTestCases android.graphics.cts.BitmapTest#testDrawingHardwareBitmapNotLeaking" />
 </SubPlan>

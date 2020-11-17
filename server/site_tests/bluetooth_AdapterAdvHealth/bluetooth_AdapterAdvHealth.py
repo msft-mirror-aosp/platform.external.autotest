@@ -79,6 +79,14 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
         self.test_case_nearby_mediums_fast()
 
+    @test_wrapper('Advertising suspend peer test', devices={'BLE_MOUSE': 1})
+    def adv_suspend_peer_test(self):
+        """Verify advertising around suspend from a peer"""
+
+        device = self.devices['BLE_MOUSE'][0]
+
+        self.advertising_peer_suspend_resume_test(device)
+
     @batch_wrapper('Advertising Health')
     def adv_health_batch_run(self, num_iterations=1, test_name=None):
         """Run the advertising health test batch or a specific given test.

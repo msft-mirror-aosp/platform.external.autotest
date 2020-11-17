@@ -182,14 +182,28 @@ class power_WakeSources(test.test):
                     'servo setup')
                 return False
             # Check both the S0ix and S3 wake masks.
-            s0ix_wake_mask = int(self._host.run(
-                    'ectool hostevent get %d' %
-                    chrome_ec.EC_HOST_EVENT_LAZY_WAKE_MASK_S0IX).stdout,
-                                 base=16)
-            s3_wake_mask = int(self._host.run(
-                    'ectool hostevent get %d' %
-                    chrome_ec.EC_HOST_EVENT_LAZY_WAKE_MASK_S3).stdout,
-                               base=16)
+            try:
+                s0ix_wake_mask = int(self._host.run(
+                        'ectool hostevent get %d' %
+                        chrome_ec.EC_HOST_EVENT_LAZY_WAKE_MASK_S0IX).stdout,
+                                     base=16)
+            except error.AutoservRunError as e:
+                s0ix_wake_mask = 0
+                logging.info(
+                        '"ectool hostevent get" failed for s0ix wake mask with'
+                        ' exception: %s', str(e))
+
+            try:
+                s3_wake_mask = int(self._host.run(
+                        'ectool hostevent get %d' %
+                        chrome_ec.EC_HOST_EVENT_LAZY_WAKE_MASK_S3).stdout,
+                                   base=16)
+            except error.AutoservRunError as e:
+                s3_wake_mask = 0
+                logging.info(
+                        '"ectool hostevent get" failed for s3 wake mask with'
+                        ' exception: %s', str(e))
+
             wake_mask = s0ix_wake_mask | s3_wake_mask
             if wake_source == 'AC_CONNECTED':
                 return wake_mask & chrome_ec.HOSTEVENT_AC_CONNECTED

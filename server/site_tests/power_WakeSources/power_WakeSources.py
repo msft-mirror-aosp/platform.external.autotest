@@ -205,10 +205,19 @@ class power_WakeSources(test.test):
                         ' exception: %s', str(e))
 
             wake_mask = s0ix_wake_mask | s3_wake_mask
+            supported = False
             if wake_source == 'AC_CONNECTED':
-                return wake_mask & chrome_ec.HOSTEVENT_AC_CONNECTED
-            if wake_source == 'AC_DISCONNECTED':
-                return wake_mask & chrome_ec.HOSTEVENT_AC_DISCONNECTED
+                supported = wake_mask & chrome_ec.HOSTEVENT_AC_CONNECTED
+            elif wake_source == 'AC_DISCONNECTED':
+                supported = wake_mask & chrome_ec.HOSTEVENT_AC_DISCONNECTED
+
+            if not supported:
+                logging.info(
+                        '%s not supported. Platforms launched in 2020 or before'
+                        ' may not require it. S0ix wake mask: 0x%x S3 wake'
+                        ' mask: 0x%x', wake_source, s0ix_wake_mask,
+                        s3_wake_mask)
+                return False
 
         return True
 

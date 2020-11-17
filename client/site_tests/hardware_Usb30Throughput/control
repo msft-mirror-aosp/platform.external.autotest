@@ -25,7 +25,11 @@ test.
 @param size: (10Mb) the size of the file to transfer for each |measureaments|
 @param fs_uuid: UUID for USB storage define volume, if auto detection does not
        work.
-@param min_speed: (300Mb/sec) a float number for the minimum speed accepted.
+@param min_read_speed: (300Mb/sec) a float number for the minimum read speed
+       accepted.
+       Any |measureaments| performing below it will make the test fail
+@param min_write_speed: (300Mb/sec) a float number for the minimum write speed
+       accepted.
        Any |measureaments| performing below it will make the test fail
 """
 
@@ -34,7 +38,9 @@ if not storage_filter:
     storage_filter = {'bus': 'usb'}
 measurements = int(args_dict.get('measurements', 10))
 size = int(args_dict.get('size', 10))
-min_speed = float(args_dict.get('min_speed', 300))
+min_read_speed = float(args_dict.get('min_read_speed', 300))
+min_write_speed = float(args_dict.get('min_write_speed', 300))
 
 job.run_test('hardware_Usb30Throughput', storage_filter=storage_filter,
-             measurements=measurements, size=size, min_speed=min_speed)
+             measurements=measurements, size=size, min_read_speed=min_read_speed,
+             min_write_speed=min_write_speed)

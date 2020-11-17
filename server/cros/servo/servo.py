@@ -1592,6 +1592,23 @@ class Servo(object):
         else:
             logging.debug('Already in the role: %s.', role)
 
+    def get_servo_v4_role(self):
+        """Get the power role of servo v4, either 'src' or 'snk'.
+
+        It returns None if not a servo v4.
+        """
+        if not self._servo_type.startswith('servo_v4'):
+            logging.debug('Not a servo v4, unable to get role')
+            return None
+
+        if not self.has_control('servo_v4_role'):
+            logging.debug(
+                    'Servo does not has servo_v4_role control, unable'
+                    ' to get the role.')
+            return None
+
+        return self.get('servo_v4_role')
+
     def set_servo_v4_pd_comm(self, en):
         """Set the PD communication of servo v4, either 'on' or 'off'.
 

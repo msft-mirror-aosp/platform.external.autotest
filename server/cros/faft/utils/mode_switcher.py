@@ -718,7 +718,10 @@ class _BaseModeSwitcher(object):
             self.servo.switch_usbkey(usb_state)
         psc.power_off()
         psc.power_on(psc.REC_ON)
-        self.bypasser.check_vbus_and_pd_state()
+        # Check VBUS and pd state only if we are going to boot
+        # to ChromeOS in the recovery mode
+        if usb_state == 'dut':
+            self.bypasser.check_vbus_and_pd_state()
 
 
     def _enable_rec_mode_force_mrc_and_reboot(self, usb_state=None):
@@ -836,25 +839,25 @@ class _BaseModeSwitcher(object):
 
         while (timeout > current_timer and
                power_state not in (self.faft_framework.POWER_STATE_S0, None)):
-                time.sleep(2)
-                current_timer += 2
-                power_state = self.faft_framework.get_power_state()
+            time.sleep(2)
+            current_timer += 2
+            power_state = self.faft_framework.get_power_state()
 
-                # If the state changed, debounce it.
-                if debounce_power_state and power_state != last_state:
-                    last_state = power_state
-                    power_state = DEBOUNCE_STATE
+            # If the state changed, debounce it.
+            if debounce_power_state and power_state != last_state:
+                last_state = power_state
+                power_state = DEBOUNCE_STATE
 
-                logging.info('power state: %s', power_state)
+            logging.info('power state: %s', power_state)
 
-                # Only power-on the device if it has been consistently out of
-                # S0.
-                if (retry_power_on and
-                    power_state not in (self.faft_framework.POWER_STATE_S0,
-                                        None, DEBOUNCE_STATE)):
-                    logging.info("-[FAFT]-[ retry powering on the DUT ]---")
-                    psc = self.servo.get_power_state_controller()
-                    psc.retry_power_on()
+            # Only power-on the device if it has been consistently out of
+            # S0.
+            if (retry_power_on and
+                power_state not in (self.faft_framework.POWER_STATE_S0,
+                                    None, DEBOUNCE_STATE)):
+                logging.info("-[FAFT]-[ retry powering on the DUT ]---")
+                psc = self.servo.get_power_state_controller()
+                psc.retry_power_on()
 
         # Use the last state if the device didn't reach a stable state in
         # timeout seconds.

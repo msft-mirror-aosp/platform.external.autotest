@@ -598,6 +598,10 @@ class _TopologyVerifier(hosts.Verifier):
         topology = servo_topology.ServoTopology(host)
         topology.read(host.get_dut_host_info())
         try:
+            # Linux takes 1 second to detect and enumerate USB device since
+            # 2010 year. We take 10 seconds to be sure as old standard was
+            # 5 seconds.
+            time.sleep(10)
             topology.validate(raise_error=True,
                               dual_set=host.is_dual_setup(),
                               compare=True)

@@ -608,6 +608,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             for device in device_list:
                 if device is not None:
                     self.clear_raspi_device(device)
+                    self.device_set_powered(device, False)
 
         # Reset the adapter
         self.test_reset_on_adapter()

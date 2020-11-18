@@ -870,6 +870,15 @@ class BluetoothAdapterTests(test.test):
         # Ensure device is back online before continuing
         self.wait_for_device(device, timeout=30)
 
+    def device_set_powered(self, device, powered):
+        """Set raspi BT powered state.
+
+        @param powered: Powered state to set on Raspi.
+        """
+        if powered:
+            device.AdapterPowerOn()
+        else:
+            device.AdapterPowerOff()
 
     def get_device_rasp(self, device_num, on_start=True):
         """Get all bluetooth device objects from Bluetooth peer devices

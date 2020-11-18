@@ -4094,7 +4094,13 @@ class BluetoothAdapterTests(test.test):
             @raises: error.TestNAError if found suspend occurred before we
                      started waiting for resume.
             """
-            if wake_at < wait_from:
+            # If the last suspend attempt was before we started waiting and by
+            # more than timeout seconds, it's probably not a recent attempt.
+            # Make sure to compare the delta because if we fail suspend,
+            # self.suspend_and_wait_for_sleep will block until the suspend
+            # attempt is already complete so wake_at < wait_from is always true.
+            if wake_at < wait_from and (wait_from - wake_at) > timedelta(
+                    seconds=resume_timeout):
                 raise error.TestNAError(
                         'No recent suspend attempt found. '
                         'Start waiting at {} but last suspend ended at {}'.

@@ -1418,7 +1418,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         # BLE_MOUSE in allowlist, interleave with allowlist passive scan
         self.test_interleaving_state(False, cycles=EXPECT_FALSE_TEST_CYCLE)
-        device.TurnOff()
+        device.AdapterPowerOff()
         # Make sure the peer is disconnected
         self.test_device_is_not_connected(device.address)
         self.test_interleaving_state(True)

@@ -1395,6 +1395,19 @@ class BluetoothAdapterTests(test.test):
         """ Collect WRT logs from Intel Adapters."""
         return self.bluetooth_facade.collect_wrt_logs()
 
+    def get_num_connected_devices(self):
+        """ Return number of remote devices currently connected to the DUT.
+
+        @returns: The number of devices known to bluez with the Connected
+            property active
+        """
+
+        num_connected_devices = 0
+        for dev in self.bluetooth_facade.get_devices():
+            if dev and dev.get('Connected', 0):
+                num_connected_devices += 1
+
+        return num_connected_devices
 
     @test_retry_and_log
     def test_bluetoothd_running(self):
@@ -2098,6 +2111,8 @@ class BluetoothAdapterTests(test.test):
         paired = False
         connected = False
         connection_info_retrievable = False
+        connected_devices = self.get_num_connected_devices()
+
         if self.bluetooth_facade.has_device(device_address):
             has_device = True
             try:
@@ -2119,9 +2134,11 @@ class BluetoothAdapterTests(test.test):
                 'has_device': has_device,
                 'paired': paired,
                 'connected': connected,
-                'connection_info_retrievable': connection_info_retrievable}
-        return all(self.results.values())
+                'connection_info_retrievable': connection_info_retrievable,
+                'connection_num': connected_devices + 1
+        }
 
+        return all(self.results.values())
 
     @test_retry_and_log
     def test_remove_pairing(self, device_address):

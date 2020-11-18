@@ -709,9 +709,14 @@ class _BaseModeSwitcher(object):
         @param usb_state: A string, one of 'dut', 'host', or 'off'.
         """
         psc = self.servo.get_power_state_controller()
-        psc.power_off()
+        # Switch the USB key when AP is on, because there is a
+        # bug (b/172909077) - using "image_usbkey_direction:usb_state", when
+        # AP if off may cause not recognizing the file system,
+        # so system won't boot in recovery from USB.
+        # When the issue is fixed, it can be done when AP is off.
         if usb_state:
             self.servo.switch_usbkey(usb_state)
+        psc.power_off()
         psc.power_on(psc.REC_ON)
         self.bypasser.check_vbus_and_pd_state()
 
@@ -726,9 +731,14 @@ class _BaseModeSwitcher(object):
         @param usb_state: A string, one of 'dut', 'host', or 'off'.
         """
         psc = self.servo.get_power_state_controller()
-        psc.power_off()
+        # Switch the USB key when AP is on, because there is a
+        # bug (b/172909077) - using "image_usbkey_direction:usb_state", when
+        # AP if off may cause not recognizing the file system,
+        # so system won't boot in recovery from USB.
+        # When the issue is fixed, it can be done when AP is off.
         if usb_state:
             self.servo.switch_usbkey(usb_state)
+        psc.power_off()
         psc.power_on(psc.REC_ON_FORCE_MRC)
 
     def disable_rec_mode_and_reboot(self, usb_state=None):

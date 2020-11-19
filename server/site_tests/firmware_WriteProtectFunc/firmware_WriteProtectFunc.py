@@ -53,13 +53,13 @@ class firmware_WriteProtectFunc(FirmwareTest):
                 # SW WP can be changed.
                 current_hw_wp = 'on' in self.servo.get('fw_wp_state')
                 if current_hw_wp:
-                    self.set_hardware_write_protect(False)
+                    self.set_ap_write_protect_and_reboot(False)
                 for target, original_sw_wp in self._original_sw_wps.items():
                     self._set_write_protect(target, original_sw_wp)
-                self.set_hardware_write_protect(current_hw_wp)
+                self.set_ap_write_protect_and_reboot(current_hw_wp)
             # Recover HW WP status.
             if hasattr(self, '_original_hw_wp'):
-                self.set_hardware_write_protect(self._original_hw_wp)
+                self.set_ap_write_protect_and_reboot(self._original_hw_wp)
         except Exception as e:
             logging.error('Caught exception: %s', str(e))
 
@@ -78,10 +78,10 @@ class firmware_WriteProtectFunc(FirmwareTest):
         assert target in (BIOS, EC)
         if target == BIOS:
             # Unlock registers to alter the region/range
-            self.set_hardware_write_protect(False)
+            self.set_ap_write_protect_and_reboot(False)
             self.faft_client.bios.set_write_protect_region('WP_RO', enable)
             if enable:
-                self.set_hardware_write_protect(True)
+                self.set_ap_write_protect_and_reboot(True)
         elif target == EC:
             self.switcher.mode_aware_reboot('custom',
                     lambda:self.set_ec_write_protect_and_reboot(enable))

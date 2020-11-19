@@ -1,16 +1,16 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import cStringIO
+import six
 import json
 import mock
 import os
 import shutil
 import tempfile
 import unittest
-import urllib2
-
+from six.moves import urllib
 import common
 
 from autotest_lib.site_utils import hwid_lib
@@ -70,7 +70,7 @@ class HwIdUnittests(unittest.TestCase):
                                 self.invalid_dummy_key_file)
 
 
-    @mock.patch('urllib2.urlopen', side_effect=urllib2.URLError('url error'))
+    @mock.patch('urllib2.urlopen', side_effect=urllib.error.URLError('url error'))
     def test_fail_to_open_url_urlerror(self, *args, **dargs):
         """Test that failing to open a url will raise a HwIdException."""
         self.validate_exception(hwid_lib.HwIdException, 'hwid',
@@ -78,10 +78,10 @@ class HwIdUnittests(unittest.TestCase):
 
 
     # pylint: disable=missing-docstring
-    @mock.patch('urllib2.urlopen')
+    @mock.patch.object(urllib.request, 'urlopen')
     def test_fail_decode_hwid(self, mock_urlopen, *args, **dargs):
         """Test that supplying bad json raises a HwIdException."""
-        mock_page_contents = mock.Mock(wraps=cStringIO.StringIO('bad json'))
+        mock_page_contents = mock.Mock(wraps=six.StringIO('bad json'))
         mock_urlopen.return_value = mock_page_contents
         self.validate_exception(hwid_lib.HwIdException, 'hwid',
                                 hwid_lib.HWID_INFO_BOM, self.dummy_key_file)
@@ -89,7 +89,7 @@ class HwIdUnittests(unittest.TestCase):
 
 
     # pylint: disable=missing-docstring
-    @mock.patch('urllib2.urlopen')
+    @mock.patch.object(urllib.request, 'urlopen')
     def test_success(self, mock_urlopen, *args, **dargs):
         """Test that get_hwid_info successfully returns a hwid dict.
 
@@ -99,7 +99,7 @@ class HwIdUnittests(unittest.TestCase):
         expected_dict = json.loads(returned_json)
         for valid_info_type in hwid_lib.HWID_INFO_TYPES:
             mock_page_contents = mock.Mock(
-                    wraps=cStringIO.StringIO(returned_json))
+                    wraps=six.StringIO(returned_json))
             mock_urlopen.return_value = mock_page_contents
             self.assertEqual(hwid_lib.get_hwid_info('hwid', valid_info_type,
                                                     self.dummy_key_file),
@@ -108,7 +108,7 @@ class HwIdUnittests(unittest.TestCase):
 
 
     # pylint: disable=missing-docstring
-    @mock.patch('urllib2.urlopen')
+    @mock.patch.object(urllib.request, 'urlopen')
     def test_url_properly_constructed(self, mock_urlopen, *args, **dargs):
         """Test that the url is properly constructed.
 
@@ -125,14 +125,14 @@ class HwIdUnittests(unittest.TestCase):
         for dummy_key_file in [self.dummy_key_file,
                                self.dummy_key_file_spaces,
                                self.dummy_key_file_newline]:
-            mock_page_contents = mock.Mock(wraps=cStringIO.StringIO('{}'))
+            mock_page_contents = mock.Mock(wraps=six.StringIO('{}'))
             mock_urlopen.return_value = mock_page_contents
             hwid_lib.get_hwid_info(hwid, info_type, dummy_key_file)
             mock_urlopen.assert_called_with(expected_url)
 
 
     # pylint: disable=missing-docstring
-    @mock.patch('urllib2.urlopen')
+    @mock.patch.object(urllib.request, 'urlopen')
     def test_url_properly_constructed_again(self, mock_urlopen, *args, **dargs):
         """Test that the url is properly constructed with special hwid.
 
@@ -146,7 +146,7 @@ class HwIdUnittests(unittest.TestCase):
                                                  info_type, hwid_quoted,
                                                  self.dummy_key))
 
-        mock_page_contents = mock.Mock(wraps=cStringIO.StringIO('{}'))
+        mock_page_contents = mock.Mock(wraps=six.StringIO('{}'))
         mock_urlopen.return_value = mock_page_contents
         hwid_lib.get_hwid_info(hwid, info_type, self.dummy_key_file)
         mock_urlopen.assert_called_with(expected_url)

@@ -3,8 +3,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import __builtin__
-import Queue
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import six.moves.builtins
+import six.moves.queue
 import json
 import logging
 import os
@@ -36,6 +40,7 @@ from autotest_lib.tko import models
 from autotest_lib.utils import gslib
 from autotest_lib.site_utils import pubsub_utils
 from chromite.lib import timeout_util
+from six.moves import range
 
 # Test value to use for `days_old`, if nothing else is required.
 _TEST_EXPIRATION_AGE = 7
@@ -587,7 +592,7 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         super(OffloadDirectoryTests, self).tearDown()
 
     def _mock_create_marker_file(self):
-        self.mox.StubOutWithMock(__builtin__, 'open')
+        self.mox.StubOutWithMock(six.moves.builtins, 'open')
         open(mox.IgnoreArg(), 'a').AndReturn(mock.MagicMock())
 
 
@@ -930,7 +935,7 @@ class JobDirectoryOffloadTests(_TempResultsDirTestBase):
     def setUp(self):
         super(JobDirectoryOffloadTests, self).setUp()
         self._job = self.make_job(self.REGULAR_JOBLIST[0])
-        self._queue = Queue.Queue()
+        self._queue = six.moves.queue.Queue()
 
 
     def _offload_unexpired_job(self, days_old):

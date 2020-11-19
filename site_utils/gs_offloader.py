@@ -10,6 +10,10 @@ Uses gsutil to archive files to the configured Google Storage bucket.
 Upon successful copy, the local results directory is deleted.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import abc
 try:
   import cachetools
@@ -29,6 +33,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from six.moves import urllib
 
 from optparse import OptionParser
 
@@ -57,6 +62,7 @@ except ImportError:
     psutil = None
 
 from chromite.lib import parallel
+import six
 try:
     from chromite.lib import metrics
     from chromite.lib import ts_mon_config
@@ -392,6 +398,124 @@ def _get_swarming_req_dir(path):
     return None
 
 
+def _parse_cts_job_results_file_path(path):
+    """Parse CTS file paths an extract required information from them."""
+
+    # Autotest paths look like:
+    # /317739475-chromeos-test/chromeos4-row9-rack11-host22/
+    # cheets_CTS.android.dpi/results/cts-results/2016.04.28_01.41.44
+
+    # Swarming paths look like:
+    # /swarming-458e3a3a7fc6f210/1/autoserv_test/
+    # cheets_CTS.android.dpi/results/cts-results/2016.04.28_01.41.44
+
+    folders = path.split(os.sep)
+    if 'swarming' in folders[1]:
+        # Swarming job and attempt combined
+        job_id = "%s-%s" % (folders[-7], folders[-6])
+    else:
+        job_id = folders[-6]
+
+    cts_package = folders[-4]
+    timestamp = folders[-1]
+
+    return job_id, cts_package, timestamp
+
+
+def _upload_files(host, path, result_pattern, multiprocessing,
+                  result_gs_bucket, apfe_gs_bucket):
+    keyval = models.test.parse_job_keyval(host)
+    build = keyval.get('build')
+    suite = keyval.get('suite')
+
+    host_keyval = models.test.parse_host_keyval(host, keyval.get('hostname'))
+    labels =  urllib.parse.unquote(host_keyval.get('labels'))
+    try:
+        host_model_name = re.search(r'model:(\w+)', labels).group(1)
+    except AttributeError:
+        logging.error('Model: name attribute is missing in %s/host_keyval/%s.',
+                      host, keyval.get('hostname'))
+        return
+
+    if not _is_valid_result(build, result_pattern, suite):
+        # No need to upload current folder, return.
+        return
+
+    parent_job_id = str(keyval['parent_job_id'])
+
+    job_id, package, timestamp = _parse_cts_job_results_file_path(path)
+
+    # Results produced by CTS test list collector are dummy results.
+    # They don't need to be copied to APFE bucket which is mainly being used for
+    # CTS APFE submission.
+    if not _is_test_collector(package):
+        # Path: bucket/build/parent_job_id/cheets_CTS.*/job_id_timestamp/
+        # or bucket/build/parent_job_id/cheets_GTS.*/job_id_timestamp/
+        index = build.find('-release')
+        build_with_model_name = ''
+        if index == -1:
+            logging.info('Not a release build.'
+                         'Non release build results can be skipped from offloading')
+            return
+
+        # CTS v2 pipeline requires device info in 'board.model' format.
+        # e.g. coral.robo360-release, eve.eve-release
+        build_with_model_name = (build[:index] + '.' + host_model_name +
+                                     build[index:])
+
+        cts_apfe_gs_path = os.path.join(
+                apfe_gs_bucket, build_with_model_name, parent_job_id,
+                package, job_id + '_' + timestamp) + '/'
+
+        for zip_file in glob.glob(os.path.join('%s.zip' % path)):
+            utils.run(' '.join(_get_cmd_list(
+                    multiprocessing, zip_file, cts_apfe_gs_path)))
+            logging.debug('Upload %s to %s ', zip_file, cts_apfe_gs_path)
+    else:
+        logging.debug('%s is a CTS Test collector Autotest test run.', package)
+        logging.debug('Skipping CTS results upload to APFE gs:// bucket.')
+
+    if result_gs_bucket:
+        # Path: bucket/cheets_CTS.*/job_id_timestamp/
+        # or bucket/cheets_GTS.*/job_id_timestamp/
+        test_result_gs_path = os.path.join(
+                result_gs_bucket, package, job_id + '_' + timestamp) + '/'
+
+        for test_result_file in glob.glob(os.path.join(path, result_pattern)):
+            # gzip test_result_file(testResult.xml/test_result.xml)
+
+            test_result_tgz_file = ''
+            if test_result_file.endswith('tgz'):
+                # Extract .xml file from tgz file for better handling in the
+                # CTS dashboard pipeline.
+                # TODO(rohitbm): work with infra team to produce .gz file so
+                # tgz to gz middle conversion is not needed.
+                try:
+                    with tarfile.open(test_result_file, 'r:gz') as tar_file:
+                        tar_file.extract(
+                                CTS_COMPRESSED_RESULT_TYPES[result_pattern])
+                        test_result_tgz_file = test_result_file
+                        test_result_file = os.path.join(path,
+                                CTS_COMPRESSED_RESULT_TYPES[result_pattern])
+                except tarfile.ReadError as error:
+                    logging.debug(error)
+                except KeyError as error:
+                    logging.debug(error)
+
+            test_result_file_gz =  '%s.gz' % test_result_file
+            with open(test_result_file, 'r') as f_in, (
+                    gzip.open(test_result_file_gz, 'w')) as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            utils.run(' '.join(_get_cmd_list(
+                    multiprocessing, test_result_file_gz, test_result_gs_path)))
+            logging.debug('Zip and upload %s to %s',
+                          test_result_file_gz, test_result_gs_path)
+            # Remove test_result_file_gz(testResult.xml.gz/test_result.xml.gz)
+            os.remove(test_result_file_gz)
+            # Remove extracted test_result.xml file.
+            if test_result_tgz_file:
+               os.remove(test_result_file)
+
 
 def _emit_gs_returncode_metric(returncode):
     """Increment the gs_returncode counter based on |returncode|."""
@@ -417,11 +541,9 @@ def _handle_dir_os_error(dir_entry, fix_permission=False):
     metrics.Counter(m_permission_error).increment(fields=metrics_fields)
 
 
-class BaseGSOffloader(object):
+class BaseGSOffloader(six.with_metaclass(abc.ABCMeta, object)):
 
     """Google Storage offloader interface."""
-
-    __metaclass__ = abc.ABCMeta
 
     def offload(self, dir_entry, dest_path, job_complete_time):
         """Safely offload a directory entry to Google Storage.

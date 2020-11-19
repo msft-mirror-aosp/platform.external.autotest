@@ -1,10 +1,11 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import json
 import logging
-import urllib2
+from six.moves import urllib
 
 from autotest_lib.client.common_lib import global_config
 
@@ -64,7 +65,7 @@ def get_hwid_info(hwid, info_type, key_file):
     url_format_dict = {'base_url': HWID_BASE_URL,
                        'version': HWID_VERSION,
                        'info_type': info_type,
-                       'hwid': urllib2.quote(hwid),
+                       'hwid': urllib.parse.quote(hwid),
                        'key': key}
     return _fetch_hwid_response(url_format_dict)
 
@@ -108,7 +109,7 @@ def _try_hwid_v1(hwid, info_type):
     url_format_dict = {'base_url': CHROMEOS_HWID_SERVER_URL,
                        'version': HWID_VERSION,
                        'info_type': info_type,
-                       'hwid': urllib2.quote(hwid),
+                       'hwid': urllib.parse.quote(hwid),
                        'key': key}
 
     try:
@@ -127,8 +128,8 @@ def _fetch_hwid_response(req_parameter_dict):
     """
     url_request = URL_FORMAT_STRING % req_parameter_dict
     try:
-        page_contents = urllib2.urlopen(url_request)
-    except (urllib2.URLError, urllib2.HTTPError) as e:
+        page_contents = urllib.request.urlopen(url_request)
+    except (urllib.error.URLError, urllib.error.HTTPError) as e:
         # TODO(kevcheng): Might need to scrub out key from exception message.
         raise HwIdException('error retrieving raw hwid info: %s' % e)
 

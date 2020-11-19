@@ -460,7 +460,7 @@ class GATT_HIDApplication(GATT_Application):
             'UUID': BatteryService.uuid,
             'Primary': True,
             'Device': None,
-            'Includes': None
+            'Includes': []
         }
         self.add_service(BatteryService)
 
@@ -490,7 +490,7 @@ class GATT_HIDApplication(GATT_Application):
             'UUID': GenericAttributeProfile.uuid,
             'Primary': True,
             'Device': None,
-            'Includes': None
+            'Includes': []
         }
         self.add_service(GenericAttributeProfile)
 
@@ -519,7 +519,7 @@ class GATT_HIDApplication(GATT_Application):
             'UUID': DeviceInfo.uuid,
             'Primary': True,
             'Device': None,
-            'Includes': None
+            'Includes': []
         }
         self.add_service(DeviceInfo)
 
@@ -550,7 +550,7 @@ class GATT_HIDApplication(GATT_Application):
             'UUID': GenericAccessProfile.uuid,
             'Primary': True,
             'Device': None,
-            'Includes': None
+            'Includes': []
         }
         self.add_service(GenericAccessProfile)
 

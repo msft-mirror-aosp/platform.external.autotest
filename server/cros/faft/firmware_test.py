@@ -994,6 +994,15 @@ class FirmwareTest(test.test):
         """
         self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
 
+    def set_ap_write_protect_and_reboot(self, enable):
+        """Set AP write protect status and reboot to take effect.
+
+        @param enable: True if asserting write protect. Otherwise, False.
+        """
+        self.set_hardware_write_protect(enable)
+        self.sync_and_ec_reboot()
+        self.switcher.wait_for_client()
+
     def run_chromeos_firmwareupdate(self, mode, append=None, options=(),
             ignore_status=False):
         """Use RPC to get the command to run, but do the actual run via ssh.

@@ -728,8 +728,14 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.error('Unexpected error occurred from usbhub control, please'
                       ' file a bug and inform chrome-fleet-software@ team!')
 
-    def _get_servo_usb_devnum(self):
-        """Helper function to collect current usb devnum of servo.
+    def get_main_servo_usb_path(self):
+        """Helper function to collect current usb-path to main servo.
+
+        The usb-path is path to the folder where usb-device was enumerated.
+        If fail then will return an empty string ('').
+
+        @returns: string, usb-path to the main servo device.
+            e.g.: '/sys/bus/usb/devices/1-6.1.3.1'
         """
         # TODO remove try-except when fix crbug.com/1087964
         try:
@@ -741,15 +747,19 @@ class ServoHost(base_servohost.BaseServoHost):
             logging.debug('Attempt to get servo usb-path failed due to '
                           'timeout; %s', e)
             return ''
-
         if resp.exit_status != 0:
             self._process_servodtool_error(resp)
             return ''
         usb_path = resp.stdout.strip()
         logging.info('Usb path of servo %s is %s', self.servo_serial, usb_path)
+        return usb_path
 
-        resp = self.run('cat %s/devnum' % usb_path,
-                        ignore_status=True)
+    def _get_servo_usb_devnum(self):
+        """Helper function to collect current usb devnum of servo."""
+        usb_path = self.get_main_servo_usb_path()
+        if not usb_path:
+            return ''
+        resp = self.run('cat %s/devnum' % usb_path, ignore_status=True)
         if resp.exit_status != 0:
             self._process_servodtool_error(resp)
             return ''

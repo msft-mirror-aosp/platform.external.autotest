@@ -2946,10 +2946,17 @@ class BluetoothAdapterTests(test.test):
                 service_data_found = False
                 break
 
-        # Verify that the advertising intervals are correct.
-        min_adv_interval_ms_found, max_adv_interval_ms_found = (
-                self._verify_advertising_intervals(min_adv_interval_ms,
-                                                   max_adv_interval_ms))
+        # Broadcast advertisements are overwritten in some kernel versions to
+        # be more aggressive. Verify that the advertising intervals are correct
+        # if this mode is not used
+        if advertisement_data.get('Type') != 'broadcast':
+            min_adv_interval_ms_found, max_adv_interval_ms_found = (
+                    self._verify_advertising_intervals(min_adv_interval_ms,
+                                                       max_adv_interval_ms))
+
+        else:
+            min_adv_interval_ms_found = True
+            max_adv_interval_ms_found = True
 
         scan_rsp_correct = self._verify_scan_response_data(advertisement_data)
 

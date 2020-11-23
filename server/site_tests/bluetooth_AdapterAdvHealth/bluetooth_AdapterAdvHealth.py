@@ -79,6 +79,12 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
         self.test_case_nearby_mediums_fast()
 
+    @test_wrapper('Broadcast advertising test')
+    def adv_broadcast_test(self):
+        """Verify broadcast advertising capability"""
+
+        self.test_case_broadcast()
+
     @test_wrapper('Advertising suspend peer test', devices={'BLE_MOUSE': 1})
     def adv_suspend_peer_test(self):
         """Verify advertising around suspend from a peer"""

@@ -294,7 +294,7 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: a list of records, where each item is a record of
                   interleave |state| and the |time| the state starts.
                   |state| could be {'no filter', 'allowlist'}
-                  |time| is kernel time in sec
+                  |time| is system time in sec
 
         """
         return self.bluetooth_facade.\

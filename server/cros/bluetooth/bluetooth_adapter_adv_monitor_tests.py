@@ -1286,6 +1286,92 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
+    def advmon_test_multi_client(self):
+        """Test case: MULTI_CLIENT
+
+        Verify working of patterns filter and RSSI filters with multiple
+        clients and multiple monitors.
+
+        """
+        self.test_setup_peer_devices()
+
+        # Create two test app instances.
+        app1 = self.create_app()
+        app2 = self.create_app()
+
+        # Register both apps, should not fail.
+        self.test_register_app(app1)
+        self.test_register_app(app2)
+
+        # Monitors with same pattern and RSSI filter values in both apps.
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+                [0, 0x19, [0xc1, 0x03]],
+        ])
+        monitor1.update_rssi([-60, 3, -80, 3])
+
+        monitor2 = TestMonitor(app2)
+        monitor2.update_type('or_patterns')
+        monitor2.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+                [0, 0x19, [0xc1, 0x03]],
+        ])
+        monitor2.update_rssi([-60, 3, -80, 3])
+
+        # Activate should get invoked.
+        self.test_add_monitor(monitor1, expected_activate=True)
+        self.test_add_monitor(monitor2, expected_activate=True)
+
+        # DeviceFound should get triggered for keyboard.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor1, count=1)
+        self.test_device_found(monitor2, count=1)
+        self.test_stop_peer_device_adv(self.peer_keybd)
+
+        # Remove a monitor from one app.
+        self.test_remove_monitor(monitor1)
+
+        # Monitors with same pattern but different RSSI filter values.
+        monitor3 = TestMonitor(app1)
+        monitor3.update_type('or_patterns')
+        monitor3.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+        ])
+        monitor3.update_rssi([-60, 3, -80, 3])
+
+        monitor4 = TestMonitor(app2)
+        monitor4.update_type('or_patterns')
+        monitor4.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+        ])
+        monitor4.update_rssi([-60, 10, -80, 10])
+
+        # Activate should get invoked.
+        self.test_add_monitor(monitor3, expected_activate=True)
+        self.test_add_monitor(monitor4, expected_activate=True)
+
+        # DeviceFound should get triggered for mouse.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor2, count=2)
+        self.test_device_found(monitor3, count=1)
+
+        # Since the RSSI timeouts are different for monitor4, DeviceFound
+        # event should get triggered after total of 10 seconds.
+        self.test_device_found(monitor4, count=0)
+        self.test_device_found(monitor4, count=1, delay=5)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+
+        # Unregister both apps, should not fail.
+        self.test_unregister_app(app1)
+        self.test_unregister_app(app2)
+
+        # Terminate the both test app instances.
+        self.test_exit_app(app1)
+        self.test_exit_app(app2)
+
+
     def advmon_test_fg_bg_combination(self):
         """Test case: FG_BG_COMBINATION
 
@@ -1371,6 +1457,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         # Terminate the test app instance.
         self.test_exit_app(app1)
+
 
     def advmon_test_interleaved_scan(self):
         """ Test cases for verifying interleave scan """

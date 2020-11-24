@@ -43,6 +43,13 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_rssi_filter_3()
 
 
+    @test_wrapper('Multi Client Tests',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_multi_client_tests(self):
+        """Tests monitor functionality for multiple clients."""
+        self.advmon_test_multi_client()
+
+
     @test_wrapper('Foreground Background Combination Tests',
                   devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def advmon_fg_bg_combination_tests(self):
@@ -71,6 +78,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """
         self.advmon_monitor_health_tests()
         self.advmon_single_client_tests()
+        self.advmon_multi_client_tests()
         self.advmon_fg_bg_combination_tests()
         self.advmon_interleaved_scan()
 

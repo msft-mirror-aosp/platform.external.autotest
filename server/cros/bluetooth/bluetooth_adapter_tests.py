@@ -106,11 +106,6 @@ COMMON_FAILURES = {
 # the ones that were not launched
 TABLET_MODELS = ['kakadu', 'kodama', 'krane', 'dru', 'druwl', 'dumo']
 
-# TODO(b/158336394) - Devices with Realtek chipsets won't behave well during
-# suspend/resume because they don't maintain FW. List all Realtek models here
-# and skip them in the relevant tests.
-REALTEK_MODELS = ['blooglet', 'barla', 'ezkinil', 'trembyle']
-
 # TODO(b/161005264) - Some tests rely on software rotation to pass, so we must
 # know which models don't use software rotation. Use a static list until we can
 # query the bluez API instead. Extended advertising is supported on platforms
@@ -121,6 +116,16 @@ EXT_ADV_MODELS = ['ezkinil', 'trembyle', 'drawcia', 'drawlat', 'drawman',
                   'dragonair', 'dratini', 'duffy', 'jinlon', 'kaisa',
                   'kindred', 'kled', 'puff', 'kohaku', 'nightfury', 'morphius',
                   'lazor', 'trogdor']
+
+# TODO(b/158336394) Realtek: Powers down during suspend due to high power usage
+#                            during S3.
+# TODO(b/168152910) Marvell: Powers down during suspend due to flakiness when
+#                            entering suspend.  This will also skip the tests
+#                            for Veyron (which don't power down right now) but
+#                            reconnect tests are still enabled for that platform
+#                            to check for suspend stability.
+SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
+
 
 def method_name():
     """Get the method name of a class.

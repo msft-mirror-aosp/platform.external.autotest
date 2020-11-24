@@ -255,12 +255,18 @@ class BatteryStat(DevStat):
     float charge_full_design: Full capacity by design [Ah]
     float charge_now:         Remaining charge [Ah]
     float current_now:        Battery discharge rate [A]
+    int   cycle_count:        Battery cycle count
     float energy:             Current battery charge [Wh]
     float energy_full:        Last full capacity reached [Wh]
     float energy_full_design: Full capacity by design [Wh]
     float energy_rate:        Battery discharge rate [W]
+    str   manufacturer:       Battery manufacturer
+    str   model_name:         Battery model name
     float power_now:          Battery discharge rate [W]
+    int   present:            Whether battery is present
     float remaining_time:     Remaining discharging time [h]
+    str   serial_number:      Battery serial number
+    str   status:             Charging status
     float voltage_min_design: Minimum voltage by design [V]
     float voltage_max_design: Maximum voltage by design [V]
     float voltage_now:        Voltage now [V]
@@ -272,6 +278,7 @@ class BatteryStat(DevStat):
         'charge_full_design':   ['charge_full_design', float],
         'charge_now':           ['charge_now', float],
         'current_now':          ['current_now', float],
+        'cycle_count':          ['cycle_count', int],
         'voltage_min_design':   ['voltage_min_design', float],
         'voltage_max_design':   ['voltage_max_design', float],
         'voltage_now':          ['voltage_now', float],
@@ -280,6 +287,9 @@ class BatteryStat(DevStat):
         'energy_full_design':   ['energy_full_design', float],
         'power_now':            ['power_now', float],
         'present':              ['present', int],
+        'manufacturer':         ['manufacturer', str],
+        'model_name':           ['model_name', str],
+        'serial_number':        ['serial_number', str],
         'energy_rate':          ['', ''],
         'remaining_time':       ['', '']
         }

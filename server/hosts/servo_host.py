@@ -151,6 +151,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_serial = None
         self.servo_setup = None
         self.additional_servod_args = None
+        self._dut_health_profile = None
         # The flag that indicate if a servo is connected to a smart usbhub.
         # TODO(xianuowang@) remove this flag once all usbhubs in the lab
         # get replaced.
@@ -1469,6 +1470,20 @@ class ServoHost(base_servohost.BaseServoHost):
         """
         return self.servo_setup == servo_constants.SERVO_SETUP_VALUE_DUAL_V4
 
+    def set_dut_health_profile(self, dut_health_profile):
+        """
+        @param dut_health_profile: A DeviceHealthProfile object.
+        """
+        logging.debug('setting dut_health_profile field to (%s)',
+                      dut_health_profile)
+        self._dut_health_profile = dut_health_profile
+
+    def get_dut_health_profile(self):
+        """
+        @return A DeviceHealthProfile object.
+        """
+        return self._dut_health_profile
+
 
 def make_servo_hostname(dut_hostname):
     """Given a DUT's hostname, return the hostname of its servo.
@@ -1563,8 +1578,12 @@ def _tweak_args_for_ssp_moblab(servo_args):
                 'SSP', 'host_container_ip', type=str, default=None)
 
 
-def create_servo_host(dut, servo_args, try_lab_servo=False,
-                      try_servo_repair=False, dut_host_info=None):
+def create_servo_host(dut,
+                      servo_args,
+                      try_lab_servo=False,
+                      try_servo_repair=False,
+                      dut_host_info=None,
+                      dut_health_profile=None):
     """Create a ServoHost object for a given DUT, if appropriate.
 
     This function attempts to create and verify or repair a `ServoHost`
@@ -1616,6 +1635,7 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
                           `repair()` instead of `verify()`.
     @param dut_host_info: A HostInfo object of the DUT that connected
                           to this servo.
+    @param dut_health_profile: DUT repair info with history.
 
     @returns: A ServoHost object or None. See comments above.
 
@@ -1660,6 +1680,10 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         return None, servo_constants.SERVO_STATE_NO_SSH
 
     newhost = ServoHost(**servo_args)
+    if not newhost.is_up_fast():
+        # We do not have any option to recover servo_host.
+        # If servo_host is not pingable then we can stop here.
+        return None, servo_constants.SERVO_STATE_NO_SSH
 
     # Reset or reboot servo device only during AdminRepair tasks.
     if try_servo_repair:
@@ -1679,6 +1703,18 @@ def create_servo_host(dut, servo_args, try_lab_servo=False,
         newhost.set_dut_hostname(dut.hostname)
     if dut_host_info:
         newhost.set_dut_host_info(dut_host_info)
+    if dut_health_profile and (try_lab_servo or try_servo_repair):
+        try:
+            if newhost.is_localhost():
+                logging.info('Servohost is a localhost, skip device'
+                             ' health profile setup...')
+            else:
+                dut_health_profile.init_profile(newhost)
+                newhost.set_dut_health_profile(dut_health_profile)
+        except Exception as e:
+            logging.info(
+                    '[Non-critical] Unexpected error while trying to'
+                    ' load device health profile; %s', e)
 
     if try_lab_servo or try_servo_repair:
         try:

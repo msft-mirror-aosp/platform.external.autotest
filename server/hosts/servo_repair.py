@@ -459,17 +459,8 @@ class _CCDPowerDeliveryVerifier(hosts.Verifier):
         return 'ensure applicable servo is in "src" mode for power delivery'
 
 
-class _DUTConnectionVerifier(hosts.Verifier):
-    """Verifier to check connection between DUT and servo.
-
-    Servo_v4 type-a connected to the DUT by:
-        1) servo_micro - checked by `cold_reset`.
-        2) USB hub - checked by ppdut5_mv.
-    Servo_v4 type-c connected to the DUT by:
-        1) ccd - checked by ppdut5_mv.
-    Servo_v3 connected to the DUT by:
-        1) legacy servo header - can be checked by `cold_reset`.
-    """
+class _BaseDUTConnectionVerifier(hosts.Verifier):
+    """Verifier to check connection between DUT and servo."""
 
     # Bus voltage on ppdut5. Value can be:
     # - less than 500 - DUT is likely not connected
@@ -477,31 +468,6 @@ class _DUTConnectionVerifier(hosts.Verifier):
     # - more than 4000 - DUT is likely connected
     MAX_PPDUT5_MV_WHEN_NOT_CONNECTED = 500
     MIN_PPDUT5_MV_WHEN_CONNECTED = 4000
-
-    @ignore_exception_for_non_cros_host
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
-    def verify(self, host):
-        if self._is_servo_v4_type_a(host):
-            if not self._is_ribbon_cable_connected(host):
-                raise hosts.AutoservVerifyError(
-                        'Servo_micro is likely not connected to the DUT.')
-            # If DUT is not powered then we cannot make second check
-            if (self._is_dut_power_on(host)
-                        and not self._is_usb_hub_connected(host)):
-                raise hosts.AutoservVerifyError(
-                        'Servo USB hub is likely not connected to the DUT.')
-        elif self._is_servo_v4_type_c(host):
-            logging.info('Skip check for type-c till confirm it in the lab')
-            # TODO(otabek@) block check till verify on the lab
-            # if not self._is_usb_hub_connected(host):
-            #     raise hosts.AutoservVerifyError(
-            #             'Servo_v4 is likely not connected to the DUT.')
-        elif self._is_servo_v3(host):
-            if not self._is_ribbon_cable_connected(host):
-                raise hosts.AutoservVerifyError(
-                        'Servo_v3 is likely not connected to the DUT.')
-        else:
-            logging.warn('Unsupported servo type!')
 
     def _is_usb_hub_connected(self, host):
         """Checking bus voltage on ppdut5.
@@ -579,6 +545,38 @@ class _DUTConnectionVerifier(hosts.Verifier):
     def _is_servo_v3(self, host):
         return not host.is_labstation()
 
+
+class _DUTConnectionVerifier(_BaseDUTConnectionVerifier):
+    """Verifier to check connection Servo to the DUT.
+
+    Servo_v4 type-a connected to the DUT by:
+        1) servo_micro - checked by `cold_reset`.
+    Servo_v4 type-c connected to the DUT by:
+        1) ccd - checked by ppdut5_mv.
+    Servo_v3 connected to the DUT by:
+        1) legacy servo header - can be checked by `cold_reset`.
+    """
+
+    @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        if self._is_servo_v4_type_a(host):
+            if not self._is_ribbon_cable_connected(host):
+                raise hosts.AutoservVerifyError(
+                        'Servo_micro is likely not connected to the DUT.')
+        elif self._is_servo_v4_type_c(host):
+            logging.info('Skip check for type-c till confirm it in the lab')
+            # TODO(otabek@) block check till verify on the lab
+            # if not self._is_usb_hub_connected(host):
+            #     raise hosts.AutoservVerifyError(
+            #             'Servo_v4 is likely not connected to the DUT.')
+        elif self._is_servo_v3(host):
+            if not self._is_ribbon_cable_connected(host):
+                raise hosts.AutoservVerifyError(
+                        'Servo_v3 is likely not connected to the DUT.')
+        else:
+            logging.warn('Unsupported servo type!')
+
     def _is_applicable(self, host):
         if host.is_ec_supported():
             return True
@@ -588,6 +586,33 @@ class _DUTConnectionVerifier(hosts.Verifier):
     @property
     def description(self):
         return 'Ensure the Servo connected to the DUT.'
+
+
+class _ServoHubConnectionVerifier(_BaseDUTConnectionVerifier):
+    """Verifier to check connection ServoHub to DUT.
+
+    Servo_v4 type-a connected to the DUT by:
+        1) USB hub - checked by ppdut5_mv.
+    """
+
+    @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        if self._is_servo_v4_type_a(host):
+            if (self._is_dut_power_on(host)
+                        and not self._is_usb_hub_connected(host)):
+                raise hosts.AutoservVerifyError(
+                        'Servo USB hub is likely not connected to the DUT.')
+
+    def _is_applicable(self, host):
+        if host.is_ec_supported():
+            return True
+        logging.info('DUT is not support EC.')
+        return False
+
+    @property
+    def description(self):
+        return 'Ensure the Servo HUB connected to the DUT.'
 
 
 class _TopologyVerifier(hosts.Verifier):
@@ -1023,19 +1048,20 @@ def create_servo_repair_strategy():
             (_ServodConnectionVerifier, 'servod_connection', ['servod_job']),
             (_ServodControlVerifier, 'servod_control', ['servod_connection']),
             (_DUTConnectionVerifier, 'dut_connected', ['servod_connection']),
-            (_PowerButtonVerifier, 'pwr_button', ['dut_connected']),
-            (_BatteryVerifier, 'battery', ['dut_connected']),
-            (_LidVerifier, 'lid_open', ['dut_connected']),
+            (_ServoHubConnectionVerifier, 'hub_connected', ['dut_connected']),
+            (_PowerButtonVerifier, 'pwr_button', ['hub_connected']),
+            (_BatteryVerifier, 'battery', ['hub_connected']),
+            (_LidVerifier, 'lid_open', ['hub_connected']),
             (_EcBoardVerifier, 'ec_board', ['dut_connected']),
             (_Cr50ConsoleVerifier, 'cr50_console', ['dut_connected']),
             (_CCDTestlabVerifier, 'ccd_testlab', ['cr50_console']),
-            (_CCDPowerDeliveryVerifier, 'power_delivery',
-             ['servod_connection']),
+            (_CCDPowerDeliveryVerifier, 'power_delivery', ['dut_connected']),
     ]
 
     servod_deps = [
             'servod_job', 'servo_topology', 'servod_connection',
-            'servod_control', 'dut_connected', 'pwr_button', 'cr50_console'
+            'servod_control', 'dut_connected', 'hub_connected', 'pwr_button',
+            'cr50_console'
     ]
     repair_actions = [
             (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space'

@@ -23,6 +23,7 @@ from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.cros.servo.topology import servo_topology
+from autotest_lib.site_utils.admin_audit import servo_updater
 import six
 
 try:
@@ -952,6 +953,60 @@ class _DiskCleanupRepair(hosts.RepairAction):
         return 'Clean up old logs/metrics on servohost to free up disk space.'
 
 
+class _ServoMicroFlashRepair(hosts.RepairAction):
+    """
+    Remove old logs/metrics/crash_dumps on servohost to free up disk space.
+    """
+    _TARGET_SERVO = 'servo_micro'
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        if not host.is_cros_host():
+            raise hosts.AutoservRepairError(
+                    'Can\'t restart servod: not running '
+                    'embedded Chrome OS.',
+                    'servo_not_applicable_to_non_cros_host')
+        servo = host.get_servo()
+        if not servo or self._TARGET_SERVO not in servo.get_servo_type():
+            logging.info("Servo-micro is not present on set-up")
+            return
+
+        try:
+            servo_updater.update_servo_firmware(host,
+                                                boards=(self._TARGET_SERVO, ),
+                                                force_update=True,
+                                                ignore_version=True)
+        except Exception as e:
+            logging.debug("(Not critical) Servo device update error: %s", e)
+            raise hosts.AutoservVerifyError(
+                    'Still fail to contact EC console after rebooting DUT')
+        # Update time when we reflashed the fw on the device
+        dhp = host.get_dut_health_profile()
+        dhp.refresh_servo_miro_fw_update_run_time()
+        host.restart_servod()
+
+    def is_time_to_try(self, dhp):
+        """Verify that it is time when we can try to re-flash fw on servo_micro.
+
+        Re-flashing limited to once per 2 weeks to avoid over-flashing
+        the servo device.
+        """
+        today_time = int(time.time())
+        last_check = dhp.get_servo_micro_fw_update_time_epoch()
+        can_run = today_time > (last_check + (14 * 24 * 60 * 60))
+        if not can_run:
+            logging.info("The servo_micro fw updated in las 2 weeks ago.")
+        return can_run
+
+    def _is_applicable(self, host):
+        return (not host.is_localhost() and host.get_dut_health_profile()
+                and self.is_time_to_try(host.get_dut_health_profile()))
+
+    @property
+    def description(self):
+        return 'Re-flash servo_micro firmware.'
+
+
 def create_servo_repair_strategy():
     """
     Return a `RepairStrategy` for a `ServoHost`.
@@ -985,6 +1040,8 @@ def create_servo_repair_strategy():
     repair_actions = [
             (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space'
                                                                  ]),
+            (_ServoMicroFlashRepair, 'servo_micro_flash',
+             ['servo_ssh', 'servo_topology'], ['dut_connected']),
             (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
             (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
             (_ToggleCCLineRepair, 'servo_cc', ['servo_ssh'], servod_deps),

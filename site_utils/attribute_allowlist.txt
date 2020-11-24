@@ -215,6 +215,7 @@ suite:vmtest-informational1
 suite:vmtest-informational2
 suite:vmtest-informational3
 suite:wifi_atten_perf
+suite:wifi_atten_roam_perf
 suite:wifi_endtoend
 suite:wifi_flaky
 suite:wifi_func_tast

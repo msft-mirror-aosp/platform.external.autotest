@@ -360,6 +360,13 @@ class BluetoothFacadeNative(object):
         self._control = bluetooth_socket.BluetoothControlSocket()
         self._has_adapter = len(self._control.read_index_list()) > 0
 
+        # Create an Advertisement Monitor App Manager instance.
+        # This needs to be created before making any dbus connections as
+        # AdvMonitorAppMgr internally forks a new helper process and due to
+        # a limitation of python, it is not possible to fork a new process
+        # once any dbus connections are established.
+        self.advmon_appmgr = adv_monitor_helper.AdvMonitorAppMgr()
+
         # Set up the connection to Upstart so we can start and stop services
         # and fetch the bluetoothd job.
         self._upstart_conn = dbus.connection.Connection(self.UPSTART_PATH)
@@ -403,11 +410,6 @@ class BluetoothFacadeNative(object):
         self._timeout_id = 0
         self._signal_watch = None
         self._dbus_mainloop = gobject.MainLoop()
-
-        # Create an Advertisement Monitor Helper App Manager instance.
-        self.advmon_appmgr = adv_monitor_helper.AdvMonitorAppMgr(
-                self._system_bus, self._dbus_mainloop,
-                self._adv_monitor_manager)
 
     @xmlrpc_server.dbus_safe(False)
     def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
@@ -3522,3 +3524,9 @@ class BluetoothFacadeNative(object):
         else:
             logging.debug("Chipset not known. Returning %s", chipset_string)
             return chipset_string
+
+
+    def cleanup(self):
+        """Cleanup before exiting the client xmlrpc process."""
+
+        self.advmon_appmgr.destroy()

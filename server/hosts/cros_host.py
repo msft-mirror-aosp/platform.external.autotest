@@ -3022,8 +3022,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                          ' health profile setup...')
             return
         try:
-            self.health_profile = device_health_profile.DeviceHealthProfile(
-                self, self._servo_host)
+            device_profile = device_health_profile.DeviceHealthProfile(
+                    hostname=self.hostname,
+                    host_info=self.host_info_store.get(),
+                    result_dir=self.get_result_dir())
+            device_profile.init_profile(self._servo_host)
+            if device_profile.is_loaded():
+                logging.info('Device health profile loaded.')
+                self.health_profile = device_profile
         except Exception as e:
             logging.warning('Failed to setup device health profile; %s', e)
 

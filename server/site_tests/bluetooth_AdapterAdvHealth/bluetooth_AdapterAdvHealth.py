@@ -4,8 +4,8 @@
 
 """A Batch of Bluetooth advertising tests"""
 
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
-        REALTEK_MODELS
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        SUSPEND_POWER_DOWN_CHIPSETS)
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
@@ -30,7 +30,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Multiple LE advertising test',
-                  skip_models=REALTEK_MODELS + ['dru', 'druwl'])
+                  skip_models=['dru', 'druwl'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(
@@ -48,7 +49,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Suspend resume LE advertising test',
-                  skip_models=REALTEK_MODELS + ['dru', 'druwl'])
+                  skip_models=['dru', 'druwl'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(

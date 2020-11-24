@@ -355,6 +355,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 hostname=self.hostname,
                 host_info=self.host_info_store.get(),
                 result_dir=self.get_result_dir())
+
+        # TODO(otabek@): remove when b/171414073 closed
+        pingable_before_servo = self.is_up_fast()
+        if pingable_before_servo:
+            logging.info('DUT is pingable before init Servo.')
         _servo_host, servo_state = servo_host.create_servo_host(
                 dut=self,
                 servo_args=servo_args,
@@ -369,6 +374,23 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # TODO(otabek@) persist device provide out of servo-host.
             self.health_profile = dut_health_profile
         self.set_servo_host(_servo_host, servo_state)
+
+        # TODO(otabek@): remove when b/171414073 closed
+        # Introduced to collect cases when servo made DUT not sshable
+        pingable_after_servo = self.is_up_fast()
+        if pingable_after_servo:
+            logging.info('DUT is pingable after init Servo.')
+        elif pingable_before_servo:
+            logging.info('DUT was pingable before init Servo but not now')
+            board = ''
+            info = self.host_info_store.get()
+            if info:
+                board = info.board
+            metrics.Counter('chromeos/autotest/dut_ping_servo_init').increment(
+                    fields={
+                            'host': self.hostname,
+                            'board': board,
+                    })
 
         # TODO(waihong): Do the simplication on Chameleon too.
         self._chameleon_host = chameleon_host.create_chameleon_host(

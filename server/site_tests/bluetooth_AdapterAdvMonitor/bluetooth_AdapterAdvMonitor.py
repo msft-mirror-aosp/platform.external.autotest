@@ -8,6 +8,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
      import BluetoothAdapterQuickTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
      import BluetoothAdapterAdvMonitorTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests \
+     import SUSPEND_POWER_DOWN_CHIPSETS
 
 
 class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
@@ -57,14 +59,26 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_fg_bg_combination()
 
 
+    # TODO(b/150897528) - Dru loses firmware around suspend, which causes bluez
+    #                     removes all the monitors.
     @test_wrapper('Suspend Resume Tests',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  skip_models=['dru'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def advmon_suspend_resume_tests(self):
         """Tests working of background scanning with suspend resume."""
         self.advmon_test_suspend_resume()
 
 
-    @test_wrapper('Interleave Scan Tests', devices={'BLE_MOUSE': 1})
+    # TODO(b/150897528) - Dru loses firmware around suspend, which causes bluez
+    #                     removes all the monitors.
+    @test_wrapper('Interleave Scan Tests',
+                  devices={'BLE_MOUSE': 1},
+                  skip_models=['dru'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def advmon_interleaved_scan(self):
         """Tests interleave scan."""
         self.advmon_test_interleaved_scan()

@@ -1604,6 +1604,22 @@ class SystemPower(PowerMeasurement):
         return float(keyvals['Battery']['energy rate'])
 
 
+class BatteryStateOfCharge(PowerMeasurement):
+    """Class for logging battery state of charge."""
+
+    def __init__(self):
+        """Constructor."""
+        super(BatteryStateOfCharge, self).__init__('battery_soc')
+
+    def refresh(self):
+        """refresh method.
+
+        See superclass PowerMeasurement for details.
+        """
+        keyvals = parse_power_supply_info()
+        return float(keyvals['Battery']['percentage'])
+
+
 class CheckpointLogger(object):
     """Class to log checkpoint data.
 
@@ -2106,6 +2122,8 @@ class PowerLogger(MeasurementLogger):
 
         measurements = []
         status = get_status()
+        if status.battery:
+            measurements.append(BatteryStateOfCharge())
         if status.battery_discharging():
             measurements.append(SystemPower(status.battery_path))
         if power_utils.has_powercap_support():

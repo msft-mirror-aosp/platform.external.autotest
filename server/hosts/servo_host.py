@@ -1395,12 +1395,13 @@ class ServoHost(base_servohost.BaseServoHost):
 
         if (dut_connected == hosts.VERIFY_FAILED
                     or hub_connected == hosts.VERIFY_FAILED):
-            if pwr_button == hosts.VERIFY_SUCCESS:
-                # unexpected case
-                metrics.Counter(
-                        'chromeos/autotest/repair/servo_unexpected/pwr_button'
-                ).increment(fields=self._get_host_metrics_data())
             return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
+        # TODO(otabek@): detect special cases detected by pwr_button
+        if dut_connected == hosts.VERIFY_SUCCESS:
+            if pwr_button == hosts.VERIFY_FAILED:
+                metrics.Counter(
+                        'chromeos/autotest/repair/servo_unexpected/pwr_button2'
+                ).increment(fields=self._get_host_metrics_data())
 
         if start_servod == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE

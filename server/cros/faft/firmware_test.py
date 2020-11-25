@@ -1066,7 +1066,9 @@ class FirmwareTest(test.test):
         else:
             # Reboot after deasserting hardware write protect pin to deactivate
             # write protect. And then remove software write protect flag.
-            self.sync_and_ec_reboot(flags='hard')
+            # Some ITE ECs can only clear their WP status on a power-on reset,
+            # no software-initiated reset will do.
+            self.sync_and_ec_reboot(flags='cold')
             self.ec.set_flash_write_protect(enable)
 
     def _setup_ec_write_protect(self, ec_wp):
@@ -1462,12 +1464,16 @@ class FirmwareTest(test.test):
         @param flags: Optional, a space-separated string of flags passed to EC
                       reboot command, including:
                           default: EC soft reboot;
-                          'hard': EC cold/hard reboot.
+                          'hard': EC hard reboot.
+                          'cold': Cold reboot via servo.
         @param extra_sleep: Optional, int or float for extra wait time for EC
                             reboot in seconds.
         """
         self.blocking_sync(freeze_for_reset=True)
-        self.ec.reboot(flags)
+        if flags == 'cold':
+            self.servo.get_power_state_controller().reset()
+        else:
+            self.ec.reboot(flags)
         time.sleep(self.faft_config.ec_boot_to_console + extra_sleep)
         self.check_lid_and_power_on()
 

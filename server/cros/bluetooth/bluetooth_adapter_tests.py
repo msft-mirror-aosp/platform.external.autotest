@@ -4279,6 +4279,21 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
+    @test_retry_and_log
+    def test_battery_reporting(self, device):
+        """ Tests that battery reporting through GATT can be received
+
+        @param device: the meta device containing a Bluetooth device
+
+        @returns: true if battery reporting is received
+        """
+
+        percentage = self.bluetooth_facade.get_battery_property(
+                device.address, 'Percentage')
+
+        return percentage > 0
+
+
     # -------------------------------------------------------------------
     # Autotest methods
     # -------------------------------------------------------------------

@@ -349,15 +349,26 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.env['LIBC_FATAL_STDERR_'] = '1'
         self._ssh_verbosity_flag = ssh_verbosity_flag
         self._ssh_options = ssh_options
-        _servo_host, servo_state = servo_host.create_servo_host(
-            dut=self,
-            servo_args=servo_args,
-            try_lab_servo=try_lab_servo,
-            try_servo_repair=try_servo_repair,
-            dut_host_info=self.host_info_store.get())
-        self.set_servo_host(_servo_host, servo_state)
         self.health_profile = None
         self._default_power_method = None
+        dut_health_profile = device_health_profile.DeviceHealthProfile(
+                hostname=self.hostname,
+                host_info=self.host_info_store.get(),
+                result_dir=self.get_result_dir())
+        _servo_host, servo_state = servo_host.create_servo_host(
+                dut=self,
+                servo_args=servo_args,
+                try_lab_servo=try_lab_servo,
+                try_servo_repair=try_servo_repair,
+                dut_host_info=self.host_info_store.get(),
+                dut_health_profile=dut_health_profile)
+        if dut_health_profile.is_loaded():
+            logging.info('Device health profile loaded.')
+            # The device profile is located in the servo_host which make it
+            # dependency. If profile is not loaded yet then we do not have it
+            # TODO(otabek@) persist device provide out of servo-host.
+            self.health_profile = dut_health_profile
+        self.set_servo_host(_servo_host, servo_state)
 
         # TODO(waihong): Do the simplication on Chameleon too.
         self._chameleon_host = chameleon_host.create_chameleon_host(
@@ -3006,26 +3017,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if freeze_for_reset and self.USE_FSFREEZE:
             sync_cmd += ' --freeze'
         return self.run(sync_cmd)
-
-    def setup_device_health_profile(self):
-        """Setup device health profile for repair/provision task to consume.
-        """
-        if self.health_profile:
-            logging.info('Device health profile has already been initialized.')
-        if not self._servo_host:
-            logging.info('Servohost is not instantiated, skip device'
-                         ' health profile setup...')
-            return
-        # Also skip setup health profile if it's a task runs locally.
-        if self._servo_host.is_localhost():
-            logging.info('Servohost is a localhost, skip device'
-                         ' health profile setup...')
-            return
-        try:
-            self.health_profile = device_health_profile.DeviceHealthProfile(
-                self, self._servo_host)
-        except Exception as e:
-            logging.warning('Failed to setup device health profile; %s', e)
 
     def set_health_profile_dut_state(self, state):
         if not self.health_profile:

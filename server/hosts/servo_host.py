@@ -1367,6 +1367,7 @@ class ServoHost(base_servohost.BaseServoHost):
         init_servo = self.get_verifier_state('servod_control')
         servo_topology = self.get_verifier_state('servo_topology')
         dut_connected = self.get_verifier_state('dut_connected')
+        hub_connected = self.get_verifier_state('hub_connected')
         pwr_button = self.get_verifier_state('pwr_button')
         lid_open = self.get_verifier_state('lid_open')
         ec_board = self.get_verifier_state('ec_board')
@@ -1392,13 +1393,15 @@ class ServoHost(base_servohost.BaseServoHost):
         if servo_topology == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_TOPOLOGY_ISSUE
 
-        if dut_connected == hosts.VERIFY_FAILED:
-            if pwr_button == hosts.VERIFY_SUCCESS:
-                # unexpected case
-                metrics.Counter(
-                        'chromeos/autotest/repair/servo_unexpected/pwr_button'
-                ).increment(fields=self._get_host_metrics_data())
+        if (dut_connected == hosts.VERIFY_FAILED
+                    or hub_connected == hosts.VERIFY_FAILED):
             return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
+        # TODO(otabek@): detect special cases detected by pwr_button
+        if dut_connected == hosts.VERIFY_SUCCESS:
+            if pwr_button == hosts.VERIFY_FAILED:
+                metrics.Counter(
+                        'chromeos/autotest/repair/servo_unexpected/pwr_button2'
+                ).increment(fields=self._get_host_metrics_data())
 
         if start_servod == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE

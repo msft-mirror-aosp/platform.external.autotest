@@ -144,6 +144,9 @@ class BluetoothAdapterAdvMonitorTests(
     # Acceptable extra/missing cycles in interleave scan
     INTERLEAVE_SCAN_CYCLE_NUM_TOLERANCE = 2
 
+    # Duration of kernel perform 'start discovery', in sec
+    DISCOVERY_DURATION = 10.24
+
     test_case_log = bluetooth_adapter_tests.test_case_log
     test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
 
@@ -723,6 +726,58 @@ class BluetoothAdapterAdvMonitorTests(
                 'Span within range': span_within_range
         }
 
+    def check_records_paused(self, records, cancel_event, expect_paused_time,
+                             expect_resume):
+        """ Check if the interleave scan is paused
+
+        @param records: a list of records
+        @param cancel_event: the timestamp interleave was canceled
+        @param expect_paused_time: minimum duration of interleave scan paused
+        @param expect_resume: True if interleave scan should restart,
+                              False if ***we don't care***
+
+        @returns: a dict of {'Cancel event': (bool),
+                             'Non-empty records before paused': (bool),
+                             'Non-empty records after paused': (bool),
+                             'Paused enough time': (bool)
+                            }
+                  Note: some entries might not exist if it doesn't make sense
+                        in that case.
+
+        """
+
+        result = {}
+
+        result.update({'Cancel event': cancel_event is not None})
+        if cancel_event is None:
+            return result
+
+        canceled_time = cancel_event + self.INTERLEAVE_SCAN_CANCEL_TOLERANCE
+
+        before_paused_rec = [r for r in records if r['time'] < canceled_time]
+        after_paused_rec = [r for r in records if r['time'] >= canceled_time]
+
+        result.update({
+                'Non-empty records before paused':
+                len(before_paused_rec) != 0
+        })
+
+        if expect_resume:
+            result.update({
+                    'Non-empty records after paused':
+                    len(after_paused_rec) != 0
+            })
+
+        if len(before_paused_rec) > 0 and len(after_paused_rec) > 0:
+            # Records are stored chronologically.
+            last_time_before_paused = before_paused_rec[-1]['time']
+            first_time_after_paused = after_paused_rec[0]['time']
+            paused_time = first_time_after_paused - last_time_before_paused
+            result.update(
+                    {'Paused enough time': paused_time >= expect_paused_time})
+
+        return result
+
     def get_interleave_scan_durations(self):
         """ Get interleave scan duration.
 
@@ -800,38 +855,45 @@ class BluetoothAdapterAdvMonitorTests(
         logging.debug(records)
         logging.debug(cancel_event)
 
-        self.results = {}
-
-        if cancel_event is None:
-            self.results = {'Cancel event': cancel_event}
-            return False
-
-        canceled_time = cancel_event + self.INTERLEAVE_SCAN_CANCEL_TOLERANCE
-
-        suspend_records = [r for r in records if r['time'] < canceled_time]
-        resume_records = [r for r in records if r['time'] >= canceled_time]
-
-        if len(suspend_records) == 0:
-            self.results = {'non-empty records before suspended': False}
-            return False
-
-        if len(resume_records) == 0:
-            self.results = {'non-empty records after resumed': False}
-            return False
-
-        # Records are stored chronologically.
-        # The first record is the earliest, while the last one is the oldest.
-        last_suspend = suspend_records[-1]['time']
-        first_resume = resume_records[0]['time']
-        suspend_time = first_resume - last_suspend
-
         # Currently resume time is not very reliable. It is likely the actual
         # time in sleeping is less than expect_suspend_time.
         # Check the interleave scan paused for at least one cycle long instead.
-        self.results = {
-                'Paused enough time': suspend_time >= interleave_period
-        }
+        self.results = self.check_records_paused(records, cancel_event,
+                                                 interleave_period, True)
+        return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_interleaving_active_scan_cycle(self):
+        """ Test for checking if kernel paused interleave scan during active
+            scan.
+
+        @returns: True on success, False otherwise.
+
+        """
+        durations = self.get_interleave_scan_durations()
+        interleave_period = sum(durations.values())
+
+        # make sure we'll get some records before/after active scan
+        extra_sleep_time = 2 * interleave_period
+
+        self.interleave_logger_start()
+        time.sleep(extra_sleep_time)
+        self.test_start_discovery()
+        time.sleep(extra_sleep_time + self.INTERLEAVE_SCAN_CANCEL_TOLERANCE)
+        self.interleave_logger_stop()
+        records = self.interleave_logger_get_records()
+        cancel_event = self.interleave_logger_get_cancel_event()
+
+        logging.debug(records)
+        logging.debug(cancel_event)
+
+        # BlueZ pauses discovery for every DISCOVERY_DURATION then restarts it
+        # 5 seconds later. Interleave scan also get restarted during the paused
+        # time.
+        self.results = self.check_records_paused(records, cancel_event,
+                                                 self.DISCOVERY_DURATION,
+                                                 False)
+        self.test_stop_discovery()
         return all(self.results.values())
 
     def advmon_test_monitor_creation(self):
@@ -1589,11 +1651,9 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_interleaving_state(True)
 
         # Interleaving with allowlist should get paused during active scan
-        self.test_start_discovery()
-        self.test_interleaving_state(False, cycles=EXPECT_FALSE_TEST_CYCLE)
+        self.test_interleaving_active_scan_cycle()
 
         # Interleaving with allowlist should get resumed after stopping scan
-        self.test_stop_discovery()
         self.test_interleaving_state(True)
 
         # Interleaving with allowlist should get paused during system suspend,

@@ -1015,7 +1015,7 @@ class ServoInstallRepair(hosts.RepairAction):
     @timeout_util.TimeoutDecorator(60 * 60)
     def repair(self, host):
         # pylint: disable=missing-docstring
-        repair_utils.require_servo(host)
+        repair_utils.require_servo(host, ignore_state=True)
         image_name = host.get_cros_repair_image_name()
         image_name_on_usb = host._servo_host.validate_image_usbkey()
         if image_name_on_usb == image_name:

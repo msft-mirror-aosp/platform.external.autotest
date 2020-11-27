@@ -437,7 +437,7 @@ class UserCrashTest(crash_test.CrashTest):
 
         # Variables and their typical contents:
         # basename: crasher_nobreakpad
-        # filename: crasher_nobreakpad.20181023.135339.16890.dmp
+        # filename: crasher_nobreakpad.20181023.135339.12345.16890.dmp
         # ext: dmp
         for filename in crash_contents:
             if filename.endswith('.core'):

@@ -208,9 +208,6 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_setup = servo_setup
         self.additional_servod_args = additional_servod_args
 
-        if self.is_servo_topology_supported():
-            self._topology = servo_topology.ServoTopology(self)
-
         # The location of the log files on the servo host for this instance.
         self.remote_log_dir = '%s_%s' % (self.SERVOD_LOG_PREFIX,
                                          self.servo_port)
@@ -340,7 +337,8 @@ class ServoHost(base_servohost.BaseServoHost):
             self._servo_state = servo_constants.SERVO_STATE_WORKING
             self.record('INFO', None, None,
                         'ServoHost verify set servo_state as WORKING')
-            if self._topology:
+            if self.is_servo_topology_supported():
+                self._topology = servo_topology.ServoTopology(self)
                 self._topology.generate()
         except Exception as e:
             if not self.is_localhost():
@@ -578,7 +576,8 @@ class ServoHost(base_servohost.BaseServoHost):
             # reboot request created by this servo because it passed repair.
             if self.is_labstation():
                 self.withdraw_reboot_request()
-            if self._topology:
+            if self.is_servo_topology_supported():
+                self._topology = servo_topology.ServoTopology(self)
                 self._topology.generate()
         except Exception as e:
             if not self.is_localhost():
@@ -1453,6 +1452,9 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def is_servo_topology_supported(self):
         """Check if servo_topology is supported."""
+        if not self.is_up_fast():
+            logging.info('Servo-Host is not reachable.')
+            return False
         if not self.is_labstation():
             logging.info('Servo-topology supported only for labstation.')
             return False

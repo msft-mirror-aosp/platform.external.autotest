@@ -85,14 +85,16 @@ class platform_PrinterPpds(test.test):
         return os.path.join(path_current, path)
 
 
-    def initialize(
-            self, path_docs, path_ppds=None, path_digests=None,
-            debug_mode=False, threads_count=8):
+    def initialize(self,
+                   path_docs,
+                   path_ppds,
+                   path_digests=None,
+                   debug_mode=False,
+                   threads_count=8):
         """
         @param path_docs: path to local directory with documents to print
         @param path_ppds: path to local directory with PPD files to test;
-                if None is set then all PPD files from the SCS server are
-                downloaded and tested
+                the directory is supposed to be compressed as .tar.xz.
         @param path_digests: path to local directory with digests files for
                 test documents; if None is set then content of printed
                 documents is not verified
@@ -126,28 +128,17 @@ class platform_PrinterPpds(test.test):
                             nonempty_results=True,
                             include_directories=False)
 
-        # Get list of PPD files ...
-        if self._location_of_PPD_files is None:
-            # ... from the SCS server
-            self._ppds = self._get_filenames_from_PPD_indexes()
-        else:
-            # ... from the given local directory
-            # Unpack archives with all PPD files:
-            path_archive = self._calculate_full_path('ppds_all.tar.xz')
-            path_target_dir = self._calculate_full_path('.')
-            file_utils.rm_dir_if_exists(
-                    os.path.join(path_target_dir,'ppds_all'))
-            subprocess.call(['tar', 'xJf', path_archive, '-C', path_target_dir])
-            path_archive = self._calculate_full_path('ppds_100.tar.xz')
-            file_utils.rm_dir_if_exists(
-                    os.path.join(path_target_dir,'ppds_100'))
-            subprocess.call(['tar', 'xJf', path_archive, '-C', path_target_dir])
-            # Load PPD files from the chosen directory
-            self._ppds = helpers.list_entries_from_directory(
-                            path=self._location_of_PPD_files,
-                            with_suffixes=('.ppd','.ppd.gz'),
-                            nonempty_results=True,
-                            include_directories=False)
+        # Unpack an archive with the PPD files:
+        path_archive = self._location_of_PPD_files + '.tar.xz'
+        path_target_dir = self._calculate_full_path('.')
+        file_utils.rm_dir_if_exists(os.path.join(path_target_dir, path_ppds))
+        subprocess.call(['tar', 'xJf', path_archive, '-C', path_target_dir])
+        # Load PPD files from the unpacked directory
+        self._ppds = helpers.list_entries_from_directory(
+                path=self._location_of_PPD_files,
+                with_suffixes=('.ppd', '.ppd.gz'),
+                nonempty_results=True,
+                include_directories=False)
         self._ppds.sort()
 
         # Load digests files

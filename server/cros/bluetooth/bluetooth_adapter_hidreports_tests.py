@@ -4,9 +4,12 @@
 
 """Server side bluetooth tests about sending bluetooth HID reports."""
 
+from __future__ import absolute_import
+
 import logging
 import time
 
+import common
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
 
@@ -90,6 +93,10 @@ class BluetoothAdapterHIDReportTests(
             self.reboot()
 
             time.sleep(self.HID_TEST_SLEEP_SECS)
+            # TODO(b/173146480) - Power on the adapter for now until this bug
+            # is resolved.
+            self.test_power_on_adapter()
+
             self.test_device_is_paired(device.address)
 
             time.sleep(self.HID_TEST_SLEEP_SECS)

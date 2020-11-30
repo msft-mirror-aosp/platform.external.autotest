@@ -1,12 +1,20 @@
+# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
 import logging
+import six
+from six.moves import range
 import time
 
 from autotest_lib.client.common_lib import error
+
 
 class PDConsoleUtils(object):
     """Base clase for all PD console utils
@@ -113,7 +121,7 @@ class PDConsoleUtils(object):
         state_result = {}
         pd_state_dict = self.PD_STATE_DICT
 
-        for key, regexp in pd_state_dict.iteritems():
+        for key, regexp in six.iteritems(pd_state_dict):
             value = re.search(regexp, m[0][0])
             if value:
                 state_result[key] = value.group(1)
@@ -398,7 +406,7 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
     DUALROLE_CMD_RESULTS = ['on', 'off', 'force sink', 'force source']
 
     # Some old firmware uses a single dualrole setting for all ports; while
-    # some new firmware uses a per port dualrole settting. This flag will be
+    # some new firmware uses a per port dualrole setting. This flag will be
     # initialized to True or False.
     # TODO: Remove this flag when the old setting phases out
     per_port_dualrole_setting = None
@@ -612,6 +620,12 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
     # Strings returned from the console command "pd dualrole"
     DUALROLE_CMD_RESULTS = ['on', 'off', 'force sink', 'force source']
 
+    # Some old firmware uses a single dualrole setting for all ports; while
+    # some new firmware uses a per port dualrole setting. This flag will be
+    # initialized to True or False.
+    # TODO: Remove this flag when the old setting phases out
+    per_port_dualrole_setting = None
+
     # Dictionary for 'pd 0/1 state' parsing
     PD_STATE_DICT = {
         'port': 'Port\s+([\w]+)',
@@ -788,7 +802,7 @@ class PDConnectionUtils(PDConsoleUtils):
 
         @returns DUT pd port number if found, None otherwise
         """
-        for port in xrange(self.dut_console.PD_MAX_PORTS):
+        for port in range(self.dut_console.PD_MAX_PORTS):
             # Check for DUT to PDTester connection on port
             if self._verify_pdtester_connection(port):
                 # PDTester PD connection found so exit

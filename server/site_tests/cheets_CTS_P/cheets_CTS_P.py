@@ -30,8 +30,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts-9.0_r13-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts-9.0_r13-linux_x86-x86.zip',
+        'arm': _PUBLIC_CTS + 'android-cts-9.0_r14-linux_x86-arm.zip',
+        'x86': _PUBLIC_CTS + 'android-cts-9.0_r14-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -72,11 +72,8 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
                 except OSError:
                     logging.error('Can\'t change current PATH directory')
 
-        elif self._timeout <= 3600:
-            # TODO(kinaba): remove once crbug.com/1041833 is resolved.
-            logging.info('Add more debug log for small modules')
-            cmd.append('--log-level-display=VERBOSE')
-
+        # Suppress redundant output from tradefed.
+        cmd.append('--quiet-output=true')
         return cmd
 
     def _get_default_bundle_url(self, bundle):

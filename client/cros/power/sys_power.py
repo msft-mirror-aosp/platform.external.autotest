@@ -104,6 +104,12 @@ class S0ixResidencyNotChanged(SuspendFailure):
     pass
 
 
+class S2IdleResidencyNotChanged(SuspendFailure):
+    """power_SuspendStress test found CPU/SoC is unable to idle properly
+    when suspended to s2idle. """
+    pass
+
+
 def prepare_wakeup(seconds):
     """Prepare the device to wake up from an upcoming suspend.
 
@@ -129,7 +135,7 @@ def check_wakeup(estimated_alarm):
     """
     now = rtc.get_seconds()
     if now < estimated_alarm:
-        logging.error('Woke up early at %d', now)
+        logging.error('Woke up %d secs early', (estimated_alarm - now))
         raise SpuriousWakeupError('Woke from suspend early')
 
 

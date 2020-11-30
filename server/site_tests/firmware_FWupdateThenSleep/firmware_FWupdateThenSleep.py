@@ -7,6 +7,7 @@ import xmlrpclib
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.power import utils as PowerUtils
 
 
 class firmware_FWupdateThenSleep(FirmwareTest):
@@ -35,7 +36,10 @@ class firmware_FWupdateThenSleep(FirmwareTest):
 
             if self.servo.supports_built_in_pd_control():
                 self.have_power_control = True
-                self.setup_pdtester(False, True, False, min_batt_level=25)
+                PowerUtils.put_host_battery_in_range(self._client,
+                                                     min_level=25,
+                                                     max_level=100,
+                                                     timeout=600)
             elif ac_online:
                 raise error.TestNAError(
                     "For this version of the test, the DUT power supply must"
@@ -56,7 +60,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
 
         if self.faft_config.ap_access_ec_flash:
             self._setup_ec_write_protect(False)
-        self.set_hardware_write_protect(False)
+        self.set_ap_write_protect_and_reboot(False)
         self.faft_client.bios.set_write_protect_range(0, 0, False)
 
         if battery_only and self.have_power_control:
@@ -66,7 +70,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         """Restore the original firmware and original write-protect."""
         self._restore_servo_v4_role()
 
-        self.set_hardware_write_protect(False)
+        self.set_ap_write_protect_and_reboot(False)
         try:
             if self.flashed and self.is_firmware_saved():
                 self.restore_firmware()
@@ -86,7 +90,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
             logging.error("Problem restoring SW write-protect:", exc_info=True)
 
         if self._original_hw_wp is not None:
-            self.set_hardware_write_protect(self._original_hw_wp)
+            self.set_ap_write_protect_and_reboot(self._original_hw_wp)
 
         super(firmware_FWupdateThenSleep, self).cleanup()
 

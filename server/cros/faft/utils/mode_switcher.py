@@ -26,6 +26,7 @@ class _BaseFwBypasser(object):
         self.servo = faft_framework.servo
         self.faft_config = faft_framework.faft_config
         self.client_host = faft_framework._client
+        self.ec = getattr(faft_framework, 'ec', None)
 
 
     def bypass_dev_mode(self):
@@ -56,6 +57,37 @@ class _BaseFwBypasser(object):
     def trigger_dev_to_normal(self):
         """Trigger to the normal mode from the dev screen."""
         raise NotImplementedError
+
+
+    # This is used as a workaround of a bug in RO - DUT does not supply
+    # Vbus when in SRC_ACCESSORY state (we set servo to snk before booting
+    # to recovery due to the assumption of no PD in RO). It causes that DUT can
+    # not see USB Stick in recovery mode(RO) despite being DFP(b/159938441).
+    # The bug in RO has been fixed in 251212fb.
+    # Some boards already have it in RO, so the issue does not appear
+    def check_vbus_and_pd_state(self):
+        """Perform PD power and data swap, if DUT is SRC and doesn't supply
+        Vbus"""
+        if self.ec and self.faft_config.ec_ro_vbus_bug:
+            time.sleep(self.faft_framework.PD_RESYNC_DELAY)
+            servo_pr_role = self.servo.get_servo_v4_role()
+            if servo_pr_role == 'snk':
+                mv = self.servo.get_vbus_voltage()
+                # Despite the faft_config, make sure the issue occurs -
+                # servo is snk and vbus is not supplied.
+                if mv is not None and mv < self.servo.VBUS_THRESHOLD:
+                    # Make servo SRC to supply Vbus correctly
+                    self.servo.set_servo_v4_role('src')
+                    time.sleep(self.faft_framework.PD_RESYNC_DELAY)
+            # After reboot, EC can be UFP so check that
+            if not self.ec.is_dfp():
+                # EC is UFP, perform PD Data Swap
+                self.ec.send_command("pd 0 swap data")
+                time.sleep(self.faft_framework.PD_RESYNC_DELAY)
+                # Make sure EC is DFP now
+                if not self.ec.is_dfp():
+                    # EC is still UFP
+                    raise error.TestError('DUT is not DFP in recovery mode.')
 
 
 class _KeyboardBypasser(_BaseFwBypasser):
@@ -95,6 +127,7 @@ class _KeyboardBypasser(_BaseFwBypasser):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
         self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
+        self.check_vbus_and_pd_state()
         self.servo.switch_usbkey('dut')
         logging.info('Enabled dut_sees_usb')
         if not self.client_host.ping_wait_up(
@@ -102,6 +135,8 @@ class _KeyboardBypasser(_BaseFwBypasser):
             logging.info('ping timed out, try REC_ON')
             psc = self.servo.get_power_state_controller()
             psc.power_on(psc.REC_ON)
+            # Check Vbus after reboot again
+            self.check_vbus_and_pd_state()
 
 
     def trigger_dev_to_rec(self):
@@ -172,11 +207,14 @@ class _JetstreamBypasser(_BaseFwBypasser):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
         self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
+        self.check_vbus_and_pd_state()
         self.servo.switch_usbkey('dut')
         if not self.client_host.ping_wait_up(
                 timeout=self.faft_config.delay_reboot_to_ping):
             psc = self.servo.get_power_state_controller()
             psc.power_on(psc.REC_ON)
+            # Check Vbus after reboot again
+            self.check_vbus_and_pd_state()
 
 
     def trigger_dev_to_rec(self):
@@ -269,6 +307,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
         self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
+        self.check_vbus_and_pd_state()
         self.servo.switch_usbkey('dut')
         logging.info('Enabled dut_sees_usb')
         if not self.client_host.ping_wait_up(
@@ -276,6 +315,8 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
             logging.info('ping timed out, try REC_ON')
             psc = self.servo.get_power_state_controller()
             psc.power_on(psc.REC_ON)
+            # Check Vbus after reboot again
+            self.check_vbus_and_pd_state()
 
 
     def bypass_dev_mode(self):
@@ -668,10 +709,19 @@ class _BaseModeSwitcher(object):
         @param usb_state: A string, one of 'dut', 'host', or 'off'.
         """
         psc = self.servo.get_power_state_controller()
-        psc.power_off()
+        # Switch the USB key when AP is on, because there is a
+        # bug (b/172909077) - using "image_usbkey_direction:usb_state", when
+        # AP if off may cause not recognizing the file system,
+        # so system won't boot in recovery from USB.
+        # When the issue is fixed, it can be done when AP is off.
         if usb_state:
             self.servo.switch_usbkey(usb_state)
+        psc.power_off()
         psc.power_on(psc.REC_ON)
+        # Check VBUS and pd state only if we are going to boot
+        # to ChromeOS in the recovery mode
+        if usb_state == 'dut':
+            self.bypasser.check_vbus_and_pd_state()
 
 
     def _enable_rec_mode_force_mrc_and_reboot(self, usb_state=None):
@@ -684,9 +734,14 @@ class _BaseModeSwitcher(object):
         @param usb_state: A string, one of 'dut', 'host', or 'off'.
         """
         psc = self.servo.get_power_state_controller()
-        psc.power_off()
+        # Switch the USB key when AP is on, because there is a
+        # bug (b/172909077) - using "image_usbkey_direction:usb_state", when
+        # AP if off may cause not recognizing the file system,
+        # so system won't boot in recovery from USB.
+        # When the issue is fixed, it can be done when AP is off.
         if usb_state:
             self.servo.switch_usbkey(usb_state)
+        psc.power_off()
         psc.power_on(psc.REC_ON_FORCE_MRC)
 
     def disable_rec_mode_and_reboot(self, usb_state=None):
@@ -784,25 +839,25 @@ class _BaseModeSwitcher(object):
 
         while (timeout > current_timer and
                power_state not in (self.faft_framework.POWER_STATE_S0, None)):
-                time.sleep(2)
-                current_timer += 2
-                power_state = self.faft_framework.get_power_state()
+            time.sleep(2)
+            current_timer += 2
+            power_state = self.faft_framework.get_power_state()
 
-                # If the state changed, debounce it.
-                if debounce_power_state and power_state != last_state:
-                    last_state = power_state
-                    power_state = DEBOUNCE_STATE
+            # If the state changed, debounce it.
+            if debounce_power_state and power_state != last_state:
+                last_state = power_state
+                power_state = DEBOUNCE_STATE
 
-                logging.info('power state: %s', power_state)
+            logging.info('power state: %s', power_state)
 
-                # Only power-on the device if it has been consistently out of
-                # S0.
-                if (retry_power_on and
-                    power_state not in (self.faft_framework.POWER_STATE_S0,
-                                        None, DEBOUNCE_STATE)):
-                    logging.info("-[FAFT]-[ retry powering on the DUT ]---")
-                    psc = self.servo.get_power_state_controller()
-                    psc.retry_power_on()
+            # Only power-on the device if it has been consistently out of
+            # S0.
+            if (retry_power_on and
+                power_state not in (self.faft_framework.POWER_STATE_S0,
+                                    None, DEBOUNCE_STATE)):
+                logging.info("-[FAFT]-[ retry powering on the DUT ]---")
+                psc = self.servo.get_power_state_controller()
+                psc.retry_power_on()
 
         # Use the last state if the device didn't reach a stable state in
         # timeout seconds.

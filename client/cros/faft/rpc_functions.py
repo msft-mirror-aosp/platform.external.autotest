@@ -7,11 +7,15 @@ These will be exposed via an xmlrpc server running on the DUT.
 
 @note: When adding categories, please also update server/cros/faft/rpc_proxy.pyi
 """
+
+from __future__ import print_function
+
 import binascii
 import httplib
 import logging
 import os
 import signal
+import six
 import sys
 import tempfile
 import traceback
@@ -139,7 +143,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                             traceback.format_exception_only(exc_class, exc))
                     exc = xmlrpclib.Fault(
                             fault_code, '%s. %s' % (message, exc_str.rstrip()))
-                raise exc, None, tb
+                six.reraise(exc, None, tb)
             finally:
                 del exc_info
                 del tb
@@ -617,11 +621,19 @@ class KernelServicer(object):
         @type os_if: os_interface.OSInterface
         """
         self._os_if = os_if
-        self._kernel_handler = kernel_handler.KernelHandler()
-        self._kernel_handler.init(
-                self._os_if,
-                dev_key_path='/usr/share/vboot/devkeys',
-                internal_disk=True)
+        self._real_kernel_handler = kernel_handler.KernelHandler(self._os_if)
+
+    @property
+    def _kernel_handler(self):
+        """Return the kernel handler, after initializing it if necessary
+
+        @rtype: kernel_handler.KernelHandler
+        """
+        if not self._real_kernel_handler.initialized:
+            self._real_kernel_handler.init(
+                    dev_key_path='/usr/share/vboot/devkeys',
+                    internal_disk=True)
+        return self._real_kernel_handler
 
     def corrupt_sig(self, section):
         """Corrupt the requested kernel section.
@@ -716,8 +728,17 @@ class RootfsServicer(object):
         @type os_if: os_interface.OSInterface
         """
         self._os_if = os_if
-        self._rootfs_handler = rootfs_handler.RootfsHandler()
-        self._rootfs_handler.init(self._os_if)
+        self._real_rootfs_handler = rootfs_handler.RootfsHandler(self._os_if)
+
+    @property
+    def _rootfs_handler(self):
+        """Return the rootfs handler, after initializing it if necessary
+
+        @rtype: rootfs_handler.RootfsHandler
+        """
+        if not self._real_rootfs_handler.initialized:
+            self._real_rootfs_handler.init()
+        return self._real_rootfs_handler
 
     def verify_rootfs(self, section):
         """Verifies the integrity of the root FS.
@@ -924,9 +945,9 @@ class SystemServicer(object):
         root_part = self._os_if.get_root_part()
         return self._os_if.get_internal_disk(root_part)
 
-    def create_temp_dir(self, prefix='backup_'):
+    def create_temp_dir(self, prefix='backup_', dir=None):
         """Create a temporary directory and return the path."""
-        return tempfile.mkdtemp(prefix=prefix)
+        return tempfile.mkdtemp(prefix=prefix, dir=dir)
 
     def remove_file(self, file_path):
         """Remove the file."""

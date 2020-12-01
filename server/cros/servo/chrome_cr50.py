@@ -85,7 +85,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     FWMP_LOCKED_DBG = ['Ignoring FWMP unlock setting']
     MAX_RETRY_COUNT = 5
     CCDSTATE_MAX_RETRY_COUNT = 20
-    START_STR = ['(.*Console is enabled;)']
+    START_STR = ['((Havn|UART).*Console is enabled;)']
     REBOOT_DELAY_WITH_CCD = 60
     REBOOT_DELAY_WITH_FLEX = 3
     ON_STRINGS = ['enable', 'enabled', 'on']

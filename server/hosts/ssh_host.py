@@ -87,7 +87,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         @param alive_count_max: SSH AliveCountMax.
         @param connection_attempts: SSH ConnectionAttempts
         """
-        options = " ".join([options, self._master_ssh.ssh_option])
+        options = " ".join([options, self._main_ssh.ssh_option])
         base_cmd = self.make_ssh_command(user=self.user, port=self.port,
                                          opts=options,
                                          hosts_file=self.known_hosts_file,
@@ -181,7 +181,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 run_counter.increment(fields=fields)
 
         # If ssh_failure_retry_ok is True, retry twice on timeouts and generic
-        # error 255: if a simple retry doesn't work, kill the ssh master
+        # error 255: if a simple retry doesn't work, kill the ssh main
         # connection and try again.  (Note that either error could come from
         # the command running in the DUT, in which case the retry may be
         # useless but, in theory, also harmless.)
@@ -245,10 +245,10 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                         ssh_failure_retry_count -= 1
                         continue
                     elif ssh_failure_retry_count == 1:
-                        # After two failures, restart the master connection
+                        # After two failures, restart the main connection
                         # before the final try.
-                        logging.debug('retry 2: restarting master connection')
-                        self.restart_master_ssh()
+                        logging.debug('retry 2: restarting main connection')
+                        self.restart_main_ssh()
                         # Last retry: reinstate timeout behavior.
                         ignore_timeout = original_ignore_timeout
                         ssh_failure_retry_count -= 1
@@ -321,7 +321,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         @param ssh_failure_retry_ok: True if the command may be retried on
                 probable ssh failure (error 255 or timeout).  When true,
                 the command may be executed up to three times, the second
-                time after restarting the ssh master connection.  Use only for
+                time after restarting the ssh main connection.  Use only for
                 commands that are idempotent, because when a "probable
                 ssh failure" occurs, we cannot tell if the command executed
                 or not.
@@ -337,7 +337,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         if timeout is None:
             timeout = self._default_run_timeout
         start_time = time.time()
-        with metrics.SecondsTimer('chromeos/autotest/ssh/master_ssh_time',
+        with metrics.SecondsTimer('chromeos/autotest/ssh/main_ssh_time',
                                   scale=0.001):
             if verbose:
                 stack = self._get_server_stack_state(lowest_frames=1,
@@ -345,9 +345,9 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 logging.debug("Running (ssh) '%s' from '%s'", command, stack)
                 command = self._verbose_logger_command(command)
 
-            self.start_master_ssh(min(
+            self.start_main_ssh(min(
                     timeout,
-                    self.DEFAULT_START_MASTER_SSH_TIMEOUT_S,
+                    self.DEFAULT_START_MAIN_SSH_TIMEOUT_S,
             ))
 
             env = " ".join("=".join(pair) for pair in six.iteritems(self.env))

@@ -410,7 +410,7 @@ class BaseServoHost(ssh_host.SSHHost):
         # with the logging bits ripped out, so that they can't cause
         # the failure logging problem described above.
         #
-        # The black stain that this has left on my soul can never be
+        # The stain that this has left on my soul can never be
         # erased.
         old_boot_id = self.get_boot_id()
         if not self.wait_down(timeout=self.WAIT_DOWN_REBOOT_TIMEOUT,
@@ -486,7 +486,7 @@ class BaseServoHost(ssh_host.SSHHost):
         """
         command = ('scp -rq %s -o BatchMode=yes -o StrictHostKeyChecking=no '
                    '-o UserKnownHostsFile=/dev/null -P %d %s "%s"')
-        return command % (self._master_ssh.ssh_option,
+        return command % (self._main_ssh.ssh_option,
                           self.port, sources, dest)
 
 

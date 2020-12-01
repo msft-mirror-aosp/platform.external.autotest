@@ -211,7 +211,7 @@ class DeployConfigManager(object):
         self.container = container
         # If shadow config is used, the deployment procedure will skip some
         # special handling of config file, e.g.,
-        # 1. Set enable_master_ssh to False in autotest shadow config.
+        # 1. Set enable_main_ssh to False in autotest shadow config.
         # 2. Set ssh logleve to ERROR for all hosts.
         if config_file is None:
             self.is_shadow_config = os.path.exists(
@@ -289,7 +289,7 @@ class DeployConfigManager(object):
         container. If one chooses to use a shadow SSP deploy config file, the
         autotest shadow_config.ini must be from a source with following
         modification:
-        1. Disable master ssh connection in shadow config, as it is not working
+        1. Disable main ssh connection in shadow config, as it is not working
            properly in container yet, and produces noise in the log.
         2. Update AUTOTEST_WEB/host and SERVER/hostname to be the IP of the host
            if any is set to localhost or 127.0.0.1. Otherwise, set it to be the
@@ -302,8 +302,8 @@ class DeployConfigManager(object):
         shadow_config = os.path.join(constants.CONTAINER_AUTOTEST_DIR,
                                      'shadow_config.ini')
 
-        # Inject "AUTOSERV/enable_master_ssh: False" in shadow config as
-        # container does not support master ssh connection yet.
+        # Inject "AUTOSERV/enable_main_ssh: False" in shadow config as
+        # container does not support main ssh connection yet.
         self.container.attach_run(
                 'echo $\'\n[AUTOSERV]\nenable_master_ssh: False\n\' >> %s' %
                 shadow_config)

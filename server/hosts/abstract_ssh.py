@@ -32,8 +32,8 @@ except ImportError:
 # pylint: disable=C0111
 
 get_value = global_config.get_config_value
-enable_master_ssh = get_value('AUTOSERV', 'enable_master_ssh', type=bool,
-                              default=False)
+enable_main_ssh = get_value('AUTOSERV', 'enable_master_ssh', type=bool,
+                            default=False)
 
 # Number of seconds to use the cached up status.
 _DEFAULT_UP_STATUS_EXPIRATION_SECONDS = 300
@@ -57,8 +57,8 @@ class AbstractSSHHost(remote.RemoteHost):
     Host.run method.
     """
     VERSION_PREFIX = ''
-    # Timeout for master ssh connection setup, in seconds.
-    DEFAULT_START_MASTER_SSH_TIMEOUT_S = 5
+    # Timeout for main ssh connection setup, in seconds.
+    DEFAULT_START_MAIN_SSH_TIMEOUT_S = 5
 
     def _initialize(self, hostname, user="root", port=_DEFAULT_SSH_PORT,
                     password="", is_client_install_supported=True,
@@ -77,7 +77,7 @@ class AbstractSSHHost(remote.RemoteHost):
         @param host_info_store: Optional host_info.CachingHostInfoStore object
                 to obtain / update host information.
         @param connection_pool: ssh_multiplex.ConnectionPool instance to share
-                the master ssh connection across control scripts.
+                the main ssh connection across control scripts.
         """
         self._track_class_usage()
         # IP address is retrieved only on demand. Otherwise the host
@@ -92,15 +92,15 @@ class AbstractSSHHost(remote.RemoteHost):
         self._rpc_server_tracker = rpc_server_tracker.RpcServerTracker(self);
 
         """
-        Master SSH connection background job, socket temp directory and socket
-        control path option. If master-SSH is enabled, these fields will be
-        initialized by start_master_ssh when a new SSH connection is initiated.
+        Main SSH connection background job, socket temp directory and socket
+        control path option. If main-SSH is enabled, these fields will be
+        initialized by start_main_ssh when a new SSH connection is initiated.
         """
         self._connection_pool = connection_pool
         if connection_pool:
-            self._master_ssh = connection_pool.get(hostname, user, port)
+            self._main_ssh = connection_pool.get(hostname, user, port)
         else:
-            self._master_ssh = ssh_multiplex.MasterSsh(hostname, user, port)
+            self._main_ssh = ssh_multiplex.MainSsh(hostname, user, port)
 
         self._afe_host = afe_host or utils.EmptyAFEHost()
         self.host_info_store = (host_info_store or
@@ -250,7 +250,7 @@ class AbstractSSHHost(remote.RemoteHost):
                       safe_symlinks=False, excludes=None):
         """Obtains rsync options for the remote."""
         ssh_cmd = self.make_ssh_command(user=self.user, port=self.port,
-                                        opts=self._master_ssh.ssh_option,
+                                        opts=self._main_ssh.ssh_option,
                                         hosts_file=self.known_hosts_file)
         if delete_dest:
             delete_flag = "--delete"
@@ -289,7 +289,7 @@ class AbstractSSHHost(remote.RemoteHost):
         to run commands directly on the machine
         """
         base_cmd = self.make_ssh_command(user=self.user, port=self.port,
-                                         opts=self._master_ssh.ssh_option,
+                                         opts=self._main_ssh.ssh_option,
                                          hosts_file=self.known_hosts_file)
 
         return '%s %s "%s"' % (base_cmd, self.hostname, utils.sh_escape(cmd))
@@ -302,7 +302,7 @@ class AbstractSSHHost(remote.RemoteHost):
         """
         command = ("scp -rq %s -o StrictHostKeyChecking=no "
                    "-o UserKnownHostsFile=%s -P %d %s '%s'")
-        return command % (self._master_ssh.ssh_option, self.known_hosts_file,
+        return command % (self._main_ssh.ssh_option, self.known_hosts_file,
                           self.port, sources, dest)
 
 
@@ -438,8 +438,8 @@ class AbstractSSHHost(remote.RemoteHost):
                       'preserve_perm: %s, preserve_symlinks:%s', source, dest,
                       delete_dest, preserve_perm, preserve_symlinks)
 
-        # Start a master SSH connection if necessary.
-        self.start_master_ssh()
+        # Start a main SSH connection if necessary.
+        self.start_main_ssh()
 
         if isinstance(source, six.string_types):
             source = [source]
@@ -544,8 +544,8 @@ class AbstractSSHHost(remote.RemoteHost):
         logging.debug('send_file. source: %s, dest: %s, delete_dest: %s,'
                       'preserve_symlinks:%s', source, dest,
                       delete_dest, preserve_symlinks)
-        # Start a master SSH connection if necessary.
-        self.start_master_ssh()
+        # Start a main SSH connection if necessary.
+        self.start_main_ssh()
 
         if isinstance(source, six.string_types):
             source = [source]
@@ -839,37 +839,37 @@ class AbstractSSHHost(remote.RemoteHost):
         super(AbstractSSHHost, self).close()
         self.rpc_server_tracker.disconnect_all()
         if not self._connection_pool:
-            self._master_ssh.close()
+            self._main_ssh.close()
         if os.path.exists(self.known_hosts_file):
             os.remove(self.known_hosts_file)
 
 
-    def restart_master_ssh(self):
+    def restart_main_ssh(self):
         """
-        Stop and restart the ssh master connection.  This is meant as a last
+        Stop and restart the ssh main connection.  This is meant as a last
         resort when ssh commands fail and we don't understand why.
         """
-        logging.debug('Restarting master ssh connection')
-        self._master_ssh.close()
-        self._master_ssh.maybe_start(timeout=30)
+        logging.debug('Restarting main ssh connection')
+        self._main_ssh.close()
+        self._main_ssh.maybe_start(timeout=30)
 
 
 
-    def start_master_ssh(self, timeout=DEFAULT_START_MASTER_SSH_TIMEOUT_S):
+    def start_main_ssh(self, timeout=DEFAULT_START_MAIN_SSH_TIMEOUT_S):
         """
-        Called whenever a slave SSH connection needs to be initiated (e.g., by
-        run, rsync, scp). If master SSH support is enabled and a master SSH
+        Called whenever a non-main SSH connection needs to be initiated (e.g.,
+        by run, rsync, scp). If main SSH support is enabled and a main SSH
         connection is not active already, start a new one in the background.
-        Also, cleanup any zombie master SSH connections (e.g., dead due to
+        Also, cleanup any zombie main SSH connections (e.g., dead due to
         reboot).
 
-        timeout: timeout in seconds (default 5) to wait for master ssh
+        timeout: timeout in seconds (default 5) to wait for main ssh
                  connection to be established. If timeout is reached, a
                  warning message is logged, but no other action is taken.
         """
-        if not enable_master_ssh:
+        if not enable_main_ssh:
             return
-        self._master_ssh.maybe_start(timeout=timeout)
+        self._main_ssh.maybe_start(timeout=timeout)
 
 
     def clear_known_hosts(self):

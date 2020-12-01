@@ -74,12 +74,14 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
         self.advertising_peer_test(device)
 
-
     @test_wrapper('Advertising Nearby test')
     def adv_nearby_test(self):
         """Verify minimal Nearby advertising requirements"""
 
-        self.test_case_nearby_mediums_fast()
+        self.run_le_advertising_test(self.host,
+                                     advertisements_data.ADVERTISEMENTS,
+                                     'nearby',
+                                     num_iterations=1)
 
     @test_wrapper('Broadcast advertising test')
     def adv_broadcast_test(self):

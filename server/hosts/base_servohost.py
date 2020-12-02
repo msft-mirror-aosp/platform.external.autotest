@@ -394,6 +394,18 @@ class BaseServoHost(ssh_host.SSHHost):
 
     def _servo_host_reboot(self):
         """Reboot this servo host because a reboot is requested."""
+        try:
+            # TODO(otabek) remove if found the fix for b/174514811
+            # The default factory firmware remember the latest chromeboxes
+            # status after power off. If box was in sleep mode before the
+            # break, the box will stay at sleep mode after power on.
+            # Disable power manager has make chromebox to boot always when
+            # we deliver the power to the device.
+            logging.info('Stoping powerd service on device')
+            self.run('stop powerd', ignore_status=True, timeout=30)
+        except Exception as e:
+            logging.debug('(Not critical) Fail to stop powerd; %s', e)
+
         logging.info('Rebooting servo host %s from build %s', self.hostname,
                      self.get_release_version())
         # Tell the reboot() call not to wait for completion.

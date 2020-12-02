@@ -594,6 +594,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def get_battery_property(self, address, prop_name):
+        """Read a property of battery by directly querying the dbus object
+
+        @param address: Address of the device to query
+        @param prop_name: Property to be queried
+
+        @return The property if battery is found and has property,
+          None otherwise
+        """
+
+        return self._proxy.get_battery_property(address, prop_name)
+
+    @proxy_thread_safe
     def start_discovery(self):
         """Start discovery of remote devices.
 

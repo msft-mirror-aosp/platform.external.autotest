@@ -1245,6 +1245,20 @@ class BluetoothFacadeNative(object):
         return True
 
     @xmlrpc_server.dbus_safe(False)
+    def set_adapter_alias(self, alias):
+        """Set the adapter alias.
+
+        @param alias: adapter alias to set with type String
+
+        @return True on success, False otherwise.
+        """
+        self._adapter.Set(self.BLUEZ_ADAPTER_IFACE,
+                          'Alias',
+                          dbus.String(alias),
+                          dbus_interface=dbus.PROPERTIES_IFACE)
+        return True
+
+    @xmlrpc_server.dbus_safe(False)
     def _get_adapter_properties(self):
         """Read the adapter properties from the Bluetooth Daemon.
 

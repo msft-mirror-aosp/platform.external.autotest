@@ -422,6 +422,19 @@ class BluetoothDevice(object):
         properties = self.get_adapter_properties()
         return properties.get('Pairable') == 1
 
+    @proxy_thread_safe
+    def set_adapter_alias(self, alias):
+        """Set the adapter alias.
+
+        A note on Alias property - providing an empty string ('') will reset the
+        Alias property to the system default
+
+        @param alias: adapter alias to set with type String
+
+        @return True on success, False otherwise.
+        """
+
+        return self._proxy.set_adapter_alias(alias)
 
     @proxy_thread_safe
     def get_adapter_properties(self):

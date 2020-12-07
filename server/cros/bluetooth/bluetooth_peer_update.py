@@ -26,6 +26,9 @@ from autotest_lib.client.common_lib import error
 # The location of the package in the cloud
 GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/bluetooth_peer_bundle/'
 
+# NAME of the file that stores python2 commits info in the cloud
+PYTHON2_COMMITS_FILENAME = 'bluetooth_python2_commits'
+
 # NAME of the file that stores  commit info in the cloud
 COMMIT_FILENAME = 'latest_bluetooth_commit'
 
@@ -53,6 +56,33 @@ def run_cmd(peer, cmd):
         return False, None
 
 
+def read_google_cloud_file(filename):
+    """ Check if update is required
+
+    Read the contents of the Googlle cloud file.
+
+    @params filename: the filename of the Google cloud file
+
+    @returns: the contexts of the file if successful; None otherwise.
+    """
+    try:
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            tmp_filename = tmp_file.name
+            cmd = 'gsutil cp {} {}'.format(filename, tmp_filename)
+            result = utils.run(cmd)
+            if result.exit_status != 0:
+                logging.error('Downloading file %s failed with %s',
+                              filename, result.exit_status)
+                return None
+            with open(tmp_filename) as f:
+                content = f.read()
+                logging.debug('content of the file %s: %s', filename, content)
+                return content
+    except Exception as e:
+        logging.error('Error in reading %s', filename)
+        return None
+
+
 def is_update_needed(peer, latest_commit):
     """ Check if update is required
 
@@ -76,13 +106,13 @@ def is_commit_hash_equal(peer, latest_commit):
     return commit == latest_commit
 
 
-def perform_update(peer, latest_commit):
+def perform_update(peer, target_commit):
     """ Update the chameleond on the peer"""
 
     logging.info('copy the file over to the peer')
     try:
         cur_dir = '/tmp/'
-        bundle = BUNDLE_TEMPLATE.format(latest_commit)
+        bundle = BUNDLE_TEMPLATE.format(target_commit)
         bundle_path = os.path.join(cur_dir, bundle)
         logging.debug('package location is %s', bundle_path)
 
@@ -92,18 +122,30 @@ def perform_update(peer, latest_commit):
         logging.error(str(os.listdir(cur_dir)))
         return False
 
+    # Backward compatibility for deploying the chamleeon bundle:
+    # use 'PY_VERSION=python3' only when the target_commit is not in
+    # the specified python2 commits. When py_version_option is empty,
+    # python2 will be used in the deployment.
+    python2_commits_filename = GS_PUBLIC + PYTHON2_COMMITS_FILENAME
+    python2_commits = read_google_cloud_file(python2_commits_filename)
+    logging.info('target_commit %s python2_commits %s ',
+                 target_commit, python2_commits)
+    if bool(python2_commits) and target_commit in python2_commits:
+        py_version_option = ''
+    else:
+        py_version_option = 'PY_VERSION=python3'
+
     HOST_NOW = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
     logging.info('running make on peer')
     cmd = ('cd %s && rm -rf %s && tar zxf %s &&'
            'cd %s && find -exec touch -c {} \; &&'
            'make install REMOTE_INSTALL=TRUE '
            'HOST_NOW="%s" BUNDLE_VERSION=%s '
-           'CHAMELEON_BOARD=%s && rm %s%s') % (cur_dir,BUNDLE_DIR, bundle,
-                                               BUNDLE_DIR, HOST_NOW,
-                                               BUNDLE_VERSION,
-                                               CHAMELEON_BOARD, cur_dir,
-                                               bundle)
-    logging.debug(cmd)
+           'CHAMELEON_BOARD=%s %s && rm %s%s' %
+           (cur_dir, BUNDLE_DIR, bundle, BUNDLE_DIR, HOST_NOW,
+            BUNDLE_VERSION, CHAMELEON_BOARD, py_version_option,
+            cur_dir, bundle))
+    logging.info(cmd)
     status, _ = run_cmd(peer, cmd)
     if not status:
         logging.info('make failed')

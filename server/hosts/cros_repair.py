@@ -39,6 +39,7 @@ except ImportError:
 from chromite.lib import timeout_util
 
 DEFAULT_SERVO_RESET_TRIGGER = (
+        'ping',
         'ssh',
         'stop_start_ui',
         'power',
@@ -99,9 +100,21 @@ _CROS_PROVISION_TRIGGERS = (
         'dev_default_boot',
 )
 _CROS_POWERWASH_TRIGGERS = ('tpm', 'good_provision', 'ext4',)
-_CROS_USB_TRIGGERS = ('ssh', 'writable', 'stop_start_ui',)
-_JETSTREAM_USB_TRIGGERS = ('ssh', 'writable',)
-_CROS_FIRMWARE_TRIGGERS = ('ssh', )
+_CROS_USB_TRIGGERS = (
+        'ping',
+        'ssh',
+        'writable',
+        'stop_start_ui',
+)
+_JETSTREAM_USB_TRIGGERS = (
+        'ping',
+        'ssh',
+        'writable',
+)
+_CROS_FIRMWARE_TRIGGERS = (
+        'ping',
+        'ssh',
+)
 _CROS_USB_DEPENDENCIES = ('usb_drive', )
 
 
@@ -1119,7 +1132,8 @@ def _cros_verify_base_dag():
     FirmwareStatusVerifier = cros_firmware.FirmwareStatusVerifier
     FirmwareVersionVerifier = cros_firmware.FirmwareVersionVerifier
     verify_dag = (
-            (repair_utils.SshVerifier, 'ssh', ()),
+            (repair_utils.PingVerifier, 'ping', ()),
+            (repair_utils.SshVerifier, 'ssh', ('ping', )),
             (ServoUSBDriveVerifier, 'usb_drive', ()),
             (DevDefaultBootVerifier, 'dev_default_boot', ('ssh', )),
             (DevModeVerifier, 'devmode', ('ssh', )),
@@ -1160,12 +1174,16 @@ def _cros_basic_repair_actions(
             # RPM cycling must precede Servo reset:  if the DUT has a dead
             # battery, we need to reattach AC power before we reset via servo.
             (repair_utils.RPMCycleRepair, 'rpm', (), (
+                    'ping',
                     'ssh',
                     'power',
             )),
             (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
             (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
-            (ServoSysRqRepair, 'sysrq', (), ('ssh', )),
+            (ServoSysRqRepair, 'sysrq', (), (
+                    'ping',
+                    'ssh',
+            )),
             (LabelCleanupRepair, 'label_cleanup', ('ssh', ),
              ('cros_version_label', )),
 
@@ -1176,6 +1194,7 @@ def _cros_basic_repair_actions(
             # and we want the repair steps below to be able to trust the
             # firmware.
             (cros_firmware.FaftFirmwareRepair, 'faft_firmware_repair', (), (
+                    'ping',
                     'ssh',
                     'fwstatus',
                     'good_provision',
@@ -1301,22 +1320,23 @@ def _jetstream_repair_actions():
     jetstream_tpm_triggers = ('jetstream_tpm', 'jetstream_attestation')
     jetstream_service_triggers = (jetstream_tpm_triggers +
                                   ('jetstream_services',))
-    repair_actions = (
-        _cros_basic_repair_actions(servo_reset_trigger=('ssh',)) +
-        (
+    base_actions = _cros_basic_repair_actions(servo_reset_trigger=(
+            'ping',
+            'ssh',
+    ))
+    custom_actions = (
             (JetstreamTpmRepair, 'jetstream_tpm_repair',
              _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS,
              provision_triggers + jetstream_tpm_triggers),
-
             (JetstreamServiceRepair, 'jetstream_service_repair',
-             _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS + (
-                 'jetstream_tpm', 'jetstream_attestation'),
+             _JETSTREAM_USB_TRIGGERS + _CROS_POWERWASH_TRIGGERS +
+             ('jetstream_tpm', 'jetstream_attestation'),
              provision_triggers + jetstream_service_triggers),
-        ) +
-        _cros_extended_repair_actions(
+    )
+    extend_actions = _cros_extended_repair_actions(
             provision_triggers=provision_triggers + jetstream_service_triggers,
-            usb_triggers=_JETSTREAM_USB_TRIGGERS))
-    return repair_actions
+            usb_triggers=_JETSTREAM_USB_TRIGGERS)
+    return base_actions + custom_actions + extend_actions
 
 
 def _jetstream_verify_dag():

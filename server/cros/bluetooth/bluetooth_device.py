@@ -1087,8 +1087,12 @@ class BluetoothDevice(object):
 
     @proxy_thread_safe
     def messages_stop(self):
-        """Stop messages monitoring."""
-        self._proxy.messages_stop()
+        """Stop messages monitoring.
+
+        @returns: True if logs were successfully gathered since logging started,
+                else False
+        """
+        return self._proxy.messages_stop()
 
     @proxy_thread_safe
     def messages_find(self, pattern_str):

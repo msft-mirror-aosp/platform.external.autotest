@@ -1309,6 +1309,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         try:
             self._repair_strategy.repair(self)
         except hosts.AutoservVerifyDependencyError as e:
+            # TODO(otabek): remove when finish b/174191325
+            self._stat_if_pingable_but_not_sshable()
             # We don't want flag a DUT as failed if only non-critical
             # verifier(s) failed during the repair.
             if e.is_critical():
@@ -2898,6 +2900,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             return False
         dut_ssh_verifier = self._repair_strategy.verifier_is_good('ssh')
         return dut_ssh_verifier == hosts.VERIFY_FAILED
+
+    def _stat_if_pingable_but_not_sshable(self):
+        """Check if DUT pingable but failed SSH verifier."""
+        if not self._repair_strategy:
+            return
+        dut_ssh = self._repair_strategy.verifier_is_good('ssh')
+        dut_ping = self._repair_strategy.verifier_is_good('ping')
+        if (dut_ping == hosts.VERIFY_FAILED
+                    and dut_ssh == hosts.VERIFY_FAILED):
+            metrics.Counter('chromeos/autotest/dut_pingable_no_ssh').increment(
+                    fields={'host': self.hostname})
 
     def try_set_device_needs_manual_repair(self):
         """Check if device require manual attention to be fixed.

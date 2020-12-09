@@ -2687,14 +2687,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         main_storage = self.run(main_storage_cmd,
                                 ignore_status=True,
                                 timeout=60).stdout.strip()
-        if not main_storage:
-            logging.debug('Main storage not detected on the host.')
-            return False
-        if boot_device == main_storage:
-            logging.debug('Device booted from main storage.')
-            return False
-        logging.debug('Device booted from external storage storage.')
-        return True
+        if not main_storage or boot_device != main_storage:
+            logging.debug('Device booted from external storage storage.')
+            return True
+        logging.debug('Device booted from main storage.')
+        return False
 
     def read_from_meminfo(self, key):
         """Return the memory info from /proc/meminfo

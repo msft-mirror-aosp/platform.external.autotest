@@ -92,7 +92,10 @@ class touch_UpdateErrors(touch_playback_test_base.touch_playback_test_base):
 
         updater_name = 'touch-firmware-update'
         start_line = self._find_logs_start_line()
-        log_cmd = 'tail -n +%s /var/log/messages | grep -i %s' % (
+        # Null characters sometimes slip into /var/log/messages, causing grep to
+        # treat it as a binary file (and output "binary file matches" rather
+        # than the matching text). --text forces grep to treat it as text file.
+        log_cmd = 'tail -n +%s /var/log/messages | grep --text -i %s' % (
                 start_line, updater_name)
 
         pass_terms = ['%s.*%s' % (updater_name, hw_id) ]

@@ -45,28 +45,22 @@ class _MockConfigTestCaseBaseClass(unittest.TestCase):
         if self.mock_configs is None:
             return
 
-        # Setup mock config._get_config_dir(), but remember the original.
+        # Setup mock config._CONFIG_DIR, but remember the original.
         self.mock_config_dir = tempfile.mkdtemp()
-        self.original_get_config_dir = config._get_config_dir
-        config._get_config_dir = lambda: self.mock_config_dir
+        self.original_config_dir = config._CONFIG_DIR
+        config._CONFIG_DIR = self.mock_config_dir
 
-        # Write mock config files.
-        self.mock_config_files = []
-        for platform in self.mock_configs:
-            mock_config_file = os.path.join(self.mock_config_dir,
-                                            '%s.json' % platform)
-            with open(mock_config_file, 'w') as f:
-                json.dump(self.mock_configs[platform], f)
-            self.mock_config_files.append(mock_config_file)
+        # Write mock config file.
+        with open(config._consolidated_json_fp(), 'w') as f:
+            json.dump(self.mock_configs, f)
 
     def tearDown(self):
         """After tests are complete, delete the tempfile"""
         if self.mock_configs is None:
             return
-        for tf in self.mock_config_files:
-            os.remove(tf)
+        os.remove(config._consolidated_json_fp())
         os.rmdir(self.mock_config_dir)
-        config._get_config_dir = self.original_get_config_dir
+        config._CONFIG_DIR = self.original_config_dir
 
 
 class InheritanceTestCase(_MockConfigTestCaseBaseClass):

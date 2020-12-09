@@ -480,8 +480,7 @@ class HWIDVerifier(hosts.Verifier):
             return
 
         host_hwid = host.run('crossystem hwid', ignore_status=True).stdout
-        host_serial_number = host.run('vpd -g serial_number',
-                                      ignore_status=True).stdout
+        host_serial_number = self._get_serial_number(host, info_serial_number)
         if not host_hwid or not host_serial_number:
             raise hosts.AutoservVerifyError(
                     'Failed to get HWID & Serial Number for host %s' %
@@ -506,6 +505,34 @@ class HWIDVerifier(hosts.Verifier):
                     host_serial_number)
             host.set_device_repair_state(
                     cros_constants.DEVICE_STATE_NEEDS_DEPLOY)
+
+    def _get_serial_number(self, host, serial_number):
+        """Read serial_number from VPD.
+
+        If VPD does not have any value for serial_number then it will
+        try to restore from host_info.
+
+        @param host             CrosHost
+        @param serial_number    Serial-number from host-info
+        """
+        req = host.run('vpd -g serial_number', ignore_status=True)
+        # serial_number not found in the VPD info
+        if not req.stdout and req.exit_status == 3 and serial_number:
+            logging.debug('Cannot find serial_number from VPD.')
+            # check if vpd working fine without error
+            l1 = host.run('vpd -l', ignore_status=True)
+            l2 = host.run('vpd -l |grep "\"serial_number\"="',
+                          ignore_status=True)
+            if l1.exit_status == 0 and l2.exit_status == 1:
+                logging.info('Start restoring serial_number:%s for VPD.',
+                             serial_number)
+                # update serial_number for VPD
+                cmd = 'vpd -s serial_number=%s'
+                host.run(cmd % serial_number, ignore_status=True)
+                host.run('dump_vpd_log --force', ignore_status=True)
+                # reading from VPD to see what we updated
+                req = host.run('vpd -g serial_number', ignore_status=True)
+        return req.stdout
 
     @property
     def description(self):

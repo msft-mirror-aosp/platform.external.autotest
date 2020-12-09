@@ -53,7 +53,7 @@ class CellularTestEnvironment(object):
     """
 
     def __init__(self, use_backchannel=True, shutdown_other_devices=True,
-                 modem_pattern='', skip_modem_reset=False):
+                 modem_pattern='', skip_modem_reset=False, is_esim_test=False):
         """
         @param use_backchannel: Set up the backchannel that can be used to
                 communicate with the DUT.
@@ -74,6 +74,7 @@ class CellularTestEnvironment(object):
 
         self._modem_pattern = modem_pattern
         self._skip_modem_reset = skip_modem_reset
+        self._is_esim_test = is_esim_test
 
         self._nested = None
         self._context_managers = []
@@ -82,16 +83,14 @@ class CellularTestEnvironment(object):
             self._context_managers.append(self._backchannel)
         if shutdown_other_devices:
             self._context_managers.append(
-                    shill_context.AllowedTechnologiesContext(
-                            [shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR]))
-
+                shill_context.AllowedTechnologiesContext(
+                    [shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR]))
 
     @contextlib.contextmanager
     def _disable_shill_autoconnect(self):
         self._enable_shill_cellular_autoconnect(False)
         yield
         self._enable_shill_cellular_autoconnect(True)
-
 
     def __enter__(self):
         try:
@@ -116,7 +115,8 @@ class CellularTestEnvironment(object):
                 self._setup_logging()
 
                 self._verify_backchannel()
-                self._wait_for_modem_registration()
+                if not self._is_esim_test:
+                    self._wait_for_modem_registration()
                 self._verify_cellular_service()
 
                 return self
@@ -133,7 +133,6 @@ class CellularTestEnvironment(object):
             self.__exit__(*sys.exc_info())
             raise
 
-
     def __exit__(self, exception, value, traceback):
         if upstart.has_service('modemfwd'):
             upstart.restart_job('modemfwd')
@@ -144,14 +143,12 @@ class CellularTestEnvironment(object):
         self.modem = None
         self.modem_path = None
 
-
     def _get_shill_cellular_device_object(self):
         return utils.poll_for_condition(
             lambda: self.shill.find_cellular_device_object(),
             exception=error.TestError('Cannot find cellular device in shill. '
                                       'Is the modem plugged in?'),
             timeout=shill_proxy.ShillProxy.DEVICE_ENUMERATION_TIMEOUT)
-
 
     def _enable_modem(self):
         modem_device = self._get_shill_cellular_device_object()
@@ -165,17 +162,15 @@ class CellularTestEnvironment(object):
         utils.poll_for_condition(
             lambda: modem_device.GetProperties()['Powered'],
             exception=error.TestError(
-                    'Failed to enable modem.'),
+                'Failed to enable modem.'),
             timeout=shill_proxy.ShillProxy.DEVICE_ENABLE_DISABLE_TIMEOUT)
-
 
     def _enable_shill_cellular_autoconnect(self, enable):
         shill = cellular_proxy.CellularProxy.get_proxy(self.bus)
         shill.manager.SetProperty(
-                shill_proxy.ShillProxy.
-                MANAGER_PROPERTY_NO_AUTOCONNECT_TECHNOLOGIES,
-                '' if enable else 'cellular')
-
+            shill_proxy.ShillProxy.
+            MANAGER_PROPERTY_NO_AUTOCONNECT_TECHNOLOGIES,
+            '' if enable else 'cellular')
 
     def _is_unsupported_error(self, e):
         return (e.get_dbus_name() ==
@@ -183,7 +178,6 @@ class CellularTestEnvironment(object):
                 (e.get_dbus_name() ==
                  shill_proxy.ShillProxy.ERROR_FAILURE and
                  'operation not supported' in e.get_dbus_message()))
-
 
     def _reset_modem(self):
         modem_device = self._get_shill_cellular_device_object()
@@ -194,7 +188,6 @@ class CellularTestEnvironment(object):
             if not self._is_unsupported_error(e):
                 raise
 
-
     def _initialize_shill(self):
         """Get access to shill."""
         # CellularProxy.get_proxy() checks to see if shill is running and
@@ -202,7 +195,6 @@ class CellularTestEnvironment(object):
         self.shill = cellular_proxy.CellularProxy.get_proxy(self.bus)
         if self.shill is None:
             raise error.TestError('Cannot connect to shill, is shill running?')
-
 
     def _initialize_modem_components(self):
         """Reset the modem and get access to modem components."""
@@ -215,17 +207,15 @@ class CellularTestEnvironment(object):
         # PickOneModem() makes sure there's a modem manager and that there is
         # one and only one modem.
         self.modem_manager, self.modem_path = \
-                mm.PickOneModem(self._modem_pattern)
+            mm.PickOneModem(self._modem_pattern)
         self.modem = self.modem_manager.GetModem(self.modem_path)
         if self.modem is None:
             raise error.TestError('Cannot get modem object at %s.' %
                                   self.modem_path)
 
-
     def _setup_logging(self):
         self.shill.set_logging_for_cellular_test()
         self.modem_manager.SetDebugLogging()
-
 
     def _verify_sim(self):
         """Verify SIM is valid.
@@ -240,7 +230,7 @@ class CellularTestEnvironment(object):
 
         # No SIM in CDMA modems.
         family = props[
-                cellular_proxy.CellularProxy.DEVICE_PROPERTY_TECHNOLOGY_FAMILY]
+            cellular_proxy.CellularProxy.DEVICE_PROPERTY_TECHNOLOGY_FAMILY]
         if (family ==
                 cellular_proxy.CellularProxy.
                 DEVICE_PROPERTY_TECHNOLOGY_FAMILY_CDMA):
@@ -252,19 +242,18 @@ class CellularTestEnvironment(object):
 
         # Make sure SIM is not locked.
         lock_status = props.get(
-                cellular_proxy.CellularProxy.DEVICE_PROPERTY_SIM_LOCK_STATUS,
-                None)
+            cellular_proxy.CellularProxy.DEVICE_PROPERTY_SIM_LOCK_STATUS,
+            None)
         if lock_status is None:
             raise error.TestError('Failed to read SIM lock status.')
         locked = lock_status.get(
-                cellular_proxy.CellularProxy.PROPERTY_KEY_SIM_LOCK_ENABLED,
-                None)
+            cellular_proxy.CellularProxy.PROPERTY_KEY_SIM_LOCK_ENABLED,
+            None)
         if locked is None:
             raise error.TestError('Failed to read SIM LockEnabled status.')
         elif locked:
             raise error.TestError(
-                    'SIM is locked, test requires an unlocked SIM.')
-
+                'SIM is locked, test requires an unlocked SIM.')
 
     def _verify_backchannel(self):
         """Verify backchannel is on an ethernet device.
@@ -279,7 +268,6 @@ class CellularTestEnvironment(object):
             raise error.TestError('An ethernet connection is required between '
                                   'the test server and the device under test.')
 
-
     def _wait_for_modem_registration(self):
         """Wait for the modem to register with the network.
 
@@ -289,9 +277,8 @@ class CellularTestEnvironment(object):
         utils.poll_for_condition(
             self.modem.ModemIsRegistered,
             exception=error.TestError(
-                    'Modem failed to register with the network.'),
+                'Modem failed to register with the network.'),
             timeout=cellular_proxy.CellularProxy.SERVICE_REGISTRATION_TIMEOUT)
-
 
     def _verify_cellular_service(self):
         """Make sure a cellular service exists.
@@ -311,26 +298,28 @@ class CellularTestEnvironment(object):
                     cellular_proxy.CellularProxy.ERROR_NOT_CONNECTED):
                 raise
         success, state, _ = self.shill.wait_for_property_in(
-                service,
-                cellular_proxy.CellularProxy.SERVICE_PROPERTY_STATE,
-                ('idle',),
-                cellular_proxy.CellularProxy.SERVICE_DISCONNECT_TIMEOUT)
+            service,
+            cellular_proxy.CellularProxy.SERVICE_PROPERTY_STATE,
+            ('idle',),
+            cellular_proxy.CellularProxy.SERVICE_DISCONNECT_TIMEOUT)
         if not success:
             raise error.TestError(
-                    'Cellular service needs to start in the "idle" state. '
-                    'Current state is "%s". '
-                    'Modem disconnect may have failed.' %
-                    state)
+                'Cellular service needs to start in the "idle" state. '
+                'Current state is "%s". '
+                'Modem disconnect may have failed.' %
+                state)
 
 
 class CellularOTATestEnvironment(CellularTestEnvironment):
     """Setup and verify cellular over-the-air (OTA) test environment. """
+
     def __init__(self, **kwargs):
         super(CellularOTATestEnvironment, self).__init__(**kwargs)
 
 
 class CellularPseudoMMTestEnvironment(CellularTestEnvironment):
     """Setup and verify cellular pseudomodem test environment. """
+
     def __init__(self, pseudomm_args=None, **kwargs):
         """
         @param pseudomm_args: Tuple of arguments passed to the pseudomodem, see
@@ -341,5 +330,14 @@ class CellularPseudoMMTestEnvironment(CellularTestEnvironment):
         kwargs["skip_modem_reset"] = True
         super(CellularPseudoMMTestEnvironment, self).__init__(**kwargs)
         self._context_managers.append(
-                pseudomodem_context.PseudoModemManagerContext(
-                        True, bus=self.bus, *pseudomm_args))
+            pseudomodem_context.PseudoModemManagerContext(
+                True, bus=self.bus, *pseudomm_args))
+
+
+class CellularESIMTestEnvironment(CellularTestEnvironment):
+    """Setup cellular eSIM test environment. """
+
+    def __init__(self, esim_arguments=None, **kwargs):
+        kwargs["skip_modem_reset"] = True
+        kwargs["is_esim_test"] = True
+        super(CellularESIMTestEnvironment, self).__init__(**kwargs)

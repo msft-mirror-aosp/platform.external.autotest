@@ -62,13 +62,13 @@ class ModemManager1Proxy(object):
                 if _is_unknown_dbus_binding_exception(e):
                     return None
                 raise ModemManager1ProxyError(
-                        'Error connecting to ModemManager1. DBus error: |%s|',
-                        repr(e))
+                    'Error connecting to ModemManager1. DBus error: |%s|',
+                    repr(e))
 
         utils.poll_for_condition(
             lambda: _connect_to_mm1(bus) is not None,
             exception=ModemManager1ProxyError(
-                    'Timed out connecting to ModemManager1'),
+                'Timed out connecting to ModemManager1'),
             timeout=timeout_seconds,
             sleep_interval=ModemManager1Proxy.CONNECT_WAIT_INTERVAL_SECONDS)
         connection = _connect_to_mm1(bus)
@@ -79,23 +79,58 @@ class ModemManager1Proxy(object):
 
         return connection
 
-
     def __init__(self, bus=None):
         if bus is None:
             dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
             bus = dbus.SystemBus()
         self._bus = bus
         self._manager = dbus.Interface(
-                self._bus.get_object(mm1_constants.I_MODEM_MANAGER,
-                                     mm1_constants.MM1),
-                mm1_constants.I_MODEM_MANAGER)
-
+            self._bus.get_object(mm1_constants.I_MODEM_MANAGER,
+                                 mm1_constants.MM1),
+            mm1_constants.I_MODEM_MANAGER)
 
     @property
     def manager(self):
         """@return the DBus ModemManager1 Manager object."""
         return self._manager
 
+    def inhibit_device(self, inhibit):
+        """
+        InhibitDevice:
+        @uid: the unique ID of the physical device, given in the
+              #org.freedesktop.ModemManager1.Modem:Device property.
+        @inhibit: %TRUE to inhibit the modem and %FALSE to uninhibit it.
+
+        Inhibit or uninhibit the device.
+
+        When the modem is inhibited ModemManager will close all its ports and
+        unexport it from the bus, so that users of the interface are no longer
+        able to operate with it.
+
+        This operation binds the inhibition request to the existence of the
+        caller in the DBus bus. If the caller disappears from the bus, the
+        inhibition will automatically removed.
+        """
+        try:
+            modem = self.get_modem()
+            if not modem:
+                return
+            device = modem.properties(
+                mm1_constants.I_MODEM).get('device')
+
+            if not self._manager:
+                raise ModemManager1ProxyError(
+                    'Failed to to obtain dbus manager object.')
+
+            if device:
+                self._manager.InhibitDevice(dbus.String(device), inhibit)
+            else:
+                self._manager.InhibitDevice(dbus.String("/virtual/fake"),
+                                            inhibit)
+        except dbus.exceptions.DBusException as e:
+            raise ModemManager1ProxyError(
+                'Failed to to obtain dbus object for the modem.'
+                'DBus error: |%s|', repr(e))
 
     def get_modem(self):
         """
@@ -123,14 +158,14 @@ class ModemManager1Proxy(object):
             modems = object_manager.GetManagedObjects()
         except dbus.exceptions.DBusException as e:
             raise ModemManager1ProxyError(
-                    'Failed to list the available modems. DBus error: |%s|',
-                    repr(e))
+                'Failed to list the available modems. DBus error: |%s|',
+                repr(e))
 
         if not modems:
             return None
         elif len(modems) > 1:
             raise ModemManager1ProxyError(
-                    'Expected one modem object, found %d', len(modems))
+                'Expected one modem object, found %d', len(modems))
 
         modem_proxy = ModemProxy(self._bus, modems.keys()[0])
         # Check that this object is valid
@@ -142,9 +177,8 @@ class ModemManager1Proxy(object):
             if _is_unknown_dbus_binding_exception(e):
                 return None
             raise ModemManager1ProxyError(
-                    'Failed to obtain dbus object for the modem. DBus error: '
-                    '|%s|', repr(e))
-
+                'Failed to obtain dbus object for the modem. DBus error: '
+                '|%s|', repr(e))
 
     def wait_for_modem(self, timeout_seconds):
         """
@@ -159,9 +193,9 @@ class ModemManager1Proxy(object):
 
         """
         return utils.poll_for_condition(
-                self.get_modem,
-                exception=ModemManager1ProxyError('No modem found'),
-                timeout=timeout_seconds)
+            self.get_modem,
+            exception=ModemManager1ProxyError('No modem found'),
+            timeout=timeout_seconds)
 
 
 class ModemProxy(object):
@@ -174,42 +208,35 @@ class ModemProxy(object):
         self._bus = bus
         self._modem = self._bus.get_object(mm1_constants.I_MODEM_MANAGER, path)
 
-
     @property
     def modem(self):
         """@return the DBus modem object."""
         return self._modem
-
 
     @property
     def iface_modem(self):
         """@return org.freedesktop.ModemManager1.Modem DBus interface."""
         return dbus.Interface(self._modem, mm1_constants.I_MODEM)
 
-
     @property
     def iface_simple_modem(self):
         """@return org.freedesktop.ModemManager1.Simple DBus interface."""
         return dbus.Interface(self._modem, mm1_constants.I_MODEM_SIMPLE)
-
 
     @property
     def iface_gsm_modem(self):
         """@return org.freedesktop.ModemManager1.Modem3gpp DBus interface."""
         return dbus.Interface(self._modem, mm1_constants.I_MODEM_3GPP)
 
-
     @property
     def iface_cdma_modem(self):
         """@return org.freedesktop.ModemManager1.ModemCdma DBus interface."""
         return dbus.Interface(self._modem, mm1_constants.I_MODEM_CDMA)
 
-
     @property
     def iface_properties(self):
         """@return org.freedesktop.DBus.Properties DBus interface."""
         return dbus.Interface(self._modem, dbus.PROPERTIES_IFACE)
-
 
     def properties(self, iface):
         """Return the properties associated with the specified interface.
@@ -219,7 +246,6 @@ class ModemProxy(object):
 
         """
         return self.iface_properties.GetAll(iface)
-
 
     def get_sim(self):
         """
@@ -240,9 +266,8 @@ class ModemProxy(object):
             if _is_unknown_dbus_binding_exception(e):
                 return None
             raise ModemManager1ProxyError(
-                    'Failed to obtain dbus object for the SIM. DBus error: '
-                    '|%s|', repr(e))
-
+                'Failed to obtain dbus object for the SIM. DBus error: '
+                '|%s|', repr(e))
 
     def wait_for_states(self, states,
                         timeout_seconds=STATE_TRANSITION_WAIT_SECONDS):
@@ -266,18 +291,18 @@ class ModemProxy(object):
                          mm1_constants.MM_MODEM_STATE_DISCONNECTING,
                          mm1_constants.MM_MODEM_STATE_CONNECTING]:
                 raise ModemManager1ProxyError(
-                        'wait_for_states() does not support transitory states.')
+                    'wait_for_states() does not support transitory states.')
 
         utils.poll_for_condition(
-                lambda: self.properties(mm1_constants.I_MODEM)[
-                        mm1_constants.MM_MODEM_PROPERTY_NAME_STATE] in states,
-                exception=ModemManager1ProxyError(
-                        'Timed out waiting for modem to enter one of these '
-                        'states: %s, current state=%s',
-                        states,
-                        self.properties(mm1_constants.I_MODEM)[
-                                mm1_constants.MM_MODEM_PROPERTY_NAME_STATE]),
-                timeout=timeout_seconds)
+            lambda: self.properties(mm1_constants.I_MODEM)[
+                mm1_constants.MM_MODEM_PROPERTY_NAME_STATE] in states,
+            exception=ModemManager1ProxyError(
+                'Timed out waiting for modem to enter one of these '
+                'states: %s, current state=%s',
+                states,
+                self.properties(mm1_constants.I_MODEM)[
+                    mm1_constants.MM_MODEM_PROPERTY_NAME_STATE]),
+            timeout=timeout_seconds)
 
 
 class SimProxy(object):
@@ -287,24 +312,20 @@ class SimProxy(object):
         self._bus = bus
         self._sim = self._bus.get_object(mm1_constants.I_MODEM_MANAGER, path)
 
-
     @property
     def sim(self):
         """@return the DBus SIM object."""
         return self._sim
-
 
     @property
     def iface_properties(self):
         """@return org.freedesktop.DBus.Properties DBus interface."""
         return dbus.Interface(self._sim, dbus.PROPERTIES_IFACE)
 
-
     @property
     def iface_sim(self):
         """@return org.freedesktop.ModemManager1.Sim DBus interface."""
         return dbus.Interface(self._sim, mm1_constants.I_SIM)
-
 
     def properties(self, iface=mm1_constants.I_SIM):
         """Return the properties associated with the specified interface.

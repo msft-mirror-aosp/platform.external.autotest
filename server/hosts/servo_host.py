@@ -1686,7 +1686,7 @@ def create_servo_host(dut,
         return None, servo_constants.SERVO_STATE_NO_SSH
 
     newhost = ServoHost(**servo_args)
-    if not newhost.is_up_fast():
+    if not newhost.is_up_fast(count=3):
         # We do not have any option to recover servo_host.
         # If servo_host is not pingable then we can stop here.
         return None, servo_constants.SERVO_STATE_NO_SSH

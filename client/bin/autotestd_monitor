@@ -67,13 +67,11 @@ finally:
     exit_code_file.close()
     _print_to_file_and_flush('Released lock of exit_code_file and closed it.',
                               file=stderr)
-    stderr.flush()
 
 # Give tail a tiny bit of time to finish.
 time.sleep(0.01)
 
 _print_to_file_and_flush('Killing child processes.', file=stderr)
-stderr.flush()
 
 # clear the SIGCHLD handler so that killing the tails doesn't kill us
 signal.signal(signal.SIGCHLD, signal.SIG_DFL)

@@ -5,6 +5,8 @@
 import abc
 import logging
 
+from autotest_lib.client.common_lib import error
+
 
 class _BaseMenuModeSwitcher:
     """Base class for mode switch with menu navigator."""
@@ -16,6 +18,7 @@ class _BaseMenuModeSwitcher:
         self.faft_config = self.test.faft_config
         self.servo = self.test.servo
         self.menu = menu_navigator
+        self.minidiag_enabled = self.faft_config.minidiag_enabled
 
     @abc.abstractmethod
     def trigger_rec_to_dev(self):
@@ -57,9 +60,7 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         (*) is the default selection.
         """
         self.test.wait_for('firmware_screen')
-        for _ in range(3, 0, -1):
-            self.menu.up()
-            self.test.wait_for('keypress_delay')
+        self.menu.move_to(3, 0)
         self.menu.select('Selecting "Developer Options"...')
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecting "Boot From Internal Disk"...')
@@ -83,9 +84,7 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         (*) is the default selection.
         """
         self.test.wait_for('firmware_screen')
-        for _ in range(3, 2, -1):
-            self.menu.up()
-            self.test.wait_for('keypress_delay')
+        self.menu.move_to(3, 2)
         self.menu.select('Selecting "Enable OS Verification"...')
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecing "Confirm Enabling OS Verification"...')
@@ -135,9 +134,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         """
         self.test.wait_for('firmware_screen')
         # Since the default selection is unknown, navigate to item 5 first
-        for _ in range(0, 5):
-            self.menu.down()
-            self.test.wait_for('keypress_delay')
+        self.menu.move_to(0, 5)
         # Navigate to "Advanced options"
         self.menu.up()
         self.test.wait_for('keypress_delay')
@@ -161,13 +158,9 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         """
         self.test.wait_for('firmware_screen')
         # Since the default selection is unknown, navigate to item 0 first
-        for _ in range(5, 0, -1):
-            self.menu.up()
-            self.test.wait_for('keypress_delay')
+        self.menu.move_to(5, 0)
         # Navigate to "Boot from internal disk"
-        for _ in range(0, 2):
-            self.menu.down()
-            self.test.wait_for('keypress_delay')
+        self.menu.move_to(0, 2)
         self.menu.select('Selecting "Boot from internal disk"...')
 
     def trigger_dev_to_normal(self):
@@ -191,15 +184,110 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         """
         self.test.wait_for('firmware_screen')
         # Since the default selection is unknown, navigate to item 0 first
-        for _ in range(5, 0, -1):
-            self.menu.up()
-            self.test.wait_for('keypress_delay')
+        self.menu.move_to(5, 0)
         # Navigate to "Return to secure mode"
         self.menu.down()
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecting "Return to secure mode"...')
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecing "Confirm"...')
+
+    def trigger_rec_to_minidiag(self):
+        """
+        Trigger to-minidiag.
+        Menu items in recovery select screen:
+            0. Language
+            1. Recovery using phone
+            2. Recovery using external disk
+            3. Launch diagnostics
+            4. Advanced options
+            5. Power off
+        """
+
+        # Validity check; this only applicable for minidiag enabled devices.
+        if not self.minidiag_enabled:
+            raise error.TestError('Minidiag is not enabled for this board')
+
+        self.test.wait_for('firmware_screen')
+        # Since the default selection is unknown, navigate to item 5 first
+        self.menu.move_to(0, 5)
+        # Navigate to "Launch diagnostics"
+        self.menu.up()
+        self.test.wait_for('keypress_delay')
+        self.menu.up()
+        self.test.wait_for('keypress_delay')
+        self.menu.select('Selecting "Launch diagnostics"...')
+        self.test.wait_for('firmware_screen')
+
+    def navigate_minidiag_storage(self):
+        """
+        Navigate to storage screen.
+        Menu items in storage screen:
+            0. Language
+            1. Page up (disabled)
+            2. Page down
+            3. Back
+            4. Power off
+        """
+
+        # Validity check; this only applicable for minidiag enabled devices.
+        if not self.minidiag_enabled:
+            raise error.TestError('Minidiag is not enabled for this board')
+
+        # From root screen to storage screen
+        self.menu.select('Selecting "Storage"...')
+        self.test.wait_for('keypress_delay')
+        # Since the default selection is unknown, navigate to item 4 first
+        self.menu.move_to(0, 4)
+        # Navigate to "Back"
+        self.menu.up()
+        self.test.wait_for('keypress_delay')
+        self.menu.select('Back to minidiag root screen...')
+        self.test.wait_for('keypress_delay')
+
+    def navigate_minidiag_quick_memory_check(self):
+        """
+        Navigate to quick memory test screen.
+        Menu items in quick memory test screen:
+            0. Language
+            1. Page up (disabled)
+            2. Page down (disabled
+            3. Back
+            4. Power off
+        """
+
+        # Validity check; this only applicable for minidiag enabled devices.
+        if not self.minidiag_enabled:
+            raise error.TestError('Minidiag is not enabled for this board')
+
+        # From root screen to quick memory test screen
+        # Since there might be self test items, navigate to the last item first
+        self.menu.move_to(0, 5)
+        self.menu.up()  # full memory test
+        self.test.wait_for('keypress_delay')
+        self.menu.up()  # quick memory test
+        self.test.wait_for('keypress_delay')
+        self.menu.select('Selecting "Quick memory test"...')
+        self.test.wait_for('keypress_delay')
+        # Wait for quick memory test
+        self.menu.select('Back to minidiag root screen...')
+        self.test.wait_for('keypress_delay')
+
+    def reset_and_leave_minidiag(self):
+        """Reset the DUT and normal boot to leave minidiag."""
+
+        # Validity check; this only applicable for minidiag enabled devices.
+        if not self.minidiag_enabled:
+            raise error.TestError('Minidiag is not enabled for this board')
+
+        # Since we want to keep the cbmem log, we need an AP reset and reboot to
+        # normal mode
+        if self.test.ec.has_command('apreset'):
+            logging.info('Trigger apreset')
+            self.test.ec.send_command('apreset')
+        else:
+            raise error.TestError('No apreset support')
+        self.test.switcher.wait_for_client()
 
 
 _MENU_MODE_SWITCHER_CLASSES = {

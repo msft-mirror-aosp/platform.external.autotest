@@ -31,6 +31,17 @@ class _BaseMenuNavigator:
         """Select a menu item."""
         raise NotImplementedError
 
+    def move_to(self, from_idx, to_idx):
+        """Move from 'from_idx' to 'to_idx' by menu up/down."""
+        if from_idx > to_idx:
+            for _ in range(from_idx, to_idx, -1):
+                self.up()
+                self.test.wait_for('keypress_delay')
+        elif from_idx < to_idx:
+            for _ in range(from_idx, to_idx, 1):
+                self.down()
+                self.test.wait_for('keypress_delay')
+
 
 class _KeyboardMenuNavigator(_BaseMenuNavigator):
     """Navigate with arrow and function keys."""

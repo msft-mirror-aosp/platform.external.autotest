@@ -44,6 +44,10 @@ TRADEFED_CACHE_MAX_SIZE = (20 * 1024 * 1024 * 1024)
 # The path that cts-tradefed uses to place media assets. By downloading and
 # expanding the archive here beforehand, tradefed can reuse the content.
 TRADEFED_MEDIA_PATH = '/tmp/android-cts-media'
+# The property tradefed reads to decide which helpers to install.
+TRADEFED_CTS_HELPERS_PROPERTY = 'ro.vendor.cts_interaction_helper_packages'
+# The directory on the board where CTS helpers can be found.
+BOARD_CTS_HELPERS_DIR = '/usr/local/opt/google/vms/android'
 
 # It looks like the GCE builder can be very slow and login on VMs take much
 # longer than on hardware or bare metal.

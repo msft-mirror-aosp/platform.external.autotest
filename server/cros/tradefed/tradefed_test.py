@@ -777,6 +777,29 @@ class TradefedTest(test.test):
                 raise error.TestFail(
                     'Failed: Unexpected media bundle was added %s' % contents)
 
+    def _fetch_helpers_from_dut(self):
+        """Fetches the CTS helpers from the dut and installs into the testcases
+           subdirectory of our local autotest copy.
+        """
+        tf_testcases = os.path.join(self._repository, 'testcases')
+
+        # Earlier checks enforce that each host has the same build fingerprint,
+        # so we can assume that the packages from the first host will work
+        # across the whole set.
+        package_list = self._run_adb_cmd(
+                self._hosts[0],
+                args=('shell', 'getprop',
+                      constants.TRADEFED_CTS_HELPERS_PROPERTY)).stdout.strip()
+        for pkg in package_list.split(':'):
+            if not pkg:
+                continue
+            apk_name = pkg + '.apk'
+            logging.info('Installing CTS helper package %s to %s', apk_name,
+                         tf_testcases)
+            self._hosts[0].get_file(
+                    os.path.join(constants.BOARD_CTS_HELPERS_DIR, apk_name),
+                    tf_testcases)
+
     def _run(self, *args, **kwargs):
         """Executes the given command line.
 
@@ -1189,6 +1212,7 @@ class TradefedTest(test.test):
                                    target_plan=None,
                                    executable_test_count=None,
                                    bundle=None,
+                                   use_helpers=False,
                                    extra_artifacts=[],
                                    extra_artifacts_host=[],
                                    cts_uri=None,
@@ -1266,6 +1290,8 @@ class TradefedTest(test.test):
                 self._ready_arc()
                 self._calculate_test_count_factor(bundle)
                 self._run_commands(precondition_commands, ignore_status=True)
+                if use_helpers:
+                    self._fetch_helpers_from_dut()
 
                 # Run tradefed.
                 if session_id == None:

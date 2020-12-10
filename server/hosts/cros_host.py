@@ -357,7 +357,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 result_dir=self.get_result_dir())
 
         # TODO(otabek@): remove when b/171414073 closed
-        pingable_before_servo = self.is_up_fast()
+        pingable_before_servo = self.is_up_fast(count=3)
         if pingable_before_servo:
             logging.info('DUT is pingable before init Servo.')
         _servo_host, servo_state = servo_host.create_servo_host(
@@ -377,20 +377,19 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         # TODO(otabek@): remove when b/171414073 closed
         # Introduced to collect cases when servo made DUT not sshable
-        pingable_after_servo = self.is_up_fast()
+        pingable_after_servo = self.is_up_fast(count=3)
         if pingable_after_servo:
             logging.info('DUT is pingable after init Servo.')
         elif pingable_before_servo:
             logging.info('DUT was pingable before init Servo but not now')
-            board = ''
-            info = self.host_info_store.get()
-            if info:
-                board = info.board
-            metrics.Counter('chromeos/autotest/dut_ping_servo_init').increment(
-                    fields={
-                            'host': self.hostname,
-                            'board': board,
-                    })
+            if servo_args and self._servo_host and self._servo_host.hostname:
+                # collect stats only for tests.
+                dut_ping_servo_init_data = {
+                        'host': self.hostname,
+                        'servo_host': self._servo_host.hostname,
+                }
+                metrics.Counter('chromeos/autotest/dut_ping_servo_init2'
+                                ).increment(fields=dut_ping_servo_init_data)
 
         # TODO(waihong): Do the simplication on Chameleon too.
         self._chameleon_host = chameleon_host.create_chameleon_host(
@@ -2688,14 +2687,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         main_storage = self.run(main_storage_cmd,
                                 ignore_status=True,
                                 timeout=60).stdout.strip()
-        if not main_storage:
-            logging.debug('Main storage not detected on the host.')
-            return False
-        if boot_device == main_storage:
-            logging.debug('Device booted from main storage.')
-            return False
-        logging.debug('Device booted from external storage storage.')
-        return True
+        if not main_storage or boot_device != main_storage:
+            logging.debug('Device booted from external storage storage.')
+            return True
+        logging.debug('Device booted from main storage.')
+        return False
 
     def read_from_meminfo(self, key):
         """Return the memory info from /proc/meminfo

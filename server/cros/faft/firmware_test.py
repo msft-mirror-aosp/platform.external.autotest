@@ -1003,8 +1003,9 @@ class FirmwareTest(test.test):
         @param enable: True if asserting write protect. Otherwise, False.
         """
         self.set_hardware_write_protect(enable)
-        self.sync_and_ec_reboot()
-        self.switcher.wait_for_client()
+        if hasattr(self, 'ec'):
+            self.sync_and_ec_reboot()
+            self.switcher.wait_for_client()
 
     def run_chromeos_firmwareupdate(self, mode, append=None, options=(),
             ignore_status=False):

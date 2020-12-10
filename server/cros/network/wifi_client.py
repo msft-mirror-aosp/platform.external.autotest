@@ -328,7 +328,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         super(WiFiClient, self).__init__(client_host, 'client',
                                          inherit_interfaces=True)
         self._command_ip = 'ip'
-        self._command_iptables = 'iptables'
+        self._command_iptables = 'iptables -w 5'
         self._command_ping6 = 'ping6'
         self._command_wpa_cli = 'wpa_cli'
         self._machine_id = None

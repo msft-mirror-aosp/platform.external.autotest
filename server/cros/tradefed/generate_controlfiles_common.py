@@ -25,7 +25,7 @@ from jinja2 import Template
 # LENGTHY first, then LONG, MEDIUM etc. But we need LENGTHY for the collect
 # job, downgrade all others. Make sure this still works in CQ/smoke suite.
 _CONTROLFILE_TEMPLATE = Template(
-    textwrap.dedent("""\
+        textwrap.dedent("""\
     # Copyright {{year}} The Chromium OS Authors. All rights reserved.
     # Use of this source code is governed by a BSD-style license that can be
     # found in the LICENSE file.
@@ -94,6 +94,9 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- endif %}
     {%- if needs_push_media %}
             needs_push_media={{needs_push_media}},
+    {%- endif %}
+    {%- if needs_cts_helpers %}
+            use_helpers={{needs_cts_helpers}},
     {%- endif %}
             tag='{{tag}}',
             test_name='{{name}}',
@@ -758,6 +761,15 @@ def needs_push_media(modules):
     return False
 
 
+def needs_cts_helpers(modules):
+    """Oracle to determine if CTS helpers should be downloaded from DUT."""
+    if 'NEEDS_CTS_HELPERS' not in CONFIG:
+        return False
+    if modules.intersection(set(CONFIG['NEEDS_CTS_HELPERS'])):
+        return True
+    return False
+
+
 def enable_default_apps(modules):
     """Oracle to determine if to enable default apps (eg. Files.app)."""
     if modules.intersection(set(CONFIG['ENABLE_DEFAULT_APPS'])):
@@ -818,6 +830,7 @@ def get_controlfile_content(combined,
             build=build,
             abi=abi,
             needs_push_media=needs_push_media(modules),
+            needs_cts_helpers=needs_cts_helpers(modules),
             enable_default_apps=enable_default_apps(modules),
             tag=tag,
             uri=uri,

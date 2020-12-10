@@ -77,6 +77,7 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                  target_module=None,
                  target_plan=None,
                  needs_push_media=False,
+                 use_helpers=False,
                  enable_default_apps=False,
                  executable_test_count=None,
                  bundle=None,
@@ -98,6 +99,7 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
         @param target_module: the name of test module to run.
         @param target_plan: the name of the test plan to run.
         @param needs_push_media: need to push test media streams.
+        @param use_helpers: copy interaction helpers from the DUT.
         @param executable_test_count: the known number of tests in the run
         @param bundle: the type of the CTS bundle: 'arm' or 'x86'
         @param precondition_commands: a list of scripts to be run on the
@@ -116,6 +118,7 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                 media_asset=tradefed_test.MediaAsset(
                         _CTS_MEDIA_URI if needs_push_media else None,
                         _CTS_MEDIA_LOCALPATH),
+                use_helpers=use_helpers,
                 enable_default_apps=enable_default_apps,
                 executable_test_count=executable_test_count,
                 bundle=bundle,

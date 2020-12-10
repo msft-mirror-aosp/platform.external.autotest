@@ -116,6 +116,10 @@ CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
         'CtsMediaTestCases.video',
 ]
 
+CONFIG['NEEDS_CTS_HELPERS'] = [
+        'CtsPrintTestCases',
+]
+
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
         'CtsAppSecurityHostTestCases',

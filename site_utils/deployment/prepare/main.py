@@ -24,6 +24,7 @@ from autotest_lib.server import server_logging_config
 from autotest_lib.server.hosts import file_store
 from autotest_lib.site_utils.deployment.prepare import dut as preparedut
 from autotest_lib.server.hosts import factory
+from autotest_lib.site_utils.admin_audit import rpm_validator
 
 
 RETURN_CODES = autotest_enum.AutotestEnum(
@@ -99,6 +100,7 @@ def main():
                     preparedut.verify_servo(host)
                     preparedut.verify_battery_status(host)
                     preparedut.verify_ccd_testlab_enable(host)
+                    rpm_validator.verify_unsafe(host)
             except Exception as err:
                 logging.error("fail on pre-deploy verification: %s", err)
                 return RETURN_CODES.PRE_DEPLOY_VERIFICATION_FAILURE

@@ -676,7 +676,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         statefuldev_url = update_url.replace('update', 'static')
         statefuldev_url += '/stateful.tgz'
         cmd = [
-                'curl', '--silent', '--show-error', '--max-time', '300',
+                'curl', '--silent', '--show-error', '--max-time', '600',
                 statefuldev_url, '|', 'tar', '--ignore-command-error',
                 '--overwrite', '--directory', '/mnt/stateful_partition', '-xz'
         ]

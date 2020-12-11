@@ -16,6 +16,7 @@ import common
 from autotest_lib.client.cros import constants
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.tpm import *
 from autotest_lib.client.cros.cros_disks import DBusClient
 
 ATTESTATION_CMD = '/usr/bin/attestation_client'
@@ -29,14 +30,6 @@ VAULT_PATH_PATTERN = '/home/.shadow/%s/vault'
 
 DBUS_PROTOS_DEP = 'dbus_protos'
 
-
-class ChromiumOSError(error.TestError):
-    """Generic error for ChromiumOS-specific exceptions."""
-    pass
-
-def __run_cmd(cmd):
-    return utils.system_output(cmd + ' 2>&1', retain_output=True,
-                               ignore_status=True).strip()
 
 def get_user_hash(user):
     """Get the user hash for the given user."""
@@ -83,36 +76,13 @@ def ensure_clean_cryptohome_for(user, password=None):
     mount_vault(user, password, create=True)
 
 
-def get_tpm_status():
-    """Get the TPM status.
-
-    Returns:
-        A TPM status dictionary, for example:
-        { 'Enabled': True,
-          'Owned': True,
-          'Ready': True
-        }
-    """
-    out = __run_cmd(TPM_MANAGER_CMD + ' status --nonsensitive')
-    status = {}
-    for field in ['is_enabled', 'is_owned']:
-        match = re.search('%s: (true|false)' % field, out)
-        if not match:
-            raise ChromiumOSError('Invalid TPM status: "%s".' % out)
-        status[field] = match.group(1) == 'true'
-    status['Enabled'] = status['is_enabled']
-    status['Owned'] = status['is_owned']
-    status['Ready'] = status['is_enabled'] and status['is_owned']
-    return status
-
-
 def get_tpm_password():
     """Get the TPM password.
 
     Returns:
         A TPM password
     """
-    out = __run_cmd(TPM_MANAGER_CMD + ' status')
+    out = run_cmd(TPM_MANAGER_CMD + ' status')
     match = re.search('owner_password: (\w*)', out)
     password = ''
     if match:
@@ -121,35 +91,6 @@ def get_tpm_password():
                 chr(int(hex_pass[i:i + 2], 16))
                 for i in range(0, len(hex_pass), 2))
     return password
-
-
-def get_tpm_da_info():
-    """Get the TPM dictionary attack information.
-    Returns:
-        A TPM dictionary attack status dictionary, for example:
-        {
-          'dictionary_attack_counter': 0,
-          'dictionary_attack_threshold': 200,
-          'dictionary_attack_lockout_in_effect': False,
-          'dictionary_attack_lockout_seconds_remaining': 0
-        }
-    """
-    status = {}
-    out = __run_cmd(TPM_MANAGER_CMD + ' get_da_info')
-    for line in out.splitlines()[1:-1]:
-        items = line.strip().split(':')
-        if len(items) != 2:
-            continue
-        if items[1].strip() == 'false':
-            value = False
-        elif items[1].strip() == 'true':
-            value = True
-        elif items[1].split('(')[0].strip().isdigit():
-            value = int(items[1].split('(')[0].strip())
-        else:
-            value = items[1].strip(' "')
-        status[items[0].strip()] = value
-    return status
 
 
 def get_fwmp(cleared_fwmp=False):
@@ -174,7 +115,7 @@ def get_fwmp(cleared_fwmp=False):
          output. This would typically happen when FWMP state does not match
          'clreared_fwmp'
     """
-    out = __run_cmd(CRYPTOHOME_CMD +
+    out = run_cmd(CRYPTOHOME_CMD +
                     ' --action=get_firmware_management_parameters')
 
     if cleared_fwmp:
@@ -207,7 +148,7 @@ def set_fwmp(flags, developer_key_hash=None):
     if developer_key_hash:
         cmd += ' --developer_key_hash=' + developer_key_hash
 
-    out = __run_cmd(cmd)
+    out = run_cmd(cmd)
     if 'SetFirmwareManagementParameters success' not in out:
         raise ChromiumOSError('failed to set FWMP: %s' % out)
 
@@ -227,7 +168,7 @@ def get_login_status():
           'boot_lockbox_finalized': True|False
         }
     """
-    out = __run_cmd(CRYPTOHOME_CMD + ' --action=get_login_status')
+    out = run_cmd(CRYPTOHOME_CMD + ' --action=get_login_status')
     status = {}
     for field in ['owner_user_exists', 'boot_lockbox_finalized']:
         match = re.search('%s: (true|false)' % field, out)
@@ -248,14 +189,14 @@ def get_install_attribute_status():
           "VALID"
           "INVALID"
     """
-    out = __run_cmd(CRYPTOHOME_CMD + ' --action=install_attributes_get_status')
+    out = run_cmd(CRYPTOHOME_CMD + ' --action=install_attributes_get_status')
     return out.strip()
 
 
 def get_tpm_attestation_status():
     """Get the TPM attestation status.  Works similar to get_tpm_status().
     """
-    out = __run_cmd(ATTESTATION_CMD + ' status')
+    out = run_cmd(ATTESTATION_CMD + ' status')
     status = {}
     for field in ['prepared_for_enrollment', 'enrolled']:
         match = re.search('%s: (true|false)' % field, out)
@@ -271,7 +212,7 @@ def take_tpm_ownership(wait_for_ownership=True):
     Args:
         wait_for_ownership: block until TPM is owned if true
     """
-    __run_cmd(CRYPTOHOME_CMD + ' --action=tpm_take_ownership')
+    run_cmd(CRYPTOHOME_CMD + ' --action=tpm_take_ownership')
     if wait_for_ownership:
         # Note that waiting for the 'Ready' flag is more correct than waiting
         # for the 'Owned' flag, as the latter is set by cryptohomed before some
@@ -297,7 +238,7 @@ def remove_vault(user):
     user_hash = get_user_hash(user)
     logging.debug('Removing vault for user %s with hash %s', user, user_hash)
     cmd = CRYPTOHOME_CMD + ' --action=remove --force --user=%s' % user
-    __run_cmd(cmd)
+    run_cmd(cmd)
     # Ensure that the vault does not exist.
     if os.path.exists(os.path.join(constants.SHADOW_ROOT, user_hash)):
         raise ChromiumOSError('Cryptohome could not remove the user\'s vault.')
@@ -329,7 +270,7 @@ def mount_vault(user, password, create=False, key_label=None):
             key_label = 'bar'
     if key_label is not None:
         args += ['--key_label=%s' % key_label]
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
     # Ensure that the vault exists in the shadow directory.
     user_hash = get_user_hash(user)
     if not os.path.exists(os.path.join(constants.SHADOW_ROOT, user_hash)):
@@ -338,7 +279,7 @@ def mount_vault(user, password, create=False, key_label=None):
         while retry < MOUNT_RETRY_COUNT and not mounted:
             time.sleep(1)
             logging.info("Retry %s", str(retry + 1))
-            __run_cmd(' '.join(args))
+            run_cmd(' '.join(args))
             # TODO: Remove this additional call to get_user_hash(user) when
             # crbug.com/690994 is fixed
             user_hash = get_user_hash(user)
@@ -355,7 +296,7 @@ def mount_vault(user, password, create=False, key_label=None):
 def mount_guest():
     """Mount the guest vault."""
     args = [CRYPTOHOME_CMD, '--action=mount_guest_ex']
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
     # Ensure that the guest vault is mounted.
     if not is_guest_vault_mounted(allow_fail=True):
         raise ChromiumOSError('Cryptohome did not mount guest vault.')
@@ -365,7 +306,7 @@ def test_auth(user, password):
     """Test key auth."""
     cmd = [CRYPTOHOME_CMD, '--action=check_key_ex', '--user=%s' % user,
            '--password=%s' % password, '--async']
-    out = __run_cmd(' '.join(cmd))
+    out = run_cmd(' '.join(cmd))
     logging.info(out)
     return 'Key authenticated.' in out
 
@@ -376,7 +317,7 @@ def add_le_key(user, password, new_password, new_key_label):
             '--user=%s' % user, '--password=%s' % password,
             '--new_key_label=%s' % new_key_label,
             '--new_password=%s' % new_password]
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
 
 
 def remove_key(user, password, remove_key_label):
@@ -384,13 +325,13 @@ def remove_key(user, password, remove_key_label):
     args = [CRYPTOHOME_CMD, '--action=remove_key_ex', '--user=%s' % user,
             '--password=%s' % password,
             '--remove_key_label=%s' % remove_key_label]
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
 
 
 def get_supported_key_policies():
     """Get supported key policies."""
     args = [CRYPTOHOME_CMD, '--action=get_supported_key_policies']
-    out = __run_cmd(' '.join(args))
+    out = run_cmd(' '.join(args))
     logging.info(out)
     policies = {}
     for line in out.splitlines():
@@ -406,7 +347,7 @@ def unmount_vault(user=None):
     Once unmounting for a specific user is supported, the user parameter will
     name the target user. See crosbug.com/20778.
     """
-    __run_cmd(CRYPTOHOME_CMD + ' --action=unmount')
+    run_cmd(CRYPTOHOME_CMD + ' --action=unmount')
     # Ensure that the vault is not mounted.
     if user is not None and is_vault_mounted(user, allow_fail=True):
         raise ChromiumOSError('Cryptohome did not unmount the user.')
@@ -568,7 +509,7 @@ def canonicalize(credential):
 def crash_cryptohomed():
     """Let cryptohome crash."""
     # Try to kill cryptohomed so we get something to work with.
-    pid = __run_cmd('pgrep cryptohomed')
+    pid = run_cmd('pgrep cryptohomed')
     try:
         pid = int(pid)
     except ValueError as e:  # empty or invalid string
@@ -603,7 +544,7 @@ def create_ecryptfs_homedir(user, password):
             '--key_label=foo',
             '--ecryptfs',
             '--create']
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
     if not is_vault_mounted(user, regexes={
         constants.CRYPTOHOME_FS_REGEX_ECRYPTFS :
             constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW
@@ -626,11 +567,11 @@ def do_dircrypto_migration(user, password, timeout=600):
             '--to_migrate_from_ecryptfs',
             '--user=%s' % user,
             '--password=%s' % password]
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
     if not __get_mount_info(temporary_mount_path(user), allow_fail=True):
         raise ChromiumOSError('Failed to mount home for migration')
     args = [CRYPTOHOME_CMD, '--action=migrate_to_dircrypto', '--user=%s' % user]
-    logging.info(__run_cmd(' '.join(args)))
+    logging.info(run_cmd(' '.join(args)))
     utils.poll_for_condition(
         lambda: not __get_mount_info(
                 temporary_mount_path(user), allow_fail=True),
@@ -647,7 +588,7 @@ def change_password(user, password, new_password):
             '--user=%s' % user,
             '--old_password=%s' % password,
             '--password=%s' % new_password]
-    out = __run_cmd(' '.join(args))
+    out = run_cmd(' '.join(args))
     logging.info(out)
     if 'Key migration succeeded.' not in out:
         raise ChromiumOSError('Key migration failed.')

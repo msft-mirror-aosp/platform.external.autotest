@@ -48,7 +48,7 @@ class firmware_ECWakeSource(FirmwareTest):
                                      self.POWER_STATE_RETRY_COUNT):
             raise error.TestFail('Platform failed to reach G3 state.')
 
-        self.ec.send_command('hibernate 1000')
+        self.ec.send_command('hibernate')
         time.sleep(self.WAKE_DELAY)
 
         # If AC is plugged during the test, the DUT would wake up right after

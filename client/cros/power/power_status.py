@@ -717,7 +717,7 @@ class AbstractStats(object):
         self.name = name
         self.incremental = incremental
         self._stats = self._read_stats()
-
+        self._first_stats = self._stats.copy()
 
     def refresh(self):
         """
@@ -735,12 +735,15 @@ class AbstractStats(object):
         Turns a dict with absolute times (or percentages) into a weighted
         average value.
         """
-        total = sum(self._stats.itervalues())
+        stats = self._stats
+        if self.incremental:
+            stats = self.do_diff(stats, self._first_stats)
+
+        total = sum(stats.itervalues())
         if total == 0:
             return None
 
-        return sum((float(k)*v) / total for (k, v) in self._stats.iteritems())
-
+        return sum(float(k) * v / total for k, v in stats.iteritems())
 
     def _supports_automatic_weighted_average(self):
         """

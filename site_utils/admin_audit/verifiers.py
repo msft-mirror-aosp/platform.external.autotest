@@ -161,10 +161,28 @@ class VerifyServoUsb(base._BaseServoVerifier):
             cmd = ('. /usr/share/misc/chromeos-common.sh; get_device_type %s' %
                    path)
             check_run = self._dut_host.run(cmd, timeout=30, ignore_status=True)
-            if check_run.stdout.strip() == 'USB':
+            if check_run.stdout.strip() != 'USB':
+                continue
+            if self._quick_check_if_device_responsive(self._dut_host, path):
                 logging.info('USB drive detected on DUT side as %s', path)
                 return path
         return None
+
+    def _quick_check_if_device_responsive(self, host, usb_path):
+        """Verify that device """
+        validate_cmd = 'fdisk -l %s' % usb_path
+        try:
+            resp = host.run(validate_cmd, ignore_status=True, timeout=30)
+            if resp.exit_status == 0:
+                return True
+            logging.error('USB %s is not detected by fdisk!', usb_path)
+        except error.AutoservRunError as e:
+            if 'Timeout encountered' in str(e):
+                logging.warning('Timeout encountered during fdisk run.')
+            else:
+                logging.error('(Not critical) fdisk check fail for %s; %s',
+                              usb_path, str(e))
+        return False
 
     def _run_check_on_host(self, host, usb):
         """Run badblocks on the provided host.

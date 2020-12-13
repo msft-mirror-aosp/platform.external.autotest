@@ -1603,12 +1603,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self._start_powerd_if_needed()
 
 
-    def cleanup(self, reboot_cmd=None):
-        """Cleanup state on device.
-
-        @param  reboot_cmd: command to use to reboot device
-        @return nothing
-        """
+    def cleanup(self):
+        """Cleanup state on device."""
         self.run('rm -f %s' % client_constants.CLEANUP_LOGS_PAUSED_FILE)
         try:
             self.cleanup_services()
@@ -1617,11 +1613,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.warning('Unable to restart ui.')
 
         # cleanup routines, i.e. reboot the machine.
-        super(CrosHost, self).cleanup(reboot_cmd=reboot_cmd)
+        super(CrosHost, self).cleanup()
 
         # Check if the rpm outlet was manipulated.
         if self.has_power():
             self._cleanup_poweron()
+
 
     def reboot(self, **dargs):
         """
@@ -1631,7 +1628,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         sync should be finished in a short time during the reboot
         command.
         """
-        if dargs.get('reboot_cmd') is None:
+        if 'reboot_cmd' not in dargs:
             reboot_timeout = dargs.get('reboot_timeout', 10)
             dargs['reboot_cmd'] = ('sleep 1; '
                                    'reboot & sleep %d; '
@@ -1654,7 +1651,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         t0 = time.time()
         try:
-            logging.info("reboot cmd: %s", dargs.get('reboot_cmd'))
             super(CrosHost, self).reboot(**dargs)
         except Exception as e:
             metric_fields['success'] = False

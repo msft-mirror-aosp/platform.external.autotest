@@ -49,6 +49,10 @@ _DEFAULT_WAIT_UP_TIME_SECONDS = 120
 # and a single ssh ping in wait_up().
 _DEFAULT_MAX_PING_TIMEOUT = 10
 
+# The client symlink directory.
+AUTOTEST_CLIENT_SYMLINK_END = 'client/autotest_lib'
+
+
 class AbstractSSHHost(remote.RemoteHost):
     """
     This class represents a generic implementation of most of the
@@ -557,47 +561,158 @@ class AbstractSSHHost(remote.RemoteHost):
         if local_sources.find('\x00') != -1:
             raise error.TestError('one or more sources include NUL char')
 
-        # If rsync is disabled or fails, try scp.
-        try_scp = True
+        send_client_symlink = False
+
+        # We want to specifically ensure that the symlink client/autotest_lib
+        # is preserved, but not force the preservation on other files/dirs.
+        client_symlink = _client_symlink(source)
+        if client_symlink and not preserve_symlinks:
+            source, local_sources = self._remove_dir_from_sources(
+                source, local_sources, client_symlink)
+            send_client_symlink = True
+
+        self._send_file(
+                dest=dest,
+                source=source,
+                local_sources=local_sources,
+                delete_dest=delete_dest,
+                excludes=excludes,
+                preserve_symlinks=preserve_symlinks)
+        if send_client_symlink:
+            self._send_file(dest=dest,
+                            source=[client_symlink],
+                            local_sources=client_symlink,
+                            delete_dest=delete_dest,
+                            excludes=excludes,
+                            preserve_symlinks=True)
+
+    def _remove_dir_from_sources(self, source, local_sources, rm_dir):
+        """Remove the specified dir from the source/local_sources.
+
+        If source is a list, remove it from the list. If a string, and the
+            string is the rm_dir, remove it. Else leave as is.
+        Args:
+            source: either
+                    1) a single file or directory, as a string
+                    2) a list of one or more (possibly mixed)
+                            files or directories
+            local_sources: str created from _encode_local_paths()
+            rm_dir: str of the dir to remove
+        Returns:
+            source, local_sources (with the dir removed)
+
+        """
+        if isinstance(source, list):
+            source.remove(rm_dir)
+        elif rm_dir in source:
+            source = ''
+
+        return source, local_sources.replace('"{}" '.format(rm_dir), '')
+
+    def _send_file(self, dest, source, local_sources, delete_dest, excludes,
+                   preserve_symlinks):
+        """Send file(s), trying rsync first, then scp."""
         if self.use_rsync():
-            logging.debug('Using Rsync.')
-            remote_dest = self._encode_remote_paths([dest])
+            rsync_success = self._send_using_rsync(
+                    dest=dest,
+                    local_sources=local_sources,
+                    delete_dest=delete_dest,
+                    preserve_symlinks=preserve_symlinks,
+                    excludes=excludes)
+
+        if not rsync_success:
+            self._send_using_scp(dest=dest,
+                                 source=source,
+                                 delete_dest=delete_dest,
+                                 excludes=excludes)
+
+    def _send_using_rsync(self, dest, local_sources, delete_dest,
+                          preserve_symlinks, excludes):
+        """Send using rsync.
+
+        Args:
+            dest: a file or a directory (if source contains a
+                    directory or more than one element, you must
+                    supply a directory dest)
+            local_sources: a string of files/dirs to send separated with spaces
+            delete_dest: if this is true, the command will also clear
+                         out any old files at dest that are not in the
+                         source
+            preserve_symlinks: controls if symlinks on the source will be
+                copied as such on the destination or transformed into the
+                referenced file/directory
+            excludes: A list of file pattern that matches files not to be
+                      sent. `send_file` will fail if exclude is set, since
+                      local copy does not support --exclude, e.g., when
+                      using scp to copy file.
+        Returns:
+            bool: True if the cmd succeeded, else False
+
+        """
+        logging.debug('Using Rsync.')
+        remote_dest = self._encode_remote_paths([dest])
+        try:
+            rsync = self._make_rsync_cmd(local_sources,
+                                         remote_dest,
+                                         delete_dest,
+                                         preserve_symlinks,
+                                         False,
+                                         excludes=excludes)
+            utils.run(rsync)
+            return True
+        except error.CmdError as e:
+            logging.warning("trying scp, rsync failed: %s", e)
+        return False
+
+    def _send_using_scp(self, dest, source, delete_dest, excludes):
+        """Send using scp.
+
+        Args:
+                source: either
+                        1) a single file or directory, as a string
+                        2) a list of one or more (possibly mixed)
+                                files or directories
+                dest: a file or a directory (if source contains a
+                        directory or more than one element, you must
+                        supply a directory dest)
+                delete_dest: if this is true, the command will also clear
+                             out any old files at dest that are not in the
+                             source
+                excludes: A list of file pattern that matches files not to be
+                          sent. `send_file` will fail if exclude is set, since
+                          local copy does not support --exclude, e.g., when
+                          using scp to copy file.
+
+        Raises:
+                AutoservRunError: the scp command failed
+        """
+        logging.debug('Trying scp.')
+        if excludes:
+            raise error.AutotestHostRunError(
+                    '--exclude is not supported in scp, try to use rsync. '
+                    'excludes: %s' % ','.join(excludes), None)
+
+        # scp has no equivalent to --delete, just drop the entire dest dir
+        if delete_dest:
+            is_dir = self.run("ls -d %s/" % dest,
+                              ignore_status=True).exit_status == 0
+            if is_dir:
+                cmd = "rm -rf %s && mkdir %s"
+                cmd %= (dest, dest)
+                self.run(cmd)
+
+        remote_dest = self._encode_remote_paths([dest], use_scp=True)
+        local_sources = self._make_rsync_compatible_source(source, True)
+        if local_sources:
+            sources = self._encode_local_paths(local_sources, escape=False)
+            scp = self._make_scp_cmd(sources, remote_dest)
             try:
-                rsync = self._make_rsync_cmd(local_sources, remote_dest,
-                                             delete_dest, preserve_symlinks,
-                                             False, excludes=excludes)
-                utils.run(rsync)
-                try_scp = False
+                utils.run(scp)
             except error.CmdError as e:
-                logging.warning("trying scp, rsync failed: %s", e)
-
-        if try_scp:
-            logging.debug('Trying scp.')
-            if excludes:
-                raise error.AutotestHostRunError(
-                        '--exclude is not supported in scp, try to use rsync. '
-                        'excludes: %s' % ','.join(excludes), None)
-            # scp has no equivalent to --delete, just drop the entire dest dir
-            if delete_dest:
-                is_dir = self.run("ls -d %s/" % dest,
-                                  ignore_status=True).exit_status == 0
-                if is_dir:
-                    cmd = "rm -rf %s && mkdir %s"
-                    cmd %= (dest, dest)
-                    self.run(cmd)
-
-            remote_dest = self._encode_remote_paths([dest], use_scp=True)
-            local_sources = self._make_rsync_compatible_source(source, True)
-            if local_sources:
-                sources = self._encode_local_paths(local_sources, escape=False)
-                scp = self._make_scp_cmd(sources, remote_dest)
-                try:
-                    utils.run(scp)
-                except error.CmdError as e:
-                    logging.debug('scp failed: %s', e)
-                    raise error.AutoservRunError(e.args[0], e.args[1])
-            else:
-                logging.debug('skipping scp for empty source list')
+                logging.debug('scp failed: %s', e)
+                raise error.AutoservRunError(e.args[0], e.args[1])
+        else:
+            logging.debug('skipping scp for empty source list')
 
     def verify_ssh_user_access(self):
         """Verify ssh access to this host.
@@ -1051,3 +1166,11 @@ class AbstractSSHHost(remote.RemoteHost):
                           timeout=30,
                           ignore_status=True)
         return result.exit_status == 0
+
+
+def _client_symlink(sources):
+    """Return the client symlink if in sources."""
+    for source in sources:
+        if source.endswith(AUTOTEST_CLIENT_SYMLINK_END):
+            return source
+    return None

@@ -35,13 +35,6 @@ _FIRST_PORT_NUMBER = 9000
 # Values are from platform/system_api/dbus/debugd/dbus-constants.h.
 _CUPS_SUCCESS = 0
 
-# Exceptions, cases that we want to omit/ignore
-# key: document; values: list of PPD files
-_EXCEPTIONS = { 'split_streams.pdf': ['HP-DeskJet_200-pcl3.ppd.gz',
-        'HP-DeskJet_310-pcl3.ppd.gz', 'HP-DeskJet_320-pcl3.ppd.gz',
-        'HP-DeskJet_340C-pcl3.ppd.gz', 'HP-DeskJet_540C-pcl3.ppd.gz',
-        'HP-DeskJet_560C-pcl3.ppd.gz'] }
-
 class platform_PrinterPpds(test.test):
     """
     This test gets a list of PPD files and a list of test documents. It tries
@@ -121,12 +114,16 @@ class platform_PrinterPpds(test.test):
         self._configurator = configurator.Configurator()
         self._configurator.configure(debug_mode)
 
-        # Reads list of test documents
+        # Read list of test documents
         self._docs = helpers.list_entries_from_directory(
                             path=self._location_of_test_docs,
                             with_suffixes=('.pdf'),
                             nonempty_results=True,
                             include_directories=False)
+
+        # Load the list of PPD files to omit
+        do_not_test_path = self._calculate_full_path('do_not_test.txt')
+        do_not_test_set = set(helpers.load_lines_from_file(do_not_test_path))
 
         # Unpack an archive with the PPD files:
         path_archive = self._location_of_PPD_files + '.tar.xz'
@@ -139,6 +136,8 @@ class platform_PrinterPpds(test.test):
                 with_suffixes=('.ppd', '.ppd.gz'),
                 nonempty_results=True,
                 include_directories=False)
+        # Remove from the list all PPD files to omit and sort it
+        self._ppds = list(set(self._ppds) - do_not_test_set)
         self._ppds.sort()
 
         # Load digests files
@@ -149,7 +148,7 @@ class platform_PrinterPpds(test.test):
         else:
             path_denylist = os.path.join(location_of_digests_files,
                                          'denylist.txt')
-            denylist = helpers.load_denylist(path_denylist)
+            denylist = helpers.load_lines_from_file(path_denylist)
             for doc_name in self._docs:
                 digests_name = doc_name + '.digests'
                 path = os.path.join(location_of_digests_files, digests_name)
@@ -336,13 +335,6 @@ class platform_PrinterPpds(test.test):
                 # Prints all test documents
                 try:
                     for doc_name in self._docs:
-                        # Omit exceptions
-                        if ( doc_name in _EXCEPTIONS and
-                                ppd_name in _EXCEPTIONS[doc_name] ):
-                            if self._path_output_directory is not None:
-                                self._new_digests[doc_name][ppd_name] = (
-                                        helpers.calculate_digest('\x00') )
-                            continue
                         # Full path to the test document
                         path_doc = os.path.join(
                                         self._location_of_test_docs, doc_name)

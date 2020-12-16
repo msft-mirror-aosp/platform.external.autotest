@@ -360,19 +360,43 @@ class BluetoothAdapterAdvMonitorTests(
         return True
 
 
-    def test_is_adv_monitoring_supported(self):
+    def test_is_controller_offloading_supported(self):
+        """Check if controller based RSSI filtering is supported.
+
+            By default the LE_SCAN_FILTER_DUP flag is enabled on all platforms.
+            Due to this, the host does not receive as many advertisements during
+            passive scanning, which causes SW based RSSI filtering not to work
+            as intended. So, if the controller offloading is not supported, skip
+            the tests that involves RSSI filtering and raise TEST_NA.
+
+            @raises: TestNA if controller based RSSI filtering is not supported.
+
+        """
+        supported_features = self.read_supported_features()
+        if not supported_features:
+            logging.info('Controller offloading not supported')
+            raise error.TestNAError('Controller offloading not supported')
+
+
+    def test_is_adv_monitoring_supported(self, require_rssi_filtering = False):
         """Check if Adv Monitor API is supported.
 
             If AdvMonitor API is not supported by the platform,
             AdvertisementMonitorManager1 interface won't be exposed by
             bluetoothd. In such case, skip the test and raise TestNA.
 
-            @raises: TestNA if Adv Monitor API is not supported.
+            @param require_rssi_filtering: True if test requires RSSI filtering.
+
+            @raises: TestNA if Adv Monitor API is not supported or if controller
+                     based RSSI filtering is not supported.
 
         """
         if not self.advmon_check_manager_interface_exist():
             logging.info('Advertisement Monitor API not supported')
             raise error.TestNAError('Advertisement Monitor API not supported')
+
+        if require_rssi_filtering:
+            self.test_is_controller_offloading_supported()
 
 
     @test_retry_and_log(False)
@@ -1105,7 +1129,7 @@ class BluetoothAdapterAdvMonitorTests(
         different AD Data Types - Local Name Service UUID and Device Type.
 
         """
-        self.test_is_adv_monitoring_supported()
+        self.test_is_adv_monitoring_supported(require_rssi_filtering = True)
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1201,7 +1225,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify unset RSSI filter and filter with no matching RSSI values.
 
         """
-        self.test_is_adv_monitoring_supported()
+        self.test_is_adv_monitoring_supported(require_rssi_filtering = True)
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1255,7 +1279,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify RSSI filter matching with multiple peer devices.
 
         """
-        self.test_is_adv_monitoring_supported()
+        self.test_is_adv_monitoring_supported(require_rssi_filtering = True)
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1320,7 +1344,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify reset of RSSI timers based on advertisements.
 
         """
-        self.test_is_adv_monitoring_supported()
+        self.test_is_adv_monitoring_supported(require_rssi_filtering = True)
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1388,7 +1412,7 @@ class BluetoothAdapterAdvMonitorTests(
         clients and multiple monitors.
 
         """
-        self.test_is_adv_monitoring_supported()
+        self.test_is_adv_monitoring_supported(require_rssi_filtering = True)
         self.test_setup_peer_devices()
 
         # Create two test app instances.
@@ -1562,7 +1586,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify working of background scanning with suspend/resume.
 
         """
-        self.test_is_adv_monitoring_supported()
+        self.test_is_adv_monitoring_supported(require_rssi_filtering = True)
         self.test_setup_peer_devices()
 
         # Create two test app instances.

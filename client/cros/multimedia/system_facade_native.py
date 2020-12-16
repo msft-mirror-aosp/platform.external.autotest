@@ -146,6 +146,12 @@ class SystemFacadeNative(object):
         """
         return utils.get_storage_statistics(device)
 
+    def get_energy_usage(self):
+        """
+        Gets the energy counter value.
+        """
+        return utils.get_energy_usage()
+
     def start_bg_worker(self, command):
         """
         Start executing the command in a background worker.

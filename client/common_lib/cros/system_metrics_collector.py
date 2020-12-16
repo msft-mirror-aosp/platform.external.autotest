@@ -222,6 +222,26 @@ class TemperatureMetric(Metric):
     def collect_metric(self):
         self._store_sample(self.system_facade.get_current_temperature_max())
 
+
+class EnergyUsageMetric(Metric):
+    """
+    Metric that collects the amount of energy used.
+    """
+
+    def __init__(self, system_facade):
+        super(EnergyUsageMetric, self).__init__('energy_usage',
+                                                units='microjoules')
+        self.system_facade = system_facade
+        self.initial_energy = self.system_facade.get_energy_usage()
+
+    def collect_metric(self):
+        self._store_sample(self.system_facade.get_energy_usage() -
+                           self.initial_energy)
+
+    def _aggregate(self, samples):
+        return samples[-1]
+
+
 def create_default_metric_set(system_facade):
     """
     Creates the default set of metrics.
@@ -238,15 +258,13 @@ def create_default_metric_set(system_facade):
     peak_mem = PeakMetric.from_metric(mem)
     peak_temperature = PeakMetric.from_metric(temperature)
     sum_storage_written_amount = SumMetric.from_metric(storage_written_amount)
-    return [cpu,
-            mem,
-            file_handles,
-            storage_written_amount,
-            temperature,
-            peak_cpu,
-            peak_mem,
-            peak_temperature,
-            sum_storage_written_amount]
+    energy = EnergyUsageMetric(system_facade)
+    return [
+            cpu, mem, file_handles, storage_written_amount, temperature,
+            peak_cpu, peak_mem, peak_temperature, sum_storage_written_amount,
+            energy
+    ]
+
 
 class SystemMetricsCollector(object):
     """

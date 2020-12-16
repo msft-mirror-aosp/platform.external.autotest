@@ -402,6 +402,15 @@ def get_intel_bclk_khz():
     return 100000
 
 
+def get_energy_usage():
+    """On Intel chips that support it, return the energy usage."""
+    if get_intel_cpu_uarch() == None:
+        return 0
+
+    with open('/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj') as fd:
+        return int(fd.readline())
+
+
 def get_current_kernel_arch():
     """Get the machine architecture, now just a wrap of 'uname -m'."""
     return os.popen('uname -m').read().rstrip()
@@ -410,10 +419,10 @@ def get_current_kernel_arch():
 def count_cpus():
     """number of CPUs in the local machine according to /proc/cpuinfo"""
     try:
-       return multiprocessing.cpu_count()
+        return multiprocessing.cpu_count()
     except Exception:
-       logging.exception('can not get cpu count from'
-                        ' multiprocessing.cpu_count()')
+        logging.exception('can not get cpu count from'
+                         ' multiprocessing.cpu_count()')
     cpuinfo = get_cpuinfo()
     # Returns at least one cpu. Check comment #1 in crosbug.com/p/9582.
     return len(cpuinfo) or 1
@@ -1109,12 +1118,12 @@ def get_chrome_remote_debugging_port():
     _, command = get_oldest_by_name('chrome')
     matches = re.search('--remote-debugging-port=([0-9]+)', command)
     if not matches:
-      return 0
+        return 0
     port = int(matches.group(1))
     if port:
-      return port
+        return port
     with open('/home/chronos/DevToolsActivePort') as f:
-      return int(f.readline().rstrip())
+        return int(f.readline().rstrip())
 
 
 def get_process_list(name, command_line=None):
@@ -2048,7 +2057,7 @@ def get_kernel_partition(root_part=None):
     @param root_part: current root partition
     """
     if not root_part:
-         root_part = get_root_partition()
+        root_part = get_root_partition()
     current_kernel_map = {'3': '2', '5': '4'}
     return root_part[:-1] + current_kernel_map[root_part[-1]]
 

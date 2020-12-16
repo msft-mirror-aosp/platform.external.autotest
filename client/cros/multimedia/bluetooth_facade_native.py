@@ -363,6 +363,10 @@ class BluetoothFacadeNative(object):
     BLUETOOTH_LIBDIR = '/var/lib/bluetooth'
     BTMON_STOP_DELAY_SECS = 3
 
+    # Due to problems transferring a date object, we convert to stringtime first
+    # This is the standard format that we will use.
+    OUT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
     # Timeout for how long we'll wait for BlueZ and the Adapter to show up
     # after reset.
     ADAPTER_TIMEOUT = 30
@@ -3398,7 +3402,6 @@ class BluetoothFacadeNative(object):
 
         # Date format for strptime and strftime
         date_format = '%m%d/%H%M%S.%f'
-        out_date_format = '%Y-%m-%d %H:%M:%S.%f'
         date_group_re = '(?P<date>[0-9]+/[0-9]+[.][0-9]+)'
 
         finish_suspend_re = re.compile(
@@ -3438,8 +3441,8 @@ class BluetoothFacadeNative(object):
                 if all([x is not None for x in [start_time, end_time, ret]]):
                     # Return dates in string format due to inconsistency between
                     # python2/3 usage on host and dut
-                    return (start_time.strftime(out_date_format),
-                            end_time.strftime(out_date_format), ret)
+                    return (start_time.strftime(self.OUT_DATE_FORMAT),
+                            end_time.strftime(self.OUT_DATE_FORMAT), ret)
                 else:
                     logging.error(
                             'Failed to parse details from last suspend. %s %s %s',
@@ -3545,6 +3548,9 @@ class BluetoothFacadeNative(object):
             logging.debug("Chipset not known. Returning %s", chipset_string)
             return chipset_string
 
+    def get_device_time(self):
+        """ Get the current device time. """
+        return datetime.now().strftime(self.OUT_DATE_FORMAT)
 
     def cleanup(self):
         """Cleanup before exiting the client xmlrpc process."""

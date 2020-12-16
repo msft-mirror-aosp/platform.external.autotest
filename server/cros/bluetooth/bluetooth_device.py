@@ -40,6 +40,10 @@ class BluetoothDevice(object):
     XMLRPC_LOG_PATH = '/var/log/bluetooth_xmlrpc_device.log'
     XMLRPC_REQUEST_TIMEOUT_SECONDS = 180
 
+    # We currently get dates back in string format due to some inconsistencies
+    # between python2 and python3. This is the standard date format we use.
+    NATIVE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
     def __init__(self, device_host, remote_facade_proxy=None):
         """Construct a BluetoothDevice.
 
@@ -1651,9 +1655,8 @@ class BluetoothDevice(object):
         # python3 (hopefully)
         # TODO - Revisit converting date to string and back in this method
         if info:
-            date_format = '%Y-%m-%d %H:%M:%S.%f'
-            start_date = datetime.strptime(info[0], date_format)
-            end_date = datetime.strptime(info[1], date_format)
+            start_date = datetime.strptime(info[0], self.NATIVE_DATE_FORMAT)
+            end_date = datetime.strptime(info[1], self.NATIVE_DATE_FORMAT)
             ret = info[2]
 
             return (start_date, end_date, ret)
@@ -1681,7 +1684,6 @@ class BluetoothDevice(object):
         """
         return self._proxy.get_wlan_vid_pid()
 
-
     @proxy_thread_safe
     def get_bt_module_name(self):
         """ Return bluetooth module name for non-USB devices
@@ -1691,6 +1693,11 @@ class BluetoothDevice(object):
         """
         return self._proxy.get_bt_module_name()
 
+    @proxy_thread_safe
+    def get_device_time(self):
+        """ Get the current device time. """
+        return datetime.strptime(self._proxy.get_device_time(),
+                                 self.NATIVE_DATE_FORMAT)
 
     @proxy_thread_safe
     def close(self, close_host=True):

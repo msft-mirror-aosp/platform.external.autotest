@@ -586,11 +586,6 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         logging.getLogger().setLevel(self._saved_loglevel)
         super(OffloadDirectoryTests, self).tearDown()
 
-    def _mock__upload_cts_testresult(self):
-        self.mox.StubOutWithMock(gs_offloader, '_upload_cts_testresult')
-        gs_offloader._upload_cts_testresult(
-                mox.IgnoreArg(),mox.IgnoreArg()).AndReturn(None)
-
     def _mock_create_marker_file(self):
         self.mox.StubOutWithMock(__builtin__, 'open')
         open(mox.IgnoreArg(), 'a').AndReturn(mock.MagicMock())
@@ -613,7 +608,6 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
                 False, queue_args[0],
                 '%s%s' % (utils.DEFAULT_OFFLOAD_GSURI,
                           queue_args[1])).AndReturn(command)
-        self._mock__upload_cts_testresult()
 
 
     def _run_offload_dir(self, should_succeed, delete_age):
@@ -793,57 +787,27 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         self.check_limit_file_count(is_test_job=False)
 
 
-    def test_is_valid_result(self):
-        """Test _is_valid_result."""
-        release_build = 'veyron_minnie-cheets-release/R52-8248.0.0'
-        pfq_build = 'cyan-cheets-android-pfq/R54-8623.0.0-rc1'
-        trybot_build = 'trybot-samus-release/R54-8640.0.0-b5092'
-        trybot_2_build = 'trybot-samus-pfq/R54-8640.0.0-b5092'
-        release_2_build = 'test-trybot-release/R54-8640.0.0-b5092'
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, 'arc-cts'))
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, 'test_that_wrapper'))
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, 'cros_test_platform'))
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, 'bvt-arc'))
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, 'bvt-perbuild'))
-        self.assertFalse(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, 'bvt-cq'))
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_V2_RESULT_PATTERN, 'arc-gts'))
-        self.assertFalse(gs_offloader._is_valid_result(
-            None, gs_offloader.CTS_RESULT_PATTERN, 'arc-cts'))
-        self.assertFalse(gs_offloader._is_valid_result(
-            release_build, gs_offloader.CTS_RESULT_PATTERN, None))
-        self.assertFalse(gs_offloader._is_valid_result(
-            pfq_build, gs_offloader.CTS_RESULT_PATTERN, 'arc-cts'))
-        self.assertFalse(gs_offloader._is_valid_result(
-            trybot_build, gs_offloader.CTS_RESULT_PATTERN, 'arc-cts'))
-        self.assertFalse(gs_offloader._is_valid_result(
-            trybot_2_build, gs_offloader.CTS_RESULT_PATTERN, 'arc-cts'))
-        self.assertTrue(gs_offloader._is_valid_result(
-            release_2_build, gs_offloader.CTS_RESULT_PATTERN, 'arc-cts'))
+    def test_get_metrics_fields(self):
+        """Test method _get_metrics_fields."""
+        results_folder, host_folder  = self._create_results_folder()
+        models.test.parse_job_keyval(mox.IgnoreArg()).AndReturn({
+                'build': 'veyron_minnie-cheets-release/R52-8248.0.0',
+                'parent_job_id': 'p_id',
+                'suite': 'arc-cts'
+            })
+        try:
+            self.mox.ReplayAll()
+            self.assertEqual({'board': 'veyron_minnie-cheets',
+                              'milestone': 'R52'},
+                             gs_offloader._get_metrics_fields(host_folder))
+            self.mox.VerifyAll()
+        finally:
+            shutil.rmtree(results_folder)
 
 
-    def create_results_folder(self):
-        """Create CTS/GTS results folders."""
+    def _create_results_folder(self):
         results_folder = tempfile.mkdtemp()
         host_folder = os.path.join(results_folder, 'chromeos4-row9-rack11-host22')
-        debug_folder = os.path.join(host_folder, 'debug')
-        sysinfo_folder = os.path.join(host_folder, 'sysinfo')
-        cts_result_folder = os.path.join(
-                host_folder, 'cheets_CTS.android.dpi', 'results', 'cts-results')
-        cts_v2_result_folder = os.path.join(host_folder,
-                'cheets_CTS_N.CtsGraphicsTestCases', 'results', 'android-cts')
-        gts_result_folder = os.path.join(
-                host_folder, 'cheets_GTS.google.admin', 'results', 'android-gts')
-        timestamp_str = '2016.04.28_01.41.44'
-        timestamp_cts_folder = os.path.join(cts_result_folder, timestamp_str)
-        timestamp_cts_v2_folder = os.path.join(cts_v2_result_folder, timestamp_str)
-        timestamp_gts_folder = os.path.join(gts_result_folder, timestamp_str)
 
         # Build host keyvals set to parse model info.
         host_info_path = os.path.join(host_folder, 'host_keyvals')
@@ -864,151 +828,7 @@ class OffloadDirectoryTests(_TempResultsDirTestBase):
         with open(autoserve_path, 'w') as temp_file:
             temp_file.write(' ')
 
-        # Test results in cts_result_folder with a different time-stamp.
-        timestamp_str_2 = '2016.04.28_10.41.44'
-        timestamp_cts_folder_2 = os.path.join(cts_result_folder, timestamp_str_2)
-
-        for folder in [debug_folder, sysinfo_folder, cts_result_folder,
-                       timestamp_cts_folder, timestamp_cts_folder_2,
-                       timestamp_cts_v2_folder, timestamp_gts_folder]:
-            os.makedirs(folder)
-
-        path_pattern_pair = [(timestamp_cts_folder, gs_offloader.CTS_RESULT_PATTERN),
-                             (timestamp_cts_folder_2, gs_offloader.CTS_RESULT_PATTERN),
-                             (timestamp_cts_folder_2, gs_offloader.CTS_COMPRESSED_RESULT_PATTERN),
-                             (timestamp_cts_v2_folder, gs_offloader.CTS_V2_RESULT_PATTERN),
-                             (timestamp_cts_v2_folder, gs_offloader.CTS_V2_COMPRESSED_RESULT_PATTERN),
-                             (timestamp_gts_folder, gs_offloader.CTS_V2_RESULT_PATTERN)]
-
-        # Create timestamp.zip file_path.
-        cts_zip_file = os.path.join(cts_result_folder, timestamp_str + '.zip')
-        cts_zip_file_2 = os.path.join(cts_result_folder, timestamp_str_2 + '.zip')
-        cts_v2_zip_file = os.path.join(cts_v2_result_folder, timestamp_str + '.zip')
-        gts_zip_file = os.path.join(gts_result_folder, timestamp_str + '.zip')
-
-        # Create xml file_path.
-        cts_result_file = os.path.join(timestamp_cts_folder, 'testResult.xml')
-        cts_result_file_2 = os.path.join(timestamp_cts_folder_2,
-                                         'testResult.xml')
-        cts_result_compressed_file_2 = os.path.join(timestamp_cts_folder_2,
-                                                     'testResult.xml.tgz')
-        gts_result_file = os.path.join(timestamp_gts_folder, 'test_result.xml')
-        cts_v2_result_file = os.path.join(timestamp_cts_v2_folder,
-                                         'test_result.xml')
-        cts_v2_result_compressed_file = os.path.join(timestamp_cts_v2_folder,
-                                         'test_result.xml.tgz')
-
-        for file_path in [cts_zip_file, cts_zip_file_2, cts_v2_zip_file,
-                          gts_zip_file, cts_result_file, cts_result_file_2,
-                          cts_result_compressed_file_2, gts_result_file,
-                          cts_v2_result_file, cts_v2_result_compressed_file]:
-          if file_path.endswith('tgz'):
-              test_result_file = gs_offloader.CTS_COMPRESSED_RESULT_TYPES[
-                      os.path.basename(file_path)]
-              with open(test_result_file, 'w') as f:
-                  f.write('test')
-              with tarfile.open(file_path, 'w:gz') as tar_file:
-                  tar_file.add(test_result_file)
-              os.remove(test_result_file)
-          else:
-              with open(file_path, 'w') as f:
-                  f.write('test')
-
-        return (results_folder, host_folder, path_pattern_pair)
-
-
-    def test__upload_cts_testresult(self):
-        """Test _upload_cts_testresult."""
-        results_folder, host_folder, path_pattern_pair = self.create_results_folder()
-
-        self.mox.StubOutWithMock(gs_offloader, '_upload_files')
-        gs_offloader._upload_files(
-            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), False,
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-                ['test', '-d', host_folder])
-        gs_offloader._upload_files(
-            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), False,
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-                ['test', '-d', host_folder])
-        gs_offloader._upload_files(
-            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), False,
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-                ['test', '-d', host_folder])
-
-        self.mox.ReplayAll()
-        gs_offloader._upload_cts_testresult(results_folder, False)
-        self.mox.VerifyAll()
-        shutil.rmtree(results_folder)
-
-
-    def test_parse_cts_job_results_file_path(self):
-        # A autotest path
-        path = ('/317739475-chromeos-test/chromeos4-row9-rack11-host22/'
-                'cheets_CTS.android.dpi/results/cts-results/'
-                '2016.04.28_01.41.44')
-        job_id, package, timestamp = \
-            gs_offloader._parse_cts_job_results_file_path(path)
-        self.assertEqual('317739475-chromeos-test', job_id)
-        self.assertEqual('cheets_CTS.android.dpi', package)
-        self.assertEqual('2016.04.28_01.41.44', timestamp)
-
-
-        # A skylab path
-        path = ('/swarming-458e3a3a7fc6f210/1/autoserv_test/'
-                'cheets_CTS.android.dpi/results/cts-results/'
-                '2016.04.28_01.41.44')
-        job_id, package, timestamp = \
-            gs_offloader._parse_cts_job_results_file_path(path)
-        self.assertEqual('swarming-458e3a3a7fc6f210-1', job_id)
-        self.assertEqual('cheets_CTS.android.dpi', package)
-        self.assertEqual('2016.04.28_01.41.44', timestamp)
-
-
-    def test_upload_files(self):
-        """Test upload_files"""
-        results_folder, host_folder, path_pattern_pair = self.create_results_folder()
-
-        for path, pattern in path_pattern_pair:
-            models.test.parse_job_keyval(mox.IgnoreArg()).AndReturn({
-                'build': 'veyron_minnie-cheets-release/R52-8248.0.0',
-                'hostname': 'chromeos4-row9-rack11-host22',
-                'parent_job_id': 'p_id',
-                'suite': 'arc-cts'
-            })
-
-            gs_offloader._get_cmd_list(
-                False, mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-                    ['test', '-d', path])
-            gs_offloader._get_cmd_list(
-                False, mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-                    ['test', '-d', path])
-
-            self.mox.ReplayAll()
-            gs_offloader._upload_files(host_folder, path, pattern, False,
-                                       'gs://a-test-bucket/',
-                                       'gs://a-test-apfe-bucket/')
-            self.mox.VerifyAll()
-            self.mox.ResetAll()
-
-        shutil.rmtree(results_folder)
-
-
-    def test_get_metrics_fields(self):
-        """Test method _get_metrics_fields."""
-        results_folder, host_folder, _ = self.create_results_folder()
-        models.test.parse_job_keyval(mox.IgnoreArg()).AndReturn({
-                'build': 'veyron_minnie-cheets-release/R52-8248.0.0',
-                'parent_job_id': 'p_id',
-                'suite': 'arc-cts'
-            })
-        try:
-            self.mox.ReplayAll()
-            self.assertEqual({'board': 'veyron_minnie-cheets',
-                              'milestone': 'R52'},
-                             gs_offloader._get_metrics_fields(host_folder))
-            self.mox.VerifyAll()
-        finally:
-            shutil.rmtree(results_folder)
+        return (results_folder, host_folder)
 
 
 class OffladerConfigTests(_TempResultsDirTestBase):
@@ -1021,14 +841,13 @@ class OffladerConfigTests(_TempResultsDirTestBase):
         self.dest_path = '/results'
         self.mox.StubOutWithMock(gs_offloader, '_get_metrics_fields')
         self.mox.StubOutWithMock(gs_offloader, '_OffloadError')
-        self.mox.StubOutWithMock(gs_offloader, '_upload_cts_testresult')
         self.mox.StubOutWithMock(gs_offloader, '_emit_offload_metrics')
         self.mox.StubOutWithMock(gs_offloader, '_get_cmd_list')
         self.mox.StubOutWithMock(subprocess, 'Popen')
         self.mox.StubOutWithMock(gs_offloader, '_emit_gs_returncode_metric')
 
 
-    def _run(self, results_dir, gs_bucket, expect_dest, cts_enabled):
+    def _run(self, results_dir, gs_bucket, expect_dest):
         stdout = os.path.join(results_dir, 'std.log')
         stderr = os.path.join(results_dir, 'std.err')
         config = {
@@ -1041,17 +860,12 @@ class OffladerConfigTests(_TempResultsDirTestBase):
                 'bucket': gs_bucket,
                 'credentials_file': '/foo-creds'
             },
-            'cts': {
-                'enabled': cts_enabled,
-            },
             'this_field_is_ignored': True
         }
         path = os.path.join(results_dir, 'side_effects_config.json')
         with open(path, 'w') as f:
             f.write(json.dumps(config))
         gs_offloader._get_metrics_fields(results_dir)
-        if cts_enabled:
-            gs_offloader._upload_cts_testresult(results_dir, True)
         gs_offloader._get_cmd_list(
             True,
             mox.IgnoreArg(),
@@ -1073,28 +887,12 @@ class OffladerConfigTests(_TempResultsDirTestBase):
         shutil.rmtree(results_dir)
 
 
-    def test_upload_files_to_dev(self):
-        """Test upload results to dev gs bucket and skip cts uploading."""
-        res = tempfile.mkdtemp()
-        gs_bucket = 'dev-bucket'
-        expect_dest = 'gs://' + gs_bucket + self.dest_path
-        self._run(res, gs_bucket, expect_dest, False)
-
-
-    def test_upload_files_prod(self):
-        """Test upload results to the prod gs bucket and also upload to cts."""
-        res = tempfile.mkdtemp()
-        gs_bucket = 'prod-bucket'
-        expect_dest = 'gs://' + gs_bucket + self.dest_path
-        self._run(res, gs_bucket, expect_dest, True)
-
-
     def test_skip_gs_prefix(self):
         """Test skip the 'gs://' prefix if already presented."""
         res = tempfile.mkdtemp()
         gs_bucket = 'gs://prod-bucket'
         expect_dest = gs_bucket + self.dest_path
-        self._run(res, gs_bucket, expect_dest, True)
+        self._run(res, gs_bucket, expect_dest)
 
 
 class JobDirectoryOffloadTests(_TempResultsDirTestBase):
@@ -1502,15 +1300,12 @@ class GsOffloaderMockTests(_TempResultsDirTestCase):
 
         """
         signal.alarm.side_effect = [0, timeout_util.TimeoutError('fubar')]
-        with mock.patch.object(gs_offloader, '_upload_cts_testresult',
-                               autospec=True) as upload:
-            upload.return_value = None
-            gs_offloader.GSOffloader(
-                    utils.DEFAULT_OFFLOAD_GSURI, False, 0).offload(
-                            self._job.queue_args[0],
-                            self._job.queue_args[1],
-                            self._job.queue_args[2])
-            self.assertTrue(os.path.isdir(self._job.queue_args[0]))
+        gs_offloader.GSOffloader(
+                utils.DEFAULT_OFFLOAD_GSURI, False, 0).offload(
+                        self._job.queue_args[0],
+                        self._job.queue_args[1],
+                        self._job.queue_args[2])
+        self.assertTrue(os.path.isdir(self._job.queue_args[0]))
 
 
     # TODO(ayatane): This tests passes when run locally, but it fails
@@ -1528,11 +1323,8 @@ class GsOffloaderMockTests(_TempResultsDirTestCase):
 
         """
         signal.alarm.side_effect = [0, 0, timeout_util.TimeoutError('fubar')]
-        with mock.patch.object(gs_offloader, '_upload_cts_testresult',
-                               autospec=True) as upload, \
-             mock.patch.object(gs_offloader, '_get_cmd_list',
+        with mock.patch.object(gs_offloader, '_get_cmd_list',
                                autospec=True) as get_cmd_list:
-            upload.return_value = None
             get_cmd_list.return_value = ['test', '-d', self._job.queue_args[0]]
             gs_offloader.GSOffloader(
                     utils.DEFAULT_OFFLOAD_GSURI, False, 0).offload(

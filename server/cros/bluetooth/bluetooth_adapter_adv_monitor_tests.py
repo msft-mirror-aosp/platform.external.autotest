@@ -521,7 +521,7 @@ class BluetoothAdapterAdvMonitorTests(
         return expected == released
 
 
-    @test_retry_and_log(False)
+    @test_retry_and_log(True)
     def test_device_found(self, monitor, count, delay=0):
         """Test if the DeviceFound method on a monitor has been invoked or not.
 
@@ -543,7 +543,7 @@ class BluetoothAdapterAdvMonitorTests(
         checked_count = self.get_event_count(app_id, monitor_id, 'DeviceFound')
 
         if count == self.MULTIPLE_EVENTS:
-            return checked_count > 1
+            return checked_count > 0
 
         return checked_count == count
 

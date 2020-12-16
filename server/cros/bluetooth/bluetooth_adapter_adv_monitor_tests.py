@@ -1122,6 +1122,110 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
+    def advmon_test_pattern_filter_only(self):
+        """Test case: PATTERN_FILTER_ONLY
+
+        Verify matching of advertisements w.r.t. various pattern values and
+        different AD Data Types - Local Name Service UUID and Device Type.
+        Test working of patterns filter matching with multiple clients,
+        multiple monitors and suspend/resume, without RSSI filtering.
+
+        """
+        self.test_is_adv_monitoring_supported()
+        self.test_setup_peer_devices()
+
+        # Create two test app instances.
+        app1 = self.create_app()
+        app2 = self.create_app()
+
+        # Register both apps, should not fail.
+        self.test_register_app(app1)
+        self.test_register_app(app2)
+
+        # Add monitors in both apps.
+        monitor1 = TestMonitor(app1)
+        monitor1.update_type('or_patterns')
+        monitor1.update_patterns([
+                [5, 0x09, '_REF'],
+        ])
+        monitor1.update_rssi([127, 0, 127, 0])
+
+        monitor2 = TestMonitor(app1)
+        monitor2.update_type('or_patterns')
+        monitor2.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+        ])
+        monitor2.update_rssi([127, 0, 127, 0])
+
+        monitor3 = TestMonitor(app2)
+        monitor3.update_type('or_patterns')
+        monitor3.update_patterns([
+                [0, 0x19, [0xc1, 0x03]],
+                [0, 0x09, 'MOUSE'],
+        ])
+        monitor3.update_rssi([127, 0, 127, 0])
+
+        monitor4 = TestMonitor(app2)
+        monitor4.update_type('or_patterns')
+        monitor4.update_patterns([
+                [0, 0x19, [0xc1, 0x03]],
+                [0, 0x19, [0xc3, 0x03]],
+        ])
+        monitor4.update_rssi([127, 0, 127, 0])
+
+        # Activate should get invoked.
+        self.test_add_monitor(monitor1, expected_activate=True)
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_add_monitor(monitor3, expected_activate=True)
+        self.test_add_monitor(monitor4, expected_activate=True)
+
+        # DeviceFound for mouse should get triggered only for monitors
+        # matching the adv pattern filter.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
+        self.test_device_found(monitor2, count=self.MULTIPLE_EVENTS)
+        self.test_device_found(monitor3, count=self.MULTIPLE_EVENTS)
+        # Device type 0xc203 should not match.
+        self.test_device_found(monitor4, count=0)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+
+        # Initiate suspend/resume.
+        self.suspend_resume()
+
+        # Remove a monitor from one app, shouldn't affect working of other
+        # monitors or apps.
+        self.test_remove_monitor(monitor1)
+
+        # Reset event counts before next test.
+        self.test_reset_event_count(monitor2)
+        self.test_reset_event_count(monitor3)
+
+        # DeviceFound for mouse should get triggered again for monitors
+        # matching the adv pattern filter.
+        self.test_start_peer_device_adv(self.peer_mouse, duration=5)
+        self.test_device_found(monitor2, count=self.MULTIPLE_EVENTS)
+        self.test_device_found(monitor3, count=self.MULTIPLE_EVENTS)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+
+        # Terminate an app, shouldn't affect working of monitors in other apps.
+        self.test_exit_app(app1)
+
+        # Reset event counts before next test.
+        self.test_reset_event_count(monitor3)
+
+        # DeviceFound should get triggered for keyboard.
+        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_device_found(monitor3, count=self.MULTIPLE_EVENTS)
+        self.test_device_found(monitor4, count=self.MULTIPLE_EVENTS)
+        self.test_stop_peer_device_adv(self.peer_keybd)
+
+        # Unregister the running app, should not fail.
+        self.test_unregister_app(app2)
+
+        # Terminate the running test app instance.
+        self.test_exit_app(app2)
+
+
     def advmon_test_pattern_filter_1(self):
         """Test case: PATTERN_FILTER_1
 

@@ -121,19 +121,20 @@ class PowerTelemetryLogger(object):
         """
         self._end_measurement()
         logging.info('%s finishes.', self.__class__.__name__)
+        checkpoint_logger = self._get_client_test_checkpoint_logger(
+                client_test_dir)
         start_ts, end_ts = self._get_client_test_ts(client_test_dir)
         loggers = self._load_and_trim_data(start_ts, end_ts)
         # Call export after trimming to only export trimmed data.
-        self._export_data_locally(client_test_dir)
-        checkpoint_logger = self._get_client_test_checkpoint_logger(
-                client_test_dir)
+        self._export_data_locally(client_test_dir,
+                                  checkpoint_logger.checkpoint_data)
         self._upload_data(loggers, checkpoint_logger)
 
     def _end_measurement(self):
         """End power telemetry devices."""
         raise NotImplementedError('Subclasses must implement _end_measurement.')
 
-    def _export_data_locally(self, client_test_dir):
+    def _export_data_locally(self, client_test_dir, checkpoint_data=None):
         """Slot for the logger to export measurements locally."""
         raise NotImplementedError('Subclasses must implement '
                                   '_export_data_locally.')
@@ -316,6 +317,19 @@ class PowerTelemetryLogger(object):
                 '_load_and_trim_data and return a list of loggers.')
 
     def _get_client_test_checkpoint_logger(self, client_test_dir):
+        """Load the client-side test checkpoints.
+
+        The key data we need is the checkpoint_logger.checkpoint_data object.
+        This is a dictionary that contains for each key a list of [start, end]
+        timestamps (seconds since epoch) for a checkpoint.
+        Note: should there be issues loading the data, the checkpoint logger
+        will still be returned, but it will be empty. Code that relies on the
+        returned object here and wants to make sure its valid, needs to check
+        against the |checkpoint_logger.checkpoint_data| being empty, as it
+        will never be None
+
+        Returns: CheckpointLogger object with client endpoints, or empty data
+        """
         client_test_resultsdir = os.path.join(client_test_dir, 'results')
         checkpoint_logger = power_status.get_checkpoint_logger_from_file(
                 resultsdir=client_test_resultsdir)
@@ -339,8 +353,7 @@ class PowerTelemetryLogger(object):
 
 
 class ServodTelemetryLogger(PowerTelemetryLogger):
-    """This logger class measures power by querying a servod instance.
-    """
+    """This logger class measures power by querying a servod instance."""
 
     DEFAULT_INA_RATE = 20.0
     DEFAULT_VBAT_RATE = 60.0
@@ -381,12 +394,38 @@ class ServodTelemetryLogger(PowerTelemetryLogger):
         """End querying servod."""
         self._pm.FinishMeasurement()
 
-    def _export_data_locally(self, client_test_dir):
-        """Output formatted text summaries locally."""
+    def _export_data_locally(self, client_test_dir, checkpoint_data=None):
+        """Output formatted text summaries to test results directory.
+
+        @param client_test_dir: path to the client test output
+        @param checkpoint_data: dict, checkpoint data. data is list of tuples
+                                of (start,end) format for the timesteps
+        """
         # At this point the PowerMeasurement unit has been processed. Dump its
         # formatted summaries into the results directory.
         power_summaries_dir = os.path.join(self._resultsdir, 'power_summaries')
         self._pm.SaveSummary(outdir=power_summaries_dir)
+        # After the main summaries are exported, we also want to export one
+        # for each checkpoint. As each checkpoint might contain multiple
+        # entries, the checkpoint name is expanded by a digit.
+        def export_checkpoint(name, start, end):
+            """Helper to avoid code duplication for 0th and next cases."""
+            self._pm.SaveTrimmedSummary(tag=name,
+                                        tstart=start,
+                                        tend=end,
+                                        outdir=power_summaries_dir)
+
+        if checkpoint_data:
+            for checkpoint_name, checkpoint_list in checkpoint_data.items():
+                # Export the first entry without any sort of name change.
+                tstart, tend = checkpoint_list[0]
+                export_checkpoint(checkpoint_name, tstart, tend)
+                for suffix, checkpoint_element in enumerate(
+                        checkpoint_list[1:], start=1):
+                    # Export subsequent entries with a suffix
+                    tstart, tend = checkpoint_element
+                    export_checkpoint('%s%d' % (checkpoint_name, suffix),
+                                      tstart, tend)
 
     def _load_and_trim_data(self, start_ts, end_ts):
         """Load data and trim data.
@@ -510,7 +549,7 @@ class PowerlogTelemetryLogger(PowerTelemetryLogger):
         """Start power measurement with Sweetberry via powerlog tool."""
         self._sweetberry_thread.start()
 
-    def _export_data_locally(self, client_test_dir):
+    def _export_data_locally(self, client_test_dir, checkpoint_data=None):
         """Output formatted text summaries locally."""
         #TODO(crbug.com/978665): implement this.
         pass

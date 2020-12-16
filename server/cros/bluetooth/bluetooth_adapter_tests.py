@@ -4032,20 +4032,6 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_pause_discovery(self):
-        """Test pause discovery"""
-
-        return self.bluetooth_facade.pause_discovery()
-
-
-    @test_retry_and_log(False)
-    def test_unpause_discovery(self):
-        """Test unpause discovery"""
-
-        return self.bluetooth_facade.unpause_discovery()
-
-
-    @test_retry_and_log(False)
     def test_get_connection_info(self, address):
         """Test that connection info to device is retrievable."""
 

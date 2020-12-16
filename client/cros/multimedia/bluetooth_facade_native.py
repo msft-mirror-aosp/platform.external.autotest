@@ -1559,68 +1559,6 @@ class BluetoothFacadeNative(object):
         self._adapter.StopDiscovery(dbus_interface=self.BLUEZ_ADAPTER_IFACE)
         return (True, None)
 
-    @dbus_print_error()
-    def pause_discovery(self, system_suspend_resume):
-        """Pause discovery of remote devices.
-
-        @return (True, None) on success, (False,<error>) otherwise.
-
-        """
-        self._adapter.PauseDiscovery(dbus.Boolean(system_suspend_resume,
-                                                  variant_level=1),
-                                     dbus_interface=self.BLUEZ_ADAPTER_IFACE)
-        return (True, None)
-
-    @dbus_print_error()
-    def unpause_discovery(self, system_suspend_resume):
-        """Unpause discovery of remote devices.
-
-        @return (True, None) on success, (False,<error>) otherwise.
-
-        """
-        self._adapter.UnpauseDiscovery(dbus.Boolean(system_suspend_resume,
-                                                    variant_level=1),
-                                       dbus_interface=self.BLUEZ_ADAPTER_IFACE)
-        return (True, None)
-
-    @xmlrpc_server.dbus_safe(False)
-    @dbus_print_error()
-    def pause_discovery(self, system_suspend_resume=False):
-        """Pause discovery of remote devices.
-
-        This pauses all device discovery sessions.
-
-        @param system_suspend_resume: whether the
-               request is related to system suspend/resume.
-
-        @return True on success, False otherwise.
-
-        """
-        if not self._adapter:
-            return (False, "Adapter Not Found")
-        self._adapter.PauseDiscovery(system_suspend_resume,
-                                     dbus_interface=self.BLUEZ_ADAPTER_IFACE)
-        return (True, None)
-
-    @xmlrpc_server.dbus_safe(False)
-    @dbus_print_error()
-    def unpause_discovery(self, system_suspend_resume=False):
-        """Unpause discovery of remote devices.
-
-        This unpauses all device discovery sessions.
-
-        @param system_suspend_resume: whether the
-               request is related to system suspend/resume.
-
-        @return True on success, False otherwise.
-
-        """
-        if not self._adapter:
-            return (False, "Adapter Not Found")
-        self._adapter.UnpauseDiscovery(system_suspend_resume,
-                                       dbus_interface=self.BLUEZ_ADAPTER_IFACE)
-        return (True, None)
-
     def get_dev_info(self):
         """Read raw HCI device information.
 

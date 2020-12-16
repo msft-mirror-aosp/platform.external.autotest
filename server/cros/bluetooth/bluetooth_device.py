@@ -642,60 +642,6 @@ class BluetoothDevice(object):
         return self._proxy.stop_discovery()
 
 
-    @proxy_thread_safe
-    def pause_discovery(self, system_suspend_resume=False):
-        """ Pause discovery of remote devices
-
-        @params: boolean system_suspend_resume Is this request related to
-                 system suspend resume.
-
-        @return (True, None) on success (False, <error>) otherwise
-        """
-        return self._proxy.pause_discovery(system_suspend_resume)
-
-
-    @proxy_thread_safe
-    def unpause_discovery(self, system_suspend_resume=False):
-        """ Unpause discovery of remote devices
-
-        @params: boolean system_suspend_resume Is this request related to
-                 system suspend resume.
-
-        @return (True, None) on success (False, <error>) otherwise
-        """
-        return self._proxy.unpause_discovery(system_suspend_resume)
-
-
-    @proxy_thread_safe
-    def pause_discovery(self, system_suspend_resume=False):
-        """Pause discovery of remote devices.
-
-        This pauses all device discovery sessions.
-
-        @param system_suspend_resume: whether the
-               request is related to system suspend/resume.
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.pause_discovery(system_suspend_resume)
-
-
-    @proxy_thread_safe
-    def unpause_discovery(self, system_suspend_resume=False):
-        """Unpause discovery of remote devices.
-
-        This unpauses all device discovery sessions.
-
-        @param system_suspend_resume: whether the
-               request is related to system suspend/resume.
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.unpause_discovery(system_suspend_resume)
-
-
     def is_discovering(self):
         """Is it discovering?
 

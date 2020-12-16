@@ -6,7 +6,7 @@ AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_BgscanBackoff.wifi_bgscan_backoff'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_matfunc')
+ATTRIBUTES = ''
 DEPENDENCIES = 'wificell'
 MAX_RESULT_SIZE_KB = 512000
 

@@ -10,6 +10,7 @@ import array
 
 from autotest_lib.client.bin import utils
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.client.common_lib import error
 
 
 class TestMonitor():
@@ -149,6 +150,15 @@ class BluetoothAdapterAdvMonitorTests(
 
     test_case_log = bluetooth_adapter_tests.test_case_log
     test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
+
+
+    def advmon_check_manager_interface_exist(self):
+        """Check if AdvertisementMonitorManager1 interface is available.
+
+        @returns: True if Manager interface is available, False otherwise.
+
+        """
+        return self.bluetooth_facade.advmon_check_manager_interface_exist()
 
 
     def read_supported_types(self):
@@ -348,6 +358,21 @@ class BluetoothAdapterAdvMonitorTests(
 
         # TODO(b/169658213) - add check for supported features.
         return True
+
+
+    def test_is_adv_monitoring_supported(self):
+        """Check if Adv Monitor API is supported.
+
+            If AdvMonitor API is not supported by the platform,
+            AdvertisementMonitorManager1 interface won't be exposed by
+            bluetoothd. In such case, skip the test and raise TestNA.
+
+            @raises: TestNA if Adv Monitor API is not supported.
+
+        """
+        if not self.advmon_check_manager_interface_exist():
+            logging.info('Advertisement Monitor API not supported')
+            raise error.TestNAError('Advertisement Monitor API not supported')
 
 
     @test_retry_and_log(False)
@@ -902,6 +927,8 @@ class BluetoothAdapterAdvMonitorTests(
         Validate register/unregister app and create/remove monitor.
 
         """
+        self.test_is_adv_monitoring_supported()
+
         # Create a test app instance.
         app1 = self.create_app()
 
@@ -966,6 +993,8 @@ class BluetoothAdapterAdvMonitorTests(
         values.
 
         """
+        self.test_is_adv_monitoring_supported()
+
         # Create a test app instance.
         app1 = self.create_app()
 
@@ -1076,6 +1105,7 @@ class BluetoothAdapterAdvMonitorTests(
         different AD Data Types - Local Name Service UUID and Device Type.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1171,6 +1201,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify unset RSSI filter and filter with no matching RSSI values.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1224,6 +1255,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify RSSI filter matching with multiple peer devices.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1288,6 +1320,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify reset of RSSI timers based on advertisements.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1355,6 +1388,7 @@ class BluetoothAdapterAdvMonitorTests(
         clients and multiple monitors.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create two test app instances.
@@ -1441,6 +1475,7 @@ class BluetoothAdapterAdvMonitorTests(
         working of each other.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create a test app instance.
@@ -1527,6 +1562,7 @@ class BluetoothAdapterAdvMonitorTests(
         Verify working of background scanning with suspend/resume.
 
         """
+        self.test_is_adv_monitoring_supported()
         self.test_setup_peer_devices()
 
         # Create two test app instances.
@@ -1601,6 +1637,8 @@ class BluetoothAdapterAdvMonitorTests(
 
     def advmon_test_interleaved_scan(self):
         """ Test cases for verifying interleave scan """
+
+        self.test_is_adv_monitoring_supported()
 
         # cycles to collect logs for tests expect no interleave scan
         EXPECT_FALSE_TEST_CYCLE = 3

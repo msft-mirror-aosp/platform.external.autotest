@@ -2162,6 +2162,22 @@ class BluetoothFacadeNative(object):
 
         return self.dbus_cb_msg
 
+
+    def advmon_check_manager_interface_exist(self):
+        """Check if AdvertisementMonitorManager1 interface is available.
+
+        @returns: True if Manager interface is available, False otherwise.
+
+        """
+        objects = self._bluez.GetManagedObjects(
+                dbus_interface=self.BLUEZ_MANAGER_IFACE)
+        for _, ifaces in six.iteritems(objects):
+            if self.BLUEZ_ADV_MONITOR_MANAGER_IFACE in ifaces:
+                return True
+
+        return False
+
+
     def advmon_read_supported_types(self):
         """Read the Advertisement Monitor supported monitor types.
 

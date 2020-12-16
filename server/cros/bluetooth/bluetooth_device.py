@@ -860,6 +860,16 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def advmon_check_manager_interface_exist(self):
+        """Check if AdvertisementMonitorManager1 interface is available.
+
+        @returns: True if Manager interface is available, False otherwise.
+
+        """
+        return self._proxy.advmon_check_manager_interface_exist()
+
+
+    @proxy_thread_safe
     def advmon_read_supported_types(self):
         """Read the Advertisement Monitor supported monitor types.
 

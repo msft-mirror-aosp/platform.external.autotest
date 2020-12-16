@@ -35,6 +35,13 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_monitor_validity()
 
 
+    @test_wrapper('Pattern Filter Tests',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_pattern_filter_tests(self):
+        """Tests monitor functionality for pattern filter only."""
+        self.advmon_test_pattern_filter_only()
+
+
     @test_wrapper('Single Client Tests',
                   devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
     def advmon_single_client_tests(self):
@@ -98,6 +105,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
 
         """
         self.advmon_monitor_health_tests()
+        self.advmon_pattern_filter_tests()
         self.advmon_single_client_tests()
         self.advmon_multi_client_tests()
         self.advmon_fg_bg_combination_tests()

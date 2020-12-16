@@ -1522,6 +1522,30 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self.run('start powerd', ignore_status=True)
 
 
+    def _get_arc_build_info(self):
+        """Returns a dictionary mapping build properties to their values."""
+        build_info = None
+        build_path_arcvm = '/usr/share/arcvm/properties/build.prop'
+        build_path_arc = '/usr/share/arc/properties/build.prop'
+        if self.path_exists(build_path_arcvm):
+            build_info = utils.parse_cmd_output('cat ' + build_path_arcvm,
+                                                run_method=self.run)
+        elif self.path_exists(build_path_arc):
+            build_info = utils.parse_cmd_output('cat ' + build_path_arc,
+                                                run_method=self.run)
+        if build_info == None:
+            logging.error('Failed to find build property info in device.')
+            return
+        return build_info
+
+    def _get_arc_primary_abi(self):
+        """Returns the primary abi of the host."""
+        return self._get_arc_build_info().get('ro.product.cpu.abi')
+
+    def _get_arc_security_patch(self):
+        """Returns the security patch of the host."""
+        return self._get_arc_build_info().get('ro.build.version.security_patch')
+
     def _get_lsb_release_content(self):
         """Return the content of lsb-release file of host."""
         return self.run(

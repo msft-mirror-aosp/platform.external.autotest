@@ -154,6 +154,7 @@ suite:mmc_qual
 suite:moblab
 suite:moblab_quick
 suite:moblab_storage_qual
+suite:nearby-share
 suite:network_nightly
 suite:network_ui
 suite:offloads

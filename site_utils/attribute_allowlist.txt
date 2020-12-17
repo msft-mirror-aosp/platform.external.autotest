@@ -87,6 +87,7 @@ suite:debug_kernel_testing
 suite:deqp
 suite:dev_drone_image_test
 suite:display
+suite:drivefs-cq
 suite:dummy
 suite:dummy_server
 suite:dummy_server_nossp

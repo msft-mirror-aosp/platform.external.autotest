@@ -586,17 +586,14 @@ class FirmwareTest(test.test):
             """Repeatedly poll for the RootFS partition sysfs node."""
             self.servo.system('ls {}'.format(rootfs))
 
-        # Incremental rollout of a large scale test change.
-        # TODO(kmshelton): Rollout to all platforms.
-        if self.faft_config.platform.lower() in ['coral', 'nami']:
-            try:
-                confirm_rootfs_partition_device_node_readable()
-            except error.AutoservRunError as e:
-                usb_info = telemetry.collect_usb_state(self.servo)
-                raise error.TestError((
-                        'Could not ls the device node for the RootFS on the USB '
-                        'device. %s: %s\nMore telemetry: %s') %
-                                      (type(e).__name__, e, usb_info))
+        try:
+            confirm_rootfs_partition_device_node_readable()
+        except error.AutoservRunError as e:
+            usb_info = telemetry.collect_usb_state(self.servo)
+            raise error.TestError(
+                    ('Could not ls the device node for the RootFS on the USB '
+                     'device. %s: %s\nMore telemetry: %s') %
+                    (type(e).__name__, e, usb_info))
         try:
             self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
         except error.AutoservRunError as e:

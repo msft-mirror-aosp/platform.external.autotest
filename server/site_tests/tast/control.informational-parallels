@@ -6,7 +6,9 @@ AUTHOR = 'Chromium OS team'
 NAME = 'tast.informational-parallels'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:bvt-tast-informational, suite:chrome-informational'
+# TODO(crbug.com/1154072): Remove from 'suite:bvt-tast-informational' once the
+# parallels suite is scheduled.
+ATTRIBUTES = 'suite:bvt-tast-informational, suite:bvt-tast-parallels-informational'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0  # Do not retry informational tests.
 

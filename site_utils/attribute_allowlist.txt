@@ -50,6 +50,8 @@ suite:bvt-tast-android-pfq
 suite:bvt-tast-chrome-pfq
 suite:bvt-tast-cq
 suite:bvt-tast-informational
+suite:bvt-tast-parallels-cq
+suite:bvt-tast-parallels-informational
 suite:camera-libcamera
 suite:camera-postsubmit
 suite:camerabox_facing-back
@@ -73,6 +75,9 @@ suite:check_setup_storage_qual
 suite:chrome-informational
 suite:cros-av-analysis
 suite:crosbolt_perf_nightly
+suite:crosbolt_perf_parallels_nightly
+suite:crosbolt_perf_parallels_perbuild
+suite:crosbolt_perf_parallels_weekly
 suite:crosbolt_perf_perbuild
 suite:crosbolt_perf_weekly
 suite:cts_P

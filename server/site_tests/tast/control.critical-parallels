@@ -6,7 +6,9 @@ AUTHOR = 'Chromium OS team'
 NAME = 'tast.critical-parallels'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:bvt-tast-cq'
+# TODO(crbug.com/1154072): Remove from 'suite:bvt-tast-cq' once the
+# parallels suite is scheduled.
+ATTRIBUTES = 'suite:bvt-tast-cq, suite:bvt-tast-parallels-cq'
 MAX_RESULT_SIZE_KB = 256 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

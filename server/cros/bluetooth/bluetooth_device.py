@@ -1726,6 +1726,6 @@ class BluetoothDevice(object):
         # This kills the RPC server.
         if close_host:
             self.host.close()
-        elif self._bt_direct_proxy:
+        elif hasattr(self, '_bt_direct_proxy'):
             self.host.rpc_server_tracker.disconnect(
                     constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT)

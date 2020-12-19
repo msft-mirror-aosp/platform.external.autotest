@@ -321,13 +321,11 @@ static void testFormatStrings() {
 
   {
     char buf[128];
-    // FIXME: Undisable these expected warnings; it's correct to complain about
-    // these things, but clang doesn't at the moment.
-    // expected-disabled-warning@+1{{format specifies type 'int'}}
+    // expected-warning@+1{{format specifies type 'int'}}
     sprintf(buf, "%d", unsigned_value);
-    // expected-disabled-warning@+1{{format string is not a string literal}}
+    // expected-warning@+1{{format string is not a string literal}}
     sprintf(buf, unknown_string, unsigned_value);
-    // expected-disabled-warning@+1{{format string is not a string literal}}
+    // expected-warning@+1{{format string is not a string literal}}
     sprintf(buf, unknown_string, va);
 
     // expected-warning@+1{{format specifies type 'int'}}

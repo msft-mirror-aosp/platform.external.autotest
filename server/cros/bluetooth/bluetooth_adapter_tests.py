@@ -854,14 +854,14 @@ class BluetoothAdapterTests(test.test):
             raise error.TestError('Peer is not available after waiting')
 
 
-    def clear_raspi_device(self, device):
+    def clear_raspi_device(self, device, next_device_type=None):
         """Clears a device on a raspi peer by resetting bluetooth stack
 
         @param device: proxy object of peripheral device
         """
 
         try:
-            device.ResetStack()
+            device.ResetStack(next_device_type)
 
         except socket.error as e:
             # Ignore conn reset, expected during stack reset
@@ -976,7 +976,7 @@ class BluetoothAdapterTests(test.test):
 
         # Re-fresh device to clean state if test is starting
         if clear_device:
-            self.clear_raspi_device(device)
+            self.clear_raspi_device(device, next_device_type=device_type)
 
         try:
             # Tell generic chameleon to bind to this device type

@@ -4069,7 +4069,7 @@ class BluetoothAdapterTests(test.test):
                              test_start_time,
                              resume_slack=RESUME_DELTA,
                              fail_on_timeout=False,
-                             fail_early_wake=False):
+                             fail_early_wake=True):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id

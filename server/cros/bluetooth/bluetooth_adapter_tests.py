@@ -1036,7 +1036,7 @@ class BluetoothAdapterTests(test.test):
         # lenient with the resume time here
         self.test_wait_for_resume(boot_id,
                                   suspend,
-                                  resume_timeout=self.RESUME_TIME_SECS,
+                                  resume_timeout=suspend_time,
                                   test_start_time=start_time)
 
 

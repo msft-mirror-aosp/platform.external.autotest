@@ -142,9 +142,11 @@ class platform_PrinterPpds(test.test):
 
         # Load digests files
         self._digests = dict()
+        self._sizes = dict()
         if location_of_digests_files is None:
             for doc_name in self._docs:
                 self._digests[doc_name] = dict()
+                self._sizes[doc_name] = dict()
         else:
             path_denylist = os.path.join(location_of_digests_files,
                                          'denylist.txt')
@@ -152,8 +154,9 @@ class platform_PrinterPpds(test.test):
             for doc_name in self._docs:
                 digests_name = doc_name + '.digests'
                 path = os.path.join(location_of_digests_files, digests_name)
-                self._digests[doc_name] = helpers.parse_digests_file(
-                        path, denylist)
+                digests, sizes = helpers.parse_digests_file(path, denylist)
+                self._digests[doc_name] = digests
+                self._sizes[doc_name] = sizes
 
         # Prepare a working directory for pipelines
         if debug_mode:
@@ -207,8 +210,10 @@ class platform_PrinterPpds(test.test):
                         self._ppds, 50)
             # A place for new digests
             self._new_digests = dict()
+            self._new_sizes = dict()
             for doc_name in self._docs:
                 self._new_digests[doc_name] = dict()
+                self._new_sizes[doc_name] = dict()
 
         # Runs tests for all PPD files (in parallel)
         outputs = self._processor.run(self._thread_test_PPD, len(self._ppds))
@@ -231,7 +236,7 @@ class platform_PrinterPpds(test.test):
                 path = os.path.join(self._path_output_directory,
                         doc_name + '.digests')
                 helpers.save_digests_file(path, self._new_digests[doc_name],
-                        failures)
+                                          self._new_sizes[doc_name], failures)
 
         # Raises an exception if at least one test failed
         if len(failures) > 0:
@@ -369,6 +374,7 @@ class platform_PrinterPpds(test.test):
                                         ppd_name, '.sh', pipeline)
                             # Set new digest
                             self._new_digests[doc_name][ppd_name] = digest
+                            self._new_sizes[doc_name][ppd_name] = len(doc)
                         # Fail if any of CUPS filters failed
                         if not no_errors:
                             raise Exception('One of the CUPS filters failed')
@@ -383,6 +389,10 @@ class platform_PrinterPpds(test.test):
                             digest_expected = self._digests[doc_name][ppd_name]
                             if digest_expected != digest:
                                 message = 'Document\'s digest does not match'
+                                if ppd_name in self._sizes[doc_name]:
+                                    message += ', old size: ' + \
+                                            str(self._sizes[doc_name][ppd_name])
+                                message += ', new size: ' + str(len(doc))
                                 raise Exception(message)
                         else:
                             # Simple validation

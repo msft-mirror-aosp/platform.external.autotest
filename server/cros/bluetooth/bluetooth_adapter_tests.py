@@ -74,7 +74,7 @@ UNSUPPORTED_CHIPSETS = [
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
 
-RESUME_DELTA = 5
+RESUME_DELTA = -5
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {

@@ -1097,9 +1097,12 @@ class ServoInstallRepair(hosts.RepairAction):
         if not need_update_image and host.health_profile:
             repair_failed_count = host.health_profile.get_repair_fail_count()
             # try to re-image USB when previous attempt failed
-            if repair_failed_count == 1:
-                logging.info('Required re-download image to usbkey as'
-                             ' a previous repair failed.')
+            if (repair_failed_count > 0 and
+                (repair_failed_count == 1 or repair_failed_count % 10 == 0)):
+                logging.info(
+                        'Required re-download image to usbkey as'
+                        ' a previous repair failed. Fail count: %s',
+                        repair_failed_count)
                 need_update_image = True
 
         update_url = None

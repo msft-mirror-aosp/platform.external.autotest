@@ -305,7 +305,7 @@ def should_check_file(file_path):
 
 def check_file(file_path, base_opts):
     """
-    Invokes pylint on files after confirming that they're not black listed.
+    Invokes pylint on files after confirming that they're not block listed.
 
     @param base_opts: pylint base options.
     @param file_path: path to the file we need to run pylint on.

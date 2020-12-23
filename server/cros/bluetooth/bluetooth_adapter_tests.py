@@ -99,6 +99,8 @@ SUPPORTED_DEVICE_TYPES = {
 COMMON_FAILURES = {
         'Freeing adapter /org/bluez/hci': 'adapter_freed',
         '/var/spool/crash/bluetoothd': 'bluetoothd_crashed',
+        'btintel_hw_error': 'intel hardware error detected',
+        'qca_hw_error': 'qca hardware error detected',
 }
 
 # TODO(b/150898182) - Don't run some tests on tablet form factors

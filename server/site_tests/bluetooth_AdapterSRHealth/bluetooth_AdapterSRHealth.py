@@ -453,6 +453,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # Test discovery with discovery filter set
         # ----------------------------------------------------------------------
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
+        start_time = self.bluetooth_facade.get_device_time()
 
         self.test_set_discovery_filter({'Transport': 'auto'})
         self.test_start_discovery()
@@ -463,7 +464,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # will be non-zero
         self.test_wait_for_resume(boot_id,
                                   suspend,
-                                  resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
+                                  resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC,
+                                  test_start_time=start_time)
 
         # Discovering should restore after suspend
         self.test_is_discovering()

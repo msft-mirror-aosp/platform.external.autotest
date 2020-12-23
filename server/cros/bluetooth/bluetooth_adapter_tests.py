@@ -74,7 +74,7 @@ UNSUPPORTED_CHIPSETS = [
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
 
-RESUME_DELTA = 5
+RESUME_DELTA = -5
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
@@ -4069,7 +4069,7 @@ class BluetoothAdapterTests(test.test):
                              test_start_time,
                              resume_slack=RESUME_DELTA,
                              fail_on_timeout=False,
-                             fail_early_wake=False):
+                             fail_early_wake=True):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id

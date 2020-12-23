@@ -424,17 +424,20 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
         boot_id = self.host.get_boot_id()
+
+        self.test_device_set_discoverable(device, True)
+
+        # Test discovery without setting discovery filter
+        # ----------------------------------------------------------------------
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
         start_time = self.bluetooth_facade.get_device_time()
 
         # We don't pair to the peer device because we don't want it in the
         # allowlist. However, we want an advertising peer in this test
         # responding to the discovery requests.
-        self.test_device_set_discoverable(device, True)
-
         self.test_start_discovery()
-        self.test_suspend_and_wait_for_sleep(
-                suspend, sleep_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
+        self.test_suspend_and_wait_for_sleep(suspend,
+                                             sleep_timeout=SUSPEND_SEC)
 
         # If discovery events wake us early, we will raise and suspend.exitcode
         # will be non-zero
@@ -445,7 +448,25 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
         # Discovering should restore after suspend
         self.test_is_discovering()
+        self.test_stop_discovery()
 
+        # Test discovery with discovery filter set
+        # ----------------------------------------------------------------------
+        suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
+
+        self.test_set_discovery_filter({'Transport': 'auto'})
+        self.test_start_discovery()
+        self.test_suspend_and_wait_for_sleep(suspend,
+                                             sleep_timeout=SUSPEND_SEC)
+
+        # If discovery events wake us early, we will raise and suspend.exitcode
+        # will be non-zero
+        self.test_wait_for_resume(boot_id,
+                                  suspend,
+                                  resume_timeout=EXPECT_NO_WAKE_SUSPEND_SEC)
+
+        # Discovering should restore after suspend
+        self.test_is_discovering()
         self.test_stop_discovery()
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend

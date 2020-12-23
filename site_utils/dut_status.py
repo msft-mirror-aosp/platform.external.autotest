@@ -445,7 +445,7 @@ def _parse_command(argv):
                         nargs='*',
                         help='Host names of DUTs to report on')
     parser.add_argument('--web',
-                        help='Master autotest frontend hostname. If no value '
+                        help='Autotest frontend hostname. If no value '
                              'is given, the one in global config will be used.',
                         default=None)
     arguments = parser.parse_args(argv[1:])

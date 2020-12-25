@@ -1254,8 +1254,9 @@ def run(uris, is_public, is_latest, cache_dir):
                     write_extra_camera_controlfiles(abi, revision, build, uri,
                                                     is_public)
 
-            write_collect_controlfiles(modules, abi, revision, build, uri,
-                                       is_public, is_latest)
+            if CONFIG.get('CONTROLFILE_WRITE_COLLECT', True):
+                write_collect_controlfiles(modules, abi, revision, build, uri,
+                                           is_public, is_latest)
 
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
                 write_extra_controlfiles(None, abi, revision, build, uri,

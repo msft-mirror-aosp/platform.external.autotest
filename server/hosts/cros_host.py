@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import sys
+import six
 import time
 
 import common
@@ -1056,8 +1057,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/boot_duration'):
+            self.servo._power_state.power_off()
+            try:
+                self.servo.image_to_servo_usb(image_path=image_url,
+                                              power_off_dut=False)
+            except error.AutotestError as e:
+                metrics.Counter('chromeos/autotest/repair/image_to_usb_error'
+                                ).increment(
+                                        fields={'host': self.hostname or ''})
+                six.reraise(error.AutotestError, str(e), sys.exc_info()[2])
+            # Give the DUT some time to power_off if we skip
+            # download image to usb. (crbug.com/982993)
+            if not image_url:
+                time.sleep(10)
             need_snk = self.require_snk_mode_in_recovery()
-            self.servo.install_recovery_image(image_url, snk_mode=need_snk)
+            self.servo.boot_in_recovery_mode(snk_mode=need_snk)
             if not self.wait_up(timeout=usb_boot_timeout):
                 if need_snk:
                     # Attempt to restore servo_v4 role to 'src' mode.

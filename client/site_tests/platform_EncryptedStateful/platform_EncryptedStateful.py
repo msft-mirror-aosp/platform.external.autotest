@@ -103,7 +103,7 @@ class EncryptedStateful(object):
         # unresized. It would be better to have the resizer running in
         # the background, as it is designed, so we can examine its behavior
         # during testing (e.g. "does the filesystem actually grow?").
-        utils.system("MOUNT_ENCRYPTED_ROOT=%s mount-encrypted "
+        utils.system("MOUNT_ENCRYPTED_ROOT=%s mount-encrypted --unsafe "
                      "%s 2>&1 | tee %s" % (self.root, args, self.mount_log))
         self.mounted = True
 
@@ -300,7 +300,7 @@ class platform_EncryptedStateful(test.test):
                 utils.system("mv %s %s" % (off, tpm))
 
         # Perform post-mount sanity checks.
-        encstate.check_sizes(finalized=False)
+        encstate.check_sizes(finalized=True)
 
         # Check disk reclamation for kernels that support PUNCH_HOLE.
         if self.is_punch_hole_supported():

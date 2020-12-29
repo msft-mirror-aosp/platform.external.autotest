@@ -969,9 +969,12 @@ class DisplayPanelSelfRefresh(object):
         return int(count) if count else None
 
     def _calc_residency(self):
-        """Calculate the PSR residency."""
+        """Calculate the PSR residency.
+
+        @returns: PSR residency in percent or -1 if not able to calculate.
+        """
         if not self.supported:
-            return 0
+            return -1
 
         tdelta = time.time() - self._init_time
         cdelta = self._get_counter() - self._init_counter

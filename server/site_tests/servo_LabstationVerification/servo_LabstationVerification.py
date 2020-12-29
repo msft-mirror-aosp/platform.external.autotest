@@ -259,7 +259,7 @@ class servo_LabstationVerification(test.test):
             # ping again.
             logging.info('Failed to ping DUT on ipv6: %s. Cold resetting',
                          dut_ipv6)
-            servo_proxy._power_state.reset()
+            servo_proxy.get_power_state_controller().reset()
             time.sleep(self.RESET_TIMEOUT_S)
         dut_ipv4 = None
         try:

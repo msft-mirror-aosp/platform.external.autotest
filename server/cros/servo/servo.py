@@ -555,26 +555,31 @@ class Servo(object):
     # The VBUS voltage threshold used to detect if VBUS is supplied
     VBUS_THRESHOLD = 3000.0
 
-    def __init__(self, servo_host, servo_serial=None):
+    def __init__(self, servo_host, servo_serial=None, delay_init=False):
         """Sets up the servo communication infrastructure.
 
         @param servo_host: A ServoHost object representing
                            the host running servod.
         @type servo_host: autotest_lib.server.hosts.servo_host.ServoHost
         @param servo_serial: Serial number of the servo board.
+        @param delay_init:  Delay cache servo_type and power_state to prevent
+                            attempt to connect to the servod.
         """
         # TODO(fdeng): crbug.com/298379
         # We should move servo_host object out of servo object
         # to minimize the dependencies on the rest of Autotest.
         self._servo_host = servo_host
         self._servo_serial = servo_serial
-        self._servo_type = self.get_servo_version()
-        self._power_state = _PowerStateController(self)
-        self._uart = _Uart(self)
+        self._servo_type = None
+        self._power_state = None
         self._programmer = None
         self._prev_log_inode = None
         self._prev_log_size = 0
         self._ccd_watchdog_disabled = False
+        if not delay_init:
+            self._servo_type = self.get_servo_version()
+            self._power_state = _PowerStateController(self)
+        self._uart = _Uart(self)
 
     def __str__(self):
         """Description of this object and address, for use in errors"""
@@ -601,6 +606,8 @@ class Servo(object):
         interfaces for reset, power-on, power-off operations.
 
         """
+        if self._power_state is None:
+            self._power_state = _PowerStateController(self)
         return self._power_state
 
 
@@ -658,11 +665,11 @@ class Servo(object):
                     logging.exception(e)
         self._uart.start_capture()
         if cold_reset:
-            if not self._power_state.supported:
+            if not self.get_power_state_controller().supported:
                 logging.info('Cold-reset for DUT requested, but servo '
                              'setup does not support power_state. Skipping.')
             else:
-                self._power_state.reset()
+                self.get_power_state_controller().reset()
         with _WrapServoErrors(
                 servo=self, description='initialize_dut()->get_version()'):
             version = self._server.get_version()
@@ -1141,7 +1148,7 @@ class Servo(object):
         # to do to the device after hotplug.  To avoid surprises,
         # force the DUT to be off.
         if power_off_dut:
-            self._power_state.power_off()
+            self.get_power_state_controller().power_off()
 
         if image_path:
             logging.info('Searching for usb device and copying image to it. '
@@ -1191,7 +1198,8 @@ class Servo(object):
             self.set_servo_v4_role('snk')
 
         try:
-            self._power_state.power_on(rec_mode=self._power_state.REC_ON)
+            power_state = self.get_power_state_controller()
+            power_state.power_on(rec_mode=power_state.REC_ON)
         except error.TestFail as e:
             self.set_servo_v4_role('src')
             logging.error('Failed to boot DUT in recovery mode. %s.', str(e))
@@ -1311,12 +1319,13 @@ class Servo(object):
 
 
     def get_servo_type(self):
+        if self._servo_type is None:
+            self._servo_type = self.get_servo_version()
         return self._servo_type
-
 
     def get_main_servo_device(self):
         """Return the main servo device"""
-        return self._servo_type.split('_with_')[-1].split('_and_')[0]
+        return self.get_servo_type().split('_with_')[-1].split('_and_')[0]
 
 
     def enable_main_servo_device(self):
@@ -1366,19 +1375,20 @@ class Servo(object):
         if self._programmer:
             return
         # Initialize firmware programmer
-        if self._servo_type.startswith('servo_v2'):
+        servo_type = self.get_servo_type()
+        if servo_type.startswith('servo_v2'):
             self._programmer = firmware_programmer.ProgrammerV2(self)
             self._programmer_rw = firmware_programmer.ProgrammerV2RwOnly(self)
         # Both servo v3 and v4 use the same programming methods so just leverage
         # ProgrammerV3 for servo v4 as well.
-        elif (self._servo_type.startswith('servo_v3') or
-              self._servo_type.startswith('servo_v4')):
+        elif (servo_type.startswith('servo_v3')
+              or servo_type.startswith('servo_v4')):
             self._programmer = firmware_programmer.ProgrammerV3(self)
             self._programmer_rw = firmware_programmer.ProgrammerV3RwOnly(self)
         else:
             raise error.TestError(
                     'No firmware programmer for servo version: %s' %
-                    self._servo_type)
+                    self.get_servo_type())
 
 
     def program_bios(self, image, rw_only=False, copy_image=True):
@@ -1580,7 +1590,7 @@ class Servo(object):
 
         @param role: Power role for DUT port on servo v4, either 'src' or 'snk'.
         """
-        if not self._servo_type.startswith('servo_v4'):
+        if not self.get_servo_type().startswith('servo_v4'):
             logging.debug('Not a servo v4, unable to set role to %s.', role)
             return
 
@@ -1601,7 +1611,7 @@ class Servo(object):
 
         It returns None if not a servo v4.
         """
-        if not self._servo_type.startswith('servo_v4'):
+        if not self.get_servo_type().startswith('servo_v4'):
             logging.debug('Not a servo v4, unable to get role')
             return None
 
@@ -1620,17 +1630,17 @@ class Servo(object):
 
         @param en: a string of 'on' or 'off' for PD communication.
         """
-        if self._servo_type.startswith('servo_v4'):
+        if self.get_servo_type().startswith('servo_v4'):
             self.set_nocheck('servo_v4_pd_comm', en)
         else:
             logging.debug('Not a servo v4, unable to set PD comm to %s.', en)
 
     def supports_built_in_pd_control(self):
         """Return whether the servo type supports pd charging and control."""
-        if 'servo_v4' not in self._servo_type:
+        if 'servo_v4' not in self.get_servo_type():
             # Only servo v4 supports this feature.
             logging.info('%r type does not support pd control.',
-                         self._servo_type)
+                         self.get_servo_type())
             return False
         # On servo v4, it still needs to be the type-c version.
         if not self.get('servo_v4_type') == 'type-c':
@@ -1647,10 +1657,10 @@ class Servo(object):
 
     def dts_mode_is_valid(self):
         """Return whether servo setup supports dts mode control for cr50."""
-        if 'servo_v4' not in self._servo_type:
+        if 'servo_v4' not in self.get_servo_type():
             # Only servo v4 supports this feature.
             logging.debug('%r type does not support dts mode control.',
-                          self._servo_type)
+                          self.get_servo_type())
             return False
         # On servo v4, it still needs ot be the type-c version.
         if not 'type-c' == self.get('servo_v4_type'):
@@ -1679,7 +1689,7 @@ class Servo(object):
 
     def ccd_watchdog_enable(self, enable):
         """Control the ccd watchdog."""
-        if 'ccd' not in self._servo_type:
+        if 'ccd' not in self.get_servo_type():
             return
         if self._ccd_watchdog_disabled and enable:
             logging.info('CCD watchdog disabled for test')
@@ -1757,12 +1767,12 @@ class Servo(object):
             return '%s_version.%s' % (dev, tag)
 
         fw_versions = {}
-        if 'servo_v4' not in self._servo_type:
+        if 'servo_v4' not in self.get_servo_type():
             return {}
         v4_tag = get_fw_version_tag('support', 'servo_v4')
         fw_versions[v4_tag] = self._get_servo_type_fw_version('servo_v4')
-        if 'with' in self._servo_type:
-            dut_devs = self._servo_type.split('_with_')[1].split('_and_')
+        if 'with' in self.get_servo_type():
+            dut_devs = self.get_servo_type().split('_with_')[1].split('_and_')
             main_tag = get_fw_version_tag('main', dut_devs[0])
             fw_versions[main_tag] = self._get_servo_type_fw_version(dut_devs[0])
             if len(dut_devs) == 2:

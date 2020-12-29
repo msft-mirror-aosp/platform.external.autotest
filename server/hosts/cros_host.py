@@ -1056,7 +1056,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/boot_duration'):
-            self.servo._power_state.power_off()
+            self.servo.get_power_state_controller().power_off()
             try:
                 self.servo.image_to_servo_usb(image_path=image_url,
                                               power_off_dut=False)

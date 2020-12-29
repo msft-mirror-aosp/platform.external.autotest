@@ -198,7 +198,7 @@ class power_Monitoring(test.test):
             logging.warn('Failed to get battery charge levels even ',
                          'after turning on charging. Cold resetting.'
                          'before re-attempting.')
-            self._host.servo._power_state.reset()
+            self._host.servo.get_power_state_controller().reset()
             # Allow DUT time after cold reset to come back.
             time.sleep(EC_RESET_DELAY_S)
             raise error.TestFail('Failed to get battery charge percent. %s',
@@ -247,11 +247,11 @@ class power_Monitoring(test.test):
     @retry.retry(error.TestFail, timeout_min=VERIFY_DUT_PINGABLE_TIMEOUT_MIN,
                  delay_sec=VERIFY_DUT_PINGABLE_DELAY_S)
     def _verify_dut(self):
-      """Verify DUT can be pinged. Reset if DUT not responsive."""
-      if not self._host.ping_wait_up(timeout=DUT_PINGABLE_TIMEOUT_S):
-          self._host.servo._power_state.reset()
-          raise error.TestFail('Dut did not reboot or respond to ping after '
-                               'charging.')
+        """Verify DUT can be pinged. Reset if DUT not responsive."""
+        if not self._host.ping_wait_up(timeout=DUT_PINGABLE_TIMEOUT_S):
+            self._host.servo.get_power_state_controller().reset()
+            raise error.TestFail('Dut did not reboot or respond to ping after '
+                                 'charging.')
 
     def _verify_and_charge_dut(self):
         """Charge DUT up to |stop_charging| level if below |start_charging|."""

@@ -1655,7 +1655,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         # DeviceFound should get triggered for keyboard.
         self.test_reset_event_count(monitor1)
-        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
+        self.test_start_peer_device_adv(self.peer_keybd, duration=10)
         self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
         self.test_stop_peer_device_adv(self.peer_keybd)
 

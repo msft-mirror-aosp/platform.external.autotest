@@ -35,8 +35,12 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_monitor_validity()
 
 
+    # TODO(b/150897528) - Dru loses firmware around suspend, which causes bluez
+    #                     removes all the monitors.
     @test_wrapper('Pattern Filter Tests',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  skip_models=['dru'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def advmon_pattern_filter_tests(self):
         """Tests monitor functionality for pattern filter only."""
         self.advmon_test_pattern_filter_only()

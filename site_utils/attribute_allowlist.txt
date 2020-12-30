@@ -131,7 +131,7 @@ suite:faft_stress
 suite:faft_wilco
 suite:files
 suite:fingerprint
-suite:fingerprint-mcu
+suite:fingerprint-mcu-dragonclaw
 suite:graphics
 suite:graphics_browser
 suite:graphics_per-build

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "yichengli@chromium.org"
-NAME = "fingerprint-mcu"
+NAME = "fingerprint-mcu-dragonclaw"
 PURPOSE = "Verify fingerprint MCU unittests pass on device."
 
 TIME = "SHORT"
@@ -11,7 +11,7 @@ TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
-DOC = """ This suite runs fingerprint MCU unittests on board. """
+DOC = """ This suite runs fingerprint MCU unittests on Dragonclaw boards. """
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite

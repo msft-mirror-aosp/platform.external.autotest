@@ -151,6 +151,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_model = None
         self.servo_serial = None
         self.servo_setup = None
+        self.servo_recovery = None
         self.additional_servod_args = None
         self._dut_health_profile = None
         # The flag that indicate if a servo is connected to a smart usbhub.
@@ -175,6 +176,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     servo_model=None,
                     servo_serial=None,
                     servo_setup=None,
+                    servo_recovery=None,
                     additional_servod_args=None,
                     is_in_lab=None,
                     *args,
@@ -207,6 +209,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_model = servo_model
         self.servo_serial = servo_serial
         self.servo_setup = servo_setup
+        self.servo_recovery = servo_recovery
         self.additional_servod_args = additional_servod_args
 
         # The location of the log files on the servo host for this instance.
@@ -659,6 +662,9 @@ class ServoHost(base_servohost.BaseServoHost):
         # Start servod with CONFIG=cr50.xml which required for some pools.
         if self._require_cr50_servod_config():
             cmd += ' CONFIG=cr50.xml'
+
+        if self.servo_recovery == True:
+            cmd += ' REC_MODE=1'
 
         # Adding customized args if any.
         if self.additional_servod_args:
@@ -1390,12 +1396,14 @@ class ServoHost(base_servohost.BaseServoHost):
             elif self._is_servo_board_present_on_servo_v3() == False:
                 return servo_constants.SERVO_STATE_NOT_CONNECTED
 
+        if dut_connected == hosts.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
+        if hub_connected == hosts.VERIFY_FAILED:
+            logging.info('Servo HUB not connected')
+            return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
         if servo_topology == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_TOPOLOGY_ISSUE
 
-        if (dut_connected == hosts.VERIFY_FAILED
-                    or hub_connected == hosts.VERIFY_FAILED):
-            return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
         # TODO(otabek@): detect special cases detected by pwr_button
         if dut_connected == hosts.VERIFY_SUCCESS:
             if pwr_button == hosts.VERIFY_FAILED:
@@ -1569,6 +1577,7 @@ def create_servo_host(dut,
                       servo_args,
                       try_lab_servo=False,
                       try_servo_repair=False,
+                      try_servo_recovery=False,
                       dut_host_info=None,
                       dut_health_profile=None):
     """Create a ServoHost object for a given DUT, if appropriate.
@@ -1620,6 +1629,7 @@ def create_servo_host(dut,
                           caller.
     @param try_servo_repair  If true, check a servo host with
                           `repair()` instead of `verify()`.
+    @param try_servo_recovery  If true, start servod in recovery mode.
     @param dut_host_info: A HostInfo object of the DUT that connected
                           to this servo.
     @param dut_health_profile: DUT repair info with history.
@@ -1661,6 +1671,9 @@ def create_servo_host(dut,
             'Servo connection info is incorrect hostname: %s , port: %s',
             servo_hostname, servo_port)
         return None, servo_constants.SERVO_STATE_WRONG_CONFIG
+
+    if try_servo_recovery == True:
+        servo_args[servo_constants.SERVO_RECOVERY_MODE] = True
 
     newhost = ServoHost(**servo_args)
     if not newhost.is_up_fast(count=3):

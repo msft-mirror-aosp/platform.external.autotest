@@ -17,6 +17,7 @@ SERVO_SERIAL_ATTR = 'servo_serial'
 # Indicates what type of servo setup, example value: REGULAR or DUAL_V4.
 SERVO_SETUP_ATTR = 'servo_setup'
 SERVO_SETUP_VALUE_DUAL_V4 = 'DUAL_V4'
+SERVO_RECOVERY_MODE = 'servo_recovery'
 SERVO_ATTR_KEYS = (
         SERVO_BOARD_ATTR,
         SERVO_HOST_ATTR,

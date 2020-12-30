@@ -308,10 +308,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             else servo_args)
 
 
-    def _initialize(self, hostname, chameleon_args=None, servo_args=None,
-                    pdtester_args=None, try_lab_servo=False,
-                    try_servo_repair=False, ssh_verbosity_flag='',
-                    ssh_options='', *args, **dargs):
+    def _initialize(self,
+                    hostname,
+                    chameleon_args=None,
+                    servo_args=None,
+                    pdtester_args=None,
+                    try_lab_servo=False,
+                    try_servo_repair=False,
+                    ssh_verbosity_flag='',
+                    ssh_options='',
+                    try_servo_recovery=False,
+                    *args,
+                    **dargs):
         """Initialize superclasses, |self.chameleon|, and |self.servo|.
 
         This method will attempt to create the test-assistant object
@@ -335,6 +343,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                    verbosity.
         @param ssh_options: String, other ssh options to pass to the ssh
                             command.
+        @param try_servo_recovery:  When True, start servod in recovery mode.
+                                    See servo_host for details.
         """
         super(CrosHost, self)._initialize(hostname=hostname,
                                           *args, **dargs)
@@ -365,6 +375,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 servo_args=servo_args,
                 try_lab_servo=try_lab_servo,
                 try_servo_repair=try_servo_repair,
+                try_servo_recovery=try_servo_recovery,
                 dut_host_info=self.host_info_store.get(),
                 dut_health_profile=dut_health_profile)
         if dut_health_profile.is_loaded():
@@ -1214,6 +1225,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Set servo info labels to dut host_info"""
         if not self.servo:
             logging.debug('Servo is not initialized to get servo_type.')
+            return
+        if not self.is_servo_in_working_state():
+            logging.debug('Servo is not good, skip update servo_type.')
             return
         servo_type = self.servo.get_servo_type()
         if not servo_type:

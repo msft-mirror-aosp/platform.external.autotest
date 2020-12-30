@@ -483,6 +483,7 @@ class _BaseDUTConnectionVerifier(hosts.Verifier):
         logging.debug('Started check by ppdut5_mv:on')
         try:
             val = host.get_servo().get('ppdut5_mv')
+            logging.debug('ppdut5_mv=%s', val)
             if val < self.MAX_PPDUT5_MV_WHEN_NOT_CONNECTED:
                 # servo is not connected to the DUT
                 return False

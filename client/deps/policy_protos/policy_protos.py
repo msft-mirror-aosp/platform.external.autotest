@@ -25,6 +25,9 @@ PROTO_PATHS = [
         'usr/share/protofiles/device_management_backend.proto',
         'usr/share/protofiles/cloud_policy.proto',
         'usr/share/protofiles/chrome_extension_policy.proto',
+        'usr/share/protofiles/private_membership_rlwe.proto',
+        'usr/share/protofiles/private_membership.proto',
+        'usr/share/protofiles/serialization.proto',
         'usr/include/chromeos/dbus/login_manager/policy_descriptor.proto',
 ]
 

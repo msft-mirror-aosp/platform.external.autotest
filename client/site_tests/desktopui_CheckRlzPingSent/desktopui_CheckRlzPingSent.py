@@ -88,8 +88,8 @@ class desktopui_CheckRlzPingSent(test.test):
     def _wait_for_rlz_lock(self):
         """Waits for the DUT to get into locked state after login."""
         def get_install_lockbox_finalized_status():
-            status = cryptohome.get_tpm_more_status()
-            return status.get('install_lockbox_finalized')
+            status = cryptohome.get_install_attribute_status()
+            return status == 'VALID'
 
         try:
             utils.poll_for_condition(

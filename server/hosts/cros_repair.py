@@ -96,6 +96,7 @@ _CROS_PROVISION_TRIGGERS = (
         'rwfw',
         'fwstatus',
         'python',
+        'hwid',
         'cros',
         'dev_default_boot',
 )

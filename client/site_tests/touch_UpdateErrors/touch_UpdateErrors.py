@@ -78,18 +78,14 @@ class touch_UpdateErrors(touch_playback_test_base.touch_playback_test_base):
 
         return start_line
 
-    def _check_updates(self, input_type):
+    def _check_updates(self, hw_id):
         """Fail the test if device has problems with touch firmware update.
 
-        @param input_type: string of input type, e.g. 'touchpad'
+        @param hw_id: the hardware ID to look for in the logs, as a string.
 
         @raises: TestFail if no update attempt occurs or if there is an error.
 
         """
-        hw_id = self.player.devices[input_type].hw_id
-        if not hw_id:
-            raise error.TestError('%s has no valid hw_id!' % input_type)
-
         updater_name = 'touch-firmware-update'
         start_line = self._find_logs_start_line()
         # Null characters sometimes slip into /var/log/messages, causing grep to
@@ -141,4 +137,14 @@ class touch_UpdateErrors(touch_playback_test_base.touch_playback_test_base):
             logging.info('This touchpad is not supported for this test.')
             return
 
-        self._check_updates(input_type)
+        hw_id = self.player.devices[input_type].hw_id
+        if not hw_id:
+            raise error.TestError('%s has no valid hw_id!' % input_type)
+
+        if input_type == 'stylus' and hw_id == 'usi':
+            logging.info(
+                    'This device uses USI, so there\'s no separate stylus '
+                    'firmware to check updates for.')
+            return
+
+        self._check_updates(hw_id)

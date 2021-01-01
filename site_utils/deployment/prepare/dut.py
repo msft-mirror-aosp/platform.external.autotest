@@ -13,7 +13,6 @@ from __future__ import division
 from __future__ import print_function
 
 import contextlib
-import six
 import time
 
 import common
@@ -409,7 +408,11 @@ def install_test_image(host):
     host.run('chromeos-install --yes', timeout=host.INSTALL_TIMEOUT)
 
     logging.info("Rebooting DUT to boot from hard drive.")
-    power_cycle_via_servo(host)
+    try:
+        host.reboot()
+    except Exception as e:
+        logging.info('Failed to reboot DUT via ssh; %s', str(e))
+        try_reset_by_servo(host)
     logging.info("Install test image completed successfully.")
 
 
@@ -462,10 +465,10 @@ def install_firmware(host):
     _check_firmware_update_result(host, fw_update_log)
 
     try:
-        try_reset_by_servo(host)
+        host.reboot()
     except Exception as e:
         logging.debug('Failed to reboot the DUT after update firmware; %s', e)
-        raise Exception('Failed to reboot the DUT after update firmware')
+        try_reset_by_servo(host)
 
     # Once we confirmed DUT can boot from new firmware, get us out of
     # dev-mode and clear GBB flags.  GBB flags are non-zero because

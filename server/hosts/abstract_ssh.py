@@ -32,7 +32,9 @@ except ImportError:
 # pylint: disable=C0111
 
 get_value = global_config.get_config_value
-enable_main_ssh = get_value('AUTOSERV', 'enable_master_ssh', type=bool,
+enable_main_ssh = get_value('AUTOSERV',
+                            'enable_main_ssh',
+                            type=bool,
                             default=False)
 
 # Number of seconds to use the cached up status.

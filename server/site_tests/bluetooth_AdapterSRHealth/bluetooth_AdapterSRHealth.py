@@ -304,7 +304,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                     self.test_device_wake_not_allowed(device.address)
 
                 # Trigger suspend, asynchronously wake and wait for resume
-                self.test_suspend_and_wait_for_sleep(suspend, sleep_timeout=5)
+                self.test_suspend_and_wait_for_sleep(suspend,
+                                                     sleep_timeout=SUSPEND_SEC)
 
                 # Trigger peer wakeup
                 adapter_address = self.bluetooth_facade.address

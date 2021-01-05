@@ -116,7 +116,7 @@ def get_tpm_password():
     match = re.search('owner_password: (\w*)', out)
     password = ''
     if match:
-        hex_pass = match.group(1).decode("hex")
+        hex_pass = match.group(1)
         password = ''.join(
                 chr(int(hex_pass[i:i + 2], 16))
                 for i in range(0, len(hex_pass), 2))

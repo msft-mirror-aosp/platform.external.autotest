@@ -25,6 +25,7 @@ class firmware_SetFWMP(test.test):
         raise error.TestFail('Failed to own the TPM %s' % status)
 
     def run_once(self, fwmp_cleared=True, flags=None, dev_key_hash=None):
+        """Own the TPM and set the FWMP."""
         # make sure the FMWP is in the expected state
         cryptohome.get_fwmp(fwmp_cleared)
         status = cryptohome.get_tpm_status()

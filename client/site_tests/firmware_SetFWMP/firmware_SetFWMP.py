@@ -33,10 +33,6 @@ class firmware_SetFWMP(test.test):
         if not status['Owned']:
             status = self.own_tpm()
 
-        # Verify we have access to the password
-        if not status['Password']:
-            logging.warning('No access to the password')
-
         logging.info(status)
 
         # Set the FWMP flags using a dev key hash

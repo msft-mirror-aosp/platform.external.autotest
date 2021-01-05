@@ -308,6 +308,11 @@ class DeployConfigManager(object):
                 'echo $\'\n[AUTOSERV]\nenable_master_ssh: False\n\' >> %s' %
                 shadow_config)
 
+        # For now (b:169251128) we will set both, then remove the above line.
+        self.container.attach_run(
+                'echo $\'\n[AUTOSERV]\nenable_main_ssh: False\n\' >> %s' %
+                shadow_config)
+
         host_ip = lxc_utils.get_host_ip()
         local_names = ['localhost', '127.0.0.1']
 

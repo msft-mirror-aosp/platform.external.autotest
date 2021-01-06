@@ -191,17 +191,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             result = host.run(
                     'grep -q CHROMEOS /etc/lsb-release && '
                     '! grep -q moblab /etc/lsb-release && '
-                    '! grep -q labstation /etc/lsb-release',
-                    ignore_status=True, timeout=timeout)
-            if result.exit_status == 0:
-                lsb_release_content = host.run(
-                    'grep CHROMEOS_RELEASE_BOARD /etc/lsb-release',
+                    '! grep -q labstation /etc/lsb-release &&'
+                    ' grep CHROMEOS_RELEASE_BOARD /etc/lsb-release',
+                    ignore_status=True,
                     timeout=timeout).stdout
+            if result:
                 return not (
                     lsbrelease_utils.is_jetstream(
-                        lsb_release_content=lsb_release_content) or
+                        lsb_release_content=result) or
                     lsbrelease_utils.is_gce_board(
-                        lsb_release_content=lsb_release_content))
+                        lsb_release_content=result))
 
         except (error.AutoservRunError, error.AutoservSSHTimeout):
             return False

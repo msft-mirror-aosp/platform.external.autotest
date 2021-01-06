@@ -1,5 +1,9 @@
 #!/usr/bin/python2 -u
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import collections
 import errno
 import fcntl
@@ -29,6 +33,7 @@ from autotest_lib.tko import db as tko_db, utils as tko_utils
 from autotest_lib.tko import models, parser_lib
 from autotest_lib.tko.perf_upload import perf_uploader
 from autotest_lib.utils.side_effects import config_loader
+import six
 
 try:
     from chromite.lib import metrics
@@ -599,7 +604,7 @@ def _match_existing_tests(db, job):
 
 
 def _delete_tests_from_db(db, tests):
-    for test_idx in tests.itervalues():
+    for test_idx in six.itervalues(tests):
         where = {'test_idx' : test_idx}
         db.delete('tko_iteration_result', where)
         db.delete('tko_iteration_perf_value', where)
@@ -617,7 +622,8 @@ def _get_job_subdirs(path):
     # if there's a .machines file, use it to get the subdirs
     machine_list = os.path.join(path, ".machines")
     if os.path.exists(machine_list):
-        subdirs = set(line.strip() for line in file(machine_list))
+        with open(machine_list, 'r') as ml:
+            subdirs = set(line.strip() for line in ml.readlines())
         existing_subdirs = set(subdir for subdir in subdirs
                                if os.path.exists(os.path.join(path, subdir)))
         if len(existing_subdirs) != 0:
@@ -763,7 +769,7 @@ def _main_with_options(options, args):
                 flags |= fcntl.LOCK_NB
             try:
                 fcntl.flock(lockfile, flags)
-            except IOError, e:
+            except IOError as e:
                 # lock is not available and nonblock has been requested
                 if e.errno == errno.EWOULDBLOCK:
                     lockfile.close()

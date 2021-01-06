@@ -27,6 +27,10 @@
 # called.
 #
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import errno
 import json
 import os
@@ -39,6 +43,7 @@ from autotest_lib.tko import models
 from autotest_lib.tko import parse
 from autotest_lib.tko import utils as tko_utils
 from autotest_lib.tko.parsers import version_0
+import six
 
 
 # Name of the report file to produce upon completion.
@@ -97,7 +102,7 @@ class StackTrace(object):
         if not os.path.exists(cache_dir):
             try:
                 os.makedirs(cache_dir)
-            except OSError, e:
+            except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
         return cache_dir
@@ -215,7 +220,7 @@ def main():
             continue
 
         # Parse failure reason for this test.
-        for t, r in parse_reason(test_dict['testdir']).iteritems():
+        for t, r in six.iteritems(parse_reason(test_dict['testdir'])):
             # Server tests may have subtests which will each have their own
             # reason, so display the test name for the subtest in that case.
             if t != test_name:

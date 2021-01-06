@@ -1,3 +1,7 @@
+# Lint as: python2, python3
+from __future__ import division
+from __future__ import print_function
+
 import json
 import os
 
@@ -5,6 +9,7 @@ from autotest_lib.server.hosts import file_store
 from autotest_lib.client.common_lib import utils
 from autotest_lib.tko import tast
 from autotest_lib.tko import utils as tko_utils
+import six
 
 
 class HostKeyvalError(Exception):
@@ -190,7 +195,7 @@ class test(object):
         # Grab test+host attributes from the host keyval.
         host_keyval = cls.parse_host_keyval(job.dir, job.machine)
         attributes.update(dict(('host-%s' % k, v)
-                               for k, v in host_keyval.iteritems()))
+                               for k, v in six.iteritems(host_keyval)))
 
         if existing_instance:
             def constructor(*args, **dargs):
@@ -406,7 +411,9 @@ class iteration(object):
         iterations = []
         index = 1
         attr, perf = {}, {}
-        for line in file(keyval_path):
+        with open(keyval_path, 'r') as kp:
+            lines = kp.readlines()
+        for line in lines:
             line = line.strip()
             if line:
                 cls.parse_line_into_dicts(line, attr, perf)

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -37,7 +38,7 @@ def TPMStatus(client):
             continue
         if len(item) == 1:
             item.append('')
-        item = map(lambda x : x.strip(), item)
+        item = [x.strip() for x in item]
         item[1] = True if item[1] == 'true' else item[1]
         item[1] = False if item[1] == 'false' else item[1]
         status[item[0]] = item[1]

@@ -60,9 +60,11 @@ class cellular_Smoke(test.test):
                                'images_b2c/shared/nav/'
                                'vz_logo_quickaccess.jpg?foo=%d')
                 bytes_to_fetch = 4476
-            else:
+            elif state == 'ready':
                 url_pattern = network.FETCH_URL_PATTERN_FOR_TEST
                 bytes_to_fetch = 64 * 1024
+            else:
+                raise error.TestError('Cellular state not ready: %s' % state)
 
             interface = self.test_env.shill.get_dbus_property(
                     device, shill_proxy.ShillProxy.DEVICE_PROPERTY_INTERFACE)
@@ -75,8 +77,13 @@ class cellular_Smoke(test.test):
                 urlparse.urlparse(url_pattern).hostname,
                 interface, socket.AF_INET)
 
-            fetch_time = network.FetchUrl(url_pattern, bytes_to_fetch,
-                                          self.fetch_timeout)
+            try:
+                fetch_time = network.FetchUrl(url_pattern, bytes_to_fetch,
+                                              self.fetch_timeout)
+            except:
+                raise error.TestError('FetchUrl timed out after %d' %
+                                      self.fetch_timeout)
+
             self.write_perf_keyval({
                 'seconds_3G_fetch_time': fetch_time,
                 'bytes_3G_bytes_received': bytes_to_fetch,
@@ -99,8 +106,12 @@ class cellular_Smoke(test.test):
                 time.sleep(self.sleep_kludge)
 
 
-    def run_once(self, test_env, connect_count=5, sleep_kludge=5,
-                 fetch_timeout=120):
+    def run_once(self,
+                 test_env,
+                 connect_count=5,
+                 sleep_kludge=5,
+                 fetch_timeout=30):
+        """ Runs the test once """
         with test_env, shill_context.ServiceAutoConnectContext(
                 test_env.shill.wait_for_cellular_service_object, False):
             self.test_env = test_env

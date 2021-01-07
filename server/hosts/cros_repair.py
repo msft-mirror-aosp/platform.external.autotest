@@ -105,7 +105,6 @@ _CROS_USB_TRIGGERS = (
         'ping',
         'ssh',
         'writable',
-        'stop_start_ui',
 )
 _JETSTREAM_USB_TRIGGERS = (
         'ping',
@@ -1286,7 +1285,9 @@ def _cros_dedicated_repair_actions(firmware_triggers=_CROS_FIRMWARE_TRIGGERS,
 def _cros_repair_actions():
     """Return the repair actions for a `CrosHost`."""
     repair_actions = (_cros_basic_repair_actions() +
-                      _cros_extended_repair_actions() +
+                      _cros_extended_repair_actions(
+                              provision_triggers=_CROS_PROVISION_TRIGGERS +
+                              ('stop_start_ui', )) +
                       _cros_dedicated_repair_actions())
     return repair_actions
 

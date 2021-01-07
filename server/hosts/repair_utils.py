@@ -91,7 +91,9 @@ class PingVerifier(hosts.Verifier):
             raise hosts.AutoservVerifyError(msg)
         if not ip_address:
             msg = 'Hostname: %s not present in DNS' % host.hostname
-            raise hosts.AutoservVerifyError(msg)
+        else:
+            msg = 'Hostname: %s not pingable' % host.hostname
+        raise hosts.AutoservVerifyError(msg)
 
     @property
     def description(self):

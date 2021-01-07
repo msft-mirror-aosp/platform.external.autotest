@@ -230,6 +230,16 @@ class TradefedTest(test.test):
 
     def cleanup(self):
         """Cleans up any dirtied state."""
+        try:
+            # Clean up test data that may not be deletable on previous
+            # ChromeOS versions. See b/170276268.
+            self._run_commands([
+                    'cryptohome --action=remove --force --user=test@test.test'
+            ],
+                               ignore_status=True)
+        except:
+            logging.error('Failed to clean up the test account.')
+
         self._kill_adb_server()
 
         if hasattr(self, '_tradefed_install'):

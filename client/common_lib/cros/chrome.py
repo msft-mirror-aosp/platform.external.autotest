@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import logging
 import os
@@ -11,6 +16,7 @@ from autotest_lib.client.common_lib.cros import arc_util
 from autotest_lib.client.common_lib.cros import assistant_util
 from autotest_lib.client.cros import constants
 from autotest_lib.client.bin import utils
+from six.moves import range
 from telemetry.core import cros_interface, exceptions
 from telemetry.internal.browser import browser_finder, browser_options
 from telemetry.internal.browser import extension_to_load

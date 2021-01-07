@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import collections
 import glob
@@ -16,6 +21,7 @@ import time
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome, arc_common
+from six.moves import range
 
 _ADB_KEYS_PATH = '/tmp/adb_keys'
 _ADB_VENDOR_KEYS = 'ADB_VENDOR_KEYS'
@@ -483,7 +489,7 @@ def is_android_container_alive():
     """Check if android container is alive."""
     try:
         container_pid = get_container_pid()
-    except Exception, e:
+    except Exception as e:
         logging.error('is_android_container_alive failed: %r', e)
         return False
     return utils.pid_is_alive(int(container_pid))
@@ -561,7 +567,7 @@ def _after_iteration_hook(obj):
                           adb_shell('dumpsys activity recents',
                                     ignore_status=True))
         if not os.path.exists(_SCREENSHOT_DIR_PATH):
-            os.mkdir(_SCREENSHOT_DIR_PATH, 0755)
+            os.mkdir(_SCREENSHOT_DIR_PATH, 0o755)
         obj.num_screenshots += 1
         if obj.num_screenshots <= _MAX_SCREENSHOT_NUM:
             logging.warning('Iteration %d failed, taking a screenshot.',
@@ -862,7 +868,7 @@ class ArcTest(test.test):
 
         # Install apks based on dep_packages/apks/full_pkg_names tuples
         if dep_packages:
-            for i in xrange(len(dep_packages)):
+            for i in range(len(dep_packages)):
                 self._install_apks(dep_packages[i], apks[i], full_pkg_names[i])
 
         if self.uiautomator:

@@ -2439,6 +2439,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return crossystem.fwid()
 
 
+    def get_hardware_id(self):
+        """Get hardware id as strings.
+
+        @returns a string representing this host's hardware id.
+        """
+        crossystem = utils.Crossystem(self)
+        crossystem.init()
+        return crossystem.hwid()
+
     def get_hardware_revision(self):
         """Get the hardware revision as strings.
 
@@ -3012,14 +3021,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         @returns: None
         """
-        message_prefix = "Don't need to request servo-host reboot "
+        message_prefix = "Don't need to request servo-host reboot"
         if not self._dut_fail_ssh_verifier():
             return
         if not self._servo_host:
-            logging.debug(message_prefix + 'as it not initialized')
+            logging.debug('%s as it not initialized', message_prefix)
             return
         if not self._servo_host.is_up_fast():
-            logging.debug(message_prefix + 'as servo-host is not sshable')
+            logging.debug('%s as servo-host is not sshable', message_prefix)
             return
         if not self._servo_host.is_labstation():
             logging.debug('Servo_v3 is not requested to reboot for the DUT')
@@ -3033,7 +3042,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             # - '2' or '2.1'   - port on the hub or smart-hub
             # - '3'   - port on servo hub
             if len(connected_port.split('.')) > 2:
-                logging.debug(message_prefix + 'as servo connected by hub')
+                logging.debug('%s as servo connected by hub', message_prefix)
                 return
         self._servo_host.request_reboot()
         logging.info('Requested labstation reboot because DUT is not sshable')

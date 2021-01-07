@@ -422,7 +422,7 @@ def count_cpus():
         return multiprocessing.cpu_count()
     except Exception:
         logging.exception('can not get cpu count from'
-                         ' multiprocessing.cpu_count()')
+                          ' multiprocessing.cpu_count()')
     cpuinfo = get_cpuinfo()
     # Returns at least one cpu. Check comment #1 in crosbug.com/p/9582.
     return len(cpuinfo) or 1
@@ -1763,6 +1763,14 @@ def get_firmware_version():
     @returns a string representing this host's firmware version.
     """
     return utils.run('crossystem fwid').stdout.strip()
+
+
+def get_hardware_id():
+    """Get hardware id as strings.
+
+    @returns a string representing this host's hardware id.
+    """
+    return utils.run('crossystem hwid').stdout.strip()
 
 
 def get_hardware_revision():

@@ -74,7 +74,10 @@ _HTML_LINK_STR = '''
 <html>
 <body>
 <a href="http://chrome-power.appspot.com/dashboard?board={board}&test={test}&datetime={datetime}">
-  Link to power dashboard
+  Link to power dashboard.
+</a><br />
+<a href="http://goto.google.com/pdash-hwid?query={hwid}">
+  Link to hwid lookup.
 </a>
 </body>
 </html>
@@ -115,11 +118,12 @@ class BaseDashboard(object):
             A dictionary of powerlog
         """
         powerlog_dict = {
-            'format_version': 5,
-            'timestamp': self._start_ts,
-            'test': self._testname,
-            'dut': self._create_dut_info_dict(raw_measurement['data'].keys()),
-            'power': raw_measurement,
+                'format_version': 6,
+                'timestamp': self._start_ts,
+                'test': self._testname,
+                'dut':
+                self._create_dut_info_dict(raw_measurement['data'].keys()),
+                'power': raw_measurement,
         }
 
         return powerlog_dict
@@ -172,10 +176,12 @@ class BaseDashboard(object):
         test = powerlog_dict['test']
         datetime = time.strftime('%Y%m%d%H%M',
                                  time.gmtime(powerlog_dict['timestamp']))
+        hwid = powerlog_dict['dut']['sku']['hwid']
 
         html_str = _HTML_LINK_STR.format(board=board,
                                          test=test,
-                                         datetime=datetime)
+                                         datetime=datetime,
+                                         hwid=hwid)
 
         # Create dict from type to sorted list of rail names.
         rail_type = collections.defaultdict(list)
@@ -352,27 +358,30 @@ class ClientTestDashboard(BaseDashboard):
             board += '_hammer'
 
         dut_info_dict = {
-            'board': board,
-            'version': {
-                'hw': utils.get_hardware_revision(),
-                'milestone': lsbrelease_utils.get_chromeos_release_milestone(),
-                'os': lsbrelease_utils.get_chromeos_release_version(),
-                'channel': lsbrelease_utils.get_chromeos_channel(),
-                'firmware': utils.get_firmware_version(),
-                'ec': utils.get_ec_version(),
-                'kernel': utils.get_kernel_version(),
-            },
-            'sku': {
-                'cpu': utils.get_cpu_name(),
-                'memory_size': utils.get_mem_total_gb(),
-                'storage_size': utils.get_disk_size_gb(utils.get_root_device()),
-                'display_resolution': utils.get_screen_resolution(),
-            },
-            'ina': {
-                'version': 0,
-                'ina': power_rails,
-            },
-            'note': self._note,
+                'board': board,
+                'version': {
+                        'hw': utils.get_hardware_revision(),
+                        'milestone':
+                        lsbrelease_utils.get_chromeos_release_milestone(),
+                        'os': lsbrelease_utils.get_chromeos_release_version(),
+                        'channel': lsbrelease_utils.get_chromeos_channel(),
+                        'firmware': utils.get_firmware_version(),
+                        'ec': utils.get_ec_version(),
+                        'kernel': utils.get_kernel_version(),
+                },
+                'sku': {
+                        'cpu': utils.get_cpu_name(),
+                        'memory_size': utils.get_mem_total_gb(),
+                        'storage_size':
+                        utils.get_disk_size_gb(utils.get_root_device()),
+                        'display_resolution': utils.get_screen_resolution(),
+                        'hwid': utils.get_hardware_id(),
+                },
+                'ina': {
+                        'version': 0,
+                        'ina': power_rails,
+                },
+                'note': self._note,
         }
 
         if power_utils.has_battery():

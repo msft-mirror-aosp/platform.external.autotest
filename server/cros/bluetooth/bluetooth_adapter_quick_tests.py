@@ -313,14 +313,17 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                     test_method(self)
                 except error.TestError as e:
-                    self.fails.append('[--- error {} ({})]'.format(
-                            test_method.__name__, str(e)))
+                    if not bool(self.fails):
+                        self.fails.append('[--- error {} ({})]'.format(
+                                test_method.__name__, str(e)))
                 except error.TestFail as e:
                     if not bool(self.fails):
                         self.fails.append('[--- failed {} ({})]'.format(
                                 test_method.__name__, str(e)))
                 except error.TestNAError as e:
-                    self.fails.append('[--- SKIPPED: {}]'.format(str(e)))
+                    if not bool(self.fails):
+                        self.fails.append('[--- SKIPPED {} ({})]'.format(
+                                test_method.__name__, str(e)))
                 except Exception as e:
                     self.fails.append('[--- unknown error {} ({})]'.format(
                             test_method.__name__, str(e)))

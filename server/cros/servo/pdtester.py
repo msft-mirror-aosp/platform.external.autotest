@@ -33,8 +33,10 @@ class PDTester(chrome_ec.ChromeEC):
     # USB charging command delays in seconds.
     USBC_COMMAND_DELAY = 0.5
     # PDTester USBC commands.
-    USBC_ROLE= 'usbc_role' # TODO(b:140256624): deprecate by USBC_PR
-    USBC_PR= 'usbc_pr'
+    USBC_DRSWAP = 'usbc_drswap'
+    USBC_PRSWAP = 'usbc_prswap'
+    USBC_ROLE = 'usbc_role'  # TODO(b:140256624): deprecate by USBC_PR
+    USBC_PR = 'usbc_pr'
     USBC_MUX = 'usbc_mux'
     RE_USBC_ROLE_VOLTAGE = r'src(\d+)v'
     USBC_SRC_CAPS = 'ada_srccaps'
@@ -225,3 +227,21 @@ class PDTester(chrome_ec.ChromeEC):
                                 'should be either \'dp\' or \'usb\'.' % mux)
         self.set(self.USBC_MUX, mux)
         time.sleep(self.USBC_COMMAND_DELAY)
+
+    def allow_pr_swap(self, allow):
+        """Issue usbc_action prswap PDTester command
+
+        @param allow: a bool for ACK or NACK to PR_SWAP
+                      command requested by DUT
+        @returns value of prswap in PDTester FW
+        """
+        self.set(self.USBC_PRSWAP, allow)
+
+    def allow_dr_swap(self, allow):
+        """Issue usbc_action drswap PDTester command
+
+        @param allow: a bool for ACK or NACK to DR_SWAP
+                      command requested by DUT
+        @returns value of drswap in PDTester FW
+        """
+        self.set(self.USBC_DRSWAP, allow)

@@ -77,8 +77,12 @@ class firmware_PDVbusRequest(FirmwareTest):
             # Set the DUT to suspend or shutdown mode
             self.set_ap_off_power_mode(init_power_mode)
         self.usbpd.send_command('chan 0')
+        logging.info('Disallow PR_SWAP request from DUT')
+        self.pdtester.allow_pr_swap(False)
 
     def cleanup(self):
+        logging.info('Allow PR_SWAP request from DUT')
+        self.pdtester.allow_pr_swap(True)
         # Set back to the max 20V SRC mode at the end.
         self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
 

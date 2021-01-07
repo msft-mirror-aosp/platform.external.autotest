@@ -1,10 +1,17 @@
+# Lint as: python2, python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import argparse
 import logging
 import re
+import six
+from six.moves import range
 
 from autotest_lib.client.common_lib import error
 
@@ -149,7 +156,7 @@ def GetVersion(versions, name):
     """
     ver = None
     key = None
-    for k, v in versions.iteritems():
+    for k, v in six.iteritems(versions):
         if name in k:
             if v == DUMMY_VER:
                 logging.info('Detected invalid %s %s', name, v)

@@ -581,7 +581,7 @@ class _DUTConnectionVerifier(_BaseDUTConnectionVerifier):
     def _is_applicable(self, host):
         if host.is_ec_supported():
             return True
-        logging.info('DUT is not support EC.')
+        logging.info('Host does not support EC.')
         return False
 
     @property
@@ -608,7 +608,7 @@ class _ServoHubConnectionVerifier(_BaseDUTConnectionVerifier):
     def _is_applicable(self, host):
         if host.is_ec_supported():
             return True
-        logging.info('DUT is not support EC.')
+        logging.info('Host does not support EC.')
         return False
 
     @property

@@ -24,6 +24,9 @@ class firmware_ECChargingState(FirmwareTest):
     # The period to check battery state while charging.
     CHECK_BATT_STATE_WAIT = 60
 
+    # Some gas gauges turn off full charge protection when soc drops below this.
+    NEARLY_FULL_SOC = 95
+
     def initialize(self, host, cmdline_args):
         super(firmware_ECChargingState, self).initialize(host, cmdline_args)
         if not self.check_ec_capability(['battery', 'charging']):
@@ -106,7 +109,10 @@ class firmware_ECChargingState(FirmwareTest):
         self.switcher.wait_for_client()
 
         batt_state = host.get_battery_state()
-        if batt_state != 'Charging' and batt_state != 'Fully charged':
+        if (self.get_battery_level() >= self.NEARLY_FULL_SOC
+                    and batt_state == 'Not charging'):
+            pass
+        elif batt_state != 'Charging' and batt_state != 'Fully charged':
             raise error.TestFail("Wrong battery state. Expected: "
                     "Charging/Fully charged, got: %s." % batt_state)
 

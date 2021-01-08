@@ -29,6 +29,7 @@ from autotest_lib.site_utils.admin_audit import rpm_validator
 
 RETURN_CODES = autotest_enum.AutotestEnum(
         'OK',
+        'SERVO_VERIFICATION_FAILURE',
         'STAGE_USB_FAILURE',
         'INSTALL_FIRMWARE_FAILURE',
         'INSTALL_TEST_IMAGE_FAILURE',
@@ -67,6 +68,14 @@ def main():
             return
 
         is_labstation = (host_info.get().os == "labstation")
+
+        if 'servo-verification' in opts.actions:
+            try:
+                if not is_labstation:
+                    preparedut.verify_servo(host)
+            except Exception as err:
+                logging.error("fail to check servo: %s", err)
+                return RETURN_CODES.SERVO_VERIFICATION_FAILURE
 
         if 'stage-usb' in opts.actions:
             try:
@@ -142,9 +151,10 @@ def _parse_args():
             'actions',
             nargs='+',
             choices=[
-                    'stage-usb', 'install-test-image', 'install-firmware',
-                    'verify-recovery-mode', 'run-pre-deploy-verification',
-                    'update-label', 'setup-labstation'
+                    'servo-verification', 'stage-usb', 'install-test-image',
+                    'install-firmware', 'verify-recovery-mode',
+                    'run-pre-deploy-verification', 'update-label',
+                    'setup-labstation'
             ],
             help='DUT preparation actions to execute.',
     )

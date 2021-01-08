@@ -1,6 +1,8 @@
 <a name="faft" />
 
-# FAFT (Fully Automated Firmware Test)
+# FAFT (Fully Automated Firmware Test): Design Doc
+
+_Self-link: [go/faft-design-doc](https://goto.google.com/faft-design-doc)_
 
 _Last updated: 2011/11/08_
 

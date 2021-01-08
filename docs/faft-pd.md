@@ -1,5 +1,7 @@
 # PD FAFT
 
+_Self-link: [go/faft-pd](https://goto.google.com/faft-pd)_
+
 PD FAFT is another set of firmware tests (FAFT), which targets testing USB-C and
 PD (Power Delivery) functionalities.
 

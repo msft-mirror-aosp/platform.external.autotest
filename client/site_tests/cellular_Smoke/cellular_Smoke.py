@@ -18,6 +18,10 @@ from autotest_lib.client.cros.networking import shill_proxy
 CONNECT_TIMEOUT = 120
 DISCONNECT_TIMEOUT = 60
 
+PORTAL_URL_PATTERN = ('https://quickaccess.verizonwireless.com/'
+                      'images_b2c/shared/nav/vz_logo_quickaccess.jpg?foo=%d')
+
+
 class cellular_Smoke(test.test):
     """
     Tests that 3G modem can connect to the network
@@ -32,13 +36,10 @@ class cellular_Smoke(test.test):
 
 
     def run_once_internal(self):
-        """
-        Executes the test.
-
-        """
+        """Executes the test."""
         old_modem_info = self.test_env.modem.GetModemProperties()
 
-        for _ in xrange(self.connect_count):
+        for i in range(self.connect_count):
             device = self.test_env.shill.find_cellular_device_object()
             if not device:
                 raise error.TestError('No cellular device found.')
@@ -56,15 +57,13 @@ class cellular_Smoke(test.test):
             logging.info('Service state = %s', state)
 
             if state == 'portal':
-                url_pattern = ('https://quickaccess.verizonwireless.com/'
-                               'images_b2c/shared/nav/'
-                               'vz_logo_quickaccess.jpg?foo=%d')
+                url_pattern = PORTAL_URL_PATTERN
                 bytes_to_fetch = 4476
-            elif state == 'ready':
+            elif state == 'online':
                 url_pattern = network.FETCH_URL_PATTERN_FOR_TEST
                 bytes_to_fetch = 64 * 1024
             else:
-                raise error.TestError('Cellular state not ready: %s' % state)
+                raise error.TestError('Cellular state not online: %s' % state)
 
             interface = self.test_env.shill.get_dbus_property(
                     device, shill_proxy.ShillProxy.DEVICE_PROPERTY_INTERFACE)

@@ -82,6 +82,7 @@ class ShillProxy(object):
     DEVICE_ENUMERATION_TIMEOUT = 30
     DEVICE_ENABLE_DISABLE_TIMEOUT = 60
     SERVICE_DISCONNECT_TIMEOUT = 5
+    SERVICE_READY_TIMEOUT = 5
 
     SERVICE_PROPERTY_AUTOCONNECT = 'AutoConnect'
     SERVICE_PROPERTY_DEVICE = 'Device'
@@ -276,10 +277,10 @@ class ShillProxy(object):
         """
         dbus_dict = {}
         for key, value in in_dict.iteritems():
-                if key not in ShillProxy.SERVICE_PROPERTY_MAP:
-                        raise ShillProxyError('Unsupported property %s' % (key))
-                (dbus_type, kwargs) = ShillProxy.SERVICE_PROPERTY_MAP[key]
-                dbus_dict[key] = dbus_type(value, variant_level=1, **kwargs)
+            if key not in ShillProxy.SERVICE_PROPERTY_MAP:
+                raise ShillProxyError('Unsupported property %s' % (key))
+            (dbus_type, kwargs) = ShillProxy.SERVICE_PROPERTY_MAP[key]
+            dbus_dict[key] = dbus_type(value, variant_level=1, **kwargs)
         return dbus_dict
 
 
@@ -342,8 +343,7 @@ class ShillProxy(object):
 
         """
         if property_key not in ShillProxy.MANAGER_OPTIONAL_PROPERTY_MAP:
-                raise ShillProxyError('Unsupported property %s' %
-                                      (property_key))
+            raise ShillProxyError('Unsupported property %s' % (property_key))
         else:
             dbus_class = ShillProxy.MANAGER_OPTIONAL_PROPERTY_MAP[property_key]
             interface.SetProperty(property_key,
@@ -658,7 +658,7 @@ class ShillProxy(object):
                 else:
                     return test_object
 
-            except dbus.exceptions.DBusException, e:
+            except dbus.exceptions.DBusException, _:
                 # This could happen if for instance, you're enumerating services
                 # and test_object was removed in shill between the call to get
                 # the manager properties and the call to get the service
@@ -698,10 +698,18 @@ class ShillProxy(object):
         except dbus.exceptions.DBusException as e:
             if e.get_dbus_name() != self.ERROR_ALREADY_CONNECTED:
                 raise e
-        success, _, _ = self.wait_for_property_in(
-                service, self.SERVICE_PROPERTY_STATE,
-                self.SERVICE_CONNECTED_STATES,
-                timeout_seconds=timeout_seconds)
+
+        # 'ready' might be an intermittent state; poll for a stable state.
+        for _ in range(self.SERVICE_READY_TIMEOUT):
+            success, state, _ = self.wait_for_property_in(
+                    service,
+                    self.SERVICE_PROPERTY_STATE,
+                    self.SERVICE_CONNECTED_STATES,
+                    timeout_seconds=timeout_seconds)
+            if state != 'ready':
+                break
+            time.sleep(1)
+
         return success
 
 

@@ -153,6 +153,15 @@ class ACPowerVerifier(hosts.Verifier):
                     'Cannot determine AC power status')
 
     def _validate_battery(self, host, info):
+        host_info = host.host_info_store.get()
+        if host_info.get_label_value('power') == 'battery':
+            if 'Battery' not in info:
+                data = {'host': host.hostname, 'model': host_info.model}
+                metrics.Counter('chromeos/autotest/battery_not_detected'
+                                ).increment(fields=data)
+                logging.info('Battery is not presented but expected!'
+                             ' Probably hardware issue.')
+
         try:
             charging_state = info['Battery']['state']
             battery_level = float(info['Battery']['percentage'])

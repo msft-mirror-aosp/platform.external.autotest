@@ -73,6 +73,13 @@ CROS_REPAIR_ACTIONS = (
         )),
         (cros_repair.EnrollmentCleanupRepair, 'cleanup_enrollment', ('ssh', ),
          ('enrollment_state', )),
+        (cros_firmware.GeneralFirmwareRepair, 'general_firmware',
+         ('usb_drive', ), (
+                 'ping',
+                 'ssh',
+         )),
+        (cros_repair.RecoverACPowerRepair, 'ac_recover', (), ('ping',
+                                                              'power')),
         (cros_repair.ProvisionRepair, 'provision',
          ('ping', 'ssh', 'writable', 'tpm', 'good_provision',
           'ext4'), ('power', 'rwfw', 'fwstatus', 'python', 'hwid', 'cros',
@@ -84,11 +91,6 @@ CROS_REPAIR_ACTIONS = (
          ('ping', 'ssh', 'writable', 'tpm', 'good_provision', 'ext4', 'power',
           'rwfw', 'fwstatus', 'python', 'hwid', 'cros', 'dev_default_boot',
           'stop_start_ui', 'faft_tpm')),
-        (cros_firmware.GeneralFirmwareRepair, 'general_firmware',
-         ('usb_drive', ), (
-                 'ping',
-                 'ssh',
-         )),
 )
 
 MOBLAB_VERIFY_DAG = (

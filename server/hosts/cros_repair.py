@@ -115,6 +115,10 @@ _CROS_FIRMWARE_TRIGGERS = (
         'ping',
         'ssh',
 )
+_CROS_AC_TRIGGERS = (
+        'ping',
+        'power',
+)
 _CROS_USB_DEPENDENCIES = ('usb_drive', )
 
 
@@ -1128,6 +1132,77 @@ class ServoInstallRepair(hosts.RepairAction):
         return 'Reinstall from USB using servo'
 
 
+class RecoverACPowerRepair(_ResetRepairAction):
+    """Recover AC detection if AC is not detected.
+
+    The fix based on toggle PD negotiating on EC level of DUT.
+    Repair works only for the DUT which has EC and battery.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        # pylint: disable=missing-docstring
+        repair_utils.require_servo(host, ignore_state=True)
+        # Verify that EC is available and we can interact with that.
+        # Do not put it in '_is_applicable' to avoid extra DUT reset.
+        try:
+            host.servo.get_ec_board()
+        except Exception as e:
+            logging.debug('(Not critical) %s', e)
+            # if EC is off it will fail to execute any EC command
+            # to wake it up we do cold-reboot then we will have active ec
+            # connection for ~30 seconds
+            host.servo.get_power_state_controller().reset()
+        if host.servo.get('battery_is_charging'):
+            # device is changing.
+            return
+        # Simple off-on not always working stable in all cases as source-sink
+        # not working too in another cases. To cover more cases here we do
+        # both toggle to recover PD negotiation.
+        # Source/sink switching CC lines to make DUT work as supplying or
+        # consuming power (between Rp and Rd).
+        self._set_pd_dualrole(host, 'off')
+        self._set_pd_dualrole(host, 'on')
+        self._set_pd_dualrole(host, 'source')
+        self._set_pd_dualrole(host, 'sink')
+        # wait to reinitialize PD negotiation and charge a little bit
+        time.sleep(120)
+        # Recommended to reset EC after manipulation with PD
+        host.servo.get_power_state_controller().reset()
+        # Verify if repair well done.
+        if not host.servo.get('battery_is_charging'):
+            raise hosts.AutoservRepairError(
+                    'Fail recovery AC detection fo the DUT.',
+                    'failed_recover_usb_pd_ac')
+        self._check_reset_success(host)
+
+    def _set_pd_dualrole(self, host, role):
+        host.servo.set_nocheck('ec_uart_flush', 'off')
+        host.servo.set_nocheck('ec_uart_cmd', 'pd dualrole %s' % role)
+        host.servo.set_nocheck('ec_uart_flush', 'on')
+        time.sleep(1)
+
+    def _is_applicable(self, host):
+        if not host._servo_host.is_ec_supported():
+            logging.info('The board not support EC')
+            return False
+        host_info = host.host_info_store.get()
+        if host_info.get_label_value('power') != 'battery':
+            logging.info('The board does not have battery')
+            return False
+        servo = host.servo
+        if (not servo.has_control('battery_full_design_mah')
+                    or not servo.has_control('battery_full_charge_mah')):
+            logging.info('The board is not supported battery controls...')
+            return False
+        return True
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Recovery AC of DUT'
+
+
 class JetstreamTpmRepair(hosts.RepairAction):
     """Repair by resetting TPM and rebooting."""
 
@@ -1283,21 +1358,25 @@ def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
 
 
 def _cros_dedicated_repair_actions(firmware_triggers=_CROS_FIRMWARE_TRIGGERS,
+                                   ac_triggers=_CROS_AC_TRIGGERS,
                                    usb_dependencies=_CROS_USB_DEPENDENCIES):
     """Return the repair actions that only works for `CrosHost`"""
 
-    repair_actions = ((cros_firmware.GeneralFirmwareRepair, 'general_firmware',
-                       usb_dependencies, firmware_triggers), )
+    repair_actions = (
+            (cros_firmware.GeneralFirmwareRepair, 'general_firmware',
+             usb_dependencies, firmware_triggers),
+            (RecoverACPowerRepair, 'ac_recover', (), ac_triggers),
+    )
     return repair_actions
 
 
 def _cros_repair_actions():
     """Return the repair actions for a `CrosHost`."""
     repair_actions = (_cros_basic_repair_actions() +
+                      _cros_dedicated_repair_actions() +
                       _cros_extended_repair_actions(
                               provision_triggers=_CROS_PROVISION_TRIGGERS +
-                              ('stop_start_ui', )) +
-                      _cros_dedicated_repair_actions())
+                              ('stop_start_ui', )))
     return repair_actions
 
 

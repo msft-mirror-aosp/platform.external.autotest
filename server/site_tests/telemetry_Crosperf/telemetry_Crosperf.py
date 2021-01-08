@@ -291,7 +291,7 @@ class telemetry_Crosperf(test.test):
         output_format = 'histograms'
 
         # For local runs, we set local=True and use local chrome source to run
-        # tests; for lab runs, we use devserver instead.
+        # tests; for lab runs, we use the drone instead.
         # By default to be True.
         local = args.get('local', 'true').lower() == 'true'
 
@@ -301,10 +301,6 @@ class telemetry_Crosperf(test.test):
         # TODO(zhizhouy): It is better to change the field name from "run_local"
         # to "telemetry_on_dut" in crosperf experiment files for consistency.
         telemetry_on_dut = args.get('run_local', '').lower() == 'true'
-
-        # Init TelemetryRunner.
-        tr = telemetry_runner.TelemetryRunner(
-                dut, local=local, telemetry_on_dut=telemetry_on_dut)
 
         # Run the test. And collect profile if needed.
         try:
@@ -341,17 +337,20 @@ class telemetry_Crosperf(test.test):
                 logging.debug('Telemetry Arguments: %s', arguments)
                 perf_value_writer = self
                 artifacts = True if profiler_args else False
-                result = tr.run_telemetry_benchmark(
-                        test_name,
-                        perf_value_writer,
-                        *arguments,
-                        ex_output_format=output_format,
-                        results_dir=self.resultsdir,
-                        no_verbose=True,
-                        artifacts=artifacts)
-                logging.info('Telemetry completed with exit status: %s.',
-                             result.status)
-                logging.info('output: %s\n', result.output)
+                with telemetry_runner.TelemetryRunnerFactory().get_runner(
+                        dut, local=local,
+                        telemetry_on_dut=telemetry_on_dut) as tr:
+                    result = tr.run_telemetry_benchmark(
+                            test_name,
+                            perf_value_writer,
+                            *arguments,
+                            ex_output_format=output_format,
+                            results_dir=self.resultsdir,
+                            no_verbose=True,
+                            artifacts=artifacts)
+                    logging.info('Telemetry completed with exit status: %s.',
+                                 result.status)
+                    logging.info('output: %s\n', result.output)
 
         except (error.TestFail, error.TestWarn):
             logging.debug(

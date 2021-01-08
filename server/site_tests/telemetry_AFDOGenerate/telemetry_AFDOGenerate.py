@@ -220,20 +220,19 @@ class telemetry_AFDOGenerate(test.test):
             if self._minimal_telemetry:
                 self._run_tests_minimal_telemetry()
             else:
-                self._telemetry_runner = telemetry_runner.TelemetryRunner(
-                        self._host, self._local, telemetry_on_dut=False)
-
-                for benchmark_info in TELEMETRY_AFDO_BENCHMARKS:
-                    benchmark = benchmark_info[0]
-                    args = (
-                    ) if len(benchmark_info) == 1 else benchmark_info[1]
-                    try:
-                        self._run_test_with_retry(benchmark, *args)
-                    except error.TestBaseException:
-                        if not self._ignore_failures:
-                            raise
-                        logging.info('Ignoring failure from benchmark %s.',
-                                     benchmark)
+                with telemetry_runner.TelemetryRunnerFactory().get_runner(
+                        self._host, self._local, telemetry_on_dut=False) as tr:
+                    for benchmark_info in TELEMETRY_AFDO_BENCHMARKS:
+                        benchmark = benchmark_info[0]
+                        args = (
+                        ) if len(benchmark_info) == 1 else benchmark_info[1]
+                        try:
+                            self._run_test_with_retry(tr, benchmark, *args)
+                        except error.TestBaseException:
+                            if not self._ignore_failures:
+                                raise
+                            logging.info('Ignoring failure from benchmark %s.',
+                                         benchmark)
 
     def after_run_once(self):
         """After the profile information has been collected, compress it
@@ -301,9 +300,10 @@ class telemetry_AFDOGenerate(test.test):
             else:
                 raise error.TestFail('Unknown option passed: %s' % option_name)
 
-    def _run_test(self, benchmark, *args):
+    def _run_test(self, tr, benchmark, *args):
         """Run the benchmark using Telemetry.
 
+        @param tr: Instance of the TelemetryRunner subclass.
         @param benchmark: Name of the benchmark to run.
         @param args: Additional arguments to pass to the telemetry execution
                      script.
@@ -313,8 +313,7 @@ class telemetry_AFDOGenerate(test.test):
         try:
             logging.info('Starting run for Telemetry benchmark %s', benchmark)
             start_time = time.time()
-            result = self._telemetry_runner.run_telemetry_benchmark(
-                    benchmark, None, *args)
+            result = tr.run_telemetry_benchmark(benchmark, None, *args)
             end_time = time.time()
             logging.info('Completed Telemetry benchmark %s in %f seconds',
                          benchmark, end_time - start_time)
@@ -336,9 +335,10 @@ class telemetry_AFDOGenerate(test.test):
             raise error.TestFail('An error occurred while executing'
                                  ' benchmark: %s' % benchmark)
 
-    def _run_test_with_retry(self, benchmark, *args):
+    def _run_test_with_retry(self, tr, benchmark, *args):
         """Run the benchmark using Telemetry. Retry in case of failure.
 
+        @param tr: An instance of the TelemetryRunner subclass.
         @param benchmark: Name of the benchmark to run.
         @param args: Additional arguments to pass to the telemetry execution
                      script.
@@ -348,7 +348,7 @@ class telemetry_AFDOGenerate(test.test):
         tried = False
         while True:
             try:
-                self._run_test(benchmark, *args)
+                self._run_test(tr, benchmark, *args)
                 logging.info('Benchmark %s succeeded on %s try', benchmark,
                              'first' if not tried else 'second')
                 break

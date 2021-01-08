@@ -18,7 +18,9 @@ class telemetry_ScrollingActionTests(test.test):
 
         @param host: host we are running telemetry on.
         """
-        telemetry = telemetry_runner.TelemetryRunner(host)
-        result = telemetry.run_telemetry_test('ScrollingActionTest')
-        logging.debug('Telemetry completed with a status of: %s with output:'
-                      ' %s', result.status, result.output)
+        with telemetry_runner.TelemetryRunnerFactory().get_runner(
+                host) as telemetry:
+            result = telemetry.run_telemetry_test('ScrollingActionTest')
+            logging.debug(
+                    'Telemetry completed with a status of: %s with '
+                    'output: %s', result.status, result.output)

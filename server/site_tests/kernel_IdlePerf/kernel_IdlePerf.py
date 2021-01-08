@@ -211,23 +211,23 @@ class kernel_IdlePerf(test.test):
         self._check_sysfs(host)
 
         local = args.get('local') == 'True'
-        telemetry = telemetry_runner.TelemetryRunner(
-                        host, local, telemetry_on_dut=False)
+        with telemetry_runner.TelemetryRunnerFactory().get_runner(
+                host, local, telemetry_on_dut=False) as telemetry:
 
-        logging.info('Starting test')
-        results_idle   = self._run_telemetry(host, telemetry, True)
-        results_noidle = self._run_telemetry(host, telemetry, False)
+            logging.info('Starting test')
+            results_idle = self._run_telemetry(host, telemetry, True)
+            results_noidle = self._run_telemetry(host, telemetry, False)
 
-        # Score is the regression in percentage of smooth frames caused by
-        # enabling CPU idle.
-        logging.info('Processing results')
-        results = self._compare_results(results_idle, results_noidle)
+            # Score is the regression in percentage of smooth frames caused by
+            # enabling CPU idle.
+            logging.info('Processing results')
+            results = self._compare_results(results_idle, results_noidle)
 
-        self.write_perf_keyval(results)
+            self.write_perf_keyval(results)
 
-        if not results['passed']:
-            raise error.TestFail('enabling CPU idle significantly '
-                                 'regresses scrolling performance')
+            if not results['passed']:
+                raise error.TestFail('enabling CPU idle significantly '
+                                     'regresses scrolling performance')
 
     def cleanup(self, host):
         """Cleanup of the test.

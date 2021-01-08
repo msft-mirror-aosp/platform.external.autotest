@@ -31,12 +31,13 @@ class telemetry_Benchmarks(test.test):
         if dut_config:
             device_setup_utils.setup_device(host, dut_config)
 
-        telemetry = telemetry_runner.TelemetryRunner(host, local, **optional)
-        perf_value_writer = self
-        extra_args = args.get("extra_args", [])
-        repeat = args.get("pageset_repeat")
-        if repeat is not None:
-            extra_args.append('--pageset-repeat=%s' % repeat)
+        with telemetry_runner.TelemetryRunnerFactory().get_runner(
+                host, local, **optional) as telemetry:
+            perf_value_writer = self
+            extra_args = args.get("extra_args", [])
+            repeat = args.get("pageset_repeat")
+            if repeat is not None:
+                extra_args.append('--pageset-repeat=%s' % repeat)
 
-        telemetry.run_telemetry_benchmark(benchmark, perf_value_writer,
-                                          *extra_args)
+            telemetry.run_telemetry_benchmark(benchmark, perf_value_writer,
+                                              *extra_args)

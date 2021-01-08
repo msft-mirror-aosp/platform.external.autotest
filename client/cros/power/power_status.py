@@ -30,9 +30,11 @@ BatteryDataReportType = autotest_enum.AutotestEnum('CHARGE', 'ENERGY')
 
 # For devices whose full capacity is significantly lower than design full
 # capacity, scale down their design full capacity.
-BATTERY_DESIGN_FULL_SCALE = {'jinlon': 0.95, # b/161307060
-                             'berknip': 0.94, # b/172625511
-                             }
+BATTERY_DESIGN_FULL_SCALE = {
+        'berknip': 0.94,  # b/172625511
+        'delbin': 0.96,  # b/177076373
+        'jinlon': 0.95,  # b/161307060
+}
 # battery data reported at 1e6 scale
 BATTERY_DATA_SCALE = 1e6
 # number of times to retry reading the battery in the case of bad data

@@ -791,8 +791,12 @@ class ServoUSBDriveVerifier(hosts.Verifier):
         usb_state = host_info.get_label_value(
                 audit_const.SERVO_USB_STATE_PREFIX)
         if usb_state and usb_state == audit_const.HW_STATE_NEED_REPLACEMENT:
-            raise hosts.AutoservNonCriticalVerifyError(
-                    'USB-drive marked for replacement')
+            # Allow to use USB-key marked for replacement.
+            # Goal to collect metrics to see if DUT still can recovered
+            return
+            # TODO(otabek): restory when fix crbug.com/1164408
+            # raise hosts.AutoservNonCriticalVerifyError(
+            #         'USB-drive marked for replacement')
 
         # The USB-drive detected and was not mark for replacement.
         # Set as normal for future audit.
@@ -1125,6 +1129,14 @@ class ServoInstallRepair(hosts.RepairAction):
         afe_utils.clean_provision_labels(host)
         host.servo_install(update_url, is_repair=True)
         afe_utils.add_provision_labels(host, host.VERSION_PREFIX, image_name)
+        # Collect info which USB-key used for successful re-image.
+        host_info = host.host_info_store.get()
+        if host_info:
+            usb_state = host_info.get_label_value(
+                    audit_const.SERVO_USB_STATE_PREFIX)
+            metrics_data = {'host': host.hostname, 'usb_state': usb_state}
+            metrics.Counter('chromeos/autotest/usbkey_install_success'
+                            ).increment(fields=metrics_data)
 
     @property
     def description(self):

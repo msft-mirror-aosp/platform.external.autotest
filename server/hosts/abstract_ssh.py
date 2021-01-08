@@ -619,12 +619,14 @@ class AbstractSSHHost(remote.RemoteHost):
                     delete_dest=delete_dest,
                     preserve_symlinks=preserve_symlinks,
                     excludes=excludes)
+            if rsync_success:
+                return
 
-        if not rsync_success:
-            self._send_using_scp(dest=dest,
-                                 source=source,
-                                 delete_dest=delete_dest,
-                                 excludes=excludes)
+        # Send using scp if you cannot via rsync, or rsync fails.
+        self._send_using_scp(dest=dest,
+                             source=source,
+                             delete_dest=delete_dest,
+                             excludes=excludes)
 
     def _send_using_rsync(self, dest, local_sources, delete_dest,
                           preserve_symlinks, excludes):

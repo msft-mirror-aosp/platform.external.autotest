@@ -10,7 +10,7 @@ load('//metadata/test_common.star', 'test_common')
 def define_tests():
     return [
         test_common.define_test(
-            'network/ChromeCelluarEndToEnd',
+            'network/ChromeCellularEndToEnd',
             suites = [],
             main_package = 'autotest_lib.client.site_tests.network_ChromeCellularEndToEnd.network_ChromeCellularEndToEnd',
         ),

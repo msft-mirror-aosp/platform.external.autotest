@@ -409,8 +409,9 @@ class Verifier(_DependencyNode):
         """
         try:
             if not self._is_applicable(host):
-                logging.info('Verify %s is not applicable to %s, skipping...',
-                             self.description, host.hostname)
+                logging.info(
+                        'Verify "%s" is not applicable to %s, skipping...',
+                        self.description, host.hostname)
                 return
         except Exception as e:
             logging.error('Skipping %s verifier due to unexpect error during'

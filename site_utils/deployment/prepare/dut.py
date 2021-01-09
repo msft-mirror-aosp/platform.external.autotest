@@ -177,6 +177,12 @@ def verify_battery_status(host):
         logging.info("Skepping due DUT does not have the battery")
         return
     power_info = host.get_power_supply_info()
+    # Dues overheat battery in the audio-boxes the device can be deployed
+    # without battery.
+    if 'Battery' not in power_info and host_info.has_label('audio_box'):
+        logging.info('Device does not have battery.'
+                     ' Skip battery verification as it is audio_box setup.')
+        return
     battery_path = power_info['Battery']['path']
     cmd = 'cat %s/status' % battery_path
     status = host.run(cmd, timeout=30, ignore_status=True).stdout.strip()

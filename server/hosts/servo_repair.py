@@ -567,16 +567,13 @@ class _DUTConnectionVerifier(_BaseDUTConnectionVerifier):
                         'Servo_micro is likely not connected to the DUT.')
         elif self._is_servo_v4_type_c(host):
             logging.info('Skip check for type-c till confirm it in the lab')
-            # TODO(otabek@) block check till verify on the lab
-            # if not self._is_usb_hub_connected(host):
-            #     raise hosts.AutoservVerifyError(
-            #             'Servo_v4 is likely not connected to the DUT.')
+            if not self._is_usb_hub_connected(host):
+                raise hosts.AutoservVerifyError(
+                        'Servo_v4 is likely not connected to the DUT.')
         elif self._is_servo_v3(host):
             if not self._is_ribbon_cable_connected(host):
                 raise hosts.AutoservVerifyError(
                         'Servo_v3 is likely not connected to the DUT.')
-        else:
-            logging.warn('Unsupported servo type!')
 
     def _is_applicable(self, host):
         if host.is_ec_supported():

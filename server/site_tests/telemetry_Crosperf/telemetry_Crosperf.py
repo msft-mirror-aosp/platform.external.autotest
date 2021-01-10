@@ -10,6 +10,7 @@ import os
 import re
 import shlex
 import shutil
+import tempfile
 
 from contextlib import contextmanager
 
@@ -79,16 +80,16 @@ class telemetry_Crosperf(test.test):
         port = ''
 
         if dut:
-          port = dut.port
-          ip = dut.hostname
+            port = dut.port
+            ip = dut.hostname
         else:
-          ip_and_port = client_ip.split(':')
-          ip = ip_and_port[0]
-          if len(ip_and_port) > 1:
-            port = ip_and_port[1]
+            ip_and_port = client_ip.split(':')
+            ip = ip_and_port[0]
+            if len(ip_and_port) > 1:
+                port = ip_and_port[1]
 
         if port:
-          cmd.extend(['-P', str(port)])
+            cmd.extend(['-P', str(port)])
 
         src = 'root@%s:%s' % (ip, file_path)
         cmd.extend([src, host_dir])
@@ -106,8 +107,8 @@ class telemetry_Crosperf(test.test):
             raise
 
         if exit_code:
-          logging.error('Command "%s" returned non-zero status: %d',
-                           command, exit_code)
+            logging.error('Command "%s" returned non-zero status: %d', command,
+                          exit_code)
         return exit_code
 
     @contextmanager
@@ -383,9 +384,10 @@ class telemetry_Crosperf(test.test):
                         # perf.data files, but only if they are named exactly
                         # so. Therefore, create a subdir for each perf.data
                         # file.
-                        dst_dir = os.path.join(self.profdir, ''.join(
-                                f.split('.')[:-2]))
-                        os.makedirs(dst_dir)
+                        # Use mkdtemp to make sure a directory name is unique.
+                        dst_dir = tempfile.mkdtemp(dir=self.profdir,
+                                                   prefix=''.join(
+                                                           f.split('.')[:-2]))
                         dst_file = os.path.join(dst_dir, 'perf.data')
                         shutil.copyfile(src_file, dst_file)
             if not perf_exist:

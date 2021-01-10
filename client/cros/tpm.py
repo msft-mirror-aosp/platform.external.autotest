@@ -33,16 +33,16 @@ def get_tpm_status():
           'Ready': True
         }
     """
-    out = run_cmd(TPM_MANAGER_CMD + ' status --nonsensitive')
+    out = run_cmd(TPM_MANAGER_CMD + ' status')
     status = {}
-    for field in ['is_enabled', 'is_owned']:
+    for field in ['enabled', 'owned']:
         match = re.search('%s: (true|false)' % field, out)
         if not match:
             raise ChromiumOSError('Invalid TPM status: "%s".' % out)
         status[field] = match.group(1) == 'true'
-    status['Enabled'] = status['is_enabled']
-    status['Owned'] = status['is_owned']
-    status['Ready'] = status['is_enabled'] and status['is_owned']
+    status['Enabled'] = status['enabled']
+    status['Owned'] = status['owned']
+    status['Ready'] = status['enabled'] and status['owned']
     return status
 
 

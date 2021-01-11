@@ -63,9 +63,12 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.test_hid_device_created(device.address)
         return self.test_keyboard_input_from_trace(device, "simple_text")
 
-    def _test_mouse_left_click(self, device):
+    def _test_mouse(self, device):
         self.test_hid_device_created(device.address)
-        return self.test_mouse_left_click(device)
+        return self.test_mouse_left_click(device) and \
+               self.test_mouse_move_in_xy(device, -60, 100) and \
+               self.test_mouse_scroll_down(device, 70) and \
+               self.test_mouse_click_and_drag(device, 90, 30)
 
     # ---------------------------------------------------------------
     # Reconnect after suspend tests
@@ -148,7 +151,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device,
-                                    self._test_mouse_left_click)])
+                                    self._test_mouse)])
 
     @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
     def sr_reconnect_le_hid(self):
@@ -156,7 +159,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device,
-                                    self._test_mouse_left_click)])
+                                    self._test_mouse)])
 
     # TODO(b/163143005) - Hana can't handle two concurrent HID connections
     @test_wrapper('Reconnect Multiple Classic HID',
@@ -168,7 +171,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [('MOUSE', self.devices['MOUSE'][0],
-                    self._test_mouse_left_click),
+                    self._test_mouse),
                    ('KEYBOARD', self.devices['KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -181,7 +184,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     def sr_reconnect_multiple_le_hid(self):
         """ Reconnects multiple LE HID devices after suspend/resume. """
         devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
-                    self._test_mouse_left_click),
+                    self._test_mouse),
                    ('BLE_KEYBOARD', self.devices['BLE_KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -196,7 +199,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
             suspend/resume.
         """
         devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
-                    self._test_mouse_left_click),
+                    self._test_mouse),
                    ('KEYBOARD', self.devices['KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -207,7 +210,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device(
-                [(device_type, device, self._test_mouse_left_click)],
+                [(device_type, device, self._test_mouse)],
                 iterations=STRESS_ITERATIONS)
 
     @test_wrapper('Reconnect LE HID Stress Test', devices={'BLE_MOUSE': 1})
@@ -216,7 +219,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device(
-                [(device_type, device, self._test_mouse_left_click)],
+                [(device_type, device, self._test_mouse)],
                 iterations=STRESS_ITERATIONS)
 
     @test_wrapper('Reconnect A2DP',
@@ -355,7 +358,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device('MOUSE',
                                     device,
-                                    device_test=self._test_mouse_left_click)
+                                    device_test=self._test_mouse)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -368,7 +371,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.run_peer_wakeup_device('BLE_MOUSE',
                                     device,
-                                    device_test=self._test_mouse_left_click)
+                                    device_test=self._test_mouse)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -381,7 +384,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device('MOUSE',
                                     device,
-                                    device_test=self._test_mouse_left_click,
+                                    device_test=self._test_mouse,
                                     iterations=STRESS_ITERATIONS)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
@@ -395,7 +398,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.run_peer_wakeup_device('BLE_MOUSE',
                                     device,
-                                    device_test=self._test_mouse_left_click,
+                                    device_test=self._test_mouse,
                                     iterations=STRESS_ITERATIONS)
 
     @test_wrapper('Peer wakeup with A2DP should fail',

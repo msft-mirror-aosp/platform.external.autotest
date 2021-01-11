@@ -27,8 +27,8 @@ class network_WiFi_Prefer5Ghz(wifi_cell_test_base.WiFiCellTestBase):
         ap_config_5G = hostap_config.HostapConfig(ssid=ssid, channel=36,
                 mode=mode_n)
 
-        # Make sure neither the 2.4 GHz nor the 5 GHz BSS is blacklisted.
-        client.clear_supplicant_blacklist()
+        # Make sure neither the 2.4 GHz nor the 5 GHz BSS is blocklisted.
+        client.clear_supplicant_blocklist()
 
         # Bring up a 2.4 GHz and 5 GHz BSS, both with the same SSID.
         self.context.configure(ap_config_2G)

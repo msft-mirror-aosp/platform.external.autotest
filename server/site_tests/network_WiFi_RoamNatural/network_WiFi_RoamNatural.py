@@ -82,7 +82,7 @@ class network_WiFi_RoamNatural(wifi_cell_test_base.WiFiCellTestBase):
                           range(0, -max_offset, -self.ATTEN_STEP),
                           range(-max_offset, 0, self.ATTEN_STEP)]
                 for r, _ in enumerate(ranges):
-                    self.context.client.clear_supplicant_blacklist()
+                    self.context.client.clear_supplicant_blocklist()
                     logger.start_event_capture()
                     for offset in ranges[r]:
                         ap1_atten = max(center + offset, min_atten)

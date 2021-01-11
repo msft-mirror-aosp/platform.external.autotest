@@ -553,7 +553,7 @@ class graphics_dEQP(graphics_utils.GraphicsTest):
             # Do not report failure if failure description is not specified.
             self._test_failure_report_enable = False
 
-        # Some information to help post-process logs into blacklists later.
+        # Some information to help post-process logs.
         logging.info('ChromeOS BOARD = %s', self._board)
         logging.info('ChromeOS CPU family = %s', self._cpu_type)
         logging.info('ChromeOS GPU family = %s', self._gpu_type)

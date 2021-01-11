@@ -12,12 +12,12 @@ from autotest_lib.client.common_lib import error
 class security_ProcessManagementPolicy(test.test):
     """
     Forks processes as non-root users and ensures the processes can change UID
-    to a user that is explicitly allowed in the system-wide whitelist, but no
+    to a user that is explicitly allowed in the system-wide allowlist, but no
     other user.
     """
     version = 1
 
-    _WHITELIST_DICT = {
+    _ALLOWLIST_DICT = {
         "cros-disks": set(("chronos", "fuse-exfat", "fuse-sshfs", "nobody",
                            "ntfs-3g", "fuse-rar2fs", "fuse-smbfs", "fuse-zip")),
         "shill": set(("dhcp", "ipsec", "openvpn", "syslog", "nobody")),
@@ -81,8 +81,8 @@ class security_ProcessManagementPolicy(test.test):
         Runs the test, spawning processes as users and checking setuid()
         behavior.
         """
-        for parent in self._WHITELIST_DICT:
-            for child in self._WHITELIST_DICT[parent]:
+        for parent in self._ALLOWLIST_DICT:
+            for child in self._ALLOWLIST_DICT[parent]:
                 # Expect the setuid() call to be permitted
                 self._test_setuid(parent, child, True, True)
                 # Expect the setuid() call to be denied

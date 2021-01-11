@@ -12,12 +12,12 @@ class platform_Perf(test.test):
     """
     version = 1
 
-    # Whitelist of DSOs that are expected to appear in perf data from a CrOS
+    # Allowlist of DSOs that are expected to appear in perf data from a CrOS
     # device. The actual name may change so use regex pattern matching. This is
     # a list of allowed but not required DSOs. With this list, we can filter out
     # unknown DSOs that might not have a build ID, e.g. JIT code.
     _KERNEL_NAME_REGEX = re.compile(r'.*kernel\.kallsyms.*')
-    _DSO_WHITELIST_REGEX = [
+    _DSO_ALLOWLIST_REGEX = [
       _KERNEL_NAME_REGEX,
       re.compile(r'bash'),
       re.compile(r'chrome'),
@@ -86,7 +86,7 @@ class platform_Perf(test.test):
                 pass
             p.wait();
 
-            # Generate a list of whitelisted DSOs from the perf report.
+            # Generate a list of allowlisted DSOs from the perf report.
             dso_list = []
             p = subprocess.Popen(perf_report_dso_args, stdout=subprocess.PIPE)
             for line in p.stdout:
@@ -97,9 +97,9 @@ class platform_Perf(test.test):
                 tokens = line.split()
                 if len(tokens) < 2:
                     continue
-                # Store the DSO name if it appears in the whitelist.
+                # Store the DSO name if it appears in the allowlist.
                 dso_name = tokens[1]
-                for regex in self._DSO_WHITELIST_REGEX:
+                for regex in self._DSO_ALLOWLIST_REGEX:
                     if regex.match(dso_name):
                         dso_list += [dso_name]
 
@@ -136,7 +136,7 @@ class platform_Perf(test.test):
         start, length, pgoff = re.sub(r'[][()@]', ' ',
                                       kernel_mapping).strip().split()
 
-        # Check that all whitelisted DSOs from the report have build IDs.
+        # Check that all allowlisted DSOs from the report have build IDs.
         kernel_name = None
         kernel_build_id = None
         for dso in dso_list:

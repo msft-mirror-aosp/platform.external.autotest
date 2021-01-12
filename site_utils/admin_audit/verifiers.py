@@ -374,11 +374,9 @@ class VerifyDUTMacAddress(base._BaseDUTVerifier):
 
     def _verify(self):
         if not self.host_is_up():
-            logging.info('Host is down; Skipping the action')
-            return
+            raise base.AuditError('Host is down.')
         if not self.servo_is_up():
-            logging.info('Servo host is down; Skipping the action')
-            return
+            raise base.AuditError('Servo host is down.')
         host = self.get_host()
         servo = host.servo
         if not host._servo_host.is_labstation():
@@ -396,26 +394,24 @@ class VerifyDUTMacAddress(base._BaseDUTVerifier):
         # NIC: /sys/bus/usb/devices/1-1.1
         hub_path = self._get_device_path(None, self.HUB_VID, self.HUB_PID)
         if not hub_path or hub_path == '.':
-            logging.info('The servo_v4 HUB not detected from DUT')
             self._send_metrics()
-            return
+            raise base.AuditError('The servo_v4 HUB not detected from DUT.')
         logging.info('Path to the servo_v4 HUB device: %s', hub_path)
         nic_path = self._get_device_path(hub_path, self.NIC_VID, self.NIC_PID)
         if not nic_path or nic_path == '.':
-            logging.info('The servo_v4 NIC not detected in HUB folder')
             self._send_metrics()
-            return
+            raise base.AuditError(
+                    'The servo_v4 NIC not detected in HUB folder.')
         logging.info('Path to the servo_v4 NIC device: %s', nic_path)
         if hub_path == nic_path or not nic_path.startswith(hub_path):
-            logging.info('The servo_v4 NIC was detect out of servo_v4 HUB;'
-                         ' Skipping the action.')
             self._send_metrics()
-            return
+            raise base.AuditError(
+                    'The servo_v4 NIC was detect out of servo_v4 HUB')
 
         macaddr = self._get_mac_address(host, nic_path)
         if not macaddr:
             self._send_metrics()
-            return
+            raise base.AuditError('Failed to extract mac address from host.')
 
         cached_mac = self._get_cached_mac_address()
         if not cached_mac or macaddr != cached_mac:
@@ -424,8 +420,8 @@ class VerifyDUTMacAddress(base._BaseDUTVerifier):
                 logging.info('Successfully updated the servo "macaddr"!')
             except error.TestFail as e:
                 logging.debug('Fail to update macaddr value; %s', e)
-                logging.info('Fail to update the "macaddr" value!')
                 self._send_metrics()
+                raise base.AuditError('Fail to update the "macaddr" value!')
         else:
             logging.info('The servo "macaddr" doe not need update.')
 

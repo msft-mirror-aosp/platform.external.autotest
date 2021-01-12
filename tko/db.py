@@ -144,7 +144,7 @@ class db_sql(object):
         # we have database routers in place any django settings will apply to
         # both tko and afe.
         # The intended use of this port is to allow a testing shard vm to
-        # update the master vm's database with test results. Specifying
+        # update the vm's database with test results. Specifying
         # and empty string will fallback to not even specifying the port
         # to the backend in tko/db.py. Unfortunately this means retries
         # won't work on the test cluster till we've migrated to routers.

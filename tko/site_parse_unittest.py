@@ -170,7 +170,7 @@ class database_selection_test(mox.MoxTestBase,
                           reload, settings)
 
 
-    def testRunOnMasterWithoutGlobalConfigsWorks(self):
+    def testRunOnMainWithoutGlobalConfigsWorks(self):
         global_config.global_config.override_config_value(
                 'SHARD', 'shard_hostname', '')
         from autotest_lib.frontend import settings

@@ -264,14 +264,13 @@ class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):
 
     def _verify(self):
         if not self.host_is_up():
-            logging.info('Host is down; Skipping the action')
-            return
+            raise base.AuditError('Host is down')
         if not self.servo_is_up():
-            logging.info('Servo not initialized; Skipping the action')
-            return
+            raise base.AuditError('Servo not initialized')
 
         host = self.get_host()
         servo = host.servo
+        status = STATUS_FAIL
         try:
             logging.info('Starting flashing the keyboard map.')
             status = self._flash_keyboard_map(host, servo)
@@ -280,13 +279,15 @@ class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):
                 self._send_metrics()
         except Exception as e:
             # The possible errors is timeout of commands.
-            logging.debug('Failed to flash servo keyboard map; %s', e)
+            logging.info('Failed to flash servo keyboard map; %s', e)
             self._send_metrics()
         finally:
             # Restore the default settings.
             # Select the chip on the USB mux unless using Servo V4
             if 'servo_v4' not in servo.get_servo_version():
                 servo.set('usb_mux_sel4', 'on')
+        if status == STATUS_FAIL:
+            raise base.AuditError('Failed to flash keyboard map on servo')
 
     def _flash_keyboard_map(self, host, servo):
         if host.run('hash dfu-programmer', ignore_status=True).exit_status:
@@ -309,6 +310,7 @@ class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):
                             'sleep:%f' % self._ATMEGA_RESET_DELAY,
                             'at_hwb:off'])
 
+        time.sleep(self._USB_PRESENT_DELAY)
         result = host.run(self.LSUSB_CMD, timeout=30).stdout.strip()
         if not 'Atmel Corp. atmega32u4 DFU bootloader' in result:
             logging.info('Not an expected chip: %s', result)

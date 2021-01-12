@@ -114,18 +114,17 @@ class test_json_config_file_sanity(unittest.TestCase):
             self.fail('Presentation config file could not be parsed as JSON.')
 
 
-    def test_required_master_name(self):
-        """Verifies that master name must be specified."""
+    def test_required_main_name(self):
+        """Verifies that main name must be specified."""
         json_obj = []
         try:
             with open(perf_uploader._PRESENTATION_CONFIG_FILE, 'r') as fp:
                 json_obj = json.load(fp)
         except:
             self.fail('Presentation config file could not be parsed as JSON.')
-
         for entry in json_obj:
-            if not 'master_name' in entry:
-                self.fail('Missing master field for test %s.' %
+            if not 'main_name' in entry:
+                self.fail('Missing main field for test %s.' %
                           entry['autotest_name'])
 
 class test_get_image_board_name(unittest.TestCase):
@@ -163,12 +162,12 @@ class test_gather_presentation_info(unittest.TestCase):
 
     _PRESENT_INFO = {
         'test_name': {
-            'master_name': 'new_master_name',
+            'main_name': 'new_main_name',
             'dashboard_test_name': 'new_test_name',
         }
     }
 
-    _PRESENT_INFO_MISSING_MASTER = {
+    _PRESENT_INFO_MISSING_MAIN = {
         'test_name': {
             'dashboard_test_name': 'new_test_name',
         }
@@ -176,18 +175,18 @@ class test_gather_presentation_info(unittest.TestCase):
 
     _PRESENT_INFO_REGEX = {
         'test_name.*': {
-            'master_name': 'new_master_name',
+            'main_name': 'new_main_name',
             'dashboard_test_name': 'new_test_name',
         }
     }
 
     _PRESENT_INFO_COLLISION = {
         'test_name.*': {
-            'master_name': 'new_master_name',
+            'main_name': 'new_main_name',
             'dashboard_test_name': 'new_test_name',
         },
         'test_name-test.*': {
-            'master_name': 'new_master_name',
+            'main_name': 'new_main_name',
             'dashboard_test_name': 'new_test_name',
         },
     }
@@ -209,11 +208,11 @@ class test_gather_presentation_info(unittest.TestCase):
                     self._PRESENT_INFO, 'test_name_P')
             self.assertTrue(
                     all([key in result for key in
-                         ['test_name', 'master_name']]),
+                         ['test_name', 'main_name']]),
                     msg='Unexpected keys in resulting dictionary: %s' % result)
-            self.assertEqual(result['master_name'], 'new_master_name',
-                             msg='Unexpected "master_name" value: %s' %
-                                 result['master_name'])
+            self.assertEqual(result['main_name'], 'new_main_name',
+                             msg='Unexpected "main_name" value: %s' %
+                                 result['main_name'])
             self.assertEqual(result['test_name'], 'new_test_name',
                              msg='Unexpected "test_name" value: %s' %
                                  result['test_name'])
@@ -224,11 +223,11 @@ class test_gather_presentation_info(unittest.TestCase):
                 self._PRESENT_INFO, 'test_name')
         self.assertTrue(
                 all([key in result for key in
-                     ['test_name', 'master_name']]),
+                     ['test_name', 'main_name']]),
                 msg='Unexpected keys in resulting dictionary: %s' % result)
-        self.assertEqual(result['master_name'], 'new_master_name',
-                         msg='Unexpected "master_name" value: %s' %
-                             result['master_name'])
+        self.assertEqual(result['main_name'], 'new_main_name',
+                         msg='Unexpected "main_name" value: %s' %
+                             result['main_name'])
         self.assertEqual(result['test_name'], 'new_test_name',
                          msg='Unexpected "test_name" value: %s' %
                              result['test_name'])
@@ -242,24 +241,24 @@ class test_gather_presentation_info(unittest.TestCase):
                         self._PRESENT_INFO, 'other_test_name')
 
 
-    def test_master_not_specified(self):
-        """Verifies exception raised if master is not there."""
+    def test_main_not_specified(self):
+        """Verifies exception raised if main is not there."""
         self.assertRaises(
                 perf_uploader.PerfUploadingError,
                 perf_uploader._gather_presentation_info,
-                    self._PRESENT_INFO_MISSING_MASTER, 'test_name')
+                    self._PRESENT_INFO_MISSING_MAIN, 'test_name')
 
 
 class test_parse_and_gather_presentation(unittest.TestCase):
     """Tests for _parse_config_file and then_gather_presentation_info."""
     _AUTOTEST_NAME_CONFIG = """[{
         "autotest_name": "test.test.VM",
-        "master_name": "ChromeOSPerf"
+        "main_name": "ChromeOSPerf"
     }]"""
 
     _AUTOTEST_REGEX_CONFIG = r"""[{
         "autotest_regex": "test\\.test\\.VM.*",
-        "master_name": "ChromeOSPerf"
+        "main_name": "ChromeOSPerf"
     }]"""
 
     def setUp(self):
@@ -277,7 +276,7 @@ class test_parse_and_gather_presentation(unittest.TestCase):
         result = perf_uploader._gather_presentation_info(config, test_name)
         self.assertEqual(result, {
             'test_name': test_name,
-            'master_name': 'ChromeOSPerf'
+            'main_name': 'ChromeOSPerf'
         })
 
     def test_autotest_name_is_exact_matched(self):
@@ -318,7 +317,7 @@ class test_parse_and_gather_presentation(unittest.TestCase):
             result = perf_uploader._gather_presentation_info(config, test_name)
             self.assertEqual(result, {
                 'test_name': test_name,
-                'master_name': 'ChromeOSPerf'
+                'main_name': 'ChromeOSPerf'
             })
 
     def test_autotest_regex_is_not_matched(self):
@@ -433,7 +432,7 @@ class test_format_for_upload(unittest.TestCase):
         },
     }
     _PRESENT_INFO = {
-        'master_name': 'new_master_name',
+        'main_name': 'new_main_name',
         'test_name': 'new_test_name',
     }
 
@@ -473,6 +472,9 @@ class test_format_for_upload(unittest.TestCase):
                 'platform', '25.1200.0.0', '25.10.1000.0', 'WINKY E2A-F2K-Q35',
                 'test_machine', self._perf_data, self._PRESENT_INFO,
                 '52926644-username/hostname')
+        # TODO b:169251326 terms below are set outside of this codebase and
+        # should be updated when possible ("master" -> "main").
+        # see catapult-project/catapult/dashboard/dashboard/add_point.py
         expected_result_string = (
           '{"versions":  {'
              '"cros_version": "25.1200.0.0",'
@@ -499,7 +501,7 @@ class test_format_for_upload(unittest.TestCase):
                '}'
              '}'
           '},'
-          '"master": "new_master_name",'
+          '"master": "new_main_name",'
           '"supplemental": {'
              '"hardware_identifier": "WINKY E2A-F2K-Q35",'
              '"jobname": "52926644-username/hostname",'

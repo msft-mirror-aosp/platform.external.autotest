@@ -1371,6 +1371,8 @@ class ServoHost(base_servohost.BaseServoHost):
         start_servod = self.get_verifier_state('servod_job')
         create_servo = self.get_verifier_state('servod_connection')
         init_servo = self.get_verifier_state('servod_control')
+        cr50_low_sbu = self.get_verifier_state('cr50_low_sbu')
+        cr50_off = self.get_verifier_state('cr50_off')
         servo_topology = self.get_verifier_state('servo_topology')
         dut_connected = self.get_verifier_state('dut_connected')
         hub_connected = self.get_verifier_state('hub_connected')
@@ -1401,6 +1403,10 @@ class ServoHost(base_servohost.BaseServoHost):
         if hub_connected == hosts.VERIFY_FAILED:
             logging.info('Servo HUB not connected')
             return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
+        if cr50_low_sbu == hosts.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_SBU_LOW_VOLTAGE
+        if cr50_off == hosts.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_CR50_NOT_ENUMERATED
         if servo_topology == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_TOPOLOGY_ISSUE
 

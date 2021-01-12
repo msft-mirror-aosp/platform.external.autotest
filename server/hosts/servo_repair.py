@@ -613,6 +613,105 @@ class _ServoHubConnectionVerifier(_BaseDUTConnectionVerifier):
         return 'Ensure the Servo HUB connected to the DUT.'
 
 
+class _BaseCr50SBUVerifier(_BaseDUTConnectionVerifier):
+    """Check servod issue related to SBU voltage."""
+
+    # Min SBU voltage to detect usb-device
+    SBU_THRESHOLD = 2500.0
+    # How many times collect SBU voltage to calc AVG value.
+    _TOTAL_CHECK_SBU_VOLTAGE = 10
+
+    def _is_applicable(self, host):
+        if host.is_localhost():
+            logging.info('Target servo is not in a lab,'
+                         ' action is not applicable.')
+            return False
+        if not self._is_servo_v4_type_c(host):
+            logging.info('Check support only servo-v4 (type-c),'
+                         ' action is not applicable.')
+            return False
+        return True
+
+    def _is_sbu_voltage_issue(self, host):
+        """Check if servo does not detected by SBU voltage issue."""
+        command = 'dut_sbu_voltage_float_fault'
+        if host.get_servo().has_control(command):
+            if host.get_servo().get(command) == 'on':
+                return True
+        return False
+
+    def _get_max_sbu_value(self, host):
+        """Get average voltage on SBU lines."""
+        servo = host.get_servo()
+        if not servo.has_control('servo_v4_sbu1_mv'):
+            return -1
+        s1 = 0
+        s2 = 0
+        for i in range(self._TOTAL_CHECK_SBU_VOLTAGE):
+            try:
+                sbu1 = int(servo.get('servo_v4_sbu1_mv'))
+                sbu2 = int(servo.get('servo_v4_sbu2_mv'))
+                logging.debug('Attempt:%2d, sbu1 %4d sbu2 %4d', i, sbu1, sbu2)
+                s1 += sbu1
+                s2 += sbu2
+            except error.TestFail as e:
+                # This is a nice to have but if reading this fails, it
+                # shouldn't interfere with the test.
+                logging.exception(e)
+        logging.debug('Total:  sbu1 %4d sbu2 %4d', s1, s2)
+        # Use float to get values with changes
+        s1 = s1 / float(self._TOTAL_CHECK_SBU_VOLTAGE)
+        s2 = s2 / float(self._TOTAL_CHECK_SBU_VOLTAGE)
+        logging.debug('Avg: sbu1 %7.2f sbu2 %7.2f', s1, s2)
+        max_sbu = max(s1, s2)
+        logging.info('Max sbu: %7.2f', max_sbu)
+        return max_sbu
+
+
+class _Cr50OffVerifier(_BaseCr50SBUVerifier):
+    """Check if CR50 is in deep sleep and fail to detected.
+
+    If SBU voltage is higher threshold but still cannot be detected
+    as usb device then probably CR50 is in deep sleep.
+    Threshold is 2500 mV on any SBU lines.
+    """
+
+    @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        if self._is_sbu_voltage_issue(host):
+            if self._get_max_sbu_value(host) > self.SBU_THRESHOLD:
+                raise hosts.AutoservVerifyError(
+                        'CR50 voltage detected but usb device not enumerated')
+
+    @property
+    def description(self):
+        return 'CR50 voltage detected but not enumerated.'
+
+
+class _Cr50LowSBUVerifier(_BaseCr50SBUVerifier):
+    """Check if servod fail to detect CR50 due low voltage.
+
+    CR50 cannot be enumerated as SBU voltage line lower then
+    threshold.
+    Threshold is 2500 mV on any SBU lines.
+    """
+
+    @ignore_exception_for_non_cros_host
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        if self._is_sbu_voltage_issue(host):
+            v = self._get_max_sbu_value(host)
+            if v > 1 and v <= self.SBU_THRESHOLD:
+                raise hosts.AutoservVerifyError(
+                        'Cr50 is not detected due to SBU voltages'
+                        ' being below %dmV', self.SBU_THRESHOLD)
+
+    @property
+    def description(self):
+        return 'Cr50 not detected as both SBU voltages are below threshold.'
+
+
 class _TopologyVerifier(hosts.Verifier):
     """Verifier that all servo component is presented."""
 
@@ -1044,6 +1143,8 @@ def create_servo_repair_strategy():
             (_ServodJobVerifier, 'servod_job', config + ['disk_space']),
             (_TopologyVerifier, 'servo_topology', ['servod_job']),
             (_ServodConnectionVerifier, 'servod_connection', ['servod_job']),
+            (_Cr50LowSBUVerifier, 'cr50_low_sbu', ['servod_connection']),
+            (_Cr50OffVerifier, 'cr50_off', ['servod_connection']),
             (_ServodControlVerifier, 'servod_control', ['servod_connection']),
             (_DUTConnectionVerifier, 'dut_connected', ['servod_connection']),
             (_ServoHubConnectionVerifier, 'hub_connected', ['dut_connected']),
@@ -1059,7 +1160,7 @@ def create_servo_repair_strategy():
     servod_deps = [
             'servod_job', 'servo_topology', 'servod_connection',
             'servod_control', 'dut_connected', 'hub_connected', 'pwr_button',
-            'cr50_console'
+            'cr50_console', 'cr50_low_sbu', 'cr50_off'
     ]
     repair_actions = [
             (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space'

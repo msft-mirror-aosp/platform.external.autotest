@@ -305,11 +305,6 @@ class DeployConfigManager(object):
         # Inject "AUTOSERV/enable_main_ssh: False" in shadow config as
         # container does not support main ssh connection yet.
         self.container.attach_run(
-                'echo $\'\n[AUTOSERV]\nenable_master_ssh: False\n\' >> %s' %
-                shadow_config)
-
-        # For now (b:169251128) we will set both, then remove the above line.
-        self.container.attach_run(
                 'echo $\'\n[AUTOSERV]\nenable_main_ssh: False\n\' >> %s' %
                 shadow_config)
 
@@ -358,7 +353,7 @@ class DeployConfigManager(object):
         self.container.attach_run('sed -i \'s/UseProxyIf=false//g\' \'%s\'' %
                                   ssh_config)
         # TODO(dshi): crbug.com/451622 ssh connection loglevel is set to
-        # ERROR in container before master ssh connection works. This is
+        # ERROR in container before the ssh connection works. This is
         # to avoid logs being flooded with warning `Permanently added
         # '[hostname]' (RSA) to the list of known hosts.` (crbug.com/478364)
         # The sed command injects following at the beginning of .ssh/config

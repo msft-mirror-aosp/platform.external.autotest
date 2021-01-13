@@ -23,23 +23,12 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
 
     version = 1
 
-    NETPERF_CONFIGS = [
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS),
-    ]
-
 
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hook into super class to take control files parameters.
 
         @param commandline_args dict of parsed parameters from the autotest.
-        @param additional_params list of HostapConfig objects.
+        @param additional_params list of tuple(HostapConfig, NetperfConfigs)
 
         """
         if 'governor' in commandline_args:
@@ -54,17 +43,19 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                 self._governor = None
         else:
             self._governor = None
-        self._ap_configs = additional_params
+        self._configurations = additional_params
 
-
-    def do_run(self, ap_config, session, power_save, governor):
+    def do_run(self, ap_config, session, power_save, governor,
+               netperf_configs):
         """Run a single set of perf tests, for a given AP and DUT config.
 
         @param ap_config: the AP configuration that is being used
         @param session: a netperf session instance
         @param power_save: whether or not to use power-save mode on the DUT
                            (boolean)
-
+        @param netperf_configs: netperf configurations being used and their
+                                associated minimum throughput values
+        @ return tuple of (list of passed configs, list of failed configs)
         """
         def get_current_governor(host):
             """
@@ -98,6 +89,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                 # perform the run twice
                 return
 
+        failed_configs = set()
         self.context.client.powersave_switch(power_save)
         session.warmup_stations()
         ps_tag = 'PS%s' % ('on' if power_save else 'off')
@@ -107,7 +99,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         signal_level = self.context.client.wifi_signal_level
         signal_description = '_'.join([ap_config_tag, 'signal'])
         self.write_perf_keyval({signal_description: signal_level})
-        for config in self.NETPERF_CONFIGS:
+        for config, expected_throughput in netperf_configs:
             results = session.run(config)
             if not results:
                 logging.error('Failed to take measurement for %s',
@@ -118,6 +110,13 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                                    higher_is_better=True,
                                    graph=ap_config_tag)
             result = netperf_runner.NetperfResult.from_samples(results)
+            assertion = netperf_runner.NetperfAssertion(
+                    throughput_min=expected_throughput)
+            if not assertion.passes(result):
+                logging.error(
+                        'Throughput is too low for %s. Expected %0.2f Mbps, got %0.2f.',
+                        config.tag, expected_throughput, result.throughput)
+                failed_configs.add(config)
             self.write_perf_keyval(result.get_keyval(
                 prefix='_'.join([ap_config_tag, config.tag])))
         if governor:
@@ -125,12 +124,16 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                     self.context.client.host)
             utils.restore_scaling_governor_states(router_governor,
                     self.context.router.host)
+        all_configs = set([config[0] for config in netperf_configs])
+        return all_configs.difference(failed_configs), failed_configs
 
 
     def run_once(self):
         """Test body."""
         start_time = time.time()
-        for ap_config in self._ap_configs:
+        low_throughput_tests = set()
+
+        for ap_config, netperf_configs in self._configurations:
             # Set up the router and associate the client with it.
             self.context.configure(ap_config)
             # self.context.configure has a similar check - but that one only
@@ -153,10 +156,21 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                 # Conduct the performance tests while toggling powersave mode.
                 for power_save in (True, False):
                     for governor in sorted(set([None, self._governor])):
-                        self.do_run(ap_config, session, power_save, governor)
+                        # Run the performance test and record the test types
+                        # which failed due to low throughput.
+                        low_throughput_tests.update(
+                                self.do_run(ap_config, session, power_save,
+                                            governor, netperf_configs)[1])
 
             # Clean up router and client state for the next run.
             self.context.client.shill.disconnect(self.context.router.get_ssid())
             self.context.router.deconfig()
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)
+        if len(low_throughput_tests) != 0:
+            low_throughput_tags = [
+                    config.tag for config in low_throughput_tests
+            ]
+            raise error.TestFail(
+                    'Throughput performance too low for test type(s): %s' %
+                    ', '.join(low_throughput_tags))

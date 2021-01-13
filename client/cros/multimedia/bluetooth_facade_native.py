@@ -190,15 +190,15 @@ class InterleaveLogger(LogRecorder):
 
     # Example bluetooth kernel log:
     # "2020-11-23T07:52:31.395941Z DEBUG kernel: [ 6469.811135] Bluetooth: "
-    # "cancel_interleave_scan() hci0: hci0 cancelling interleave scan"
+    # "cancel_interleave_scan() hci0: cancelling interleave scan"
     KERNEL_LOG_PATTERN = ('([^ ]+) DEBUG kernel: \[.*\] Bluetooth: '
                           '{FUNCTION}\(\) hci0: {LOG_STR}')
     STATE_PATTERN = KERNEL_LOG_PATTERN.format(
-            FUNCTION='add_le_interleave_adv_monitor_scan',
+            FUNCTION='hci_req_add_le_interleaved_scan',
             LOG_STR='next state: (.+)')
     CANCEL_PATTERN = KERNEL_LOG_PATTERN.format(
             FUNCTION='cancel_interleave_scan',
-            LOG_STR='hci0 cancelling interleave scan')
+            LOG_STR='cancelling interleave scan')
     SYSTIME_LENGTH = len('2020-12-18T00:11:22.345678')
 
     def __init__(self):

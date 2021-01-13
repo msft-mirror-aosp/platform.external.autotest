@@ -329,7 +329,8 @@ class longevity_Tracker(test.test):
             'benchmark_name': self.test_suite_name,
             'charts': chart_data,
         }
-
+        # TODO b:169251326 terms below are set outside of this codebase and
+        # should be updated when possible ("master" -> "main").
         dash_entry = {
             'master': 'ChromeOS_Enterprise',
             'bot': 'cros-%s' % self.board_name,

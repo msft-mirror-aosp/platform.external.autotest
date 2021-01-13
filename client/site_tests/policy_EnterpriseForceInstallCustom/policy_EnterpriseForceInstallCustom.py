@@ -117,6 +117,8 @@ class policy_EnterpriseForceInstallCustom(
 
         @returns: Policy value.
         """
+        # TODO b:169251326 terms below are set outside of this codebase and
+        # should be updated when possible ("WHITELIST" -> "ALLOWLIST").
         pol = {'ArcEnabled': True,
                'ArcPolicy':
                    {"installUnknownSourcesDisabled": False,

@@ -197,7 +197,7 @@ def get_bundle_abi(filename):
     In this case we chose to guess by filename, but we could also parse the
     xml files in the module. (Maybe this needs to be done in the future.)
     """
-    if CONFIG.get('DYNAMIC_TEST_FETCH'):
+    if CONFIG.get('SINGLE_CONTROL_FILE'):
         return None
     if filename.endswith('arm.zip'):
         return 'arm'
@@ -229,9 +229,9 @@ def get_extension(module, abi, revision, is_public=False, led_provision=None, ca
                     abi part is omitted.
     """
     ext_parts = []
-    if not CONFIG.get('DYNAMIC_TEST_FETCH') and not is_public:
+    if not CONFIG.get('SINGLE_CONTROL_FILE') and not is_public:
         ext_parts = [revision]
-    if not CONFIG.get('DYNAMIC_TEST_FETCH') and abi:
+    if not CONFIG.get('SINGLE_CONTROL_FILE') and abi:
         ext_parts += [abi]
     ext_parts += [module]
     if led_provision:
@@ -243,7 +243,8 @@ def get_extension(module, abi, revision, is_public=False, led_provision=None, ca
 
 def get_doc(modules, abi, is_public):
     """Defines the control file DOC string."""
-    if modules.intersection(get_collect_modules(is_public)):
+    if modules.intersection(get_collect_modules(is_public)) or CONFIG.get(
+            'SINGLE_CONTROL_FILE'):
         module_text = 'all'
     else:
         # Generate per-module DOC
@@ -885,6 +886,8 @@ def get_tradefed_data(path, is_public, abi):
         elif line.startswith('Gts'):
             # Older GTS plainly lists the module names
             modules.add(line)
+        elif line.startswith('Sts'):
+            modules.add(line)
         elif line.startswith('cts-'):
             modules.add(line)
         elif line.startswith('signed-Cts'):
@@ -1116,10 +1119,23 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
     became too much in P (more than 300 per ABI). Instead we combine modules
     with similar names and run these in the same job (alphabetically).
     """
-    combined = combine_modules_by_common_word(set(modules))
-    for key in combined:
-        write_controlfile(key, combined[key], abi, revision, build, uri, None,
-                          is_public, is_latest)
+    if CONFIG.get('SINGLE_CONTROL_FILE'):
+        module_set = set(modules)
+        write_controlfile('all',
+                          module_set,
+                          abi,
+                          revision,
+                          build,
+                          uri,
+                          None,
+                          is_public,
+                          is_latest,
+                          whole_module_set=module_set)
+    else:
+        combined = combine_modules_by_common_word(set(modules))
+        for key in combined:
+            write_controlfile(key, combined[key], abi, revision, build, uri,
+                              None, is_public, is_latest)
 
 
 def write_qualification_controlfiles(modules, abi, revision, build, uri,

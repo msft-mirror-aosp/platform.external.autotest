@@ -1571,11 +1571,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.error('Failed to find %s in device.', filename)
         return build_info
 
-    def _get_arc_primary_abi(self):
+    def get_arc_primary_abi(self):
         """Returns the primary abi of the host."""
         return self._get_arc_build_info().get('ro.product.cpu.abi')
 
-    def _get_arc_security_patch(self):
+    def get_arc_security_patch(self):
         """Returns the security patch of the host."""
         return self._get_arc_build_info().get('ro.build.version.security_patch')
 

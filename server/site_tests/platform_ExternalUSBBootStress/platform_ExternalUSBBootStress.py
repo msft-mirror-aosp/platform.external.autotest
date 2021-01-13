@@ -111,7 +111,7 @@ class platform_ExternalUSBBootStress(test.test):
             diff_now = set(connected_now).difference(set(off_list))
             if diff_list != diff_now:
                 raise error.TestFail('The list of connected items does not '
-                                      'match the master list.\nMaster: %s\n'
+                                      'match the main list.\nMain: %s\n'
                                       'Current: %s' %
                                       (diff_list, diff_now))
             logging.info('Connected devices for iteration %d: %s' %

@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 """
-This file generates all telemetry_Benchmarks control files from a master list.
+This file generates all telemetry_Benchmarks control files from a main list.
 """
 
 from __future__ import print_function

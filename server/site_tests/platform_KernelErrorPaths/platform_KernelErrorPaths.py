@@ -22,7 +22,7 @@ class platform_KernelErrorPaths(test.test):
     def _run_client_command(self, command):
         try:
             # Simply sending the trigger into lkdtm resets the target
-            # immediately, leaving files unsaved to disk and the master ssh
+            # immediately, leaving files unsaved to disk and the ssh
             # connection wedged for a long time.
             self.client.run(
                 'sh -c "sync; sleep 1; %s" >/dev/null 2>&1 &' % command)

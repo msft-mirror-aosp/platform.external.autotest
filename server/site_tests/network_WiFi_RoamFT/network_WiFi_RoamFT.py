@@ -87,6 +87,8 @@ class network_WiFi_RoamFT(wifi_cell_test_base.WiFiCellTestBase):
                                            '%s' % (self.veth0, self.veth1))
             self.context.router.router.run('ifconfig %s up' % self.veth0)
             self.context.router.router.run('ifconfig %s up' % self.veth1)
+            # TODO b:169251326 terms below are set outside of this codebase and
+            # should be updated when possible ("master" -> "main").
             self.context.router.router.run('ip link set %s master %s' %
                                            (self.veth0, br0))
             self.context.router.router.run('ip link set %s master %s' %

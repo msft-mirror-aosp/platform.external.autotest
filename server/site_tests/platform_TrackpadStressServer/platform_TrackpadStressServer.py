@@ -43,7 +43,7 @@ class platform_TrackpadStressServer(test.test):
                      command, self.client.hostname)
         try:
             # Simply writing to the crash interface resets the target
-            # immediately, leaving files unsaved to disk and the master ssh
+            # immediately, leaving files unsaved to disk and the main ssh
             # connection wedged for a long time.
             self.client.run(
                 'sh -c "sync; sleep 1; %s" >/dev/null 2>&1 &' % command)

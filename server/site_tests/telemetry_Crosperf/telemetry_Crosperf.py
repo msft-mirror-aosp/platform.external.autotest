@@ -45,6 +45,8 @@ WARNING_STATUS = 'WARNING'
 FAILED_STATUS = 'FAILED'
 
 # Regex for the RESULT output lines understood by chrome buildbot.
+# TODO b:169251326 terms below are set outside of this codebase and
+# should be updated when possible ("slave").
 # Keep in sync with
 # chromium/tools/build/scripts/slave/performance_log_processor.py.
 RESULTS_REGEX = re.compile(r'(?P<IMPORTANT>\*)?RESULT '
@@ -154,7 +156,7 @@ class telemetry_Crosperf(test.test):
                 logging.info('Killing background process, pid %s', pid)
                 # Kill the process blindly. OK if it's already gone.
                 # There is an issue when underlying child processes stay alive
-                # while the parent master process is killed.
+                # while the parent main process is killed.
                 # The solution is to kill the chain of processes via process
                 # group id.
                 dut.run('pgid=$(cat /proc/%s/stat | cut -d")" -f2 | '

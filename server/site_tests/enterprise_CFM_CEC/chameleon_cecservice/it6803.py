@@ -102,13 +102,13 @@ def cmd_help():
 
 def cec_open():
     """ Enable cec port. """
-    # enable IT6803 CEC port: enable cec clock and assign slave addr
+    # enable IT6803 CEC port: enable cec clock and assign node addr
     i2cset(I2C_HDMI, 0x0E, 0xFF)
     i2cset(I2C_HDMI, 0x86, 0x95)
 
 def cec_close():
     """ Close cec port. """
-    # disable cec slave addr
+    # disable cec node addr
     i2cset(I2C_HDMI, 0x86, 0x94)
 
 

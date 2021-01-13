@@ -94,6 +94,8 @@ class enterprise_LongevityTrackerServer(test.test):
             'charts': chart_data,
         }
         #TODO(krishnargv): Add a method to capture the chrome_version.
+        # TODO b:169251326 terms below are set outside of this codebase and
+        # should be updated when possible ("master" -> "main").
         dash_entry = {
             'master': 'ChromeOS_Enterprise',
             'bot': 'cros-%s' % self.board_name,

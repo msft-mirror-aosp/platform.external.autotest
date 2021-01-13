@@ -148,7 +148,7 @@ class SystemFacadeNative(object):
 
     def get_energy_usage(self):
         """
-        Gets the energy counter value.
+        Gets the energy counter value as a string.
         """
         return utils.get_energy_usage()
 

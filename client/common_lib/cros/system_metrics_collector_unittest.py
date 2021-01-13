@@ -240,7 +240,7 @@ class FakeSystemFacade(object):
 
     def get_energy_usage(self):
         self.energy_usage += 1
-        return self.energy_usage
+        return str(self.energy_usage)
 
 
 class TestMetric(system_metrics_collector.Metric):

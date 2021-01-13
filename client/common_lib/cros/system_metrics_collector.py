@@ -232,11 +232,12 @@ class EnergyUsageMetric(Metric):
         super(EnergyUsageMetric, self).__init__('energy_usage',
                                                 units='microjoules')
         self.system_facade = system_facade
-        self.initial_energy = self.system_facade.get_energy_usage()
+        self.initial_energy = int(self.system_facade.get_energy_usage())
 
     def collect_metric(self):
-        self._store_sample(self.system_facade.get_energy_usage() -
-                           self.initial_energy)
+        self._store_sample(
+                int(self.system_facade.get_energy_usage()) -
+                self.initial_energy)
 
     def _aggregate(self, samples):
         return samples[-1]

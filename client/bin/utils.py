@@ -408,7 +408,7 @@ def get_energy_usage():
         return 0
 
     with open('/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj') as fd:
-        return int(fd.readline())
+        return fd.readline()
 
 
 def get_current_kernel_arch():

@@ -54,6 +54,8 @@ DEVICE_POLICY_DICT = {
     'DeviceMachinePasswordChangeRate': 'device_machine_password_change_rate.rate_days',
     'DeviceNativePrintersBlacklist': 'native_device_printers_blacklist.blacklist',
     'DeviceNativePrintersWhitelist': 'native_device_printers_whitelist.whitelist',
+    'DevicePrintersBlocklist': 'device_printers_blocklist.blocklist',
+    'DevicePrintersAllowlist': 'device_printers_allowlist.allowlist',
     'HeartbeatEnabled': 'device_heartbeat_settings.heartbeat_enabled',
     'HeartbeatFrequency': 'device_heartbeat_settings.heartbeat_frequency',
     'ChromeOsReleaseChannel': 'release_channel.release_channel',

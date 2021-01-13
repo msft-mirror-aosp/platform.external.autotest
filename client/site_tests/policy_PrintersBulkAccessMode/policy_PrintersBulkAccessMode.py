@@ -8,7 +8,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.enterprise import enterprise_policy_base
 
 
-class policy_NativePrintersBulkAccessMode(
+class policy_PrintersBulkAccessMode(
         enterprise_policy_base.EnterprisePolicyTest):
     """Verify behavior of NativePrinters user policy."""
     version = 1
@@ -33,30 +33,30 @@ class policy_NativePrintersBulkAccessMode(
         self.DEFINED_IDS = set(['wl', 'bl', 'other', 'both'])
         # These strings are printer ids, defined in PRINTERS2_URL.
         self.DEFINED_IDS2 = set(['wl2', 'bl2', 'other2', 'both2'])
-        # Whitelist and blacklist, common for both sets of printers
-        self.WHITELIST = ['both', 'both2', 'wl', 'wl2', 'otherwl']
-        self.BLACKLIST = ['both', 'both2', 'bl', 'bl2', 'otherbl']
+        # allowlist and blocklist, common for both sets of printers
+        self.ALLOWLIST = ['both', 'both2', 'wl', 'wl2', 'otherwl']
+        self.BLOCKLIST = ['both', 'both2', 'bl', 'bl2', 'otherbl']
 
         self.user_policies = {
-                'NativePrintersBulkConfiguration': {'url': PRINTERS_URL,
-                                                    'hash': PRINTERS_HASH},
-                'NativePrintersBulkWhitelist': self.WHITELIST,
-                'NativePrintersBulkBlacklist': self.BLACKLIST}
+                'PrintersBulkConfiguration': {'url': PRINTERS_URL,
+                                              'hash': PRINTERS_HASH},
+                'PrintersBulkAllowlist': self.ALLOWLIST,
+                'PrintersBulkBlocklist': self.BLOCKLIST}
 
         self.device_policies = {
                 'DevicePrinters': {
                         'url': PRINTERS2_URL,
                         'hash': PRINTERS2_HASH
                 },
-                'DevicePrintersAllowlist': self.WHITELIST,
-                'DevicePrintersBlocklist': self.BLACKLIST
+                'DevicePrintersAllowlist': self.ALLOWLIST,
+                'DevicePrintersBlocklist': self.BLOCKLIST
         }
 
-        self.USER_ACCESS_MODE_NAME = 'NativePrintersBulkAccessMode'
+        self.USER_ACCESS_MODE_NAME = 'PrintersBulkAccessMode'
         self.DEVICE_ACCESS_MODE_NAME = 'DevicePrintersAccessMode'
         self.ACCESS_MODE_VALUES = {'allowall': 2,
-                                   'whitelist': 1,
-                                   'blacklist': 0}
+                                   'allowlist': 1,
+                                   'blocklist': 0}
 
 
     def _get_printer_ids(self):
@@ -101,8 +101,8 @@ class policy_NativePrintersBulkAccessMode(
         Calculates resultant set of printers identifiers depending on given
         access_mode.
 
-        @param access_mode: one of strings: 'allowall', 'whitelist',
-            'blacklist' or None (policy not set).
+        @param access_mode: one of strings: 'allowall', 'allowlist',
+            'blocklist' or None (policy not set).
         @param set_of_all_ids: set of all printer identifiers.
 
         @returns: a set of ids of printers.
@@ -110,10 +110,10 @@ class policy_NativePrintersBulkAccessMode(
         """
         if access_mode is None:
             return set()
-        if access_mode == 'blacklist':
-            return set_of_all_ids - set(self.BLACKLIST)
-        if access_mode == 'whitelist':
-            return set_of_all_ids & set(self.WHITELIST)
+        if access_mode == 'blocklist':
+            return set_of_all_ids - set(self.BLOCKLIST)
+        if access_mode == 'allowlist':
+            return set_of_all_ids & set(self.ALLOWLIST)
         if access_mode == 'allowall':
             return set_of_all_ids
         raise Exception("Incorrect value of access mode")
@@ -123,9 +123,9 @@ class policy_NativePrintersBulkAccessMode(
         """
 
         @param case_device: access mode set in device policies (one of strings:
-                'allowall', 'whitelist', 'blacklist') or None (policy not set).
+                'allowall', 'allowlist', 'blocklist') or None (policy not set).
         @param case_user: access mode set in user policies (one of strings:
-                'allowall', 'whitelist', 'blacklist') or None (policy not set).
+                'allowall', 'allowlist', 'blocklist') or None (policy not set).
 
         """
         printers = self._get_printer_ids()
@@ -143,7 +143,7 @@ class policy_NativePrintersBulkAccessMode(
 
         @param case: a tuple of two access modes, the first one is for device
                 policies, the second one is for user policies. Each access mode
-                equals one of the strings: 'allowall', 'whitelist', 'blacklist'
+                equals one of the strings: 'allowall', 'allowlist', 'blocklist'
                 or is set to None (what means 'policy not set').
 
         """

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'pawliczek'
-NAME = 'policy_DeviceServer.EnterprisePrinters_wlnone'
+NAME = 'policy_DeviceServer.EnterprisePrinters_alnone'
 TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'
@@ -12,13 +12,13 @@ TEST_TYPE = 'server'
 # ATTRIBUTES = 'suite:ent-nightly, suite:policy'
 
 DOC = """
-Sets up and runs the client test for NativePrintersBulk* and
-DeviceNativePrinters* policies.
+Sets up and runs the client test for PrintersBulk* and
+DevicePrinters* policies.
 
 """
 
-client_test = 'policy_NativePrintersBulkAccessMode'
-case = ('whitelist',None)
+client_test = 'policy_PrintersBulkAccessMode'
+case = ('allowlist',None)
 
 def run(machine):
     host = hosts.create_host(machine)

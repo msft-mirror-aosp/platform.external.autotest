@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'kathrelkeld, pawliczek, Chrome OS Team'
-NAME = 'policy_NativePrintersBulkAccessMode.none'
+NAME = 'policy_PrintersBulkAccessMode.allowall'
 ATTRIBUTES = 'suite:bvt-perbuild, suite:policy'
 TIME = 'SHORT'
 TEST_CATEGORY = 'General'
@@ -11,9 +11,9 @@ TEST_CLASS = 'enterprise'
 TEST_TYPE = 'client'
 
 DOC = '''
-Verify effect of NativePrintersBulkAccessMode policy on which printers are
+Verify effect of PrintersBulkAccessMode policy on which printers are
 displayed for use on a managed account.
 
 '''
 
-job.run_test('policy_NativePrintersBulkAccessMode', case=(None,None))
+job.run_test('policy_PrintersBulkAccessMode', case=(None, 'allowall'))

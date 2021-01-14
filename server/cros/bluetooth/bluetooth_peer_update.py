@@ -15,6 +15,7 @@ import os
 import sys
 import tempfile
 import time
+import yaml
 
 from datetime import datetime
 
@@ -29,8 +30,9 @@ GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/bluetooth_peer_bundle/'
 # NAME of the file that stores python2 commits info in the cloud
 PYTHON2_COMMITS_FILENAME = 'bluetooth_python2_commits'
 
-# NAME of the file that stores  commit info in the cloud
-COMMIT_FILENAME = 'latest_bluetooth_commit'
+# NAME of the file that stores commits info in the Google cloud storage.
+COMMITS_FILENAME = 'bluetooth_commits.yaml'
+
 
 # The following needs to be kept in sync with values chameleond code
 BUNDLE_TEMPLATE='chameleond-0.0.2-{}.tar.gz' # Name of the chamleond package
@@ -240,38 +242,60 @@ def update_peers(host, latest_commit):
                                          if v['update_needed']]))
 
 
-def get_latest_commit():
-    """ Get the latest commit
+def get_target_commit(hostname, host_build):
+    """ Get the target commit per the DUT hostname
 
-    Download the file containing the latest commit and
-    parse it contents, and cleanup.
-    @returns (True,commit) in case of success ; (False, None) in case of failure
+    Download the yaml file containing the commits, parse its contents,
+    and cleanup.
+
+    The yaml file looks like
+    ------------------------
+    lab_curr_commit: d732343cf
+    lab_next_build: 13721.0.0
+    lab_next_commit: 71be114
+    lab_next_hosts:
+      - chromeos15-row8-rack5-host1
+      - chromeos15-row5-rack7-host7
+      - chromeos15-row5-rack1-host4
+
+    The lab_next_commit will be used only when 3 conditions are satisfied
+    - the lab_next_commit is non-empty
+    - the hostname of the DUT can be found in lab_next_hosts
+    - the host_build of the DUT is the same as lab_next_build
+
+    Tests of next build will go back to lab_curr_commit automatically.
+    The purpose is that in case lab_next_commit is not stable, the DUTs will
+    go back to use the supposed stable lab_curr_commit.
+
+    On the other hand, if lab_next_commit is stable by juding from the lab
+    dashboard, someone can then copy lab_next_build to lab_curr_commit manually.
+
+    @params hostname: the client hostname;
+                      can be a DNS name or a numerical IP address
+    @params host_build: the image build number of the host
+
+    @returns commit in case of success; None in case of failure
     """
+    # The hostname may have a suffix of '.cros' if the test server
+    # is located out of the lab. Remove the suffix for consistency.
+    hostname = hostname.rstrip('.cros')
     try:
-        commit = None
-        src = GS_PUBLIC + COMMIT_FILENAME
-
-        with tempfile.NamedTemporaryFile(suffix='bt_commit') as tmp_file:
-            tmp_filename = tmp_file.name
-            cmd = 'gsutil cp {} {}'.format(src, tmp_filename)
-            result = utils.run(cmd)
-            if result.exit_status != 0:
-                logging.error('Downloading commit file failed with %s',
-                              result.exit_status)
-                return (False, None)
-            with open(tmp_filename) as f:
-                content = f.read()
-                logging.debug('content of the file is %s', content)
-                commit = content.strip('\n').strip()
-
-        logging.info('latest commit is %s', commit)
-        if commit is None:
-            return (False, None)
+        src = GS_PUBLIC + COMMITS_FILENAME
+        content = yaml.load(read_google_cloud_file(src))
+        logging.info('content of %s: %s', src, content)
+        commit = content.get('lab_next_commit')
+        if (hostname in content.get('lab_next_hosts') and
+            host_build == content.get('lab_next_build') and
+            bool(commit)):
+            logging.info('Next btpeer commit of %s: %s', hostname, commit)
         else:
-            return (True, commit)
+            # Otherwise, use the current commit.
+            commit = content.get('lab_curr_commit')
+            logging.info('Current btpeer commit of %s: %s', hostname, commit)
     except Exception as e:
-        logging.error('exception %s in get_latest_commit', str(e))
-        return (False, None)
+        logging.error('exception %s in get_target_commit', str(e))
+        commit = None
+    return commit
 
 
 def download_installation_files(host, commit):

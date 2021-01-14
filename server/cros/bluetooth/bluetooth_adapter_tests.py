@@ -4398,8 +4398,9 @@ class BluetoothAdapterTests(test.test):
                         if v['update_needed']])
 
         try:
-            commit = None
-            (_, commit) = bluetooth_peer_update.get_latest_commit()
+            build = self.host.get_release_version()
+            commit = bluetooth_peer_update.get_target_commit(
+                    self.host.hostname, build)
             if commit is None:
                 logging.error('Unable to get current commit')
                 return False

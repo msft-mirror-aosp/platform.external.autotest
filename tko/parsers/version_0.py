@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # pylint: disable=missing-docstring
 import os
 import re
@@ -111,7 +112,8 @@ class job(models.job):
     def find_hostname(path):
         hostname = os.path.join(path, "sysinfo", "hostname")
         try:
-            machine = open(hostname).readline().rstrip()
+            with open(hostname) as rf:
+                machine = rf.readline().rstrip()
             return machine
         except Exception:
             tko_utils.dprint("Could not read a hostname from "
@@ -190,7 +192,9 @@ class kernel(models.kernel):
             return None
 
         base, patches, hashes = "UNKNOWN", [], []
-        for line in file(path):
+        with open(path) as rf:
+            lines = rf.readlines()
+        for line in lines:
             head, rest = line.split(": ", 1)
             rest = rest.split()
             if head == "BASE":

@@ -1,3 +1,8 @@
+# Lint as: python2, python3
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import json
 import math
 import os
@@ -9,6 +14,8 @@ from autotest_lib.tko import status_lib
 from autotest_lib.tko import utils as tko_utils
 from autotest_lib.tko.parsers import base
 from autotest_lib.tko.parsers import version_0
+from six.moves import map
+from six.moves import range
 
 
 class job(version_0.job):
@@ -173,7 +180,9 @@ class perf_value_iteration(models.perf_value_iteration):
         value = perf_dict['value']
         perf_dict['stddev'] = 0.0
         if isinstance(value, list):
-            value, stddev = mean_and_standard_deviation(map(float, value))
+            # list wrapping the map IS needed here.
+            value, stddev = mean_and_standard_deviation(list(map(float,
+                                                                 value)))
             perf_dict['value'] = value
             perf_dict['stddev'] = stddev
 
@@ -370,7 +379,7 @@ class parser(base.parser):
                     reason = 'Job aborted unexpectedly'
 
                 timestamp = line.optional_fields.get('timestamp')
-                for i in reversed(xrange(stack.size())):
+                for i in reversed(range(stack.size())):
                     if abort_subdir_stack:
                         subdir = abort_subdir_stack.pop()
                     else:

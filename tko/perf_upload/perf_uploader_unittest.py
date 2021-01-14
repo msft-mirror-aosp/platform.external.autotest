@@ -4,6 +4,10 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import json
 import os
 import tempfile
@@ -12,6 +16,7 @@ import unittest
 import common
 from autotest_lib.tko import models as tko_models
 from autotest_lib.tko.perf_upload import perf_uploader
+import six
 
 
 class test_aggregate_iterations(unittest.TestCase):
@@ -76,7 +81,7 @@ class test_aggregate_iterations(unittest.TestCase):
     def setUp(self):
         """Sets up for each test case."""
         self._perf_values = []
-        for iter_num, iter_data in self._PERF_ITERATION_DATA.iteritems():
+        for iter_num, iter_data in six.iteritems(self._PERF_ITERATION_DATA):
             self._perf_values.append(
                     tko_models.perf_value_iteration(iter_num, iter_data))
 
@@ -370,42 +375,44 @@ class test_get_version_numbers(unittest.TestCase):
     """Tests for the _get_version_numbers function."""
 
     def test_with_valid_versions(self):
-      """Checks the version numbers used when data is formatted as expected."""
-      self.assertEqual(
-              ('34.5678.9.0', '34.5.678.9'),
-              perf_uploader._get_version_numbers(
-                  {
-                      'CHROME_VERSION': '34.5.678.9',
-                      'CHROMEOS_RELEASE_VERSION': '5678.9.0',
-                  }))
+        """Checks the version numbers used when data is formatted as expected."""
+        self.assertEqual(('34.5678.9.0', '34.5.678.9'),
+                         perf_uploader._get_version_numbers({
+                                 'CHROME_VERSION':
+                                 '34.5.678.9',
+                                 'CHROMEOS_RELEASE_VERSION':
+                                 '5678.9.0',
+                         }))
 
     def test_with_missing_version_raises_error(self):
-      """Checks that an error is raised when a version is missing."""
-      with self.assertRaises(perf_uploader.PerfUploadingError):
-          perf_uploader._get_version_numbers(
-              {
-                  'CHROMEOS_RELEASE_VERSION': '5678.9.0',
-              })
+        """Checks that an error is raised when a version is missing."""
+        with self.assertRaises(perf_uploader.PerfUploadingError):
+            perf_uploader._get_version_numbers({
+                    'CHROMEOS_RELEASE_VERSION':
+                    '5678.9.0',
+            })
 
     def test_with_unexpected_version_format_raises_error(self):
-      """Checks that an error is raised when there's a rN suffix."""
-      with self.assertRaises(perf_uploader.PerfUploadingError):
-          perf_uploader._get_version_numbers(
-              {
-                  'CHROME_VERSION': '34.5.678.9',
-                  'CHROMEOS_RELEASE_VERSION': '5678.9.0r1',
-              })
+        """Checks that an error is raised when there's a rN suffix."""
+        with self.assertRaises(perf_uploader.PerfUploadingError):
+            perf_uploader._get_version_numbers({
+                    'CHROME_VERSION':
+                    '34.5.678.9',
+                    'CHROMEOS_RELEASE_VERSION':
+                    '5678.9.0r1',
+            })
 
     def test_with_valid_release_milestone(self):
-      """Checks the version numbers used when data is formatted as expected."""
-      self.assertEqual(
-              ('54.5678.9.0', '34.5.678.9'),
-              perf_uploader._get_version_numbers(
-                  {
-                      'CHROME_VERSION': '34.5.678.9',
-                      'CHROMEOS_RELEASE_VERSION': '5678.9.0',
-                      'CHROMEOS_RELEASE_CHROME_MILESTONE': '54',
-                  }))
+        """Checks the version numbers used when data is formatted as expected."""
+        self.assertEqual(('54.5678.9.0', '34.5.678.9'),
+                         perf_uploader._get_version_numbers({
+                                 'CHROME_VERSION':
+                                 '34.5.678.9',
+                                 'CHROMEOS_RELEASE_VERSION':
+                                 '5678.9.0',
+                                 'CHROMEOS_RELEASE_CHROME_MILESTONE':
+                                 '54',
+                         }))
 
 
 class test_format_for_upload(unittest.TestCase):
@@ -457,11 +464,12 @@ class test_format_for_upload(unittest.TestCase):
         def ordered(obj):
             """Return the sorted obj."""
             if isinstance(obj, dict):
-               return sorted((k, ordered(v)) for k, v in obj.items())
+                return sorted((k, ordered(v)) for k, v in obj.items())
             if isinstance(obj, list):
-               return sorted(ordered(x) for x in obj)
+                return sorted(ordered(x) for x in obj)
             else:
-               return obj
+                return obj
+
         fail_msg = 'Unexpected result string: %s' % actual_result
         self.assertEqual(ordered(expected), ordered(actual), msg=fail_msg)
 

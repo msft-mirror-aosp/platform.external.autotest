@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -13,12 +14,11 @@ must be logged in with an @google.com account to view chromeOS perf data there.
 
 """
 
-import httplib
+import six.moves.http_client
 import json
 import os
 import re
-import urllib
-import urllib2
+from six.moves import urllib
 
 import common
 from autotest_lib.tko import utils as tko_utils
@@ -194,9 +194,10 @@ def _get_version_numbers(test_attributes):
     # Use the release milestone as the milestone if present, othewise prefix the
     # cros version with the with the Chrome browser milestone.
     if cros_milestone:
-      cros_version = "%s.%s" % (cros_milestone, cros_version)
+        cros_version = "%s.%s" % (cros_milestone, cros_version)
     else:
-      cros_version = chrome_version[:chrome_version.find('.') + 1] + cros_version
+        cros_version = chrome_version[:chrome_version.find('.') +
+                                      1] + cros_version
     if not re.match(VERSION_REGEXP, cros_version):
         raise PerfUploadingError('CrOS version "%s" does not match expected '
                                  'format.' % cros_version)
@@ -319,19 +320,19 @@ def _send_to_dashboard(data_obj):
     @raises PerfUploadingError if an exception was raised when uploading.
 
     """
-    encoded = urllib.urlencode(data_obj)
-    req = urllib2.Request(_DASHBOARD_UPLOAD_URL, encoded)
+    encoded = urllib.parse.urlencode(data_obj)
+    req = urllib.request.Request(_DASHBOARD_UPLOAD_URL, encoded)
     _add_oauth_token(req.headers)
     try:
-        urllib2.urlopen(req)
-    except urllib2.HTTPError as e:
+        urllib.request.urlopen(req)
+    except urllib.error.HTTPError as e:
         raise PerfUploadingError('HTTPError: %d %s for JSON %s\n' % (
                 e.code, e.msg, data_obj['data']))
-    except urllib2.URLError as e:
+    except urllib.error.URLError as e:
         raise PerfUploadingError(
                 'URLError: %s for JSON %s\n' %
                 (str(e.reason), data_obj['data']))
-    except httplib.HTTPException:
+    except six.moves.http_client.HTTPException:
         raise PerfUploadingError(
                 'HTTPException for JSON %s\n' % data_obj['data'])
 
@@ -402,4 +403,3 @@ def upload_test(job, test, jobname):
     else:
         tko_utils.dprint('Successfully uploaded perf data to the perf '
                          'dashboard for test %s.' % test_name)
-

@@ -294,6 +294,16 @@ class purgeable_logdir(logdir):
             utils.system("rm -rf %s/*" % (self.dir))
 
 
+class purged_on_init_logdir(logdir):
+    """Represents a log directory that is purged *when initialized*."""
+
+    def __init__(self, directory, excludes=logdir.DEFAULT_EXCLUDES):
+        super(purged_on_init_logdir, self).__init__(directory, excludes)
+
+        if os.path.exists(self.dir):
+            utils.system("rm -rf %s/*" % (self.dir))
+
+
 class site_sysinfo(base_sysinfo.base_sysinfo):
     """Represents site system info."""
     def __init__(self, job_resultsdir):
@@ -324,17 +334,20 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
         self.test_loggables.add(
             purgeable_logdir(
                 os.path.join(constants.CRYPTOHOME_MOUNT_PT, "log")))
-        # We only want to gather and purge crash reports after the client test
-        # runs in case a client test is checking that a crash found at boot
-        # (such as a kernel crash) is handled.
+
+        # We do *not* want to purge crashes after iteration to allow post-test
+        # infrastructure to collect them as well. Instead, purge them before.
+        # TODO(mutexlox, ayatane): test_runner should handle the purging.
         self.after_iteration_loggables.add(
-            purgeable_logdir(
-                os.path.join(constants.CRYPTOHOME_MOUNT_PT, "crash"),
-                excludes=logdir.DEFAULT_EXCLUDES + (crash_exclude_string,)))
+                purged_on_init_logdir(os.path.join(
+                        constants.CRYPTOHOME_MOUNT_PT, "crash"),
+                                      excludes=logdir.DEFAULT_EXCLUDES +
+                                      (crash_exclude_string, )))
         self.after_iteration_loggables.add(
-            purgeable_logdir(
-                constants.CRASH_DIR,
-                excludes=logdir.DEFAULT_EXCLUDES + (crash_exclude_string,)))
+                purged_on_init_logdir(constants.CRASH_DIR,
+                                      excludes=logdir.DEFAULT_EXCLUDES +
+                                      (crash_exclude_string, )))
+
         self.test_loggables.add(
             logfile(os.path.join(constants.USER_DATA_DIR,
                                  ".Google/Google Talk Plugin/gtbplugin.log")))

@@ -1710,6 +1710,19 @@ class BluetoothDevice(object):
                                  self.NATIVE_DATE_FORMAT)
 
     @proxy_thread_safe
+    def get_bt_usb_disconnect_str(self):
+        """ Return the expected log error on USB disconnect
+
+        Locate the descriptor that will be used from the list of all usb
+        descriptors associated with our bluetooth chip, and format into the
+        expected string error for USB disconnect
+
+        @returns: string representing expected usb disconnect log entry if usb
+                  device could be identified, None otherwise
+        """
+        return self._proxy.get_bt_usb_disconnect_str()
+
+    @proxy_thread_safe
     def close(self, close_host=True):
         """Tear down state associated with the client.
 

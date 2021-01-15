@@ -3564,6 +3564,60 @@ class BluetoothFacadeNative(object):
             logging.debug("Chipset not known. Returning %s", chipset_string)
             return chipset_string
 
+    def get_bt_usb_device_strs(self):
+        """ Return the usb endpoints for the bluetooth device, if they exist
+
+        We wish to be able to identify usb disconnect events that affect our
+        bluetooth operation. To do so, we must first identify the usb endpoint
+        that is associated with our bluetooth device.
+
+        @returns: Relevant usb endpoints for the bluetooth device,
+                  i.e. ['1-1','1-1.2'] if they exist,
+                  [] otherwise
+        """
+
+        hci_device = '/sys/class/bluetooth/hci0'
+        real_path = os.path.realpath(hci_device)
+
+        # real_path for a usb bluetooth controller will look something like:
+        # ../../devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4:1.0/bluetooth/hci0
+        if 'usb' not in real_path:
+            return []
+
+        logging.debug('Searching for usb path: {}'.format(real_path))
+
+        # Grab all numbered entries between 'usb' and 'bluetooth' descriptors
+        m = re.search(r'usb(.*)bluetooth', real_path)
+
+        if not m:
+            logging.error(
+                    'Unable to extract usb dev from {}'.format(real_path))
+            return []
+
+        # Return the path as a list of individual usb descriptors
+        return m.group(1).split('/')
+
+    def get_bt_usb_disconnect_str(self):
+        """ Return the expected log error on USB disconnect
+
+        Locate the descriptor that will be used from the list of all usb
+        descriptors associated with our bluetooth chip, and format into the
+        expected string error for USB disconnect
+
+        @returns: string representing expected usb disconnect log entry if usb
+                  device could be identified, None otherwise
+        """
+        disconnect_log_template = 'usb {}: USB disconnect'
+        descriptors = self.get_bt_usb_device_strs()
+
+        # The usb disconnect log message seems to use the most detailed
+        # descriptor that does not use the ':1.0' entry
+        for d in sorted(descriptors, key=len, reverse=True):
+            if ':' not in d:
+                return disconnect_log_template.format(d)
+
+        return None
+
     def get_device_time(self):
         """ Get the current device time. """
         return datetime.now().strftime(self.OUT_DATE_FORMAT)

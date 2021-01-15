@@ -4533,6 +4533,12 @@ class BluetoothAdapterTests(test.test):
         self.assert_on_fail(
                 self.test_pairing(device.address, device.pin, trusted=True))
 
+    def identify_platform_failure_reasons(self):
+        """ Identifies platform failure reasons to watch for in logs """
+        s = self.bluetooth_facade.get_bt_usb_disconnect_str()
+        if s:
+            COMMON_FAILURES[s] = 'USB disconnect detected'
+
     def run_once(self, *args, **kwargs):
         """This method should be implemented by children classes.
 

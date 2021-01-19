@@ -25,6 +25,9 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
     _ATH10K_RESET_PATH = \
         '/sys/kernel/debug/ieee80211/%s/ath10k/simulate_fw_crash'
 
+    # The below path is used to check for wcn399x device.
+    _ATH10K_DEVICE_PATH = "/sys/class/net/%s/device/of_node/compatible"
+
     # Possible reset paths for Intel wireless NICs are:
     # 1. '/sys/kernel/debug/iwlwifi/*/iwlmvm/fw_restart'
     # Logs look like: iwlwifi 0000:00:0c.0: 0x00000038 | BAD_COMMAND
@@ -114,6 +117,18 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
         """
         self.context.client.host.run('echo soft > ' + self.ath10k_reset_path)
 
+        dev_path = self._ATH10K_DEVICE_PATH % (self.context.client.wifi_if)
+        wcn399x_dev = self.context.client.host.run('cat ' + dev_path,
+                                                   ignore_status=True)
+
+        # Disconnection and reconnection is required for wcn399x devices
+        if "qcom,wcn3990-wifi" in wcn399x_dev.stdout.split(b'\0'):
+            ssid = self.context.router.get_ssid()
+
+            # Disconnection and reconnection after reset so idle state expected
+            self.context.client.wait_for_service_states(ssid, ['idle'],
+                                                        timeout_seconds=20)
+
     def iwlwifi_reset_path(self):
         """Get path to iwlwifi debugfs reset file"""
         pci_dev_name = self.context.client.parent_device_name
@@ -131,18 +146,18 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
 
     def get_reset_driver(self):
         DRIVER_LIST = [
-            self.DriverReset(
-                supported=self.mwifiex_reset_exists,
-                do_reset=self.mwifiex_reset,
-            ),
-            self.DriverReset(
-                supported=self.ath10k_reset_exists,
-                do_reset=self.ath10k_reset,
-            ),
-            self.DriverReset(
-                supported=self.iwlwifi_reset_exists,
-                do_reset=self.iwlwifi_reset,
-            ),
+                self.DriverReset(
+                        supported=self.mwifiex_reset_exists,
+                        do_reset=self.mwifiex_reset,
+                ),
+                self.DriverReset(
+                        supported=self.ath10k_reset_exists,
+                        do_reset=self.ath10k_reset,
+                ),
+                self.DriverReset(
+                        supported=self.iwlwifi_reset_exists,
+                        do_reset=self.iwlwifi_reset,
+                ),
         ]
 
         for driver in DRIVER_LIST:

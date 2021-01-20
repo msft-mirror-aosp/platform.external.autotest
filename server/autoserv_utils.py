@@ -77,7 +77,7 @@ def autoserv_run_job_command(autoserv_directory, machines,
     full_script_path = os.path.join(autoserv_directory, script_name)
 
     # virtualenv_autoserv is a `POSIX shell script, ASCII text executable`.
-    # Calling with `sys.executable` would fail because python doesn't 
+    # Calling with `sys.executable` would fail because python doesn't
     # interpret shebangs itself.
     if use_virtualenv:
         command = [full_script_path]
@@ -141,5 +141,9 @@ def autoserv_run_job_command(autoserv_directory, machines,
 
     if in_lab:
         command.extend(['--lab', 'True'])
+
+    py_version = os.getenv('PY_VERSION')
+    if py_version:
+        command.extend(['--py_version', py_version])
 
     return command + extra_args

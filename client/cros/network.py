@@ -16,7 +16,7 @@ from autotest_lib.client.common_lib import error
 
 
 def CheckInterfaceForDestination(host, expected_interface,
-                                 family=socket.AF_UNSPEC):
+                                 families=[socket.AF_UNSPEC]):
     """
     Checks that routes for host go through a given interface.
 
@@ -59,15 +59,27 @@ def CheckInterfaceForDestination(host, expected_interface,
 
     # addrinfo records: (family, type, proto, canonname, (addr, port))
     server_addresses = [record[4][0]
+                        for family in families
                         for record in socket.getaddrinfo(host, 80, family)]
+    found_route = False
+    failing_addresses = []
     for address in server_addresses:
         # Routes may not always be up by this point. Note that routes for v4 or
         # v6 may come up before the other, so we simply do this poll for all
         # addresses.
-        utils.poll_for_condition(
-            condition=lambda: _MatchesRoute(address, expected_interface),
-            exception=error.TestFail('No route to %s' % address),
-            timeout=1)
+        try:
+            utils.poll_for_condition(
+                condition=lambda: _MatchesRoute(address, expected_interface),
+                exception=Exception('No route to %s' % address),
+                timeout=1)
+        except Exception as e:
+            logging.info(e)
+            failing_addresses.append(address)
+        else:
+            found_route = True
+
+    if not found_route:
+        raise error.TestFail('No route to addresses %s', failing_addresses)
 
 FETCH_URL_PATTERN_FOR_TEST = \
     'http://testing-chargen.appspot.com/download?size=%d'

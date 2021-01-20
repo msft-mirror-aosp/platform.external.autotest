@@ -9,7 +9,6 @@ This module provides bindings for Hermes.
 
 import dbus
 import logging
-import time
 import dbus.mainloop.glib
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.cellular import cellular_logging
@@ -77,9 +76,6 @@ class HermesManagerProxy(object):
             sleep_interval=hermes_constants.CONNECT_WAIT_INTERVAL_SECONDS)
         connection = _connect_to_hermes_manager(bus)
 
-        # Check to make sure Hermes is responding to DBus requests by
-        # setting to test mode
-        connection.set_test_mode('true')
         return connection
 
     def __init__(self, bus=None):
@@ -223,18 +219,15 @@ class HermesManagerProxy(object):
                 # give smds or empty string
                 if euicc == "/org/chromium/Hermes/euicc/1":
                     logging.debug("Request euicc 1")
+                    self.set_test_mode(True)
                     euicc_proxy.request_pending_profiles(
                             dbus.String('prod.smds.rsp.goog'))
-                    #Remove theses(2) lines after fixing b:177297969
-                    time.sleep(3)
-                    euicc_proxy.request_installed_profiles()
                 else:
+                    self.set_test_mode(False)
                     logging.debug('Skipping request_pending_profiles for '
                                   'euicc 0 , since we do not plan to test '
                                   'SMDS with prod CI')
-                #Uncomment after fixing b:177297969
-                #time.sleep(3)
-                #euicc_proxy.request_installed_profiles()
+                euicc_proxy.request_installed_profiles()
         except dbus.DBusException as e:
             if _is_unknown_dbus_binding_exception(e):
                 return None

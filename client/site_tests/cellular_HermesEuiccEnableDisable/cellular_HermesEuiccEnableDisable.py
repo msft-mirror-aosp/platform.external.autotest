@@ -45,6 +45,10 @@ class cellular_HermesEuiccEnableDisable(test.test):
         """ Validates enable profile api DBus call """
         try:
             euicc = self.hermes_manager.get_euicc(euicc_path)
+            # Profile objects maybe stale if IsActive is false
+            # Switch to the euicc we are interested in before
+            # performing an op.
+            euicc.request_installed_profiles()
             if not euicc:
                 raise error.TestFail('No active euicc,'
                                      'try install profile and euicc on dut')
@@ -77,6 +81,7 @@ class cellular_HermesEuiccEnableDisable(test.test):
         """ Validates disable profile api DBus call """
         try:
             euicc = self.hermes_manager.get_euicc(euicc_path)
+            euicc.request_installed_profiles()
             if not euicc:
                 raise error.TestFail('No active euicc,'
                                      'try install euicc and profile on dut')
@@ -112,6 +117,10 @@ class cellular_HermesEuiccEnableDisable(test.test):
         on EID of test esims in lab devices
         """
 
+        if self.is_prod_ci:
+            raise error.TestFail(
+                    'No support for InstallProfileTest with prod CI')
+
         try:
             # get all pending profiles which are generated on DUT EID
             # Read all profiles activation code from pending profile dict
@@ -128,7 +137,7 @@ class cellular_HermesEuiccEnableDisable(test.test):
                 logging.error('No Euicc enumerated')
                 return False
 
-            logging.info('euicc chosen: %s', euicc)
+            logging.info('euicc chosen: %s', euicc_path)
             profiles_pending = euicc.get_pending_profiles()
             if not profiles_pending:
                 logging.error("No pending profile found")
@@ -221,7 +230,7 @@ class cellular_HermesEuiccEnableDisable(test.test):
         installed_profiles = euicc.get_installed_profiles()
         if installed_profiles[profile_path_to_install] is None:
             raise error.TestFail('Install pending profile failed :%s',
-                                 installed_profiles[profile_path_to_install])
+                                 profile_path_to_install)
 
         # Do uninstall the just installed profile if it has > 2 profiles
         if len(installed_profiles) > 2:
@@ -247,18 +256,28 @@ class cellular_HermesEuiccEnableDisable(test.test):
                 return False
 
             profiles_installed = euicc.get_installed_profiles()
-            if not profiles_installed:
-                raise error.TestFail('In Test no installed profiles')
 
-            profile_uninstall = random.choice(list(
-                profiles_installed.keys()))
-            euicc.uninstall_profile(profile_uninstall)
-            logging.debug('Uninstalled profile %s', profile_uninstall)
+            uninstalled_profile = None
+
+            for profile_path, profile in profiles_installed.items():
+                # Hermes does not support uninstalling test profiles yet.
+                if hermes_constants.ProfileClassToString(
+                        profile.profileclass) != 'TESTING':
+                    logging.info("profile to uninstall is : %s", profile_path)
+                    euicc.uninstall_profile(profile_path)
+                    uninstalled_profile = profile_path
+                    logging.info('UninstallTest succeeded')
+                    break
+
+            if not uninstalled_profile:
+                raise error.TestFail(
+                        'UninstallTest failed - No uninstallable profile')
+
             #Try to find the uninstalled profile, if exists raise test failure
             profiles_installed = {}
             profiles_installed = euicc.get_installed_profiles()
             for profile in profiles_installed.keys():
-                if profile_uninstall in profile:
+                if uninstalled_profile in profile:
                     raise error.TestFail('Uninstall profile Failed')
             logging.info('UninstallTest succeeded')
             return True
@@ -280,7 +299,6 @@ class cellular_HermesEuiccEnableDisable(test.test):
         logging.info('Connect to Hermes attempt')
         self._connect_to_hermes()
 
-        logging.info('Refresh profiles')
         self.hermes_manager.refresh_profiles()
 
         # Always euicc/0 is prod one and euicc/1 is for test esim profiles
@@ -288,6 +306,9 @@ class cellular_HermesEuiccEnableDisable(test.test):
         self.test_euicc_path = "/org/chromium/Hermes/euicc/1"
         euicc_path = self.prod_euicc_path if self.is_prod_ci \
                                             else self.test_euicc_path
+
+        self.hermes_manager.set_test_mode(not self.is_prod_ci)
+
         if not self.is_prod_ci:
             is_smds_test = random.choice([True, False])
             logging.info('is_smds_test %s', is_smds_test)

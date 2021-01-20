@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "cellular_HermesEuiccEnableDisable"
+NAME = "cellular_HermesEuiccEnableDisable.prodci"
 PURPOSE = "Verify that a failed hermes connect attempt reported"
 CRITERIA = """
 This test will fail if could not able to Enable/Disable a given Euicc through

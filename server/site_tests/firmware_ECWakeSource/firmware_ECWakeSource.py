@@ -118,6 +118,10 @@ class firmware_ECWakeSource(FirmwareTest):
 
     def run_once(self, host):
         """Runs a single iteration of the test."""
+        if not self.check_ec_capability():
+            raise error.TestNAError(
+                    "Nothing needs to be tested on this device")
+
         # Login as a normal user and stay there, such that closing lid triggers
         # suspend, instead of shutdown.
         autotest_client = autotest.Autotest(host)

@@ -1,14 +1,71 @@
-__author__ = "jadmanski@google.com (John Admanski)"
-
-import os, sys
+import os
+import re
+import sys
 
 # This must run on Python versions less than 2.4.
 dirname = os.path.dirname(sys.modules[__name__].__file__)
-common_dir = os.path.abspath(os.path.join(dirname, "common_lib"))
+common_dir = os.path.abspath(os.path.join(dirname, 'common_lib'))
 sys.path.insert(0, common_dir)
 import check_version
 sys.path.pop(0)
-check_version.check_python_version()
+
+
+def _get_pyversion_from_args():
+    """Extract, format, & pop the current py_version from args, if provided."""
+    py_version = 2
+    py_version_re = re.compile(r'--py_version=(\w+)\b')
+
+    version_found = False
+    for i, arg in enumerate(sys.argv):
+        if not arg.startswith('--py_version'):
+            continue
+        result = py_version_re.search(arg)
+        if result:
+            if version_found:
+                raise ValueError('--py_version may only be specified once.')
+            py_version = result.group(1)
+            version_found = True
+            if py_version not in ('2', '3'):
+                raise ValueError('Python version must be "2" or "3".')
+
+            # Remove the arg so other argparsers don't get grumpy.
+            sys.argv.pop(i)
+
+    return py_version
+
+
+def _desired_version():
+    """
+    Returns desired python version.
+
+    If the PY_VERSION env var is set, just return that. This is the case
+    when autoserv kicks of autotest on the server side via a job.run(), or
+    a process created a subprocess.
+
+    Otherwise, parse & pop the sys.argv for the '--py_version' flag. If no
+    flag is set, default to python 2 (for now).
+
+    """
+    # Even if the arg is in the env vars, we will attempt to get it from the
+    # args, so that it can be popped prior to other argparsers hitting.
+    py_version = _get_pyversion_from_args()
+
+    if os.getenv('PY_VERSION'):
+        return int(os.getenv('PY_VERSION'))
+
+    os.environ['PY_VERSION'] = str(py_version)
+    return int(py_version)
+
+
+desired_version = _desired_version()
+if desired_version == sys.version_info.major:
+    os.environ['AUTOTEST_NO_RESTART'] = 'True'
+else:
+    # There are cases were this can be set (ie by test_that), but a subprocess
+    # is launched in the incorrect version.
+    if os.getenv('AUTOTEST_NO_RESTART'):
+        del os.environ['AUTOTEST_NO_RESTART']
+    check_version.check_python_version(desired_version)
 
 import glob, traceback, types
 
@@ -22,7 +79,7 @@ def _create_module(name):
 
 def _create_module_and_parents(name):
     """Create a module, and all the necessary parents"""
-    parts = name.split(".")
+    parts = name.split('.')
     # first create the top-level module
     parent = _create_module(parts[0])
     created_parts = [parts[0]]
@@ -33,7 +90,7 @@ def _create_module_and_parents(name):
         module = types.ModuleType(child_name)
         setattr(parent, child_name, module)
         created_parts.append(child_name)
-        sys.modules[".".join(created_parts)] = module
+        sys.modules['.'.join(created_parts)] = module
         parent = module
 
 
@@ -45,11 +102,11 @@ def _import_children_into_module(parent_module_name, path):
         full_name = os.path.join(path, filename)
         if not os.path.isdir(full_name):
             continue   # skip files
-        if "." in filename:
-            continue   # if "." is in the name it's not a valid package name
+        if '.' in filename:
+            continue  # if '.' is in the name it's not a valid package name
         if not os.access(full_name, os.R_OK | os.X_OK):
             continue   # need read + exec access to make a dir importable
-        if "__init__.py" in os.listdir(full_name):
+        if '__init__.py' in os.listdir(full_name):
             names.append(filename)
     # import all the packages and insert them into 'parent_module'
     sys.path.insert(0, path)
@@ -58,7 +115,7 @@ def _import_children_into_module(parent_module_name, path):
         # add the package to the parent
         parent_module = sys.modules[parent_module_name]
         setattr(parent_module, name, module)
-        full_name = parent_module_name + "." + name
+        full_name = parent_module_name + '.' + name
         sys.modules[full_name] = module
     # restore the system path
     sys.path.pop(0)
@@ -91,10 +148,10 @@ def _autotest_logging_handle_error(self, record):
 
 def _monkeypatch_logging_handle_error():
     # Hack out logging.py*
-    logging_py = os.path.join(os.path.dirname(__file__), "common_lib",
-                              "logging.py*")
+    logging_py = os.path.join(os.path.dirname(__file__), 'common_lib',
+                              'logging.py*')
     if glob.glob(logging_py):
-        os.system("rm -f %s" % logging_py)
+        os.system('rm -f %s' % logging_py)
 
     # Monkey patch our own handleError into the logging module's StreamHandler.
     # A nicer way of doing this -might- be to have our own logging module define
@@ -134,6 +191,6 @@ def setup(base_path, root_module_name=""):
         # running as a client.
         # This is primarily for the benefit of frontend and tko so that they
         # may use libraries other than those available as system packages.
-        sys.path.insert(0, os.path.join(base_path, "site-packages"))
+        sys.path.insert(0, os.path.join(base_path, 'site-packages'))
 
     _monkeypatch_logging_handle_error()

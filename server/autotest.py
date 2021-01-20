@@ -55,6 +55,11 @@ _FAIL_STATUS_RE = re.compile(
 LOG_BUFFER_SIZE_BYTES = 64
 
 
+def _set_py_version():
+    """Return the py_version flag obtained from the set environmental var."""
+    return '--py_version=%s' % int(os.getenv('PY_VERSION'))
+
+
 class AutodirNotFoundError(Exception):
     """No Autotest installation could be found."""
 
@@ -735,23 +740,36 @@ class _Run(object):
 
 
     def get_background_cmd(self, section):
-        cmd = ['nohup', os.path.join(self.autodir, 'bin/autotest_client')]
+        cmd = [
+                'nohup',
+                os.path.join(self.autodir, 'bin/autotest_client'),
+                _set_py_version()
+        ]
         cmd += self.get_base_cmd_args(section)
         cmd += ['>/dev/null', '2>/dev/null', '&']
         return ' '.join(cmd)
 
 
     def get_daemon_cmd(self, section, monitor_dir):
-        cmd = ['nohup', os.path.join(self.autodir, 'bin/autotestd'),
-               monitor_dir, '-H autoserv']
+        cmd = [
+                'nohup',
+                os.path.join(self.autodir, 'bin/autotestd'), monitor_dir,
+                '-H autoserv',
+                _set_py_version()
+        ]
         cmd += self.get_base_cmd_args(section)
         cmd += ['>/dev/null', '2>/dev/null', '&']
         return ' '.join(cmd)
 
 
     def get_monitor_cmd(self, monitor_dir, stdout_read, stderr_read):
-        cmd = [os.path.join(self.autodir, 'bin', 'autotestd_monitor'),
-               monitor_dir, str(stdout_read), str(stderr_read)]
+        cmd = [
+                os.path.join(self.autodir, 'bin', 'autotestd_monitor'),
+                monitor_dir,
+                str(stdout_read),
+                str(stderr_read),
+                _set_py_version()
+        ]
         return ' '.join(cmd)
 
 
@@ -1419,8 +1437,8 @@ class client_logger(object):
             server_package = os.path.join(self.job.pkgmgr.pkgmgr_dir,
                                           'packages', pkg_name)
             if os.path.exists(server_package):
-              self.host.send_file(server_package, remote_dest)
-              return
+                self.host.send_file(server_package, remote_dest)
+                return
 
         except error.AutoservRunError:
             msg = ("Package %s could not be sent from the package cache." %

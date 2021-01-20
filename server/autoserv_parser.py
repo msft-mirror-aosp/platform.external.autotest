@@ -238,6 +238,12 @@ class autoserv_parser(object):
                      ' enabled. The default value is provided via the global'
                      ' config setting for AUTOSERV/container_base_name.'
         )
+        self.parser.add_argument('--py_version',
+                                 action='store',
+                                 dest='py_version',
+                                 default='2',
+                                 type=str,
+                                 choices=['2', '3'])
 
         #
         # Warning! Please read before adding any new arguments!

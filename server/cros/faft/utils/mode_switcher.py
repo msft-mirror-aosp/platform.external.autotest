@@ -68,7 +68,8 @@ class _BaseFwBypasser(object):
     def check_vbus_and_pd_state(self):
         """Perform PD power and data swap, if DUT is SRC and doesn't supply
         Vbus"""
-        if self.ec and self.faft_config.ec_ro_vbus_bug:
+        if (self.ec and self.faft_config.ec_ro_vbus_bug
+                    and (self.servo.get('servo_v4_type') == 'type-c')):
             time.sleep(self.faft_framework.PD_RESYNC_DELAY)
             servo_pr_role = self.servo.get_servo_v4_role()
             if servo_pr_role == 'snk':
@@ -79,15 +80,28 @@ class _BaseFwBypasser(object):
                     # Make servo SRC to supply Vbus correctly
                     self.servo.set_servo_v4_role('src')
                     time.sleep(self.faft_framework.PD_RESYNC_DELAY)
+
             # After reboot, EC can be UFP so check that
-            if not self.ec.is_dfp():
+            MAX_PORTS = 2
+            ec_is_dfp = False
+            for port in range(0, MAX_PORTS):
+                if self.ec.is_dfp(port):
+                    ec_is_dfp = True
+                    break
+
+            if not ec_is_dfp:
                 # EC is UFP, perform PD Data Swap
-                self.ec.send_command("pd 0 swap data")
-                time.sleep(self.faft_framework.PD_RESYNC_DELAY)
-                # Make sure EC is DFP now
-                if not self.ec.is_dfp():
-                    # EC is still UFP
-                    raise error.TestError('DUT is not DFP in recovery mode.')
+                for port in range(0, MAX_PORTS):
+                    self.ec.send_command("pd %d swap data" % port)
+                    time.sleep(self.faft_framework.PD_RESYNC_DELAY)
+                    # Make sure EC is DFP now
+                    if self.ec.is_dfp(port):
+                        ec_is_dfp = True
+                        break
+
+            if not ec_is_dfp:
+                # EC is still UFP
+                raise error.TestError('DUT is not DFP in recovery mode.')
 
 
 class _KeyboardBypasser(_BaseFwBypasser):

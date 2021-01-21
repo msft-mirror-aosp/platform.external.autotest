@@ -223,14 +223,20 @@ class ChromeConsole(object):
           False: if EC is not DFP
         """
         is_dfp = None
+        ret = None
         try:
-            # After reboot, EC should be UFP, but workaround in servod
-            # can perform PD Data Swap in workaroud so check that
-            ret = self.send_command_get_output("pd %d state" % port, ["DFP"])
+            ret = self.send_command_get_output("pd %d state" % port,
+                                               ["DFP.*Flag"])
             is_dfp = True
         except Exception as e:
-            # EC is UFP
             is_dfp = False
+
+        # For TCPMv1, after disconnecting a device the data state remains
+        # the same, so even when pd state shows DPF, make sure the device is
+        # not disconnected
+        if is_dfp:
+            if "DRP_AUTO_TOGGLE" in ret[0] or "DISCONNECTED" in ret[0]:
+                is_dfp = False
 
         return is_dfp
 

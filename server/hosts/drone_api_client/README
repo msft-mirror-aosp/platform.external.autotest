@@ -1,5 +1,5 @@
 Protos in this dir are generated using
-`python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. common.proto`
+`python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. autottest_common.proto`
 and manually checked into the tree. The source of the protos is
 src/config/proto/chromiumos/config/api/test/tls/common.proto, relative to a
 standard repo.

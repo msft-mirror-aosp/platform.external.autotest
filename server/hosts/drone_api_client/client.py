@@ -7,8 +7,8 @@ import logging
 import six
 import time
 
-import common_pb2
-import common_pb2_grpc
+import autotest_common_pb2
+import autotest_common_pb2_grpc
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -23,7 +23,7 @@ class TLSClient(object):
         """Configure the grpc channel."""
         self.hostname = hostname
         self.channel = grpc.insecure_channel('{}:{}'.format(TLS_IP, TLS_PORT))
-        self.stub = common_pb2_grpc.CommonStub(self.channel)
+        self.stub = autotest_common_pb2_grpc.CommonStub(self.channel)
 
     def __enter__(self):
         return self
@@ -83,7 +83,7 @@ class TLSClient(object):
 
     def _send_cmd(self, cmd, timeout):
         """Serialize and send the cmd to the TLS service."""
-        formatted_cmd = common_pb2.ExecDutCommandRequest(name=self.hostname,
+        formatted_cmd = autotest_common_pb2.ExecDutCommandRequest(name=self.hostname,
                                                          command=cmd)
         return self.stub.ExecDutCommand(formatted_cmd, timeout=timeout)
 

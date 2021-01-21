@@ -199,6 +199,7 @@ suite:ssdqual
 suite:storage_qual
 suite:storage_qual_cq
 suite:storage_qual_external
+suite:storage_qual_mini_soak
 suite:storage_qual_quick
 suite:storage_qual_v2_l
 suite:storage_qual_v2_m

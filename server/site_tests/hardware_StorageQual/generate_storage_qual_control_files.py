@@ -74,6 +74,11 @@ BASE_NONROOT_BEFORE['args']['nonroot'] = True
 BASE_NONROOT_AFTER = copy.deepcopy(BASE_AFTER)
 BASE_NONROOT_AFTER['args']['nonroot'] = True
 
+BASE_MINI_SOAK_BEFORE = copy.deepcopy(BASE_BEFORE)
+BASE_MINI_SOAK_BEFORE['args']['skip_crypto'] = True
+BASE_MINI_SOAK_AFTER = copy.deepcopy(BASE_AFTER)
+BASE_MINI_SOAK_AFTER['args']['skip_crypto'] = True
+
 SOAK_QUICK = copy.deepcopy(SOAK)
 SOAK_QUICK['iterations'] = 2
 SOAK_QUICK['args']['duration'] = HOUR_IN_SECS
@@ -212,6 +217,25 @@ SUITES = {
             ]
         }
     ],
+    'storage_qual_mini_soak': [
+        {
+            'label': 'storage_qual_mini_soak',
+            'tests': [
+                BASE_MINI_SOAK_BEFORE,
+                {
+                    'test': 'hardware_StorageStress',
+                    'args': {'tag': 'soak', 'power_command': 'nothing',
+                        'storage_test_command': 'full_write',
+                        'duration': 2 * HOUR_IN_SECS
+                    },
+                    'iterations': 1,
+                    'priority': 90,
+                    'length': 'lengthy'
+                },
+                BASE_MINI_SOAK_AFTER
+            ]
+        }
+    ],
     'storage_qual_cq': [
         {
             'label': 'storage_qual_cq_1',
@@ -255,7 +279,8 @@ SUITE_ATTRIBUTES = {
     'storage_qual': 'suite:storage_qual',
     'storage_qual_quick': 'suite:storage_qual_quick',
     'storage_qual_cq': 'suite:storage_qual_cq',
-    'storage_qual_external': 'suite:storage_qual_external'
+    'storage_qual_external': 'suite:storage_qual_external',
+    'storage_qual_mini_soak': 'suite:storage_qual_mini_soak'
 }
 
 TEMPLATE = """

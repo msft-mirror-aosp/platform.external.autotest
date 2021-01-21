@@ -54,8 +54,13 @@ class hardware_StorageQualBase(test.test):
     ]
 
 
-    def run_once(self, client_ip, client_tag='', crypto_runtime=CRYPTO_RUNTIME,
-                 cq=False, nonroot=False):
+    def run_once(self,
+                 client_ip,
+                 client_tag='',
+                 crypto_runtime=CRYPTO_RUNTIME,
+                 cq=False,
+                 nonroot=False,
+                 skip_crypto=False):
         """
         Runs simple tests to ensure the device meets basic criteria.
 
@@ -63,6 +68,7 @@ class hardware_StorageQualBase(test.test):
         @param client_tag: client tag for keyval label
         @param crypto_runtime: runtime for platform.CryptohomeFio tests
         @param cq: part of a cq run
+        @param skip_crypto: skip running cryptohome tests
 
         """
 
@@ -85,12 +91,13 @@ class hardware_StorageQualBase(test.test):
                 client_at.run_test(test_name, disable_sysinfo=True,
                                    tag=client_tag, **argv)
 
-            # Test real life performance
-            for script in self.CRYPTO_TESTS:
-                client_at.run_test('platform_CryptohomeFio',
-                    disable_sysinfo=True,
-                    from_internal_disk_only=True,
-                    script=script,
-                    tag='_'.join([client_tag, script]),
-                    runtime=crypto_runtime,
-                    disk_configs=['crypto', 'plain'])
+            if not skip_crypto:
+                # Test real life performance
+                for script in self.CRYPTO_TESTS:
+                    client_at.run_test('platform_CryptohomeFio',
+                                       disable_sysinfo=True,
+                                       from_internal_disk_only=True,
+                                       script=script,
+                                       tag='_'.join([client_tag, script]),
+                                       runtime=crypto_runtime,
+                                       disk_configs=['crypto', 'plain'])

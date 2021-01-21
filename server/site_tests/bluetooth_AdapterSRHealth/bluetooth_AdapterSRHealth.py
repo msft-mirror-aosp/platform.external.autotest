@@ -125,11 +125,17 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                           resume_timeout=SUSPEND_SEC,
                                           test_start_time=start_time)
 
-                for device_type, device, device_test in devtuples:
-                    # Only reconnect if we don't expect automatic reconnect
-                    if not auto_reconnect:
+                # Only reconnect if we don't expect automatic reconnect.
+                # Let the devices initiate connections before the DUT initiates
+                # auto reconnections.
+                # Complete reconnecting all peers before running device tests.
+                # Otherwise, we may have a race between auto reconnection
+                # from the dut and peer initiated connection. See b/177870286
+                if not auto_reconnect:
+                    for device_type, device, _ in devtuples:
                         if 'BLE' in device_type:
-                            # LE can't reconnect without advertising/discoverable
+                            # LE can't reconnect without
+                            # advertising/discoverable
                             self.test_device_set_discoverable(device, True)
                             # Make sure we're actually connected
                             self.test_device_is_connected(device.address)
@@ -138,6 +144,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                             # wake up the dut
                             self.test_connection_by_device(device)
 
+                for _, device, device_test in devtuples:
                     if device_test is not None:
                         device_test(device)
 

@@ -2952,16 +2952,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             cros_constants.DEVICE_STATE_NEEDS_REPLACEMENT,
             resultdir=resultdir)
 
-    def _dut_fail_ssh_verifier(self):
-        """Check if DUT failed SSH verifier.
+    def _dut_is_accessible_by_verifier(self):
+        """Check if DUT accessible by SSH or PING verifier.
 
-        @returns: bool, True - verifier marked as fail.
-                        False - result not reachable, verifier did not fail.
+        @returns: bool, True - verifier marked as success.
+                        False - result not reachable, verifier did not success.
         """
         if not self._repair_strategy:
             return False
-        dut_ssh_verifier = self._repair_strategy.verifier_is_good('ssh')
-        return dut_ssh_verifier == hosts.VERIFY_FAILED
+        dut_ssh = self._repair_strategy.verifier_is_good('ssh')
+        dut_ping = self._repair_strategy.verifier_is_good('ping')
+        return dut_ssh == hosts.VERIFY_SUCCESS or dut_ssh == hosts.VERIFY_SUCCESS
 
     def _stat_if_pingable_but_not_sshable(self):
         """Check if DUT pingable but failed SSH verifier."""
@@ -2984,8 +2985,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         # state can be set by any cros repair actions
         if self.get_device_repair_state():
             return
-        if not self._dut_fail_ssh_verifier():
-            # DUT is sshable and we still have many options to repair it.
+        if self._dut_is_accessible_by_verifier():
+            # DUT is accessible and we still have many options to repair it.
             return
         needs_manual_repair = False
         dhp = self.health_profile
@@ -3022,7 +3023,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @returns: None
         """
         message_prefix = "Don't need to request servo-host reboot"
-        if not self._dut_fail_ssh_verifier():
+        if self._dut_is_accessible_by_verifier():
             return
         if not self._servo_host:
             logging.debug('%s as it not initialized', message_prefix)

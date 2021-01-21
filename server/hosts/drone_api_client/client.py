@@ -7,8 +7,8 @@ import logging
 import six
 import time
 
-import autotest_common_pb2
-import autotest_common_pb2_grpc
+from autotest_lib.server.hosts.drone_api_client import autotest_common_pb2
+from autotest_lib.server.hosts.drone_api_client import autotest_common_pb2_grpc
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils

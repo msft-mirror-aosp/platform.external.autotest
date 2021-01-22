@@ -104,6 +104,7 @@ suite:faft_bios_ec3po
 suite:faft_bios_ro_qual
 suite:faft_bios_rw_qual
 suite:faft_bios_tot
+suite:faft_ccd
 suite:faft_cr50_experimental
 suite:faft_cr50_prepvt
 suite:faft_cr50_prepvt_tast

@@ -252,9 +252,11 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         # Expect a quick resume. If a timeout occurs, test fails.
         self.test_wait_for_resume(boot_id,
                                   suspend,
-                                  resume_timeout=20,
+                                  resume_timeout=15,
                                   test_start_time=start_time,
-                                  fail_on_timeout=True)
+                                  resume_slack=5,
+                                  fail_on_timeout=True,
+                                  fail_early_wake=False)
 
         # Finish peer wake process
         peer_wake.join()

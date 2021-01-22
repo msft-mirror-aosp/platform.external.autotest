@@ -1,4 +1,4 @@
-# Copyright (c) 2015 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,13 +6,13 @@ from autotest_lib.server import utils
 
 AUTHOR = 'harpreet'
 TIME = 'SHORT'
-NAME = 'cellular_ChromeEndToEnd.enableDisableCellular'
+NAME = 'cellular_ChromeEndToEnd.ethernetPreferred_verizon'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_endtoend'
-DEPENDENCIES = 'servo_state:WORKING'
+DEPENDENCIES = 'servo_state:WORKING, carrier:verizon'
 
 DOC = """
-Tests that cellular can be enabled or disabled on the DUI.
+Tests that the device prefers ethernet over cellular network.
 """
 
 args_dict = utils.args_to_dict(args)
@@ -23,6 +23,6 @@ def run(machine):
     job.run_test('cellular_ChromeEndToEnd',
                  host=host,
                  raw_cmdline_args=args,
-                 test='enableDisableCellular')
+                 test='ethernetPreferred')
 
 parallel_simple(run, machines)

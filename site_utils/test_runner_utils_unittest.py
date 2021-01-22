@@ -58,15 +58,32 @@ class DummyJob(object):
     def __init__(self, id=1):
         self.id = id
 
+
+class fake_tests(object):
+    def __init__(self, text, deps=[]):
+        self.text = text
+        self.test_type = 'client'
+        self.dependencies = deps
+
+
 class TestRunnerUnittests(mox.MoxTestBase):
+    autotest_path = 'ottotest_path'
+    suite_name = 'sweet_name'
+    test_arg = 'suite:' + suite_name
+    remote = 'remoat'
+    build = 'bild'
+    board = 'bored'
+    fast_mode = False
+    suite_control_files = ['c1', 'c2', 'c3', 'c4']
+    results_dir = '/tmp/test_that_results_fake'
+    id_digits = 1
+    ssh_verbosity = 2
+    ssh_options = '-F /dev/null -i /dev/null'
+    args = 'matey'
+    retry = True
 
     def setUp(self):
         mox.MoxTestBase.setUp(self)
-
-
-    def test_fetch_local_suite(self):
-        # Deferred until fetch_local_suite knows about non-local builds.
-        pass
 
 
     def _results_directory_from_results_list(self, results_list):
@@ -171,112 +188,81 @@ class TestRunnerUnittests(mox.MoxTestBase):
             self.assertTrue(isinstance(desc, str))
 
     def test_perform_local_run(self):
-        afe = test_runner_utils.setup_local_afe()
-        autotest_path = 'ottotest_path'
-        suite_name = 'sweet_name'
-        test_arg = 'suite:' + suite_name
-        remote = 'remoat'
-        build = 'bild'
-        board = 'bored'
-        fast_mode = False
-        suite_control_files = ['c1', 'c2', 'c3', 'c4']
-        results_dir = '/tmp/test_that_results_fake'
-        id_digits = 1
-        ssh_verbosity = 2
-        ssh_options = '-F /dev/null -i /dev/null'
-        args = 'matey'
-        ignore_deps = False
-        retry = True
-
-        # Fake suite objects that will be returned by fetch_local_suite
-        class fake_suite(object):
-            def __init__(self, suite_control_files, hosts):
-                self._suite_control_files = suite_control_files
-                self._hosts = hosts
-                self._jobs = []
-                self._jobs_to_tests = {}
-                self.retry_hack = True
-
-            def schedule(self, *args, **kwargs):
-                for control_file in self._suite_control_files:
-                    job_id = afe.create_job(control_file, hosts=self._hosts)
-                    self._jobs.append(job_id)
-                    self._jobs_to_tests[job_id] = control_file
-
-            def handle_local_result(self, job_id, results_dir, logger,
-                                    **kwargs):
-                if results_dir == "success_directory":
-                    return None
-                retries = True
-                if 'retries' in kwargs:
-                    retries = kwargs['retries']
-                if retries and self.retry_hack:
-                    self.retry_hack = False
-                else:
-                    return None
-                control_file = self._jobs_to_tests.get(job_id)
-                job_id = afe.create_job(control_file, hosts=self._hosts)
-                self._jobs.append(job_id)
-                self._jobs_to_tests[job_id] = control_file
-                return job_id
-
-            @property
-            def jobs(self):
-                return self._jobs
-
-            def test_name_from_job(self, id):
-                return ""
-
-        # Mock out scheduling of suite and running of jobs.
-        self.mox.StubOutWithMock(test_runner_utils, 'fetch_local_suite')
-        test_runner_utils.fetch_local_suite(autotest_path, mox.IgnoreArg(),
-                afe, test_arg=test_arg, remote=remote, build=build,
-                board=board, results_directory=results_dir,
-                no_experimental=False,
-                ignore_deps=ignore_deps,
-                job_retry=retry
-                ).AndReturn(fake_suite(suite_control_files, [remote]))
-        self.mox.StubOutWithMock(test_runner_utils, 'run_job')
-        self.mox.StubOutWithMock(test_runner_utils, 'run_provisioning_job')
+        """Test a local run that should pass."""
         self.mox.StubOutWithMock(test_runner_utils, '_auto_detect_labels')
+        self.mox.StubOutWithMock(test_runner_utils, 'get_all_control_files')
 
-        test_runner_utils._auto_detect_labels(afe, remote).AndReturn([])
-        # Test perform_local_run. Enforce that run_provisioning_job,
-        # run_job and _auto_detect_labels are called correctly.
-        test_runner_utils.run_provisioning_job(
-                'cros-version:' + build,
-                remote,
-                mox.IsA(host_info.HostInfo),
-                autotest_path,
-                results_dir,
-                fast_mode,
-                ssh_verbosity,
-                ssh_options,
-                False,
-                False,
-        )
+        test_runner_utils._auto_detect_labels(self.remote).AndReturn(
+                ['os:cros', 'has_chameleon:True'])
 
-        for control_file in suite_control_files:
+        test_runner_utils.get_all_control_files(
+                self.test_arg, self.autotest_path).AndReturn([
+                        fake_tests(test, deps=['has_chameleon:True'])
+                        for test in self.suite_control_files
+                ])
+
+        self.mox.StubOutWithMock(test_runner_utils, 'run_job')
+        for control_file in self.suite_control_files:
             test_runner_utils.run_job(
                     mox.ContainsAttributeValue('control_file', control_file),
-                    remote,
+                    self.remote,
                     mox.IsA(host_info.HostInfo),
-                    autotest_path,
-                    results_dir,
-                    fast_mode,
-                    id_digits,
-                    ssh_verbosity,
-                    ssh_options,
-                    mox.StrContains(args),
+                    self.autotest_path,
+                    self.results_dir,
+                    self.fast_mode,
+                    self.id_digits,
+                    self.ssh_verbosity,
+                    self.ssh_options,
+                    mox.StrContains(self.args),
                     False,
                     False,
             ).AndReturn((0, '/fake/dir'))
+
         self.mox.ReplayAll()
-        test_runner_utils.perform_local_run(
-                afe, autotest_path, ['suite:'+suite_name], remote, fast_mode,
-                build=build, board=board, ignore_deps=False,
-                ssh_verbosity=ssh_verbosity, ssh_options=ssh_options,
-                args=args, results_directory=results_dir, job_retry=retry)
+        test_runner_utils.perform_local_run(self.autotest_path,
+                                            ['suite:' + self.suite_name],
+                                            self.remote,
+                                            self.fast_mode,
+                                            build=self.build,
+                                            board=self.board,
+                                            ssh_verbosity=self.ssh_verbosity,
+                                            ssh_options=self.ssh_options,
+                                            args=self.args,
+                                            results_directory=self.results_dir,
+                                            job_retry=self.retry,
+                                            ignore_deps=False)
+
+    def test_perform_local_run_missing_deps(self):
+        """Test a local run with missing dependencies. No tests should run."""
+        self.mox.StubOutWithMock(test_runner_utils, '_auto_detect_labels')
+        self.mox.StubOutWithMock(test_runner_utils, 'get_all_control_files')
+
+        test_runner_utils._auto_detect_labels(self.remote).AndReturn(
+                ['os:cros', 'has_chameleon:True'])
+
+        test_runner_utils.get_all_control_files(
+                self.test_arg, self.autotest_path).AndReturn([
+                        fake_tests(test, deps=['has_chameleon:False'])
+                        for test in self.suite_control_files
+                ])
+
+        self.mox.ReplayAll()
+
+        res = test_runner_utils.perform_local_run(
+                self.autotest_path, ['suite:' + self.suite_name],
+                self.remote,
+                self.fast_mode,
+                build=self.build,
+                board=self.board,
+                ssh_verbosity=self.ssh_verbosity,
+                ssh_options=self.ssh_options,
+                args=self.args,
+                results_directory=self.results_dir,
+                job_retry=self.retry,
+                ignore_deps=False)
+
+        # Verify when the deps are not met, the tests are not run.
+        self.assertEquals(res, [])
 
 
 if __name__ == '__main__':

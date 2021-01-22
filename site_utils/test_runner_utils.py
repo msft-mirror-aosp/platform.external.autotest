@@ -25,18 +25,15 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 import common
-from autotest_lib.client.common_lib.cros import dev_server, retry
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib import logging_manager
 from autotest_lib.server.cros.dynamic_suite import suite, constants
-from autotest_lib.server.cros import provision
 from autotest_lib.server.hosts import factory
 from autotest_lib.server.hosts import file_store
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server import autoserv_utils
 from autotest_lib.server import server_logging_config
 from autotest_lib.server import utils
-from autotest_lib.utils import labellib
-from six.moves import range
 
 
 _autoserv_proc = None
@@ -95,11 +92,11 @@ def add_common_args(parser):
     parser.add_argument('--pretend', action='store_true', default=False,
                         help='Print autoserv commands that would be run, '
                              'rather than running them.')
-    parser.add_argument('--no-experimental', action='store_true',
-                        default=False, dest='no_experimental',
-                        help='When scheduling a suite, skip any tests marked '
-                             'as experimental. Applies only to tests scheduled'
-                             ' via suite:[SUITE].')
+    parser.add_argument('--no-experimental',
+                        action='store_true',
+                        default=False,
+                        dest='no_experimental',
+                        help='DEPRECATED DO NOT USE.')
     parser.add_argument('--enforce-deps', action='store_true',
                         default=False, dest='enforce_deps',
                         help='Skip tests whose DEPENDENCIES can not '
@@ -176,77 +173,6 @@ class LocalSuite(suite.Suite):
         """Find the name of the test run by a job with a given job ID."""
         if self._jobs_to_tests[job_id]:
             return self._jobs_to_tests[job_id].name
-
-
-
-def fetch_local_suite(autotest_path, suite_predicate, afe, test_arg, remote,
-                      build=NO_BUILD, board=NO_BOARD,
-                      results_directory=None, no_experimental=False,
-                      ignore_deps=True, job_retry=True):
-    """Create a suite from the given suite predicate.
-
-    Satisfaction of dependencies is enforced by Suite.schedule() if
-    ignore_deps is False. Note that this method assumes only one host,
-    i.e. |remote|, was added to afe. Suite.schedule() will not
-    schedule a job if none of the hosts in the afe (in our case,
-    just one host |remote|) has a label that matches a requested
-    test dependency.
-
-    @param autotest_path: Absolute path to autotest (in sysroot or
-                          custom autotest directory set by --autotest_dir).
-    @param suite_predicate: callable that takes ControlData objects, and
-                            returns True on those that should be in suite
-    @param afe: afe object to schedule against (typically a directAFE)
-    @param test_arg: String. An individual TEST command line argument, e.g.
-                     'login_CryptohomeMounted' or 'suite:smoke'.
-    @param remote: String representing the IP of the remote host.
-    @param build: Build to schedule suite for.
-    @param board: Board to schedule suite for.
-    @param results_directory: Absolute path of directory to store results in.
-                              (results will be stored in subdirectory of this).
-    @param no_experimental: Skip experimental tests when scheduling a suite.
-    @param ignore_deps: If True, test dependencies will be ignored.
-    @param job_retry: If False, tests will not be retried at all.
-
-    @returns: A LocalSuite object.
-
-    """
-    fs_getter = suite.create_fs_getter(autotest_path)
-    devserver = dev_server.ImageServer('')
-    my_suite = LocalSuite.create_from_predicates(
-        [suite_predicate],
-        {provision.CROS_VERSION_PREFIX: build},
-        constants.BOARD_PREFIX + board,
-        devserver, fs_getter, afe=afe,
-        ignore_deps=ignore_deps,
-        results_dir=results_directory,
-        forgiving_parser=False,
-        job_retry=job_retry
-    )
-    if len(my_suite.tests) == 0:
-        (similarity_predicate, similarity_description) = (
-                get_predicate_for_possible_test_arg(test_arg))
-        logging.error('No test found, searching for possible tests with %s',
-                      similarity_description)
-        possible_tests = suite.find_possible_tests(fs_getter,
-                                                         similarity_predicate)
-        raise ValueError('Found no tests. Check your suite name, test name, '
-                         'or test matching wildcard.\nDid you mean any of '
-                         'following tests?\n  %s' % '\n  '.join(possible_tests))
-
-    if not ignore_deps:
-        # Log tests whose dependencies can't be satisfied.
-        labels = [label.name for label in
-                  afe.get_labels(host__hostname=remote)]
-        for test in my_suite.tests:
-            if test.experimental and no_experimental:
-                continue
-            unsatisfiable_deps = set(test.dependencies).difference(labels)
-            if unsatisfiable_deps:
-                logging.warning('%s will be skipped, unsatisfiable '
-                             'test dependencies: %s', test.name,
-                             unsatisfiable_deps)
-    return my_suite
 
 
 def _run_autoserv(command, pretend=False):
@@ -486,13 +412,11 @@ def add_ssh_identity(temp_directory, ssh_private_key=TEST_KEY_PATH):
                         'may fail.')
 
 
-def _auto_detect_labels(afe, remote):
-    """Automatically detect host labels and add them to the host in afe.
+def _auto_detect_labels(remote):
+    """Automatically detect host labels and return them.
 
     Note that the label of board will not be auto-detected.
-    This method assumes the host |remote| has already been added to afe.
 
-    @param afe: A direct_afe object used to interact with local afe database.
     @param remote: The hostname of the remote device.
 
     @returns: the detected labels as a list of strings.
@@ -500,21 +424,21 @@ def _auto_detect_labels(afe, remote):
     cros_host = factory.create_host(remote)
     labels_to_create = [label for label in cros_host.get_labels()
                         if not label.startswith(constants.BOARD_PREFIX)]
-    labels_to_add_to_afe_host = []
-    for label in labels_to_create:
-        new_label = afe.create_label(label)
-        labels_to_add_to_afe_host.append(new_label.name)
-    hosts = afe.get_hosts(hostname=remote)
-    if not hosts:
-        raise TestThatRunError('Unexpected error: %s has not '
-                               'been added to afe.' % remote)
-    afe_host = hosts[0]
-    afe_host.add_labels(labels_to_add_to_afe_host)
-    return labels_to_add_to_afe_host
+    return labels_to_create
 
 
-def perform_local_run(afe,
-                      autotest_path,
+def get_all_control_files(test, autotest_path):
+    """Get all control files for specified test in the given autotest_path.
+
+    @param test: name of the test or suite to fetch
+    @praram autotest_path:  Absolute path of autotest installed in sysroot
+    """
+    (predicate, description) = get_predicate_for_test_arg(test)
+    logging.info('Fetching suite for %s...', description)
+    return get_control_files(autotest_path=autotest_path, pred=predicate)
+
+
+def perform_local_run(autotest_path,
                       tests,
                       remote,
                       fast_mode,
@@ -523,7 +447,6 @@ def perform_local_run(afe,
                       model=NO_MODEL,
                       args=None,
                       pretend=False,
-                      no_experimental=False,
                       ignore_deps=True,
                       results_directory=None,
                       ssh_verbosity=0,
@@ -537,7 +460,6 @@ def perform_local_run(afe,
     This method enforces satisfaction of test dependencies for tests that are
     run as a part of a suite.
 
-    @param afe: A direct_afe object used to interact with local afe database.
     @param autotest_path: Absolute path of autotest installed in sysroot or
                           custom autotest path set by --autotest_dir.
     @param tests: List of strings naming tests and suites to run. Suite strings
@@ -551,8 +473,6 @@ def perform_local_run(afe,
                  and then ultimitely to test itself.
     @param pretend: If True, will print out autoserv commands rather than
                     running them.
-    @param no_experimental: Skip experimental tests when scheduling a suite.
-    @param ignore_deps: If True, test dependencies will be ignored.
     @param results_directory: Directory to store results in. Defaults to None,
                               in which case results will be stored in a new
                               subdirectory of /tmp
@@ -568,124 +488,63 @@ def perform_local_run(afe,
               provision failed prior to running any jobs.
     """
     args = _set_default_servo_args(args)
-    # Create host in afe, add board and build labels.
-    cros_version_label = labellib.format_keyval_label(
-        labellib.KeyvalLabel(labellib.Key.CROS_VERSION, build))
 
-    build_label = afe.create_label(cros_version_label)
-    board_label = afe.create_label(constants.BOARD_PREFIX + board)
-    model_label = afe.create_label(constants.MODEL_PREFIX + model)
-    labels = [build_label.name, board_label.name, model_label.name]
+    # version doesn't really matter for local runs...
+    # NOTE: when F20 local env is implemented this will need to be re-addressed
+    labels = [
+            u'cros-version:ad_hoc_build',
+            u'board:%s' % board,
+            u'model:%s' % model
+    ]
 
-    new_host = afe.create_host(remote)
-    new_host.add_labels(labels)
     if not ignore_deps:
         logging.info('Auto-detecting labels for %s', remote)
-        labels += _auto_detect_labels(afe, remote)
         # Auto-detected labels may duplicate explicitly set ones.
-        labels = list(set(labels))
+        labels += list(set(_auto_detect_labels(remote)))
 
     info = host_info.HostInfo(labels, host_attributes)
 
-    # Provision the host to |build|.
-    if build != NO_BUILD:
-        logging.info('Provisioning %s...', cros_version_label)
-        try:
-            run_provisioning_job(
-                cros_version_label,
+    job_queue = []
+    test_num = 0
+
+    for test in tests:
+        ctrl_files = get_all_control_files(test, autotest_path)
+        for control in ctrl_files:
+            test_num += 1
+            job = SimpleJob(name="adhoc/{}".format(test),
+                            owner='autotest_system',
+                            test_num=test_num)
+            job.set_control_file(control)
+            if ignore_deps:
+                job_queue.append(job)
+            elif job.deps_satisfied(labels):
+                job_queue.append(job)
+
+    codes = []
+    job_id_digits = 0
+    for job in job_queue:
+        logging.info('%s jobs in job queue', len(job_queue))
+        # could also math.log10... but for a single conversion, not worth.
+        job_id_digits = len(str(job.id))
+        logging.debug('Running job %s of test %s', job.id, (job.name))
+
+        code, abs_dir = run_job(
+                job,
                 remote,
                 info,
                 autotest_path,
                 results_directory,
                 fast_mode,
+                job_id_digits,
                 ssh_verbosity,
                 ssh_options,
+                args,
                 pretend,
                 autoserv_verbose,
-            )
-        except TestThatProvisioningError as e:
-            logging.error('Provisioning %s to %s failed, tests are aborted, '
-                          'failure reason: %s',
-                          remote, cros_version_label, e)
-            return [1]
+        )
+        codes.append(code)
+        logging.debug("Code: %s, Results in %s", code, abs_dir)
 
-    # Create suites that will be scheduled.
-    suites_and_descriptions = []
-    for test in tests:
-        (predicate, description) = get_predicate_for_test_arg(test)
-        logging.info('Fetching suite for %s...', description)
-        suite = fetch_local_suite(autotest_path, predicate, afe, test_arg=test,
-                                  remote=remote,
-                                  build=build, board=board,
-                                  results_directory=results_directory,
-                                  no_experimental=no_experimental,
-                                  ignore_deps=ignore_deps,
-                                  job_retry=job_retry)
-        suites_and_descriptions.append((suite, description))
-
-    jobs_to_suites = {}
-    null_logger = lambda log_entry, log_in_subdir=False: None
-    # Schedule the suites, looping over iterations if necessary.
-    for iteration in range(iterations):
-        if iteration > 0:
-            logging.info('Repeating scheduling for iteration %d:', iteration)
-
-        for suite, description in suites_and_descriptions:
-            logging.info('Scheduling suite for %s...', description)
-            ntests = suite.schedule(null_logger)
-            logging.debug('jobs: %s nonzero job_retries: %s',
-                          len(suite._jobs_to_tests),
-                          len([True for (job_id, test) in
-                               suite._jobs_to_tests.items()]))
-            logging.info('... scheduled %s job(s).', ntests)
-            for job in suite.jobs:
-                jobs_to_suites[job.id] = suite
-
-    if not afe.get_jobs():
-        logging.info('No jobs scheduled. End of local run.')
-        return []
-
-    last_job_id = afe.get_jobs()[-1].id
-    job_id_digits = len(str(last_job_id))
-    codes = []
-    job_queue = afe.get_jobs()
-    completed_job_ids = set()
-    while job_queue:
-        logging.info('%s jobs in job queue', len(job_queue))
-        for job in job_queue:
-            suite = jobs_to_suites.get(job.id)
-            if not suite:
-                logging.error('Job %s not run, no associated suite.', job.id)
-            else:
-                logging.debug('Running job %s of test %s', job.id,
-                              suite.test_name_from_job(job.id))
-                code, abs_dir = run_job(
-                        job,
-                        remote,
-                        info,
-                        autotest_path,
-                        results_directory,
-                        fast_mode,
-                        job_id_digits,
-                        ssh_verbosity,
-                        ssh_options,
-                        args,
-                        pretend,
-                        autoserv_verbose,
-                )
-                codes.append(code)
-                logging.debug("Code: %s, Results in %s", code, abs_dir)
-                new_id = suite.handle_local_result(job.id, abs_dir,
-                                                   null_logger)
-                if new_id:
-                    jobs_to_suites[new_id] = jobs_to_suites[job.id]
-            completed_job_ids.add(job.id)
-        all_jobs = afe.get_jobs(not_yet_run=True, running=True)
-        new_jobs = set(job for job in all_jobs
-                       if job.id not in completed_job_ids)
-        logging.debug('%s incomplete jobs, %s jobs total', len(new_jobs),
-                      len(all_jobs))
-        job_queue = list(new_jobs)
     return codes
 
 
@@ -825,7 +684,6 @@ def perform_run_from_autotest_root(autotest_path,
                                    model=NO_MODEL,
                                    args=None,
                                    pretend=False,
-                                   no_experimental=False,
                                    ignore_deps=True,
                                    results_directory=None,
                                    ssh_verbosity=0,
@@ -855,7 +713,6 @@ def perform_run_from_autotest_root(autotest_path,
                  and then ultimitely to test itself.
     @param pretend: If True, will print out autoserv commands rather than
                     running them.
-    @param no_experimental: Skip experimental tests when scheduling a suite.
     @param ignore_deps: If True, test dependencies will be ignored.
     @param results_directory: Directory to store results in. Defaults to None,
                               in which case results will be stored in a new
@@ -890,9 +747,7 @@ def perform_run_from_autotest_root(autotest_path,
     signal.signal(signal.SIGINT, sigint_handler)
     signal.signal(signal.SIGTERM, sigint_handler)
 
-    afe = setup_local_afe()
-    codes = perform_local_run(afe,
-                              autotest_path,
+    codes = perform_local_run(autotest_path,
                               tests,
                               remote,
                               fast_mode,
@@ -901,7 +756,6 @@ def perform_run_from_autotest_root(autotest_path,
                               model,
                               args=args,
                               pretend=pretend,
-                              no_experimental=no_experimental,
                               ignore_deps=ignore_deps,
                               results_directory=results_directory,
                               ssh_verbosity=ssh_verbosity,
@@ -910,6 +764,7 @@ def perform_run_from_autotest_root(autotest_path,
                               iterations=iterations,
                               host_attributes=host_attributes,
                               job_retry=job_retry)
+
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0
@@ -945,3 +800,37 @@ def _write_host_info(results_dir, host_info_subdir, hostname, info):
     os.makedirs(d)
     store = file_store.FileStore(os.path.join(d, '%s.store' % hostname))
     store.commit(info)
+
+
+class SimpleJob(object):
+    """
+    A Simple job for running autotests without an AFE.
+
+    The goal here is to remove the deps to frontend/afe, and their dependent
+    libs. Autotests will be run via 2 methods going forward: Skylab world, and
+    test_that. Skylab invokes autoserv directly, bypassing all of this.
+    test_that is a CLI, not a UI, and should be split free of the AFE libs.
+    """
+
+    def __init__(self, owner, name, control_type='client', test_num=1):
+        self.owner = owner
+        self.name = name
+        self.control_type = control_type
+        self.id = test_num
+        self.keyvals = {'experimental': False}
+        self.dependencies = []
+
+    def set_control_file(self, control):
+        self.control_file = control.text
+        self.control_type = control.test_type.capitalize()
+        if hasattr(control, 'dependencies'):
+            self.dependencies = set(control.dependencies)
+
+    def deps_satisfied(self, labels):
+        """Verify the deps for this job are satisfied on the given labels"""
+        return self.dependencies.issubset(labels)
+
+
+def get_control_files(autotest_path, pred):
+    cf_getter = suite.create_fs_getter(autotest_path)
+    return list(suite.find_and_parse_tests(cf_getter, pred))

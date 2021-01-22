@@ -33,8 +33,7 @@ class policy_ForceYouTubeRestrict(
     def _search_for_adult_content(self):
         SEARCH_QUERY = 'https://www.youtube.com/results?search_query=adult'
         BURGER_MENU = (
-                "document.querySelector('* /deep/ #masthead-container /deep/"
-                " #end /deep/ ytd-topbar-menu-button-renderer:last-of-type').innerHTML;"
+                "document.querySelector('* #masthead-container #end ytd-topbar-menu-button-renderer:last-of-type').innerHTML;"
         )
         self.search_tab = self.navigate_to_url(SEARCH_QUERY)
         utils.poll_for_condition(lambda: self.check_page_readiness(

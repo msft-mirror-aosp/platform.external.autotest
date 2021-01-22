@@ -47,32 +47,31 @@ CLIENT_TESTS = [
         'videos' : [('h264_1080_30fps', ''), ('vp9_1080_30fps', '')]}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 100, 'max_run_time': 5 * HOURS,
-        'tag' : 'powerqual'}),
+        'percent_target_charge' : 80, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
         'tag' : 'powerqual', 'force_discharge' : True}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 40, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_Idle', {
         'tag' : 'powerqual', 'force_discharge' : True}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 35, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoPlayback', {
         'tag' : 'powerqual_info', 'force_discharge' : True}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 30, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoEncode', {
         'tag' : 'powerqual', 'force_discharge' : True}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 25, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_Display', {
         'tag' : 'powerqual_brightness', 'force_discharge' : True,
@@ -80,7 +79,7 @@ CLIENT_TESTS = [
         'secs_per_page' : 20, 'seconds_period' : 1}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 20, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_Display', {
         'tag' : 'powerqual_cabc', 'force_discharge' : True,

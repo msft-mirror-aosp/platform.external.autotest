@@ -14,6 +14,7 @@ class power_BatteryCharge(test.test):
     version = 1
 
     def initialize(self):
+        """Perform necessary initialization prior to test run."""
         if not power_utils.has_battery():
             raise error.TestNAError('DUT has no battery. Test Skipped')
 
@@ -106,11 +107,17 @@ class power_BatteryCharge(test.test):
                 logging.info('Battery full, aborting!')
                 break
             elif self.status.battery.status == 'Discharging':
-                raise error.TestError('This test needs to be run with the '
-                    'battery charging on AC.')
+                # TestError might be raised if |use_design_charge_capacity|
+                # is True when testing with older battery.
+                if current_charge > self.charge_capacity * 0.97:
+                    logging.info('Battery full (Discharge on AC), aborting!')
+                else:
+                    raise error.TestError('This test needs to be run with the '
+                                          'battery charging on AC.')
 
 
     def postprocess_iteration(self):
+        """"Collect and log keyvals."""
         keyvals = {}
         keyvals['ah_charge_full'] = self.charge_full
         keyvals['ah_charge_full_design'] = self.charge_full_design
@@ -139,6 +146,7 @@ class power_BatteryCharge(test.test):
 
 
     def cleanup(self):
+        """Restore stop services and backlight level."""
         if hasattr(self, '_services') and self._services:
             self._services.restore_services()
         if hasattr(self, '_backlight') and self._backlight:

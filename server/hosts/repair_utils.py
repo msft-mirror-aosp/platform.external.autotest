@@ -11,7 +11,7 @@ from autotest_lib.server import utils
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.hosts import cros_constants
 
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 
 def require_servo(host, ignore_state=False):

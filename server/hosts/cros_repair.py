@@ -36,7 +36,7 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 DEFAULT_SERVO_RESET_TRIGGER = (
         'ping',

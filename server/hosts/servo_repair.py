@@ -31,9 +31,7 @@ try:
 except ImportError:
     metrics = utils.metrics_mock
 
-
-# TODO(gregorynisbet): will importing chromite always succeed in all contexts?
-from chromite.lib import timeout_util
+from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 
 def ignore_exception_for_non_cros_host(func):

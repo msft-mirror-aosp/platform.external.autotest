@@ -942,22 +942,37 @@ class _ToggleCCLineRepair(hosts.RepairAction):
     """Try repair servod by toggle cc.
 
     When cr50 is not enumerated we can try to recover it by toggle cc line.
-    Repair action running from servohost.
-    We using usb_console temporally witch required stop servod.
-
-    TODO(otabek@) review the logic when b/159755652 implemented
     """
+    # Timeout for shut down configuration channel.
+    CC_OFF_TIMEOUT = 10
+    # Timeout for initialize configuration channel.
+    CC_ON_TIMEOUT = 30
 
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
-        host.stop_servod()
-        self._reset_usbc_pigtail_connection(host)
+        logging.info('Turn off configuration channel and wait 10 seconds.')
+        host.get_servo().set_nocheck('servo_v4_uart_cmd', 'cc off')
+        # wait till command will be effected
+        time.sleep(self.CC_OFF_TIMEOUT)
+
+        logging.info('Turn on configuration channel and wait 30 seconds.')
+        # alternative option to turn line on is by `cc srcdts`
+        host.get_servo().set_nocheck('servo_v4_role', 'src')
+        host.get_servo().set_nocheck('servo_v4_dts_mode', 'on')
+        # wait till command will be effected
+        time.sleep(self.CC_ON_TIMEOUT)
         host.restart_servod()
 
     def _is_applicable(self, host):
         if host.is_localhost() or not host.is_labstation():
             return False
         if not host.servo_serial:
+            return False
+        if not host.servo_recovery:
+            logging.debug('Servod is not running in recovery mode.')
+            return False
+        if not host.get_servo():
+            logging.debug('Servo is not initialized.')
             return False
         return self._is_type_c(host)
 
@@ -967,37 +982,6 @@ class _ToggleCCLineRepair(hosts.RepairAction):
                     servo_constants.SERVO_TYPE_LABEL_PREFIX)
             return 'ccd_cr50' in servo_type
         return False
-
-    def _reset_usbc_pigtail_connection(self, host):
-        """Reset USBC pigtail connection on servo board.
-
-        To reset need to run 'cc off' and then 'cc srcdts' in usb_console.
-        """
-        logging.debug('Starting reset USBC pigtail connection.')
-
-        def _run_command(cc_command):
-            """Run configuration channel commands.
-
-            @returns: True if pas successful and False if fail.
-            """
-            try:
-                cmd = (r"echo 'cc %s' | usb_console -d 18d1:501b -s %s" %
-                       (cc_command, host.servo_serial))
-                resp = host.run(cmd, timeout=host.DEFAULT_TERMINAL_TIMEOUT)
-                return True
-            except Exception as e:
-                logging.info('(Non-critical) %s.', e)
-            return False
-
-        logging.info('Turn off configuration channel. And wait 5 seconds.')
-        if _run_command('off'):
-            # wait till command will be effected
-            time.sleep(5)
-            logging.info('Turn on configuration channel. '
-                         'And wait 15 seconds.')
-            if _run_command('srcdts'):
-                # wait till command will be effected
-                time.sleep(15)
 
     @property
     def description(self):
@@ -1169,7 +1153,8 @@ def create_servo_repair_strategy():
              ['servo_ssh', 'servo_topology'], ['dut_connected']),
             (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
             (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
-            (_ToggleCCLineRepair, 'servo_cc', ['servo_ssh'], servod_deps),
+            (_ToggleCCLineRepair, 'servo_cc', ['servod_connection'],
+             servod_deps),
             (_DutRebootRepair, 'dut_reboot', ['servod_connection'],
              ['servod_control', 'lid_open', 'ec_board']),
             (_ECRebootRepair, 'ec_reboot', ['servod_connection'],

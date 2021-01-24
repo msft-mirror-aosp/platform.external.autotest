@@ -481,7 +481,7 @@ class _BaseDUTConnectionVerifier(hosts.Verifier):
         logging.debug('Started check by ppdut5_mv:on')
         try:
             val = host.get_servo().get('ppdut5_mv')
-            logging.debug('ppdut5_mv=%s', val)
+            logging.info('ppdut5_mv=%s', val)
             if val < self.MAX_PPDUT5_MV_WHEN_NOT_CONNECTED:
                 # servo is not connected to the DUT
                 return False
@@ -510,7 +510,9 @@ class _BaseDUTConnectionVerifier(hosts.Verifier):
         """
         logging.debug('Started check by cold_reset:on')
         try:
-            if host.get_servo().get('cold_reset') == 'on':
+            val = host.get_servo().get('cold_reset')
+            logging.info('cold_reset=%s', val)
+            if val == 'on':
                 # If cold_reset has is on can be right signal
                 # or caused by missing connection between servo_micro and DUT.
                 # if we can switch it to the off then it was signal.

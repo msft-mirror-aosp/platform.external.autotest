@@ -1165,9 +1165,14 @@ class RecoverACPowerRepair(_ResetRepairAction):
             # to wake it up we do cold-reboot then we will have active ec
             # connection for ~30 seconds
             host.servo.get_power_state_controller().reset()
-        if host.servo.get('battery_is_charging'):
-            # device is changing.
-            return
+        try:
+            if host.servo.get('battery_is_charging'):
+                # device is changing.
+                return
+        except Exception as e:
+            logging.debug('(Not critical) %s', e)
+            raise hosts.AutoservRepairError(
+                    'Fail to read battery metrics from EC')
         # Simple off-on not always working stable in all cases as source-sink
         # not working too in another cases. To cover more cases here we do
         # both toggle to recover PD negotiation.
@@ -1201,11 +1206,6 @@ class RecoverACPowerRepair(_ResetRepairAction):
         host_info = host.host_info_store.get()
         if host_info.get_label_value('power') != 'battery':
             logging.info('The board does not have battery')
-            return False
-        servo = host.servo
-        if (not servo.has_control('battery_full_design_mah')
-                    or not servo.has_control('battery_full_charge_mah')):
-            logging.info('The board is not supported battery controls...')
             return False
         return True
 

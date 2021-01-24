@@ -703,7 +703,7 @@ class _Cr50LowSBUVerifier(_BaseCr50SBUVerifier):
             if v > 1 and v <= self.SBU_THRESHOLD:
                 raise hosts.AutoservVerifyError(
                         'Cr50 is not detected due to SBU voltages'
-                        ' being below %dmV', self.SBU_THRESHOLD)
+                        ' being below %dmV' % self.SBU_THRESHOLD)
 
     @property
     def description(self):

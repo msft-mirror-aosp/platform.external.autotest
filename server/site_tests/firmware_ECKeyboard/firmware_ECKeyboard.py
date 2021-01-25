@@ -16,10 +16,10 @@ class firmware_ECKeyboard(FirmwareTest):
     version = 1
 
     # Delay between commands
-    CMD_DELAY = 1
+    CMD_DELAY = 2
 
     # Delay to wait until developer console is open.
-    DEV_CONSOLE_DELAY = 2
+    DEV_CONSOLE_DELAY = 4
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECKeyboard, self).initialize(host, cmdline_args)

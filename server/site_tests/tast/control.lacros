@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.server import utils
 
 AUTHOR = 'Chromium OS team'
@@ -34,11 +36,18 @@ def run(machine):
     # TODO(crbug.com/1139516): Revisit the args dict once the POC is done.
     # The goal is to control the browser tests from chromium side.
     args_dict = utils.args_to_dict(args)
+    expr = args_dict.get('tast_expr')
+    if not expr:
+        raise TestFail(
+            'Attribute expression is unspecified; set tast_expr in --args.\n'
+            '  Example: test_that --args="tast_expr=lacros.Basic"\n'
+            '  More details at go/lacros-on-skylab.')
     # TODO(crbug.com/1155637): Once CTP could provision LaCrOS versions,
     # remove below lines which download a LaCrOS artifact before tast runs.
     lacros_gcs_path = args_dict.get('lacros_gcs_path')
     if lacros_gcs_path:
-        utils.system_output('gsutil cp %s /tmp/' % lacros_gcs_path)
+        logging.info('Expect to download LaCrOS from %s', lacros_gcs_path)
+        utils.system_output('gsutil cp %s /tmp/lacros.zip' % lacros_gcs_path)
         utils.system_output('unzip -o /tmp/lacros.zip -d /tmp/lacros')
         host.send_file('/tmp/lacros', '/usr/local/', delete_dest=True)
         varslist.append('lacrosDeployedBinary=/usr/local/lacros')
@@ -46,11 +55,7 @@ def run(machine):
         utils.system_output('rm -rf /tmp/lacros.zip /tmp/lacros')
     job.run_test('tast',
                  host=host,
-                 test_exprs=['('
-                             '"group:mainline" && '
-                             '!informational && '
-                             '"dep:lacros"'
-                             ')'],
+                 test_exprs=[expr],
                  download_data_lazily=False,
                  ignore_test_failures=False, max_run_sec=3600,
                  command_args=args,

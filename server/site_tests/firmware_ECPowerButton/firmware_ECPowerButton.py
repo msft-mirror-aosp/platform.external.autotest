@@ -32,6 +32,18 @@ class firmware_ECPowerButton(FirmwareTest):
     # Delay after pressing power button to check power state
     POWER_BUTTON_IGNORE_PRESS_DELAY = 10
 
+    # Number of tries when checking power state
+    POWER_STATE_CHECK_TRIES = 3
+
+    # Delay between checking power state
+    POWER_STATE_CHECK_DELAY = 0
+
+    # String for checking S5 power state
+    POWER_STATE_S5 = 'S5'
+
+    # String for checking G3 power state
+    POWER_STATE_G3 = 'G3'
+
     def initialize(self, host, cmdline_args):
         super(firmware_ECPowerButton, self).initialize(host, cmdline_args)
 
@@ -64,14 +76,14 @@ class firmware_ECPowerButton(FirmwareTest):
         Timer(3, self.servo.power_key, [0.001]).start()
         return self.faft_client.system.check_keys([116])
 
-    def shutdown_and_wake(self,
-                          shutdown_powerkey_duration,
-                          wake_delay,
-                          wake_powerkey_duration):
+    def shutdown_and_wake(self, shutdown_powerkey_duration, wake_delay,
+                          power_states, wake_powerkey_duration):
         """
-        Shutdown the system by power button, delay, and then power on
-        by power button again.
+        Shutdown the system by power button, delay, wait for requested power
+        states and then power on by power button again.
         """
+
+        # Shutdown the system by pressing the power button
         self.servo.power_key(shutdown_powerkey_duration)
 
         # Send a new line to wakeup EC from deepsleep,
@@ -83,9 +95,16 @@ class firmware_ECPowerButton(FirmwareTest):
         if wake_delay > 2:
             Timer(wake_delay - 1, self.ec.send_command, [""]).start()
 
-        Timer(wake_delay,
-              self.servo.power_key,
-              [wake_powerkey_duration]).start()
+        # Sleep and wait for the system to enter the requested power mode
+        time.sleep(wake_delay)
+        if not self.wait_power_states(power_states,
+                                      self.POWER_STATE_CHECK_TRIES,
+                                      self.POWER_STATE_CHECK_DELAY):
+            raise error.TestFail('The device failed to reach %s.',
+                                 power_states)
+
+        # Power on the system by pressing the power button
+        self.servo.power_key(wake_powerkey_duration)
 
     def run_once(self):
         """Runs a single iteration of the test."""
@@ -155,8 +174,9 @@ class firmware_ECPowerButton(FirmwareTest):
                 self._reset_client()
                 raise error.TestFail("DUT didn't boot by short power button press")
 
-        logging.info("Shutdown when powerd is still running and wake from S5 "
-                     "with short power button press.")
+        logging.info(
+                "Shutdown when powerd is still running and wake from S5/G3 "
+                "with short power button press.")
         if self.servo.is_localhost() and self.has_internal_display:
             self.check_state(self.debounce_power_button)
         self.switcher.mode_aware_reboot(
@@ -164,6 +184,7 @@ class firmware_ECPowerButton(FirmwareTest):
                 lambda:self.shutdown_and_wake(
                         self.POWER_BUTTON_POWERD_DURATION,
                         self.SHORT_WAKE_DELAY,
+                        [self.POWER_STATE_S5, self.POWER_STATE_G3],
                         self.POWER_BUTTON_SHORT_POWER_ON_DURATION))
 
         logging.info("Shutdown when powerd is stopped and wake from G3 "
@@ -174,6 +195,7 @@ class firmware_ECPowerButton(FirmwareTest):
                 lambda:self.shutdown_and_wake(
                         self.POWER_BUTTON_NO_POWERD_DURATION,
                         self.LONG_WAKE_DELAY,
+                        self.POWER_STATE_G3,
                         self.POWER_BUTTON_SHORT_POWER_ON_DURATION))
 
         logging.info("Shutdown when powerd is still running and wake from G3 "
@@ -183,9 +205,10 @@ class firmware_ECPowerButton(FirmwareTest):
                 lambda:self.shutdown_and_wake(
                         self.POWER_BUTTON_POWERD_DURATION,
                         self.LONG_WAKE_DELAY,
+                        self.POWER_STATE_G3,
                         self.POWER_BUTTON_LONG_POWER_ON_DURATION))
 
-        logging.info("Shutdown when powerd is stopped and wake from S5 "
+        logging.info("Shutdown when powerd is stopped and wake from S5/G3 "
                      "with long power button press.")
         self.kill_powerd()
         self.switcher.mode_aware_reboot(
@@ -193,4 +216,5 @@ class firmware_ECPowerButton(FirmwareTest):
                 lambda:self.shutdown_and_wake(
                         self.POWER_BUTTON_NO_POWERD_DURATION,
                         self.SHORT_WAKE_DELAY,
+                        [self.POWER_STATE_S5, self.POWER_STATE_G3],
                         self.POWER_BUTTON_LONG_POWER_ON_DURATION))

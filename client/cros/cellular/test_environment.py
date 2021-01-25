@@ -6,6 +6,7 @@ import contextlib
 import dbus
 import logging
 import sys
+import time
 import traceback
 
 import common
@@ -103,6 +104,10 @@ class CellularTestEnvironment(object):
     def __enter__(self):
         try:
             if upstart.has_service('modemfwd') and upstart.is_running('modemfwd'):
+                # Due to b/179796133, stopping modemfwd right after it was
+                # started by a previous test, can wedge the modem. In many
+                # devices, a ~1 second delay solves the problem.
+                time.sleep(4)
                 upstart.stop_job('modemfwd')
             # Temporarily disable shill autoconnect to cellular service while
             # the test environment is setup to prevent a race condition

@@ -85,7 +85,7 @@ class firmware_ECWakeSource(FirmwareTest):
         if not self.wait_power_state(self.POWER_STATE_SUSPEND,
                                      self.POWER_STATE_RETRY_COUNT):
             raise error.TestFail('Platform failed to reach S0ix or S3 state.')
-        time.sleep(self.SUSPEND_WAIT_TIME_SECONDS);
+        time.sleep(self.SUSPEND_WAIT_TIME_SECONDS)
         wake_func()
         if not self.wait_power_state(self.POWER_STATE_S0,
                                      self.POWER_STATE_RETRY_COUNT):
@@ -116,6 +116,19 @@ class firmware_ECWakeSource(FirmwareTest):
                 raise error.TestFail('Platform failed to reach S0 state.')
         self.switcher.wait_for_client(timeout=self.RESUME_TIMEOUT)
 
+    def check_boot_id(self, host, orig_boot_id, wake_method):
+        """Check current boot id matches original boot id.
+
+        Args:
+            host: test host object
+            orig_boot_id: original boot_id to compare against
+            wake_method: string indicating the method used to wake the device
+        """
+        boot_id = host.get_boot_id()
+        if boot_id != orig_boot_id:
+            raise error.TestFail('Unexpected reboot by suspend and wake: ' +
+                                 wake_method)
+
     def run_once(self, host):
         """Runs a single iteration of the test."""
         if not self.check_ec_capability():
@@ -129,38 +142,54 @@ class firmware_ECWakeSource(FirmwareTest):
                                  exit_without_logout=True)
         original_boot_id = host.get_boot_id()
 
-        # With no display connected, pressing the power button in suspend mode
-        # would lead to shutdown.
-        if self.has_internal_display:
-            logging.info('Suspend and wake by power button.')
+        # Test suspend and wake by power button
+        wake_src = 'power button'
+        if not self.has_internal_display:
+            # With no display connected, pressing the power button in suspend mode
+            # would lead to shutdown.
+            logging.info(
+                    'The device has no internal display. '
+                    'Skip testing suspend/resume by %s.', wake_src)
+        else:
+            logging.info('Suspend and wake by %s.', wake_src)
             self.suspend_and_wake(self.suspend, self.servo.power_normal_press)
+            self.check_boot_id(host, original_boot_id, wake_src)
 
+        # Test suspend and wake by internal key press
+        wake_src = 'internal key press'
         if not self.check_ec_capability(['keyboard']):
-            logging.info('The device has no internal keyboard. '
-                         'Skip testing suspend/resume by internal keyboard.')
+            logging.info(
+                    'The device has no internal keyboard. '
+                    'Skip testing suspend/resume by %s.', wake_src)
         elif not self.ec.has_command('ksstate'):
-            logging.info('The device does not support the ksstate command. '
-                         'Skip testing suspend/resume by internal keyboard.')
+            logging.info(
+                    'The device does not support the ksstate command. '
+                    'Skip testing suspend/resume by %s.', wake_src)
         else:
             result = self.ec.send_command_get_output(
                     'ksstate',
                     ['Keyboard scan disable mask: 0x([0-9a-fA-F]{8})'])
             kb_scan_disable_mask = int(result[0][1], 16)
             if kb_scan_disable_mask == 0:
-                logging.info('Suspend and wake by internal key press.')
+                logging.info('Suspend and wake by %s.', wake_src)
                 self.suspend_and_wake(self.suspend,
                                       lambda: self.ec.key_press('<enter>'))
             else:
-                logging.info('Tablet mode enabled; suspend and check device '
-                             'does not wake by internal key press.')
+                logging.info(
+                        'Tablet mode enabled; suspend and check device '
+                        'does not wake by %s.', wake_src)
                 self.suspend_and_dont_wake(
                         self.suspend, lambda: self.ec.key_press('<enter>'))
+            self.check_boot_id(host, original_boot_id, wake_src)
 
+        # Test suspend and wake by USB HID key press
+        wake_src = 'USB HID key press'
         if not self.faft_config.usb_hid_wake_enabled:
-            logging.info('Device does not support wake by USB HID. '
-                         'Skip suspend and wake by USB HID key press.')
+            logging.info(
+                    'Device does not support wake by USB HID. '
+                    'Skip suspend and wake by %s.', wake_src)
         else:
-            logging.info('Suspend and wake by USB HID key press.')
+            logging.info('Suspend and wake by %s.', wake_src)
 
             logging.debug('Initializing HID keyboard emulator.')
             self.servo.set_nocheck('init_usb_keyboard', 'on')
@@ -176,23 +205,24 @@ class firmware_ECWakeSource(FirmwareTest):
                         'update firmware for Atmel USB KB emulator by running '
                         'firmware_FlashServoKeyboardMap test and then try again?'
                 )
+            self.check_boot_id(host, original_boot_id, wake_src)
 
             logging.debug('Turning off HID keyboard emulator.')
             self.servo.set_nocheck('init_usb_keyboard', 'off')
 
+        # Test suspend and wake by lid switch
+        wake_src = 'lid switch'
         if not self.check_ec_capability(['lid']):
-            logging.info('The device has no lid. '
-                         'Skip testing suspend/resume by lid switch.')
+            logging.info(
+                    'The device has no lid. '
+                    'Skip testing suspend/resume by %s.', wake_src)
         else:
-            logging.info('Suspend and wake by lid switch.')
+            logging.info('Suspend and wake by %s.', wake_src)
             self.suspend_and_wake(self.suspend, self.wake_by_lid_switch)
-            logging.info('Close lid to suspend and wake by lid switch.')
+            logging.info('Close lid to suspend and wake by %s.', wake_src)
             self.suspend_and_wake(lambda:self.servo.set('lid_open', 'no'),
                                   self.wake_by_lid_switch)
-
-        boot_id = host.get_boot_id()
-        if boot_id != original_boot_id:
-            raise error.TestFail('Different boot_id. Unexpected reboot.')
+            self.check_boot_id(host, original_boot_id, wake_src)
 
         if self.servo.main_device_is_ccd():
             logging.info('With CCD, we can\'t wake up the DUT from hibernate '

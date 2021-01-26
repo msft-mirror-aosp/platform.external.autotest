@@ -64,7 +64,8 @@ class RemoteNebraskaWrapper(multiprocessing.Process):
 
   def __init__(self, remote_device, nebraska_bin=None,
                update_payloads_address=None, update_metadata_dir=None,
-               install_payloads_address=None, install_metadata_dir=None):
+               install_payloads_address=None, install_metadata_dir=None,
+               ignore_appid=False):
     """Initializes the nebraska wrapper.
 
     Args:
@@ -79,6 +80,10 @@ class RemoteNebraskaWrapper(multiprocessing.Process):
           operations.
       install_metadata_dir: Similar to update_metadata_dir but for install
           payloads.
+      ignore_appid: True to tell Nebraska to ignore the update request's
+          App ID. This allows mismatching the source and target version boards.
+          One specific use case is updating between <board> and
+          <board>-kernelnext images.
     """
     super(RemoteNebraskaWrapper, self).__init__()
 
@@ -89,6 +94,7 @@ class RemoteNebraskaWrapper(multiprocessing.Process):
     self._update_metadata_dir = update_metadata_dir
     self._install_payloads_address = install_payloads_address
     self._install_metadata_dir = install_metadata_dir
+    self._ignore_appid = ignore_appid
 
     self._nebraska_bin = nebraska_bin or self.NEBRASKA_PATH
 
@@ -182,6 +188,8 @@ class RemoteNebraskaWrapper(multiprocessing.Process):
       cmd += ['--install-metadata', self._install_metadata_dir]
     if self._install_payloads_address:
       cmd += ['--install-payloads-address', self._install_payloads_address]
+    if self._ignore_appid:
+      cmd += ['--ignore-appid']
 
     try:
       self._RemoteCommand(cmd, stdout=True, stderr=subprocess.STDOUT)

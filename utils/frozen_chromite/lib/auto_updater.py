@@ -148,7 +148,7 @@ class ChromiumOSUpdater(BaseUpdater):
                yes=False, do_rootfs_update=True, do_stateful_update=True,
                reboot=True, disable_verification=False,
                send_payload_in_parallel=False, payload_filename=None,
-               staging_server=None, clear_tpm_owner=False):
+               staging_server=None, clear_tpm_owner=False, ignore_appid=False):
     """Initialize a ChromiumOSUpdater for auto-update a chromium OS device.
 
     Args:
@@ -184,6 +184,10 @@ class ChromiumOSUpdater(BaseUpdater):
           or empty, an auto_updater_transfer.LocalTransfer reference must be
           passed through the transfer_class parameter.
       clear_tpm_owner: If true, it will clear the TPM owner on reboot.
+      ignore_appid: True to tell Nebraska to ignore the update request's
+          App ID. This allows mismatching the source and target version boards.
+          One specific use case is updating between <board> and
+          <board>-kernelnext images which have different App IDs.
     """
     super(ChromiumOSUpdater, self).__init__(device, payload_dir)
 
@@ -227,6 +231,7 @@ class ChromiumOSUpdater(BaseUpdater):
     self._transfer_obj = self._CreateTransferObject(transfer_class)
 
     self._clear_tpm_owner = clear_tpm_owner
+    self._ignore_appid = ignore_appid
 
   @property
   def is_au_endtoendtest(self):
@@ -442,7 +447,8 @@ class ChromiumOSUpdater(BaseUpdater):
     nebraska = nebraska_wrapper.RemoteNebraskaWrapper(
         self.device, nebraska_bin=nebraska_bin,
         update_payloads_address='file://' + self.device_payload_dir,
-        update_metadata_dir=self.device_payload_dir)
+        update_metadata_dir=self.device_payload_dir,
+        ignore_appid=self._ignore_appid)
 
     try:
       nebraska.Start()

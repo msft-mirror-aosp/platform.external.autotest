@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = "Harpreet Grewal <harpreet@chromium.org>"
-NAME = "cellular_StaleModemReboot"
+NAME = "cellular_StaleModemReboot.tmobile"
 PURPOSE = "Verify modem is available for testing."
 CRITERIA = """
 This test will fail if either there is no response to modem status command or
@@ -15,7 +15,8 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+ATTRIBUTES = "suite:cellular_modem_repair"
+DEPENDENCIES = "servo_state:WORKING, carrier:tmobile"
 
 DOC = """
   Tests that a cellular modem is available for testing.

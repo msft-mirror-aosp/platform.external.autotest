@@ -183,6 +183,8 @@ class FioTest(test.test):
            stat.S_ISBLK(os.stat(self.__filename).st_mode) and \
            self.__filesize != 0 and blkdiscard:
             try:
+                logging.info("Doing a blkdiscard using ioctl %s",
+                             self.IOCTL_TRIM_CMD)
                 fd = os.open(self.__filename, os.O_RDWR)
                 fcntl.ioctl(fd, self.IOCTL_TRIM_CMD,
                             struct.pack('QQ', 0, self.__filesize))

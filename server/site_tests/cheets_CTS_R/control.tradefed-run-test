@@ -64,6 +64,7 @@ uri = ('gs://chromeos-arc-images/cts/bundle/R/android-cts-' + cts_revision +
        '-linux_x86-' + cts_abi + '.zip') if cts_revision else 'LATEST'
 run_template = ['run', 'commandAndExit', 'cts',
                 '--include-filter', cts_module + ' ' + cts_test,
+                '--skip-device-info',
                 '--logcat-on-failure']
 retry_template = ['run', 'commandAndExit', 'retry',
                   '--retry', '{session_id}']

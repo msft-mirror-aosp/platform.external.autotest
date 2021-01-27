@@ -60,6 +60,7 @@ if not gts_module or not gts_revision or not gts_test:
 uri = ('gs://chromeos-arc-images/cts/bundle/android-gts-' + gts_revision + '.zip')
 run_template = ['run', 'commandAndExit', 'gts',
                 '--include-filter', gts_module + ' ' + gts_test,
+                '--skip-device-info',
                 '--ignore-business-logic-failure']
 retry_template = ['run', 'commandAndExit', 'retry',
                   '--retry', '{session_id}']

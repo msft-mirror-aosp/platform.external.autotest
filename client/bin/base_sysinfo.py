@@ -15,15 +15,15 @@ from autotest_lib.client.bin import utils, package
 
 _DEFAULT_COMMANDS_TO_LOG_PER_TEST = []
 _DEFAULT_COMMANDS_TO_LOG_PER_BOOT = [
-    'lspci -vvn',
-    'gcc --version',
-    'ld --version',
-    'mount',
-    'hostname',
-    'uptime',
-    # for Downloadable Content (DLC)
-    'losetup',
-    'dlcservice_util --list',
+        'lspci -vvnn',
+        'gcc --version',
+        'ld --version',
+        'mount',
+        'hostname',
+        'uptime',
+        # for Downloadable Content (DLC)
+        'losetup',
+        'dlcservice_util --list',
 ]
 _DEFAULT_COMMANDS_TO_LOG_BEFORE_ITERATION = []
 _DEFAULT_COMMANDS_TO_LOG_AFTER_ITERATION = []

@@ -44,9 +44,9 @@ attribute strings defined above.  Illegal strings are ignored.
 """
 
 
-import hashlib, logging, os, utils
-import six
+import hashlib, logging, os
 
+from autotest_lib.client.common_lib import utils
 
 private_host_attributes = utils.import_site_symbol(
     __file__,

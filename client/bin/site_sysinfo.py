@@ -224,7 +224,7 @@ class diffable_logdir(logdir):
                 # File is modified to a smaller size, copy whole file.
                 bytes_to_skip = 0
         try:
-            with open(file_path, 'r') as in_log:
+            with open(file_path, 'rb') as in_log:
                 if bytes_to_skip > 0:
                     in_log.seek(bytes_to_skip)
                 # Skip src_dir in path, e.g., src_dir/[sub_dir]/file_name.
@@ -233,7 +233,7 @@ class diffable_logdir(logdir):
                 target_dir = os.path.dirname(target_path)
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
-                with open(target_path, "w") as out_log:
+                with open(target_path, 'wb') as out_log:
                     out_log.write(in_log.read())
         except IOError as e:
             logging.error('Diff %s failed with error: %s', file_path, e)

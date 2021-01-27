@@ -298,6 +298,18 @@ def get_target_commit(hostname, host_build):
     return commit
 
 
+def get_latest_commit():
+    """Get the current chameleon bundle commit deployed in the lab.
+
+    This function exists for backward compatibility.
+    Remove this function once the bluetooth_PeerUpdate test is removed.
+
+    @returns the current commit in case of success; None in case of failure
+    """
+    commit = get_target_commit(hostname='', host_build='')
+    return bool(commit), commit
+
+
 def download_installation_files(host, commit):
     """ Download the chameleond installation bundle"""
     src_path = GS_PUBLIC + BUNDLE_TEMPLATE.format(commit)

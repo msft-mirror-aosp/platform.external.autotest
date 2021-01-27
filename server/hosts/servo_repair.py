@@ -988,6 +988,48 @@ class _ToggleCCLineRepair(hosts.RepairAction):
         return 'Toggle cc lines'
 
 
+class _FakedisconnectRepair(hosts.RepairAction):
+    """Try repair servod by mimic reconnection of servo.
+
+    When cr50 is not enumerated as we can try to recover it by reconnect to DUT.
+    """
+    # Delay to disconnect.
+    DISC_DELAY_MS = 100
+    # Timeout to wait to restore the connection.
+    DISC_TIMEOUT_MS = 2000
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        disc_cmd = ('fakedisconnect %d %d' %
+                    (self.DISC_DELAY_MS, self.DISC_TIMEOUT_MS))
+        host.get_servo().set_nocheck('servo_v4_uart_cmd', disc_cmd)
+        host.restart_servod()
+
+    def _is_applicable(self, host):
+        if host.is_localhost() or not host.is_labstation():
+            return False
+        if not host.servo_serial:
+            return False
+        if not host.servo_recovery:
+            logging.debug('Servod is not running in recovery mode.')
+            return False
+        if not host.get_servo():
+            logging.debug('Servo is not initialized.')
+            return False
+        return self._is_type_c(host)
+
+    def _is_type_c(self, host):
+        if host.get_dut_host_info():
+            servo_type = host.get_dut_host_info().get_label_value(
+                    servo_constants.SERVO_TYPE_LABEL_PREFIX)
+            return 'ccd_cr50' in servo_type
+        return False
+
+    @property
+    def description(self):
+        return 'Fake reconnect to DUT'
+
+
 class _ECRebootRepair(hosts.RepairAction):
     """
     Reboot EC on DUT from servo.
@@ -1153,6 +1195,8 @@ def create_servo_repair_strategy():
              ['servo_ssh', 'servo_topology'], ['dut_connected']),
             (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
             (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
+            (_FakedisconnectRepair, 'servo_fakedisconnect',
+             ['servod_connection'], servod_deps),
             (_ToggleCCLineRepair, 'servo_cc', ['servod_connection'],
              servod_deps),
             (_DutRebootRepair, 'dut_reboot', ['servod_connection'],

@@ -6,23 +6,38 @@
 
 
 ADVERTISEMENT1 = {
-    'Path': '/org/bluez/test/advertisement1',
-    'Type': 'peripheral',
-    'ManufacturerData': {'0xff01': [0x1a, 0x1b, 0x1c, 0x1d, 0x1e]},
-    'ServiceUUIDs': ['180D', '180F'],
-    'SolicitUUIDs': [],
-    'ServiceData': {'9991': [0x11, 0x12, 0x13, 0x14, 0x15]},
-    'IncludeTxPower': True}
-
+        'Path': '/org/bluez/test/advertisement1',
+        'Type': 'peripheral',
+        'ManufacturerData': {
+                '0xff01': [0x1a, 0x1b, 0x1c, 0x1d, 0x1e]
+        },
+        'ServiceUUIDs': ['180D', '180F'],
+        'SolicitUUIDs': [],
+        'ServiceData': {
+                '9991': [0x11, 0x12, 0x13, 0x14, 0x15]
+        },
+        'ScanResponseData': {
+                '0x16': [0xcd, 0xab] + list(range(1, 21))
+        },
+        'IncludeTxPower': True
+}
 
 ADVERTISEMENT2 = {
-    'Path': '/org/bluez/test/advertisement2',
-    'Type': 'peripheral',
-    'ManufacturerData': {'0xff02': [0x2a, 0x2b, 0x2c, 0x2d, 0x2e]},
-    'ServiceUUIDs': ['1821'],
-    'SolicitUUIDs': [],
-    'ServiceData': {'9992': [0x21, 0x22, 0x23, 0x24, 0x25]},
-    'IncludeTxPower': True}
+        'Path': '/org/bluez/test/advertisement2',
+        'Type': 'peripheral',
+        'ManufacturerData': {
+                '0xff02': [0x2a, 0x2b, 0x2c, 0x2d, 0x2e]
+        },
+        'ServiceUUIDs': ['1821'],
+        'SolicitUUIDs': [],
+        'ServiceData': {
+                '9992': [0x21, 0x22, 0x23, 0x24, 0x25]
+        },
+        'ScanResponseData': {
+                '0x16': [0xcd, 0xab] + list(range(22, 42))
+        },
+        'IncludeTxPower': True
+}
 
 
 ADVERTISEMENT3 = {

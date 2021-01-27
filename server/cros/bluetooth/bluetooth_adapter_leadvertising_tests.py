@@ -248,6 +248,51 @@ class bluetooth_AdapterLEAdvertising(
         return discovered_service_data
 
 
+    def validate_scan_rsp_reception(self, peer, advertisement, discover_time):
+        """Validate our advertisement's scan response is located by the peer
+
+        If our advertisements are configured with scan response data, we wish
+        to confirm that a scanning peer will be able to discover this content.
+
+        @param peer: Handle to peer device for advertisement collection
+        @param advertisement: Advertisement data that has been enabled on DUT
+            side
+        @param discover_time: Number of seconds we should spend discovering
+            before considering the device undiscoverable
+
+        @returns: True if scan response is discovered and is correct, else False
+        """
+
+        scan_rsp_data = advertisement.get('ScanResponseData', {})
+
+        # For now, scan response can only contain service data (ad type 0x16):
+        # It appears in a scan response event with the following format:
+        # 'Service Data (UUID 0xfef3): 010203...'
+        if '0x16' in scan_rsp_data:
+            service_uuid_data = scan_rsp_data['0x16']
+
+            # First two bytes of data make up 16 bit service UUID
+            uuid = service_uuid_data[1] * 256 + service_uuid_data[0]
+            # Subsequent bytes make up the service data
+            service_data = ''.join(
+                    ['{:02x}'.format(data) for data in service_uuid_data[2:]])
+
+            search_str = 'Service Data (UUID 0x{:4x}): {}'.format(
+                    uuid, service_data)
+            logging.debug('Searching btmon for content: {}'.format(search_str))
+
+            # Locate a scan response with the above entry. Pass if it is found
+            start_time = time.time()
+            found_adv = peer.FindAdvertisementWithAttributes(
+                    [search_str, 'SCAN_RSP'], discover_time)
+
+            logging.info('Scan response discovered after %fs',
+                         time.time() - start_time)
+
+            return bool(found_adv)
+
+        return True
+
     def _test_peer_received_correct_adv(self, peer, advertisement,
                                         discover_time):
         """Test that configured advertisements are found by peer
@@ -266,6 +311,8 @@ class bluetooth_AdapterLEAdvertising(
         @returns: True if advertisement is discovered and is correct, else False
         """
 
+        self.results = {}
+
         # We locate the advertisement by searching for the ServiceData
         # attribute we configured.
         data_to_match = list(advertisement['ServiceData'].keys())[0]
@@ -276,6 +323,9 @@ class bluetooth_AdapterLEAdvertising(
         logging.info('Advertisement discovered after %fs',
                      time.time() - start_time)
 
+        if not found_adv:
+            self.results['advertisement_found'] = False
+
         # Check that our service UUIDs match what we expect
         found_service_uuids = self._get_uuids_from_advertisement(
                 found_adv, 'Service')
@@ -284,6 +334,7 @@ class bluetooth_AdapterLEAdvertising(
             if int(UUID, 16) not in found_service_uuids:
                 logging.info('Service id %d not found in %s', int(UUID, 16),
                              str(found_service_uuids))
+                self.results['service_ids_found'] = False
                 return False
 
         # Check that our solicit UUIDs match what we expect
@@ -294,6 +345,7 @@ class bluetooth_AdapterLEAdvertising(
             if int(UUID, 16) not in found_solicit_uuids:
                 logging.info('Solicid ID %d not found in %s', int(UUID, 16),
                              str(found_solicit_uuids))
+                self.results['solicit_ids_found'] = False
                 return False
 
         # Check that our Manufacturer info is correct
@@ -304,6 +356,7 @@ class bluetooth_AdapterLEAdvertising(
             if int(UUID, 16) not in company_info:
                 logging.info('Company ID %d not found in advertisement',
                         int(UUID, 16))
+                self.results['manufacturer_uuid_found'] = False
                 return False
 
             expected_data = expected_company_info.get(UUID, None)
@@ -312,6 +365,7 @@ class bluetooth_AdapterLEAdvertising(
             if formatted_data != company_info.get(int(UUID, 16)):
                 logging.info('Manufacturer data %s didn\'t match expected %s',
                         company_info.get(int(UUID, 16)), formatted_data)
+                self.results['manufacturer_data_found'] = False
                 return False
 
         # Check that our service data is correct
@@ -322,6 +376,7 @@ class bluetooth_AdapterLEAdvertising(
             if int(UUID, 16) not in service_data:
                 logging.info('Service UUID %d not found in advertisement',
                              int(UUID, 16))
+                self.results['service_data_uuid_found'] = False
                 return False
 
             expected_data = expected_service_data.get(UUID, None)
@@ -330,7 +385,14 @@ class bluetooth_AdapterLEAdvertising(
             if formatted_data != service_data.get(int(UUID, 16)):
                 logging.info('Service data %s didn\'t match expected %s',
                              service_data.get(int(UUID, 16)), formatted_data)
+                self.results['service_data_found'] = False
                 return False
+
+        # Validate scan response from peer's perspective
+        if not self.validate_scan_rsp_reception(peer, advertisement,
+                                                discover_time):
+            self.results['scan_rsp_found'] = False
+            return False
 
         return True
 

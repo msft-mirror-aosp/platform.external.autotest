@@ -31,7 +31,7 @@ gts_module = ''
 gts_retry = 5
 gts_revision = None
 gts_test = ''
-gts_timeout = 600
+gts_timeout = 3600
 
 # Pull parameters either from run_suite or test_that.
 if 'args_dict' in vars():

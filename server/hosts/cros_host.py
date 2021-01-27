@@ -91,6 +91,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     #   including the 30 second dev-mode delay and time to start the
     #   network.
     # INSTALL_TIMEOUT: Time to allow for chromeos-install.
+    # ADMIN_INSTALL_TIMEOUT: Time to allow for chromeos-install
+    #   used by admin tasks.
     # POWERWASH_BOOT_TIMEOUT: Time to allow for a reboot that
     #   includes powerwash.
 
@@ -100,6 +102,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     BOOT_TIMEOUT = 150
     USB_BOOT_TIMEOUT = 300
     INSTALL_TIMEOUT = 480
+    ADMIN_INSTALL_TIMEOUT = 600
     POWERWASH_BOOT_TIMEOUT = 60
 
     # Minimum OS version that supports server side packaging. Older builds may

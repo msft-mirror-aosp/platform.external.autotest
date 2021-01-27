@@ -1127,7 +1127,9 @@ class ServoInstallRepair(hosts.RepairAction):
             logging.info('Staging image: %s on caching server.', image_name)
             _, update_url = host.stage_image_for_servo()
         afe_utils.clean_provision_labels(host)
-        host.servo_install(update_url, is_repair=True)
+        host.servo_install(update_url,
+                           install_timeout=host.ADMIN_INSTALL_TIMEOUT,
+                           is_repair=True)
         afe_utils.add_provision_labels(host, host.VERSION_PREFIX, image_name)
         # Collect info which USB-key used for successful re-image.
         host_info = host.host_info_store.get()

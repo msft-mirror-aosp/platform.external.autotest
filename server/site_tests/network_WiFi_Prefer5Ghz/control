@@ -6,7 +6,8 @@ AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_Prefer5Ghz'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_matfunc')
+# NOTE(b/175661052): the test is replaced by tast.wifi.Prefer5Ghz.
+ATTRIBUTES = ''
 DEPENDENCIES = 'wificell'
 
 DOC = """

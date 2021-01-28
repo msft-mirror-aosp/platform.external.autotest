@@ -1155,53 +1155,75 @@ class _ServoMicroFlashRepair(hosts.RepairAction):
         return 'Re-flash servo_micro firmware.'
 
 
-def create_servo_repair_strategy():
+def _servo_verifier_actions():
+    """
+    Return a verifiers for a `ServoHost`.
+    """
+    config = ['servo_config_board', 'servo_config_serial']
+    return (
+            (repair_utils.SshVerifier, 'servo_ssh', []),
+            (_DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
+            (_UpdateVerifier, 'servo_update', ['servo_ssh']),
+            (_BoardConfigVerifier, 'servo_config_board', ['servo_ssh']),
+            (_SerialConfigVerifier, 'servo_config_serial', ['servo_ssh']),
+            (_ServodJobVerifier, 'servod_started',
+             config + ['servo_disk_space']),
+            (_TopologyVerifier, 'servo_topology', ['servod_started']),
+            (_ServodConnectionVerifier, 'servod_connection',
+             ['servod_started']),
+            (_Cr50LowSBUVerifier, 'servo_cr50_low_sbu', ['servod_connection']),
+            (_Cr50OffVerifier, 'servo_cr50_off', ['servod_connection']),
+            (_ServodControlVerifier, 'servod_control', ['servod_connection']),
+            (_DUTConnectionVerifier, 'servo_dut_connected',
+             ['servod_connection']),
+            (_ServoHubConnectionVerifier, 'servo_hub_connected',
+             ['servo_dut_connected']),
+            (_PowerButtonVerifier, 'servo_pwr_button', ['servo_hub_connected'
+                                                        ]),
+            (_BatteryVerifier, 'servo_battery', ['servo_hub_connected']),
+            (_LidVerifier, 'servo_lid_open', ['servo_hub_connected']),
+            (_EcBoardVerifier, 'servo_ec_board', ['servo_dut_connected']),
+            (_Cr50ConsoleVerifier, 'servo_cr50_console',
+             ['servo_dut_connected']),
+            (_CCDTestlabVerifier, 'servo_ccd_testlab', ['servo_cr50_console']),
+            (_CCDPowerDeliveryVerifier, 'servo_power_delivery',
+             ['servo_dut_connected']),
+    )
+
+
+def _servo_repair_actions():
     """
     Return a `RepairStrategy` for a `ServoHost`.
     """
-    config = ['brd_config', 'ser_config']
-    verify_dag = [
-            (repair_utils.SshVerifier, 'servo_ssh', []),
-            (_DiskSpaceVerifier, 'disk_space', ['servo_ssh']),
-            (_UpdateVerifier, 'update', ['servo_ssh']),
-            (_BoardConfigVerifier, 'brd_config', ['servo_ssh']),
-            (_SerialConfigVerifier, 'ser_config', ['servo_ssh']),
-            (_ServodJobVerifier, 'servod_job', config + ['disk_space']),
-            (_TopologyVerifier, 'servo_topology', ['servod_job']),
-            (_ServodConnectionVerifier, 'servod_connection', ['servod_job']),
-            (_Cr50LowSBUVerifier, 'cr50_low_sbu', ['servod_connection']),
-            (_Cr50OffVerifier, 'cr50_off', ['servod_connection']),
-            (_ServodControlVerifier, 'servod_control', ['servod_connection']),
-            (_DUTConnectionVerifier, 'dut_connected', ['servod_connection']),
-            (_ServoHubConnectionVerifier, 'hub_connected', ['dut_connected']),
-            (_PowerButtonVerifier, 'pwr_button', ['hub_connected']),
-            (_BatteryVerifier, 'battery', ['hub_connected']),
-            (_LidVerifier, 'lid_open', ['hub_connected']),
-            (_EcBoardVerifier, 'ec_board', ['dut_connected']),
-            (_Cr50ConsoleVerifier, 'cr50_console', ['dut_connected']),
-            (_CCDTestlabVerifier, 'ccd_testlab', ['cr50_console']),
-            (_CCDPowerDeliveryVerifier, 'power_delivery', ['dut_connected']),
-    ]
-
+    config = ['servo_config_board', 'servo_config_serial']
     servod_deps = [
-            'servod_job', 'servo_topology', 'servod_connection',
-            'servod_control', 'dut_connected', 'hub_connected', 'pwr_button',
-            'cr50_console', 'cr50_low_sbu', 'cr50_off'
+            'servod_started', 'servo_topology', 'servod_connection',
+            'servod_control', 'servo_dut_connected', 'servo_hub_connected',
+            'servo_pwr_button', 'servo_cr50_console', 'servo_cr50_low_sbu',
+            'servo_cr50_off'
     ]
-    repair_actions = [
-            (_DiskCleanupRepair, 'disk_cleanup', ['servo_ssh'], ['disk_space'
-                                                                 ]),
+    return (
+            (_DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
+             ['servo_disk_space']),
             (_ServoMicroFlashRepair, 'servo_micro_flash',
-             ['servo_ssh', 'servo_topology'], ['dut_connected']),
-            (_RestartServod, 'restart', ['servo_ssh'], config + servod_deps),
+             ['servo_ssh', 'servo_topology'], ['servo_dut_connected']),
+            (_RestartServod, 'servod_restart', ['servo_ssh'],
+             config + servod_deps),
             (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
             (_FakedisconnectRepair, 'servo_fakedisconnect',
              ['servod_connection'], servod_deps),
             (_ToggleCCLineRepair, 'servo_cc', ['servod_connection'],
              servod_deps),
-            (_DutRebootRepair, 'dut_reboot', ['servod_connection'],
-             ['servod_control', 'lid_open', 'ec_board']),
-            (_ECRebootRepair, 'ec_reboot', ['servod_connection'],
-             ['servod_control', 'lid_open', 'ec_board']),
-    ]
-    return hosts.RepairStrategy(verify_dag, repair_actions, 'servo')
+            (_DutRebootRepair, 'servo_dut_reboot', ['servod_connection'],
+             ['servod_control', 'servo_lid_open', 'servo_ec_board']),
+            (_ECRebootRepair, 'servo_ec_reboot', ['servod_connection'],
+             ['servod_control', 'servo_lid_open', 'servo_ec_board']),
+    )
+
+
+def create_servo_repair_strategy():
+    """
+    Return a `RepairStrategy` for a `ServoHost`.
+    """
+    return hosts.RepairStrategy(_servo_verifier_actions(),
+                                _servo_repair_actions(), 'servo')

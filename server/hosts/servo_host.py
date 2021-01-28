@@ -1367,20 +1367,20 @@ class ServoHost(base_servohost.BaseServoHost):
         them.
         """
         ssh = self.get_verifier_state('servo_ssh')
-        disk_space = self.get_verifier_state('disk_space')
-        start_servod = self.get_verifier_state('servod_job')
+        disk_space = self.get_verifier_state('servo_disk_space')
+        start_servod = self.get_verifier_state('servod_started')
         create_servo = self.get_verifier_state('servod_connection')
         init_servo = self.get_verifier_state('servod_control')
-        cr50_low_sbu = self.get_verifier_state('cr50_low_sbu')
-        cr50_off = self.get_verifier_state('cr50_off')
+        cr50_low_sbu = self.get_verifier_state('servo_cr50_low_sbu')
+        cr50_off = self.get_verifier_state('servo_cr50_off')
         servo_topology = self.get_verifier_state('servo_topology')
-        dut_connected = self.get_verifier_state('dut_connected')
-        hub_connected = self.get_verifier_state('hub_connected')
-        pwr_button = self.get_verifier_state('pwr_button')
-        lid_open = self.get_verifier_state('lid_open')
-        ec_board = self.get_verifier_state('ec_board')
-        cr50_console = self.get_verifier_state('cr50_console')
-        ccd_testlab = self.get_verifier_state('ccd_testlab')
+        dut_connected = self.get_verifier_state('servo_dut_connected')
+        hub_connected = self.get_verifier_state('servo_hub_connected')
+        pwr_button = self.get_verifier_state('servo_pwr_button')
+        lid_open = self.get_verifier_state('servo_lid_open')
+        ec_board = self.get_verifier_state('servo_ec_board')
+        cr50_console = self.get_verifier_state('servo_cr50_console')
+        ccd_testlab = self.get_verifier_state('servo_ccd_testlab')
 
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH

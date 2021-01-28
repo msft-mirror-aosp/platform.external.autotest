@@ -11,6 +11,7 @@ CRITERIA = "This test will fail if Plankton type C VBUS voltage not in range."
 TIME = "FAST"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
+JOB_RETRIES = 0
 
 DOC = """
 This test remotely emulates type C charging adapter with different source

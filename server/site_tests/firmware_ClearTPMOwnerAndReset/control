@@ -7,6 +7,7 @@ NAME = "firmware_ClearTPMOwnerAndReset"
 PURPOSE = "Verify normal boot after clearing the tpm owner and rebooting the ec"
 TIME = "SHORT"
 TEST_TYPE = "server"
+JOB_RETRIES = 0
 DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """

@@ -997,12 +997,17 @@ class _FakedisconnectRepair(hosts.RepairAction):
     DISC_DELAY_MS = 100
     # Timeout to wait to restore the connection.
     DISC_TIMEOUT_MS = 2000
+    # Timeout to wait to execute the command and apply effect.
+    EXEC_TIMEOUT = (DISC_DELAY_MS + DISC_TIMEOUT_MS) / 1000 + 2
 
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         disc_cmd = ('fakedisconnect %d %d' %
                     (self.DISC_DELAY_MS, self.DISC_TIMEOUT_MS))
+        # cannot use 'set' as control is not returned executed commands
         host.get_servo().set_nocheck('servo_v4_uart_cmd', disc_cmd)
+        logging.debug('Waiting %ss for affect of action', self.EXEC_TIMEOUT)
+        time.sleep(self.EXEC_TIMEOUT)
         host.restart_servod()
 
     def _is_applicable(self, host):

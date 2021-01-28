@@ -37,9 +37,10 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
 
         # TODO(mruthven): replace with dependency on servo v4 with servo micro
         # and type c cable.
-        if (self.servo.get_servo_version(active=True) !=
-            'servo_v4_with_servo_micro'):
-            raise error.TestNAError('Run using servo v4 with servo micro')
+        if ('servo_v4' not in self.servo.get_servo_type()
+                    or not self.servo.main_device_is_flex()):
+            raise error.TestNAError('Must use servo v4 with flex(c2d2 or '
+                                    'servo_micro)')
 
         if not self.cr50.servo_dts_mode_is_valid():
             raise error.TestNAError('Plug in servo v4 type c cable into ccd '

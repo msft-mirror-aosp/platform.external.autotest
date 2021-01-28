@@ -91,8 +91,10 @@ class AdvMonitor(dbus.service.Object):
         """
         properties = dict()
         properties['Type'] = dbus.String(self.monitor_type)
-        properties['RSSIThresholdsAndTimers'] = dbus.Struct(self.rssi,
-                                                            signature='nqnq')
+        properties['RSSIHighThreshold'] = dbus.Int16(self.rssi_h_thresh)
+        properties['RSSIHighTimeout'] = dbus.UInt16(self.rssi_h_timeout)
+        properties['RSSILowThreshold'] = dbus.Int16(self.rssi_l_thresh)
+        properties['RSSILowTimeout'] = dbus.UInt16(self.rssi_l_timeout)
         properties['Patterns'] = dbus.Array(self.patterns, signature='(yyay)')
         return {ADV_MONITOR_IFACE: properties}
 
@@ -112,11 +114,10 @@ class AdvMonitor(dbus.service.Object):
         @param rssi: the list of rssi threshold and timeout values.
 
         """
-        h_thresh = dbus.Int16(rssi[self.RSSI_H_THRESH])
-        h_timeout = dbus.UInt16(rssi[self.RSSI_H_TIMEOUT])
-        l_thresh = dbus.Int16(rssi[self.RSSI_L_THRESH])
-        l_timeout = dbus.UInt16(rssi[self.RSSI_L_TIMEOUT])
-        self.rssi = (h_thresh, h_timeout, l_thresh, l_timeout)
+        self.rssi_h_thresh = rssi[self.RSSI_H_THRESH]
+        self.rssi_h_timeout = rssi[self.RSSI_H_TIMEOUT]
+        self.rssi_l_thresh = rssi[self.RSSI_L_THRESH]
+        self.rssi_l_timeout = rssi[self.RSSI_L_TIMEOUT]
 
 
     def _set_patterns(self, patterns):

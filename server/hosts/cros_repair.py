@@ -247,8 +247,9 @@ class CrosVerisionVerifier(hosts.Verifier):
             # We don't want fail this verifier for any errors that other
             # than a actual version mismatch, as that can make debugging
             # more challenge.
-            logging.warning('Unexpected error during verify cros verision'
-                            ' on %s; %s', host.hostname, e)
+            logging.warning(
+                    'Unexpected error during verify cros version on %s; %s',
+                    host.hostname, e)
 
         if not label_match:
             raise hosts.AutoservVerifyError('ChromeOS image on the host'

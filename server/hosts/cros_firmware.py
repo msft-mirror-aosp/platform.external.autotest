@@ -387,6 +387,28 @@ class FirmwareVersionVerifier(hosts.Verifier):
             raise hosts.AutoservVerifyError(
                     message % (version_a, version_b))
 
+    def _is_stable_image_installed(self, host):
+        """Verify that ChromeOS image on host is a stable version.
+
+        This check verify that device booted from stable image to protect us
+        from installing the firmware from bad/broken/no-tested image. Bad
+        image can have broken updater or corrupted firmware.
+
+        The representation version looks like:
+                nocturne-release/R89-13728.0.0
+        Check compare version from host to version provide as stable image
+        from host-info file.
+
+        @param host  CrosHost instance.
+        """
+        os_from_host = host.get_release_builder_path()
+        os_from_host_info = host.get_cros_repair_image_name()
+        if os_from_host != os_from_host_info:
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'Firmware update can be run only from stable image.'
+                    ' Expected version:"%s", actually: "%s"' %
+                    (os_from_host_info, os_from_host))
+
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         # Test 1 - The DUT is not excluded from updates.
@@ -430,6 +452,7 @@ class FirmwareVersionVerifier(hosts.Verifier):
             logging.error('Supplied firmware version in OS can\'t be '
                           'determined.')
             return
+        self._is_stable_image_installed(host)
         if available_firmware != stable_firmware:
             raise hosts.AutoservVerifyError(
                     'DUT firmware requires update from %s to %s' %

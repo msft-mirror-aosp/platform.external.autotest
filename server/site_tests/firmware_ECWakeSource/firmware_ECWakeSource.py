@@ -227,11 +227,16 @@ class firmware_ECWakeSource(FirmwareTest):
         if self.servo.main_device_is_ccd():
             logging.info('With CCD, we can\'t wake up the DUT from hibernate '
                          'by power button. Skip hibernate test.')
-        elif not self.faft_config.ec_has_hibernate_cmd:
-            logging.info('EC does not support hibernate. Skip hibernate test.')
-        elif not self.has_internal_display:
-            logging.info('For the form factors without internal display, '
-                         'hibernate is not useful. Skip hibernate test.')
+        elif not self.faft_config.hibernate:
+            logging.info(
+                    'The device does not support hibernate. Skip hibernate test.'
+            )
+        elif not self._client.has_battery():
+            logging.warning(
+                    'The device claims to have hibernate support, but does not '
+                    'have a battery. It probably does not actually have hibernate '
+                    'support, edit the device.json file in fw-testing-configs. '
+                    'Skip hibernate test.')
         else:
             logging.info('EC hibernate and wake by power button.')
             self.hibernate_and_wake_by_power_button(host)

@@ -38,7 +38,7 @@ def run(machine):
                              '!"dep:plugin_vm" && '
                              '!"dep:android*"'
                              ')'],
-                 ignore_test_failures=False, max_run_sec=3600,
+                 ignore_test_failures=False, max_run_sec=7200,
                  command_args=args,
                  clear_tpm=True)
 

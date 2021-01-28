@@ -6,7 +6,6 @@
 This module provides bindings for Hermes.
 
 """
-
 import dbus
 import logging
 import dbus.mainloop.glib
@@ -15,9 +14,7 @@ from autotest_lib.client.cros.cellular import cellular_logging
 from autotest_lib.client.cros.cellular import hermes_constants
 from autotest_lib.client.cros.cellular import mm1_constants
 
-
 log = cellular_logging.SetupCellularLogging('Hermes')
-
 
 def _is_unknown_dbus_binding_exception(e):
     return (isinstance(e, dbus.exceptions.DBusException) and
@@ -25,7 +22,6 @@ def _is_unknown_dbus_binding_exception(e):
                                   mm1_constants.DBUS_UNKNOWN_METHOD,
                                   mm1_constants.DBUS_UNKNOWN_OBJECT,
                                   mm1_constants.DBUS_UNKNOWN_INTERFACE])
-
 
 class HermesManagerProxyError(Exception):
     """Exceptions raised by HermesManager1ProxyError and it's children."""
@@ -58,7 +54,6 @@ class HermesManagerProxy(object):
                 # called. This way, calling get_hermes_manager
                 # SubclassOfHermesManagerProxy._connect_to_hermes_manager()
                 # will get a proxy of the right type
-
                 return cls(bus=bus)
             except dbus.exceptions.DBusException as e:
                 if _is_unknown_dbus_binding_exception(e):
@@ -75,7 +70,6 @@ class HermesManagerProxy(object):
             timeout=timeout_seconds,
             sleep_interval=hermes_constants.CONNECT_WAIT_INTERVAL_SECONDS)
         connection = _connect_to_hermes_manager(bus)
-
         return connection
 
     def __init__(self, bus=None):
@@ -94,8 +88,11 @@ class HermesManagerProxy(object):
         return self._manager
 
     def set_test_mode(self, test_mode):
-        """ Sets Hermes daemon to test mode, required to run autotests
+        """
+        Sets Hermes daemon to test mode, required to run autotests
+
         @param test_mode boolean to set true or false
+
         """
         try:
             logging.info('Hermes call SetTestMode')
@@ -112,15 +109,19 @@ class HermesManagerProxy(object):
     def properties(self, iface=hermes_constants.HERMES_MANAGER_IFACE):
         """
         Return the properties associated with the specified interface.
+
         @param iface: Name of interface to retrieve the properties from.
         @return array of properties.
+
         """
         return self.iface_properties.GetAll(iface)
 
     def get_available_euiccs(self):
         """
         Return AvailableEuiccs property from manager interface
+
         @return array of euicc paths
+
         """
         available_euiccs = self.properties()
         if len(available_euiccs) <= 0:
@@ -131,7 +132,9 @@ class HermesManagerProxy(object):
     def get_first_inactive_euicc(self):
         """
         Read all euiccs objects in loop and get an non active euicc object
+
         @return non active euicc object
+
         """
         try:
             euiccs = self.get_available_euiccs()
@@ -149,7 +152,9 @@ class HermesManagerProxy(object):
         """
         Read all euiccs and get an active euicc object
         by reading isactive property of each euicc object
+
         @return active euicc dbus object path
+
         """
         try:
             euiccs = self.get_available_euiccs()
@@ -166,8 +171,10 @@ class HermesManagerProxy(object):
     def get_euicc(self, euicc_path):
         """
         Create a proxy object for given euicc path
+
         @param euicc_path: available euicc dbus path as string
         @return euicc proxy dbus object
+
         """
         if not euicc_path:
             return None
@@ -188,7 +195,9 @@ class HermesManagerProxy(object):
     def get_profile_from_iccid(self, iccid):
         """
         Generic function to get profile based on given iccid
+
         @return euicc object and profile object
+
         """
         logging.debug('Get profile from given iccid:%s', iccid)
         euiccs = self.get_available_euiccs()
@@ -197,69 +206,6 @@ class HermesManagerProxy(object):
             if euicc_obj.get_profile_from_iccid(iccid) != None:
                 return euicc_obj, euicc.get_profile_from_iccid
         return None
-
-    def refresh_profiles(self):
-        """
-        call RequestInstalledProfiles DBus api after each Hermes restart or
-        before start fetching euicc/profile details, this loads all the
-        installed, pending profiles for all available euiccs.
-        @return HermesManagerProxyError if failed to refresh.
-        """
-        try:
-            euiccs = self.get_available_euiccs()
-            if euiccs is None:
-                logging.error('No Euicc found to refresh')
-                euiccs = {'/org/chromium/Hermes/euicc/0',
-                          '/org/chromium/Hermes/euicc/1'}
-            logging.info(
-                'Refresh installed and pending profiles on each euicc')
-            for euicc in euiccs:
-                euicc_proxy = EuiccProxy(self._bus, euicc)
-                euicc_proxy.properties()
-                # give smds or empty string
-                if euicc == "/org/chromium/Hermes/euicc/1":
-                    logging.debug("Request euicc 1")
-                    self.set_test_mode(True)
-                    euicc_proxy.request_pending_profiles(
-                            dbus.String('prod.smds.rsp.goog'))
-                else:
-                    self.set_test_mode(False)
-                    logging.debug('Skipping request_pending_profiles for '
-                                  'euicc 0 , since we do not plan to test '
-                                  'SMDS with prod CI')
-                euicc_proxy.request_installed_profiles()
-        except dbus.DBusException as e:
-            if _is_unknown_dbus_binding_exception(e):
-                return None
-            raise HermesManagerProxyError(
-                'Failed to refresh profiles. DBus error: '
-                '|%s|', repr(e))
-
-    def install_pending_profile(self):
-        """
-        Install a profile onto the euicc using a pending profile from SM-DS.
-        @param confirmation_code
-        @return installed profile object or None, raise HermesProxyError
-        """
-        profile_dict = {}
-        euiccs = self.get_available_euiccs()
-        profile_result = None
-        confirmation_code = None
-        for euicc in euiccs:
-            euiccs_proxy = EuiccProxy(self._bus, euicc)
-            profile_dict.update(self.get_pending_profiles(euicc))
-            if (len(profile_dict) > 0):
-                logging.info(
-                    'Confirmation_code not given. Install any pending profile')
-                profile_path = list(profile_dict.keys())[0]
-                profile_result = \
-                    euiccs_proxy.install_pending_profile(profile_path,
-                                                         confirmation_code)
-                logging.debug('Installed pending profile %s', profile_path)
-                break
-            else:
-                return None
-        return profile_result
 
     def set_debug_logging(self):
         self.manager.SetLogging('DEBUG')
@@ -271,7 +217,6 @@ class HermesManagerProxy(object):
 
 # End of Manager class
 
-
 class ProfileProxy(object):
     """A wrapper around a DBus proxy for Hermes profile object."""
 
@@ -280,6 +225,7 @@ class ProfileProxy(object):
 
     def __init__(self, bus, path):
         self._bus = bus
+        self._path = path
         self._profile = self._bus.get_object(
             hermes_constants.HERMES_SERVICE, path)
 
@@ -301,6 +247,11 @@ class ProfileProxy(object):
     def profile(self):
         """@return the DBus profiles object."""
         return self._profile
+
+    @property
+    def path(self):
+        """@return profile path."""
+        return self._path
 
     @property
     def iface_properties(self):
@@ -370,7 +321,6 @@ class ProfileProxy(object):
         props = self.properties(hermes_constants.HERMES_PROFILE_IFACE)
         return props.get('Nickname')
 
-
 class EuiccProxy(object):
     """A wrapper around a DBus proxy for Hermes euicc object."""
 
@@ -395,9 +345,12 @@ class EuiccProxy(object):
         return dbus.Interface(self._euicc, hermes_constants.HERMES_EUICC_IFACE)
 
     def properties(self, iface=hermes_constants.HERMES_EUICC_IFACE):
-        """Return the properties associated with the specified interface.
+        """
+        Return the properties associated with the specified interface.
+
         @param iface: Name of interface to retrieve the properties from.
         @return array of properties.
+
         """
         return self.iface_properties.GetAll(iface)
 
@@ -451,7 +404,7 @@ class EuiccProxy(object):
             for profile in self.installedprofiles:
                 profile_proxy = ProfileProxy(self._bus, profile)
                 profiles_dict[profile] = profile_proxy
-                logging.debug('Get installed profiles for current euicc')
+            logging.debug('Get installed profiles for current euicc')
             return profiles_dict
         except dbus.exceptions.DBusException as e:
             if _is_unknown_dbus_binding_exception(e):
@@ -474,8 +427,9 @@ class EuiccProxy(object):
         """
         Read all pending profiles of current euicc and create & return dict of
         all pending profiles
-        @param euicc_path: pending profile euicc dbus path as string
+
         @return dictionary of pending profiles proxy dbus objects
+
         """
         try:
             logging.debug('Hermes euicc getting pending profiles')

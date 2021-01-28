@@ -28,4 +28,3 @@ from autotest_lib.client.cros.cellular import test_environment
 test_env = test_environment.CellularESIMTestEnvironment()
 job.run_test('cellular_HermesEuiccEnableDisable', test_env=test_env,
             is_prod_ci=False)
-

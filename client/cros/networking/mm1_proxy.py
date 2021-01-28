@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,6 +9,8 @@ This module provides bindings for ModemManager1.
 
 import dbus
 import dbus.mainloop.glib
+import logging
+import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.cellular import mm1_constants
@@ -88,6 +90,7 @@ class ModemManager1Proxy(object):
             self._bus.get_object(mm1_constants.I_MODEM_MANAGER,
                                  mm1_constants.MM1),
             mm1_constants.I_MODEM_MANAGER)
+        self._device = None
 
     @property
     def manager(self):
@@ -96,7 +99,11 @@ class ModemManager1Proxy(object):
 
     def inhibit_device(self, inhibit):
         """
-        InhibitDevice:
+
+        Uses Modem Manager InhibitDevice DBus API to inhibit/uninhibit
+        @param inhibit: true to inhibit the modem and false to uninhibit it.
+
+        InhibitDevice API:
         @uid: the unique ID of the physical device, given in the
               #org.freedesktop.ModemManager1.Modem:Device property.
         @inhibit: %TRUE to inhibit the modem and %FALSE to uninhibit it.
@@ -112,21 +119,36 @@ class ModemManager1Proxy(object):
         inhibition will automatically removed.
         """
         try:
-            modem = self.get_modem()
-            if not modem:
-                return
-            device = modem.properties(
-                mm1_constants.I_MODEM).get('device')
-
             if not self._manager:
                 raise ModemManager1ProxyError(
-                    'Failed to to obtain dbus manager object.')
+                    'Failed to obtain dbus manager object.- No manager')
+            if not inhibit and not self._device:
+                raise ModemManager1ProxyError(
+                    'Uninhibit called before inhibit %s', self._device)
 
-            if device:
-                self._manager.InhibitDevice(dbus.String(device), inhibit)
+            if inhibit:
+                modem = self.get_modem()
+                if not modem:
+                    raise ModemManager1ProxyError(
+                        'Failed to to obtain dbus manager object. - No modem')
+
+                self._device = modem.properties(
+                mm1_constants.I_MODEM).get('Device')
+
+            logging.debug('device to be inhibited/uninhibited %s', self._device)
+            self._manager.InhibitDevice(dbus.String(self._device), inhibit)
+
+            logging.debug('inhibit=%r done with %s', inhibit, self._device)
+
+            if inhibit:
+                time.sleep(mm1_constants.MM_INHIBIT_PROCESSING_TIME)
             else:
-                self._manager.InhibitDevice(dbus.String("/virtual/fake"),
-                                            inhibit)
+                result = self.wait_for_modem(
+                    mm1_constants.MM_UNINHIBIT_PROCESSING_TIME)
+
+                time.sleep(mm1_constants.MM_REPROBE_PROCESSING_TIME)
+                if result is None:
+                    raise ModemManager1ProxyError('No modem after uninhibit')
         except dbus.exceptions.DBusException as e:
             raise ModemManager1ProxyError(
                 'Failed to to obtain dbus object for the modem.'
@@ -269,6 +291,65 @@ class ModemProxy(object):
                 'Failed to obtain dbus object for the SIM. DBus error: '
                 '|%s|', repr(e))
 
+    def get_sim_slots(self):
+        """
+        The list of SIM slots available in the system, including the SIM object
+        paths if the cards are present. If a given SIM slot at a given index
+        doesn't have a SIM card available, an empty object path will be given.
+
+        The length of this array of objects will be equal to the amount of
+        available SIM slots in the system, and the index in the array is the
+        slot index.
+
+        This list includes the SIM object considered as primary active SIM slot
+        (#org.freedesktop.ModemManager1.Modem.Sim) at index
+        #org.freedesktop.ModemManager1.Modem.ActiveSimSlot.
+
+        @return list of SimSlot paths
+
+        """
+        return self.properties(mm1_constants.I_MODEM).get('SimSlots')
+
+    def get_primary_sim_slot(self):
+        """
+        The index of the primary active SIM slot in the
+        #org.freedesktop.ModemManager1.Modem.SimSlots array, given in the [1,N]
+        range.
+
+        If multiple SIM slots aren't supported, this property will report None
+
+        In a Multi SIM Single Standby setup, this index identifies the only SIM
+        that is currently active. All the remaining slots will be inactive.
+
+        In a Multi SIM Multi Standby setup, this index identifies the active SIM
+        that is considered primary, i.e. the one that will be used when a data
+        connection is setup.
+
+        @return current primary slot index
+
+        """
+        return self.properties(mm1_constants.I_MODEM).get('PrimarySimSlot')
+
+    def set_primary_slot(self, sim_slot):
+        """
+        Selects which SIM slot to be considered as primary, on devices that
+        expose multiple slots in the #org.freedesktop.ModemManager1.Modem
+        :SimSlots property.
+
+        When the switch happens the modem may require a full device reprobe,
+        so the modem object in DBus will get removed, and recreated once the
+        selected SIM slot is in use.
+
+        There is no limitation on which SIM slot to select, so the user may
+        also set as primary a slot that doesn't currently have any valid SIM
+        card inserted.
+
+        @param: sim_slot: SIM slot number to set as primary.
+        @return: success or raise error
+
+        """
+        self.iface_modem.SetPrimarySimSlot(dbus.UInt32(sim_slot))
+
     def wait_for_states(self, states,
                         timeout_seconds=STATE_TRANSITION_WAIT_SECONDS):
         """
@@ -303,7 +384,6 @@ class ModemProxy(object):
                 self.properties(mm1_constants.I_MODEM)[
                     mm1_constants.MM_MODEM_PROPERTY_NAME_STATE]),
             timeout=timeout_seconds)
-
 
 class SimProxy(object):
     """A wrapper around a DBus proxy for ModemManager1 SIM object."""

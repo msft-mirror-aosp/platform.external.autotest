@@ -1739,7 +1739,7 @@ class Servo(object):
     def _get_servo_type_fw_version(self, servo_type, prefix=''):
         """Helper to handle fw retrieval for micro/v4 vs ccd.
 
-        @param servo_type: one of 'servo_v4', 'servo_micro', 'ccd_cr50'
+        @param servo_type: one of 'servo_v4', 'servo_micro', 'ccd_cr50', 'c2d2'
         @param prefix: whether the control has a prefix
 
         @returns: fw version for non-ccd devices, cr50 version for ccd device

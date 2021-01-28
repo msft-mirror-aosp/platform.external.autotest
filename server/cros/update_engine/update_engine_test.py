@@ -287,7 +287,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # dlc_sample-dlc_package_R85-13265.0.0_eve_full_dev.bin
         # dlc_sample-dlc_package_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
         if is_dlc:
-            payload_prefix = 'dlc_*%s*_%s_*' % (build.rpartition('/')[2], '%s')
+            payload_prefix = 'dlc_*_%s_*.bin'
         else:
             payload_prefix = 'chromeos_*_%s_*.bin'
 

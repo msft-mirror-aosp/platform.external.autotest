@@ -555,6 +555,9 @@ class Servo(object):
     # The VBUS voltage threshold used to detect if VBUS is supplied
     VBUS_THRESHOLD = 3000.0
 
+    # List of servos that connect to a debug header on the board.
+    FLEX_SERVOS = ['c2d2', 'servo_micro', 'servo_v3']
+
     def __init__(self, servo_host, servo_serial=None, delay_init=False):
         """Sets up the servo communication infrastructure.
 
@@ -1338,12 +1341,13 @@ class Servo(object):
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""
         servo = self.get_servo_type()
-        return 'ccd_cr50' in servo and 'servo_micro' not in servo
+        return 'ccd_cr50' in servo and not self.main_device_is_flex()
 
 
     def main_device_is_flex(self):
         """Whether the main servo device (no prefixes) is a legacy device."""
-        return not self.main_device_is_ccd()
+        servo = self.get_servo_type()
+        return any([flex in servo for flex in self.FLEX_SERVOS])
 
 
     def main_device_is_active(self):

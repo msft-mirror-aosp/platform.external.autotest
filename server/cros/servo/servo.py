@@ -1337,9 +1337,7 @@ class Servo(object):
 
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""
-        with _WrapServoErrors(
-                servo=self, description='main_device_is_ccd()->get_version()'):
-            servo = self._server.get_version()
+        servo = self.get_servo_type()
         return 'ccd_cr50' in servo and 'servo_micro' not in servo
 
 

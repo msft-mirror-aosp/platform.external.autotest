@@ -759,7 +759,7 @@ class DroneTelemetryRunner(TelemetryRunner):
         logging.debug('Setting up telemetry for build: %s', info.build)
         try:
             self._telemetry_setup = telemetry_setup.TelemetrySetup(
-                    build=info.build)
+                    hostname=self._host.hostname, build=info.build)
             self._telemetry_path = self._telemetry_setup.Setup()
         except telemetry_setup.TelemetrySetupError as e:
             raise error.AutotestError('Telemetry Environment could not be '

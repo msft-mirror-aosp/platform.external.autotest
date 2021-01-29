@@ -68,15 +68,18 @@ class TelemetrySetup(object):
     # Partial devserver URLs.
     _STATIC_URL_TEMPLATE = '%s/static/%s/autotest/packages/%s'
 
-    def __init__(self, build):
+    def __init__(self, hostname, build):
         """Initializes the TelemetrySetup class.
 
         Args:
+        hostname: The host for which telemetry environment should be setup. This
+            is important for devserver resolution.
         build: The build for which telemetry environment should be setup. It is
             typically in the format <board>/<version>.
         """
         self._build = build
-        self._ds = dev_server.ImageServer.resolve(self._build)
+        self._ds = dev_server.ImageServer.resolve(self._build,
+                                                  hostname=hostname)
         self._setup_dir_path = tempfile.mkdtemp(prefix='telemetry-setupdir_')
         self._tmp_build_dir = os.path.join(self._BASE_DIR_PATH, self._build)
         self._tlm_src_dir_path = os.path.join(self._tmp_build_dir,
@@ -134,8 +137,8 @@ class TelemetrySetup(object):
         dep_path = os.path.join(dest_path, filename)
         url = (self._STATIC_URL_TEMPLATE %
                (self._ds.url(), self._build, filename))
-        resp = requests.get(url)
         try:
+            resp = requests.get(url)
             resp.raise_for_status()
             with open(dep_path, 'w') as f:
                 for content in resp.iter_content(_READ_BUFFER_SIZE_BYTES):
@@ -148,10 +151,43 @@ class TelemetrySetup(object):
                         'This dependency could be new and therefore does not '
                         'exist. Hence, squashing the exception and proceeding.',
                         url)
+            elif isinstance(e, requests.exceptions.ConnectionError):
+                logging.warning(
+                        'The request failed because a connection to the devserver '
+                        '%s could not be established. Attempting to execute the '
+                        'request %s once by SSH-ing into the devserver.',
+                        self._ds.url(), url)
+                return self._DownloadFilesFromDevserverViaSSH(url, dep_path)
             else:
                 raise TelemetrySetupError(
                         'An error occurred while trying to complete  %s: %s' %
                         (url, e))
+        return dep_path
+
+    def _DownloadFilesFromDevserverViaSSH(self, url, dep_path):
+        """Downloads the file at the URL from the devserver by SSH-ing into it.
+
+        Args:
+          url: URL of the location of the tar.bz2 file on the devserver.
+          dep_path: Full path to the file where it will be downloaded.
+
+        Returns:
+            Full path to the downloaded file.
+
+        Raises:
+          TelemetrySetupError when the download cannot be completed for any
+              reason.
+        """
+        cmd = ['ssh', self._ds.hostname, 'curl', url]
+        with open(dep_path, 'w') as f:
+            proc = subprocess.Popen(cmd, stdout=f, stderr=subprocess.PIPE)
+            _, err = proc.communicate()
+            if proc.returncode != 0:
+                raise TelemetrySetupError(
+                        'The command: %s finished with returncode %s and '
+                        'errors as following: %s. The telemetry dependency '
+                        'could not be downloaded.' %
+                        (' '.join(cmd), proc.returncode, err))
         return dep_path
 
     def _ExtractTarball(self, tarball_path, dest_path):

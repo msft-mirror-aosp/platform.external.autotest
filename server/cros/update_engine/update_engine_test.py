@@ -410,20 +410,32 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         requests = pattern.findall(update_engine_log)
 
         # We are looking for patterns like this:
-        # [0324/151230.562305:INFO:omaha_request_action.cc(501)] Request:
-        timestamp_pattern = re.compile(r'\[([0-9]+)/([0-9]+).*?\] Request:')
+        # "2021-01-28T10:14:33.998217Z INFO update_engine: \
+        # [omaha_request_action.cc(794)] Request "
+        timestamp_pattern = re.compile(
+                r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}).*Request')
         timestamps = [
-            # Just use the current year since the logs don't have the year
-            # value. Let's all hope tests don't start to fail on new year's
-            # eve LOL.
-            datetime(datetime.now().year,
-                     int(ts[0][0:2]),  # Month
-                     int(ts[0][2:4]),  # Day
-                     int(ts[1][0:2]),  # Hours
-                     int(ts[1][2:4]),  # Minutes
-                     int(ts[1][4:6]))  # Seconds
-            for ts in timestamp_pattern.findall(update_engine_log)
+                datetime.strptime(ts, '%y-%m-%dT%H:%M:%S')
+                for ts in timestamp_pattern.findall(update_engine_log)
         ]
+        if len(timestamps) == 0:
+            # We might be reading log in old format so try parsing with another regexp.
+            # [0324/151230.562305:INFO:omaha_request_action.cc(501)] Request:
+            timestamp_pattern_old = re.compile(
+                    r'\[([0-9]+)/([0-9]+).*?\] Request:')
+            timestamps = [
+                    # Just use the current year since the logs don't have the year
+                    # value. Let's all hope tests don't start to fail on new year's
+                    # eve LOL.
+                    datetime(
+                            datetime.now().year,
+                            int(ts[0][0:2]),  # Month
+                            int(ts[0][2:4]),  # Day
+                            int(ts[1][0:2]),  # Hours
+                            int(ts[1][2:4]),  # Minutes
+                            int(ts[1][4:6]))  # Seconds
+                    for ts in timestamp_pattern_old.findall(update_engine_log)
+            ]
 
         if len(requests) != len(timestamps):
             raise error.TestFail('Failed to properly parse the update_engine '

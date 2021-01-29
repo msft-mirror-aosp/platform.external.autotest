@@ -188,8 +188,8 @@ class UpdateEngineUtil(object):
         """
         self._wait_for_update_status(self._UPDATE_STATUS_UPDATED_NEED_REBOOT)
         if check_kernel_after_update:
-          kernel_utils.verify_kernel_state_after_update(
-              self._host if hasattr(self, '_host') else None)
+            kernel_utils.verify_kernel_state_after_update(
+                    self._host if hasattr(self, '_host') else None)
 
 
     def _wait_for_update_status(self, status_to_wait_for):
@@ -379,7 +379,7 @@ class UpdateEngineUtil(object):
             logging.debug('Comparing %d and %d', int(before_match[i]),
                           int(after_match[i]))
             if int(before_match[i]) > int(after_match[i]):
-              return False
+                return False
         return True
 
 
@@ -586,20 +586,37 @@ class UpdateEngineUtil(object):
         """
         update_log = self._get_update_engine_log()
 
-        # Matches any single line with "MMDD/HHMMSS ... Request ... xml", e.g.
-        # "[0723/133526:INFO:omaha_request_action.cc(794)] Request: <?xml".
-        result = re.findall(r'([0-9]{4}/[0-9]{6}).*Request.*xml', update_log)
-        if not result:
-            return None
+        # Matches any line with "YYYY-MM-DDTHH:MM:SS ... Request ... xml",
+        # e.g.
+        # "2021-01-28T10:14:33.998217Z INFO update_engine: \
+        # [omaha_request_action.cc(794)] Request: <?xml"
+        pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}).*Request.*xml'
+        LOG_TIMESTAMP_FORMAT = '%y-%m-%dT%H:%M:%S'
 
-        LOG_TIMESTAMP_FORMAT = '%m%d/%H%M%S'
-        match = result[-1]
+        result = re.findall(pattern, update_log)
 
-        # The log does not include the year, so set it as this year.
-        # This assumption could cause incorrect behavior, but is unlikely to.
-        current_year = datetime.datetime.now().year
-        log_datetime = datetime.datetime.strptime(match, LOG_TIMESTAMP_FORMAT)
-        log_datetime = log_datetime.replace(year=current_year)
+        if result:
+            match = result[-1]
+            log_datetime = datetime.datetime.strptime(match,
+                                                      LOG_TIMESTAMP_FORMAT)
+        else:
+            # If no match for new timestamp, try old timestamp format.
+            # "[0723/133526:INFO:omaha_request_action.cc(794)] Request: <?xml".
+            pattern_old = r'([0-9]{4}/[0-9]{6}).*Request.*xml'
+            LOG_TIMESTAMP_FORMAT_OLD = '%m%d/%H%M%S'
+
+            result = re.findall(pattern_old, update_log)
+            if not result:
+                return None
+
+            match = result[-1]
+
+            # The old format does not include the year, so set it as this year.
+            # This could cause incorrect behavior, but is unlikely to.
+            current_year = datetime.datetime.now().year
+            log_datetime = datetime.datetime.strptime(
+                    match, LOG_TIMESTAMP_FORMAT_OLD)
+            log_datetime = log_datetime.replace(year=current_year)
 
         return time.mktime(log_datetime.timetuple())
 
@@ -643,9 +660,9 @@ class UpdateEngineUtil(object):
         targets = [line for line in log if err_str in line]
         logging.debug('Error lines found: %s', targets)
         if not targets:
-          return None
+            return None
         else:
-          return targets[-1].rpartition(err_str)[2]
+            return targets[-1].rpartition(err_str)[2]
 
 
     def _get_latest_initial_request(self):

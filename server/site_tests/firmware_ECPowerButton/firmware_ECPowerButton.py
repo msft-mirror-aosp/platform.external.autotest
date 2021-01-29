@@ -92,24 +92,30 @@ class firmware_ECPowerButton(FirmwareTest):
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
 
-        logging.info("Boot to recovery screen.")
-        self.switcher.enable_rec_mode_and_reboot(usb_state='host')
-        time.sleep(self.faft_config.firmware_screen)
-        if self.get_power_state() != self.POWER_STATE_S0:
-            raise error.TestFail("DUT didn't boot to recovery screen")
+        # Ensure that detachable is in OFF State for following test
+        if self.faft_config.is_detachable:
+            logging.info("Setting Power Off")
+            self.servo.get_power_state_controller().power_off()
+        else:
+            # Run these test steps for non detachable devices
+            logging.info("Boot to recovery screen.")
+            self.switcher.enable_rec_mode_and_reboot(usb_state='host')
+            time.sleep(self.faft_config.firmware_screen)
+            if self.get_power_state() != self.POWER_STATE_S0:
+                raise error.TestFail("DUT didn't boot to recovery screen")
 
-        logging.info("Shutdown by short power button press.")
-        self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
-        time.sleep(self.RECOVERY_SCREEN_SHUTDOWN_DELAY)
-        power_state = self.get_power_state()
-        if (power_state != self.POWER_STATE_S5 and
-            power_state != self.POWER_STATE_G3):
-            raise error.TestFail("DUT didn't shutdown by "
-                                 "short power button press")
-        if self.ec.check_feature('EC_FEATURE_EFS2'):
-            logging.info("Check if EC jumped to RW.")
-            if not self.ec.check_ro_rw('RW'):
-                raise error.TestFail("EC didn't jump to RW")
+            logging.info("Shutdown by short power button press.")
+            self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
+            time.sleep(self.RECOVERY_SCREEN_SHUTDOWN_DELAY)
+            power_state = self.get_power_state()
+            if (power_state != self.POWER_STATE_S5
+                        and power_state != self.POWER_STATE_G3):
+                raise error.TestFail("DUT didn't shutdown by "
+                                     "short power button press")
+            if self.ec.check_feature('EC_FEATURE_EFS2'):
+                logging.info("Check if EC jumped to RW.")
+                if not self.ec.check_ro_rw('RW'):
+                    raise error.TestFail("EC didn't jump to RW")
 
         logging.info("Boot by short power button press.")
         self.servo.power_key(self.faft_config.hold_pwr_button_poweron)

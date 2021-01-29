@@ -64,7 +64,7 @@ def strip_kernelnext_suffix(board_name):
 
     """
     if board_name.endswith("-kernelnext"):
-      return board_name[:-len("-kernelnext")]
+        return board_name[:-len("-kernelnext")]
 
     return board_name
 
@@ -121,6 +121,10 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('zork', 'dalboz', ''),
         BoardInfo('zork', 'ezkinil', ''),
         BoardInfo('zork', 'morphius', ''),
+        BoardInfo('zork', 'vilboz360', '1518534658'),
+        BoardInfo('zork', 'vilboz360', '1518534660'),
+        BoardInfo('zork', 'vilboz360', '1518534661'),
+        BoardInfo('zork', 'vilboz360', '1518534662'),
 ]
 
 
@@ -198,6 +202,7 @@ def get_plugged_internal_mics(board_type, board, model, sku):
 
 HEADPHONE_NODE = {
         ('sarien'): 'LINEOUT',
+        ('drallion'): 'LINEOUT',
 }
 
 

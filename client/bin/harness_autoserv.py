@@ -19,7 +19,8 @@ class harness_autoserv(harness.harness):
                         The job object for this job
         """
         super(harness_autoserv, self).__init__(job)
-        self.status = os.fdopen(3, 'w', 0)
+        # 2 for buffer size. Can't use the kwarg 'buffering' on fdopen in py2.
+        self.status = os.fdopen(3, 'w', 2)
 
         # If a bug on the client run code prevents global_config.ini
         # from being copied to the client machine, the client will run
@@ -58,7 +59,7 @@ class harness_autoserv(harness.harness):
             # send signal to the server as title[:args]:path
             msg = ':'.join([title] + list(args) + [fifo_path]) + '\n'
             self.status.write(msg)
-
+            self.status.flush()
             # wait for the server to signal back to us
             fifo = open(fifo_path)
             fifo.read(1)
@@ -77,8 +78,7 @@ class harness_autoserv(harness.harness):
         """A test within this job is completing"""
         for line in status.split('\n'):
             # sent status messages with AUTOTEST_STATUS:tag:message
-            msg = 'AUTOTEST_STATUS:%s:%s\n'
-            msg %= (tag, line)
+            msg = ('AUTOTEST_STATUS:%s:%s\n' % (tag, line))
             self.status.write(msg)
 
 

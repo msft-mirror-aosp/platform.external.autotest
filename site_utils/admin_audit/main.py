@@ -19,7 +19,7 @@ import socket
 import errno
 
 import common
-from autotest_lib.client.common_lib import enum
+from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import logging_manager
 from autotest_lib.server import server_logging_config
 from autotest_lib.server.hosts import factory
@@ -27,7 +27,7 @@ from autotest_lib.server.hosts import servo_host
 
 import verifiers
 
-RETURN_CODES = enum.Enum(
+RETURN_CODES = autotest_enum.AutotestEnum(
         'OK',
         'VERIFY_FAILURE',
         'OTHER_FAILURES'
@@ -38,23 +38,27 @@ ACTION_VERIFY_SERVO_USB = 'verify-servo-usb-drive'
 ACTION_VERIFY_SERVO_FW = 'verify-servo-fw'
 ACTION_FLASH_SERVO_KEYBOARD_MAP = 'flash-servo-keyboard-map'
 ACTION_VERIFY_DUT_MACADDR = 'verify-dut-macaddr'
+ACTION_VERIFY_RPM_CONFIG = 'verify-rpm-config'
 
 _LOG_FILE = 'audit.log'
 _SERVO_UART_LOGS = 'servo_uart'
 
 VERIFIER_MAP = {
-    ACTION_VERIFY_DUT_STORAGE: verifiers.VerifyDutStorage,
-    ACTION_VERIFY_SERVO_USB: verifiers.VerifyServoUsb,
-    ACTION_VERIFY_SERVO_FW: verifiers.VerifyServoFw,
-    ACTION_FLASH_SERVO_KEYBOARD_MAP: verifiers.FlashServoKeyboardMapVerifier,
-    ACTION_VERIFY_DUT_MACADDR: verifiers.VerifyDUTMacAddress,
+        ACTION_VERIFY_DUT_STORAGE: verifiers.VerifyDutStorage,
+        ACTION_VERIFY_SERVO_USB: verifiers.VerifyServoUsb,
+        ACTION_VERIFY_SERVO_FW: verifiers.VerifyServoFw,
+        ACTION_FLASH_SERVO_KEYBOARD_MAP:
+        verifiers.FlashServoKeyboardMapVerifier,
+        ACTION_VERIFY_DUT_MACADDR: verifiers.VerifyDUTMacAddress,
+        ACTION_VERIFY_RPM_CONFIG: verifiers.VerifyRPMConfig,
 }
 
 # Actions required Servod service
 ACTIONS_REQUIRED_SERVOD = set([
-    ACTION_VERIFY_SERVO_USB,
-    ACTION_FLASH_SERVO_KEYBOARD_MAP,
-    ACTION_VERIFY_DUT_MACADDR,
+        ACTION_VERIFY_DUT_STORAGE,
+        ACTION_VERIFY_SERVO_USB,
+        ACTION_FLASH_SERVO_KEYBOARD_MAP,
+        ACTION_VERIFY_DUT_MACADDR,
 ])
 
 # Actions required ServoHost without Servod process
@@ -95,6 +99,7 @@ def main():
                 opts.hostname,
                 host_info_path=opts.host_info_file,
                 try_lab_servo=need_servod,
+                try_servo_repair=need_servod,
                 servo_uart_logs_dir=servo_uart_logs_dir)
     except Exception as err:
         logging.error("fail to create host: %s", err)
@@ -109,7 +114,6 @@ def main():
             except Exception as err:
                 logging.error("fail to init servo host: %s", err)
                 return RETURN_CODES.OTHER_FAILURES
-
         for action in opts.actions:
             if opts.dry_run:
                 logging.info('DRY RUN: Would have run actions %s', action)

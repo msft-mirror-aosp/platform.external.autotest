@@ -7,6 +7,7 @@ import os
 import time
 
 from autotest_lib.server import test
+from autotest_lib.server.cros import filesystem_util
 from autotest_lib.client.common_lib import error, utils
 
 
@@ -16,6 +17,12 @@ class FingerprintTest(test.test):
 
     # Location of firmware from the build on the DUT
     _FINGERPRINT_BUILD_FW_DIR = '/opt/google/biod/fw'
+
+    _DISABLE_FP_UPDATER_FILE = '.disable_fp_updater'
+
+    _UPSTART_DIR = '/etc/init'
+    _BIOD_UPSTART_JOB_FILE = 'biod.conf'
+    _STATEFUL_PARTITION_DIR = '/mnt/stateful_partition'
 
     _GENIMAGES_SCRIPT_NAME = 'gen_test_images.sh'
     _GENIMAGES_OUTPUT_DIR_NAME = 'images'
@@ -30,6 +37,7 @@ class FingerprintTest(test.test):
         'TEST_IMAGE_DEV_RB_NINE': '%s.dev.rb9'
     }
 
+    _ROLLBACK_ZERO_BLOCK_ID = '0'
     _ROLLBACK_INITIAL_BLOCK_ID = '1'
     _ROLLBACK_INITIAL_MIN_VERSION = '0'
     _ROLLBACK_INITIAL_RW_VERSION = '0'
@@ -80,10 +88,13 @@ class FingerprintTest(test.test):
     # RO versions that are flashed in the factory
     # (for eternity for a given board)
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: 'bloonchipper_v2.0.4277-9f652bb3',
-        _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
-        _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
-        _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
+            _FP_BOARD_NAME_BLOONCHIPPER: {
+                    'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
+                    'zork': 'bloonchipper_v2.0.5938-197506c1',
+            },
+            _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
+            _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
+            _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
     }
 
     _FIRMWARE_VERSION_SHA256SUM = 'sha256sum'
@@ -105,10 +116,10 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
-            'bloonchipper_v2.0.4478-22ad3ce2.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '9a0cd0d9dd44b0b9f1eacf4c381f3d6d2aa3d7c7bbd5a04f1f7ba708bc80015a',
-                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4478-22ad3ce2',
-                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4478-22ad3ce2',
+            'bloonchipper_v2.0.5938-197506c1.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'dc62e4b05eaf4fa8ab5546dcf18abdb30c8e64e9bf0fbf377ebc85155c7c3a47',
+                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.5938-197506c1',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.5938-197506c1',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
         },
@@ -219,6 +230,29 @@ class FingerprintTest(test.test):
             logging.info('Stopping %s', self._BIOD_UPSTART_JOB_NAME)
             self.host.upstart_stop(self._BIOD_UPSTART_JOB_NAME)
 
+        # On some platforms an AP reboot is needed after flashing firmware to
+        # rebind the driver.
+        self._dut_needs_reboot = self.get_host_board() == 'zork'
+
+        if filesystem_util.is_rootfs_writable(self.host):
+            if self._dut_needs_reboot:
+                logging.warning('rootfs is writable')
+            else:
+                raise error.TestFail('rootfs is writable')
+
+        if not self.biod_upstart_job_enabled():
+            raise error.TestFail(
+                    'Biod upstart job is disabled at the beginning of test')
+        if not self.fp_updater_is_enabled():
+            raise error.TestFail(
+                    'Fingerprint firmware updater is disabled at the beginning of test'
+            )
+
+        # Disable biod and updater so that they won't interfere after reboot.
+        if self._dut_needs_reboot:
+            self.disable_biod_upstart_job()
+            self.disable_fp_updater()
+
         # create tmp working directory on device (automatically cleaned up)
         self._dut_working_dir = self.host.get_tmp_dir(
             parent=self._DUT_TMP_PATH_BASE)
@@ -242,6 +276,7 @@ class FingerprintTest(test.test):
 
         self._initialize_running_fw_version(use_dev_signed_fw,
                                             force_firmware_flashing)
+
         if init_entropy:
             self._initialize_fw_entropy()
 
@@ -255,6 +290,13 @@ class FingerprintTest(test.test):
         self._initialize_running_fw_version(use_dev_signed_fw=False,
                                             force_firmware_flashing=False)
         self._initialize_fw_entropy()
+        # Re-enable biod and updater after flashing and initializing entropy so
+        # that they don't interfere if there was a reboot.
+        if hasattr(self, '_dut_needs_reboot') and self._dut_needs_reboot:
+            if not self.biod_upstart_job_enabled():
+                self.enable_biod_upstart_job()
+            if not self.fp_updater_is_enabled():
+                self.enable_fp_updater()
         self._initialize_hw_and_sw_write_protect(
             enable_hardware_write_protect=True,
             enable_software_write_protect=True)
@@ -389,11 +431,16 @@ class FingerprintTest(test.test):
         See go/cros-fingerprint-firmware-branching-and-signing.
         """
         # Use cros_config to get fingerprint board.
-        result = self._run_cros_config_cmd('board')
+        # Due to b/160271883, we will try running the cmd via cat instead.
+        result = self._run_cros_config_cmd_cat('fingerprint/board')
         if result.exit_status != 0:
             raise error.TestFail(
                 'Unable to get fingerprint board with cros_config')
         return result.stdout.rstrip()
+
+    def get_host_board(self):
+        """Returns name of the host board."""
+        return self.host.get_board().split(':')[-1]
 
     def get_build_fw_file(self):
         """Returns full path to build FW file on DUT."""
@@ -599,6 +646,8 @@ class FingerprintTest(test.test):
         """Returns RO firmware version used in factory."""
         board = self.get_fp_board()
         golden_version = self._GOLDEN_RO_FIRMWARE_VERSION_MAP.get(board)
+        if isinstance(golden_version, dict):
+            golden_version = golden_version.get(self.get_host_board())
         if golden_version is None:
             raise error.TestFail('Unable to get golden RO version for board: %s'
                                  % board)
@@ -670,14 +719,107 @@ class FingerprintTest(test.test):
                 self.get_rollback_rw_version() ==
                 self._ROLLBACK_INITIAL_RW_VERSION)
 
+    def is_rollback_unset(self):
+        """
+        Returns True if rollbackinfo matches the uninitialized value that it
+        should have after flashing the entire flash.
+        """
+        return (self.get_rollback_id() == self._ROLLBACK_ZERO_BLOCK_ID
+                and self.get_rollback_min_version() ==
+                self._ROLLBACK_INITIAL_MIN_VERSION
+                and self.get_rollback_rw_version() ==
+                self._ROLLBACK_INITIAL_RW_VERSION)
+
+    def biod_upstart_job_enabled(self):
+        """Returns whether biod's upstart job file is at original location."""
+        return self.host.is_file_exists(
+                os.path.join(self._UPSTART_DIR, self._BIOD_UPSTART_JOB_FILE))
+
+    def disable_biod_upstart_job(self):
+        """
+        Disable biod's upstart job so that biod will not run after a reboot.
+        """
+        logging.info('Disabling biod\'s upstart job')
+        filesystem_util.make_rootfs_writable(self.host)
+        cmd = 'mv %s %s' % (os.path.join(
+                self._UPSTART_DIR,
+                self._BIOD_UPSTART_JOB_FILE), self._STATEFUL_PARTITION_DIR)
+        result = self.run_cmd(cmd)
+        if result.exit_status != 0:
+            raise error.TestFail('Unable to disable biod upstart job: %s' %
+                                 result.stderr.strip())
+
+    def enable_biod_upstart_job(self):
+        """
+        Enable biod's upstart job so that biod will run after a reboot.
+        """
+        logging.info('Enabling biod\'s upstart job')
+        filesystem_util.make_rootfs_writable(self.host)
+        cmd = 'mv %s %s' % (os.path.join(
+                self._STATEFUL_PARTITION_DIR,
+                self._BIOD_UPSTART_JOB_FILE), self._UPSTART_DIR)
+        result = self.run_cmd(cmd)
+        if result.exit_status != 0:
+            raise error.TestFail('Unable to enable biod upstart job: %s' %
+                                 result.stderr.strip())
+
+    def fp_updater_is_enabled(self):
+        """Returns whether the fingerprint firmware updater is disabled."""
+        return not self.host.is_file_exists(
+                os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                             self._DISABLE_FP_UPDATER_FILE))
+
+    def disable_fp_updater(self):
+        """Disable the fingerprint firmware updater."""
+        filesystem_util.make_rootfs_writable(self.host)
+        touch_cmd = 'touch %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                                              self._DISABLE_FP_UPDATER_FILE)
+        logging.info('Disabling fp firmware updater')
+        result = self.run_cmd(touch_cmd)
+        if result.exit_status != 0:
+            raise error.TestFail(
+                    'Unable to write file to disable fp updater:'
+                    ' command failed (rc=%s): %s' %
+                    (result.exit_status, result.stderr.strip() or touch_cmd))
+        self.run_cmd('sync')
+
+    def enable_fp_updater(self):
+        """
+        Enable the fingerprint firmware updater. Must be called only after
+        disable_fp_updater().
+        """
+        filesystem_util.make_rootfs_writable(self.host)
+        rm_cmd = 'rm %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                                        self._DISABLE_FP_UPDATER_FILE)
+        logging.info('Enabling fp firmware updater')
+        result = self.run_cmd(rm_cmd)
+        if result.exit_status != 0:
+            raise error.TestFail(
+                    'Unable to rm .disable_fp_updater:'
+                    ' command failed (rc=%s): %s' %
+                    (result.exit_status, result.stderr.strip() or rm_cmd))
+        self.run_cmd('sync')
+
     def flash_rw_ro_firmware(self, fw_path):
         """Flashes *all* firmware (both RO and RW)."""
         self.set_hardware_write_protect(False)
         flash_cmd = 'flash_fp_mcu' + ' ' + fw_path
         logging.info('Running flash cmd: %s', flash_cmd)
-        result = self.run_cmd(flash_cmd)
+        flash_result = self.run_cmd(flash_cmd)
         self.set_hardware_write_protect(True)
-        if result.exit_status != 0:
+
+        # Zork cannot rebind cros-ec-uart after flashing, so an AP reboot is
+        # needed to talk to FPMCU. See b/170213489.
+        # We have to do this even if flashing failed.
+        if hasattr(self, '_dut_needs_reboot') and self._dut_needs_reboot:
+            self.host.reboot()
+            if self.fp_updater_is_enabled():
+                raise error.TestFail(
+                        'Fp updater was not disabled when firmware is flashed')
+            # If we just re-enable fp updater, it can still update (race
+            # condition), so do it later in cleanup.
+
+        if flash_result.exit_status != 0:
             raise error.TestFail('Flashing RW/RO firmware failed')
 
     def is_hardware_write_protect_enabled(self):
@@ -721,6 +863,8 @@ class FingerprintTest(test.test):
         """Copies files from server to DUT."""
         logging.info('Copying files from (%s) to (%s).', src_dir, dst_dir)
         self.host.send_file(src_dir, dst_dir, delete_dest=True)
+        # Sync the filesystem in case we need to reboot the AP soon.
+        self.run_cmd('sync')
 
     def run_server_cmd(self, command, timeout=60):
         """Runs command on server; return result with output and exit code."""
@@ -752,6 +896,11 @@ class FingerprintTest(test.test):
               + command
         result = self.run_cmd(cmd)
         return result
+
+    def _run_cros_config_cmd_cat(self, command):
+        """Runs cat /run/chromeos-config/v1 on DUT; return result."""
+        cmd = "cat /run/chromeos-config/v1/{}".format(command)
+        return self.run_cmd(cmd)
 
     def _run_dump_fmap_cmd(self, fw_file, section):
         """

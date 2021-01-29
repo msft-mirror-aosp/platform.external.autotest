@@ -95,14 +95,16 @@ class power_Test(test.test):
     def get_extra_browser_args_for_camera_test(self):
         """Return Chrome args for camera power test."""
         ret = [
-            # No pop up to ask permission to record video.
-            '--use-fake-ui-for-media-stream',
-            # Allow 2 windows side by side.
-            '--force-tablet-mode=clamshell',
+                # No pop up to ask permission to record video.
+                '--use-fake-ui-for-media-stream',
+                # Allow 2 windows side by side.
+                '--force-tablet-mode=clamshell',
+                # Prefer using constant frame rate for camera streaming.
+                '--enable-features=PreferConstantFrameRate',
         ]
 
         # Use fake camera for DUT without camera, e.g. chromebox.
-        if not camera_utils.find_cameras():
+        if not camera_utils.has_builtin_or_vivid_camera():
             ret.append('--use-fake-device-for-media-stream')
             self.keyvals['use_fake_camera'] = 1
         else:
@@ -218,13 +220,29 @@ class power_Test(test.test):
                                 self.status.battery.charge_full_design
             keyvals['ah_charge_now'] = self.status.battery.charge_now
             keyvals['a_current_now'] = self.status.battery.current_now
-            keyvals['wh_energy'] = self.status.battery.energy
+
+            keyvals['wh_energy_full'] = self.status.battery.energy_full
+            keyvals['wh_energy_full_design'] = \
+                                self.status.battery.energy_full_design
+            keyvals['wh_energy_now'] = self.status.battery.energy
+            keyvals['wh_energy_start'] = self._start_energy
             energy_used = self._start_energy - self.status.battery.energy
             runtime_minutes = (time.time() - self._start_time) / 60.
             keyvals['wh_energy_used'] = energy_used
             keyvals['minutes_tested'] = runtime_minutes
+
+            low_batt = power_utils.get_low_battery_shutdown_percent()
+            keyvals['percent_sys_low_battery'] = low_batt
+
             if energy_used > 0 and runtime_minutes > 1:
-                keyvals['w_energy_rate'] = energy_used * 60 / runtime_minutes
+                keyvals['w_energy_rate'] = energy_used * 60. / runtime_minutes
+                energy_avail = self.status.battery.energy_full_design * \
+                    ((100. - low_batt) / 100.)
+                keyvals['minutes_battery_life'] = energy_avail / energy_used * \
+                    runtime_minutes
+                keyvals['hours_battery_life'] = \
+                    keyvals['minutes_battery_life'] / 60.
+
             keyvals['v_voltage_min_design'] = \
                                 self.status.battery.voltage_min_design
             keyvals['v_voltage_now'] = self.status.battery.voltage_now

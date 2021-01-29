@@ -27,8 +27,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-    'arm': _PUBLIC_CTS + 'android-cts_instant-9.0_r13-linux_x86-arm.zip',
-    'x86': _PUBLIC_CTS + 'android-cts_instant-9.0_r13-linux_x86-x86.zip',
+        'arm': _PUBLIC_CTS + 'android-cts_instant-9.0_r14-linux_x86-arm.zip',
+        'x86': _PUBLIC_CTS + 'android-cts_instant-9.0_r14-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -75,6 +75,8 @@ class cheets_CTS_Instant(tradefed_test.TradefedTest):
                                                     stderr=subprocess.STDOUT))
                 except OSError:
                     logging.error('Can\'t change current PATH directory')
+        # Suppress redundant output from tradefed.
+        cmd.append('--quiet-output=true')
         return cmd
 
     def _get_default_bundle_url(self, bundle):

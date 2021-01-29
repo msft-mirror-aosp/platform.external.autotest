@@ -17,6 +17,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as client_utils
 from autotest_lib.server.cros.storage import storage_validate as storage
 from autotest_lib.server.cros import servo_keyboard_utils
+from autotest_lib.site_utils.admin_audit import rpm_validator
 
 try:
     from chromite.lib import metrics
@@ -52,7 +53,7 @@ class VerifyDutStorage(base._BaseDUTVerifier):
         super(VerifyDutStorage, self).__init__(dut_host)
         self._state = None
 
-    def _verify(self, set_label=True):
+    def _verify(self, set_label=True, run_badblocks=None):
         if not self.host_is_up():
             logging.info('Host is down; Skipping the verification')
             return
@@ -60,7 +61,7 @@ class VerifyDutStorage(base._BaseDUTVerifier):
             validator = storage.StorageStateValidator(self.get_host())
             storage_type = validator.get_type()
             logging.debug('Detected storage type: %s', storage_type)
-            storage_state = validator.get_state()
+            storage_state = validator.get_state(run_badblocks=run_badblocks)
             logging.debug('Detected storage state: %s', storage_state)
             state = self.convert_state(storage_state)
             if state and set_label:
@@ -118,24 +119,23 @@ class VerifyServoUsb(base._BaseServoVerifier):
         if not usb:
             self._set_state(constants.HW_STATE_NOT_DETECTED)
             return
+        # basic readonly check
 
-        servo = self.get_host().get_servo()
+        # path to USB if DUT is sshable
+        logging.info('Starting verification of USB drive...')
+        dut_usb = None
+        if self.host_is_up():
+            dut_usb = self._usb_path_on_dut()
         state = None
         try:
-            # The USB will be format during checking to the bad blocks.
-            command = 'badblocks -sw -e 1 -t 0xff %s' % usb
-            logging.info('Running command: %s', command)
-            # The response is the list of bad block on USB.
-            # Extended time for 2 hour to run USB verification.
-            # TODO (otabek@) (b:153661014#comment2) bring F3 to run
-            # check faster if badblocks cannot finish in 2 hours.
-            result = servo.system_output(command, timeout=7200)
-            logging.info("Check result: '%s'", result)
-            if result:
-                # So has result is Bad and empty is Good.
-                state = constants.HW_STATE_NEED_REPLACEMENT
+            if dut_usb:
+                logging.info('Try run check on DUT side.')
+                state = self._run_check_on_host(self._dut_host, dut_usb)
             else:
-                state = constants.HW_STATE_NORMAL
+                logging.info('Try run check on ServoHost side.')
+                servo = self.get_host().get_servo()
+                servo_usb = servo.probe_host_usb_dev()
+                state = self._run_check_on_host(self.get_host(), servo_usb)
         except Exception as e:
             if 'Timeout encountered:' in str(e):
                 logging.info('Timeout during running action')
@@ -149,19 +149,75 @@ class VerifyServoUsb(base._BaseServoVerifier):
             logging.debug(str(e))
 
         self._set_state(state)
+        logging.info('Finished verification of USB drive.')
 
+        self._install_stable_image()
+
+    def _usb_path_on_dut(self):
+        """Return path to the USB detected on DUT side."""
+        servo = self.get_host().get_servo()
+        servo.switch_usbkey('dut')
+        result = self._dut_host.run('ls /dev/sd[a-z]')
+        for path in result.stdout.splitlines():
+            cmd = ('. /usr/share/misc/chromeos-common.sh; get_device_type %s' %
+                   path)
+            check_run = self._dut_host.run(cmd, timeout=30, ignore_status=True)
+            if check_run.stdout.strip() != 'USB':
+                continue
+            if self._quick_check_if_device_responsive(self._dut_host, path):
+                logging.info('USB drive detected on DUT side as %s', path)
+                return path
+        return None
+
+    def _quick_check_if_device_responsive(self, host, usb_path):
+        """Verify that device """
+        validate_cmd = 'fdisk -l %s' % usb_path
+        try:
+            resp = host.run(validate_cmd, ignore_status=True, timeout=30)
+            if resp.exit_status == 0:
+                return True
+            logging.error('USB %s is not detected by fdisk!', usb_path)
+        except error.AutoservRunError as e:
+            if 'Timeout encountered' in str(e):
+                logging.warning('Timeout encountered during fdisk run.')
+            else:
+                logging.error('(Not critical) fdisk check fail for %s; %s',
+                              usb_path, str(e))
+        return False
+
+    def _run_check_on_host(self, host, usb):
+        """Run badblocks on the provided host.
+
+        @params host:   Host where USB drive mounted
+        @params usb:    Path to USB drive. (e.g. /dev/sda)
+        """
+        command = 'badblocks -w -e 5 -b 4096 -t random %s' % usb
+        logging.info('Running command: %s', command)
+        # The response is the list of bad block on USB.
+        # Extended time for 2 hour to run USB verification.
+        # TODO (otabek@) (b:153661014#comment2) bring F3 to run
+        # check faster if badblocks cannot finish in 2 hours.
+        result = host.run(command, timeout=7200).stdout.strip()
+        logging.info("Check result: '%s'", result)
+        if result:
+            # So has result is Bad and empty is Good.
+            return constants.HW_STATE_NEED_REPLACEMENT
+        return constants.HW_STATE_NORMAL
+
+    def _install_stable_image(self):
+        """Install stable image to the USB drive."""
         # install fresh image to the USB because badblocks formats it
         # https://crbug.com/1091406
         try:
             logging.debug('Started to install test image to USB-drive')
             _, image_path = self._dut_host.stage_image_for_servo()
-            servo.image_to_servo_usb(image_path, power_off_dut=False)
+            self.get_host().get_servo().image_to_servo_usb(image_path,
+                                                           power_off_dut=False)
             logging.debug('Finished installing test image to USB-drive')
         except:
             # ignore any error which happined during install image
             # it not relative to the main goal
-            logging.debug('Fail to install test image to USB-drive')
-            pass
+            logging.info('Fail to install test image to USB-drive')
 
     def _set_state(self, state):
         if state:
@@ -182,6 +238,19 @@ class VerifyServoFw(base._BaseServoVerifier):
         servo_updater.update_servo_firmware(
             self.get_host(),
             force_update=True)
+
+
+class VerifyRPMConfig(base._BaseDUTVerifier):
+    """Check RPM config of the setup.
+
+    This check run against RPM configs settings.
+    """
+
+    def _verify(self):
+        if not self.host_is_up():
+            logging.info('Host is down; Skipping the verification')
+            return
+        rpm_validator.verify_unsafe(self.get_host())
 
 
 class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):

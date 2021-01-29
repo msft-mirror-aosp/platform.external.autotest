@@ -117,7 +117,7 @@ def get_machine_dicts(machine_names, store_dir, in_lab, use_shadow_store,
             'host_info_store': A host_info.CachingHostInfoStore object to obtain
                     host information. A stub if in_lab is False.
             'connection_pool': ssh_multiplex.ConnectionPool instance to share
-                    master ssh connection across control scripts. This is set to
+                    ssh connection across control scripts. This is set to
                     None, and should be overridden for connection sharing.
     """
     # See autoserv_parser.parse_args. Only one of in_lab or host_attributes can
@@ -745,7 +745,7 @@ class server_job(base_job.base_job):
                              "skipping crashinfo collection")
                 return
             else:
-                log_file = open(self._uncollected_log_file, "w")
+                log_file = open(self._uncollected_log_file, "wb")
                 pickle.dump([], log_file)
                 log_file.close()
                 created_uncollected_logs = True
@@ -1270,7 +1270,7 @@ class server_job(base_job.base_job):
                 os.path.exists(self._uncollected_log_file)):
             return
         if self._uncollected_log_file:
-            log_file = open(self._uncollected_log_file, "r+")
+            log_file = open(self._uncollected_log_file, "rb+")
             fcntl.flock(log_file, fcntl.LOCK_EX)
         try:
             uncollected_logs = pickle.load(log_file)

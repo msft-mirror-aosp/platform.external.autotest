@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+
 import base64
 import functools
 import json
@@ -9,6 +11,7 @@ import logging
 import threading
 from datetime import datetime
 
+import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import constants
 from autotest_lib.server import autotest
@@ -35,29 +38,30 @@ class BluetoothDevice(object):
 
     XMLRPC_BRINGUP_TIMEOUT_SECONDS = 60
     XMLRPC_LOG_PATH = '/var/log/bluetooth_xmlrpc_device.log'
+    XMLRPC_REQUEST_TIMEOUT_SECONDS = 180
 
-    def __init__(self, device_host):
+    # We currently get dates back in string format due to some inconsistencies
+    # between python2 and python3. This is the standard date format we use.
+    NATIVE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
+    def __init__(self, device_host, remote_facade_proxy=None):
         """Construct a BluetoothDevice.
 
         @param device_host: host object representing a remote host.
 
         """
         self.host = device_host
+        self._remote_proxy = remote_facade_proxy
+
         # Make sure the client library is on the device so that the proxy code
         # is there when we try to call it.
         client_at = autotest.Autotest(self.host)
         client_at.install()
         self._proxy_lock = threading.Lock()
-        # Start up the XML-RPC proxy on the client.
-        self._proxy = self.host.rpc_server_tracker.xmlrpc_connect(
-                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_COMMAND,
-                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT,
-                command_name=
-                  constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_CLEANUP_PATTERN,
-                ready_test_name=
-                  constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_READY_METHOD,
-                timeout_seconds=self.XMLRPC_BRINGUP_TIMEOUT_SECONDS,
-                logfile=self.XMLRPC_LOG_PATH)
+
+        # If remote facade wasn't already created, connect directly here
+        if not self._remote_proxy:
+            self._connect_xmlrpc_directly()
 
         # Get some static information about the bluetooth adapter.
         properties = self.get_adapter_properties()
@@ -65,6 +69,41 @@ class BluetoothDevice(object):
         self.address = properties.get('Address')
         self.bluetooth_class = properties.get('Class')
         self.UUIDs = properties.get('UUIDs')
+
+    def _connect_xmlrpc_directly(self):
+        """Connects to the bluetooth native facade directly via xmlrpc."""
+        proxy = self.host.rpc_server_tracker.xmlrpc_connect(
+                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_COMMAND,
+                constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT,
+                command_name=constants.
+                BLUETOOTH_DEVICE_XMLRPC_SERVER_CLEANUP_PATTERN,
+                ready_test_name=constants.
+                BLUETOOTH_DEVICE_XMLRPC_SERVER_READY_METHOD,
+                timeout_seconds=self.XMLRPC_BRINGUP_TIMEOUT_SECONDS,
+                logfile=self.XMLRPC_LOG_PATH,
+                request_timeout_seconds=self.XMLRPC_REQUEST_TIMEOUT_SECONDS)
+
+        self._bt_direct_proxy = proxy
+        return proxy
+
+    @property
+    def _proxy(self):
+        """Gets the proxy to the DUT bluetooth facade.
+
+        @return XML RPC proxy to DUT bluetooth facade.
+
+        """
+        # When the xmlrpc server is already created (using the
+        # RemoteFacadeFactory), we will use the BluetoothNativeFacade inside the
+        # remote proxy. Otherwise, we will use the xmlrpc server started from
+        # this class. Currently, there are a few users outside of the Bluetooth
+        # autotests that use this and this can be removed once those users
+        # migrate to using the RemoteFacadeFactory to generate the xmlrpc
+        # connection.
+        if self._remote_proxy:
+            return self._remote_proxy.bluetooth
+        else:
+            return self._bt_direct_proxy
 
     @proxy_thread_safe
     def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
@@ -99,7 +138,7 @@ class BluetoothDevice(object):
                 self._proxy.log_message(msg)
 
             if peer:
-                for btpeer in self.host.peer_list:
+                for btpeer in self.host.btpeer_list:
                     btpeer.log_message(msg)
         except Exception as e:
             logging.error("Exception '%s' in log_message '%s'", str(e), msg)
@@ -387,6 +426,19 @@ class BluetoothDevice(object):
         properties = self.get_adapter_properties()
         return properties.get('Pairable') == 1
 
+    @proxy_thread_safe
+    def set_adapter_alias(self, alias):
+        """Set the adapter alias.
+
+        A note on Alias property - providing an empty string ('') will reset the
+        Alias property to the system default
+
+        @param alias: adapter alias to set with type String
+
+        @return True on success, False otherwise.
+        """
+
+        return self._proxy.set_adapter_alias(alias)
 
     @proxy_thread_safe
     def get_adapter_properties(self):
@@ -559,6 +611,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def get_battery_property(self, address, prop_name):
+        """Read a property of battery by directly querying the dbus object
+
+        @param address: Address of the device to query
+        @param prop_name: Property to be queried
+
+        @return The property if battery is found and has property,
+          None otherwise
+        """
+
+        return self._proxy.get_battery_property(address, prop_name)
+
+    @proxy_thread_safe
     def start_discovery(self):
         """Start discovery of remote devices.
 
@@ -579,60 +644,6 @@ class BluetoothDevice(object):
 
         """
         return self._proxy.stop_discovery()
-
-
-    @proxy_thread_safe
-    def pause_discovery(self, system_suspend_resume=False):
-        """ Pause discovery of remote devices
-
-        @params: boolean system_suspend_resume Is this request related to
-                 system suspend resume.
-
-        @return (True, None) on success (False, <error>) otherwise
-        """
-        return self._proxy.pause_discovery(system_suspend_resume)
-
-
-    @proxy_thread_safe
-    def unpause_discovery(self, system_suspend_resume=False):
-        """ Unpause discovery of remote devices
-
-        @params: boolean system_suspend_resume Is this request related to
-                 system suspend resume.
-
-        @return (True, None) on success (False, <error>) otherwise
-        """
-        return self._proxy.unpause_discovery(system_suspend_resume)
-
-
-    @proxy_thread_safe
-    def pause_discovery(self, system_suspend_resume=False):
-        """Pause discovery of remote devices.
-
-        This pauses all device discovery sessions.
-
-        @param system_suspend_resume: whether the
-               request is related to system suspend/resume.
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.pause_discovery(system_suspend_resume)
-
-
-    @proxy_thread_safe
-    def unpause_discovery(self, system_suspend_resume=False):
-        """Unpause discovery of remote devices.
-
-        This unpauses all device discovery sessions.
-
-        @param system_suspend_resume: whether the
-               request is related to system suspend/resume.
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.unpause_discovery(system_suspend_resume)
 
 
     def is_discovering(self):
@@ -847,6 +858,212 @@ class BluetoothDevice(object):
         """
         return self._proxy.btmon_find(pattern_str)
 
+
+    @proxy_thread_safe
+    def advmon_check_manager_interface_exist(self):
+        """Check if AdvertisementMonitorManager1 interface is available.
+
+        @returns: True if Manager interface is available, False otherwise.
+
+        """
+        return self._proxy.advmon_check_manager_interface_exist()
+
+
+    @proxy_thread_safe
+    def advmon_read_supported_types(self):
+        """Read the Advertisement Monitor supported monitor types.
+
+        @returns: List of supported advertisement monitor types.
+
+        """
+        return self._proxy.advmon_read_supported_types()
+
+
+    @proxy_thread_safe
+    def advmon_read_supported_features(self):
+        """Read the Advertisement Monitor supported features.
+
+        @returns: List of supported advertisement monitor features.
+
+        """
+        return self._proxy.advmon_read_supported_features()
+
+
+    @proxy_thread_safe
+    def advmon_create_app(self):
+        """Create an advertisement monitor app.
+
+        @returns: app id, once the app is created.
+
+        """
+        return self._proxy.advmon_create_app()
+
+
+    @proxy_thread_safe
+    def advmon_exit_app(self, app_id):
+        """Exit an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_exit_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_kill_app(self, app_id):
+        """Kill an advertisement monitor app by sending SIGKILL.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_kill_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_register_app(self, app_id):
+        """Register an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_register_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_unregister_app(self, app_id):
+        """Unregister an advertisement monitor app.
+
+        @param app_id: the app id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_unregister_app(app_id)
+
+
+    @proxy_thread_safe
+    def advmon_add_monitor(self, app_id, monitor_data):
+        """Create an Advertisement Monitor object.
+
+        @param app_id: the app id.
+        @param monitor_data: the list containing monitor type, RSSI filter
+                             values and patterns.
+
+        @returns: monitor id, once the monitor is created, None otherwise.
+
+        """
+        return self._proxy.advmon_add_monitor(app_id, monitor_data)
+
+
+    @proxy_thread_safe
+    def advmon_remove_monitor(self, app_id, monitor_id):
+        """Remove the Advertisement Monitor object.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_remove_monitor(app_id, monitor_id)
+
+
+    @proxy_thread_safe
+    def advmon_get_event_count(self, app_id, monitor_id, event):
+        """Read the count of a particular event on the given monitor.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param event: name of the specific event or 'All' for all events.
+
+        @returns: count of the specific event or dict of counts of all events.
+
+        """
+        return self._proxy.advmon_get_event_count(app_id, monitor_id, event)
+
+
+    @proxy_thread_safe
+    def advmon_reset_event_count(self, app_id, monitor_id, event):
+        """Reset the count of a particular event on the given monitor.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param event: name of the specific event or 'All' for all events.
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_reset_event_count(app_id, monitor_id, event)
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_start(self):
+        """ Start interleave logger recording
+        """
+        self._proxy.advmon_interleave_scan_logger_start()
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_stop(self):
+        """ Stop interleave logger recording
+
+        @returns: True if logs were successfully collected,
+                  False otherwise.
+
+        """
+        return self._proxy.advmon_interleave_scan_logger_stop()
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_get_records(self):
+        """ Get records in previous log collections
+
+        @returns: a list of records, where each item is a record of
+                  interleave |state| and the |time| the state starts.
+                  |state| could be {'no filter', 'allowlist'}
+                  |time| is system time in sec
+
+        """
+        return self._proxy.advmon_interleave_scan_logger_get_records()
+
+    @proxy_thread_safe
+    def advmon_interleave_scan_logger_get_cancel_events(self):
+        """ Get cancel events in previous log collections
+
+        @returns: a list of cancel |time| when a interleave cancel event log
+                  was found.
+                  |time| is system time in sec
+
+        """
+        return self._proxy.advmon_interleave_scan_logger_get_cancel_events()
+
+    @proxy_thread_safe
+    def messages_start(self):
+        """Start messages monitoring."""
+        self._proxy.messages_start()
+
+    @proxy_thread_safe
+    def messages_stop(self):
+        """Stop messages monitoring.
+
+        @returns: True if logs were successfully gathered since logging started,
+                else False
+        """
+        return self._proxy.messages_stop()
+
+    @proxy_thread_safe
+    def messages_find(self, pattern_str):
+        """Find if a pattern string exists in messages output.
+
+        @param pattern_str: the pattern string to find.
+
+        @returns: True on success. False otherwise.
+
+        """
+        return self._proxy.messages_find(pattern_str)
 
     @proxy_thread_safe
     def register_advertisement(self, advertisement_data):
@@ -1434,6 +1651,27 @@ class BluetoothDevice(object):
 
         return self._proxy.bt_caused_last_resume()
 
+    @proxy_thread_safe
+    def find_last_suspend_via_powerd_logs(self):
+        """Finds the last suspend attempt via powerd logs.
+
+        @return: Tuple (suspend start time, suspend end time, suspend result) or
+                 None
+        """
+        info = self._proxy.find_last_suspend_via_powerd_logs()
+
+        # Currently, we get the date back in string format due to python2/3
+        # inconsistencies. We can get rid of this once everything is running
+        # python3 (hopefully)
+        # TODO - Revisit converting date to string and back in this method
+        if info:
+            start_date = datetime.strptime(info[0], self.NATIVE_DATE_FORMAT)
+            end_date = datetime.strptime(info[1], self.NATIVE_DATE_FORMAT)
+            ret = info[2]
+
+            return (start_date, end_date, ret)
+
+        return None
 
     @proxy_thread_safe
     def do_suspend(self, seconds, expect_bt_wake):
@@ -1444,7 +1682,8 @@ class BluetoothDevice(object):
             suspend. If true, we expect this resume will occur early
         """
 
-        return self._proxy.do_suspend(seconds, expect_bt_wake)
+        # Do not retry this RPC if it fails or times out
+        return self._proxy.do_suspend(seconds, expect_bt_wake, __no_retry=True)
 
 
     @proxy_thread_safe
@@ -1455,7 +1694,6 @@ class BluetoothDevice(object):
         """
         return self._proxy.get_wlan_vid_pid()
 
-
     @proxy_thread_safe
     def get_bt_module_name(self):
         """ Return bluetooth module name for non-USB devices
@@ -1465,6 +1703,11 @@ class BluetoothDevice(object):
         """
         return self._proxy.get_bt_module_name()
 
+    @proxy_thread_safe
+    def get_device_time(self):
+        """ Get the current device time. """
+        return datetime.strptime(self._proxy.get_device_time(),
+                                 self.NATIVE_DATE_FORMAT)
 
     @proxy_thread_safe
     def close(self, close_host=True):
@@ -1483,6 +1726,6 @@ class BluetoothDevice(object):
         # This kills the RPC server.
         if close_host:
             self.host.close()
-        else:
+        elif self._bt_direct_proxy:
             self.host.rpc_server_tracker.disconnect(
                     constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT)

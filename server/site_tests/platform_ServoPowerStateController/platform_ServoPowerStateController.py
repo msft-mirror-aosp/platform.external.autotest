@@ -111,9 +111,19 @@ class platform_ServoPowerStateController(test.test):
         """Initialize DUT for testing."""
         pass
 
+    # This is used as detection of b/159938441 occurrence
+    def check_vbus(self):
+        """Check if Vbus is supplied"""
+        # Check the issue occurs - VBUS is not supplied.
+        mv = self.host.servo.get_vbus_voltage()
+        if mv is not None and mv < self.host.servo.VBUS_THRESHOLD:
+            return False
+        # If vbus voltage monitoring isn't supported, does not signal the issue
+        return True
 
     def cleanup(self):
         """Clean up DUT after servo actions."""
+        # Ensure DUTs with type_c servo are in src mode.
         self.host.servo.set_servo_v4_role('src')
         if not self.host.is_up():
             # Power off, then power on DUT from internal storage.
@@ -165,8 +175,13 @@ class platform_ServoPowerStateController(test.test):
         # recovery mode (b/161464597).
         # TODO(waihong): Add a check to see if the battery level is too
         # low and sleep for a while for charging.
-        logging.info('Put servo_v4 into snk role')
-        self.host.servo.set_servo_v4_role('snk')
+        if self.host.get_board().split(':')[1] == 'grunt':
+            # Skip on Grunt to avoid breaking CCD (b/170167166).
+            # TODO: Remove this once Grunt FW is fixed.
+            logging.info('Grunt: Do not put servo_v4 into snk role')
+        else:
+            logging.info('Put servo_v4 into snk role')
+            self.host.servo.set_servo_v4_role('snk')
 
         logging.info('Power off DUT')
         self.host.power_off_via_servo()
@@ -179,9 +194,15 @@ class platform_ServoPowerStateController(test.test):
 
         self.host.servo.switch_usbkey('dut')
         time.sleep(30)
-        self.assert_dut_on(rec_on=True)
+        if self.check_vbus():
+            self.assert_dut_on(rec_on=True)
+            logging.info('Power off DUT which is up in recovery mode.')
+        else:
+            logging.error('EC/RO bug(b:159938441) present.'
+                          'The check for power_state:rec with USB plugged'
+                          'omitted for this board.')
+            logging.info('Power off DUT at recovery screen.')
 
-        logging.info('Power off DUT which is up in recovery mode.')
         self.host.power_off_via_servo()
         self.assert_dut_off('power_state:off failed after boot from external '
                             'USB stick.')
@@ -199,9 +220,6 @@ class platform_ServoPowerStateController(test.test):
         self.host.power_on_via_servo(self.controller.REC_OFF)
         self.assert_dut_on()
         self.host.servo.switch_usbkey('off')
-
-        logging.info('Put servo_v4 back into src role')
-        self.host.servo.set_servo_v4_role('src')
 
 
     def test_with_usb_unplugged(self):

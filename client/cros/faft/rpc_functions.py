@@ -7,11 +7,15 @@ These will be exposed via an xmlrpc server running on the DUT.
 
 @note: When adding categories, please also update server/cros/faft/rpc_proxy.pyi
 """
+
+from __future__ import print_function
+
 import binascii
 import httplib
 import logging
 import os
 import signal
+import six
 import sys
 import tempfile
 import traceback
@@ -139,7 +143,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                             traceback.format_exception_only(exc_class, exc))
                     exc = xmlrpclib.Fault(
                             fault_code, '%s. %s' % (message, exc_str.rstrip()))
-                raise exc, None, tb
+                six.reraise(exc, None, tb)
             finally:
                 del exc_info
                 del tb
@@ -941,9 +945,9 @@ class SystemServicer(object):
         root_part = self._os_if.get_root_part()
         return self._os_if.get_internal_disk(root_part)
 
-    def create_temp_dir(self, prefix='backup_'):
+    def create_temp_dir(self, prefix='backup_', dir=None):
         """Create a temporary directory and return the path."""
-        return tempfile.mkdtemp(prefix=prefix)
+        return tempfile.mkdtemp(prefix=prefix, dir=dir)
 
     def remove_file(self, file_path):
         """Remove the file."""
@@ -1220,6 +1224,31 @@ class UpdaterServicer(object):
         @return: Boolean success status.
         """
         return self._updater.cbfs_sign_and_flash()
+
+    def cbfs_extract(self,
+                     filename,
+                     extension,
+                     regions,
+                     local_filename=None,
+                     arch=None,
+                     bios=None):
+        """Extracts an arbitrary file from cbfs.
+
+        Note that extracting from
+        @param filename: Filename in cbfs, including extension
+        @param extension: Extension of the file, including '.'
+        @param regions: Tuple of regions (the default is just 'a')
+        @param arch: Specific machine architecture to extract (default unset)
+        @param local_filename: Path to use on the DUT, overriding the default in
+                           the cbfs work dir.
+        @param bios: Image from which the cbfs file to be extracted
+        @return: The full path of the extracted file, or None
+        """
+        return self._updater.cbfs_extract(filename,
+                                      extension, regions,
+                                      local_filename,
+                                      arch,
+                                      bios)
 
     def get_temp_path(self):
         """Get updater's temp directory path."""

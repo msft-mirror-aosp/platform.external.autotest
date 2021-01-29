@@ -482,10 +482,14 @@ class base_client_job(base_job.base_job):
                 raise error.TestError("Dependency %s does not exist" % dep)
 
             os.chdir(dep_dir)
-            if os.path.exists("%s.py" % dep):
+            # Run the dependency, as it could create more files needed for the
+            # tests.
+            # In future this might want to be changed, as this always returns
+            # None, unless the dep.py errors. In which case, it'll error rather
+            # than returning.
+            if eval(compile(open('%s.py' % dep, "rb").read(),
+                            '%s.py' % dep, 'exec'), {}) is None:
                 logging.info('Dependency %s successfuly built', dep)
-            else:
-                raise error.TestError("Dependency %s.py does not exist" % dep)
 
     def _runtest(self, url, tag, timeout, args, dargs):
         try:
@@ -880,12 +884,6 @@ class base_client_job(base_job.base_job):
 
     def complete(self, status):
         """Write pending reports, clean up, and exit"""
-        # write out a job HTML report
-        try:
-            html_report.create_report(self.resultdir)
-        except Exception as e:
-            logging.error("Error writing job HTML report: %s", e)
-
         # We are about to exit 'complete' so clean up the control file.
         dest = os.path.join(self.resultdir, os.path.basename(self._state_file))
         shutil.move(self._state_file, dest)

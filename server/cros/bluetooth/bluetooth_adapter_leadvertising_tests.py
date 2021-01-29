@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -29,13 +30,20 @@ if min advertising interval is set to an expected value" or
 
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import copy
 import logging
 import re
 import time
 
+import common
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from six.moves import range
+from six.moves import zip
 
 test_case_log = bluetooth_adapter_tests.test_case_log
 test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
@@ -55,6 +63,14 @@ class bluetooth_AdapterLEAdvertising(
 
     """
 
+    # The software advertising rotation is a default bluez parameter, 2 seconds
+    SOFTWARE_ROTATION_INTERVAL_S = 2
+
+    # If hardware offloading is available, a 'default' discovery time is used,
+    # that will not depend on number of advertisements registered since they are
+    # advertised in parallel.
+    DEFAULT_DISCOVERY_TIME_S = 3
+
     @staticmethod
     def get_instance_ids(advertisements):
         """Get the list of instace IDs starting at 1.
@@ -62,7 +78,7 @@ class bluetooth_AdapterLEAdvertising(
         @param advertisements: a list of advertisements.
 
         """
-        return range(1, len(advertisements) + 1)
+        return list(range(1, len(advertisements) + 1))
 
 
     def register_advertisements(self, advertisements, min_adv_interval_ms,
@@ -232,8 +248,8 @@ class bluetooth_AdapterLEAdvertising(
         return discovered_service_data
 
 
-    @test_retry_and_log(False)
-    def test_peer_received_correct_advertisement(self, peer, advertisement):
+    def _test_peer_received_correct_adv(self, peer, advertisement,
+                                        discover_time):
         """Test that configured advertisements are found by peer
 
         We need to verify quality of advertising service from the perspective of
@@ -244,20 +260,19 @@ class bluetooth_AdapterLEAdvertising(
         @param peer: Handle to peer device for advertisement collection
         @param advertisement: Advertisement data that has been enabled on DUT
             side
+        @param discover_time: Number of seconds we should spend discovering
+            before considering the device undiscoverable
 
         @returns: True if advertisement is discovered and is correct, else False
         """
 
         # We locate the advertisement by searching for the ServiceData
         # attribute we configured.
-        data_to_match = advertisement['ServiceData'].keys()[0]
-
-        # TODO Reduce discovery time once b/153027105 is resolved
-        advertising_wait_time = 120
+        data_to_match = list(advertisement['ServiceData'].keys())[0]
 
         start_time = time.time()
         found_adv = peer.FindAdvertisementWithAttributes([data_to_match],
-                                                         advertising_wait_time)
+                                                         discover_time)
         logging.info('Advertisement discovered after %fs',
                      time.time() - start_time)
 
@@ -320,6 +335,39 @@ class bluetooth_AdapterLEAdvertising(
         return True
 
 
+    def get_host_discovery_time(self, num_adv):
+        """Estimates how long it will take the peer to discover the host
+
+        The amount of time we wait for the peer to discover the host's
+        advertisement depends on how many advertisements are registered, and
+        whether the host platform is using hardware offloaded multi-advertising
+        or software rotation.
+
+        @param num_adv: Number of advertisements that are active
+        @returns: number of seconds we should wait for discovery
+        """
+
+        if self.ext_adv_enabled():
+            return self.DEFAULT_DISCOVERY_TIME_S
+
+        return num_adv * self.SOFTWARE_ROTATION_INTERVAL_S
+
+    @test_retry_and_log(False)
+    def test_peer_received_correct_adv(self, peer, advertisement,
+                                       discover_time):
+        """Tests that advertisement can be received by the peer"""
+
+        return self._test_peer_received_correct_adv(peer, advertisement,
+                                                    discover_time)
+
+    @test_retry_and_log(False, messages_start=False, messages_stop=False)
+    def test_peer_failed_received_correct_adv(self, peer, advertisement,
+                                              discover_time):
+        """Tests that advertisement can not be received by the peer"""
+
+        return not self._test_peer_received_correct_adv(
+                peer, advertisement, discover_time)
+
     def advertising_peer_test(self, peer):
         """Verifies that advertisements registered on DUT are seen by peer
 
@@ -339,9 +387,75 @@ class bluetooth_AdapterLEAdvertising(
             self.bluetooth_le_facade.register_advertisement(
                     advertisements_data.ADVERTISEMENTS[i])
 
+        discover_time = self.get_host_discovery_time(num_adv)
+
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_advertisement(
-                    peer, advertisements_data.ADVERTISEMENTS[i])
+            res = self.test_peer_received_correct_adv(
+                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+
+    def advertising_peer_suspend_resume_test(self, peer):
+        """Verify expected advertising behavior around suspend/resume
+
+        For power and usage sake, we expect that when the system suspends, any
+        advertising instances should be paused. When we resume from suspend,
+        they should be re-enabled again. To confirm this behavior, the test
+        performs the following steps:
+
+        - Register some advertisements
+        - Verify that advertisements are discoverable by remote device
+        - Enter suspend
+        - Verify that advertisements are NOT discoverable by remote device
+        - Exit suspend
+        - Verify that advertisements are discoverable by remote device
+
+        @param peer: handle to peer used in test
+        """
+
+        self.kernel_version = self.host.get_kernel_version()
+        self.check_kernel_version()
+
+        self.bluetooth_le_facade = self.bluetooth_facade
+
+        # Register some advertisements
+        num_adv = 3
+        discover_time = self.get_host_discovery_time(num_adv)
+        self.test_reset_advertising()
+
+        for i in range(0, num_adv):
+            self.bluetooth_le_facade.register_advertisement(
+                    advertisements_data.ADVERTISEMENTS[i])
+
+        # Verify they can all be discovered
+        for i in range(0, num_adv):
+            res = self.test_peer_received_correct_adv(
+                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+
+        # Enter suspend long enough to verify none of the registered
+        # advertisements are discoverable. Give a few extra seconds in suspend
+        # to be safe
+        suspend_time = discover_time * num_adv + 10
+
+        # Trigger suspend, asynchronously trigger wake and wait for resume
+        boot_id = self.host.get_boot_id()
+        suspend = self.suspend_async(suspend_time=suspend_time)
+        start_time = self.bluetooth_facade.get_device_time()
+        self.test_suspend_and_wait_for_sleep(suspend, sleep_timeout=5)
+
+        # Verify they can not be discovered
+        for i in range(0, num_adv):
+            res = self.test_peer_failed_received_correct_adv(
+                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+
+        # Wait for device to come out of suspend
+        self.test_wait_for_resume(boot_id,
+                                  suspend,
+                                  resume_timeout=suspend_time + 5,
+                                  test_start_time=start_time)
+
+        # Verify reception of advertisements again
+        for i in range(0, num_adv):
+            res = self.test_peer_received_correct_adv(
+                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
 
 
     @test_case_log
@@ -1243,6 +1357,46 @@ class bluetooth_AdapterLEAdvertising(
 
         self.unregister_advertisements(advertisements)
 
+    @test_case_log
+    def test_case_nearby_mediums_fast(self):
+        """Verify minimal test case for nearby sharing"""
+        orig_min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_max_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+
+        # We set a specific advertisement with fields required by Nearby
+        # sharing service
+        advertisements = [advertisements_data.NEARBY_MEDIUMS_FAST_ADV]
+
+        self.test_reset_advertising()
+
+        # Nearby share requires general discoverable advertising flag be set.
+        # Bluez sets this flag based on the adapter's Discoverable property,
+        # so we apply this setting here
+        self.bluetooth_facade.set_discoverable(True)
+
+        self.register_advertisements(advertisements, orig_min_adv_interval_ms,
+                                     orig_max_adv_interval_ms)
+
+        # Ensure that our discoverable flag is advertised
+        self.test_advertising_flags(['Advertise as Discoverable'])
+
+    @test_case_log
+    def test_case_broadcast(self):
+        """Verify minimal test case for broadcasted advertising"""
+        orig_min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_max_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+
+        # We set a specific advertisement that uses the 'broadcast' mode
+        advertisements = [advertisements_data.NEARBY_BROADCAST_ADV]
+
+        self.bluetooth_le_facade = self.bluetooth_facade
+        self.test_reset_advertising()
+
+        # Verify that registration is successful, and that all configured
+        # properties are sent to the controller.
+        self.register_advertisements(advertisements, orig_min_adv_interval_ms,
+                                     orig_max_adv_interval_ms)
+
     def run_le_advertising_test(self, host, advertisements, test_type, \
                                 num_iterations=1):
         """Running Bluetooth adapter LE advertising autotest.
@@ -1315,7 +1469,7 @@ class bluetooth_AdapterLEAdvertising(
 
         elif test_type == 'suspend_resume':
             # Run all test cases for suspend resume stress testing.
-            for i in xrange(num_iterations):
+            for i in range(num_iterations):
                 logging.info('Starting suspend resume loop #%d', i+1)
                 self.test_case_SI200_RA3_CD_SR_CD_UA3()
                 self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()
@@ -1324,8 +1478,11 @@ class bluetooth_AdapterLEAdvertising(
 
         elif test_type == 'reboot':
             # Run all test cases for reboot stress testing.
-            for i in xrange(num_iterations):
+            for i in range(num_iterations):
                 logging.info('Starting reboot loop #%d', i+1)
                 self.test_case_SI200_RA3_CD_PC_CD_UA3()
                 self.test_case_RA3_CD_SI200_CD_PC_CD_UA3()
                 self.test_case_RA1_CD_SI200_CD_PC_CD_UA1()
+
+        elif test_type == 'nearby':
+            self.test_case_nearby_mediums_fast()

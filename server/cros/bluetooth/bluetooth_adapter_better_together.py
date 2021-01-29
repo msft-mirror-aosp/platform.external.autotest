@@ -1,21 +1,26 @@
+# Lint as: python2, python3
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """A class provides most of the test logic for Bluetooth Better Together"""
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import logging
 import base64
 import json
 
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
-  BluetoothAdapterQuickTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import \
-  BluetoothAdapterPairingTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import \
-  test_retry_and_log
+import common
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import (
+        BluetoothAdapterPairingTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        test_retry_and_log)
+from six.moves import range
 
 class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
                                         BluetoothAdapterPairingTests):
@@ -122,16 +127,14 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
        3. Stop the discovery after the device was found.
        4. Set the LE connection parameters to reduce the min and max
           connection intervals to 6.
-       5. Pause the discovery sessions from all the clients.
-       6. Connect the device.
-       7. Unpause the discovery sessions once the device was connected.
-       8. Set the Trusted property of the device to true.
-       9. Verify all the services were resolved.
-       10. Start notification on the RX characteristic of the
+       5. Connect the device.
+       6. Set the Trusted property of the device to true.
+       7. Verify all the services were resolved.
+       8. Start notification on the RX characteristic of the
            Proximity Service.
-       11. Exchange some messages with the peer device to authorize it.
-       12. Stop the notification.
-       13. Disconnect the device.
+       9. Exchange some messages with the peer device to authorize it.
+       10. Stop the notification.
+       11. Disconnect the device.
     """
 
     filter = {'Transport':'le'}
@@ -146,9 +149,7 @@ class BluetoothAdapterBetterTogether(BluetoothAdapterQuickTests,
       self.test_discover_device(address)
 
       self.test_set_le_connection_parameters(address, parameters)
-      self.test_pause_discovery()
       self.test_connection_by_adapter(address)
-      self.test_unpause_discovery()
 
       self.test_set_trusted(address)
       self.test_service_resolved(address)

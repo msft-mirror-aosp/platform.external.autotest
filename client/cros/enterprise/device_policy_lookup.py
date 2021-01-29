@@ -4,7 +4,9 @@ to a stand alone file for readability/maintainability. Source is
 policy_templates.json, and this file will need to be periodically updated if new
 device policies are added to the proto.
 """
-
+# TODO b:169251326 terms below are set outside of this codebase
+# and should be updated when possible.
+# ("whitelist" -> "allowlist", "blacklist" --> "blocklist" or "denylist")
 DEVICE_POLICY_DICT = {
     'DeviceGuestModeEnabled': 'guest_mode_enabled.guest_mode_enabled',
     'DeviceRebootOnShutdown': 'reboot_on_shutdown.reboot_on_shutdown',

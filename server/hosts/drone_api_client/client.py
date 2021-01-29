@@ -1,9 +1,10 @@
+# Lint as: python2, python3
 """Client for Autotest side communcations to the TLS SSH Server."""
 
 
-import cStringIO
 import grpc
 import logging
+import six
 import time
 
 import common_pb2
@@ -13,7 +14,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 
 TLS_PORT = 7152
-
+TLS_IP = '10.254.254.254'
 
 class TLSClient(object):
     """The client side connection to Common-TLS service running in a drone."""
@@ -21,7 +22,7 @@ class TLSClient(object):
     def __init__(self, hostname):
         """Configure the grpc channel."""
         self.hostname = hostname
-        self.channel = grpc.insecure_channel('localhost:{}'.format(TLS_PORT))
+        self.channel = grpc.insecure_channel('{}:{}'.format(TLS_IP, TLS_PORT))
         self.stub = common_pb2_grpc.CommonStub(self.channel)
 
     def __enter__(self):
@@ -62,8 +63,8 @@ class TLSClient(object):
         start_time = time.time()
         response = self._send_cmd(cmd, timeout)
 
-        stdout_buf = cStringIO.StringIO()
-        stderr_buf = cStringIO.StringIO()
+        stdout_buf = six.StringIO()
+        stderr_buf = six.StringIO()
         last_status = 0
 
         if response:

@@ -61,14 +61,14 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
 
         logging.info('Extracting diagnostics')
         self.faft_client.updater.cbfs_extract_diagnostics(self.DIAG_CBFS_NAME,
-                local_filename)
+                diag_cbfs_path)
 
         logging.info('Corrupting diagnostics')
-        self.faft_client.updater.corrupt_diagnostics_image(local_filename)
+        self.faft_client.updater.corrupt_diagnostics_image(diag_cbfs_path)
 
         logging.info('Replacing diagnostics')
         self.faft_client.updater.cbfs_replace_diagnostics(self.DIAG_CBFS_NAME,
-                local_filename)
+                diag_cbfs_path)
 
         logging.info('Writing back BIOS')
         self.faft_client.bios.write_whole(bios_cbfs_path)

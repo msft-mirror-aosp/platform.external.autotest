@@ -555,7 +555,13 @@ class Suspender(object):
         """
 
         if power_utils.get_sleep_state() == 'freeze':
-            self._s0ix_residency_stats = power_status.S0ixResidencyStats()
+            arch = utils.get_arch()
+
+            if arch == 'x86_64':
+                self._s0ix_residency_stats = power_status.S0ixResidencyStats()
+            elif arch == 'aarch64':
+                self._s2idle_residency_stats = \
+                    power_status.S2IdleResidencyStats()
 
         try:
             iteration = len(self.failures) + len(self.successes) + 1
@@ -649,6 +655,16 @@ class Suspender(object):
                         raise sys_power.S0ixResidencyNotChanged(msg)
                     logging.warn(msg)
                 logging.info('S0ix residency : %d secs.', s0ix_residency_secs)
+            elif hasattr(self, '_s2idle_residency_stats'):
+                s2idle_residency_usecs = \
+                        self._s2idle_residency_stats.\
+                                get_accumulated_residency_usecs()
+                if not s2idle_residency_usecs:
+                    msg = 's2idle residency did not change.'
+                    raise sys_power.S2IdleResidencyNotChanged(msg)
+
+                logging.info('s2idle residency : %d usecs.',
+                             s2idle_residency_usecs)
 
             successful_suspend = {
                 'seconds_system_suspend': kernel_down,

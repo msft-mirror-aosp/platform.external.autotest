@@ -36,11 +36,9 @@ WARNING_STATUS = 'WARNING'
 FAILED_STATUS = 'FAILED'
 
 # A list of telemetry tests that cannot run on dut.
-ON_DUT_BLACKLIST = [
-        'cros_ui_smoothness',  # crbug/976839
+ON_DUT_BLOCKLIST = [
         'loading.desktop',  # crbug/882299
         'rendering.desktop',  # crbug/882291
-        'system_health.memory_desktop',  # crbug/874386
 ]
 
 
@@ -429,7 +427,7 @@ class TelemetryRunner(object):
 
         self._perf_value_writer = perf_value_writer
 
-        if benchmark in ON_DUT_BLACKLIST:
+        if benchmark in ON_DUT_BLOCKLIST:
             self._telemetry_on_dut = False
 
         output_format = kwargs.get('ex_output_format', '')

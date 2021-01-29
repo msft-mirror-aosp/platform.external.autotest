@@ -16,6 +16,7 @@ import uuid
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import vboot_constants as vboot
@@ -29,6 +30,13 @@ from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.cros.faft import telemetry
+
+# Experimentally tuned time in minutes to wait for partition device nodes on a
+# USB stick to be ready after plugging in the stick.
+PARTITION_TABLE_READINESS_TIMEOUT = 0.1  # minutes
+# Experimentally tuned time in seconds to wait for the first retry of reading
+# the sysfs node of a USB stick's partition device node.
+PARTITION_TABLE_READINESS_FIRST_RETRY_DELAY = 1  # seconds
 
 ConnectionError = mode_switcher.ConnectionError
 
@@ -102,6 +110,8 @@ class FirmwareTest(test.test):
 
     # CCD password used by tests.
     CCD_PASSWORD = 'Password'
+
+    RESPONSE_TIMEOUT = 180
 
     @classmethod
     def check_setup_done(cls, label):
@@ -177,10 +187,10 @@ class FirmwareTest(test.test):
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
         self.checkers = FAFTCheckers(self)
-        self.switcher = mode_switcher.create_mode_switcher(self)
 
         if self.faft_config.chrome_ec:
             self.ec = chrome_ec.ChromeEC(self.servo)
+        self.switcher = mode_switcher.create_mode_switcher(self)
         # Check for presence of a USBPD console
         if self.faft_config.chrome_usbpd:
             self.usbpd = chrome_ec.ChromeUSBPD(self.servo)
@@ -565,6 +575,25 @@ class FirmwareTest(test.test):
         rootfs = '%s%s' % (usb_dev, self._ROOTFS_PARTITION_NUMBER)
         logging.info('usb dev is %s', usb_dev)
         tmpd = self.servo.system_output('mktemp -d -t usbcheck.XXXX')
+        # After the USB key is muxed from the DUT to the servo host, there
+        # appears to be a delay between when servod can confirm that a sysfs
+        # entry exists for the disk (as done by probe_host_usb_dev) and when
+        # sysfs entries get populated for the disk's partitions.
+        @retry.retry(error.AutoservRunError,
+                     timeout_min=PARTITION_TABLE_READINESS_TIMEOUT,
+                     delay_sec=PARTITION_TABLE_READINESS_FIRST_RETRY_DELAY)
+        def confirm_rootfs_partition_device_node_readable():
+            """Repeatedly poll for the RootFS partition sysfs node."""
+            self.servo.system('ls {}'.format(rootfs))
+
+        try:
+            confirm_rootfs_partition_device_node_readable()
+        except error.AutoservRunError as e:
+            usb_info = telemetry.collect_usb_state(self.servo)
+            raise error.TestError(
+                    ('Could not ls the device node for the RootFS on the USB '
+                     'device. %s: %s\nMore telemetry: %s') %
+                    (type(e).__name__, e, usb_info))
         try:
             self.servo.system('mount -o ro %s %s' % (rootfs, tmpd))
         except error.AutoservRunError as e:
@@ -591,21 +620,6 @@ class FirmwareTest(test.test):
             for cmd in ('umount -l %s' % tmpd, 'sync', 'rm -rf %s' % tmpd):
                 self.servo.system(cmd)
 
-        kernel_a = '%s%s' % (usb_dev, self.KERNEL_MAP['a'])
-        logging.debug(
-                'Making sure kernel A(%s) on the USB stick can be booted '
-                'in recovery mode', kernel_a)
-        kernel_verify = self.servo.system_output('futility vbutil_kernel '
-                                                 '--verify %s' % kernel_a)
-        # Example output when recovery flag is enabled:
-        #  Flags:               11  !DEV DEV REC
-        # Example output when recovery flag is disabled:
-        #  Flags:               7  !DEV DEV !REC
-        if not re.search(r'Flags:.*[^!]REC', kernel_verify):
-            raise error.TestError(
-                    'Kernel A(%s) on the USB stick does not have '
-                    'the recovery flag set' % kernel_a)
-
         self.mark_setup_done('usb_check')
 
     def setup_pdtester(self, flip_cc=False, dts_mode=False, pd_faft=True,
@@ -620,12 +634,15 @@ class FirmwareTest(test.test):
         @raise TestError: If Servo v4 not setup properly.
         """
 
-        # PD FAFT is only tested with a least a servo V4 with servo micro.
+        # PD FAFT is only tested with a least a servo V4 with servo micro
+        # or C2D2.
         if pd_faft and (
-                'servo_v4_with_servo_micro' not in self.pdtester.servo_type):
-            raise error.TestError('servo_v4_with_servo_micro is a mandatory '
-                                  'setup for PD FAFT. Got %s.'
-                                  % self.pdtester.servo_type)
+                'servo_v4_with_servo_micro' not in self.pdtester.servo_type
+        ) and ('servo_v4_with_c2d2' not in self.pdtester.servo_type):
+            raise error.TestError('servo_v4_with_servo_micro or '
+                                  'servo_v4_with_c2d2 is a mandatory setup '
+                                  'for PD FAFT. Got %s.' %
+                                  self.pdtester.servo_type)
 
         # Ensure the battery is enough for testing, this should be done before
         # all the following setup.
@@ -719,6 +736,25 @@ class FirmwareTest(test.test):
             return
         if self._needed_restore_servo_v4_role:
             self.servo.set_servo_v4_role('src')
+
+    def set_dut_low_power_idle_delay(self, delay):
+        """Set EC low power idle delay
+
+        @param delay: Delay in seconds
+        """
+        if not self.ec.has_command('dsleep'):
+            logging.info("Can't set low power idle delay.")
+            return
+        self._previous_ec_low_power_delay = int(
+                self.ec.send_command_get_output("dsleep",
+                ["timeout:\s+(\d+)\ssec"])[0][1])
+        self.ec.send_command("dsleep " + str(delay))
+
+    def restore_dut_low_power_idle_delay(self):
+        """Restore EC low power idle delay"""
+        if getattr(self, '_previous_ec_low_power_delay', None):
+            self.ec.send_command("dsleep " + str(
+                    self._previous_ec_low_power_delay))
 
     def get_usbdisk_path_on_dut(self):
         """Get the path of the USB disk device plugged-in the servo on DUT.
@@ -958,6 +994,16 @@ class FirmwareTest(test.test):
         """
         self.servo.set('fw_wp_state', 'force_on' if enable else 'force_off')
 
+    def set_ap_write_protect_and_reboot(self, enable):
+        """Set AP write protect status and reboot to take effect.
+
+        @param enable: True if asserting write protect. Otherwise, False.
+        """
+        self.set_hardware_write_protect(enable)
+        if hasattr(self, 'ec'):
+            self.sync_and_ec_reboot()
+            self.switcher.wait_for_client()
+
     def run_chromeos_firmwareupdate(self, mode, append=None, options=(),
             ignore_status=False):
         """Use RPC to get the command to run, but do the actual run via ssh.
@@ -1015,11 +1061,15 @@ class FirmwareTest(test.test):
         if enable:
             # Set write protect flag and reboot to take effect.
             self.ec.set_flash_write_protect(enable)
-            self.sync_and_ec_reboot(flags='hard')
+            self.sync_and_ec_reboot(
+                    flags='hard',
+                    extra_sleep=self.faft_config.ec_boot_to_wp_en)
         else:
             # Reboot after deasserting hardware write protect pin to deactivate
             # write protect. And then remove software write protect flag.
-            self.sync_and_ec_reboot(flags='hard')
+            # Some ITE ECs can only clear their WP status on a power-on reset,
+            # no software-initiated reset will do.
+            self.sync_and_ec_reboot(flags='cold')
             self.ec.set_flash_write_protect(enable)
 
     def _setup_ec_write_protect(self, ec_wp):
@@ -1204,8 +1254,9 @@ class FirmwareTest(test.test):
 
     def suspend(self):
         """Suspends the DUT."""
-        cmd = '(sleep %d; powerd_dbus_suspend) &' % self.EC_SUSPEND_DELAY
-        self.faft_client.system.run_shell_command(cmd)
+        cmd = 'sleep %d; powerd_dbus_suspend' % self.EC_SUSPEND_DELAY
+        block = False
+        self.faft_client.system.run_shell_command(cmd, block)
         time.sleep(self.EC_SUSPEND_DELAY)
 
     def _record_faft_client_log(self):
@@ -1408,17 +1459,23 @@ class FirmwareTest(test.test):
             internal_dev = self.faft_client.system.get_internal_device()
             self.do_blocking_sync(internal_dev)
 
-    def sync_and_ec_reboot(self, flags=''):
+    def sync_and_ec_reboot(self, flags='', extra_sleep=0):
         """Request the client sync and do a EC triggered reboot.
 
         @param flags: Optional, a space-separated string of flags passed to EC
                       reboot command, including:
                           default: EC soft reboot;
-                          'hard': EC cold/hard reboot.
+                          'hard': EC hard reboot.
+                          'cold': Cold reboot via servo.
+        @param extra_sleep: Optional, int or float for extra wait time for EC
+                            reboot in seconds.
         """
         self.blocking_sync(freeze_for_reset=True)
-        self.ec.reboot(flags)
-        time.sleep(self.faft_config.ec_boot_to_console)
+        if flags == 'cold':
+            self.servo.get_power_state_controller().reset()
+        else:
+            self.ec.reboot(flags)
+        time.sleep(self.faft_config.ec_boot_to_console + extra_sleep)
         self.check_lid_and_power_on()
 
     def reboot_and_reset_tpm(self):
@@ -1696,7 +1753,6 @@ class FirmwareTest(test.test):
         @return: Current firmware checksums and fwids, as a dict
         """
 
-        # TODO(dgoyette): add a way to avoid hardcoding the keys (section names)
         current_checksums = {
             'VBOOTA': self.faft_client.bios.get_sig_sha('a'),
             'FVMAINA': self.faft_client.bios.get_body_sha('a'),
@@ -2105,17 +2161,17 @@ class FirmwareTest(test.test):
 
     def _tpm_is_owned(self):
         """Returns True if the tpm is owned"""
-        result = self.host.run('cryptohome --action=tpm_more_status',
+        result = self.host.run('tpm_manager_client status --nonsensitive',
                                ignore_status=True)
         logging.debug(result)
-        return result.exit_status == 0 and 'owned: true' in result.stdout
+        return result.exit_status == 0 and 'is_owned: true' in result.stdout
 
     def clear_fwmp(self):
         """Clear the FWMP"""
         if self.fwmp_is_cleared():
             return
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        self.host.run('cryptohome --action=tpm_take_ownership')
+        self.host.run('tpm_manager_client take_ownership')
         if not utils.wait_for_value(self._tpm_is_owned, expected_value=True):
             raise error.TestError('Unable to own tpm while clearing fwmp.')
         self.host.run('cryptohome '

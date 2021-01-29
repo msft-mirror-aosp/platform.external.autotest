@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,14 +7,13 @@
 # prompt, such as within the Chromium OS development chroot.
 
 import ast
-import httplib
 import logging
 import os
 import re
-import time
-import xmlrpclib
-
 import six
+import six.moves.xmlrpc_client
+import six.moves.http_client
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -74,7 +74,7 @@ class ResponsiveConsoleError(ConsoleError):
     pass
 
 
-class ServodBadResponse(httplib.BadStatusLine):
+class ServodBadResponse(six.moves.http_client.BadStatusLine):
     """Indicates a bad HTTP response from servod"""
 
     def __init__(self, when, line):
@@ -161,6 +161,13 @@ class _WrapServoErrors(object):
         """
         return re.sub('^.*>:', '', xmlexc.faultString)
 
+    @staticmethod
+    def _log_exception(exc_type, exc_val, exc_tb):
+        """Log exception information"""
+        if exc_val is not None:
+            logging.debug(
+                    'Wrapped exception:', exc_info=(exc_type, exc_val, exc_tb))
+
     def __enter__(self):
         """Enter the context"""
         return self
@@ -168,12 +175,8 @@ class _WrapServoErrors(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the context, handling the exception if there was one"""
         try:
-            if exc_val is not None:
-                logging.debug(
-                        'Wrapped exception:',
-                        exc_info=(exc_type, exc_val, exc_tb))
-
-            if isinstance(exc_val, httplib.BadStatusLine):
+            if isinstance(exc_val, six.moves.http_client.BadStatusLine):
+                self._log_exception(exc_type, exc_val, exc_tb)
                 if exc_val.line in ('', "''"):
                     err = ServodEmptyResponse(self.description, exc_val.line)
                 else:
@@ -181,22 +184,24 @@ class _WrapServoErrors(object):
                 six.reraise(err.__class__, err, exc_tb)
 
             if isinstance(exc_val, seven.SOCKET_ERRORS):
+                self._log_exception(exc_type, exc_val, exc_tb)
                 err = ServodConnectionError(self.description, exc_val.args[0],
                                             exc_val.args[1], self.servo_name)
                 six.reraise(err.__class__, err, exc_tb)
 
-            if isinstance(exc_val, xmlrpclib.Fault):
+            if isinstance(exc_val, six.moves.xmlrpc_client.Fault):
                 err_str = self._get_xmlrpclib_exception(exc_val)
                 err_msg = '%s :: %s' % (self.description, err_str)
                 unknown_ctrl = re.search(NO_CONTROL_RE, err_str)
                 if not unknown_ctrl:
                     # Log the full text for errors, except unavailable controls.
+                    self._log_exception(exc_type, exc_val, exc_tb)
                     logging.debug(err_msg)
                 if unknown_ctrl:
                     # The error message for unavailable controls is huge, since
                     # it reports all known controls.  Don't log the full text.
                     unknown_ctrl_name = unknown_ctrl.group('name')
-                    logging.error('%s :: No control named %r',
+                    logging.debug('%s :: No control named %r',
                                   self.description, unknown_ctrl_name)
                     err = ControlUnavailableError(
                             'No control named %r' % unknown_ctrl_name)
@@ -547,6 +552,9 @@ class Servo(object):
     # extract firmware on the lab host machines (b/149419503).
     EXTRACT_TIMEOUT_SECS = 180
 
+    # The VBUS voltage threshold used to detect if VBUS is supplied
+    VBUS_THRESHOLD = 3000.0
+
     def __init__(self, servo_host, servo_serial=None):
         """Sets up the servo communication infrastructure.
 
@@ -636,14 +644,18 @@ class Servo(object):
         # TODO(coconutruben): eventually, replace this with a metric to track
         # SBU voltages wrt servo-hw/dut-hw
         if self.has_control('servo_v4_sbu1_mv'):
-            for sbu in ['sbu1', 'sbu2']:
+            # Attempt to take a reading of sbu1 and sbu2 multiple times to
+            # account for situations where the two lines exchange hi/lo roles
+            # frequently.
+            for i in range(10):
                 try:
-                    mv = int(self.get('servo_v4_%s_mv' % sbu))
-                    logging.info('%s voltage: %d mv', sbu, mv)
+                    sbu1 = int(self.get('servo_v4_sbu1_mv'))
+                    sbu2 = int(self.get('servo_v4_sbu2_mv'))
+                    logging.info('attempt %d sbu1 %d sbu2 %d', i, sbu1, sbu2)
                 except error.TestFail as e:
                     # This is a nice to have but if reading this fails, it
                     # shouldn't interfere with the test.
-                    logging.info('Failed to read %s voltage', sbu)
+                    logging.exception(e)
         self._uart.start_capture()
         if cold_reset:
             if not self._power_state.supported:
@@ -678,11 +690,11 @@ class Servo(object):
         """Returns the servod version."""
         # TODO: use system_output once servod --sversion prints to stdout
         try:
-            result = self._servo_host.run('servod --sversion')
+            result = self._servo_host.run('servod --sversion 2>&1')
         except error.AutoservRunError as e:
             if 'command execution error' in str(e):
                 # Fall back to version if sversion is not supported yet.
-                result = self._servo_host.run('servod --version')
+                result = self._servo_host.run('servod --version 2>&1')
                 return result.stdout.strip() or result.stderr.strip()
             # An actually unexpected error occurred, just raise.
             raise e
@@ -968,7 +980,7 @@ class Servo(object):
         try:
             with _WrapServoErrors(servo=self, description='get_base_board()'):
                 return self._server.get_base_board()
-        except  xmlrpclib.Fault as e:
+        except six.moves.xmlrpc_client.Fault as e:
             # TODO(waihong): Remove the following compatibility check when
             # the new versions of hdctools are deployed.
             if 'not supported' in str(e):
@@ -1426,18 +1438,22 @@ class Servo(object):
             logging.warn('Not a Chrome EC, ignore re-programming it')
             return None
 
-        # Array of candidates for EC image
-        ec_image_candidates = ['ec.bin',
-                               '%s/ec.bin' % model,
-                               '%s/ec.bin' % board]
-
-        # Best effort; try to retrieve the EC board from the version as
-        # reported by the EC.
+        # Try to retrieve firmware build target from the version reported
+        # by the EC. If this doesn't work, we assume the firmware build
+        # target is the same as the model name.
         try:
-            ec_image_candidates.append('%s/ec.bin' % self.get_ec_board())
+            fw_target = self.get_ec_board()
         except Exception as err:
             logging.warn('Failed to get ec_board value; ignoring')
+            fw_target = model
             pass
+
+        # Array of candidates for EC image
+        ec_image_candidates = [
+                'ec.bin',
+                '%s/ec.bin' % fw_target,
+                '%s/ec.bin' % board
+        ]
 
         # Extract EC image from tarball
         dest_dir = os.path.join(os.path.dirname(tarball_path), 'EC')
@@ -1471,18 +1487,22 @@ class Servo(object):
         @return: Path to extracted BIOS image.
         """
 
-        # Array of candidates for BIOS image
-        bios_image_candidates = ['image.bin',
-                                 'image-%s.bin' % model,
-                                 'image-%s.bin' % board]
-
-        # Best effort; try to retrieve the EC board from the version as
-        # reported by the EC.
+        # Try to retrieve firmware build target from the version reported
+        # by the EC. If this doesn't work, we assume the firmware build
+        # target is the same as the model name.
         try:
-            bios_image_candidates.append('image-%s.bin' % self.get_ec_board())
+            fw_target = self.get_ec_board()
         except Exception as err:
             logging.warn('Failed to get ec_board value; ignoring')
+            fw_target = model
             pass
+
+        # Array of candidates for BIOS image
+        bios_image_candidates = [
+                'image.bin',
+                'image-%s.bin' % fw_target,
+                'image-%s.bin' % board
+        ]
 
         # Extract BIOS image from tarball
         dest_dir = os.path.join(os.path.dirname(tarball_path), 'BIOS')
@@ -1575,6 +1595,23 @@ class Servo(object):
             self.set_nocheck('servo_v4_role', role)
         else:
             logging.debug('Already in the role: %s.', role)
+
+    def get_servo_v4_role(self):
+        """Get the power role of servo v4, either 'src' or 'snk'.
+
+        It returns None if not a servo v4.
+        """
+        if not self._servo_type.startswith('servo_v4'):
+            logging.debug('Not a servo v4, unable to get role')
+            return None
+
+        if not self.has_control('servo_v4_role'):
+            logging.debug(
+                    'Servo does not has servo_v4_role control, unable'
+                    ' to get the role.')
+            return None
+
+        return self.get('servo_v4_role')
 
     def set_servo_v4_pd_comm(self, en):
         """Set the PD communication of servo v4, either 'on' or 'off'.
@@ -1782,3 +1819,16 @@ class Servo(object):
         self.set_nocheck('ec_uart_flush', 'off')
         self.set_nocheck('ec_uart_cmd', 'reboot')
         self.set_nocheck('ec_uart_flush', 'on')
+
+    def get_vbus_voltage(self):
+        """Get the voltage of VBUS'.
+
+        @returns The voltage of VBUS, if vbus_voltage is supported.
+                 None               , if vbus_voltage is not supported.
+        """
+        if not self.has_control('vbus_voltage'):
+            logging.debug('Servo does not have vbus_voltage control,'
+                          'unable to get vbus voltage')
+            return None
+
+        return self.get('vbus_voltage')

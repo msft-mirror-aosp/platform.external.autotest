@@ -1271,7 +1271,7 @@ class RepairStrategyRepairTests(_RepairStrategyTestCase):
             strategy.repair(self._fake_host, silent)
         self._check_silent_records(silent)
         for action, count in action_counts:
-              self.assertEqual(action.repair_count, count + 1)
+            self.assertEqual(action.repair_count, count + 1)
 
 
     def _check_repair_success(self, strategy, silent):
@@ -1292,7 +1292,7 @@ class RepairStrategyRepairTests(_RepairStrategyTestCase):
         strategy.repair(self._fake_host, silent)
         self._check_silent_records(silent)
         for action, count in action_counts:
-              self.assertEqual(action.repair_count, count + 1)
+            self.assertEqual(action.repair_count, count + 1)
 
 
     def test_repair(self):
@@ -1370,7 +1370,7 @@ class VerifierResultTestCases(_DependencyNodeTestCase):
             self.assertEqual(tag, verifier.tag)
 
         verifier = strategy._verify_root._get_node_by_tag('v0')
-        self.assertIsNone(verifier)
+        self.assertEqual(repair.VERIFY_NOT_RUN, verifier)
 
     def test_run_verifier_and_get_results(self):
         """Check the result of verifiers"""
@@ -1384,11 +1384,15 @@ class VerifierResultTestCases(_DependencyNodeTestCase):
             strategy.verify(self._fake_host, silent=True)
         except Exception as e:
             pass
-        self.assertIsNone(strategy.verifier_is_good('v0'))
-        self.assertEqual(True, strategy.verifier_is_good('v1'))
-        self.assertEqual(False, strategy.verifier_is_good('v2'))
-        self.assertIsNone(strategy.verifier_is_good('v3'))
-        self.assertIsNone(strategy.verifier_is_good('v4'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v0'))
+        self.assertEqual(repair.VERIFY_SUCCESS,
+                         strategy.verifier_is_good('v1'))
+        self.assertEqual(repair.VERIFY_FAILED, strategy.verifier_is_good('v2'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v3'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v4'))
 
     def test_run_verifier_with_dependencies(self):
         """Check the result if dependency fail or not applicable."""
@@ -1404,15 +1408,21 @@ class VerifierResultTestCases(_DependencyNodeTestCase):
             strategy.verify(self._fake_host, silent=True)
         except Exception as e:
             pass
-        self.assertIsNone(strategy.verifier_is_good('v0'))
-        self.assertEqual(True, strategy.verifier_is_good('v1'))
-        self.assertEqual(False, strategy.verifier_is_good('v2'))
-        self.assertIsNone(strategy.verifier_is_good('v3'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v0'))
+        self.assertEqual(repair.VERIFY_SUCCESS,
+                         strategy.verifier_is_good('v1'))
+        self.assertEqual(repair.VERIFY_FAILED, strategy.verifier_is_good('v2'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v3'))
         # if dependencies fail then the verifier mark as not run
-        self.assertEqual(None, strategy.verifier_is_good('v4'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v4'))
         # if dependencies not applicable then run only verifier
-        self.assertEqual(True, strategy.verifier_is_good('v5'))
-        self.assertIsNone(strategy.verifier_is_good('v6'))
+        self.assertEqual(repair.VERIFY_SUCCESS,
+                         strategy.verifier_is_good('v5'))
+        self.assertEqual(repair.VERIFY_NOT_RUN,
+                         strategy.verifier_is_good('v6'))
 
 
 if __name__ == '__main__':

@@ -249,10 +249,10 @@ class RemoteHost(base_classes.Host):
         self.log_op(self.OP_REBOOT, op_func)
 
 
-    def cleanup(self, reboot_cmd=None):
+    def cleanup(self):
         # pylint: disable=missing-docstring
         super(RemoteHost, self).cleanup()
-        self.reboot(reboot_cmd=reboot_cmd)
+        self.reboot()
 
 
     def get_tmp_dir(self, parent='/tmp'):
@@ -398,3 +398,12 @@ class RemoteHost(base_classes.Host):
                 elif type(label) is list:
                     labels.extend(label)
         return labels
+
+    def get_result_dir(self):
+        """Return the result directory path if passed or None if not.
+
+        @return string
+        """
+        if self.job and hasattr(self.job, 'resultdir'):
+            return self.job.resultdir
+        return None

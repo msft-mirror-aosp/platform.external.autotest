@@ -104,8 +104,7 @@ class UserCrashTest(crash_test.CrashTest):
         first_line = symbols.split('\n')[0]
         tokens = first_line.split()
         if tokens[0] != 'MODULE' or tokens[1] != 'Linux':
-          raise error.TestError('Unexpected symbols format: %s',
-                                first_line)
+            raise error.TestError('Unexpected symbols format: %s', first_line)
         file_id = tokens[3]
         target_dir = os.path.join(self._symbol_dir, basename, file_id)
         os.makedirs(target_dir)
@@ -274,14 +273,21 @@ class UserCrashTest(crash_test.CrashTest):
         if expected_gid is None:
             expected_gid = pwd.getpwnam(username).pw_gid
 
-        if expected_reason is None:
-            expected_reason = 'handling' if consent else 'ignoring - no consent'
+        if expected_reason is None and consent:
+            expected_reason = 'handling'
 
-        expected_message = (
-            ('[%s] Received crash notification for %s[%d] sig 11, user %d '
-             'group %d (%s)') %
-            (self._expected_tag, basename, pid, expected_uid, expected_gid,
-             expected_reason))
+        if expected_reason is not None:
+            expected_message = ((
+                    '[%s] Received crash notification for %s[%d] sig 11, user %d '
+                    'group %d (%s)') %
+                                (self._expected_tag, basename, pid,
+                                 expected_uid, expected_gid, expected_reason))
+        else:
+            # No consent; different message format.
+            expected_message = ((
+                    'No consent. Not handling invocation: /sbin/crash_reporter '
+                    '--user=%d:11:%d:%d:%s') %
+                                (pid, expected_uid, expected_gid, basename))
 
         # Wait until no crash_reporter is running.
         utils.poll_for_condition(
@@ -419,8 +425,8 @@ class UserCrashTest(crash_test.CrashTest):
         crash_contents = os.listdir(crash_dir)
         basename = os.path.basename(crasher_path or self._crasher_path)
         if expect_crash_reporter_fail:
-          old_basename = basename
-          basename = "crash_reporter_failure"
+            old_basename = basename
+            basename = "crash_reporter_failure"
 
         # A dict tracking files for each crash report.
         crash_report_files = {}
@@ -431,7 +437,7 @@ class UserCrashTest(crash_test.CrashTest):
 
         # Variables and their typical contents:
         # basename: crasher_nobreakpad
-        # filename: crasher_nobreakpad.20181023.135339.16890.dmp
+        # filename: crasher_nobreakpad.20181023.135339.12345.16890.dmp
         # ext: dmp
         for filename in crash_contents:
             if filename.endswith('.core'):
@@ -496,10 +502,15 @@ class UserCrashTest(crash_test.CrashTest):
             raise error.TestFail('crash_reporter did not catch crash')
 
 
-    def _check_crashing_process(self, username, consent=True,
-                                crasher_path=None, run_crasher=None,
-                                expected_uid=None, expected_gid=None,
-                                expected_exit_code=None):
+    def _check_crashing_process(self,
+                                username,
+                                consent=True,
+                                crasher_path=None,
+                                run_crasher=None,
+                                expected_uid=None,
+                                expected_gid=None,
+                                expected_exit_code=None,
+                                extra_meta_contents=None):
         result = self._run_crasher_process_and_analyze(
             username, consent=consent,
             crasher_path=crasher_path,
@@ -512,6 +523,12 @@ class UserCrashTest(crash_test.CrashTest):
 
         if not consent:
             return
+
+        if extra_meta_contents:
+            with open(result['meta'], 'r') as f:
+                if extra_meta_contents not in f.read():
+                    raise error.TestFail('metadata did not contain "%s"' %
+                                         extra_meta_contents)
 
         if not result['minidump']:
             raise error.TestFail('crash reporter did not generate minidump')

@@ -49,6 +49,7 @@ suite:bvt-perbuild
 suite:bvt-tast-android-pfq
 suite:bvt-tast-chrome-pfq
 suite:bvt-tast-cq
+suite:bvt-tast-cq-example
 suite:bvt-tast-informational
 suite:bvt-tast-parallels-cq
 suite:bvt-tast-parallels-informational

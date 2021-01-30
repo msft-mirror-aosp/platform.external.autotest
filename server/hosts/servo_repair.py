@@ -400,53 +400,12 @@ class _CCDPowerDeliveryVerifier(hosts.Verifier):
     src --  servo in power delivery mode and passes power to the DUT.
     snk --  servo in normal mode and not passes power to DUT.
     We want to ensure that servo_v4_role is set to src.
-
-    TODO(xianuowang@) Convert it to verifier/repair action pair or remove it
-    once we collected enough metrics.
     """
-    # Change to use the  constant value in CrosHost if we move it to
-    # verifier/repair pair.
-    CHANGE_SERVO_ROLE_TIMEOUT = 180
-
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
         if host.get_servo().get('servo_v4_role') == 'snk':
-            logging.warning('The servo initlized with role snk while'
-                            ' supporting power delivery, resetting role'
-                            ' to src...')
-
-            try:
-                logging.info('setting power direction with retries')
-                # do not pass host since host does not inherit from CrosHost.
-                charge_manager = servo_charger.ServoV4ChargeManager(
-                    host=None,
-                    servo=host.get_servo(),
-                )
-                attempts = charge_manager.start_charging()
-                logging.info('setting power direction took %d tries', attempts)
-                # if control makes it here, we successfully changed the host
-                # direction
-                result = 'src'
-            except Exception as e:
-                logging.error(
-                    'setting power direction with retries failed %s',
-                    str(e),
-                )
-            finally:
-                time.sleep(self.CHANGE_SERVO_ROLE_TIMEOUT)
-
-            result = host.get_servo().get('servo_v4_role')
-            logging.debug('Servo_v4 role after reset: %s', result)
-
-            metrics_data = {
-                'hostname': host.get_dut_hostname() or 'unknown',
-                'status': 'success' if result == 'src' else 'failed',
-                'board': host.servo_board or 'unknown',
-                'model': host.servo_model or 'unknown'
-            }
-            metrics.Counter(
-                'chromeos/autotest/repair/verifier/power_delivery3'
-            ).increment(fields=metrics_data)
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'Power delivery not in src role.')
 
     def _is_applicable(self, host):
         return (host.is_in_lab() and
@@ -1035,6 +994,45 @@ class _FakedisconnectRepair(hosts.RepairAction):
         return 'Fake reconnect to DUT'
 
 
+class _PowerDeliveryRepair(hosts.RepairAction):
+    """Repair to check servo_v4_role for servos that support
+    power delivery feature(a.k.a power pass through).
+
+    There are currently two position of servo_v4_role, src and snk:
+    src --  servo in power delivery mode and passes power to the DUT.
+    snk --  servo in normal mode and not passes power to DUT.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        for x in range(10):
+            if host.get_servo().get('servo_v4_role') == 'snk':
+                try:
+                    host.get_servo().set_nocheck('servo_v4_role', 'snk')
+                    time.sleep(1)
+                    host.get_servo().set_nocheck('servo_v4_role', 'src')
+                    time.sleep(1)
+                except Exception as e:
+                    logging.debug(
+                            'setting power direction with retries failed %s',
+                            e)
+        if host.get_servo().get('servo_v4_role') == 'snk':
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'Cannot switch power delivery to the src role')
+        # Restart servod to re-initialize servos.
+        # In some cases if device did not receive power can block detection
+        # of servo components.
+        host.restart_servod()
+
+    def _is_type_c(self, host):
+        return (host.is_in_lab() and host.get_servo()
+                and host.get_servo().supports_built_in_pd_control())
+
+    @property
+    def description(self):
+        return 'ensure applicable servo is in "src" mode for power delivery'
+
+
 class _ECRebootRepair(hosts.RepairAction):
     """
     Reboot EC on DUT from servo.
@@ -1192,7 +1190,7 @@ def _servo_verifier_actions():
              ['servo_dut_connected']),
             (_CCDTestlabVerifier, 'servo_ccd_testlab', ['servo_cr50_console']),
             (_CCDPowerDeliveryVerifier, 'servo_power_delivery',
-             ['servo_dut_connected']),
+             ['servod_connection']),
     )
 
 
@@ -1207,6 +1205,10 @@ def _servo_repair_actions():
             'servo_pwr_button', 'servo_cr50_console', 'servo_cr50_low_sbu',
             'servo_cr50_off'
     ]
+    pd_triggers = [
+            'servo_power_delivery', 'servo_dut_connected',
+            'servo_hub_connected', 'servo_cr50_low_sbu'
+    ]
     return (
             (_DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
              ['servo_disk_space']),
@@ -1215,6 +1217,8 @@ def _servo_repair_actions():
             (_RestartServod, 'servod_restart', ['servo_ssh'],
              config + servod_deps),
             (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
+            (_PowerDeliveryRepair, 'servo_pd_recover', ['servod_connection'],
+             pd_triggers),
             (_FakedisconnectRepair, 'servo_fakedisconnect',
              ['servod_connection'], servod_deps),
             (_ToggleCCLineRepair, 'servo_cc', ['servod_connection'],

@@ -1649,8 +1649,9 @@ class Servo(object):
         # Lastly, one cannot really do anything without a plugged in charger.
         chg_port_mv = self.get('ppchg5_mv')
         if chg_port_mv < V4_CHG_ATTACHED_MIN_VOLTAGE_MV:
-            logging.warn('It appears that no charger is plugged into servo v4. '
-                         'Charger port voltage: %dmV', chg_port_mv)
+            logging.info(
+                    'It appears that no charger is plugged into servo v4. '
+                    'Charger port voltage: %dmV', chg_port_mv)
             return False
         logging.info('Charger port voltage: %dmV', chg_port_mv)
         return True

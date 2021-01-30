@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# pylint: disable=missing-docstring
+
 import mock
 import unittest
 
@@ -45,7 +47,7 @@ SERVO_VERIFY_DAG = (
         (servo_repair._CCDTestlabVerifier, 'servo_ccd_testlab',
          ['servo_cr50_console']),
         (servo_repair._CCDPowerDeliveryVerifier, 'servo_power_delivery',
-         ['servo_dut_connected']),
+         ['servod_connection']),
 )
 
 SERVO_REPAIR_ACTIONS = (
@@ -66,6 +68,11 @@ SERVO_REPAIR_ACTIONS = (
                 'servo_pwr_button', 'servo_cr50_console', 'servo_cr50_low_sbu',
                 'servo_cr50_off'
         ]),
+        (servo_repair._PowerDeliveryRepair, 'servo_pd_recover',
+         ['servod_connection'], [
+                 'servo_power_delivery', 'servo_dut_connected',
+                 'servo_hub_connected', 'servo_cr50_low_sbu'
+         ]),
         (servo_repair._FakedisconnectRepair, 'servo_fakedisconnect',
          ['servod_connection'], [
                  'servod_started', 'servo_topology', 'servod_connection',
@@ -89,7 +96,9 @@ SERVO_REPAIR_ACTIONS = (
 
 
 class ServoRepairUnittests(unittest.TestCase):
-    # pylint: disable=missing-docstring
+
+    # Allow to show all diff when compare tuple.
+    maxDiff = None
 
     def test_servo_repair_components(self):
         verify_dag = servo_repair._servo_verifier_actions()

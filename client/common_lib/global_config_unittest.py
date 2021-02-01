@@ -40,7 +40,16 @@ value_a: A
 random: 1
 wireless_ssid_1.2.3.4/24: ssid_1
 wireless_ssid_4.3.2.1/16: ssid_2
+
+[SECTION_F]
+value_7: %sexample
+value_8: %%sexample
+value_9: %%\(example\)
+value_10: %\(branch\)s
+value_11: %%\(branch\)s
+
 """
+
 
 moblab_config_ini_contents = """
 [SECTION_C]
@@ -183,6 +192,24 @@ class global_config_test(mox.MoxTestBase):
         val = self.conf.get_config_value("SECTION_A", "value_6", bool)
         self.assertEquals(val, False)
 
+
+    def test_special(self):
+        """Test converting special instances of '%, %%, %s, %%(), %()'."""
+        val7 = self.conf.get_config_value("SECTION_F", "value_7")
+        val8 = self.conf.get_config_value("SECTION_F", "value_8")
+        val9 = self.conf.get_config_value("SECTION_F", "value_9")
+        val10 = self.conf.get_config_value("SECTION_F", "value_10")
+        val11 = self.conf.get_config_value("SECTION_F", "value_11")
+
+        # This is the same parsing done within dev_server and other libs...
+        val10 = (val10.replace('\\', '') % {'branch': 'test_str'})
+        val11 = (val11.replace('\\', '') % {'branch': 'test_str'})
+
+        self.assertEquals(val7, '%sexample')
+        self.assertEquals(val8, '%sexample')
+        self.assertEquals(val9, '%\(example\)')
+        self.assertEquals(val10, 'test_str')
+        self.assertEquals(val11, 'test_str')
 
     def test_defaults(self):
         """Test default value works."""

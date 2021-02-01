@@ -128,6 +128,17 @@ EXT_ADV_MODELS = ['ezkinil', 'trembyle', 'drawcia', 'drawlat', 'drawman',
 #                            to check for suspend stability.
 SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
 
+KERNEL_LOG_LEVEL = {
+        'EMERG': 0,
+        'ALERT': 1,
+        'CRIT': 2,
+        'ERR': 3,
+        'WARNING': 4,
+        'NOTICE': 5,
+        'INFO': 6,
+        'DEBUG': 7
+}
+
 
 def method_name():
     """Get the method name of a class.
@@ -4538,6 +4549,15 @@ class BluetoothAdapterTests(test.test):
         s = self.bluetooth_facade.get_bt_usb_disconnect_str()
         if s:
             COMMON_FAILURES[s] = 'USB disconnect detected'
+
+    def clean_bluetooth_kernel_log(self, level_name):
+        """Remove Bluetooth kernel logs in /var/log/messages with equal or lower
+        prioity than level_name
+
+        @param level_name: name of the log level, e.x. 'INFO', 'DEBUG'...
+        """
+        self.bluetooth_facade.clean_bluetooth_kernel_log(
+                KERNEL_LOG_LEVEL[level_name])
 
     def run_once(self, *args, **kwargs):
         """This method should be implemented by children classes.

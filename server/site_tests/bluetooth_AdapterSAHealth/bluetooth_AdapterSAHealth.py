@@ -241,7 +241,11 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.sa_dbus_api_tests()
 
 
-    def run_once(self, host, num_iterations=1, test_name=None,
+    def run_once(self,
+                 host,
+                 num_iterations=1,
+                 args_dict=None,
+                 test_name=None,
                  flag='Quick Health'):
         """Run the batch of Bluetooth stand health tests
 

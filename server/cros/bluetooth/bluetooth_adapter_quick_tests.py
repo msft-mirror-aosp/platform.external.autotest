@@ -108,6 +108,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             return args_dict[key].lower() != 'false'
         return True
 
+    @staticmethod
+    def _get_clean_kernel_log_arguments(args_dict=None):
+        """Parse the clean_kernel_log argument"""
+        key = 'clean_kernel_log'
+        if args_dict is not None and key in args_dict:
+            return args_dict[key].upper()
+        return 'DEBUG'
+
     def quick_test_init(self,
                         host,
                         use_btpeer=True,
@@ -119,6 +127,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.start_browser = start_browser
         self.use_btpeer = use_btpeer
         update_btpeers = self._get_update_btpeers_arguments(args_dict)
+        clean_log = self._get_clean_kernel_log_arguments(args_dict)
         btpeer_args = []
         if args_dict is not None:
             btpeer_args = self.host.get_btpeer_arguments(args_dict)
@@ -135,6 +144,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                           str(e))
             raise error.TestFail('Unable to create bluetooth_facade')
 
+        if clean_log is not 'FALSE':
+            # Clean Bluetooth kernel logs in the DUT to prevent
+            # /var/log/messages occupying too much space
+            self.clean_bluetooth_kernel_log(clean_log)
 
         if self.use_btpeer:
             self.input_facade = self.factory.create_input_facade()

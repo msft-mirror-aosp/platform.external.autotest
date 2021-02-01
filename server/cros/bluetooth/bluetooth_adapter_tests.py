@@ -74,7 +74,7 @@ UNSUPPORTED_CHIPSETS = [
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)
 TRACE_LOCATION = os.path.join(BT_ADAPTER_TEST_PATH, 'input_traces/keyboard')
 
-RESUME_DELTA = 5
+RESUME_DELTA = -5
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
@@ -1026,6 +1026,7 @@ class BluetoothAdapterTests(test.test):
         """
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=suspend_time)
+        start_time = self.bluetooth_facade.get_device_time()
 
         # Give the system some time to enter suspend
         self.test_suspend_and_wait_for_sleep(
@@ -1035,7 +1036,8 @@ class BluetoothAdapterTests(test.test):
         # lenient with the resume time here
         self.test_wait_for_resume(boot_id,
                                   suspend,
-                                  resume_timeout=self.RESUME_TIME_SECS)
+                                  resume_timeout=suspend_time,
+                                  test_start_time=start_time)
 
 
     def reboot(self):
@@ -1926,10 +1928,17 @@ class BluetoothAdapterTests(test.test):
 
         device_type = self.host.get_board_type().lower()
         alias_format = '%s_[a-z0-9]{4}' % device_type
-        if not re.match(alias_format, alias.lower()):
-            return False
 
-        return True
+        self.results = {}
+
+        alias_was_correct = True
+        if not re.match(alias_format, alias.lower()):
+            alias_was_correct = False
+            logging.info('unexpected alias %s found', alias)
+            self.results['alias_found'] = alias
+
+        self.results['alias_was_correct'] = alias_was_correct
+        return all(self.results.values())
 
 
     # -------------------------------------------------------------------
@@ -4025,20 +4034,6 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_pause_discovery(self):
-        """Test pause discovery"""
-
-        return self.bluetooth_facade.pause_discovery()
-
-
-    @test_retry_and_log(False)
-    def test_unpause_discovery(self):
-        """Test unpause discovery"""
-
-        return self.bluetooth_facade.unpause_discovery()
-
-
-    @test_retry_and_log(False)
     def test_get_connection_info(self, address):
         """Test that connection info to device is retrievable."""
 
@@ -4071,14 +4066,16 @@ class BluetoothAdapterTests(test.test):
                              boot_id,
                              suspend,
                              resume_timeout,
+                             test_start_time,
                              resume_slack=RESUME_DELTA,
                              fail_on_timeout=False,
-                             fail_early_wake=False):
+                             fail_early_wake=True):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id
         @param suspend: Sub-process that does actual suspend call.
         @param resume_timeout: Expect device to resume in given timeout.
+        @param test_start_time: When was this test started? (device time)
         @param resume_slack: Allow some slack on resume timeout.
         @param fail_on_timeout: Fails if timeout is reached
         @param fail_early_wake: Fails if timeout isn't reached
@@ -4094,29 +4091,25 @@ class BluetoothAdapterTests(test.test):
             else:
                 return not fail_early_wake
 
-        def _check_suspend_attempt_or_raise(wait_from, wake_at):
+        def _check_suspend_attempt_or_raise(test_start, wake_at):
             """Make sure suspend attempt was recent or raise TestNA.
 
             If we're looking at a previous suspend attempt, it means the test
             didn't trigger a suspend properly (i.e. no powerd call)
 
-            @param wait_from: When we started waiting for resume.
+            @param test_start: When we started the test.
             @param wake_at: When powerd suspend resumed.
 
             @raises: error.TestNAError if found suspend occurred before we
-                     started waiting for resume.
+                     started the test.
             """
-            # If the last suspend attempt was before we started waiting and by
-            # more than timeout seconds, it's probably not a recent attempt.
-            # Make sure to compare the delta because if we fail suspend,
-            # self.suspend_and_wait_for_sleep will block until the suspend
-            # attempt is already complete so wake_at < wait_from is always true.
-            if wake_at < wait_from and (wait_from - wake_at) > timedelta(
-                    seconds=resume_timeout):
+            # If the last suspend attempt was before we started the test, it's
+            # probably not a recent attempt.
+            if wake_at < test_start:
                 raise error.TestNAError(
                         'No recent suspend attempt found. '
-                        'Start waiting at {} but last suspend ended at {}'.
-                        format(wait_from, wake_at))
+                        'Started test at {} but last suspend ended at {}'.
+                        format(test_start, wake_at))
 
             return True
 
@@ -4171,7 +4164,8 @@ class BluetoothAdapterTests(test.test):
                 # This is by design (we depend on the timeout to check for
                 # spurious wakeup).
                 success = _check_suspend_attempt_or_raise(
-                        start, end_suspend_at) and _check_retcode_or_raise(
+                        test_start_time,
+                        end_suspend_at) and _check_retcode_or_raise(
                                 retcode) and _check_timeout(actual_delta)
             else:
                 results['time to resume'] = network_delta.total_seconds()
@@ -4293,6 +4287,43 @@ class BluetoothAdapterTests(test.test):
 
         return percentage > 0
 
+    def _apply_new_adapter_alias(self, alias):
+        """ Sets new system alias and applies discoverable setting
+
+        @param alias: string alias to be applied to Adapter->Alias property
+        """
+
+        # Set Adapter's Alias property
+        self.bluetooth_facade.set_adapter_alias(alias)
+
+        # Set discoverable setting on
+        self.bluetooth_facade.set_discoverable(True)
+
+    @test_retry_and_log(False)
+    def test_set_adapter_alias(self, alias):
+        """ Validates that a new adapter alias is applied correctly
+
+        @param alias: string alias to be applied to Adapter->Alias property
+
+        @returns: True if the applied alias is properly applied in btmon trace
+        """
+
+        orig_alias = self.get_adapter_properties()['Alias']
+        self.bluetooth_le_facade = self.bluetooth_facade
+
+        # 1. Capture btmon logs around alias set operation
+        self._get_btmon_log(lambda: self._apply_new_adapter_alias(alias))
+
+        # 2. Verify that name appears in btmon trace with the following format:
+        # "Name (complete): Chromebook_BA0E" as appears in EIR data set
+        expected_alias_str = 'Name (complete): ' + alias
+        alias_found = self.bluetooth_facade.btmon_find(expected_alias_str)
+
+        # 3. Re-apply previous bluez alias as other tests expect default
+        self.bluetooth_facade.set_adapter_alias(orig_alias)
+
+        self.results = {'alias_found': alias_found}
+        return all(self.results.values())
 
     # -------------------------------------------------------------------
     # Autotest methods

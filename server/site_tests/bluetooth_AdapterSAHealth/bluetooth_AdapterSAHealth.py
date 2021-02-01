@@ -206,19 +206,16 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_dbus_stop_discovery_fail_discovery_not_in_progress()
         self.test_dbus_stop_discovery_fail_power_off()
 
-        self.test_dbus_pause_discovery_success()
-        self.test_dbus_pause_discovery_success_no_discovery_in_progress()
-        self.test_dbus_pause_discovery_fail_already_paused()
-        self.test_dbus_pause_discovery_fail_power_off()
-
-        self.test_dbus_unpause_discovery_success()
-        self.test_dbus_unpause_discovery_fail_without_pause()
-        self.test_dbus_unpause_discovery_fail_power_off()
-        self.test_dbus_unpause_discovery_fail_already_unpaused()
-
         self.test_dbus_get_supported_capabilities_success()
         self.test_dbus_get_supported_capabilities_success_power_off()
 
+    @test_wrapper('EIR Max Alias Size test')
+    def sa_eir_max_name_size_test(self):
+        """ Verify that the non-default max eir name size is used """
+        EIR_80_char_name = ('1234567890123456789012345678901234567890'
+                            '1234567890123456789012345678901234567890')
+
+        self.test_set_adapter_alias(EIR_80_char_name)
 
 
     @batch_wrapper('Stand Alone Health')

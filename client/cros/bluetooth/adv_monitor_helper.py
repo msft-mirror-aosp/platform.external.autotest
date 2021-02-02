@@ -34,6 +34,10 @@ class AdvMonitor(dbus.service.Object):
 
     """
 
+    # Refer doc/advertisement-monitor-api.txt for more info about unset values.
+    UNSET_RSSI = 127
+    UNSET_TIMEOUT = 0
+
     # Indexes of the Monitor object parameters in a monitor data list.
     MONITOR_TYPE = 0
     RSSI_FILTER = 1
@@ -91,10 +95,14 @@ class AdvMonitor(dbus.service.Object):
         """
         properties = dict()
         properties['Type'] = dbus.String(self.monitor_type)
-        properties['RSSIHighThreshold'] = dbus.Int16(self.rssi_h_thresh)
-        properties['RSSIHighTimeout'] = dbus.UInt16(self.rssi_h_timeout)
-        properties['RSSILowThreshold'] = dbus.Int16(self.rssi_l_thresh)
-        properties['RSSILowTimeout'] = dbus.UInt16(self.rssi_l_timeout)
+        if self.rssi_h_thresh != self.UNSET_RSSI:
+            properties['RSSIHighThreshold'] = dbus.Int16(self.rssi_h_thresh)
+        if self.rssi_h_timeout != self.UNSET_TIMEOUT:
+            properties['RSSIHighTimeout'] = dbus.UInt16(self.rssi_h_timeout)
+        if self.rssi_l_thresh != self.UNSET_RSSI:
+            properties['RSSILowThreshold'] = dbus.Int16(self.rssi_l_thresh)
+        if self.rssi_l_timeout != self.UNSET_TIMEOUT:
+            properties['RSSILowTimeout'] = dbus.UInt16(self.rssi_l_timeout)
         properties['Patterns'] = dbus.Array(self.patterns, signature='(yyay)')
         return {ADV_MONITOR_IFACE: properties}
 

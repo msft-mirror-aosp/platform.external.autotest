@@ -4579,7 +4579,7 @@ class BluetoothAdapterTests(test.test):
         raise NotImplementedError
 
 
-    def cleanup(self, test_state='END'):
+    def cleanup_bt_test(self, test_state='END'):
         """Clean up bluetooth adapter tests.
 
         @param test_state: string describing the requested clear is for
@@ -4624,3 +4624,9 @@ class BluetoothAdapterTests(test.test):
         self.devices = dict()
         for device_type in SUPPORTED_DEVICE_TYPES:
             self.devices[device_type] = list()
+
+    # Called only by test.test
+    def cleanup(self):
+        """Cleanup test.test instance"""
+
+        self.cleanup_bt_test()

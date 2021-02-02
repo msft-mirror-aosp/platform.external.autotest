@@ -67,7 +67,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         # Grab current device list for initialization
         connected_devices = self.devices
-        self.cleanup(test_state='MID')
+        self.cleanup_bt_test(test_state='MID')
 
         for device_type, device_list in connected_devices.items():
             for device in device_list:
@@ -473,7 +473,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.group_btpeers_type()
 
         # Close the connection between peers
-        self.cleanup(test_state='NEW')
+        self.cleanup_bt_test(test_state='NEW')
 
     @staticmethod
     def quick_test_batch_decorator(batch_name):

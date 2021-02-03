@@ -308,11 +308,13 @@ class TradefedTest(test.test):
         The value equals to the times each test case is run, which is determined
         by the intersection of the supported ABIs of the CTS/GTS bundle and that
         of the tested device."""
+        # This is only a conservative approximation. Some suites only run the
+        # primary ABI, so to be fully precise, those have to be counted as 1.
         arm_abis = set(('armeabi-v7a', 'arm64-v8a'))
         x86_abis = set(('x86', 'x86_64'))
-        if bundle == 'arm':
+        if bundle.startswith('arm'):
             tradefed_abis = arm_abis
-        elif bundle == 'x86':
+        elif bundle.startswith('x86'):
             tradefed_abis = x86_abis
         else:
             tradefed_abis = arm_abis | x86_abis

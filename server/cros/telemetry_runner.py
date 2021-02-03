@@ -102,7 +102,7 @@ class TelemetryRunnerFactory(object):
             # tests are executed on the devserver. Once this has reached, the
             # DevserverTelemetryRunner can be safely deprecated.
             determiner = random.randint(1, 100)
-            cutoff = 25
+            cutoff = 50
             if determiner <= cutoff:
                 return DroneTelemetryRunner(host, telemetry_on_dut)
             else:

@@ -3,23 +3,23 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.category-example'
+NAME = 'tast.category-crash'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:bvt-tast-cq-example'
+ATTRIBUTES = 'suite:bvt-tast-cq-crash'
 MAX_RESULT_SIZE_KB = 256 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
 DOC = '''
-Run the critical Tast tests in the "example" category.
+Run the critical Tast tests in the "crash" category.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
 
-This test runs Tast tests in the "example" category that are required to pass
+This test runs Tast tests in the "crash" category that are required to pass
 against a remote DUT. It fails if any individual Tast tests fail.
 
 See http://go/tast-failures for information about investigating failures.
@@ -31,7 +31,7 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              '!informational && '
-                             '"name:example.*"'
+                             '"name:crash.*"'
                              ')'],
                  ignore_test_failures=False, max_run_sec=1800,
                  command_args=args,

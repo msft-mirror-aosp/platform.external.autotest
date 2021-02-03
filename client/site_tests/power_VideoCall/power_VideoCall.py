@@ -16,7 +16,7 @@ class power_VideoCall(power_test.power_Test):
     """class for power_VideoCall test."""
     version = 1
 
-    video_url = 'http://crospower.page.link/power_VideoCall'
+    video_url = 'https://storage.googleapis.com/chrome-power/autotest/power_VideoCall/power_VideoCall.html'
     doc_url = 'http://doc.new'
 
     def initialize(self, seconds_period=20., pdash_note='',
@@ -56,21 +56,15 @@ class power_VideoCall(power_test.power_Test):
             tab_left = cr.browser.tabs[0]
             tab_left.Activate()
             keys.press_key('alt+[')
-            logging.info('Navigating left window to %s', self.video_url)
-            tab_left.Navigate(self.video_url)
-            tab_left.WaitForDocumentReadyStateToBeComplete()
 
-            # We need to make sure that default camera preset was init properly
-            # before changing preset or else MediaRecorder won't get torn down
-            # properly. So capture the init time with the default preset and
-            # then switch to appropriate preset later.
+            # Append preset to self.video_url for camera preset.
+            video_url = '%s?preset=%s' % (self.video_url, preset)
+            logging.info('Navigating left window to %s', video_url)
+            tab_left.Navigate(video_url)
+            tab_left.WaitForDocumentReadyStateToBeComplete()
             video_init_time = power_status.VideoFpsLogger.time_until_ready(
                               tab_left, num_video=5)
             self.keyvals['video_init_time'] = video_init_time
-            tab_left.EvaluateJavaScript('setPreset("%s")' % preset)
-
-            # Wait for camera to init for the new preset.
-            power_status.VideoFpsLogger.time_until_ready(tab_left, num_video=5)
 
             # Open Google Doc on right half
             logging.info('Navigating right window to %s', self.doc_url)

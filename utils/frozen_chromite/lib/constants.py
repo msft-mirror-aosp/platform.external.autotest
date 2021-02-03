@@ -11,16 +11,16 @@ import itertools
 import os
 
 def _FindSourceRoot():
-  """Try and find the root check out of the chromiumos tree"""
-  source_root = path = os.path.realpath(os.path.join(
-      os.path.abspath(__file__), '..', '..', '..'))
-  while True:
-    if os.path.isdir(os.path.join(path, '.repo')):
-      return path
-    elif path == '/':
-      break
-    path = os.path.dirname(path)
-  return source_root
+    """Try and find the root check out of the chromiumos tree"""
+    source_root = path = os.path.realpath(
+            os.path.join(os.path.abspath(__file__), '..', '..', '..'))
+    while True:
+        if os.path.isdir(os.path.join(path, '.repo')):
+            return path
+        elif path == '/':
+            break
+        path = os.path.dirname(path)
+    return source_root
 
 
 SOURCE_ROOT = _FindSourceRoot()
@@ -649,10 +649,6 @@ HWTEST_STATUES_NOT_PASSED = frozenset([HWTEST_STATUS_FAIL,
                                        HWTEST_STATUS_ABORT,
                                        HWTEST_STATUS_OTHER])
 
-# Define HWTEST subsystem logic constants.
-SUBSYSTEMS = 'subsystems'
-SUBSYSTEM_UNUSED = 'subsystem_unused'
-
 # Build messages
 MESSAGE_TYPE_IGNORED_REASON = 'ignored_reason'
 MESSAGE_TYPE_ANNOTATIONS_FINALIZED = 'annotations_finalized'
@@ -769,15 +765,17 @@ PATH_TO_CHROME_CHROMEOS_OWNERS = 'chromeos/OWNERS'
 # Cache constants.
 COMMON_CACHE = 'common'
 
-# Artifact constants.
 def _SlashToUnderscore(string):
-  return string.replace('/', '_')
+    """Artifact constants."""
+    return string.replace('/', '_')
 
-# GCE tar ball constants.
+
 def ImageBinToGceTar(image_bin):
-  assert image_bin.endswith('.bin'), ('Filename %s does not end with ".bin"' %
-                                      image_bin)
-  return '%s_gce.tar.gz' % os.path.splitext(image_bin)[0]
+    """GCE tar ball constants."""
+    assert image_bin.endswith('.bin'), (
+            'Filename %s does not end with ".bin"' % image_bin)
+    return '%s_gce.tar.gz' % os.path.splitext(image_bin)[0]
+
 
 RELEASE_BUCKET = 'gs://chromeos-releases'
 TRASH_BUCKET = 'gs://chromeos-throw-away-bucket'

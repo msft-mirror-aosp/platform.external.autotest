@@ -11,8 +11,9 @@ TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
 
 DOC = """
-This test uses netperf to measure the maximal receiving and transmitting
-throughput on a DUT with a network based on WPA2/WPA3 mixed and PMF enabled.
+This test uses netperf to measure and verify the maximal receiving and
+transmitting throughput on a DUT with a network based on WPA2/WPA3 mixed and PMF
+enabled.
 """
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
@@ -43,13 +44,13 @@ def run(machine):
     host = hosts.create_host(machine)
     netperf_configs = [
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM), 0),
+                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM), 110),
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS), 0),
+                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS), 100),
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM), 0),
+                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM), 260),
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS), 0),
+                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS), 130),
     ]
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,

@@ -24,8 +24,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Internal download locations for android vts bundles.
 _INTERNAL_VTS = 'gs://chromeos-arc-images/vts/'
 _VTS_URI = {
-        'arm': _INTERNAL_VTS + 'android-vts-6722941-linux_x86-arm.zip',
-        'x86': _INTERNAL_VTS + 'android-vts-6722941-linux_x86-x86.zip',
+        'arm64': _INTERNAL_VTS + 'android-vts-6961477-arm64.zip',
+        'x86_64': _INTERNAL_VTS + 'android-vts-6961477-x86_64.zip',
 }
 
 
@@ -52,6 +52,9 @@ class cheets_VTS_R(tradefed_test.TradefedTest):
         return cmd
 
     def _get_default_bundle_url(self, bundle):
+        return _VTS_URI[bundle]
+
+    def _get_latest_bundle_url(self, bundle):
         return _VTS_URI[bundle]
 
     def _get_tradefed_base_dir(self):

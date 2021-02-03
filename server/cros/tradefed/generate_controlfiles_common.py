@@ -208,6 +208,8 @@ def get_bundle_abi(filename):
         return 'arm64'
     if filename.endswith('x86.zip'):
         return 'x86'
+    if filename.endswith('x86_64.zip'):
+        return 'x86_64'
 
     assert(CONFIG['TRADEFED_CTS_COMMAND'] =='gts'), 'Only GTS has empty ABI'
     return ''

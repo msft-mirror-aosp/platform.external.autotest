@@ -1578,6 +1578,7 @@ class BluetoothAdapterAdvMonitorTests(
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
                 [0, 0x19, [0xc1, 0x03]],
+                [0, 0x09, 'DUMMY_DATA_1'],
         ])
         monitor1.update_rssi([-60, 3, -80, 3])
 
@@ -1586,6 +1587,7 @@ class BluetoothAdapterAdvMonitorTests(
         monitor2.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
                 [0, 0x19, [0xc1, 0x03]],
+                [0, 0x09, 'DUMMY_DATA_2'],
         ])
         monitor2.update_rssi([-60, 3, -80, 3])
 
@@ -1607,6 +1609,7 @@ class BluetoothAdapterAdvMonitorTests(
         monitor3.update_type('or_patterns')
         monitor3.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
+                [0, 0x09, 'DUMMY_DATA_3'],
         ])
         monitor3.update_rssi([-60, 3, -80, 3])
 
@@ -1614,6 +1617,7 @@ class BluetoothAdapterAdvMonitorTests(
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
+                [0, 0x09, 'DUMMY_DATA_4'],
         ])
         monitor4.update_rssi([-60, 10, -80, 10])
 
@@ -1754,22 +1758,34 @@ class BluetoothAdapterAdvMonitorTests(
         # Add monitors in both apps.
         monitor1 = TestMonitor(app1)
         monitor1.update_type('or_patterns')
-        monitor1.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
+        monitor1.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+                [0, 0x09, 'DUMMY_DATA_1'],
+        ])
         monitor1.update_rssi([-60, 3, -80, 3])
 
         monitor2 = TestMonitor(app1)
         monitor2.update_type('or_patterns')
-        monitor2.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
+        monitor2.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+                [0, 0x09, 'DUMMY_DATA_2'],
+        ])
         monitor2.update_rssi([-60, 10, -80, 10])
 
         monitor3 = TestMonitor(app2)
         monitor3.update_type('or_patterns')
-        monitor3.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
+        monitor3.update_patterns([
+                [0, 0x03, [0x12, 0x18]],
+                [0, 0x09, 'DUMMY_DATA_3'],
+        ])
         monitor3.update_rssi([-60, 3, -80, 3])
 
         monitor4 = TestMonitor(app2)
         monitor4.update_type('or_patterns')
-        monitor4.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
+        monitor4.update_patterns([
+                [0, 0x19, [0xc2, 0x03]],
+                [0, 0x09, 'DUMMY_DATA_4'],
+        ])
         monitor4.update_rssi([-60, 15, -80, 15])
 
         # Activate should get invoked.

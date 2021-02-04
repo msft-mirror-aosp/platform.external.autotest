@@ -31,8 +31,7 @@ class TLSClient(object):
     def __exit__(self, *exc):
         self.close()
 
-    def run_cmd(self, cmd, stdout_tee=None, stderr_tee=None, timeout=120,
-                ignore_timeout=False):
+    def run_cmd(self, cmd, stdout_tee=None, stderr_tee=None, timeout=120):
         """
         Run a command on the host configured during init.
 
@@ -41,7 +40,7 @@ class TLSClient(object):
             respective streams to
         @param timeout int(seconds): how long to allow the command to run
             before forcefully killing it.
-        @param ignore_timeout: if True, do not raise err on timeouts.
+
         """
         res = utils.CmdResult(command=cmd)
         try:
@@ -51,8 +50,6 @@ class TLSClient(object):
             self._run(cmd, stdout_tee, stderr_tee, res, timeout)
         except grpc.RpcError as e:
             if e.code().name == "DEADLINE_EXCEEDED":
-                if ignore_timeout:
-                    return None
                 raise error.CmdTimeoutError(
                     cmd, res,
                     "Command(s) did not complete within %d seconds" % timeout)

@@ -1203,7 +1203,7 @@ def _servo_repair_actions():
             'servod_started', 'servo_topology', 'servod_connection',
             'servod_control', 'servo_dut_connected', 'servo_hub_connected',
             'servo_pwr_button', 'servo_cr50_console', 'servo_cr50_low_sbu',
-            'servo_cr50_off'
+            'servo_cr50_off', 'servo_power_delivery'
     ]
     pd_triggers = [
             'servo_power_delivery', 'servo_dut_connected',

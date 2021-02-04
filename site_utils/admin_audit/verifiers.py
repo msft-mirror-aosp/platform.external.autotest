@@ -8,13 +8,13 @@ import logging
 import base
 import constants
 import servo_updater
-import re
 
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as client_utils
 from autotest_lib.server.cros.storage import storage_validate as storage
 from autotest_lib.server.cros.servo.keyboard import servo_keyboard_flasher
+from autotest_lib.server.cros.repair import mac_address_helper
 from autotest_lib.site_utils.admin_audit import rpm_validator
 
 try:
@@ -273,153 +273,11 @@ class VerifyDUTMacAddress(base._BaseDUTVerifier):
     address on servod side to better debugging.
     """
 
-    # HUB and NIC VID/PID.
-    # Values presented as the string of the hex without 0x to match
-    # representation in sysfs (idVendor/idProduct).
-    HUB_VID = '04b4'
-    HUB_PID = '6502'
-    NIC_VID = '0bda'
-    NIC_PID = '8153'
-
-    # Regex to check mac address format.
-    # eg: f4:f5:e8:50:e9:45
-    RE_MACADDR = re.compile('^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
-
     def _verify(self):
         if not self.host_is_up():
             raise base.AuditError('Host is down.')
         if not self.servo_is_up():
             raise base.AuditError('Servo host is down.')
-        host = self.get_host()
-        servo = host.servo
-        if not host._servo_host.is_labstation():
-            logging.info('Only servo_v4 has NIC; '
-                         'Skipping the action')
-            return
-        if not servo.has_control('macaddr'):
-            logging.info('"macaddr" control not supported;'
-                         'Skipping the action')
-            return
 
-        # Path to the NIC has to be located in the HUB.
-        # eg.
-        # HUB: /sys/bus/usb/devices/1-1
-        # NIC: /sys/bus/usb/devices/1-1.1
-        hub_path = self._get_device_path(None, self.HUB_VID, self.HUB_PID)
-        if not hub_path or hub_path == '.':
-            self._send_metrics()
-            raise base.AuditError('The servo_v4 HUB not detected from DUT.')
-        logging.info('Path to the servo_v4 HUB device: %s', hub_path)
-        nic_path = self._get_device_path(hub_path, self.NIC_VID, self.NIC_PID)
-        if not nic_path or nic_path == '.':
-            self._send_metrics()
-            raise base.AuditError(
-                    'The servo_v4 NIC not detected in HUB folder.')
-        logging.info('Path to the servo_v4 NIC device: %s', nic_path)
-        if hub_path == nic_path or not nic_path.startswith(hub_path):
-            self._send_metrics()
-            raise base.AuditError(
-                    'The servo_v4 NIC was detect out of servo_v4 HUB')
-
-        macaddr = self._get_mac_address(host, nic_path)
-        if not macaddr:
-            self._send_metrics()
-            raise base.AuditError('Failed to extract mac address from host.')
-
-        cached_mac = self._get_cached_mac_address()
-        if not cached_mac or macaddr != cached_mac:
-            try:
-                servo.set('macaddr', macaddr)
-                logging.info('Successfully updated the servo "macaddr"!')
-            except error.TestFail as e:
-                logging.debug('Fail to update macaddr value; %s', e)
-                self._send_metrics()
-                raise base.AuditError('Fail to update the "macaddr" value!')
-        else:
-            logging.info('The servo "macaddr" doe not need update.')
-
-    def _get_cached_mac_address(self):
-        try:
-            return self.get_host().servo.get('macaddr')
-        except error.TestFail as e:
-            logging.error('(Non-critical) Fail to get macaddr: %s', e)
-            return None
-
-    def _get_mac_address(self, host, nic_path):
-        cmd = r'find %s/ | grep /net/ | grep /address' % nic_path
-        res = host.run(cmd,
-                       timeout=30,
-                       ignore_status=True,
-                       ignore_timeout=True)
-        if not res:
-            logging.info('Timeout during retriving NIC address files.')
-            return None
-        addrs = res.stdout.splitlines()
-        if not addrs or len(addrs) == 0:
-            logging.info('No NIC address file found.')
-            return None
-        if len(addrs) > 1:
-            logging.info('More than one NIC address file found.')
-            return None
-        logging.info('Found NIC address file: %s', addrs[0])
-        cmd = r'cat %s' % addrs[0]
-        res = host.run(cmd,
-                       timeout=30,
-                       ignore_status=True,
-                       ignore_timeout=True)
-        if not res:
-            logging.info('Timeout during attemp read NIC address file: %s',
-                         addrs[0])
-            return None
-        mac_addr = res.stdout.strip()
-        if not self.RE_MACADDR.match(mac_addr):
-            logging.info('incorrect format of the mac address: %s', mac_addr)
-            return None
-        logging.info('Servo_v4 NIC mac address from DUT side: %s', mac_addr)
-        return mac_addr
-
-    def _get_device_path(self, base_path, vid, pid):
-        """Find a device by VID/PID under particular path.
-
-        1) Get path to the unique idVendor file with VID
-        2) Get path to the unique idProduct file with PID
-        3) Get directions of both file and compare them
-
-        @param base_path:   Path to the directory where to look for the device.
-        @param vid:         Vendor ID of the looking device.
-        @param pid:         Product ID of the looking device.
-
-        @returns: path to the folder of the device
-        """
-        host = self.get_host()
-        def _run(cmd):
-            res = host.run(cmd, timeout=30,
-                           ignore_status=True,
-                           ignore_timeout=True)
-            l = res.stdout.splitlines()
-            if not l or len(l) != 1:
-                return None
-            return l[0]
-
-        if not base_path:
-            base_path = '/sys/bus/usb/devices/*/'
-        else:
-            base_path += '*/'
-        cmd_template = 'grep -l %s $(find %s -maxdepth 1 -name %s)'
-        vid_path = _run(cmd_template % (vid, base_path, 'idVendor'))
-        if not vid_path:
-            return None
-
-        pid_path = _run(cmd_template % (pid, base_path, 'idProduct'))
-        if not pid_path:
-            return None
-
-        # check if both files locates in the same folder
-        return _run('LC_ALL=C comm -12 <(dirname %s) <(dirname %s)' %
-                    (vid_path, pid_path))
-
-    def _send_metrics(self):
-        host = self.get_host()
-        data = {'host': host.hostname, 'status': STATUS_FAIL}
-        metrics.Counter(
-            'chromeos/autotest/audit/servo_macaddr').increment(fields=data)
+        helper = mac_address_helper.MacAddressHelper()
+        helper.update_if_needed(self.get_host())

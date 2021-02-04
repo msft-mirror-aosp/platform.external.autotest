@@ -24,7 +24,7 @@ class firmware_Cr50Keygen(FirmwareTest):
     # get an idea for how the lab devices are operating.
     # Raise an error if the average RSA key generation time takes longer than
     # this threshold in ms.
-    RSA_AVG_THRESHOLD = 5000
+    RSA_AVG_THRESHOLD = 8000
     # Raise an error if the max RSA key generation time takes longer than this
     # threshold in ms.
     RSA_MAX_THRESHOLD = 30000

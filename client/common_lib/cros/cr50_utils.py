@@ -461,8 +461,9 @@ def GetBoardIdInfoString(board_id_info, symbolic=False):
         (board_id|symbolic_board_id):(mask|board_id_inv):flags. Will return
         None if if the given board id info is empty or is not valid
     """
+    # TODO(mruthven): remove unicode check after conversion to python3.
     # Convert board_id_info to a tuple if it's a string.
-    if isinstance(board_id_info, str):
+    if isinstance(board_id_info, str) or isinstance(board_id_info, unicode):
         board_id_info = GetBoardIdInfoTuple(board_id_info)
 
     if not board_id_info:

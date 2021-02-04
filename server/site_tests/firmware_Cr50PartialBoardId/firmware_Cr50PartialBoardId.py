@@ -71,7 +71,8 @@ class firmware_Cr50PartialBoardId(Cr50Test):
         """Returns a string representation of the board id tuple."""
         bid_str_fields = []
         for field in bid:
-            if isinstance(field, str):
+            # TODO(mruthven): remove unicode check after switch to python3
+            if isinstance(field, str) or isinstance(field, unicode):
                 bid_str_fields.append(field)
             elif isinstance(field, int):
                 bid_str_fields.append(hex(field))

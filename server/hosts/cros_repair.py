@@ -24,6 +24,7 @@ from autotest_lib.server import afe_utils
 from autotest_lib.server import crashcollect
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.cros.servo.keyboard import servo_keyboard_flasher
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
@@ -841,6 +842,33 @@ class DUTStorageVerifier(hosts.Verifier):
         return 'Ensure DUT storage SMART information is in good state.'
 
 
+class ServoKeyboardMapVerifier(hosts.Verifier):
+    """Not critical verify to flash servo keyboard for the host.
+
+    Check if host support servo keyboard and update if firmware is not present.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        try:
+            flasher = servo_keyboard_flasher.ServoKeyboardMapFlasher()
+            if flasher.is_image_supported(host):
+                flasher.update(host)
+        except Exception as e:
+            logging.debug('(Not critical) %s', e)
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'Fail to verify/update servo keyboard map on the host.')
+
+    def _is_applicable(self, host):
+        if host.servo:
+            return True
+        return False
+
+    @property
+    def description(self):
+        return 'Verify and update servo keyboard map.'
+
+
 class _ResetRepairAction(hosts.RepairAction):
     """Common handling for repair actions that reset a DUT."""
 
@@ -1288,6 +1316,7 @@ def _cros_verify_extended_dag():
     return (
             (StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
             (DUTStorageVerifier, 'storage', ('ssh', )),
+            (ServoKeyboardMapVerifier, 'dut_servo_keyboard', ('ssh', )),
     )
 
 

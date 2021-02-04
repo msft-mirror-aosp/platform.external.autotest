@@ -177,11 +177,6 @@ class TradefedTest(test.test):
                 bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
-    def postprocess(self):
-        """Postprocess: synchronous offloads and performance data"""
-        self._output_perf()
-        self._prepare_synchronous_offloads()
-
     def _output_perf(self):
         """Output performance values."""
         base = self._default_tradefed_base_dir()
@@ -230,6 +225,13 @@ class TradefedTest(test.test):
 
     def cleanup(self):
         """Cleans up any dirtied state."""
+
+        # We also run a postprocess result and performance data
+        # offloading here so that WARN and FAIL runs also run the
+        # steps. postprocess() method only runs for PASSing jobs.
+        self._prepare_synchronous_offloads()
+        self._output_perf()
+
         try:
             # Clean up test data that may not be deletable on previous
             # ChromeOS versions. See b/170276268.

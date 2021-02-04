@@ -5,18 +5,16 @@
 
 import logging
 
-import common
 import base
 import constants
 import servo_updater
-import time
-import os
 import re
 
+import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as client_utils
 from autotest_lib.server.cros.storage import storage_validate as storage
-from autotest_lib.server.cros import servo_keyboard_utils
+from autotest_lib.server.cros.servo.keyboard import servo_keyboard_flasher
 from autotest_lib.site_utils.admin_audit import rpm_validator
 
 try:
@@ -256,12 +254,6 @@ class VerifyRPMConfig(base._BaseDUTVerifier):
 class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):
     """Flash the keyboard map on servo."""
 
-    _ATMEGA_RESET_DELAY = 0.2
-    _USB_PRESENT_DELAY = 1
-
-    # Command to detect LUFA Keyboard Demo by VID.
-    LSUSB_CMD = 'lsusb -d %s:' % servo_keyboard_utils.ATMEL_USB_VENDOR_ID
-
     def _verify(self):
         if not self.host_is_up():
             raise base.AuditError('Host is down')
@@ -269,88 +261,9 @@ class FlashServoKeyboardMapVerifier(base._BaseDUTVerifier):
             raise base.AuditError('Servo not initialized')
 
         host = self.get_host()
-        servo = host.servo
-        status = STATUS_FAIL
-        try:
-            logging.info('Starting flashing the keyboard map.')
-            status = self._flash_keyboard_map(host, servo)
-            logging.info('Set status: %s', status)
-            if status == STATUS_FAIL:
-                self._send_metrics()
-        except Exception as e:
-            # The possible errors is timeout of commands.
-            logging.info('Failed to flash servo keyboard map; %s', e)
-            self._send_metrics()
-        finally:
-            # Restore the default settings.
-            # Select the chip on the USB mux unless using Servo V4
-            if 'servo_v4' not in servo.get_servo_version():
-                servo.set('usb_mux_sel4', 'on')
-        if status == STATUS_FAIL:
-            raise base.AuditError('Failed to flash keyboard map on servo')
-
-    def _flash_keyboard_map(self, host, servo):
-        if host.run('hash dfu-programmer', ignore_status=True).exit_status:
-            logging.info(
-                'The image is too old that does not have dfu-programmer.')
-            return STATUS_SKIPPED
-
-        servo.set_nocheck('init_usb_keyboard', 'on')
-
-        if self._is_keyboard_present(host):
-            logging.info('Already using the new keyboard map.')
-            return STATUS_SUCCESS
-
-        # Boot AVR into DFU mode by enabling the HardWareBoot mode
-        # strapping and reset.
-        servo.set_get_all(['at_hwb:on',
-                            'atmega_rst:on',
-                            'sleep:%f' % self._ATMEGA_RESET_DELAY,
-                            'atmega_rst:off',
-                            'sleep:%f' % self._ATMEGA_RESET_DELAY,
-                            'at_hwb:off'])
-
-        time.sleep(self._USB_PRESENT_DELAY)
-        result = host.run(self.LSUSB_CMD, timeout=30).stdout.strip()
-        if not 'Atmel Corp. atmega32u4 DFU bootloader' in result:
-            logging.info('Not an expected chip: %s', result)
-            return STATUS_FAIL
-
-        # Update the keyboard map.
-        bindir = os.path.dirname(os.path.realpath(__file__))
-        local_path = os.path.join(bindir, 'data', 'keyboard.hex')
-        host.send_file(local_path, '/tmp')
-        logging.info('Updating the keyboard map...')
-        host.run('dfu-programmer atmega32u4 erase --force', timeout=120)
-        host.run('dfu-programmer atmega32u4 flash /tmp/keyboard.hex',
-                 timeout=120)
-
-        # Reset the chip.
-        servo.set_get_all(['atmega_rst:on',
-                            'sleep:%f' % self._ATMEGA_RESET_DELAY,
-                            'atmega_rst:off'])
-        if self._is_keyboard_present(host):
-            logging.info('Update successfully!')
-            return STATUS_SUCCESS
-
-        logging.info('Update failed!')
-        return STATUS_FAIL
-
-    def _is_keyboard_present(self, host):
-        # Check the result of lsusb.
-        time.sleep(self._USB_PRESENT_DELAY)
-        result = host.run(self.LSUSB_CMD, timeout=30).stdout.strip()
-        logging.info('got the result: %s', result)
-        if ('LUFA Keyboard Demo' in result and
-            servo_keyboard_utils.is_servo_usb_wake_capable(host)):
-            return True
-        return False
-
-    def _send_metrics(self):
-        host = self.get_host()
-        data = {'host': host.hostname, 'status': STATUS_FAIL}
-        metrics.Counter(
-            'chromeos/autotest/audit/servo_keyboard').increment(fields=data)
+        flasher = servo_keyboard_flasher.ServoKeyboardMapFlasher()
+        if flasher.is_image_supported(host):
+            flasher.update(host)
 
 
 class VerifyDUTMacAddress(base._BaseDUTVerifier):

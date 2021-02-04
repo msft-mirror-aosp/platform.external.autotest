@@ -879,7 +879,7 @@ class BluetoothAdapterAdvMonitorTests(
         return all(self.results.values())
 
     @test_retry_and_log(False)
-    def test_interleaving_suspend_resume(self):
+    def test_interleaving_suspend_resume(self, expect_true):
         """ Test for checking if kernel paused interleave scan during system
             suspended.
 
@@ -908,15 +908,19 @@ class BluetoothAdapterAdvMonitorTests(
         logging.debug(records)
         logging.debug(cancel_event)
 
-        # Currently resume time is not very reliable. It is likely the actual
-        # time in sleeping is less than expect_suspend_time.
-        # Check the interleave scan paused for at least one cycle long instead.
-        self.results = self.check_records_paused(records, cancel_event,
-                                                 interleave_period, True)
+        if not expect_true:
+            self.results = {'No records': len(records) == 0}
+        else:
+            # Currently resume time is not very reliable. It is likely the
+            # actual time in sleeping is less than expect_suspend_time.
+            # Check the interleave scan paused for at least one cycle long
+            # instead.
+            self.results = self.check_records_paused(records, cancel_event,
+                                                     interleave_period, True)
         return all(self.results.values())
 
     @test_retry_and_log(False)
-    def test_interleaving_active_scan_cycle(self):
+    def test_interleaving_active_scan_cycle(self, expect_true):
         """ Test for checking if kernel paused interleave scan during active
             scan.
 
@@ -940,12 +944,15 @@ class BluetoothAdapterAdvMonitorTests(
         logging.debug(records)
         logging.debug(cancel_event)
 
-        # BlueZ pauses discovery for every DISCOVERY_DURATION then restarts it
-        # 5 seconds later. Interleave scan also get restarted during the paused
-        # time.
-        self.results = self.check_records_paused(records, cancel_event,
-                                                 self.DISCOVERY_DURATION,
-                                                 False)
+        if not expect_true:
+            self.results = {'No records': len(records) == 0}
+        else:
+            # BlueZ pauses discovery for every DISCOVERY_DURATION then restarts
+            # it 5 seconds later. Interleave scan also get restarted during the
+            # paused time.
+            self.results = self.check_records_paused(records, cancel_event,
+                                                     self.DISCOVERY_DURATION,
+                                                     False)
         self.test_stop_discovery()
         return all(self.results.values())
 
@@ -1837,6 +1844,15 @@ class BluetoothAdapterAdvMonitorTests(
         # cycles to collect logs for tests expect no interleave scan
         EXPECT_FALSE_TEST_CYCLE = 3
 
+        supported_features = self.read_supported_features()
+
+        if 'controller-patterns' in supported_features:
+            # For device supporting hardware filtering, software interleave
+            # scan shall not be used.
+            sw_interleave_scan = False
+        else:
+            sw_interleave_scan = True
+
         # Create a test app instance.
         app1 = self.create_app()
 
@@ -1885,18 +1901,18 @@ class BluetoothAdapterAdvMonitorTests(
         device.AdapterPowerOff()
         # Make sure the peer is disconnected
         self.test_device_is_not_connected(device.address)
-        self.test_interleaving_state(True)
+        self.test_interleaving_state(sw_interleave_scan)
 
         # Interleaving with allowlist should get paused during active scan
-        self.test_interleaving_active_scan_cycle()
+        self.test_interleaving_active_scan_cycle(sw_interleave_scan)
 
         # Interleaving with allowlist should get resumed after stopping scan
-        self.test_interleaving_state(True)
+        self.test_interleaving_state(sw_interleave_scan)
 
         # Interleaving with allowlist should get paused during system suspend,
         # get resumed after system awake
-        self.test_interleaving_suspend_resume()
-        self.test_interleaving_state(True)
+        self.test_interleaving_suspend_resume(sw_interleave_scan)
+        self.test_interleaving_state(sw_interleave_scan)
 
         self.test_remove_monitor(monitor1)
         self.test_interleaving_state(False, cycles=EXPECT_FALSE_TEST_CYCLE)

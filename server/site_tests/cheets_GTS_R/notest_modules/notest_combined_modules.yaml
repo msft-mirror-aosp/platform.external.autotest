@@ -1,4 +1,5 @@
 GtsIncrementalInstall: [all]
+GtsInstallerV2: [all]
 GtsMemory: [all]
 GtsNoPermission: [all]
 GtsSample: [all]

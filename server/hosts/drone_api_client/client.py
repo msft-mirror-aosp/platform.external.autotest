@@ -31,11 +31,7 @@ class TLSClient(object):
     def __exit__(self, *exc):
         self.close()
 
-    def run_cmd(self,
-                cmd,
-                timeout=120,
-                stdout_tee=None,
-                stderr_tee=None,
+    def run_cmd(self, cmd, stdout_tee=None, stderr_tee=None, timeout=120,
                 ignore_timeout=False):
         """
         Run a command on the host configured during init.

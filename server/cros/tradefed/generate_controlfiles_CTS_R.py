@@ -221,7 +221,6 @@ CONFIG['EXTRA_MODULES'] = {
                         'CtsWindowManager.A',
                         'CtsWindowManager.C',
                         'CtsWindowManager.D',
-                        'CtsWindowManager.Ensure',
                         'CtsWindowManager.F',
                         'CtsWindowManager.L',
                         'CtsWindowManager.M',
@@ -584,10 +583,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                'CtsWindowManagerDeviceTestCases android.server.wm.DragDropTest',
                '--include-filter',
                'CtsWindowManagerDeviceTestCases android.server.wm.DreamManagerServiceTests',
-        ],
-        'CtsWindowManager.Ensure': [
-               '--include-filter',
-               'CtsWindowManagerDeviceTestCases android.server.wm.EnsureBarContrastTest',
         ],
         'CtsWindowManager.F': [
                '--include-filter',

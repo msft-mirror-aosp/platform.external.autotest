@@ -108,7 +108,7 @@ SUITES = {
                 'label':
                 'retention',
                 'tests': [
-                        CHECK_SETUP, BASE_BEFORE, SOAK, {
+                        CHECK_SETUP, BASE_BEFORE, SOAK, BASE_AFTER, {
                                 'test': 'hardware_StorageStress',
                                 'args': {
                                         'tag': 'suspend',
@@ -117,41 +117,41 @@ SUITES = {
                                         'suspend_duration': 12 * HOUR_IN_SECS,
                                         'duration': 7 * DAY_IN_SECS
                                 },
-                                'priority': 80,
+                                'priority': 60,
                                 'length': 'long',
                                 'ssp': True
-                        }, BASE_AFTER
+                        }
                 ]
         }, {
                 'label':
                 'suspend',
                 'tests': [
-                        BASE_BEFORE, SOAK, {
+                        BASE_BEFORE, SOAK, BASE_AFTER, {
                                 'test': 'hardware_StorageQualSuspendStress',
                                 'args': {
                                         'tag': 'suspend',
                                         'duration': 4 * HOUR_IN_SECS
                                 },
                                 'iterations': 7 * DAY_IN_HOURS / 4,
-                                'priority': 80,
+                                'priority': 60,
                                 'length': 'long',
                                 'ssp': True
-                        }, BASE_AFTER
+                        }
                 ]
         }, {
                 'label':
                 'trim',
                 'tests': [
-                        BASE_BEFORE, SOAK, {
+                        BASE_BEFORE, SOAK, BASE_AFTER, {
                                 'test': 'hardware_StorageQualTrimStress',
                                 'args': {
                                         'duration': 4 * HOUR_IN_SECS
                                 },
                                 'iterations': 7 * DAY_IN_HOURS / 4,
-                                'priority': 80,
+                                'priority': 60,
                                 'length': 'long',
                                 'ssp': True
-                        }, BASE_AFTER
+                        }
                 ]
         }],
         'storage_qual_quick': [{

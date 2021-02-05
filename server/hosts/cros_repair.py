@@ -25,6 +25,7 @@ from autotest_lib.server import crashcollect
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.servo.keyboard import servo_keyboard_flasher
+from autotest_lib.server.cros.repair import mac_address_helper
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
@@ -869,6 +870,33 @@ class ServoKeyboardMapVerifier(hosts.Verifier):
         return 'Verify and update servo keyboard map.'
 
 
+class ServoMacAddressVerifier(hosts.Verifier):
+    """Not critical verify to cache NIC mac address for the host on servo.
+
+    Servo_v4 plugged to the DUT and providing NIC for that. We caching mac
+    address on servod side for better debugging.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        try:
+            helper = mac_address_helper.MacAddressHelper()
+            helper.update_if_needed(host)
+        except Exception as e:
+            logging.debug('(Not critical) %s', e)
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'Fail to verify/update servo NIC mac address for host.')
+
+    def _is_applicable(self, host):
+        if host.servo:
+            return True
+        return False
+
+    @property
+    def description(self):
+        return 'Verify and update cached NIC mac address.'
+
+
 class _ResetRepairAction(hosts.RepairAction):
     """Common handling for repair actions that reset a DUT."""
 
@@ -1317,6 +1345,7 @@ def _cros_verify_extended_dag():
             (StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
             (DUTStorageVerifier, 'storage', ('ssh', )),
             (ServoKeyboardMapVerifier, 'dut_servo_keyboard', ('ssh', )),
+            (ServoMacAddressVerifier, 'dut_servo_macaddr', ('ssh', )),
     )
 
 

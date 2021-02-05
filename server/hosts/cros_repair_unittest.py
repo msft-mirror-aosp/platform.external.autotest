@@ -39,6 +39,7 @@ CROS_VERIFY_DAG = (
         (cros_repair.DUTStorageVerifier, 'storage', ('ssh', )),
         (cros_repair.ServoKeyboardMapVerifier, 'dut_servo_keyboard',
          ('ssh', )),
+        (cros_repair.ServoMacAddressVerifier, 'dut_servo_macaddr', ('ssh', )),
 )
 
 CROS_REPAIR_ACTIONS = (

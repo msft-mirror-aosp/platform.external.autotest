@@ -321,8 +321,8 @@ class RpcServerTracker(object):
             # status.
             self._host.run("pkill -f '%s'" % remote_name, ignore_status=True)
             if remote_pid:
-                logging.info('Waiting for RPC server "%s" shutdown',
-                             remote_name)
+                logging.info('Waiting for RPC server "%s" shutdown (%s)',
+                             remote_name, remote_pid)
                 start_time = time.time()
                 while (time.time() - start_time <
                        self._RPC_SHUTDOWN_TIMEOUT_SECONDS):
@@ -330,9 +330,11 @@ class RpcServerTracker(object):
                             "pgrep -f '%s'" % remote_name,
                             ignore_status=True).stdout.split()
                     if not remote_pid in running_processes:
-                        logging.info('Shut down RPC server.')
+                        logging.info('Shut down RPC server %s.', remote_pid)
                         break
                     time.sleep(self._RPC_SHUTDOWN_POLLING_PERIOD_SECONDS)
+                    self._host.run("pkill -9 -f '%s'" % remote_name,
+                                   ignore_status=True)
                 else:
                     raise error.TestError('Failed to shutdown RPC server %s' %
                                           remote_name)

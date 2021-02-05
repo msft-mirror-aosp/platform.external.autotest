@@ -314,9 +314,9 @@ class TradefedTest(test.test):
         # primary ABI, so to be fully precise, those have to be counted as 1.
         arm_abis = set(('armeabi-v7a', 'arm64-v8a'))
         x86_abis = set(('x86', 'x86_64'))
-        if bundle.startswith('arm'):
+        if bundle and bundle.startswith('arm'):
             tradefed_abis = arm_abis
-        elif bundle.startswith('x86'):
+        elif bundle and bundle.startswith('x86'):
             tradefed_abis = x86_abis
         else:
             tradefed_abis = arm_abis | x86_abis

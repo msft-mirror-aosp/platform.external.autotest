@@ -42,7 +42,7 @@ CONFIG['QUAL_SUITE_NAMES'] = []
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = False
-CONFIG['CONTROLFILE_WRITE_EXTRA'] = False
+CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 2
 CONFIG['CTS_QUAL_RETRIES'] = 9
@@ -125,10 +125,49 @@ CONFIG['OVERRIDE_TEST_LENGTH'] = {
 # individual tests finish in the order of 10ms or less (b/118836700). Specify
 # modules here to not enable the flag.
 CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([])
-CONFIG['EXTRA_MODULES'] = {}
+
+CONFIG['EXTRA_MODULES'] = {
+        'GtsMediaTestCases': {
+                'SUBMODULES':
+                set([
+                        'GtsMediaTestCases.download',
+                ]),
+                'SUITES': ['suite:arc-cts-r'],
+        },
+}
+
 CONFIG['PUBLIC_EXTRA_MODULES'] = {}
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {}
-CONFIG['EXTRA_COMMANDLINE'] = {}
+
+CONFIG['EXTRA_COMMANDLINE'] = {
+        'GtsMediaTestCases.download': [
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_AAC_AUDIO_DOWNLOADED_V5_ASYNC_WITH_HANDLER',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_AAC_AUDIO_DOWNLOADED_V3_ASYNC_DRMPREPARED',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_AAC_AUDIO_DOWNLOADED_V0_SYNC',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_AAC_AUDIO_DOWNLOADED_V2_SYNC_CONFIG',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_AAC_AUDIO_DOWNLOADED_V1_ASYNC',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_H264_BASELINE_240P_800_DOWNLOADED_V4_SYNC_OFFLINE_KEY',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_H264_BASELINE_240P_800_DOWNLOADED_V2_SYNC_CONFIG',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_H264_BASELINE_240P_800_DOWNLOADED_V5_ASYNC_WITH_HANDLER',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_H264_BASELINE_240P_800_DOWNLOADED_V0_SYNC',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_H264_BASELINE_240P_800_DOWNLOADED_V1_ASYNC',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_H264_BASELINE_240P_800_DOWNLOADED_V3_ASYNC_DRMPREPARED',
+                '--include-filter',
+                'GtsMediaTestCases com.google.android.media.gts.MediaPlayerTest#testLLAMA_AAC_AUDIO_DOWNLOADED_V4_SYNC_OFFLINE_KEY',
+        ],
+}
+
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'tradefed-run-collect-tests-only-internal': ['suite:arc-gts'],
 }

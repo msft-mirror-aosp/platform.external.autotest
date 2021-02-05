@@ -213,6 +213,7 @@ CONFIG['EXTRA_MODULES'] = {
                 'SUBMODULES': set([
                         'CtsMediaTestCases.audio',
                         'CtsMediaTestCases.video',
+                        'CtsMediaTestCases.download',
                 ]),
                 'SUITES': ['suite:arc-cts-r'],
         },
@@ -523,6 +524,10 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                'CtsMediaTestCases android.media.cts.ExtractDecodeEditEncodeMuxTest',
                '--include-filter',
                'CtsMediaTestCases android.media.cts.MediaCodecPlayerTest',
+        ],
+        'CtsMediaTestCases.download': [
+                '--include-filter',
+                'CtsMediaTestCases android.media.cts.MediaPlayerDrmTest',
         ],
         'CtsWindowManager.A': [
                '--include-filter',

@@ -23,7 +23,9 @@ def run_TS(machine):
         needs_push_media=True,
         tag='11_r3.arm.CtsMediaTestCases',
         test_name='cheets_CTS_R.11_r3.arm.CtsMediaTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases', '--include-filter', 'CtsMediaTestCases[instant]', '--logcat-on-failure'],
+        # TODO(b/175277119): Remove this manual hack once the storage bug is fixed.
+        # run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases', '--include-filter', 'CtsMediaTestCases[instant]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaTestCases', '--exclude-filter', 'CtsMediaTestCases android.media.cts.MediaPlayerDrmTest'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaTestCases',
         target_plan=None,

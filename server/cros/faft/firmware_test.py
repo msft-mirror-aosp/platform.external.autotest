@@ -659,6 +659,8 @@ class FirmwareTest(test.test):
             logging.warn('Configuring DTS mode only supported on Servo v4')
 
         self.pdtester.set('usbc_polarity', 'cc2' if flip_cc else 'cc1')
+        self.pdtester.send_command('fakedisconnect 100 1000')
+        time.sleep(1)
         # Make it sourcing max voltage.
         self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
 

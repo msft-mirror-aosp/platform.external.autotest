@@ -51,6 +51,10 @@
   <Entry include="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testSetAllocatorDecodeBitmap[6]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testSetAllocatorDecodeBitmap[7]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testSetAllocatorDecodeBitmap[8]" />
+  <Entry include="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation" />
+  <Entry include="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_DeviceLocked" />
+  <Entry include="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation" />
+  <Entry include="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_DeviceLocked" />
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[154(video/x-vnd.on2.vp8111)]" />
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[155(video/x-vnd.on2.vp8113)]" />
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[158(video/x-vnd.on2.vp8121)]" />

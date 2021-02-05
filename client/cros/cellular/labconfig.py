@@ -96,15 +96,15 @@ class Configuration(object):
             machine = self.ip
         ifconfig = ''
         if not machine:
-            log.debug('self.ip is : %s ' % self.ip)
+            log.debug('self.ip is : %s ', self.ip)
             # TODO(byronk): use sysfs to find network interface
             possible_interfaces = ['eth0', 'eth1', 'eth_test']
-            log.debug('Looking for an up network interface in : %s' %
+            log.debug('Looking for an up network interface in : %s',
                       possible_interfaces)
             for interface in possible_interfaces:
                 machine = get_interface_ip(interface)
                 if machine:
-                    log.debug('Got an IP address: %s Stopping the search.. ' %
+                    log.debug('Got an IP address: %s Stopping the search.. ',
                               machine)
                     self.ip = machine
                     break

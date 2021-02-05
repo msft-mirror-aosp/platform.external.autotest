@@ -7,7 +7,6 @@ import cellular_logging
 import dbus, os, subprocess, time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros import flimflam_test_path
 from autotest_lib.client.cros.cellular import modem
 
 log = cellular_logging.SetupCellularLogging('mm_test')

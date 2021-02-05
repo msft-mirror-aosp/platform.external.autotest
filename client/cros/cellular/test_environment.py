@@ -157,7 +157,7 @@ class CellularTestEnvironment(object):
             except_type, except_value, except_traceback = sys.exc_info()
             lines = traceback.format_exception(except_type, except_value,
                                                except_traceback)
-            logging.error('Error during test initialization:\n' +
+            logging.error('Error during test initialization:\n%s',
                           ''.join(lines))
             self.__exit__(*sys.exc_info())
             raise error.TestError('INIT_ERROR: %s' % str(e))

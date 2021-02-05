@@ -5,7 +5,7 @@
 
 DOCS="""Print DHCP and /etc/hosts stanzas for hosts in a specified cell."""
 
-import exceptions, io, sys
+import io, sys
 import labconfig_data
 
 

@@ -22,7 +22,6 @@ from autotest_lib.site_utils.stats import log_daemon_common
 # Not used, but needed for importing rpc_interface.
 from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.afe import rpc_interface
-from autotest_lib.frontend.afe import moblab_rpc_interface
 
 
 """
@@ -96,8 +95,7 @@ ALLOWLISTED_ENDPOINTS = frozenset((
 # A bad actor could DOS Monarch by requesting millions of different RPC methods,
 # each of which would create a different stream. Only allow an allowlist of
 # methods to be recorded in Monarch.
-ALLOWLISTED_METHODS = (frozenset(dir(rpc_interface))
-                       | frozenset(dir(moblab_rpc_interface)))
+ALLOWLISTED_METHODS = frozenset(dir(rpc_interface))
 
 
 def EmitRequestMetrics(m):

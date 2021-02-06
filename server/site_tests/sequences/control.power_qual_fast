@@ -63,6 +63,10 @@ CLIENT_TESTS = [
         'tag' : 'powerqual_fast', 'force_discharge' : True,
         'brightness' : 'max', 'secs_per_page' : 20, 'seconds_period' : 1,
         'pages' : ['white', 'black', 'white', 'checker1', 'white']}),
+
+    ('power_WaitForCoolDown', {}),
+    ('power_UiResume', {
+        'tag' : 'powerqual_fast'}),
 ]
 
 # Workaround to make it compatible with moblab autotest UI.

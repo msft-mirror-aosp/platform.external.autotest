@@ -44,6 +44,10 @@ CLIENT_TESTS = [
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
         'tag' : 'powerqual', 'force_discharge' : True}),
+
+    ('power_WaitForCoolDown', {}),
+    ('power_UiResume', {
+        'tag' : 'powerqual'}),
 ]
 
 # Workaround to make it compatible with moblab autotest UI.

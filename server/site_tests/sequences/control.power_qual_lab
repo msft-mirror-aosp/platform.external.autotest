@@ -107,6 +107,10 @@ CLIENT_TESTS = [
                    'white', 'checker70',
                    'white', 'checker60',
                    'white', 'checker50']}),
+
+    ('power_WaitForCoolDown', {}),
+    ('power_UiResume', {
+        'tag' : 'powerqual_lab'}),
 ]
 
 # Workaround to make it compatible with moblab autotest UI.

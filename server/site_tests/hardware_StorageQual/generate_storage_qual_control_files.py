@@ -36,36 +36,48 @@ HOUR_IN_SECS = MINUTE_IN_SECS * 60
 DAY_IN_SECS = HOUR_IN_SECS * DAY_IN_HOURS
 
 CHECK_SETUP = {
-    'test': 'hardware_StorageQualCheckSetup',
-    'args': {},
-    'priority': 110,
-    'length': 'lengthy'
+        'test': 'hardware_StorageQualCheckSetup',
+        'args': {},
+        'priority': 110,
+        'length': 'lengthy',
+        'ssp': False
 }
 
 BASE_BEFORE = {
-    'test': 'hardware_StorageQualBase',
-    'args': {'tag': 'before', 'client_tag': 'before'},
-    'priority': 100,
-    'length': 'lengthy'
+        'test': 'hardware_StorageQualBase',
+        'args': {
+                'tag': 'before',
+                'client_tag': 'before'
+        },
+        'priority': 100,
+        'length': 'lengthy',
+        'ssp': True
 }
 
 SOAK = {
-    'test': 'hardware_StorageStress',
-    'args': {'tag': 'soak', 'power_command': 'wait',
-        'storage_test_command': 'full_write',
-        'suspend_duration': 5 * MINUTE_IN_SECS,
-        'duration': 4 * HOUR_IN_SECS
-    },
-    'iterations': 7 * DAY_IN_HOURS / 4,
-    'priority': 90,
-    'length': 'long'
+        'test': 'hardware_StorageStress',
+        'args': {
+                'tag': 'soak',
+                'power_command': 'wait',
+                'storage_test_command': 'full_write',
+                'suspend_duration': 5 * MINUTE_IN_SECS,
+                'duration': 4 * HOUR_IN_SECS
+        },
+        'iterations': 7 * DAY_IN_HOURS / 4,
+        'priority': 90,
+        'length': 'long',
+        'ssp': True
 }
 
 BASE_AFTER = {
-    'test': 'hardware_StorageQualBase',
-    'args': {'tag': 'after', 'client_tag': 'after'},
-    'priority': 70,
-    'length': 'long'
+        'test': 'hardware_StorageQualBase',
+        'args': {
+                'tag': 'after',
+                'client_tag': 'after'
+        },
+        'priority': 70,
+        'length': 'long',
+        'ssp': True
 }
 
 
@@ -92,187 +104,179 @@ BASE_AFTER_CQ = copy.deepcopy(BASE_AFTER)
 BASE_AFTER_CQ['args']['cq'] = True
 
 SUITES = {
-    'storage_qual': [
-        {
-            'label': 'retention',
-            'tests': [
-                CHECK_SETUP,
-                BASE_BEFORE,
-                SOAK,
-                {
-                    'test': 'hardware_StorageStress',
-                    'args': {'tag': 'suspend', 'power_command': 'suspend',
-                        'storage_test_command': 'full_write',
-                        'suspend_duration': 12 * HOUR_IN_SECS,
-                        'duration': 7 * DAY_IN_SECS
-                    },
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER
-            ]
-        },
-
-        {
-            'label': 'suspend',
-            'tests': [
-                BASE_BEFORE,
-                SOAK,
-                {
-                    'test': 'hardware_StorageQualSuspendStress',
-                    'args': {'tag': 'suspend', 'duration': 4 * HOUR_IN_SECS},
-                    'iterations': 7 * DAY_IN_HOURS / 4,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER
-            ]
-        },
-
-        {
-            'label': 'trim',
-            'tests': [
-                BASE_BEFORE,
-                SOAK,
-                {
-                    'test': 'hardware_StorageQualTrimStress',
-                    'args': {'duration': 4 * HOUR_IN_SECS},
-                    'iterations': 7 * DAY_IN_HOURS / 4,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER
-            ]
-        }
-
-    ],
-    'storage_qual_quick': [
-        {
-            'label': 'retention',
-            'tests': [
-                CHECK_SETUP,
-                BASE_BEFORE,
-                SOAK_QUICK,
-                {
-                    'test': 'hardware_StorageStress',
-                    'args': {'tag': 'suspend', 'power_command': 'suspend',
-                        'storage_test_command': 'full_write',
-                        'suspend_duration': 120,
-                        'duration': HOUR_IN_SECS / 2
-                    },
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER
-            ]
-        },
-
-        {
-            'label': 'suspend',
-            'tests': [
-                BASE_BEFORE,
-                SOAK_QUICK,
-                {
-                    'test': 'hardware_StorageQualSuspendStress',
-                    'args': {'tag': 'suspend', 'duration': HOUR_IN_SECS / 2},
-                    'iterations': 2,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER
-            ]
-        },
-
-        {
-            'label': 'trim',
-            'tests': [
-                BASE_BEFORE,
-                SOAK_QUICK,
-                {
-                    'test': 'hardware_StorageQualTrimStress',
-                    'args': {'duration': HOUR_IN_SECS / 2},
-                    'iterations': 2,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER
-            ]
-        }
-    ],
-    'storage_qual_external': [
-        {
-            'label': 'storage_qual_external',
-            'tests': [
-                BASE_NONROOT_BEFORE,
-                {
-                    'test': 'hardware_StorageQualSuspendStress',
-                    'args': {'tag': 'suspend', 'duration': 4 * HOUR_IN_SECS,
-                        'other_dev': True
-                    },
-                    'iterations': 2,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_NONROOT_AFTER
-            ]
-        }
-    ],
-    'storage_qual_mini_soak': [
-        {
-            'label': 'storage_qual_mini_soak',
-            'tests': [
-                BASE_MINI_SOAK_BEFORE,
-                {
-                    'test': 'hardware_StorageStress',
-                    'args': {'tag': 'soak', 'power_command': 'nothing',
-                        'storage_test_command': 'full_write',
-                        'duration': 2 * HOUR_IN_SECS
-                    },
-                    'iterations': 1,
-                    'priority': 90,
-                    'length': 'lengthy'
-                },
-                BASE_MINI_SOAK_AFTER
-            ]
-        }
-    ],
-    'storage_qual_cq': [
-        {
-            'label': 'storage_qual_cq_1',
-            'tests': [
-                BASE_BEFORE_CQ,
-                SOAK_CQ,
-                {
-                    'test': 'hardware_StorageStress',
-                    'args': {'tag': 'suspend', 'power_command': 'suspend',
-                        'storage_test_command': 'full_write',
-                        'suspend_duration': 120,
-                        'duration': HOUR_IN_SECS / 2,
-                        'cq': True
-                    },
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER_CQ
-            ]
-        },
-
-        {
-            'label': 'storage_qual_cq_2',
-            'tests': [
-                BASE_BEFORE_CQ,
-                SOAK_CQ,
-                {
-                    'test': 'hardware_StorageQualTrimStress',
-                    'args': {'duration': HOUR_IN_SECS / 2, 'cq': True},
-                    'iterations': 2,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_AFTER_CQ
-            ]
-        }
-    ]
+        'storage_qual': [{
+                'label':
+                'retention',
+                'tests': [
+                        CHECK_SETUP, BASE_BEFORE, SOAK, {
+                                'test': 'hardware_StorageStress',
+                                'args': {
+                                        'tag': 'suspend',
+                                        'power_command': 'suspend',
+                                        'storage_test_command': 'full_write',
+                                        'suspend_duration': 12 * HOUR_IN_SECS,
+                                        'duration': 7 * DAY_IN_SECS
+                                },
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER
+                ]
+        }, {
+                'label':
+                'suspend',
+                'tests': [
+                        BASE_BEFORE, SOAK, {
+                                'test': 'hardware_StorageQualSuspendStress',
+                                'args': {
+                                        'tag': 'suspend',
+                                        'duration': 4 * HOUR_IN_SECS
+                                },
+                                'iterations': 7 * DAY_IN_HOURS / 4,
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER
+                ]
+        }, {
+                'label':
+                'trim',
+                'tests': [
+                        BASE_BEFORE, SOAK, {
+                                'test': 'hardware_StorageQualTrimStress',
+                                'args': {
+                                        'duration': 4 * HOUR_IN_SECS
+                                },
+                                'iterations': 7 * DAY_IN_HOURS / 4,
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER
+                ]
+        }],
+        'storage_qual_quick': [{
+                'label':
+                'retention',
+                'tests': [
+                        CHECK_SETUP, BASE_BEFORE, SOAK_QUICK, {
+                                'test': 'hardware_StorageStress',
+                                'args': {
+                                        'tag': 'suspend',
+                                        'power_command': 'suspend',
+                                        'storage_test_command': 'full_write',
+                                        'suspend_duration': 120,
+                                        'duration': HOUR_IN_SECS / 2
+                                },
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER
+                ]
+        }, {
+                'label':
+                'suspend',
+                'tests': [
+                        BASE_BEFORE, SOAK_QUICK, {
+                                'test': 'hardware_StorageQualSuspendStress',
+                                'args': {
+                                        'tag': 'suspend',
+                                        'duration': HOUR_IN_SECS / 2
+                                },
+                                'iterations': 2,
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER
+                ]
+        }, {
+                'label':
+                'trim',
+                'tests': [
+                        BASE_BEFORE, SOAK_QUICK, {
+                                'test': 'hardware_StorageQualTrimStress',
+                                'args': {
+                                        'duration': HOUR_IN_SECS / 2
+                                },
+                                'iterations': 2,
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER
+                ]
+        }],
+        'storage_qual_external': [{
+                'label':
+                'storage_qual_external',
+                'tests': [
+                        BASE_NONROOT_BEFORE, {
+                                'test': 'hardware_StorageQualSuspendStress',
+                                'args': {
+                                        'tag': 'suspend',
+                                        'duration': 4 * HOUR_IN_SECS,
+                                        'other_dev': True
+                                },
+                                'iterations': 2,
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_NONROOT_AFTER
+                ]
+        }],
+        'storage_qual_mini_soak': [{
+                'label':
+                'storage_qual_mini_soak',
+                'tests': [
+                        BASE_MINI_SOAK_BEFORE, {
+                                'test': 'hardware_StorageStress',
+                                'args': {
+                                        'tag': 'soak',
+                                        'power_command': 'nothing',
+                                        'storage_test_command': 'full_write',
+                                        'duration': 2 * HOUR_IN_SECS
+                                },
+                                'iterations': 1,
+                                'priority': 90,
+                                'length': 'lengthy',
+                                'ssp': True
+                        }, BASE_MINI_SOAK_AFTER
+                ]
+        }],
+        'storage_qual_cq': [{
+                'label':
+                'storage_qual_cq_1',
+                'tests': [
+                        BASE_BEFORE_CQ, SOAK_CQ, {
+                                'test': 'hardware_StorageStress',
+                                'args': {
+                                        'tag': 'suspend',
+                                        'power_command': 'suspend',
+                                        'storage_test_command': 'full_write',
+                                        'suspend_duration': 120,
+                                        'duration': HOUR_IN_SECS / 2,
+                                        'cq': True
+                                },
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER_CQ
+                ]
+        }, {
+                'label':
+                'storage_qual_cq_2',
+                'tests': [
+                        BASE_BEFORE_CQ, SOAK_CQ, {
+                                'test': 'hardware_StorageQualTrimStress',
+                                'args': {
+                                        'duration': HOUR_IN_SECS / 2,
+                                        'cq': True
+                                },
+                                'iterations': 2,
+                                'priority': 80,
+                                'length': 'long',
+                                'ssp': True
+                        }, BASE_AFTER_CQ
+                ]
+        }]
 }
 
 SUITE_ATTRIBUTES = {
@@ -301,7 +305,7 @@ TIME = "{length}"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "Hardware"
 TEST_TYPE = "server"
-REQUIRE_SSP = True
+REQUIRE_SSP = {ssp}
 PRIORITY = {priority}
 DEPENDENCIES = "{label}"
 JOB_RETRIES = 0
@@ -355,28 +359,29 @@ for suite in SUITES:
             if 'iterations' in test:
                 for i in range(int(test['iterations'])):
                     control_file = TEMPLATE.format(
-                        label = label,
-                        name = _get_name(label, test, i),
-                        args = _get_args(test),
-                        priority = test['priority'],
-                        test = test['test'],
-                        length = test['length'],
-                        attributes = SUITE_ATTRIBUTES[suite],
-                        version = STORAGE_QUAL_VERSION,
+                            label=label,
+                            name=_get_name(label, test, i),
+                            args=_get_args(test),
+                            priority=test['priority'],
+                            ssp=test['ssp'],
+                            test=test['test'],
+                            length=test['length'],
+                            attributes=SUITE_ATTRIBUTES[suite],
+                            version=STORAGE_QUAL_VERSION,
                     )
                     _write_control_file(_get_control_file_name(
                         suite, label, test, i), control_file)
 
             else:
                 control_file = TEMPLATE.format(
-                    label = label,
-                    name = _get_name(label, test),
-                    args = _get_args(test),
-                    priority = test['priority'],
-                    test = test['test'],
-                    length = test['length'],
-                    attributes = SUITE_ATTRIBUTES[suite],
-                    version = STORAGE_QUAL_VERSION
-                )
+                        label=label,
+                        name=_get_name(label, test),
+                        args=_get_args(test),
+                        priority=test['priority'],
+                        test=test['test'],
+                        length=test['length'],
+                        ssp=test['ssp'],
+                        attributes=SUITE_ATTRIBUTES[suite],
+                        version=STORAGE_QUAL_VERSION)
                 _write_control_file(_get_control_file_name(suite, label, test),
                         control_file)

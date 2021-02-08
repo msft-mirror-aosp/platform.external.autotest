@@ -411,11 +411,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # We are looking for patterns like this:
         # "2021-01-28T10:14:33.998217Z INFO update_engine: \
-        # [omaha_request_action.cc(794)] Request "
+        # [omaha_request_action.cc(794)] Request: <?xml"
         timestamp_pattern = re.compile(
-                r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}).*Request')
+                r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}).* Request:.*xml')
         timestamps = [
-                datetime.strptime(ts, '%y-%m-%dT%H:%M:%S')
+                datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S')
                 for ts in timestamp_pattern.findall(update_engine_log)
         ]
         if len(timestamps) == 0:

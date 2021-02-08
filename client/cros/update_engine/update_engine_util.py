@@ -590,8 +590,8 @@ class UpdateEngineUtil(object):
         # e.g.
         # "2021-01-28T10:14:33.998217Z INFO update_engine: \
         # [omaha_request_action.cc(794)] Request: <?xml"
-        pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}).*Request.*xml'
-        LOG_TIMESTAMP_FORMAT = '%y-%m-%dT%H:%M:%S'
+        pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}).* Request:.*xml'
+        LOG_TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
         result = re.findall(pattern, update_log)
 

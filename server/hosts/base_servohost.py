@@ -72,7 +72,7 @@ class BaseServoHost(ssh_host.SSHHost):
         super(BaseServoHost, self)._initialize(hostname=hostname,
                                                *args, **dargs)
         self._is_localhost = (self.hostname == 'localhost'
-                              and servo_host_ssh_port is not None)
+                              and servo_host_ssh_port is None)
         if self._is_localhost:
             self._is_in_lab = False
         elif is_in_lab is None:

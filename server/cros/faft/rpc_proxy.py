@@ -104,10 +104,12 @@ class RPCProxy(object):
                 command_name=self._client_config.rpc_command_short,
                 ready_test_name=self._client_config.rpc_ready_call,
                 timeout_seconds=self._client_config.rpc_timeout,
-                logfile="%s.%s" % (self._client_config.rpc_logfile,
-                                   time.time()),
-                server_desc=str(self)
-                )
+                logfile="%s.%s" %
+                (self._client_config.rpc_logfile, time.time()),
+                server_desc=str(self),
+                request_timeout_seconds=self._client_config.
+                rpc_request_timeout,
+        )
 
     def disconnect(self):
         """Disconnect the RPC server."""

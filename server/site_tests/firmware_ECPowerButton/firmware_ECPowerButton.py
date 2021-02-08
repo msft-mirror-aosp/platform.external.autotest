@@ -94,6 +94,8 @@ class firmware_ECPowerButton(FirmwareTest):
 
         # Ensure that detachable is in OFF State for following test
         if self.faft_config.is_detachable:
+            # Skip this test step for detachable
+            # Setting Power State to off for entry to next step
             logging.info("Setting Power Off")
             self.servo.get_power_state_controller().power_off()
         else:

@@ -29,7 +29,17 @@ class firmware_FwScreenPressPower(FirmwareTest):
         # While the firmware screen, the power button probing loop sleeps
         # 0.25 second on every scan. Use the normal delay (1.2 second) for
         # power press.
-        self.servo.power_normal_press()
+
+        if self.faft_config.is_detachable and self.faft_config.mode_switcher_type == 'menu_switcher':
+            # Since power button has been overridden as a select button in the
+            # fw screens for detachables, we can just skip this part of the test
+            # and shut down the DUT using the power state controller instead.
+            logging.info("Setting Power Off")
+            self.servo.get_power_state_controller().power_off()
+        else:
+            # Otherwise use the power button
+            logging.info("Pressing Power Button")
+            self.servo.power_normal_press()
 
     def wait_longer_fw_screen_and_press_power(self):
         """Wait for firmware screen without timeout and press power button."""

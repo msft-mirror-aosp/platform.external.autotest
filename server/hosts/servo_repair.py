@@ -17,7 +17,6 @@ import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import utils
-from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
@@ -493,14 +492,10 @@ class _BaseDUTConnectionVerifier(hosts.Verifier):
         return False
 
     def _is_servo_v4_type_a(self, host):
-        return (host.is_labstation()
-                and host.get_servo().has_control('servo_v4_type')
-                and host.get_servo().get('servo_v4_type') == 'type-a')
+        return host.is_labstation() and host.get_servo().is_servo_v4_type_a()
 
     def _is_servo_v4_type_c(self, host):
-        return (host.is_labstation()
-                and host.get_servo().has_control('servo_v4_type')
-                and host.get_servo().get('servo_v4_type') == 'type-c')
+        return host.is_labstation() and host.get_servo().is_servo_v4_type_c()
 
     def _is_servo_v3(self, host):
         return not host.is_labstation()

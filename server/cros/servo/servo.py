@@ -1326,6 +1326,23 @@ class Servo(object):
             self._servo_type = self.get_servo_version()
         return self._servo_type
 
+    def get_servo_v4_type(self):
+        """Return the servo_v4_type (such as 'type-c'), or None if not v4."""
+        if not hasattr(self, '_servo_v4_type'):
+            if 'servo_v4' in self.get_servo_type():
+                self._servo_v4_type = self.get('servo_v4_type')
+            else:
+                self._servo_v4_type = None
+        return self._servo_v4_type
+
+    def is_servo_v4_type_a(self):
+        """True if the servo is v4 and type-a, else False."""
+        return self.get_servo_v4_type() == 'type-a'
+
+    def is_servo_v4_type_c(self):
+        """True if the servo is v4 and type-c, else False."""
+        return self.get_servo_v4_type() == 'type-c'
+
     def get_main_servo_device(self):
         """Return the main servo device"""
         return self.get_servo_type().split('_with_')[-1].split('_and_')[0]
@@ -1639,14 +1656,9 @@ class Servo(object):
 
     def supports_built_in_pd_control(self):
         """Return whether the servo type supports pd charging and control."""
-        if 'servo_v4' not in self.get_servo_type():
-            # Only servo v4 supports this feature.
-            logging.info('%r type does not support pd control.',
-                         self.get_servo_type())
-            return False
-        # On servo v4, it still needs to be the type-c version.
-        if not self.get('servo_v4_type') == 'type-c':
-            logging.info('PD controls require a type-c servo v4.')
+        # Only servo v4 type-c supports this feature.
+        if not self.is_servo_v4_type_c():
+            logging.info('PD controls require a servo v4 type-c.')
             return False
         # Lastly, one cannot really do anything without a plugged in charger.
         chg_port_mv = self.get('ppchg5_mv')
@@ -1660,16 +1672,8 @@ class Servo(object):
 
     def dts_mode_is_valid(self):
         """Return whether servo setup supports dts mode control for cr50."""
-        if 'servo_v4' not in self.get_servo_type():
-            # Only servo v4 supports this feature.
-            logging.debug('%r type does not support dts mode control.',
-                          self.get_servo_type())
-            return False
-        # On servo v4, it still needs ot be the type-c version.
-        if not 'type-c' == self.get('servo_v4_type'):
-            logging.info('DTS controls require a type-c servo v4.')
-            return False
-        return True
+        # Only servo v4 type-c supports this feature.
+        return self.is_servo_v4_type_c()
 
     def dts_mode_is_safe(self):
         """Return whether servo setup supports dts mode without losing access.

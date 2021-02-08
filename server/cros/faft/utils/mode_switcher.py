@@ -69,7 +69,7 @@ class _BaseFwBypasser(object):
         """Perform PD power and data swap, if DUT is SRC and doesn't supply
         Vbus"""
         if (self.ec and self.faft_config.ec_ro_vbus_bug
-                    and (self.servo.get('servo_v4_type') == 'type-c')):
+                    and self.servo.is_servo_v4_type_c()):
             time.sleep(self.faft_framework.PD_RESYNC_DELAY)
             servo_pr_role = self.servo.get_servo_v4_role()
             if servo_pr_role == 'snk':

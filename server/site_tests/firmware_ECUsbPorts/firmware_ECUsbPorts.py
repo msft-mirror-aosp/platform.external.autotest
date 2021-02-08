@@ -121,11 +121,9 @@ class firmware_ECUsbPorts(FirmwareTest):
 
         if self.servo.main_device_is_ccd():
             logging.info("Using CCD, ignore checking USB port connection.")
-        elif (self.servo.has_control('servo_v4_type') and
-              self.servo.get('servo_v4_type') == 'type-c'):
+        elif self.servo.is_servo_v4_type_c():
             logging.info("Using type-c servo, ignore checking USB port connection.")
-        elif (self.servo.has_control('servo_v4_type') and
-              self.servo.get('servo_v4_type') != 'type-c'):
+        elif self.servo.get_servo_v4_type() is not None:
             # When only one USB-A port control is available, turning off the
             # USB-A port disconnects the network connection from the DUT.
             raise error.TestNAError("Only one USB-A port control; servo v4 type-C required")

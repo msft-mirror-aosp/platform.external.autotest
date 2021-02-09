@@ -515,6 +515,10 @@ class AutoservDiskSizeUnknownError(AutoservHostError):
     """Exception raised when the disk space could not be determined."""
 
 
+class TLSConnectionError(AutoservError):
+    pass
+
+
 # This MUST remain at the end of the file.
 # Limit 'from error import *' to only import the exception instances.
 for _name, _thing in list(locals().items()):

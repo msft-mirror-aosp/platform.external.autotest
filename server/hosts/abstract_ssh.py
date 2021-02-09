@@ -22,7 +22,7 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 from autotest_lib.server.hosts import rpc_server_tracker
 from autotest_lib.server.hosts import ssh_multiplex
-from autotest_lib.server.hosts.drone_api_client import client
+from autotest_lib.server.hosts.tls_client import exec_dut_command
 
 import six
 from six.moves import filter
@@ -39,8 +39,6 @@ enable_main_ssh = get_value('AUTOSERV',
                             'enable_main_ssh',
                             type=bool,
                             default=False)
-
-enable_tls = get_value('AUTOSERV', 'enable_tls', type=bool, default=False)
 
 # Number of seconds to use the cached up status.
 _DEFAULT_UP_STATUS_EXPIRATION_SECONDS = 300
@@ -108,8 +106,8 @@ class AbstractSSHHost(remote.RemoteHost):
         self._use_rsync = None
         self.known_hosts_file = tempfile.mkstemp()[1]
         self._rpc_server_tracker = rpc_server_tracker.RpcServerTracker(self);
-        self.tls_client = None
-        self.tls_unstable = False
+        self._tls_exec_dut_command_client = None
+        self._tls_unstable = False
 
         # Read the value of the use_icmp flag, setting to true if missing.
         args_string = autoserv_parser.autoserv_parser.options.args
@@ -978,7 +976,6 @@ class AbstractSSHHost(remote.RemoteHost):
             logging.exception('autodir space check exception, this is probably '
                              'safe to ignore\n')
 
-
     def close(self):
         super(AbstractSSHHost, self).close()
         self.rpc_server_tracker.disconnect_all()
@@ -986,9 +983,7 @@ class AbstractSSHHost(remote.RemoteHost):
             self._main_ssh.close()
         if os.path.exists(self.known_hosts_file):
             os.remove(self.known_hosts_file)
-        if self.tls_client:
-            self.close_tls_client()
-
+        self.tls_exec_dut_command = None
 
     def close_main_ssh(self):
         """Stop the ssh main connection.
@@ -1021,37 +1016,41 @@ class AbstractSSHHost(remote.RemoteHost):
                  connection to be established. If timeout is reached, a
                  warning message is logged, but no other action is taken.
         """
-        self._maybe_start_tls_client()
         if not enable_main_ssh:
             return
         self._main_ssh.maybe_start(timeout=timeout)
 
-    def _maybe_start_tls_client(self):
-        """Start a TLS Client if one does not exist and TLS is not unstable."""
+    @property
+    def tls_unstable(self):
+        # A single test will rebuild remote many times. Its safe to assume if
+        # TLS unstable for one try, it will be for others. If we check each,
+        # it adds ~60 seconds per test (if its dead).
+        if os.getenv('TLS_UNSTABLE'):
+            return bool(os.getenv('TLS_UNSTABLE'))
+        if self._tls_unstable is not None:
+            return self._tls_unstable
 
-        # Only run TLS if the global_config has specified so (aka Drones).
-        if not enable_tls:
-            return
-        if self.tls_unstable or self.tls_client is not None:
-            if self.tls_unstable:
-                logging.debug("Not starting TLS, as it is unstable.")
-            return
-        self.start_tls_client()
+    @tls_unstable.setter
+    def tls_unstable(self, v):
+        if not isinstance(v, bool):
+            raise error.AutoservError('tls_stable setting must be bool, got %s'
+                                      % (type(v)))
+        os.environ['TLS_UNSTABLE'] = str(v)
+        self._tls_unstable = v
 
-    def start_tls_client(self):
-        """Start the TLS client."""
-        self.tls_client = client.TLSClient(hostname=self.hostname)
-
-    def close_tls_client(self):
-        """Try to close the TLS Client connection."""
-        if self.tls_client is None:
-            return
-        try:
-            self.tls_client.close()
-        except Exception as e:
-            logging.warning("TLS could not close %s", e)
-            self.tls_unstable = True
-        self.tls_client = None
+    @property
+    def tls_exec_dut_command_client(self):
+        # If client is already initialized, return that.
+        if self.tls_unstable:
+            return None
+        if self._tls_exec_dut_command_client is not None:
+            return self._tls_exec_dut_command_client
+        # If the TLS connection is alive, create a new client.
+        if self.tls_connection is None:
+            return None
+        return exec_dut_command.TLSExecDutCommandClient(
+            tlsconnection=self.tls_connection,
+            hostname=self.hostname)
 
     def clear_known_hosts(self):
         """Clears out the temporary ssh known_hosts file.

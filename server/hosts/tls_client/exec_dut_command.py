@@ -1,36 +1,35 @@
 # Lint as: python2, python3
-"""Client for Autotest side communcations to the TLS SSH Server."""
+# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+"""Autotest communcations to the Hosts (DUTs) via TLS ExecDutCommand."""
 
-
+import common
 import grpc
 import logging
 import six
 import time
 
-from autotest_lib.server.hosts.drone_api_client import autotest_common_pb2
-from autotest_lib.server.hosts.drone_api_client import autotest_common_pb2_grpc
+from autotest_lib.server.hosts.tls_client import autotest_common_pb2
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 
-TLS_PORT = 7152
-TLS_IP = '10.254.254.254'
 
-class TLSClient(object):
-    """The client side connection to Common-TLS service running in a drone."""
+class TLSExecDutCommandClient():
+    """Object for sending commands to a host, and getting the response."""
 
-    def __init__(self, hostname):
+    def __init__(self, tlsconnection, hostname):
         """Configure the grpc channel."""
+        if tlsconnection.alive:
+            self.stub = tlsconnection.stub
+        else:
+            raise error.TLSConnectionError(
+                "TLS connection is not alive when try to creating"
+                " exec_dut_command client.")
+
         self.hostname = hostname
-        self.channel = grpc.insecure_channel('{}:{}'.format(TLS_IP, TLS_PORT))
-        self.stub = autotest_common_pb2_grpc.CommonStub(self.channel)
-        logging.debug('TLS Client Started. Connected to: {}'.format(hostname))
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        self.close()
+        self.tlsconnection = tlsconnection
 
     def run_cmd(self,
                 cmd,
@@ -48,23 +47,27 @@ class TLSClient(object):
             before forcefully killing it.
         @param ignore_timeout: if True, do not raise err on timeouts.
         """
-        res = utils.CmdResult(command=cmd)
+        if not self.tlsconnection.alive:
+            error.TLSConnectionError(
+                "TLS connection is not up when try to run exec_dut_command.")
+        result = utils.CmdResult(command=cmd)
         try:
-            self._run(cmd, stdout_tee, stderr_tee, res, timeout)
+            self._run(cmd, stdout_tee, stderr_tee, result, timeout)
         except grpc.RpcError as e:
             if e.code().name == "DEADLINE_EXCEEDED":
                 if ignore_timeout:
                     return None
                 raise error.CmdTimeoutError(
-                    cmd, res,
-                    "Command(s) did not complete within %d seconds" % timeout)
+                        cmd, result,
+                        "Command(s) did not complete within %d seconds" %
+                        timeout)
             raise e
         except Exception as e:
             raise e
-        return res
+        return result
 
-    def _run(self, cmd, stdout_tee, stderr_tee, res, timeout):
-        """Run the provided cmd, populate the res and return it."""
+    def _run(self, cmd, stdout_tee, stderr_tee, result, timeout):
+        """Run the provided cmd, populate the result in place."""
         start_time = time.time()
         response = self._send_cmd(cmd, timeout)
 
@@ -75,27 +78,22 @@ class TLSClient(object):
         if response:
             for item in response:
                 last_status = item.exit_info.status
-                _parse_item_and_log(item.stdout, stdout_buf, stdout_tee)
-                _parse_item_and_log(item.stderr, stderr_buf, stderr_tee)
+                _log_item(item.stdout, stdout_buf, stdout_tee)
+                _log_item(item.stderr, stderr_buf, stderr_tee)
 
-        res.stdout = stdout_buf.getvalue()
-        res.stderr = stderr_buf.getvalue()
-        res.exit_status = last_status
-        res.duration = time.time() - start_time
+        result.stdout = stdout_buf.getvalue()
+        result.stderr = stderr_buf.getvalue()
+        result.exit_status = last_status
+        result.duration = time.time() - start_time
 
     def _send_cmd(self, cmd, timeout):
         """Serialize and send the cmd to the TLS service."""
-        formatted_cmd = autotest_common_pb2.ExecDutCommandRequest(name=self.hostname,
-                                                         command=cmd)
+        formatted_cmd = autotest_common_pb2.ExecDutCommandRequest(
+                name=self.hostname, command=cmd)
         return self.stub.ExecDutCommand(formatted_cmd, timeout=timeout)
 
-    def close(self):
-        """Close the grpc channel."""
-        self.channel.close()
-        logging.debug("TLS Client closed.")
 
-
-def _parse_item_and_log(item, buf, tee):
+def _log_item(item, buf, tee):
     """
     Parse the provided item.
 

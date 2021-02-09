@@ -130,12 +130,15 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
     def _tls_run(self, original_cmd, timeout, ignore_status, stdout, stderr,
                  args, ignore_timeout):
         """Helper function for run(), uses the tls client."""
+        if not self.tls_connection.alive:
+            raise error.TLSConnectionError("TLS not connected.")
         original_cmd = ' '.join([original_cmd] +
                                 [utils.sh_quote_word(arg) for arg in args])
 
         try:
-            result = self.tls_client.run_cmd(original_cmd, timeout, stdout,
-                                             stderr, ignore_timeout)
+            result = self.tls_exec_dut_command_client.run_cmd(original_cmd, timeout,
+                                                       stdout, stderr,
+                                                       ignore_timeout)
         except Exception as e:
             logging.warning("TLS Client run err %s", e)
             raise e
@@ -165,7 +168,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         # If TLS client has been built, and not marked as unstable, use it.
         # NOTE: if the tls_enabled setting in the config is not True, the
         # client will not have been built.
-        use_tls = self.tls_client and not self.tls_unstable
+        use_tls = self.tls_exec_dut_command_client and not self.tls_unstable
 
         if verbose:
             stack = self._get_server_stack_state(lowest_frames=2,
@@ -185,7 +188,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 # If TLS fails for unknown reason, we will revert to normal ssh.
                 logging.warning(
                         "Unexpected TLS cmd failed. Reverting to SSH.\n %s", e)
-                self.close_tls_client()
+
                 # Note the TLS as unstable so we do not attempt to re-start it.
                 self.tls_unstable = True
 

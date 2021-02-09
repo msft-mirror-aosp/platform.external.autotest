@@ -7,7 +7,8 @@ import logging
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import test
-from autotest_lib.server.hosts.drone_api_client.client import TLSClient
+from autotest_lib.server.hosts.tls_client import connection
+from autotest_lib.server.hosts.tls_client import exec_dut_command
 
 
 class infra_TLSExecDUTCommand(test.test):
@@ -27,14 +28,16 @@ class infra_TLSExecDUTCommand(test.test):
         @param case: The case to run.
 
         """
-        self.tlsclient = TLSClient(hostname=host.hostname)
-        if case == 'basic':
+        tlsconn = connection.TLSCConnection()
+        self.tlsclient = exec_dut_command.TLSExecDutCommandClient(
+                tlsconn, host.hostname)
+        if case == "basic":
             self.basic()
-        elif case == 'stress':
+        elif case == "stress":
             self.stress()
-        elif case == 'stress_fail':
+        elif case == "stress_fail":
             self.stress_fail()
-        elif case == 'timeout':
+        elif case == "timeout":
             self.timeout()
         else:
             raise error.TestError("Case {} does not exist".format(case))
@@ -42,7 +45,7 @@ class infra_TLSExecDUTCommand(test.test):
     def timeout(self):
         """Test that the timeout is respected."""
         try:
-            self.tlsclient.run_cmd('sleep 10', timeout=5)
+            self.tlsclient.run_cmd("sleep 10", timeout=5)
         except error.CmdTimeoutError:
             return
         raise error.TestError("Command did not timeout.")
@@ -55,7 +58,7 @@ class infra_TLSExecDUTCommand(test.test):
     def stress_fail(self):
         """Test a cmd that should return exit_status of 1 does so, reliably."""
         for i in range(500):
-            res = self.tlsclient.run_cmd('NonExistingCommand')
+            res = self.tlsclient.run_cmd("NonExistingCommand")
             if res.exit_status == 0:
                 raise error.TestError(
                         "TLS SSH exit status was: '{}'. Expected != 0".format(

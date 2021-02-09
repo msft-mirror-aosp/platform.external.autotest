@@ -3,13 +3,12 @@
 import os
 from shutil import copyfile
 
-
 UP = '../'
 PROTO_PATH = 'src/config/proto/chromiumos/config/api/test/tls/'
 PROTO_NAME = 'common.proto'
 BUILD_CMD = (
-    "python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. {}"
-    .format(PROTO_NAME))
+        "python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. {}"
+        .format(PROTO_NAME))
 
 
 def delete_old_protos():
@@ -48,6 +47,7 @@ def main():
     delete_old_protos()
     copy_proto_from_src()
     create_bindings()
+
 
 if __name__ == "__main__":
     main()

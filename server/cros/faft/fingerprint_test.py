@@ -110,10 +110,10 @@ class FingerprintTest(test.test):
     #      what we release) is exactly what we expect.
     _FIRMWARE_VERSION_MAP = {
         _FP_BOARD_NAME_BLOONCHIPPER: {
-            'bloonchipper_v2.0.4277-9f652bb3.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '7d9b788a908bee5c83e27450258b2bbf110d7253d49faa4804562ae27e42cb3b',
+            'bloonchipper_v2.0.4277-9f652bb3-RO_v2.0.7314-3dfc5ff6-RW.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '2bac89c16ad71986fe37ed651fe7dd6d5a3d039678d4a5f1d03c5a65a9f3bc3c',
                 _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
-                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.7314-3dfc5ff6',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
             'bloonchipper_v2.0.5938-197506c1.bin': {

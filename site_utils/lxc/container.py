@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import collections
 import json
 import logging
@@ -16,6 +20,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.site_utils.lxc import constants
 from autotest_lib.site_utils.lxc import lxc
 from autotest_lib.site_utils.lxc import utils as lxc_utils
+import six
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
@@ -151,7 +156,7 @@ class Container(object):
         # property rootfs is retrieved.
         self._rootfs = None
         self.name = name
-        for attribute, value in attribute_values.iteritems():
+        for attribute, value in six.iteritems(attribute_values):
             setattr(self, attribute, value)
 
         # Clone the container
@@ -176,7 +181,7 @@ class Container(object):
                 self._id = None
 
         if not Container._LXC_VERSION:
-          Container._LXC_VERSION = lxc_utils.get_lxc_version()
+            Container._LXC_VERSION = lxc_utils.get_lxc_version()
 
 
     @classmethod
@@ -263,7 +268,7 @@ class Container(object):
                     'No container found in directory %s with name of %s.' %
                     (self.container_path, self.name))
         attribute_values = containers[0]
-        for attribute, value in attribute_values.iteritems():
+        for attribute, value in six.iteritems(attribute_values):
             setattr(self, attribute, value)
 
 

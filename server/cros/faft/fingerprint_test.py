@@ -124,10 +124,10 @@ class FingerprintTest(test.test):
             },
         },
         _FP_BOARD_NAME_NOCTURNE: {
-            'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.4017-9c45fb4b3-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '16c405eeaff75dcbc76dbc9f368f66e3fabc47e2ebcf13bd2b64b8b133bbff97',
+            'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.7304-441100b93-RW.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '569a191bd2ed25ce89b296f0ab8cd2ed567dbf6a8df3f6b3f82ad58c786d79a9',
                 _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
-                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.4017-9c45fb4b3',
+                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.7304-441100b93',
                 _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
             },
         },

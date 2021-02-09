@@ -5,9 +5,6 @@
 
 import logging
 
-import base
-import constants
-import servo_updater
 
 import common
 from autotest_lib.client.common_lib import error
@@ -15,7 +12,10 @@ from autotest_lib.client.common_lib import utils as client_utils
 from autotest_lib.server.cros.storage import storage_validate as storage
 from autotest_lib.server.cros.servo.keyboard import servo_keyboard_flasher
 from autotest_lib.server.cros.repair import mac_address_helper
+from autotest_lib.site_utils.admin_audit import base
+from autotest_lib.site_utils.admin_audit import constants
 from autotest_lib.site_utils.admin_audit import rpm_validator
+from autotest_lib.site_utils.admin_audit import servo_updater
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics

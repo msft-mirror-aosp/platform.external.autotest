@@ -3,14 +3,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import __builtin__
+import six.moves.builtins
 import mox
 import os
 import unittest
 import time
-from StringIO import StringIO
+from six import StringIO
 
-import utils
+import common
+
+from autotest_lib.site_utils.rpm_control_system import utils
 
 
 class TestUtils(mox.MoxTestBase):
@@ -19,7 +21,7 @@ class TestUtils(mox.MoxTestBase):
 
     def test_load_servo_interface_mapping(self):
         """Test servo-interface mapping file can be loaded."""
-        self.mox.StubOutWithMock(__builtin__, 'open')
+        self.mox.StubOutWithMock(six.moves.builtins, 'open')
         fake_content = (
                 'chromeos1-rack5-host10-servo, chromeos1-poe-switch1, fa42\n'
                 'chromeos1-rack5-host11-servo, chromeos1-poe-switch1, fa43\n'

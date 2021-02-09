@@ -2,24 +2,29 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import ctypes
 import datetime
 import logging
 import multiprocessing
 import os
 import pexpect
-import Queue
+import six.moves.queue
 import re
 import threading
 import time
 
-from config import rpm_config
-import dli_urllib
-import rpm_logging_config
-
 import common
+
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
+from autotest_lib.site_utils.rpm_control_system import dli_urllib
+from autotest_lib.site_utils.rpm_control_system import rpm_logging_config
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import retry
+from six.moves import range
 
 RPM_CALL_TIMEOUT_MINS = rpm_config.getint('RPM_INFRASTRUCTURE',
                                           'call_timeout_mins')
@@ -99,7 +104,7 @@ class RPMController(object):
         """
         self._dns_zone = rpm_config.get('CROS', 'dns_zone')
         self.hostname = rpm_hostname
-        self.request_queue = Queue.Queue()
+        self.request_queue = six.moves.queue.Queue()
         self._running = False
         self.is_running_lock = threading.Lock()
         # If a hydra name is provided by the subclass then we know we are
@@ -266,7 +271,7 @@ class RPMController(object):
         request['new_state'] = new_state
         request['start_time'] = datetime.datetime.utcnow()
         # Reserve a spot for the result to be stored.
-        request['result_queue'] = Queue.Queue()
+        request['result_queue'] = six.moves.queue.Queue()
         # Place in request_queue
         self.request_queue.put(request)
         self._start_processing_requests()
@@ -857,7 +862,7 @@ class CiscoPOEController(RPMController):
             ssh.sendline(self.CONFIG_IF % interface)
             ssh.expect(self.config_if_prompt, timeout=self.CMD_TIMEOUT)
             return True
-        except pexpect.ExceptionPexpect, e:
+        except pexpect.ExceptionPexpect as e:
             ssh.sendline(self.END_CMD)
             logging.exception(e)
         return False
@@ -879,7 +884,7 @@ class CiscoPOEController(RPMController):
             ssh.sendline(self.END_CMD)
             ssh.expect(self.poe_prompt, timeout=self.CMD_TIMEOUT)
             return True
-        except pexpect.ExceptionPexpect, e:
+        except pexpect.ExceptionPexpect as e:
             logging.exception(e)
         return False
 
@@ -915,7 +920,7 @@ class CiscoPOEController(RPMController):
                 state = ssh.match.group(2)
                 if state == expected_state:
                     return True
-        except pexpect.ExceptionPexpect, e:
+        except pexpect.ExceptionPexpect as e:
             logging.exception(e)
         return False
 

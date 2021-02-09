@@ -7,11 +7,11 @@ import mox
 import socket
 import unittest
 
-import frontend_server
-from rpm_infrastructure_exception import RPMInfrastructureException
-
 import common
+
+from autotest_lib.site_utils.rpm_control_system import frontend_server
 from autotest_lib.site_utils.rpm_control_system import utils
+from autotest_lib.site_utils.rpm_control_system.rpm_infrastructure_exception import RPMInfrastructureException
 
 
 FAKE_DISPATCHER_URI1 = 'http://fake_dispatcher:1'
@@ -37,9 +37,11 @@ class TestFrontendServer(mox.MoxTestBase):
                 powerunit_hostname=POWERUNIT_HOSTNAME,
                 outlet=OUTLET, hydra_hostname=None)
         self.xmlrpc_mock = self.mox.CreateMockAnything()
-        frontend_server.xmlrpclib.ServerProxy = self.mox.CreateMockAnything()
-        frontend_server.xmlrpclib.ServerProxy(FAKE_DISPATCHER_URI1,
-                allow_none=True).AndReturn(self.xmlrpc_mock)
+        frontend_server.xmlrpc_client.ServerProxy = self.mox.CreateMockAnything(
+        )
+        frontend_server.xmlrpc_client.ServerProxy(FAKE_DISPATCHER_URI1,
+                                                  allow_none=True).AndReturn(
+                                                          self.xmlrpc_mock)
 
 
     def testNoRegisteredDispatchers(self):
@@ -118,10 +120,9 @@ class TestFrontendServer(mox.MoxTestBase):
         self.xmlrpc_mock.queue_request(
                 mox.IgnoreArg(), NEW_STATE).AndRaise(
                 socket.error(FAKE_ERRNO, UNREACHABLE_SERVER_MSG))
-        frontend_server.xmlrpclib.ServerProxy(
-                FAKE_DISPATCHER_URI1,
-                allow_none=True).AndReturn(
-                self.xmlrpc_mock)
+        frontend_server.xmlrpc_client.ServerProxy(FAKE_DISPATCHER_URI1,
+                                                  allow_none=True).AndReturn(
+                                                          self.xmlrpc_mock)
         self.xmlrpc_mock.is_up().AndRaise(
                 socket.error(FAKE_ERRNO, UNREACHABLE_SERVER_MSG))
         self.mox.ReplayAll()
@@ -146,9 +147,9 @@ class TestFrontendServer(mox.MoxTestBase):
         self.xmlrpc_mock.queue_request(
                 mox.IgnoreArg(), NEW_STATE).AndRaise(
                 socket.error(FAKE_ERRNO,UNREACHABLE_SERVER_MSG))
-        frontend_server.xmlrpclib.ServerProxy(
-                mox.IgnoreArg(), allow_none=True).MultipleTimes(3).AndReturn(
-                        self.xmlrpc_mock)
+        frontend_server.xmlrpc_client.ServerProxy(
+                mox.IgnoreArg(),
+                allow_none=True).MultipleTimes(3).AndReturn(self.xmlrpc_mock)
         self.xmlrpc_mock.is_up().AndRaise(
                 socket.error(FAKE_ERRNO, UNREACHABLE_SERVER_MSG))
         self.xmlrpc_mock.is_up().AndReturn(True)

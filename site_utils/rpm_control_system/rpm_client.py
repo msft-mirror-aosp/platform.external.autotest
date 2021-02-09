@@ -3,16 +3,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import division
+from __future__ import print_function
+
 import argparse
 import logging
 import sys
-import xmlrpclib
+import six.moves.xmlrpc_client
 
 import common
 
-from config import rpm_config
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib.cros import retry
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
@@ -69,9 +72,9 @@ def _set_power(args_tuple, timeout_mins=RPM_CALL_TIMEOUT_MINS):
     @param args_tuple: A args tuple for rpc call. See example below:
         (hostname, powerunit_hostname, outlet, hydra_hostname, new_state)
     """
-    client = xmlrpclib.ServerProxy(RPM_FRONTEND_URI,
-                                   verbose=False,
-                                   allow_none=True)
+    client = six.moves.xmlrpc_client.ServerProxy(RPM_FRONTEND_URI,
+                                                 verbose=False,
+                                                 allow_none=True)
     timeout = None
     result = None
     endpoint = (client.set_power_via_poe if len(args_tuple) == 2
@@ -137,7 +140,7 @@ def main():
     if options.machine.endswith('servo'):
         args_tuple = (options.machine, options.state)
     elif not options.p_hostname or not options.outlet:
-        print "Powerunit hostname and outlet info are required for DUT."
+        print("Powerunit hostname and outlet info are required for DUT.")
         return
     else:
         args_tuple = (options.machine, options.p_hostname, options.outlet,
@@ -145,10 +148,12 @@ def main():
     _set_power(args_tuple)
 
     if options.disable_emails is not None:
-        client = xmlrpclib.ServerProxy(RPM_FRONTEND_URI, verbose=False)
+        client = six.moves.xmlrpc_client.ServerProxy(RPM_FRONTEND_URI,
+                                                     verbose=False)
         client.suspend_emails(options.disable_emails)
     if options.enable_emails:
-        client = xmlrpclib.ServerProxy(RPM_FRONTEND_URI, verbose=False)
+        client = six.moves.xmlrpc_client.ServerProxy(RPM_FRONTEND_URI,
+                                                     verbose=False)
         client.resume_emails()
 
 

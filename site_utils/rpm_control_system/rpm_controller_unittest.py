@@ -7,11 +7,10 @@ import mox
 import pexpect
 import unittest
 
-import dli
-
-import rpm_controller
-
 import common
+
+from autotest_lib.site_utils.rpm_control_system import dli
+from autotest_lib.site_utils.rpm_control_system import rpm_controller
 from autotest_lib.site_utils.rpm_control_system import utils
 
 
@@ -46,7 +45,6 @@ class TestRPMControllerQueue(mox.MoxTestBase):
 class TestSentryRPMController(mox.MoxTestBase):
     """Test SentryRPMController."""
 
-
     def setUp(self):
         super(TestSentryRPMController, self).setUp()
         self.ssh = self.mox.CreateMockAnything()
@@ -59,7 +57,6 @@ class TestSentryRPMController(mox.MoxTestBase):
                 powerunit_type=utils.PowerUnitInfo.POWERUNIT_TYPES.RPM,
                 outlet='.A100',
                 hydra_hostname=None)
-
 
     def testSuccessfullyChangeOutlet(self):
         """Should return True if change was successful."""
@@ -77,7 +74,6 @@ class TestSentryRPMController(mox.MoxTestBase):
         self.assertTrue(self.rpm.set_power_state(
                 self.powerunit_info, new_state))
         self.mox.VerifyAll()
-
 
     def testUnsuccessfullyChangeOutlet(self):
         """Should return False if change was unsuccessful."""
@@ -97,10 +93,8 @@ class TestSentryRPMController(mox.MoxTestBase):
             self.rpm.set_power_state(self.powerunit_info, new_state))
         self.mox.VerifyAll()
 
-
 class TestWebPoweredRPMController(mox.MoxTestBase):
     """Test WebPoweredRPMController."""
-
 
     def setUp(self):
         super(TestWebPoweredRPMController, self).setUp()
@@ -120,7 +114,6 @@ class TestWebPoweredRPMController(mox.MoxTestBase):
                 outlet=outlet,
                 hydra_hostname=None)
 
-
     def testSuccessfullyChangeOutlet(self):
         """Should return True if change was successful."""
         test_status_list_final = [[8, 'chromeos-rack8a-host8', 'u\'OFF\'']]
@@ -130,7 +123,6 @@ class TestWebPoweredRPMController(mox.MoxTestBase):
         self.assertTrue(self.web_rpm.set_power_state(
                 self.powerunit_info, 'OFF'))
         self.mox.VerifyAll()
-
 
     def testUnsuccessfullyChangeOutlet(self):
         """Should return False if Outlet State does not change."""
@@ -142,13 +134,11 @@ class TestWebPoweredRPMController(mox.MoxTestBase):
                 self.powerunit_info, 'OFF'))
         self.mox.VerifyAll()
 
-
     def testNoOutlet(self):
         """Should return False if DUT hostname is not on the RPM device."""
         self.powerunit_info.outlet=None
         self.assertFalse(self.web_rpm.set_power_state(
                 self.powerunit_info, 'OFF'))
-
 
 class TestCiscoPOEController(mox.MoxTestBase):
     """Test CiscoPOEController."""

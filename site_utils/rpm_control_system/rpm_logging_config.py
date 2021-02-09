@@ -8,9 +8,9 @@ import os
 import socket
 import time
 
-from config import rpm_config
-
 import common
+
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
 from autotest_lib.site_utils import log_socket_server
 from autotest_lib.site_utils.rpm_control_system import rpm_infrastructure_exception
 

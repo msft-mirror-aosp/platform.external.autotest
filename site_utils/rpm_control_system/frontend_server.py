@@ -3,6 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import errno
 import heapq
 import logging
@@ -10,14 +14,15 @@ import os
 import sys
 import socket
 import threading
-import xmlrpclib
-
-import rpm_logging_config
-from config import rpm_config
-from MultiThreadedXMLRPCServer import MultiThreadedXMLRPCServer
-from rpm_infrastructure_exception import RPMInfrastructureException
+from six.moves import xmlrpc_client
 
 import common
+
+from autotest_lib.site_utils.rpm_control_system import rpm_logging_config
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
+from autotest_lib.site_utils.rpm_control_system.MultiThreadedXMLRPCServer import MultiThreadedXMLRPCServer
+from autotest_lib.site_utils.rpm_control_system.rpm_infrastructure_exception import RPMInfrastructureException
+
 from autotest_lib.site_utils.rpm_control_system import utils
 
 DEFAULT_RPM_COUNT = 0
@@ -177,7 +182,7 @@ class RPMFrontendServer(object):
         if not dispatcher_uri:
             # No dispatchers available.
             raise RPMInfrastructureException('No dispatchers available.')
-        client = xmlrpclib.ServerProxy(dispatcher_uri, allow_none=True)
+        client = xmlrpc_client.ServerProxy(dispatcher_uri, allow_none=True)
         try:
             # Block on the request and return the result once it arrives.
             return client.queue_request(powerunit_info, new_state)
@@ -209,7 +214,7 @@ class RPMFrontendServer(object):
                  can still function. True otherwise.
         """
         for dispatcher_entry in self._dispatcher_minheap:
-            dispatcher = xmlrpclib.ServerProxy(
+            dispatcher = xmlrpc_client.ServerProxy(
                     dispatcher_entry[DISPATCHER_URI], allow_none=True)
             try:
                 if dispatcher.is_up():
@@ -385,8 +390,8 @@ if __name__ == '__main__':
     RPMFrontendServer and registers it to a MultiThreadedXMLRPCServer instance.
     """
     if len(sys.argv) != 2:
-      print 'Usage: ./%s <log_file_dir>.' % sys.argv[0]
-      sys.exit(1)
+        print('Usage: ./%s <log_file_dir>.' % sys.argv[0])
+        sys.exit(1)
 
     email_handler = rpm_logging_config.set_up_logging_to_file(
             sys.argv[1], LOG_FILENAME_FORMAT)

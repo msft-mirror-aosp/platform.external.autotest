@@ -1,9 +1,8 @@
-# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
-import urllib
+from six.moves import urllib
 
-import dli
+import common
+
+from autotest_lib.site_utils.rpm_control_system import dli
 
 
 class Powerswitch(dli.powerswitch):
@@ -16,7 +15,7 @@ class Powerswitch(dli.powerswitch):
         self.contents=''
         path = 'http://%s:%s@%s:80/%s' % (self.userid,self.password,
                                           self.hostname,url)
-        web_file = urllib.urlopen(path)
+        web_file = urllib.request.urlopen(path)
         if web_file.getcode() != 200:
             return None
         self.contents = web_file.read()

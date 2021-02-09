@@ -76,7 +76,10 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE, DAMMIT.
 
 """
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import generators
+from __future__ import print_function
 
 __author__ = "Leonard Richardson (leonardr@segfault.org)"
 __version__ = "3.2.1"
@@ -89,10 +92,14 @@ import markupbase
 import types
 import re
 import sgmllib
+import six
+from six import unichr
+from six.moves import map
+from six.moves import range
 try:
-  from htmlentitydefs import name2codepoint
+    from six.moves.html_entities import name2codepoint
 except ImportError:
-  name2codepoint = {}
+    name2codepoint = {}
 try:
     set
 except NameError:
@@ -202,7 +209,7 @@ class PageElement(object):
         return lastChild
 
     def insert(self, position, newChild):
-        if isinstance(newChild, basestring) \
+        if isinstance(newChild, six.string_types) \
             and not isinstance(newChild, NavigableString):
             newChild = NavigableString(newChild)
 
@@ -357,7 +364,7 @@ class PageElement(object):
                 return [element for element in generator()
                         if isinstance(element, Tag)]
             # findAll*('tag-name')
-            elif isinstance(name, basestring):
+            elif isinstance(name, six.string_types):
                 return [element for element in generator()
                         if isinstance(element, Tag) and
                         element.name == name]
@@ -370,7 +377,7 @@ class PageElement(object):
         g = generator()
         while True:
             try:
-                i = g.next()
+                i = next(g)
             except StopIteration:
                 break
             if i:
@@ -421,19 +428,19 @@ class PageElement(object):
     def toEncoding(self, s, encoding=None):
         """Encodes an object to a string in some encoding, or to Unicode.
         ."""
-        if isinstance(s, unicode):
+        if isinstance(s, six.text_type):
             if encoding:
                 s = s.encode(encoding)
         elif isinstance(s, str):
             if encoding:
                 s = s.encode(encoding)
             else:
-                s = unicode(s)
+                s = six.text_type(s)
         else:
             if encoding:
                 s  = self.toEncoding(str(s), encoding)
             else:
-                s = unicode(s)
+                s = six.text_type(s)
         return s
 
     BARE_AMPERSAND_OR_BRACKET = re.compile("([<>]|"
@@ -446,7 +453,7 @@ class PageElement(object):
         return "&" + self.XML_SPECIAL_CHARS_TO_ENTITIES[x.group(0)[0]] + ";"
 
 
-class NavigableString(unicode, PageElement):
+class NavigableString(six.text_type, PageElement):
 
     def __new__(cls, value):
         """Create a new NavigableString.
@@ -456,9 +463,9 @@ class NavigableString(unicode, PageElement):
         passed in to the superclass's __new__ or the superclass won't know
         how to handle non-ASCII characters.
         """
-        if isinstance(value, unicode):
-            return unicode.__new__(cls, value)
-        return unicode.__new__(cls, value, DEFAULT_OUTPUT_ENCODING)
+        if isinstance(value, six.text_type):
+            return six.text_type.__new__(cls, value)
+        return six.text_type.__new__(cls, value, DEFAULT_OUTPUT_ENCODING)
 
     def __getnewargs__(self):
         return (NavigableString.__str__(self),)
@@ -470,7 +477,8 @@ class NavigableString(unicode, PageElement):
         if attr == 'string':
             return self
         else:
-            raise AttributeError, "'%s' object has no attribute '%s'" % (self.__class__.__name__, attr)
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (self.__class__.__name__, attr))
 
     def __unicode__(self):
         return str(self).decode(DEFAULT_OUTPUT_ENCODING)
@@ -544,7 +552,7 @@ class Tag(PageElement):
         if attrs is None:
             attrs = []
         elif isinstance(attrs, dict):
-            attrs = attrs.items()
+            attrs = list(attrs.items())
         self.attrs = attrs
         self.contents = []
         self.setup(parent, previous)
@@ -555,11 +563,10 @@ class Tag(PageElement):
         self.escapeUnrecognizedEntities = parser.escapeUnrecognizedEntities
 
         # Convert any HTML, XML, or numeric entities in the attribute values.
-        convert = lambda(k, val): (k,
-                                   re.sub("&(#\d+|#x[0-9a-fA-F]+|\w+);",
-                                          self._convertEntities,
-                                          val))
-        self.attrs = map(convert, self.attrs)
+        convert = lambda k_val: (k_val[0],
+                                 re.sub("&(#\d+|#x[0-9a-fA-F]+|\w+);", self.
+                                        _convertEntities, k_val[1]))
+        self.attrs = list(map(convert, self.attrs))
 
     def getString(self):
         if (len(self.contents) == 1
@@ -605,7 +612,7 @@ class Tag(PageElement):
         raise ValueError("Tag.index: element not in tag")
 
     def has_key(self, key):
-        return self._getAttrMap().has_key(key)
+        return key in self._getAttrMap()
 
     def __getitem__(self, key):
         """tag[key] returns the value of the 'key' attribute for the tag,
@@ -649,14 +656,14 @@ class Tag(PageElement):
                 #We don't break because bad HTML can define the same
                 #attribute multiple times.
             self._getAttrMap()
-            if self.attrMap.has_key(key):
+            if key in self.attrMap:
                 del self.attrMap[key]
 
     def __call__(self, *args, **kwargs):
         """Calling a tag like a function is the same as calling its
         findAll() method. Eg. tag('a') returns a list of all the A tags
         found within this tag."""
-        return apply(self.findAll, args, kwargs)
+        return self.findAll(*args, **kwargs)
 
     def __getattr__(self, tag):
         #print "Getattr %s.%s" % (self.__class__, tag)
@@ -664,7 +671,8 @@ class Tag(PageElement):
             return self.find(tag[:-3])
         elif tag.find('__') != 0:
             return self.find(tag)
-        raise AttributeError, "'%s' object has no attribute '%s'" % (self.__class__, tag)
+        raise AttributeError("'%s' object has no attribute '%s'" %
+                             (self.__class__, tag))
 
     def __eq__(self, other):
         """Returns true iff this tag has the same name, the same attributes,
@@ -708,7 +716,7 @@ class Tag(PageElement):
         if self.attrs:
             for key, val in self.attrs:
                 fmt = '%s="%s"'
-                if isinstance(val, basestring):
+                if isinstance(val, six.string_types):
                     if self.containsSubstitutions and '%SOUP-ENCODING%' in val:
                         val = self.substituteEncoding(val, encoding)
 
@@ -892,7 +900,7 @@ class SoupStrainer:
 
     def __init__(self, name=None, attrs={}, text=None, **kwargs):
         self.name = name
-        if isinstance(attrs, basestring):
+        if isinstance(attrs, six.string_types):
             kwargs['class'] = _match_css_class(attrs)
             attrs = None
         if kwargs:
@@ -930,9 +938,9 @@ class SoupStrainer:
                 markupAttrMap = None
                 for attr, matchAgainst in self.attrs.items():
                     if not markupAttrMap:
-                         if hasattr(markupAttrs, 'get'):
+                        if hasattr(markupAttrs, 'get'):
                             markupAttrMap = markupAttrs
-                         else:
+                        else:
                             markupAttrMap = {}
                             for k,v in markupAttrs:
                                 markupAttrMap[k] = v
@@ -966,12 +974,12 @@ class SoupStrainer:
                 found = self.searchTag(markup)
         # If it's text, make sure the text matches.
         elif isinstance(markup, NavigableString) or \
-                 isinstance(markup, basestring):
+                 isinstance(markup, six.string_types):
             if self._matches(markup, self.text):
                 found = markup
         else:
-            raise Exception, "I don't know how to match against a %s" \
-                  % markup.__class__
+            raise Exception("I don't know how to match against a %s" \
+                  % markup.__class__)
         return found
 
     def _matches(self, markup, matchAgainst):
@@ -986,8 +994,8 @@ class SoupStrainer:
             #other ways of matching match the tag name as a string.
             if isinstance(markup, Tag):
                 markup = markup.name
-            if markup and not isinstance(markup, basestring):
-                markup = unicode(markup)
+            if markup and not isinstance(markup, six.string_types):
+                markup = six.text_type(markup)
             #Now we know that chunk is either a string, or None.
             if hasattr(matchAgainst, 'match'):
                 # It's a regexp object.
@@ -995,10 +1003,10 @@ class SoupStrainer:
             elif hasattr(matchAgainst, '__iter__'): # list-like
                 result = markup in matchAgainst
             elif hasattr(matchAgainst, 'items'):
-                result = markup.has_key(matchAgainst)
-            elif matchAgainst and isinstance(markup, basestring):
-                if isinstance(markup, unicode):
-                    matchAgainst = unicode(matchAgainst)
+                result = matchAgainst in markup
+            elif matchAgainst and isinstance(markup, six.string_types):
+                if isinstance(markup, six.text_type):
+                    matchAgainst = six.text_type(matchAgainst)
                 else:
                     matchAgainst = str(matchAgainst)
 
@@ -1162,14 +1170,14 @@ class BeautifulStoneSoup(Tag, SGMLParser):
     def _feed(self, inDocumentEncoding=None, isHTML=False):
         # Convert the document to Unicode.
         markup = self.markup
-        if isinstance(markup, unicode):
+        if isinstance(markup, six.text_type):
             if not hasattr(self, 'originalEncoding'):
                 self.originalEncoding = None
         else:
             dammit = UnicodeDammit\
                      (markup, [self.fromEncoding, inDocumentEncoding],
                       smartQuotesTo=self.smartQuotesTo, isHTML=isHTML)
-            markup = dammit.unicode
+            markup = dammit.six.text_type
             self.originalEncoding = dammit.originalEncoding
             self.declaredHTMLEncoding = dammit.declaredHTMLEncoding
         if markup:
@@ -1208,8 +1216,8 @@ class BeautifulStoneSoup(Tag, SGMLParser):
     def isSelfClosingTag(self, name):
         """Returns true iff the given string is the name of a
         self-closing tag according to this parser."""
-        return self.SELF_CLOSING_TAGS.has_key(name) \
-               or self.instanceSelfClosingTags.has_key(name)
+        return name in self.SELF_CLOSING_TAGS \
+               or name in self.instanceSelfClosingTags
 
     def reset(self):
         Tag.__init__(self, self, self.ROOT_TAG_NAME)
@@ -1301,7 +1309,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
 
         nestingResetTriggers = self.NESTABLE_TAGS.get(name)
         isNestable = nestingResetTriggers != None
-        isResetNesting = self.RESET_NESTING_TAGS.has_key(name)
+        isResetNesting = name in self.RESET_NESTING_TAGS
         popTo = None
         inclusive = True
         for i in range(len(self.tagStack)-1, 0, -1):
@@ -1314,7 +1322,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
             if (nestingResetTriggers is not None
                 and p.name in nestingResetTriggers) \
                 or (nestingResetTriggers is None and isResetNesting
-                    and self.RESET_NESTING_TAGS.has_key(p.name)):
+                    and p.name in self.RESET_NESTING_TAGS):
 
                 #If we encounter one of the nesting reset triggers
                 #peculiar to this tag, or we encounter another tag
@@ -1412,27 +1420,27 @@ class BeautifulStoneSoup(Tag, SGMLParser):
                 pass
 
         if not data and self.convertXMLEntities:
-                data = self.XML_ENTITIES_TO_SPECIAL_CHARS.get(ref)
+            data = self.XML_ENTITIES_TO_SPECIAL_CHARS.get(ref)
 
         if not data and self.convertHTMLEntities and \
             not self.XML_ENTITIES_TO_SPECIAL_CHARS.get(ref):
-                # TODO: We've got a problem here. We're told this is
-                # an entity reference, but it's not an XML entity
-                # reference or an HTML entity reference. Nonetheless,
-                # the logical thing to do is to pass it through as an
-                # unrecognized entity reference.
-                #
-                # Except: when the input is "&carol;" this function
-                # will be called with input "carol". When the input is
-                # "AT&T", this function will be called with input
-                # "T". We have no way of knowing whether a semicolon
-                # was present originally, so we don't know whether
-                # this is an unknown entity or just a misplaced
-                # ampersand.
-                #
-                # The more common case is a misplaced ampersand, so I
-                # escape the ampersand and omit the trailing semicolon.
-                data = "&amp;%s" % ref
+            # TODO: We've got a problem here. We're told this is
+            # an entity reference, but it's not an XML entity
+            # reference or an HTML entity reference. Nonetheless,
+            # the logical thing to do is to pass it through as an
+            # unrecognized entity reference.
+            #
+            # Except: when the input is "&carol;" this function
+            # will be called with input "carol". When the input is
+            # "AT&T", this function will be called with input
+            # "T". We have no way of knowing whether a semicolon
+            # was present originally, so we don't know whether
+            # this is an unknown entity or just a misplaced
+            # ampersand.
+            #
+            # The more common case is a misplaced ampersand, so I
+            # escape the ampersand and omit the trailing semicolon.
+            data = "&amp;%s" % ref
         if not data:
             # This case is different from the one above, because we
             # haven't already gone through a supposedly comprehensive
@@ -1452,12 +1460,12 @@ class BeautifulStoneSoup(Tag, SGMLParser):
         declaration as a CData object."""
         j = None
         if self.rawdata[i:i+9] == '<![CDATA[':
-             k = self.rawdata.find(']]>', i)
-             if k == -1:
-                 k = len(self.rawdata)
-             data = self.rawdata[i+9:k]
-             j = k+3
-             self._toStringSubclass(data, CData)
+            k = self.rawdata.find(']]>', i)
+            if k == -1:
+                k = len(self.rawdata)
+            data = self.rawdata[i + 9:k]
+            j = k + 3
+            self._toStringSubclass(data, CData)
         else:
             try:
                 j = SGMLParser.parse_declaration(self, i)
@@ -1516,7 +1524,7 @@ class BeautifulSoup(BeautifulStoneSoup):
     BeautifulStoneSoup before writing your own subclass."""
 
     def __init__(self, *args, **kwargs):
-        if not kwargs.has_key('smartQuotesTo'):
+        if 'smartQuotesTo' not in kwargs:
             kwargs['smartQuotesTo'] = self.HTML_ENTITIES
         kwargs['isHTML'] = True
         BeautifulStoneSoup.__init__(self, *args, **kwargs)
@@ -1697,9 +1705,9 @@ class BeautifulSOAP(BeautifulStoneSoup):
             tag = self.tagStack[-1]
             parent = self.tagStack[-2]
             parent._getAttrMap()
-            if (isinstance(tag, Tag) and len(tag.contents) == 1 and
-                isinstance(tag.contents[0], NavigableString) and
-                not parent.attrMap.has_key(tag.name)):
+            if (isinstance(tag, Tag) and len(tag.contents) == 1
+                        and isinstance(tag.contents[0], NavigableString)
+                        and tag.name not in parent.attrMap):
                 parent[tag.name] = tag.contents[0]
         BeautifulStoneSoup.popTag(self)
 
@@ -1773,9 +1781,9 @@ class UnicodeDammit:
                      self._detectEncoding(markup, isHTML)
         self.smartQuotesTo = smartQuotesTo
         self.triedEncodings = []
-        if markup == '' or isinstance(markup, unicode):
+        if markup == '' or isinstance(markup, six.text_type):
             self.originalEncoding = None
-            self.unicode = unicode(markup)
+            self.six.text_type = six.text_type(markup)
             return
 
         u = None
@@ -1788,7 +1796,7 @@ class UnicodeDammit:
                 if u: break
 
         # If no luck and we have auto-detection library, try that:
-        if not u and chardet and not isinstance(self.markup, unicode):
+        if not u and chardet and not isinstance(self.markup, six.text_type):
             u = self._convertFrom(chardet.detect(self.markup)['encoding'])
 
         # As a last resort, try utf-8 and windows-1252:
@@ -1797,7 +1805,7 @@ class UnicodeDammit:
                 u = self._convertFrom(proposed_encoding)
                 if u: break
 
-        self.unicode = u
+        self.six.text_type = u
         if not u: self.originalEncoding = None
 
     def _subMSChar(self, orig):
@@ -1824,7 +1832,7 @@ class UnicodeDammit:
                                                       "iso-8859-1",
                                                       "iso-8859-2"):
             markup = re.compile("([\x80-\x9f])").sub \
-                     (lambda(x): self._subMSChar(x.group(1)),
+                     (lambda x: self._subMSChar(x.group(1)),
                       markup)
 
         try:
@@ -1832,7 +1840,7 @@ class UnicodeDammit:
             u = self._toUnicode(markup, proposed)
             self.markup = u
             self.originalEncoding = proposed
-        except Exception, e:
+        except Exception as e:
             # print "That didn't work!"
             # print e
             return None
@@ -1861,7 +1869,7 @@ class UnicodeDammit:
         elif data[:4] == '\xff\xfe\x00\x00':
             encoding = 'utf-32le'
             data = data[4:]
-        newdata = unicode(data, encoding)
+        newdata = six.text_type(data, encoding)
         return newdata
 
     def _detectEncoding(self, xml_data, isHTML=False):
@@ -1874,41 +1882,45 @@ class UnicodeDammit:
             elif xml_data[:4] == '\x00\x3c\x00\x3f':
                 # UTF-16BE
                 sniffed_xml_encoding = 'utf-16be'
-                xml_data = unicode(xml_data, 'utf-16be').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-16be').encode('utf-8')
             elif (len(xml_data) >= 4) and (xml_data[:2] == '\xfe\xff') \
                      and (xml_data[2:4] != '\x00\x00'):
                 # UTF-16BE with BOM
                 sniffed_xml_encoding = 'utf-16be'
-                xml_data = unicode(xml_data[2:], 'utf-16be').encode('utf-8')
+                xml_data = six.text_type(xml_data[2:],
+                                         'utf-16be').encode('utf-8')
             elif xml_data[:4] == '\x3c\x00\x3f\x00':
                 # UTF-16LE
                 sniffed_xml_encoding = 'utf-16le'
-                xml_data = unicode(xml_data, 'utf-16le').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-16le').encode('utf-8')
             elif (len(xml_data) >= 4) and (xml_data[:2] == '\xff\xfe') and \
                      (xml_data[2:4] != '\x00\x00'):
                 # UTF-16LE with BOM
                 sniffed_xml_encoding = 'utf-16le'
-                xml_data = unicode(xml_data[2:], 'utf-16le').encode('utf-8')
+                xml_data = six.text_type(xml_data[2:],
+                                         'utf-16le').encode('utf-8')
             elif xml_data[:4] == '\x00\x00\x00\x3c':
                 # UTF-32BE
                 sniffed_xml_encoding = 'utf-32be'
-                xml_data = unicode(xml_data, 'utf-32be').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-32be').encode('utf-8')
             elif xml_data[:4] == '\x3c\x00\x00\x00':
                 # UTF-32LE
                 sniffed_xml_encoding = 'utf-32le'
-                xml_data = unicode(xml_data, 'utf-32le').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-32le').encode('utf-8')
             elif xml_data[:4] == '\x00\x00\xfe\xff':
                 # UTF-32BE with BOM
                 sniffed_xml_encoding = 'utf-32be'
-                xml_data = unicode(xml_data[4:], 'utf-32be').encode('utf-8')
+                xml_data = six.text_type(xml_data[4:],
+                                         'utf-32be').encode('utf-8')
             elif xml_data[:4] == '\xff\xfe\x00\x00':
                 # UTF-32LE with BOM
                 sniffed_xml_encoding = 'utf-32le'
-                xml_data = unicode(xml_data[4:], 'utf-32le').encode('utf-8')
+                xml_data = six.text_type(xml_data[4:],
+                                         'utf-32le').encode('utf-8')
             elif xml_data[:3] == '\xef\xbb\xbf':
                 # UTF-8 with BOM
                 sniffed_xml_encoding = 'utf-8'
-                xml_data = unicode(xml_data[3:], 'utf-8').encode('utf-8')
+                xml_data = six.text_type(xml_data[3:], 'utf-8').encode('utf-8')
             else:
                 sniffed_xml_encoding = 'ascii'
                 pass
@@ -1971,7 +1983,7 @@ class UnicodeDammit:
                     250,251,252,253,254,255)
             import string
             c.EBCDIC_TO_ASCII_MAP = string.maketrans( \
-            ''.join(map(chr, range(256))), ''.join(map(chr, emap)))
+            ''.join(map(chr, list(range(256)))), ''.join(map(chr, emap)))
         return s.translate(c.EBCDIC_TO_ASCII_MAP)
 
     MS_CHARS = { '\x80' : ('euro', '20AC'),
@@ -2014,4 +2026,4 @@ class UnicodeDammit:
 if __name__ == '__main__':
     import sys
     soup = BeautifulSoup(sys.stdin)
-    print soup.prettify()
+    print(soup.prettify())

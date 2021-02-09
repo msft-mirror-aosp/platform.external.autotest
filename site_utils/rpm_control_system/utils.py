@@ -14,8 +14,8 @@ import time
 
 import common
 
-import rpm_infrastructure_exception
-from config import rpm_config
+from autotest_lib.site_utils.rpm_control_system import rpm_infrastructure_exception
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
 from autotest_lib.client.common_lib import autotest_enum
 
 

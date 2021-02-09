@@ -1,22 +1,28 @@
 #!/usr/bin/python2
 #pylint: disable-msg=C0111
-import BeautifulSoup,optparse
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import optparse
+
+import common
+from autotest_lib.site_utils.rpm_control_system import BeautifulSoup
 
 try:
     import pycurl
 except ImportError:
-    print "Failed to import pycurl. Ignoring."
+    print("Failed to import pycurl. Ignoring.")
 
 ###############################################################
 # Digital Loggers Web Power Switch management
 ###############################################################
 # Version: 0.01
 # Description: This is both a module and a script
-#              
+#
 #              The module provides a python class named
 #              DLIPower that allows managing the web power
 #              switch from python programs.
-# 
+#
 #              When run as a script this acts as a command
 #              line utilty to manage the DLI Power switch.
 # Author: Dwight Hubbard d@dhub.me
@@ -81,11 +87,13 @@ class powerswitch:
     def printstatus(self):
         """ Print the status off all the outlets as a table to stdout """
         if not self.statuslist():
-            print "Unable to communicte to the Web power switch at %s" % self.hostname
+            print("Unable to communicte to the Web power switch at %s" %
+                  self.hostname)
             return None
-        print 'Outlet\t%-15.15s\tState' % 'Hostname'
+        print('Outlet\t%-15.15s\tState' % 'Hostname')
         for item in self.statuslist():
-            print '%d\t%-15.15s\t%s' % (item[0],item[1],item[2])
+            print('%d\t%-15.15s\t%s' % (item[0], item[1], item[2]))
+
     def status(self,outlet=1):
         """ Return the status of an outlet, returned value will be one of: On, Off, Unknown """
         outlets=self.statuslist()
@@ -110,6 +118,6 @@ if __name__ == "__main__":
             if args[0].lower() in ['off','poweroff']:
                 switch.off(int(args[1]))
             if args[0].lower() in ['status']:
-                print switch.status(int(args[1]))
+                print(switch.status(int(args[1])))
     else:
         switch.printstatus()

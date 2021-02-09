@@ -7,8 +7,10 @@ import mox
 import socket
 import unittest
 
-from config import rpm_config
-import rpm_dispatcher
+import common
+
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
+from autotest_lib.site_utils.rpm_control_system import rpm_dispatcher
 
 DUT_SAME_RPM1 = 'chromeos-rack8e-hostbs1'
 DUT_SAME_RPM2 = 'chromeos-rack8e-hostbs2'
@@ -38,9 +40,10 @@ class TestRPMDispatcher(mox.MoxTestBase):
         expected_uri = PROPER_URI_FORMAT % (FAKE_DISPATCHER_URI,
                                             FAKE_DISPATCHER_PORT)
         self.frontend_mock.register_dispatcher(expected_uri)
-        rpm_dispatcher.xmlrpclib.ServerProxy = self.mox.CreateMockAnything()
+        rpm_dispatcher.xmlrpc_client.ServerProxy = self.mox.CreateMockAnything(
+        )
         frontend_uri = 'http://%s:%d' % (socket.gethostname(), FRONT_END_PORT)
-        rpm_dispatcher.xmlrpclib.ServerProxy(frontend_uri).AndReturn(
+        rpm_dispatcher.xmlrpc_client.ServerProxy(frontend_uri).AndReturn(
                 self.frontend_mock)
         rpm_dispatcher.atexit = self.mox.CreateMockAnything()
         rpm_dispatcher.atexit.register(mox.IgnoreArg())

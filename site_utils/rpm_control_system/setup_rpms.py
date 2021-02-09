@@ -2,10 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging, sys
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from config import rpm_config
-import rpm_controller
+import logging, sys
+import common
+
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
+from autotest_lib.site_utils.rpm_control_system import rpm_controller
+from six.moves import range
 
 LOGGING_FORMAT = rpm_config.get('GENERAL','logging_format')
 oyster_rpm_name_format = 'chromeos1-rack%d-rpm1'
@@ -53,8 +59,8 @@ def setup_rpm(rpm_name):
 
 def main():
     if len(sys.argv) != 2:
-        print 'USAGE: python %s [rpm|atlantis|oyster]' % sys.argv[0]
-        print 'atlantis|oyster: implies all RPMs inside that lab.'
+        print('USAGE: python %s [rpm|atlantis|oyster]' % sys.argv[0])
+        print('atlantis|oyster: implies all RPMs inside that lab.')
         return
     if sys.argv[1] != 'atlantis' and sys.argv[1] != 'oyster':
         setup_rpm(sys.argv[1])

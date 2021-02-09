@@ -3,6 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import atexit
 import errno
 import logging
@@ -10,16 +14,15 @@ import re
 import sys
 import socket
 import threading
-import xmlrpclib
-
-import rpm_controller
-import rpm_logging_config
-
-from config import rpm_config
-from MultiThreadedXMLRPCServer import MultiThreadedXMLRPCServer
-from rpm_infrastructure_exception import RPMInfrastructureException
+from six.moves import xmlrpc_client
 
 import common
+
+from autotest_lib.site_utils.rpm_control_system.rpm_infrastructure_exception import RPMInfrastructureException
+from autotest_lib.site_utils.rpm_control_system.MultiThreadedXMLRPCServer import MultiThreadedXMLRPCServer
+from autotest_lib.site_utils.rpm_control_system import rpm_logging_config
+from autotest_lib.site_utils.rpm_control_system.config import rpm_config
+from autotest_lib.site_utils.rpm_control_system import rpm_controller
 from autotest_lib.site_utils.rpm_control_system import utils
 
 LOG_FILENAME_FORMAT = rpm_config.get('GENERAL','dispatcher_logname_format')
@@ -73,7 +76,7 @@ class RPMDispatcher(object):
                                                   frontend_server_port)
         logging.info('Registering this rpm dispatcher with the frontend '
                      'server at %s.', self._frontend_server)
-        client = xmlrpclib.ServerProxy(self._frontend_server)
+        client = xmlrpc_client.ServerProxy(self._frontend_server)
         # De-register with the frontend when the dispatcher exit's.
         atexit.register(self._unregister)
         try:
@@ -208,7 +211,7 @@ class RPMDispatcher(object):
         """
         logging.info('Dispatch server shutting down. Unregistering with RPM '
                      'frontend server.')
-        client = xmlrpclib.ServerProxy(self._frontend_server)
+        client = xmlrpc_client.ServerProxy(self._frontend_server)
         try:
             client.unregister_dispatcher(self._get_serveruri())
         except socket.error as er:
@@ -245,8 +248,8 @@ if __name__ == '__main__':
     RPMDispatcher and registers it to a MultiThreadedXMLRPCServer instance.
     """
     if len(sys.argv) != 2:
-      print 'Usage: ./%s <log_file_name>' % sys.argv[0]
-      sys.exit(1)
+        print('Usage: ./%s <log_file_name>' % sys.argv[0])
+        sys.exit(1)
 
     rpm_logging_config.start_log_server(sys.argv[1], LOG_FILENAME_FORMAT)
     rpm_logging_config.set_up_logging_to_server()

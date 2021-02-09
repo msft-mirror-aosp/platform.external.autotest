@@ -7,7 +7,7 @@ import mock
 import unittest
 
 import common
-import constants
+from autotest_lib.site_utils.admin_audit import constants
 from autotest_lib.site_utils.admin_audit import verifiers
 from autotest_lib.server.cros.storage import storage_validate as storage
 

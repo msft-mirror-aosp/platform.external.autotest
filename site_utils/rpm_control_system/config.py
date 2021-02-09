@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 import os
 
-import ConfigParser
+import six.moves.configparser
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'rpm_config.ini')
-rpm_config = ConfigParser.SafeConfigParser()
+rpm_config = six.moves.configparser.SafeConfigParser()
 rpm_config.read(CONFIG_FILE)

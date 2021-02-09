@@ -132,10 +132,10 @@ class FingerprintTest(test.test):
             },
         },
         _FP_BOARD_NAME_NAMI: {
-            'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.4017-9c45fb4b3-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '7965ea4c4371ee6d21dc462b9ed7c99078d17f4b772bec51441ca9af7d8f3a80',
+            'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.7304-441100b93-RW.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: 'e7b23f5e585c47d24fe3696139b48c0bac8c43b025669f74aafbff4aa9cbbebd',
                 _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
-                _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.4017-9c45fb4b3',
+                _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.7304-441100b93',
                 _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
             },
         },

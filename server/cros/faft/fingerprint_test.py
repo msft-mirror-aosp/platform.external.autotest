@@ -116,10 +116,10 @@ class FingerprintTest(test.test):
                 _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.7314-3dfc5ff6',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
-            'bloonchipper_v2.0.5938-197506c1.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: 'dc62e4b05eaf4fa8ab5546dcf18abdb30c8e64e9bf0fbf377ebc85155c7c3a47',
+            'bloonchipper_v2.0.5938-197506c1-RO_v2.0.7314-3dfc5ff6-RW.bin': {
+                _FIRMWARE_VERSION_SHA256SUM: '50ddcad558e1ded476a209946cabcddd6d9c1033890f1661d7ba8c183aa625ab',
                 _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.5938-197506c1',
-                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.5938-197506c1',
+                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.7314-3dfc5ff6',
                 _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
             },
         },

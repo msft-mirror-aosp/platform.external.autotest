@@ -100,6 +100,7 @@ def main():
                 host_info_path=opts.host_info_file,
                 try_lab_servo=need_servod,
                 try_servo_repair=need_servod,
+                try_servo_recovery=need_servod,
                 servo_uart_logs_dir=servo_uart_logs_dir)
     except Exception as err:
         logging.error("fail to create host: %s", err)

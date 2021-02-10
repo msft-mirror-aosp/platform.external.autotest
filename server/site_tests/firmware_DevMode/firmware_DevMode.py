@@ -45,9 +45,7 @@ class firmware_DevMode(FirmwareTest):
                 'mainfw_type': 'normal',
         }))
 
-        if (
-                self.check_ec_capability() and
-                self.faft_config.mode_switcher_type == 'jetstream_switcher'):
+        if self.check_ec_capability():
             if self.gbb_flags & vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC:
                 # In order to test that entering dev mode does not work when
                 # EC_IN_RW=1, EC software sync must be enabled.  If EC software

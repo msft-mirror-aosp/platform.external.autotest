@@ -12,7 +12,6 @@ import json
 import logging
 import numbers
 import os
-import random
 import tempfile
 import six
 
@@ -20,7 +19,6 @@ import numpy
 
 import common
 from autotest_lib.client.common_lib import error, utils
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros import telemetry_setup
 
 TELEMETRY_RUN_BENCHMARKS_SCRIPT = 'tools/perf/run_benchmark'
@@ -88,25 +86,7 @@ class TelemetryRunnerFactory(object):
         if local:
             return LocalTelemetryRunner(host, telemetry_on_dut)
         else:
-            # TODO(crbug.com/165407): Once all telemetry tests are being
-            # executed on the drone, deprecate DevserverTelemetryRunner class.
-            #
-            # In case of Lab tests, we want to move all telemetry test execution
-            # from the devserver to the drone. But a slow rollout is key, as we
-            # are not sure what kind of problems moving telemetry to drone will
-            # cause. The determiner is a random number between 1 to 100 and the
-            # cutoff essentially decides the "percentage" of tests that will
-            # executed on the drone. Every once in a while (may be once or twice
-            # a week), this cutoff value will be increased until it reaches 100
-            # i.e 100% of telemetry tests are executed on the drones and 0%
-            # tests are executed on the devserver. Once this has reached, the
-            # DevserverTelemetryRunner can be safely deprecated.
-            determiner = random.randint(1, 100)
-            cutoff = 50
-            if determiner <= cutoff:
-                return DroneTelemetryRunner(host, telemetry_on_dut)
-            else:
-                return DevserverTelemetryRunner(host, telemetry_on_dut)
+            return DroneTelemetryRunner(host, telemetry_on_dut)
 
 
 class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
@@ -129,7 +109,6 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         """
         self._host = host
         self._telemetry_path = None
-        self._devserver = None
         self._perf_value_writer = None
         self._setup_telemetry()
         self._telemetry_on_dut = telemetry_on_dut
@@ -165,13 +144,6 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         @returns Full telemetry command to execute the script.
         """
         telemetry_cmd = []
-        # TODO(crbug.com/165407): All conditional blocks that are dependent on
-        # "self_devserver" must be deleted once all telemetry tests are
-        # migrated to the drone and DevserverTelemetryRunner is deprecated.
-        if self._devserver:
-            devserver_hostname = self._devserver.hostname
-            telemetry_cmd.extend(['ssh', devserver_hostname])
-
         no_verbose = kwargs.get('no_verbose', False)
 
         output_dir = (DUT_CHROME_ROOT
@@ -253,15 +225,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
             # 2) DUT will be reflashed frequently and no need to worry about
             # result size.
             scp_cmd.extend(['rsync', '-avz', '--remove-source-files'])
-            # TODO(crbug.com/165407): All conditional blocks that are dependent
-            # on "self._devserver" must be deleted once all telemetry tests
-            # are migrated to the drone and DevserverTelemetryRunner is
-            # deprecated.
-            devserver_hostname = ''
-            if self._devserver:
-                devserver_hostname = self._devserver.hostname
-                devserver_hostname += ':'
-            src = '%s%s' % (devserver_hostname, self._telemetry_path)
+            src = self._telemetry_path
 
         if self._perf_value_writer:
             src = os.path.join(src, self._perf_value_writer.tmpdir.strip('/'))
@@ -461,19 +425,11 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
                  execution.
         """
         script = os.path.join(DUT_CHROME_ROOT, TELEMETRY_RUN_GPU_TESTS_SCRIPT)
-        cmd = []
-        # TODO(crbug.com/165407): All conditional blocks that are dependent on
-        # "self._devserver" must be deleted once all telemetry tests are
-        # migrated to the drone and DevserverTelemetryRunner is deprecated.
-        if self._devserver:
-            devserver_hostname = self._devserver.hostname
-            cmd.extend(['ssh', devserver_hostname])
-
-        cmd.extend([
-                self._host.ssh_command(
-                        alive_interval=900, connection_attempts=4), 'python2',
+        cmd = [
+                self._host.ssh_command(alive_interval=900,
+                                       connection_attempts=4), 'python2',
                 script
-        ])
+        ]
         cmd.extend(args)
         cmd.append(test)
         cmd = ' '.join(cmd)
@@ -508,15 +464,6 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         command_fetch = format_fetch % (fetch_path, deps_path, test_name)
         command_get = 'cat %s' % deps_path
 
-        # TODO(crbug.com/165407): All conditional blocks that are dependent on
-        # "self._devserver" must be deleted once all telemetry tests are
-        # migrated to the drone and DevserverTelemetryRunner is deprecated.
-        if self._devserver:
-            devserver_hostname = self._devserver.url().split(
-                    'http://')[1].split(':')[0]
-            command_fetch = 'ssh %s %s' % (devserver_hostname, command_fetch)
-            command_get = 'ssh %s %s' % (devserver_hostname, command_get)
-
         logging.info('Getting DEPs: %s', command_fetch)
         _, _, exit_code = self._run_cmd(command_fetch)
         if exit_code != 0:
@@ -531,17 +478,10 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         for dep in deps[test_name]:
             src = os.path.join(self._telemetry_path, dep)
             dst = os.path.join(DUT_CHROME_ROOT, dep)
-            if self._devserver:
-                logging.info('Copying: %s -> %s', src, dst)
-                rsync_cmd = utils.sh_escape(
-                        'rsync %s %s %s:%s' % (self._host.rsync_options(), src,
-                                               self._host.hostname, dst))
-                utils.run('ssh %s "%s"' % (devserver_hostname, rsync_cmd))
-            else:
-                if not os.path.isfile(src):
-                    raise error.TestFail('Error occurred while saving DEPs.')
-                logging.info('Copying: %s -> %s', src, dst)
-                dut.send_file(src, dst)
+            if not os.path.isfile(src):
+                raise error.TestFail('Error occurred while saving DEPs.')
+            logging.info('Copying: %s -> %s', src, dst)
+            dut.send_file(src, dst)
 
     @staticmethod
     def convert_chart_json(histogram_set):
@@ -764,45 +704,3 @@ class DroneTelemetryRunner(TelemetryRunner):
         except telemetry_setup.TelemetrySetupError as e:
             raise error.AutotestError('Telemetry Environment could not be '
                                       'setup: %s.' % e)
-
-
-class DevserverTelemetryRunner(TelemetryRunner):
-    """Handle telemetry test setup and execution on the devserver."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize DevserverTelemetryRunner.
-
-        The telemetry test will run on the devserver. Depending on whether
-        telemetry_on_dut is True or False, there can be possible combinations
-        for the execution of this test:
-
-        telemetry_on_dut=False:
-        ssh [devserver] python2 run_benchmark --browser=cros-chrome
-        --remote=[dut] [test]
-
-        telemetry_on_dut=True:
-        ssh [devserver] ssh [dut] python2 run_benchmark --browser=system [test]
-
-        @param args: The list of arguments to be passed. See Base class for a
-                     complete list of accepted arguments.
-        @param kwargs: Any keyword arguments to be passed. See Base class for a
-                       complete list of accepted keyword arguments.
-        """
-        super(DevserverTelemetryRunner, self).__init__(*args, **kwargs)
-
-    def _setup_telemetry(self):
-        """Setup Telemetry to use the devserver."""
-        logging.debug('Setting up telemetry for devserver testing')
-        logging.debug('Grabbing build from AFE.')
-        info = self._host.host_info_store.get()
-        if not info.build:
-            logging.error('Unable to locate build label for host: %s.',
-                          self._host.host_port)
-            raise error.AutotestError('Failed to grab build for host %s.' %
-                                      self._host.host_port)
-        logging.debug('Setting up telemetry for build: %s', info.build)
-        self._devserver = dev_server.ImageServer.resolve(
-                info.build, hostname=self._host.hostname)
-        self._devserver.stage_artifacts(info.build, ['autotest_packages'])
-        self._telemetry_path = self._devserver.setup_telemetry(
-                build=info.build)

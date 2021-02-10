@@ -227,7 +227,7 @@ class ACPowerVerifier(hosts.Verifier):
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'The DUT is plugged in to AC power and battery is charing'
+        return 'The DUT is plugged in to AC power and battery is charging'
 
 
 class CrosVerisionVerifier(hosts.Verifier):

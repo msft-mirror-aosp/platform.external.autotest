@@ -269,8 +269,7 @@ def _run_autoserv(command, pretend=False):
         # so that autoserv output can be displayed to the user
         # immediately.
         for message in iter(_autoserv_proc.stdout.readline, b''):
-            logging.info('autoserv| %s', message.rstrip())
-
+            logging.info('autoserv| %s', message.rstrip().decode())
         _autoserv_proc.wait()
         returncode = _autoserv_proc.returncode
         _autoserv_proc = None
@@ -354,7 +353,7 @@ def run_job(job, host, info, autotest_path, results_directory, fast_mode,
               where results were stored.
     """
     with tempfile.NamedTemporaryFile() as temp_file:
-        temp_file.write(job.control_file)
+        temp_file.write(job.control_file.encode())
         temp_file.flush()
         name_tail = job.name.split('/')[-1]
         results_directory = os.path.join(results_directory,

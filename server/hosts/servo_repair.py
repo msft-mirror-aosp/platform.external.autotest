@@ -1001,16 +1001,15 @@ class _PowerDeliveryRepair(hosts.RepairAction):
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
         for x in range(10):
-            if host.get_servo().get('servo_v4_role') == 'snk':
-                try:
-                    host.get_servo().set_nocheck('servo_v4_role', 'snk')
-                    time.sleep(1)
-                    host.get_servo().set_nocheck('servo_v4_role', 'src')
-                    time.sleep(1)
-                except Exception as e:
-                    logging.debug(
-                            'setting power direction with retries failed %s',
-                            e)
+            try:
+                host.get_servo().set_nocheck('servo_v4_role', 'snk')
+                time.sleep(1)
+                host.get_servo().set_nocheck('servo_v4_role', 'src')
+                time.sleep(1)
+            except Exception as e:
+                logging.debug('Setting PD with retries failed %s', e)
+            if host.get_servo().get('servo_v4_role') == 'src':
+                break
         if host.get_servo().get('servo_v4_role') == 'snk':
             raise hosts.AutoservNonCriticalVerifyError(
                     'Cannot switch power delivery to the src role')
@@ -1025,7 +1024,7 @@ class _PowerDeliveryRepair(hosts.RepairAction):
 
     @property
     def description(self):
-        return 'ensure applicable servo is in "src" mode for power delivery'
+        return 'Recover power delivery on servo'
 
 
 class _ECRebootRepair(hosts.RepairAction):
@@ -1198,11 +1197,12 @@ def _servo_repair_actions():
             'servod_started', 'servo_topology', 'servod_connection',
             'servod_control', 'servo_dut_connected', 'servo_hub_connected',
             'servo_pwr_button', 'servo_cr50_console', 'servo_cr50_low_sbu',
-            'servo_cr50_off', 'servo_power_delivery'
+            'servo_cr50_off'
     ]
     pd_triggers = [
-            'servo_power_delivery', 'servo_dut_connected',
-            'servo_hub_connected', 'servo_cr50_low_sbu'
+            'servo_power_delivery', 'servo_topology', 'servo_dut_connected',
+            'servo_hub_connected', 'servo_cr50_low_sbu', 'servo_cr50_off',
+            'servo_cr50_console'
     ]
     return (
             (_DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],

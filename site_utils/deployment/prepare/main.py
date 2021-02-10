@@ -228,6 +228,7 @@ def create_host(hostname, host_info, results_dir):
                                       host_info_store=host_info,
                                       try_lab_servo=need_servo,
                                       try_servo_repair=need_servo,
+                                      try_servo_recovery=need_servo,
                                       servo_uart_logs_dir=dut_logs_dir)
 
 

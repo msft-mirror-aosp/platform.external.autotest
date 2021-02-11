@@ -1204,6 +1204,12 @@ def _servo_repair_actions():
             'servo_hub_connected', 'servo_cr50_low_sbu', 'servo_cr50_off',
             'servo_cr50_console'
     ]
+    dut_triggers = [
+            'servod_control', 'servo_lid_open', 'servo_ec_board',
+            'servo_topology', 'servo_dut_connected', 'servo_hub_connected',
+            'servo_cr50_low_sbu', 'servo_cr50_off', 'servo_cr50_console',
+            'servo_power_delivery'
+    ]
     return (
             (_DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
              ['servo_disk_space']),
@@ -1219,9 +1225,9 @@ def _servo_repair_actions():
             (_ToggleCCLineRepair, 'servo_cc', ['servod_connection'],
              servod_deps),
             (_DutRebootRepair, 'servo_dut_reboot', ['servod_connection'],
-             ['servod_control', 'servo_lid_open', 'servo_ec_board']),
+             dut_triggers),
             (_ECRebootRepair, 'servo_ec_reboot', ['servod_connection'],
-             ['servod_control', 'servo_lid_open', 'servo_ec_board']),
+             dut_triggers),
     )
 
 

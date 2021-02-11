@@ -587,22 +587,24 @@ class AbstractSSHHost(remote.RemoteHost):
         if isinstance(source, six.string_types):
             source = [source]
 
+        client_symlink = _client_symlink(source)
+        # The client symlink *must* be preserved, so if this flag is set,
+        # make an initial rsync with these links preserved
+        if client_symlink and not preserve_symlinks:
+            source.remove(client_symlink)
+            self._send_file(dest=dest,
+                            source=[client_symlink],
+                            local_sources=client_symlink,
+                            delete_dest=delete_dest,
+                            excludes=excludes,
+                            preserve_symlinks=True)
+
         local_sources = self._encode_local_paths(source)
         if not local_sources:
             raise error.TestError('source |%s| yielded an empty string' % (
                 source))
         if local_sources.find('\x00') != -1:
             raise error.TestError('one or more sources include NUL char')
-
-        send_client_symlink = False
-
-        # We want to specifically ensure that the symlink client/autotest_lib
-        # is preserved, but not force the preservation on other files/dirs.
-        client_symlink = _client_symlink(source)
-        if client_symlink and not preserve_symlinks:
-            source, local_sources = self._remove_dir_from_sources(
-                source, local_sources, client_symlink)
-            send_client_symlink = True
 
         self._send_file(
                 dest=dest,
@@ -611,36 +613,6 @@ class AbstractSSHHost(remote.RemoteHost):
                 delete_dest=delete_dest,
                 excludes=excludes,
                 preserve_symlinks=preserve_symlinks)
-        if send_client_symlink:
-            self._send_file(dest=dest,
-                            source=[client_symlink],
-                            local_sources=client_symlink,
-                            delete_dest=delete_dest,
-                            excludes=excludes,
-                            preserve_symlinks=True)
-
-    def _remove_dir_from_sources(self, source, local_sources, rm_dir):
-        """Remove the specified dir from the source/local_sources.
-
-        If source is a list, remove it from the list. If a string, and the
-            string is the rm_dir, remove it. Else leave as is.
-        Args:
-            source: either
-                    1) a single file or directory, as a string
-                    2) a list of one or more (possibly mixed)
-                            files or directories
-            local_sources: str created from _encode_local_paths()
-            rm_dir: str of the dir to remove
-        Returns:
-            source, local_sources (with the dir removed)
-
-        """
-        if isinstance(source, list):
-            source.remove(rm_dir)
-        elif rm_dir in source:
-            source = ''
-
-        return source, local_sources.replace('"{}" '.format(rm_dir), '')
 
     def _send_file(self, dest, source, local_sources, delete_dest, excludes,
                    preserve_symlinks):

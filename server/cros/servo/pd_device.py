@@ -539,12 +539,20 @@ class PDTesterDevice(PDConsoleDevice):
         """
         DISC_DELAY = 100
         disc_cmd = 'fakedisconnect %d %d' % (DISC_DELAY, disc_time_sec * 1000)
+        state_exp = '(C%d)\s+[\w]+:?\s(%s)'
+
+        disconnected_tuple = self.utils.get_disconnected_states()
+        disconnected_states = '|'.join(disconnected_tuple)
+        disconnected_exp = state_exp % (self.port, disconnected_states)
+
         src_connected_tuple = self.utils.get_src_connect_states()
         snk_connected_tuple = self.utils.get_snk_connect_states()
-        connected_exp = '|'.join(src_connected_tuple + snk_connected_tuple)
-        reply_exp = ['(.*)(C%d)\s+[\w]+:?\s(%s)' % (self.port, connected_exp)]
-        m = self.utils.send_pd_command_get_output(disc_cmd, reply_exp)
-        return m[0][3]
+        connected_states = '|'.join(src_connected_tuple + snk_connected_tuple)
+        connected_exp = state_exp % (self.port, connected_states)
+
+        m = self.utils.send_pd_command_get_output(disc_cmd, [disconnected_exp,
+            connected_exp])
+        return m[1][2]
 
     def drp_disconnect_connect(self, disc_time_sec):
         """Disconnect/reconnect using PDTester

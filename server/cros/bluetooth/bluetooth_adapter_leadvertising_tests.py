@@ -1443,6 +1443,38 @@ class bluetooth_AdapterLEAdvertising(
         self.test_advertising_flags(['Advertise as Discoverable'])
 
     @test_case_log
+    def test_case_adv_before_scan(self):
+        """Verify we can scan after advertising starts
+
+        We found that when extended advertising is available, any Set Adv
+        Disable HCI command would mark the hdev as not advertising, even if
+        other instances were active at the time. Later attempts to start
+        discovery would fail, because kernel tries to update the random address
+        without knowing to pause the advertisements. This test case replicates
+        this failure condition to validate the fix.
+        """
+        orig_min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_max_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        advertisements = self.three_advertisements
+
+        self.test_reset_advertising()
+
+        # Register several advertisements
+        self.register_advertisements(advertisements, orig_min_adv_interval_ms,
+                                     orig_max_adv_interval_ms)
+
+        # Unregister one active advertisement.
+        instance_id = 2
+        self.test_unregister_advertisement(advertisements[instance_id - 1],
+                                           instance_id,
+                                           advertising_disabled=False)
+
+        self.test_start_discovery()
+
+        # Test if advertising is reset correctly.Only instances [1, 3] are left.
+        self.test_reset_advertising([1, 3])
+
+    @test_case_log
     def test_case_broadcast(self):
         """Verify minimal test case for broadcasted advertising"""
         orig_min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
@@ -1548,3 +1580,4 @@ class bluetooth_AdapterLEAdvertising(
 
         elif test_type == 'nearby':
             self.test_case_nearby_mediums_fast()
+            self.test_case_adv_before_scan()

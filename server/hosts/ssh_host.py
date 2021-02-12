@@ -146,14 +146,15 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 msg = result.stdout.strip()
                 if msg:
                     msg = msg.splitlines()[-1]
-            raise error.AutoservRunError("command execution error (%d): %s" %
-                                         (result.exit_status, msg), result)
+            raise error.AutoservRunError(
+                    "command execution error using TLS (%d): %s" %
+                    (result.exit_status, msg), result)
 
         return result
 
-    def _run(self, command, timeout, ignore_status,
-             stdout, stderr, connect_timeout, env, options, stdin, args,
-             ignore_timeout, ssh_failure_retry_ok):
+    def _run(self, command, timeout, ignore_status, stdout, stderr,
+             connect_timeout, env, options, stdin, args, ignore_timeout,
+             ssh_failure_retry_ok, verbose):
         """Helper function for run()."""
         if connect_timeout > timeout:
             # timeout passed from run() may be smaller than 1, because we
@@ -161,7 +162,20 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
             connect_timeout = max(int(timeout), 1)
         original_cmd = command
 
-        if self.tls_client and not self.tls_unstable:
+        # If TLS client has been built, and not marked as unstable, use it.
+        # NOTE: if the tls_enabled setting in the config is not True, the
+        # client will not have been built.
+        use_tls = self.tls_client and not self.tls_unstable
+
+        if verbose:
+            stack = self._get_server_stack_state(lowest_frames=2,
+                                                 highest_frames=8)
+
+            logging.debug("Running (via %s) '%s' from '%s'",
+                          'TLS' if use_tls else 'SSH', command, stack)
+            command = self._verbose_logger_command(command)
+
+        if use_tls:
             try:
                 return self._tls_run(command, timeout, ignore_status, stdout,
                                      stderr, args, ignore_timeout)
@@ -169,7 +183,8 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 raise e
             except Exception as e:
                 # If TLS fails for unknown reason, we will revert to normal ssh.
-                logging.warning("TLS cmd failed... {}".format(e))
+                logging.warning(
+                        "Unexpected TLS cmd failed. Reverting to SSH.\n %s", e)
                 self.close_tls_client()
                 # Note the TLS as unstable so we do not attempt to re-start it.
                 self.tls_unstable = True
@@ -376,12 +391,6 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
         start_time = time.time()
         with metrics.SecondsTimer('chromeos/autotest/ssh/main_ssh_time',
                                   scale=0.001):
-            if verbose:
-                stack = self._get_server_stack_state(lowest_frames=1,
-                                                     highest_frames=7)
-                logging.debug("Running (tls/ssh) '%s' from '%s'",
-                              command, stack)
-                command = self._verbose_logger_command(command)
 
             self.start_main_ssh(min(
                     timeout,
@@ -394,7 +403,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 return self._run(command, timeout - elapsed, ignore_status,
                                  stdout_tee, stderr_tee, connect_timeout, env,
                                  options, stdin, args, ignore_timeout,
-                                 ssh_failure_retry_ok)
+                                 ssh_failure_retry_ok, verbose)
             except error.CmdError as cmderr:
                 # We get a CmdError here only if there is timeout of that
                 # command. Catch that and stuff it into AutoservRunError and

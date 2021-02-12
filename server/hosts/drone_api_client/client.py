@@ -24,6 +24,7 @@ class TLSClient(object):
         self.hostname = hostname
         self.channel = grpc.insecure_channel('{}:{}'.format(TLS_IP, TLS_PORT))
         self.stub = autotest_common_pb2_grpc.CommonStub(self.channel)
+        logging.debug('TLS Client Started. Connected to: {}'.format(hostname))
 
     def __enter__(self):
         return self
@@ -49,9 +50,6 @@ class TLSClient(object):
         """
         res = utils.CmdResult(command=cmd)
         try:
-            logging.debug(
-                "Running command %s via TLS ExecDutCommand on host %s",
-                cmd, self.hostname)
             self._run(cmd, stdout_tee, stderr_tee, res, timeout)
         except grpc.RpcError as e:
             if e.code().name == "DEADLINE_EXCEEDED":
@@ -94,6 +92,7 @@ class TLSClient(object):
     def close(self):
         """Close the grpc channel."""
         self.channel.close()
+        logging.debug("TLS Client closed.")
 
 
 def _parse_item_and_log(item, buf, tee):

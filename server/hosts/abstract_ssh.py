@@ -1014,9 +1014,7 @@ class AbstractSSHHost(remote.RemoteHost):
 
     def start_tls_client(self):
         """Start the TLS client."""
-        logging.debug("Starting TLS Client.")
         self.tls_client = client.TLSClient(hostname=self.hostname)
-        logging.debug("TLS Client started.")
 
     def close_tls_client(self):
         """Try to close the TLS Client connection."""

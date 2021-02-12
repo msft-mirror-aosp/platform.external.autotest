@@ -44,7 +44,7 @@ PROVISION_FAILED = '/var/tmp/provision_failed'
 # parts of the system in Chromium OS test images will behave in ways
 # convenient to the test lab when this file is present.  Generally,
 # we create this immediately after any update completes.
-_LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
+LAB_MACHINE_FILE = '/mnt/stateful_partition/.labmachine'
 
 # _TARGET_VERSION - A file containing the new version to which we plan
 # to update.  This file is used by the CrOS shutdown code to detect and
@@ -468,10 +468,10 @@ class ChromiumOSProvisioner(object):
         # Touch the lab machine file to leave a marker that
         # distinguishes this image from other test images.
         # Afterwards, we must re-run the autoreboot script because
-        # it depends on the _LAB_MACHINE_FILE.
+        # it depends on the LAB_MACHINE_FILE.
         autoreboot_cmd = ('FILE="%s" ; [ -f "$FILE" ] || '
                           '( touch "$FILE" ; start autoreboot )')
-        self._run(autoreboot_cmd % _LAB_MACHINE_FILE)
+        self._run(autoreboot_cmd % LAB_MACHINE_FILE)
         try:
             kernel_utils.verify_boot_expectations(
                     expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,

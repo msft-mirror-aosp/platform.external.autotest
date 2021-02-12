@@ -89,6 +89,18 @@ class network_WiFi_UpdateRouter(test.test):
         for path in self.FILES_TO_REMOVE:
             device_host.run('rm -rf %s' % path, ignore_status=True)
 
+    def stop_recover_duts(self, device_host):
+        """Stop running recover_duts on the host.
+
+        b/177380545: recover_duts is currently providing negative value on
+        routers. TBD: decided whether we should re-enable this when router
+        images are updated to fix hang issues?
+
+        @param device_host: router / pcap host object
+        """
+        device_host.run('rm -f %s' % provisioner.LAB_MACHINE_FILE,
+                        ignore_status=True)
+        device_host.run('stop recover_duts', ignore_status=True)
 
     def run_once(self, host, is_pcap=False):
         """Update router / packet capture associated with host.
@@ -119,10 +131,17 @@ class network_WiFi_UpdateRouter(test.test):
         device_host = hosts.create_host(device_hostname,
                                         host_class=hosts.CrosHost,
                                         allow_failure=True)
+
+        # Stop recover_duts now, for cases where we don't go through a full
+        # update below.
+        self.stop_recover_duts(device_host)
+
         # Remove un-wanted files to freeup diskspace before starting update.
         self.freeup_disk_space(device_host)
         self.update_device(device_host)
 
+        # Stop recover_duts again, in case provisioning re-enabled it.
+        self.stop_recover_duts(device_host)
 
     def update_device(self, device_host):
         """Update router and pcap associated with host.

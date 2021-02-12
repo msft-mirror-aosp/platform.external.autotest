@@ -258,6 +258,10 @@ class AutoservSshPermissionDeniedError(AutoservRunError):
     """Indicates that a SSH permission denied error was encountered."""
 
 
+class AutoservSshDnsError(AutoservRunError):
+    """Indicates that a DNS resolution error was encountered."""
+
+
 class AutoservUnsupportedError(AutoservError):
     """Error raised when you try to use an unsupported optional feature"""
 

@@ -199,17 +199,6 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
             command += ' "%s"' % utils.sh_escape(arg)
         full_cmd = '%s "%s %s"' % (ssh_cmd, env, utils.sh_escape(command))
 
-        # TODO(jrbarnette):  crbug.com/484726 - When we're in an SSP
-        # container, sometimes shortly after reboot we will see DNS
-        # resolution errors on ssh commands; the problem never
-        # occurs more than once in a row.  This especially affects
-        # the autoupdate_Rollback test, but other cases have been
-        # affected, too.
-        #
-        # We work around it by detecting the first DNS resolution error
-        # and retrying exactly one time.
-        dns_error_retry_count = 1
-
         def counters_inc(counter_name, failure_name):
             """Helper function to increment metrics counters.
             @param counter_name: string indicating which counter to use
@@ -286,10 +275,7 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
             if failure_name:
                 # There was a failure: decide whether to retry.
                 if failure_name == 'dns_failure':
-                    if dns_error_retry_count > 0:
-                        logging.debug('retrying ssh because of DNS failure')
-                        dns_error_retry_count -= 1
-                        continue
+                    raise error.AutoservSshDnsError("DNS Failure: ", result)
                 else:
                     if ssh_failure_retry_count == 2:
                         logging.debug('retrying ssh command after %s',

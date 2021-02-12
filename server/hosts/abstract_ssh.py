@@ -799,10 +799,18 @@ class AbstractSSHHost(remote.RemoteHost):
                             stack)
             return True
         ping_config = ping_runner.PingConfig(self.hostname,
-                                             count=count,
+                                             count=1,
                                              ignore_result=True,
                                              ignore_status=True)
-        return ping_runner.PingRunner().ping(ping_config).received > 0
+
+        # Run up to the amount specified, but also exit as soon as the first
+        # reply is found.
+        loops_remaining = count
+        while loops_remaining > 0:
+            loops_remaining -= 1
+            if ping_runner.PingRunner().ping(ping_config).received > 0:
+                return True
+        return False
 
 
     def wait_up(self, timeout=_DEFAULT_WAIT_UP_TIME_SECONDS):

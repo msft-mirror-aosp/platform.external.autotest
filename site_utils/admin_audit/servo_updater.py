@@ -8,6 +8,8 @@ import logging
 
 import common
 from autotest_lib.client.common_lib import utils as client_utils
+from autotest_lib.server.cros.servo.topology import servo_topology
+from autotest_lib.server.cros.servo.topology import topology_constants
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
@@ -21,50 +23,41 @@ class _BaseUpdateServoFw(object):
     # Command to update servo device.
     # param 1: servo board (servo_v4|servo_micro)
     # param 2: serial number of main device on the board
-    UPDATER = 'servo_updater -b %s -s %s --reboot'
+    UPDATER = 'servo_updater -b %s -s "%s" --reboot'
     UPDATER_FORCE = UPDATER + ' --force'
 
-    # Command to read current version on the servo
-    # param 1: serial number of main device on the board
-    SERVO_VERSION = 'cat $(servodtool device -s %s usb-path)/configuration'
-
-    # Command to read servod config file with extracting value by key
-    # param 1: servo port, provided by servo config
-    # param 2: required parammeter (key) from config file
-    SERVOD_CONFIG = 'cat /var/lib/servod/config_%s | grep %s'
+    # Commands to kill active servo_updater fail with timeout
+    ACTIVE_UPDATER_CORE = 'ps aux | grep -ie [s]ervo_updater |grep "%s" '
+    ACTIVE_UPDATER_PRINT = ACTIVE_UPDATER_CORE + "| awk '{print $2}' "
+    ACTIVE_UPDATER_KILL = ACTIVE_UPDATER_PRINT + "| xargs kill -9 "
 
     # Command to get PATH to the latest available firmware on the host
     # param 1: servo board (servo_v4|servo_micro)
     LATEST_VERSION_FW = 'realpath /usr/share/servo_updater/firmware/%s.bin'
 
-    # Command to get servo product supported by device
-    # param 1: serial number of main device on the board
-    SERVO_PRODUCT = 'cat $(servodtool device -s %s usb-path)/product'
-
-    def __init__(self, servo_host):
+    def __init__(self, servo_host, device):
         self._host = servo_host
-        # keep flag that class support and can run updater
-        self._supported = None
+        self._device = device
 
-    def check_needs(self, ignore_version=False):
-        """Check if class supports update for particular servo type.
+    def need_update(self, ignore_version=False):
+        """Verify that servo_update is required.
 
-        @params ignore_version: do not check the version on the device.
+        @params ignore_version: Do not check the version on the device.
+
+        @returns: True if update required, False if not
         """
-        if self._supported is None:
-            if not self._host:
-                self._supported = False
-            elif not self._host.is_labstation():
-                self._supported = False
-            elif not self._host.servo_serial:
-                self._supported = False
-            elif not self._check_needs():
-                self._supported = False
-            elif not ignore_version:
-                self._supported = self._is_outdated_version()
-            else:
-                self._supported = True
-        return self._supported
+        if not self._host:
+            return False
+        elif not self.get_serial_number():
+            return False
+        elif not self._host.is_labstation():
+            return False
+        elif not self._custom_verifier():
+            return False
+        elif not ignore_version:
+            return self._is_outdated_version()
+        logging.info('The board %s is need update.', self.get_board())
+        return True
 
     def update(self, force_update=False, ignore_version=False):
         """Update firmware on the servo.
@@ -74,23 +67,30 @@ class _BaseUpdateServoFw(object):
         2) Try to get serial number for the servo.
         3) Updating firmware.
 
-        @params force_update: run updater with force option.
-        @params ignore_version: do not check the version on the device.
+        @params force_update:   Run updater with force option.
+        @params ignore_version: Do not check the version on the device.
         """
-        if not self.check_needs(ignore_version):
-            logging.info('The board %s does not need update or '
-                         'not present in the setup.', self.get_board())
+        if not self.need_update(ignore_version):
+            logging.info("The board %s doesn't need update.", self.get_board())
             return
         if not self.get_serial_number():
             logging.info('Serial number is not detected. It means no update'
                          ' will be performed on servo.')
             return
+        if self._device.get_type() != self.get_board():
+            logging.info('Attempt use incorrect updater for %s. Expected: %s.',
+                         self._device.get_type(), self.get_board())
+            return
         self._update_firmware(force_update)
 
-    def _check_needs(self):
-        """Check is servo type supported"""
-        raise NotImplementedError('Please implement method to perform'
-                                  ' check of supporting the servo type')
+    def _custom_verifier(self):
+        """Custom verifier to block update proceed.
+
+        Please override the method if board needs special checks.
+
+        @returns: True if can proceed with update, False if not.
+        """
+        return True
 
     def get_board(self):
         """Return servo type supported by updater"""
@@ -98,9 +98,8 @@ class _BaseUpdateServoFw(object):
                                   ' servo type')
 
     def get_serial_number(self):
-        """Return serial number for main servo device on servo"""
-        raise NotImplementedError('Please implement method to return'
-                                  ' serial number')
+        """Return serial number for servo device"""
+        return self._device.get_serial_number()
 
     def _get_updater_cmd(self, force_update):
         """Return command to run firmware updater for the servo device.
@@ -118,37 +117,28 @@ class _BaseUpdateServoFw(object):
     def _update_firmware(self, force_update):
         """Execute firmware updater command.
 
-        Method generate a metric to collect statistics of update.
         @params force_update: run updater with force option.
         """
         cmd = self._get_updater_cmd(force_update)
-        logging.info('Servo fw update: %s', cmd)
-        result = self._host.run(cmd, ignore_status=True).stdout.strip()
-        logging.debug('Servo fw update finished; %s', result)
-        logging.info('Servo fw update finished')
-        metrics.Counter(
-            'chromeos/autotest/audit/servo/fw_update'
-            ).increment(fields={'status': 'success'})
+        logging.info('Try to update servo fw update by running: %s', cmd)
+        try:
+            res = self._host.run(cmd, timeout=120)
+            logging.debug('Servo fw update finished; %s', res.stdout.strip())
+            logging.info('Servo fw update finished')
+        finally:
+            self._kill_active_update_process()
 
-    def _get_config_value(self, key):
-        """Read configuration value by provided key.
-
-        @param key: key from key=value pair in config file.
-                    eg: 'HUB' or 'SERVO_MICRO_SERIAL'
-        """
-        """Read value from servod config file"""
-        cmd = self.SERVOD_CONFIG % (self._host.servo_port, key)
-        result = self._host.run(cmd, ignore_status=True).stdout.strip()
-        if result:
-            return result[len(key)+1:]
-        return None
+    def _kill_active_update_process(self):
+        """Kill active servo_update processes when stuck after attempt."""
+        try:
+            cmd = self.ACTIVE_UPDATER_KILL % self.get_serial_number()
+            self._host.run(cmd, timeout=30, ignore_status=True)
+        except Exception as e:
+            logging.debug('Fail kill active processes; %s', e)
 
     def _current_version(self):
         """Get current version on servo device"""
-        cmd = self.SERVO_VERSION % self.get_serial_number()
-        version = self._host.run(cmd, ignore_status=True).stdout.strip()
-        logging.debug('Current version: %s', version)
-        return version
+        return self._device.get_version()
 
     def _latest_version(self):
         """Get latest version available on servo-host"""
@@ -162,8 +152,6 @@ class _BaseUpdateServoFw(object):
 
     def _is_outdated_version(self):
         """Compare version to determine request to update the Servo or not.
-
-        Method generate metrics to collect statistics with version.
         """
         current_version = self._current_version()
         latest_version = self._latest_version()
@@ -171,122 +159,166 @@ class _BaseUpdateServoFw(object):
             return True
         if current_version == latest_version:
             return False
-        metrics.Counter(
-            'chromeos/autotest/audit/servo/fw_need_update'
-            ).increment(fields={'version': current_version})
         return True
-
-    def _get_product(self):
-        """Get servo product from servo device"""
-        cmd = self.SERVO_PRODUCT % self.get_serial_number()
-        return self._host.run(cmd, ignore_status=True).stdout.strip()
 
 
 class UpdateServoV4Fw(_BaseUpdateServoFw):
-    """Servo firmware updater for servo_v4 version.
+    """Servo firmware updater for servo_v4."""
 
-    Update firmware will be only if new version present and servo
-    was not updated.
-    """
     def get_board(self):
         """Return servo type supported by updater"""
-        return 'servo_v4'
+        return topology_constants.ST_V4_TYPE
 
-    def get_serial_number(self):
-        # serial number of servo_v4 match with device number
-        return self._host.servo_serial
 
-    def _check_needs(self):
-        """Check if servo is servo_v4.
+class UpdateServoV4p1Fw(_BaseUpdateServoFw):
+    """Servo firmware updater for servo_v4p1."""
 
-        Check servo type.
-        Check access to the serial number.
-        """
-        if self._get_product() != 'Servo V4':
-            return False
-        if not self.get_serial_number():
-            return False
-        return True
+    def get_board(self):
+        """Return servo type supported by updater"""
+        return topology_constants.ST_V4P1_TYPE
 
 
 class UpdateServoMicroFw(_BaseUpdateServoFw):
-    """Servo firmware updater for servo_micro version.
-
-    Update firmware will be only if new version present and servo
-    was not updated.
-    """
-    def __init__(self, servo_host):
-        super(UpdateServoMicroFw, self).__init__(servo_host)
-        self._serial_number = None
+    """Servo firmware updater for servo_micro."""
 
     def get_board(self):
         """Return servo type supported by updater"""
-        return 'servo_micro'
-
-    def get_serial_number(self):
-        # serial number of servo_v4 match with device number
-        if self._serial_number is None:
-            # servo_micro serial number is not match to serial on
-            # the servo device servod is keeping it in config file
-            serial = self._get_config_value('SERVO_MICRO_SERIAL')
-            self._serial_number = serial if serial is not None else ''
-        return self._serial_number
-
-    def _check_needs(self):
-        """Check if servo is servo_micro.
-
-        Check servo type.
-        Check access to the serial number.
-        """
-        if not self.get_serial_number():
-            # set does not include servo_micro
-            return False
-        if self._get_product() != 'Servo Micro':
-            return False
-        return True
+        return topology_constants.ST_SERVO_MICRO_TYPE
 
 
-# List servo firmware updaters
-SERVO_UPDATERS = (
-    UpdateServoV4Fw,
-    UpdateServoMicroFw,
-)
+class UpdateC2D2Fw(_BaseUpdateServoFw):
+    """Servo firmware updater for c2d2."""
+
+    def get_board(self):
+        """Return servo type supported by updater"""
+        return topology_constants.ST_C2D2_TYPE
+
+
+class UpdateSweetberryFw(_BaseUpdateServoFw):
+    """Servo firmware updater for sweetberry."""
+
+    def get_board(self):
+        """Return servo type supported by updater"""
+        return topology_constants.ST_SWEETBERRY_TYPE
+
+
+# List servo firmware updaters mapped to the type
+SERVO_UPDATERS = {
+        topology_constants.ST_V4_TYPE: UpdateServoV4Fw,
+        topology_constants.ST_V4P1_TYPE: UpdateServoV4p1Fw,
+        topology_constants.ST_SERVO_MICRO_TYPE: UpdateServoMicroFw,
+        topology_constants.ST_C2D2_TYPE: UpdateC2D2Fw,
+        topology_constants.ST_SWEETBERRY_TYPE: UpdateSweetberryFw,
+}
+
+
+def _run_update_attempt(updater, try_count, force_update, ignore_version):
+    """Run servo update attempt.
+
+    @params updater:        Servo updater instance.
+    @params try_count:      Count of attempt to run update.
+    @params force_update:   Run updater with force option.
+    @params ignore_version: Do not check the version on the device.
+
+    @returns:   True is finished without any error, False - with error
+    """
+    board = updater.get_board()
+    success = False
+    for a in range(try_count):
+        msg = 'Starting attempt: %s to update "%s".'
+        if force_update:
+            msg += ' with force'
+        logging.info(msg, a + 1, board)
+        try:
+            updater.update(force_update=force_update,
+                           ignore_version=ignore_version)
+            success = True
+        except Exception as e:
+            logging.debug('(Not critical) fail to update %s; %s', board, e)
+        if success:
+            break
+    return success
 
 
 def update_servo_firmware(host,
                           boards=None,
+                          try_attempt_count=1,
                           force_update=False,
+                          try_force_update=False,
                           ignore_version=False):
     """Update firmware on servo devices.
 
-    @params host: ServoHost instance to run all required commands.
-    @params force_update: run updater with force option.
-    @params ignore_version: do not check the version on the device.
+    @params host:               ServoHost instance to run required commands
+                                and access to topology.
+    @params try_attempt_count:  Count of attempts to update servo. For force
+                                option the count attempts is always 1 (one).
+    @params try_force_update:   Try force force option if fail to update in
+                                normal mode.
+    @params force_update:       Run updater with force option. Override
+                                try_force_update option.
+    @params ignore_version:     Do not check the version on the device.
+
+    @returns:                   True is all servos updated or does not need it,
+                                False if any device could not updated.
     """
     if boards is None:
         boards = []
     if ignore_version:
         logging.debug('Running servo_updater with ignore_version=True')
 
+    # Basic verification
+    if not host:
+        raise Exception('ServoHost is not provided.')
+
+    # Use force option as first attempt
+    use_force_option_as_first_attempt = False
+    # If requested to update with force then first attempt will be with force
+    # and there no second attempt.
+    if force_update:
+        try_attempt_count = 1
+        try_force_update = False
+        use_force_option_as_first_attempt = True
     # to run updater we need make sure the servod is not running
     host.stop_servod()
-    # initialize all updaters
-    updaters = [updater(host) for updater in SERVO_UPDATERS]
+    # Collection to count which board failed to update
+    fail_boards = []
 
-    for updater in updaters:
-        board = updater.get_board()
+    # Get list connected servos
+    topology = servo_topology.ServoTopology(host)
+    for device in topology.get_list_of_devices():
+        if not device.is_good():
+            continue
+        board = device.get_type()
         if len(boards) > 0 and board not in boards:
             logging.info('The %s is not requested for update', board)
             continue
-        logging.info('Try to update board: %s', board)
-        try:
-            updater.update(force_update=force_update,
-                           ignore_version=ignore_version)
-        except Exception as e:
-            data = {'host': host.get_dut_hostname() or '',
-                    'board': board}
-            metrics.Counter(
-                'chromeos/autotest/audit/servo/fw/update/error'
-                ).increment(fields=data)
+        updater_type = SERVO_UPDATERS.get(board, None)
+        if not updater_type:
+            logging.info('No specified updater for %s', board)
+            continue
+        # Creating update instance
+        updater = updater_type(host, device)
+        is_success_update = _run_update_attempt(
+                updater=updater,
+                try_count=try_attempt_count,
+                force_update=use_force_option_as_first_attempt,
+                ignore_version=ignore_version)
+        # If fail to update and we got requested to try force option then
+        # run second time with force.
+        if not is_success_update and try_force_update:
+            is_success_update = _run_update_attempt(
+                    updater=updater,
+                    try_count=1,
+                    force_update=True,
+                    ignore_version=ignore_version)
+        if not is_success_update:
             logging.info('Fail update firmware for %s', board)
-            logging.debug('Fail update firmware for %s: %s', board, str(e))
+            host = host.get_dut_hostname() or host.hostname
+            metrics.Counter('chromeos/autotest/servo/fw_update_fail'
+                            ).increment(fields={'host': host})
+            fail_boards.append(board)
+
+    if len(fail_boards) == 0:
+        logging.info('Successfull updated all requested servos.')
+        return True
+    return False

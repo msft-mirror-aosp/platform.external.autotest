@@ -1731,9 +1731,10 @@ def create_servo_host(dut,
     if try_lab_servo or try_servo_repair:
         try:
             logging.info("Check and update servo firmware.")
-            servo_updater.update_servo_firmware(
-                newhost,
-                force_update=False)
+            servo_updater.update_servo_firmware(newhost,
+                                                try_attempt_count=3,
+                                                force_update=False,
+                                                try_force_update=False)
         except Exception as e:
             logging.error("Servo device update error: %s", e)
 

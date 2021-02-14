@@ -11,6 +11,7 @@ from __future__ import division
 import os
 import copy
 import json
+import string
 import base64
 import logging
 
@@ -42,11 +43,13 @@ class MissingServoError(ServoTopologyError):
 class ServoTopology(object):
     """Class to read, generate and validate servo topology in the lab.
 
-    The class support detection of servo listed in ST_PRODUCT_TYPES.
+    The class support detection of servo listed in VID_PID_SERVO_TYPES.
     To save servo topology to host-info date passed two steps:
        - convert to the json
        - encode to base64
     """
+    # Command to get usb-path to device
+    SERVOD_TOOL_USB_PATH = 'servodtool device -s %s usb-path'
 
     def __init__(self, servo_host):
         self._host = servo_host
@@ -158,6 +161,15 @@ class ServoTopology(object):
         logging.info('Servo topology successfully verified.')
         return True
 
+    def is_servo_serial_provided(self):
+        """Verify that core servo serial is provided."""
+        core_servo_serial = self._host.servo_serial
+        if not core_servo_serial:
+            logging.info('Core servo serial is not provided.')
+            return False
+        logging.debug('Core servo serial: %s', core_servo_serial)
+        return True
+
     def _process_error(self, message, raise_error):
         if not raise_error:
             logging.info('Validate servo topology failed with: %s', message)
@@ -184,45 +196,23 @@ class ServoTopology(object):
         Read and generate topology structure with out update the state.
         """
         logging.debug('Trying generate a servo-topology')
+        if not self.is_servo_serial_provided():
+            return
         core_servo_serial = self._host.servo_serial
-        if not core_servo_serial:
-            logging.info('Servo serial is not provided.')
-            return None
-        logging.debug('Getting topology for core servo: %s', core_servo_serial)
-        # collect main device info
-        cmd_hub = 'servodtool device -s %s usb-path' % core_servo_serial
-        servo_path = self._read_line(cmd_hub)
-        logging.debug('Device -%s path: %s', core_servo_serial, servo_path)
-        if not servo_path:
-            logging.info('Core servo not detected.')
-            return None
-        if not self._is_expected_type(servo_path):
-            return None
-        main_device = self._read_device_info(servo_path)
+        main_device = None
+        children = []
+        devices = self.get_list_of_devices()
+        for device in devices:
+            if not device.is_good():
+                logging.info('Skip %s as missing some data', device)
+                continue
+            if device.get_serial_number() == core_servo_serial:
+                main_device = device.get_topology_item()
+            else:
+                children.append(device.get_topology_item())
         if not main_device:
             logging.debug('Core device missed some data')
             return None
-        # collect child device info
-        children = []
-        hub_path = servo_path[0:-2]
-        logging.debug('Core hub path: %s', hub_path)
-        devices_cmd = 'find %s/* -name serial' % hub_path
-        devices = self._read_multilines(devices_cmd)
-        core_device_port = main_device.get(stc.ST_DEVICE_HUB_PORT)
-        for device in devices:
-            logging.debug('Child device %s', device)
-            device_dir = os.path.dirname(device)
-            if not self._is_expected_type(device_dir):
-                # skip not expected device type like USB or hubs
-                continue
-            child = self._read_device_info(device_dir)
-            if not child:
-                logging.debug('Child missed some data.')
-                continue
-            if core_device_port == child.get(stc.ST_DEVICE_HUB_PORT):
-                logging.debug('Skip device if match with core device')
-                continue
-            children.append(child)
         topology = {
                 stc.ST_DEVICE_MAIN: main_device,
                 stc.ST_DEVICE_CHILDREN: children
@@ -230,49 +220,108 @@ class ServoTopology(object):
         logging.debug('Servo topology: %s', topology)
         return topology
 
-    def _is_expected_type(self, path):
-        """Check if device type is known servo type.
+    def _get_servo_hub_path(self, servo_serial):
+        """Get path to the servo hub.
 
-        Please update ST_PRODUCT_TYPES to extend more servo types.
+        The core servo is connected directly to the servo-hub. To find other
+        servos connected to the hub we need find the path to the servo-hub.
+        The servod-tool always return direct path to the servo, like:
+            /sys/bus/usb/devices/1-3.2.1
+            base path:  /sys/bus/usb/devices/
+            core-servo:  1-3.2.1
+        the alternative path is '/sys/bus/usb/devices/1-3.2/1-3.2.1/'
+        where '1-3.2' is path to servo-hub. To extract path to servo-hub
+        logic parse parse and remove last digit of the port where core servo
+        connected to the servo-hub.
+            base path:  /sys/bus/usb/devices/
+            servo-hub:  1-3.2
+            core-servo: .1
+        After we will join only base path with servo-hub.
+
+        @params servo_serial    Serial number of the servo connected to hub
+        @returns: A string representation of fs-path to servo-hub device
         """
-        product = self._read_file(path, 'product')
-        if bool(stc.ST_PRODUCT_TYPES.get(product)):
-            return True
-        logging.info('Unknown product: %s', product)
-        return False
+        logging.debug('Try to find a hub-path for servo:%s', servo_serial)
+        cmd_hub = self.SERVOD_TOOL_USB_PATH % servo_serial
+        servo_path = self._read_line(cmd_hub)
+        logging.debug('Servo %s path: %s', servo_serial, servo_path)
+        if not servo_path or len(servo_path) < 3:
+            logging.info('Servo not detected.')
+            return None
+        base_path = os.path.dirname(servo_path)
+        core_servo_tail = os.path.basename(servo_path)
+        # Removing last port as
+        servo_hub_tail = string.join(core_servo_tail.split('.')[:-1], '.')
+        return os.path.join(base_path, servo_hub_tail)
 
-    def _read_device_info(self, path):
-        """Read device details for topology.
+    def get_list_of_devices(self):
+        """Generate list of devices with serials.
 
-        @params path: Absolute path to the device in FS.
+        Logic based on detecting all device enumerated under servo-hub device.
+
+        @returns: Collection of detected device connected to the servo-hub.
         """
+        logging.debug('Trying generate device-a servo-topology')
+        if not self.is_servo_serial_provided():
+            return []
+        # Find the path to the servo-hub folder.
+        hub_path = self._get_servo_hub_path(self._host.servo_serial)
+        if not hub_path:
+            return []
+        logging.debug('Servo hub path: %s', hub_path)
+
+        # Find all serial filed of devices under servo-hub. Each device
+        # has to have serial number.
+        devices_cmd = 'find %s/* -name serial' % hub_path
+        devices = self._read_multilines(devices_cmd)
+        children = []
+        for device in devices:
+            logging.debug('Child device %s', device)
+            device_dir = os.path.dirname(device)
+            child = self._get_device(device_dir)
+            if not child:
+                logging.debug('Child missed some data.')
+                continue
+            children.append(child)
+        logging.debug('Detected devices: %s', len(children))
+        return children
+
+    def _get_vid_pid(self, path):
+        """Read VID and PID of the device.
+
+        @params path    Absolute path to the device in FS.
+        @returns: A string representation VID:PID of device.
+        """
+        vid = self._read_file(path, 'idVendor')
+        pid = self._read_file(path, 'idProduct')
+        if not vid or not pid:
+            return None
+        vid_pid = '%s:%s' % (vid, pid)
+        logging.debug("VID/PID of device device: '%s'", vid_pid)
+        return vid_pid
+
+    def _get_device(self, path):
+        """Create device representation.
+
+        @params path:   Absolute path to the device in FS.
+        @returns: ConnectedServo if VID/PID present.
+        """
+        vid_pid = self._get_vid_pid(path)
+        if not vid_pid:
+            return None
         serial = self._read_file(path, 'serial')
         product = self._read_file(path, 'product')
         hub_path = self._read_file(path, 'devpath')
-        stype = stc.ST_PRODUCT_TYPES.get(product)
-        return self._create_item(serial, stype, product, hub_path)
-
-    def _create_item(self, servo_serial, servo_type, product, hub_path):
-        """Create topology item.
-
-        Return created item only if all details provided.
-
-        @params servo_serial:   Serial number of device.
-        @params servo_type:     Product type code of the device.
-        @params product:        Product name of the device.
-        @params hub_path:       Device enumerated folder name. Show the
-                                chain of used ports to connect the device.
-        """
-        item = {
-                stc.ST_DEVICE_SERIAL: servo_serial,
-                stc.ST_DEVICE_TYPE: servo_type,
-                stc.ST_DEVICE_PRODUCT: product,
-                stc.ST_DEVICE_HUB_PORT: hub_path
-        }
-        if not (servo_serial and servo_type and product and hub_path):
-            logging.debug('Some data missing: %s', item)
+        configuration = self._read_file(path, 'configuration')
+        servo_type = stc.VID_PID_SERVO_TYPES.get(vid_pid)
+        if not servo_type:
             return None
-        return item
+        return ConnectedServo(device_product=product,
+                              device_serial=serial,
+                              device_type=servo_type,
+                              device_vid_pid=vid_pid,
+                              device_hub_path=hub_path,
+                              device_version=configuration)
 
     def _read_file(self, path, file_name):
         """Read context of the file and return result as one line.
@@ -310,6 +359,54 @@ class ServoTopology(object):
         if r.exit_status == 0:
             return r.stdout.splitlines()
         return []
+
+
+class ConnectedServo(object):
+    """Class to hold info about connected detected."""
+
+    def __init__(self,
+                 device_product=None,
+                 device_serial=None,
+                 device_type=None,
+                 device_vid_pid=None,
+                 device_hub_path=None,
+                 device_version=None):
+        self._product = device_product
+        self._serial = device_serial
+        self._type = device_type
+        self._vid_pid = device_vid_pid
+        self._hub_path = device_hub_path
+        self._version = device_version
+
+    def get_topology_item(self):
+        """Extract as topology item."""
+        return {
+                stc.ST_DEVICE_SERIAL: self._serial,
+                stc.ST_DEVICE_TYPE: self._type,
+                stc.ST_DEVICE_PRODUCT: self._product,
+                stc.ST_DEVICE_HUB_PORT: self._hub_path
+        }
+
+    def is_good(self):
+        """Check if minimal data for topology item is present."""
+        return self._serial and self._type and self._hub_path
+
+    def get_type(self):
+        """Servo type."""
+        return self._type
+
+    def get_serial_number(self):
+        """Servo serial number."""
+        return self._serial
+
+    def get_version(self):
+        """Get servo version."""
+        return self._version
+
+    def __str__(self):
+        return ("Device %s:%s (%s, %s) version: %s" %
+                (self._type, self._serial, self._vid_pid, self._hub_path,
+                 self._version))
 
 
 def _convert_topology_to_string(topology):

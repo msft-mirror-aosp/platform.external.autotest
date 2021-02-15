@@ -5,7 +5,7 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'storage_qual_v2_stress_06'
+NAME = 'hardware_StorageQualV2.stress_06'
 ATTRIBUTES = 'suite:storage_qual_v2_xl, suite:storage_qual_v2_l, suite:storage_qual_v2_m, suite:storage_qual_v2_s'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'

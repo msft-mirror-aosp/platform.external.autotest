@@ -3172,13 +3172,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Set servo-topology info to the host-info."""
         logging.debug('Try to save servo topology to host-info.')
         if not self._servo_host:
-            logging.info('Servo host is not initilized.')
+            logging.debug('Servo host is not initilized.')
+            return
+        if not self.is_servo_in_working_state():
+            logging.debug('Is servo is not in working state then'
+                          ' update topology is not allowed.')
             return
         if not self._servo_host.is_servo_topology_supported():
-            logging.info('Servo-topology is not supported.')
+            logging.debug('Servo-topology is not supported.')
             return
         servo_topology = self._servo_host.get_topology()
         if not servo_topology or servo_topology.is_empty():
-            logging.info('Servo topology is empty')
+            logging.debug('Servo topology is empty')
             return
         servo_topology.save(self.host_info_store)

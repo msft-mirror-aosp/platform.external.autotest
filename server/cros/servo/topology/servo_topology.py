@@ -53,12 +53,12 @@ class ServoTopology(object):
 
     def __init__(self, servo_host):
         self._host = servo_host
-        self._topology = None
+        self.reset()
 
     def read(self, host_info):
         """Reading servo-topology info."""
         logging.info('Reading servo topology info...')
-        self._topology = None
+        self.reset()
         if not host_info:
             logging.info('The host_info not provided. Skip reading.')
             return
@@ -92,12 +92,19 @@ class ServoTopology(object):
         host_info_store.commit(host_info)
         logging.info('Servo topology saved successfully.')
 
+    def reset(self):
+        """Reset topology to the initialize state.
+
+        All cash will be reset to empty state.
+        """
+        self._topology = None
+
     def generate(self):
         """Read servo data and create topology."""
+        self.reset()
         try:
             self._topology = self._generate()
         except Exception as e:
-            self._topology = None
             logging.debug('(Not critical) %s', e)
             logging.info('Fail to generate servo-topology')
         if not self.is_empty():

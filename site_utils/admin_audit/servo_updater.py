@@ -8,7 +8,6 @@ import logging
 
 import common
 from autotest_lib.client.common_lib import utils as client_utils
-from autotest_lib.server.cros.servo.topology import servo_topology
 from autotest_lib.server.cros.servo.topology import topology_constants
 
 try:
@@ -284,8 +283,7 @@ def update_servo_firmware(host,
     fail_boards = []
 
     # Get list connected servos
-    topology = servo_topology.ServoTopology(host)
-    for device in topology.get_list_of_devices():
+    for device in host.get_topology().get_list_of_devices():
         if not device.is_good():
             continue
         board = device.get_type()

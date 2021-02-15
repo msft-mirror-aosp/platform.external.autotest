@@ -672,7 +672,7 @@ class _TopologyVerifier(hosts.Verifier):
     @ignore_exception_for_non_cros_host
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
-        topology = servo_topology.ServoTopology(host)
+        topology = host.get_topology()
         topology.read(host.get_dut_host_info())
         try:
             # Linux takes 1 second to detect and enumerate USB device since

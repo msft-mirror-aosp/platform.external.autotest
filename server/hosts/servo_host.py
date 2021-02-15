@@ -340,9 +340,6 @@ class ServoHost(base_servohost.BaseServoHost):
             self._servo_state = servo_constants.SERVO_STATE_WORKING
             self.record('INFO', None, None,
                         'ServoHost verify set servo_state as WORKING')
-            if self.is_servo_topology_supported():
-                self._topology = servo_topology.ServoTopology(self)
-                self._topology.generate()
         except Exception as e:
             if not self.is_localhost():
                 self._servo_state = self.determine_servo_state()
@@ -579,9 +576,6 @@ class ServoHost(base_servohost.BaseServoHost):
             # reboot request created by this servo because it passed repair.
             if self.is_labstation():
                 self.withdraw_reboot_request()
-            if self.is_servo_topology_supported():
-                self._topology = servo_topology.ServoTopology(self)
-                self._topology.generate()
         except Exception as e:
             if not self.is_localhost():
                 self._servo_state = self.determine_servo_state()
@@ -1479,6 +1473,8 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def get_topology(self):
         """Get servo topology."""
+        if not self._topology:
+            self._topology = servo_topology.ServoTopology(self)
         return self._topology
 
     def is_dual_setup(self):

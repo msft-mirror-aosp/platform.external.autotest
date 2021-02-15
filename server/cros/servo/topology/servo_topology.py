@@ -114,6 +114,8 @@ class ServoTopology(object):
         - set-up expectation: min one child or 2 for DUAL_V4
         - last saved topology: check if any device missed
 
+        Update topology cache if validation passed successfully.
+
         @params raise_error: raise error if validate did not pass otherwise
                              return False.
         @params dual_set:    Check if servo expect DUAL_V4 setup.
@@ -159,6 +161,7 @@ class ServoTopology(object):
                 message = 'Some child is missed'
                 return self._process_error(message, raise_error)
         logging.info('Servo topology successfully verified.')
+        self._topology = new_st
         return True
 
     def is_servo_serial_provided(self):

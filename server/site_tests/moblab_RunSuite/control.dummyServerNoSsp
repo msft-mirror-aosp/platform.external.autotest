@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "moblab_DummyServerNoSspSuite"
+NAME = "moblab_RunSuite.DummyServerNoSspSuite"
 PURPOSE = "Test that Moblab can run the Dummy Server suite without SSP."
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"

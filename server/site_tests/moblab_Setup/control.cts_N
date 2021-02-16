@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "cts_N"
+NAME = "moblab_Setup.cts_N"
 PURPOSE = "Test that the moblab has the correct setup for cts_N suite"
 ATTRIBUTES = "suite:check_setup_cts_N"
 TIME = "SHORT"

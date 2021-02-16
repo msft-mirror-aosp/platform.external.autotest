@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "TPMSmogcheck"
+NAME = "suite_TPM.TPMSmogcheck"
 PURPOSE = "Execute automated TPM functionality checks."
 TIME = "SHORT"  # <= 15 minutes in execution
 TEST_CATEGORY = "Functional"

@@ -34,6 +34,24 @@ class platform_SuspendResumeTiming(test.test):
         self.host.servo.set('usb_mux_sel3', 'servo_sees_usbkey')
 
 
+    def parse_timestamp(out_log):
+        """ Parses timestamp.
+
+        @param out_log: log string to parse for timestamp
+
+        @returns datetime formatted timestamp
+        """
+        # TODO(2022-Jan): remove support for old format after ~1yr
+        try:
+            rv = datetime.datetime.strptime(out_log[0:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            # assume its the old date format before crrev.com/c/2652108
+            logging.info("Using old datetime format")
+            rv = datetime.datetime.strptime(out_log[1:12], "%m%d/%H%M%S")
+
+        return rv
+
+
     def get_suspender_log_stamp(self, pwrd_log):
         """ Reads powerd log and takes suspend and resume logs timestamps.
 
@@ -50,7 +68,7 @@ class platform_SuspendResumeTiming(test.test):
         if log_count != 1:
             raise error.TestError('Log \"%s\" is found %d times!'
                                   % (pwrd_log, log_count))
-        return datetime.datetime.strptime(out_log[1:12], "%m%d/%H%M%S")
+        return parse_timestamp(out_log)
 
 
     def get_display_mode_timestamp(self):
@@ -64,7 +82,7 @@ class platform_SuspendResumeTiming(test.test):
             % (_RESUME_START_LOG.replace("\"",""),
                _POWERD_LOG_PATH, _RESUME_END_LOG))
         out_log = self.host.run(cmd, ignore_status=True).stdout.strip()
-        return datetime.datetime.strptime(out_log[1:12], "%m%d/%H%M%S")
+        return parse_timestamp(out_log)
 
 
     def get_suspend_resume_time(self):

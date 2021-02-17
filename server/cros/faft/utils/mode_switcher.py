@@ -887,7 +887,7 @@ class _BaseModeSwitcher(object):
         if self.client_host.use_icmp and not self.client_host.ping_wait_up(
                 timeout):
             logging.warning("-[FAFT]-[ system did not respond to ping ]")
-        if self.client_host.wait_up(timeout):
+        if self.client_host.wait_up(timeout, host_is_down=True):
             # Check the FAFT client is avaiable.
             self.faft_client.system.is_available()
             # Stop update-engine as it may change firmware/kernel.

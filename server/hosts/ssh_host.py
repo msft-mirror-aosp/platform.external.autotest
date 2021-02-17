@@ -299,7 +299,11 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                     elif ssh_failure_retry_count == 1:
                         # After two failures, restart the main connection
                         # before the final try.
-                        logging.debug('retry 2: restarting main connection')
+                        stack = self._get_server_stack_state(lowest_frames=1,
+                                                             highest_frames=7)
+                        logging.debug(
+                                'retry 2: restarting main connection from \'%s\'',
+                                stack)
                         self.restart_main_ssh()
                         # Last retry: reinstate timeout behavior.
                         ignore_timeout = original_ignore_timeout

@@ -813,7 +813,9 @@ class AbstractSSHHost(remote.RemoteHost):
         return False
 
 
-    def wait_up(self, timeout=_DEFAULT_WAIT_UP_TIME_SECONDS):
+    def wait_up(self,
+                timeout=_DEFAULT_WAIT_UP_TIME_SECONDS,
+                host_is_down=False):
         """
         Wait until the remote host is up or the timeout expires.
 
@@ -822,10 +824,16 @@ class AbstractSSHHost(remote.RemoteHost):
 
         @param timeout time limit in seconds before returning even
             if the host is not up.
+        @param host_is_down set to True if the host is known to be down before
+            wait_up.
 
         @returns True if the host was found to be up before the timeout expires,
                  False otherwise
         """
+        if host_is_down:
+            # Since we expect the host to be down when this is called, if there is
+            # an existing ssh main connection close it.
+            self._main_ssh.close()
         current_time = int(time.time())
         end_time = current_time + timeout
 

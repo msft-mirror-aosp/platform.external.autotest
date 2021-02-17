@@ -3257,21 +3257,24 @@ class BluetoothFacadeNative(object):
         @return: Tuple (suspend start time, suspend end time, suspend result) or
                 None if we can't find a suspend attempt
         """
-        # Logs look like this:
-        # [1102/202036.973853:INFO:daemon.cc(704)] powerd_suspend returned 0
+        # Logs look like this (ignore newline):
+        # 2021-02-11T18:53:43.561880Z INFO powerd:
+        #       [daemon.cc(724)] powerd_suspend returned 0
         # ... stuff in between ...
-        # [1102/202025.785372:INFO:suspender.cc(574)] Starting suspend
+        # 2021-02-11T18:53:13.277695Z INFO powerd:
+        #       [suspender.cc(574)] Starting suspend
 
         # Date format for strptime and strftime
-        date_format = '%m%d/%H%M%S.%f'
-        date_group_re = '(?P<date>[0-9]+/[0-9]+[.][0-9]+)'
+        date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+        date_group_re = ('(?P<date>[0-9]+-[0-9]+-[0-9]+T'
+                         '[0-9]+:[0-9]+:[0-9]+[.][0-9]+Z)\s')
 
         finish_suspend_re = re.compile(
-                '^\\[{date_regex}'
+                '^{date_regex}'
                 '.*daemon.*powerd_suspend returned '
                 '(?P<exitcode>[0-9]+)'.format(date_regex=date_group_re))
         start_suspend_re = re.compile(
-                '^\\[{date_regex}.*suspender.*'
+                '^{date_regex}.*suspender.*'
                 'Starting suspend'.format(date_regex=date_group_re))
 
         now = datetime.now()

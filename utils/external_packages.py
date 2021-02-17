@@ -1032,6 +1032,18 @@ class LogilabCommonPackage(ExternalPackage):
             ExternalPackage._build_and_install_current_dir_setup_py)
 
 
+class PytestRunnerPackage(ExternalPackage):
+    """pytest-runner package."""
+    version = '5.2'
+    url_filename = 'pytest-runner-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = '3427663b575c5d885ea3869a1be09aca36517f74'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
 class PyLintPackage(ExternalPackage):
     """pylint package."""
     version = '1.7.2'

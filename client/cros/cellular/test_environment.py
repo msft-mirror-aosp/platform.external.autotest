@@ -52,14 +52,21 @@ class CellularTestEnvironment(object):
 
     """
 
-    def __init__(self, use_backchannel=True, shutdown_other_devices=True,
-                 modem_pattern='', skip_modem_reset=False, is_esim_test=False):
+    def __init__(self,
+                 use_backchannel=True,
+                 shutdown_other_devices=True,
+                 modem_pattern='',
+                 skip_modem_reset=False,
+                 is_esim_test=False,
+                 enable_temp_containments=True):
         """
         @param use_backchannel: Set up the backchannel that can be used to
                 communicate with the DUT.
         @param shutdown_other_devices: If True, shutdown all devices except
                 cellular.
         @param modem_pattern: Search string used when looking for the modem.
+        @param enable_temp_containments: Enable temporary containments to avoid
+                failures on tests with known problems.
 
         """
         # Tests should use this main loop instead of creating their own.
@@ -75,6 +82,7 @@ class CellularTestEnvironment(object):
         self._modem_pattern = modem_pattern
         self._skip_modem_reset = skip_modem_reset
         self._is_esim_test = is_esim_test
+        self._enable_temp_containments = enable_temp_containments
 
         self._nested = None
         self._context_managers = []

@@ -139,7 +139,6 @@ def _stage_ssp(parser, resultsdir):
     )
 
     namespace = {'machines': machines_list,
-                 'isolate_hash': parser.options.isolate,
                  'image': parser.options.test_source_build}
     script_locals = {}
 
@@ -187,8 +186,7 @@ def _run_with_ssp(job, container_id, job_id, results, parser, ssp_url,
         test_container = bucket.setup_test(container_id, job_id, ssp_url,
                                            results, control=control,
                                            job_folder=_LXC_JOB_FOLDER,
-                                           dut_name=dut_name,
-                                           isolate_hash=parser.options.isolate)
+                                           dut_name=dut_name)
     except Exception as e:
         job.record('FAIL', None, None,
                    'Failed to setup container for test: %s. Check logs in '

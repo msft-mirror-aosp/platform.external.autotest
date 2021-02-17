@@ -57,6 +57,30 @@ FAFT is to exercise EC firmware and BIOS firmware functionality and performance.
 
 ## Hardware Setup {#hardware-setup}
 
+### General requirements
+
+The firmware running on the system needs to be able to deal with the
+signatures on the disks, so when testing your own local Chrome OS build
+signed with dev keys, install dev signed firmware as well.
+
+The setup requires a USB drive: Pick the fastest option that you can
+reasonably employ but even more than that, ensure that it's reliable!
+If the drive is quirky in manual use, FAFT will definitely be confused
+because it won't be able to deal with extraordinary circumstances.
+
+The OS image installed on the USB drive MUST NOT be a recovery image. FAFT
+switches pretty often between normal and dev mode, and the transition into
+dev mode is done by going through the recovery screen. With a recovery
+image present, it will do a recovery instead of going through the dev
+mode transition flow.
+
+The OS on the USB drive and on the disk must be a test image. If not, it
+will lack important tooling for running the tests: If you see messages
+that `rsync` can't be found you're not using a test image and while
+this step will work (albeit slowly because the fallback is to scp files
+individually), running the DUT's side of the tests will fail because
+non-test Chrome OS lacks a suitable python interpreter.
+
 ### ServoV4 Type-A with Micro {#servov4-typea-micro}
 
 The hardware configuration for running FAFT on a servo v4 Type-A

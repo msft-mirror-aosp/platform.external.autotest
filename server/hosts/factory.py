@@ -4,9 +4,10 @@
 
 """Provides a factory method to create a host object."""
 
-import logging
 from contextlib import closing
 from contextlib import contextmanager
+import logging
+import os
 
 from autotest_lib.client.bin import local_host
 from autotest_lib.client.bin import utils
@@ -47,6 +48,13 @@ OS_HOST_DICT = {'cros': cros_host.CrosHost,
                 'jetstream': jetstream_host.JetstreamHost,
                 'moblab': moblab_host.MoblabHost,
                 'labstation': labstation_host.LabstationHost}
+
+LOOKUP_DICT = {
+        'CrosHost': cros_host.CrosHost,
+        'JetstreamHost': jetstream_host.JetstreamHost,
+        'MoblabHost': moblab_host.MoblabHost,
+        'LabstationHost': labstation_host.LabstationHost
+}
 
 # Timeout for early connectivity check to the host, in seconds.
 _CONNECTIVITY_CHECK_TIMEOUT_S = 10
@@ -118,16 +126,35 @@ def _detect_host(connectivity_class, hostname, **args):
     @returns: Class type of the first host class that returns True to the
               check_host method.
     """
+    preset_host = _preset_host(hostname)
+    if preset_host:
+        logging.debug("Using preset_host %s for %s ", preset_host.__name__,
+                      hostname)
+        return preset_host
     with closing(connectivity_class(hostname, **args)) as host:
         for host_module in host_types:
             logging.info('Attempting to autodetect if host is of type %s',
                          host_module.__name__)
             if host_module.check_host(host, timeout=10):
+                os.environ['HOST_%s' % hostname] = str(host_module.__name__)
                 return host_module
 
     logging.warning('Unable to apply conventional host detection methods, '
                     'defaulting to chromeos host.')
     return cros_host.CrosHost
+
+
+def _preset_host(hostname):
+    """Check the environmental variables to see if the host type has been set.
+
+    @param hostname: A string representing the host name of the device.
+
+    @returns: Class type of the host, if previously found & set in
+        _detect_host, else None.
+    """
+    preset_host = os.getenv('HOST_%s' % hostname)
+    if preset_host:
+        return LOOKUP_DICT.get(preset_host, None)
 
 
 def _choose_connectivity_class(hostname, ssh_port):
@@ -296,6 +323,6 @@ def create_target_host(hostname, host_info_path=None, host_info_store=None,
     if servo_uart_logs_dir and host.servo:
         host.servo.uart_logs_dir = servo_uart_logs_dir
     try:
-      yield host
+        yield host
     finally:
-      host.close()
+        host.close()

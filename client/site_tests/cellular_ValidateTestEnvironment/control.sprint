@@ -24,13 +24,13 @@ from autotest_lib.client.cros.cellular import test_environment
 
 ITERATIONS_PER_TEST=3
 
-test_env = test_environment.CellularTestEnvironment()
+test_env = test_environment.CellularTestEnvironment(enable_temp_containments=False)
 job.run_test('cellular_ValidateTestEnvironment',
              tag='Base',
              test_env=test_env,
              iterations=ITERATIONS_PER_TEST)
 
-test_env = test_environment.CellularOTATestEnvironment()
+test_env = test_environment.CellularOTATestEnvironment(enable_temp_containments=False)
 job.run_test('cellular_ValidateTestEnvironment',
              tag='OTA',
              test_env=test_env,

@@ -28,7 +28,7 @@ from autotest_lib.client.bin import test
 mytest = test.test(job, '', %r)
 job.sysinfo.log_before_each_test(mytest)
 sysinfo_pickle = os.path.join(mytest.outputdir, 'sysinfo.pickle')
-pickle.dump(job.sysinfo, open(sysinfo_pickle, 'w'))
+pickle.dump(job.sysinfo, open(sysinfo_pickle, 'wb'))
 job.record('GOOD', '', 'sysinfo.before')
 """
 
@@ -41,7 +41,12 @@ mytest = test.test(job, '', %r)
 mytest.success = %s
 sysinfo_pickle = os.path.join(mytest.outputdir, 'sysinfo.pickle')
 if os.path.exists(sysinfo_pickle):
-    job.sysinfo = pickle.load(open(sysinfo_pickle))
+    try:
+        with open(sysinfo_pickle, 'r') as rf:
+            job.sysinfo = pickle.load(rf)
+    except UnicodeDecodeError:
+        with open(sysinfo_pickle, 'rb') as rf:
+            job.sysinfo = pickle.load(rf)
     job.sysinfo.__init__(job.resultdir)
 job.sysinfo.log_after_each_test(mytest)
 job.record('GOOD', '', 'sysinfo.after')
@@ -57,10 +62,15 @@ from autotest_lib.client.bin import test
 mytest = test.test(job, '', %r)
 sysinfo_pickle = os.path.join(mytest.outputdir, 'sysinfo.pickle')
 if os.path.exists(sysinfo_pickle):
-    job.sysinfo = pickle.load(open(sysinfo_pickle))
+    try:
+        with open(sysinfo_pickle, 'r') as rf:
+            job.sysinfo = pickle.load(rf)
+    except UnicodeDecodeError:
+        with open(sysinfo_pickle, 'rb') as rf:
+            job.sysinfo = pickle.load(rf)
     job.sysinfo.__init__(job.resultdir)
 job.sysinfo.%s(mytest, iteration=%d)
-pickle.dump(job.sysinfo, open(sysinfo_pickle, 'w'))
+pickle.dump(job.sysinfo, open(sysinfo_pickle, 'wb'))
 job.record('GOOD', '', 'sysinfo.iteration.%s')
 """
 

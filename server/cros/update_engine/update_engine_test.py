@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import shutil
+import time
 from six.moves import zip
 from six.moves import zip_longest
 import six.moves.urllib.parse
@@ -423,6 +424,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             # [0324/151230.562305:INFO:omaha_request_action.cc(501)] Request:
             timestamp_pattern_old = re.compile(
                     r'\[([0-9]+)/([0-9]+).*?\] Request:')
+
+            # Since the old format uses local time, we want to convert it to utc time.
+            is_dst = time.daylight and time.localtime().tm_isdst > 0
+            utc_offset = timedelta(
+                    seconds=(time.altzone if is_dst else time.timezone))
             timestamps = [
                     # Just use the current year since the logs don't have the year
                     # value. Let's all hope tests don't start to fail on new year's
@@ -433,7 +439,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                             int(ts[0][2:4]),  # Day
                             int(ts[1][0:2]),  # Hours
                             int(ts[1][2:4]),  # Minutes
-                            int(ts[1][4:6]))  # Seconds
+                            int(ts[1][4:6])  # Seconds
+                    ) + utc_offset
                     for ts in timestamp_pattern_old.findall(update_engine_log)
             ]
 

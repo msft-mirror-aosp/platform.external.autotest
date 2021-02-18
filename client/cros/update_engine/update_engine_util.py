@@ -599,6 +599,10 @@ class UpdateEngineUtil(object):
             match = result[-1]
             log_datetime = datetime.datetime.strptime(match,
                                                       LOG_TIMESTAMP_FORMAT)
+            epoch = datetime.datetime(1970, 1, 1)
+
+            # Since log_datetime is in UTC, simply take the diff from epoch.
+            return (log_datetime - epoch).total_seconds()
         else:
             # If no match for new timestamp, try old timestamp format.
             # "[0723/133526:INFO:omaha_request_action.cc(794)] Request: <?xml".
@@ -618,7 +622,7 @@ class UpdateEngineUtil(object):
                     match, LOG_TIMESTAMP_FORMAT_OLD)
             log_datetime = log_datetime.replace(year=current_year)
 
-        return time.mktime(log_datetime.timetuple())
+            return time.mktime(log_datetime.timetuple())
 
 
     def _take_screenshot(self, filename):

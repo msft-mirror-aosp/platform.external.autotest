@@ -115,10 +115,42 @@ class firmware_PDVbusRequest(FirmwareTest):
             raise error.TestFail("pd connection not found")
 
         dut_voltage_limit = self.faft_config.usbc_input_voltage_limit
+        dut_power_voltage_limit = dut_voltage_limit
         is_override = self.faft_config.charger_profile_override
         if is_override:
             logging.info('*** Custom charger profile takes over, which may '
                          'cause voltage-not-matched. It is OK to fail. *** ')
+
+        # Obtain voltage limit due to maximum charging power. Note that this
+        # voltage limit applies only when EC follows the default policy. There
+        # are other policies like PREFER_LOW_VOLTAGE or PREFER_HIGH_VOLTAGE but
+        # they are not implemented in this test.
+        try:
+            srccaps = self.pdtester.get_adapter_source_caps()
+            dut_max_charging_power = self.faft_config.max_charging_power
+            selected_voltage = 0
+            selected_power = 0
+            for (mv, ma) in srccaps:
+                voltage = mv / 1000.0
+                current = ma / 1000.0
+                power = min(voltage * current, dut_max_charging_power)
+
+                if (voltage > dut_voltage_limit or power <= selected_power):
+                    continue
+                selected_voltage = voltage
+                selected_power = power
+
+            if selected_voltage < dut_power_voltage_limit:
+                dut_power_voltage_limit = selected_voltage
+                logging.info(
+                        'EC may request maximum %dV due to adapter\'s max '
+                        'supported power and DUT\'s power constraints. DUT\'s '
+                        'max charging power %dW. Selected charging power %dW',
+                        dut_power_voltage_limit, dut_max_charging_power,
+                        selected_power)
+        except self.pdtester.PDTesterError:
+            logging.warn('Unable to get charging voltages and currents. '
+                         'Test may fail on high voltages.')
 
         pdtester_failures = []
         logging.info('Start PDTester initiated tests')
@@ -147,7 +179,7 @@ class firmware_PDVbusRequest(FirmwareTest):
                 ok_to_fail = False
             else:
                 expected_vbus_voltage = min(voltage, dut_voltage_limit)
-                ok_to_fail = is_override
+                ok_to_fail = is_override or voltage > dut_power_voltage_limit
 
             result, result_str = self._compare_vbus(expected_vbus_voltage,
                                                     ok_to_fail)
@@ -190,7 +222,8 @@ class firmware_PDVbusRequest(FirmwareTest):
             cmd = 'pd %d dev %d' % (self.dut_port.port, v)
             self.dut_port.utils.send_pd_command(cmd)
             time.sleep(self.PD_SETTLE_DELAY)
-            result, result_str = self._compare_vbus(v, ok_to_fail=is_override)
+            ok_to_fail = is_override or v > dut_power_voltage_limit
+            result, result_str = self._compare_vbus(v, ok_to_fail)
             logging.info('%s, %s', result_str, result)
             if result == 'FAIL':
                 dut_failures.append(result_str)

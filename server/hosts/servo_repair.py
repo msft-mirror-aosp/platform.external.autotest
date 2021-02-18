@@ -59,6 +59,7 @@ class _UpdateVerifier(hosts.Verifier):
     """
     Verifier to trigger a servo host update, if necessary.
 
+    The verifier works only for servo_v3.
     The operation doesn't wait for the update to complete and is
     considered a success whether or not the servo is currently
     up-to-date.
@@ -66,37 +67,72 @@ class _UpdateVerifier(hosts.Verifier):
 
     @timeout_util.TimeoutDecorator(cros_constants.LONG_VERIFY_TIMEOUT_SEC)
     def verify(self, host):
-        # First, only run this verifier if the host is in the physical lab.
-        # Secondly, skip if the test is being run by test_that, because subnet
-        # restrictions can cause the update to fail.
         try:
-            if host.is_labstation():
-                logging.info("Skip update check because the host is a"
-                             " labstation and labstation update is handled"
-                             " by labstation AdminRepair task.")
+            if (
+                    not host.get_dut_host_info()
+                    or not host.get_dut_host_info().servo_cros_stable_version):
+                logging.info('Servo stable version missed.'
+                             ' Skip update check action.')
                 return
-            if host.is_in_lab() and host.job and host.job.in_lab:
-                if (
-                        not host.get_dut_host_info() or
-                        not host.get_dut_host_info().servo_cros_stable_version
-                ):
-                    logging.info('Servo stable version missed.'
-                                 ' Skip update check action.')
-                    return
-                # We have seen cases that invalid GPT headers/entries block
-                # v3s from been update, so always try to repair here.
-                # See crbug.com/994396, crbug.com/1057302.
-                host.run('cgpt repair /dev/mmcblk0', ignore_status=True)
-                host.update_image()
+            # We have seen cases that invalid GPT headers/entries block
+            # v3s from been update, so always try to repair here.
+            # See crbug.com/994396, crbug.com/1057302.
+            host.run('cgpt repair /dev/mmcblk0', ignore_status=True)
+            host.update_image()
         # We don't want failure from update block DUT repair action.
         # See crbug.com/1029950.
         except Exception as e:
             six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
                         sys.exc_info()[2])
 
+    def _is_applicable(self, host):
+        # Run only for servo_v3 host.
+        if host.is_labstation():
+            return False
+        # Only run if the host is in the physical lab.
+        if not host.is_in_lab() or host.is_localhost():
+            return False
+        # Skip if the test is being run by test_that, because subnet
+        # restrictions can cause the update to fail.
+        return host.job and host.job.in_lab
+
     @property
     def description(self):
-        return 'servo host software is up-to-date'
+        return 'Servo_v3 host software is up-to-date'
+
+
+class _ServoFwVerifier(hosts.Verifier):
+    """Verifier to check is a servo fw is up-to-date."""
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        if servo_updater.any_servo_needs_firmware_update(host):
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'Some servo requires firmware update')
+
+        # If all servos are up-to-date so now we can start servod.
+        # We still do not fail if we have issue with starting the servod
+        # so just log issue if detected.
+        try:
+            host.restart_servod(quick_startup=True)
+        except Exception as e:
+            logging.warning(
+                    "Start servod failed due to:\n%s\n"
+                    "This error is forgiven here, we will retry"
+                    " in further repair actions.", e)
+
+    def _is_applicable(self, host):
+        # Run only for servos under labstations.
+        if not host.is_labstation():
+            return False
+        # Only run if the host is in the physical lab.
+        if not host.is_in_lab() or host.is_localhost():
+            return False
+        return True
+
+    @property
+    def description(self):
+        return 'Servo fw is up-to-date'
 
 
 class _ConfigVerifier(hosts.Verifier):
@@ -1098,6 +1134,28 @@ class _DiskCleanupRepair(hosts.RepairAction):
         return 'Clean up old logs/metrics on servohost to free up disk space.'
 
 
+class _ServoFwUpdateRepair(hosts.RepairAction):
+    """Update firmware for servos.
+
+    We try to update servo 3 times and then try to force update it.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        servo_updater.update_servo_firmware(host,
+                                            try_attempt_count=3,
+                                            force_update=False,
+                                            try_force_update=True)
+
+    def _is_applicable(self, host):
+        # Run only for servo_v4 and servo_v4p1.
+        return host.is_labstation()
+
+    @property
+    def description(self):
+        return 'Update servo-fw if required.'
+
+
 class _ServoMicroFlashRepair(hosts.RepairAction):
     """
     Remove old logs/metrics/crash_dumps on servohost to free up disk space.
@@ -1159,6 +1217,7 @@ def _servo_verifier_actions():
     config = ['servo_config_board', 'servo_config_serial']
     return (
             (repair_utils.SshVerifier, 'servo_ssh', []),
+            (_ServoFwVerifier, 'servo_fw', ['servo_ssh']),
             (_DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
             (_UpdateVerifier, 'servo_update', ['servo_ssh']),
             (_BoardConfigVerifier, 'servo_config_board', ['servo_ssh']),
@@ -1211,6 +1270,8 @@ def _servo_repair_actions():
             'servo_power_delivery'
     ]
     return (
+            (_ServoFwUpdateRepair, 'servo_fw_update', ['servo_ssh'],
+             ['servo_fw']),
             (_DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
              ['servo_disk_space']),
             (_ServoMicroFlashRepair, 'servo_micro_flash',

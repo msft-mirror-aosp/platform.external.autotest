@@ -1360,6 +1360,7 @@ class ServoHost(base_servohost.BaseServoHost):
         them.
         """
         ssh = self.get_verifier_state('servo_ssh')
+        servo_fw = self.get_verifier_state('servo_fw')
         disk_space = self.get_verifier_state('servo_disk_space')
         start_servod = self.get_verifier_state('servod_started')
         create_servo = self.get_verifier_state('servod_connection')
@@ -1377,6 +1378,8 @@ class ServoHost(base_servohost.BaseServoHost):
 
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH
+        if servo_fw == hosts.VERIFY_FAILED:
+            return servo_constants.SERVO_STATE_NEED_REPLACEMENT
 
         if (start_servod == hosts.VERIFY_FAILED
                     or create_servo == hosts.VERIFY_FAILED):
@@ -1723,27 +1726,6 @@ def create_servo_host(dut,
             logging.info(
                     '[Non-critical] Unexpected error while trying to'
                     ' load device health profile; %s', e)
-
-    if try_lab_servo or try_servo_repair:
-        try:
-            logging.info("Check and update servo firmware.")
-            servo_updater.update_servo_firmware(newhost,
-                                                try_attempt_count=3,
-                                                force_update=False,
-                                                try_force_update=False)
-        except Exception as e:
-            logging.error("Servo device update error: %s", e)
-
-    try:
-        newhost.restart_servod(quick_startup=True)
-    except error.AutoservSSHTimeout:
-        logging.warning("Restart servod failed due ssh connection "
-                        "to servohost timed out. This error is forgiven"
-                        " here, we will retry in servo repair process.")
-    except error.AutoservRunError as e:
-        logging.warning("Restart servod failed due to:\n%s\n"
-                        "This error is forgiven here, we will retry"
-                        " in servo repair process.", str(e))
 
     # Note that the logic of repair() includes everything done
     # by verify().  It's sufficient to call one or the other;

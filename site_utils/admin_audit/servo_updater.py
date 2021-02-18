@@ -239,6 +239,34 @@ def _run_update_attempt(updater, try_count, force_update, ignore_version):
     return success
 
 
+def any_servo_needs_firmware_update(host):
+    """Verify if any servo requires firmware update.
+
+    @params host:   ServoHost instance to run required commands
+                    and access to topology.
+    @returns:       True if any servo requires an update.
+    """
+    if not host:
+        raise ValueError('ServoHost is not provided.')
+
+    has_servo_requires_update = False
+    for device in host.get_topology().get_list_of_devices():
+        # Verify that device can provide serial and servo_type.
+        if not device.is_good():
+            continue
+        board = device.get_type()
+        updater_type = SERVO_UPDATERS.get(board, None)
+        if not updater_type:
+            logging.debug('No specified updater for %s', board)
+            continue
+        # Creating update instance
+        updater = updater_type(host, device)
+        if updater.need_update(ignore_version=False):
+            logging.info('The servo: %s requires firmware update!', board)
+            has_servo_requires_update = True
+    return has_servo_requires_update
+
+
 def update_servo_firmware(host,
                           boards=None,
                           try_attempt_count=1,
@@ -265,9 +293,8 @@ def update_servo_firmware(host,
     if ignore_version:
         logging.debug('Running servo_updater with ignore_version=True')
 
-    # Basic verification
     if not host:
-        raise Exception('ServoHost is not provided.')
+        raise ValueError('ServoHost is not provided.')
 
     # Use force option as first attempt
     use_force_option_as_first_attempt = False
@@ -284,6 +311,7 @@ def update_servo_firmware(host,
 
     # Get list connected servos
     for device in host.get_topology().get_list_of_devices():
+        # Verify that device can provide serial and servo_type.
         if not device.is_good():
             continue
         board = device.get_type()

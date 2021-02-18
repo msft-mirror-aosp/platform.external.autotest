@@ -14,6 +14,7 @@ from autotest_lib.server.hosts import repair_utils
 
 SERVO_VERIFY_DAG = (
         (repair_utils.SshVerifier, 'servo_ssh', []),
+        (servo_repair._ServoFwVerifier, 'servo_fw', ['servo_ssh']),
         (servo_repair._DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
         (servo_repair._UpdateVerifier, 'servo_update', ['servo_ssh']),
         (servo_repair._BoardConfigVerifier, 'servo_config_board',
@@ -51,6 +52,8 @@ SERVO_VERIFY_DAG = (
 )
 
 SERVO_REPAIR_ACTIONS = (
+        (servo_repair._ServoFwUpdateRepair, 'servo_fw_update', ['servo_ssh'],
+         ['servo_fw']),
         (servo_repair._DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
          ['servo_disk_space']),
         (servo_repair._ServoMicroFlashRepair, 'servo_micro_flash',

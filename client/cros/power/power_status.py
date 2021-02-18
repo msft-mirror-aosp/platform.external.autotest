@@ -273,26 +273,26 @@ class BatteryStat(DevStat):
     """
 
     battery_fields = {
-        'status':               ['status', str],
-        'charge_full':          ['charge_full', float],
-        'charge_full_design':   ['charge_full_design', float],
-        'charge_now':           ['charge_now', float],
-        'current_now':          ['current_now', float],
-        'cycle_count':          ['cycle_count', int],
-        'voltage_min_design':   ['voltage_min_design', float],
-        'voltage_max_design':   ['voltage_max_design', float],
-        'voltage_now':          ['voltage_now', float],
-        'energy':               ['energy_now', float],
-        'energy_full':          ['energy_full', float],
-        'energy_full_design':   ['energy_full_design', float],
-        'power_now':            ['power_now', float],
-        'present':              ['present', int],
-        'manufacturer':         ['manufacturer', str],
-        'model_name':           ['model_name', str],
-        'serial_number':        ['serial_number', str],
-        'energy_rate':          ['', ''],
-        'remaining_time':       ['', '']
-        }
+            'status': ['status', str],
+            'charge_full': ['charge_full', float],
+            'charge_full_design': ['charge_full_design', float],
+            'charge_now': ['charge_now', float],
+            'current_now': ['current_now', float],
+            'cycle_count': ['cycle_count', int],
+            'voltage_min_design': ['voltage_min_design', float],
+            'voltage_max_design': ['voltage_max_design', float],
+            'voltage_now': ['voltage_now', float],
+            'energy': ['energy_now', float],
+            'energy_full': ['energy_full', float],
+            'energy_full_design': ['energy_full_design', float],
+            'power_now': ['power_now', float],
+            'present': ['present', int],
+            'manufacturer': ['manufacturer', str],
+            'model_name': ['model_name', str],
+            'serial_number': ['serial_number', str],
+            'energy_rate': ['', ''],
+            'remaining_time': ['', '']
+    }
 
     def __init__(self, path=None):
         super(BatteryStat, self).__init__(self.battery_fields, path)

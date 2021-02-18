@@ -12,7 +12,6 @@ CRITERIA = """
 Test will fail if the cellular service is found to be in an
 unexpected state.
 """
-ATTRIBUTES = "suite:cellular_pseudomodem"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"

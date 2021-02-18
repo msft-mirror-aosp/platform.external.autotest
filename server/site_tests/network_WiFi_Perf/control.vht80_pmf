@@ -44,13 +44,13 @@ def run(machine):
     host = hosts.create_host(machine)
     netperf_configs = [
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM), 110),
+                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS), 110),
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS), 100),
+                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM), 100),
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM), 260),
+                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS), 260),
             (netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS), 130),
+                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM), 130),
     ]
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,

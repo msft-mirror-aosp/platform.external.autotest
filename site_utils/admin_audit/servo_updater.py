@@ -16,6 +16,10 @@ except ImportError:
     metrics = client_utils.metrics_mock
 
 
+class ServoFwVersionMissedError(Exception):
+    """Raised when Available version is not detected."""
+
+
 class _BaseUpdateServoFw(object):
     """Base class to update firmware on servo"""
 
@@ -33,6 +37,12 @@ class _BaseUpdateServoFw(object):
     # Command to get PATH to the latest available firmware on the host
     # param 1: servo board (servo_v4|servo_micro)
     LATEST_VERSION_FW = 'realpath /usr/share/servo_updater/firmware/%s.bin'
+
+    # Command to get servo firmware version for requested board and channel.
+    LATEST_VERSION_CMD = 'servo_updater -p -b "%s" -c %s | grep firmware'
+
+    # Default firmware channel.
+    DEFAULT_FW_CHANNEL = 'stable'
 
     def __init__(self, servo_host, device):
         self._host = servo_host
@@ -92,7 +102,7 @@ class _BaseUpdateServoFw(object):
         return True
 
     def get_board(self):
-        """Return servo type supported by updater"""
+        """Return servo type supported by updater."""
         raise NotImplementedError('Please implement method to return'
                                   ' servo type')
 
@@ -140,7 +150,29 @@ class _BaseUpdateServoFw(object):
         return self._device.get_version()
 
     def _latest_version(self):
-        """Get latest version available on servo-host"""
+        """Get latest version available on servo-host."""
+        # New R90 moved firmware files and introduced new way to check
+        # the available firmware version on labstation. The servo_updater
+        # introduced new option 'print'.
+        cmd = 'servo_updater --help | grep print'
+        result = self._host.run(cmd, ignore_status=True)
+        if result.exit_status == 0:
+            return self._latest_version_from_updater()
+        return self._latest_version_from_binary()
+
+    def _latest_version_from_updater(self):
+        """Get latest available version from servo_updater."""
+        cmd = (self.LATEST_VERSION_CMD %
+               (self.get_board(), self.DEFAULT_FW_CHANNEL))
+        re = self._host.run(cmd, ignore_status=True)
+        if re.exit_status == 0:
+            result = re.stdout.strip().split(':')
+            if len(result) == 2:
+                return result[-1].strip()
+        return None
+
+    def _latest_version_from_binary(self):
+        """Get latest available version by parse firmware bin filename."""
         cmd = self.LATEST_VERSION_FW % self.get_board()
         filepath = self._host.run(cmd, ignore_status=True).stdout.strip()
         if not filepath:
@@ -153,9 +185,13 @@ class _BaseUpdateServoFw(object):
         """Compare version to determine request to update the Servo or not.
         """
         current_version = self._current_version()
+        logging.debug('Servo fw on the device: %s', current_version)
         latest_version = self._latest_version()
-        if not current_version or not latest_version:
+        logging.debug('Latest servo fw: %s', latest_version)
+        if not current_version:
             return True
+        if not latest_version:
+            raise ServoFwVersionMissedError()
         if current_version == latest_version:
             return False
         return True

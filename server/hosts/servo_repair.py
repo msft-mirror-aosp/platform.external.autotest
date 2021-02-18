@@ -106,9 +106,16 @@ class _ServoFwVerifier(hosts.Verifier):
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
-        if servo_updater.any_servo_needs_firmware_update(host):
-            raise hosts.AutoservNonCriticalVerifyError(
-                    'Some servo requires firmware update')
+        try:
+            if servo_updater.any_servo_needs_firmware_update(host):
+                raise hosts.AutoservNonCriticalVerifyError(
+                        'Some servo requires firmware update')
+        except servo_updater.ServoFwVersionMissedError as e:
+            # Do not fail as it will trigger re-flash fw on the servo
+            logging.info(
+                    'Issue with detect new version of firmware for servo.'
+                    ' Please file a bug agains Fleet Automation team (go/fleet-bug)'
+            )
 
         # If all servos are up-to-date so now we can start servod.
         # We still do not fail if we have issue with starting the servod

@@ -979,7 +979,7 @@ class AbstractSSHHost(remote.RemoteHost):
         if os.path.exists(self.known_hosts_file):
             os.remove(self.known_hosts_file)
         if self.tls_client:
-            self.tls_client.close()
+            self.close_tls_client()
 
 
     def restart_main_ssh(self):

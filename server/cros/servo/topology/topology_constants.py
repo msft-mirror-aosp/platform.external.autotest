@@ -37,7 +37,7 @@ VID_PID_SERVO_TYPES = {
         '18d1:520d': ST_V4P1_TYPE,
         '18d1:5014': ST_CR50_TYPE,
         '18d1:501a': ST_SERVO_MICRO_TYPE,
-        '1d81:5041': ST_C2D2_TYPE,
+        '18d1:5041': ST_C2D2_TYPE,
         '18d1:5020': ST_SWEETBERRY_TYPE
 }
 

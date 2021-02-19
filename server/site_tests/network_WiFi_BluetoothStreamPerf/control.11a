@@ -4,7 +4,7 @@
 
 AUTHOR = 'bfreed'
 NAME = 'network_WiFi_BluetoothStreamPerf.11a'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = ''
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1'

@@ -22,7 +22,8 @@ from autotest_lib.server.cros.network import netperf_runner
 
 def run(machine):
     n_caps = [hostap_config.HostapConfig.N_CAPABILITY_HT40_PLUS]
-    ac_caps = [hostap_config.HostapConfig.AC_CAPABILITY_SHORT_GI_80]
+    ac_caps = [hostap_config.HostapConfig.AC_CAPABILITY_SHORT_GI_80,
+               hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7]
     ac_mode = hostap_config.HostapConfig.MODE_11AC_MIXED
     channel_width_80_mhz = hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80
     ap_configs = [hostap_config.HostapConfig(

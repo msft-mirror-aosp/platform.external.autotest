@@ -25,7 +25,7 @@ class audio_AlsaAPI(test.test):
         'cave': {'sklnau8825max': [4, 5, 6]},
         'snappy': {'bxtda7219max': [4, 5, 6]},
         # Chell's HDMI device 4 can not be used without being plugged.
-        # Also, its HDMI devices 5 and 6 are dummy devices.
+        # Also, its HDMI devices 5 and 6 are placeholder devices.
         'chell': {'sklnau8825adi': [4, 5, 6]},
         # Kevin's device 3 is a DisplayPort device.
         'kevin': {'rk3399-gru-sound': [3]},

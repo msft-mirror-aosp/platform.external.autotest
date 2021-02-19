@@ -19,7 +19,7 @@ class SpectralAnalysisTest(unittest.TestCase):
         numpy.random.seed(0)
 
 
-    def dummy_peak_detection(self, array, window_size):
+    def stub_peak_detection(self, array, window_size):
         """Detects peaks in an array in simple way.
 
         A point (i, array[i]) is a peak if array[i] is the maximum among
@@ -79,12 +79,12 @@ class SpectralAnalysisTest(unittest.TestCase):
     def testPeakDetectionLarge(self):
         array = numpy.random.uniform(0, 1, 1000000)
         window_size = 100
-        logging.debug('Test large array using dummy peak detection')
-        dummy_answer = self.dummy_peak_detection(array, window_size)
+        logging.debug('Test large array using stub peak detection')
+        stub_answer = self.stub_peak_detection(array, window_size)
         logging.debug('Test large array using improved peak detection')
         improved_answer = audio_analysis.peak_detection(array, window_size)
         logging.debug('Compare the result')
-        self.assertEqual(dummy_answer, improved_answer)
+        self.assertEqual(stub_answer, improved_answer)
 
 
     def testSpectralAnalysis(self):

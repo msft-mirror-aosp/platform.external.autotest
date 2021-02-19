@@ -56,7 +56,7 @@ def interpolate_missing_data(data, max_nan_ratio=None, max_sample_gap=None,
     if max_sample_gap is not None or max_sample_time_gap is not None:
         # Flag to keep track whether the loop is in a measurement gap (NaN).
         consecutive_nan_start = None
-        # Add a dummy at the end to make sure the iteration covers all real
+        # Add a stub at the end to make sure the iteration covers all real
         # examples.
         for i, isnan in enumerate(numpy.append(nan_data, False)):
             if isnan and consecutive_nan_start is None:

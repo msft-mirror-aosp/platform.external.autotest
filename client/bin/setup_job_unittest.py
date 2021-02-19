@@ -89,7 +89,7 @@ class test_init_minimal_options(abstract_test_init, setup_job_test_case):
         self.job.__init__(options)
 
 
-class dummy(object):
+class stub(object):
     """A simple placeholder for attributes"""
     pass
 
@@ -119,10 +119,10 @@ class test_setup_job(unittest.TestCase):
         sys.stdout = six.StringIO()
         logging_manager.configure_logging(logging_config.TestingConfig())
         logging.disable(logging.CRITICAL)
-        def dummy_configure_logging(*args, **kwargs):
+        def stub_configure_logging(*args, **kwargs):
             pass
         self.god.stub_with(logging_manager, 'configure_logging',
-                           dummy_configure_logging)
+                           stub_configure_logging)
         real_get_logging_manager = logging_manager.get_logging_manager
         def get_logging_manager_no_fds(manage_stdout_and_stderr=False,
                                        redirect_fds=False):
@@ -169,7 +169,7 @@ class test_setup_job(unittest.TestCase):
         resultdir = self._setup_pre_record_init()
 
         # finish constructor
-        options = dummy()
+        options = stub()
         options.tag = self.jobtag
         options.log = False
         options.verbose = False

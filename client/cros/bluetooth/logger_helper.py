@@ -14,7 +14,7 @@ class LogManager(object):
     """The LogManager class helps to collect logs without a listening thread"""
 
     class LoggingException(Exception):
-        """A dummy exception class for LogManager class."""
+        """A stub exception class for LogManager class."""
         pass
 
     def __init__(self, log_path):

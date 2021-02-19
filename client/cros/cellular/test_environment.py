@@ -3,18 +3,14 @@
 # found in the LICENSE file.
 
 import contextlib
-from time import sleep
 import dbus
 import logging
-import os
-import subprocess
 import sys
 import traceback
 
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import backchannel
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.cellular import mm
@@ -106,26 +102,6 @@ class CellularTestEnvironment(object):
 
     def __enter__(self):
         try:
-            # TODO(b/180508924): The following containment restarts the Fibocom
-            # modem on jinlon devices after 3 seconds if the modem gets stuck.
-            # Once b/179795020 is fixed, the containment can be removed.
-            if self._enable_temp_containments and utils.get_board() == 'hatch':
-                retries = 3
-                while (retries >= 0 and not '2cb7:0007' in
-                       CellularTestEnvironment.get_usb_data()):
-                    if retries == 0:
-                        logging.info("Force rebooting Fibocom modem.")
-                        os.system(
-                                '/opt/google/modemfwd-helpers/l850gl-helper ' \
-                                '--reboot --power_enable_gpio=218'
-                        )
-                        sleep(4)
-                    else:
-                        logging.info("Waiting for usb device 2cb7:0007.")
-                        sleep(1)
-
-                    retries -= 1
-
             if upstart.has_service('modemfwd') and upstart.is_running('modemfwd'):
                 upstart.stop_job('modemfwd')
             # Temporarily disable shill autoconnect to cellular service while
@@ -181,11 +157,6 @@ class CellularTestEnvironment(object):
             exception=error.TestError('Cannot find cellular device in shill. '
                                       'Is the modem plugged in?'),
             timeout=shill_proxy.ShillProxy.DEVICE_ENUMERATION_TIMEOUT)
-
-    @staticmethod
-    def get_usb_data():
-        return subprocess.Popen('lsusb', shell=True,
-                                stdout=subprocess.PIPE).stdout
 
     def _enable_modem(self):
         modem_device = self._get_shill_cellular_device_object()

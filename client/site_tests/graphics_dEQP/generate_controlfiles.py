@@ -18,16 +18,16 @@ from jinja2 import Template
 Test = namedtuple('Test', 'filter, suite, shards, time, hasty, tag, test_file, perf_failure_description')
 
 
-ATTRIBUTES_BVT_PB = (
+ATTRIBUTES_INFRA = (
     'suite:deqp, suite:graphics_per-day, suite:graphics_system, '
-    'suite:bvt-perbuild'
+    'suite:infra_qual'
 )
 ATTRIBUTES_DAILY = 'suite:deqp, suite:graphics_per-day, suite:graphics_system'
 
 class Suite(Enum):
     none = 1
     daily = 2
-    bvtcq = 3
+    infra = 3
     bvtpb = 4
 
 test_file_folder = '/usr/local/deqp/master/'
@@ -41,7 +41,7 @@ VK_MASTER_FILE = os.path.join(test_file_folder, 'vk-master.txt')
 hasty_exclude_list = ['dEQP-VK-master']
 
 tests = [
-    Test('bvt',                    Suite.daily, shards=1,  hasty=False, time='FAST',     tag='bvt',           test_file=BVT_MASTER_FILE,    perf_failure_description='Failures_BVT'),
+    Test('bvt',                    Suite.infra, shards=1,  hasty=False, time='FAST',     tag='bvt',           test_file=BVT_MASTER_FILE,    perf_failure_description='Failures_BVT'),
     Test('dEQP-GLES2-master',      Suite.daily, shards=1,  hasty=False, time='LENGTHY',  tag='gles2-master',  test_file=GLES2_MASTER_FILE,  perf_failure_description='Failures_GLES2'),
     # As we are following tot with dEQP the hasty shards have too much noise that is impossible to expect.
     #Test('dEQP-GLES2-master',      Suite.bvtpb, shards=10, hasty=True,  time='FAST',     tag='gles2-master',  test_file=GLES2_MASTER_FILE,  perf_failure_description=None),
@@ -75,7 +75,7 @@ TIME = '{{time}}'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'graphics'
 TEST_TYPE = 'client'
-MAX_RESULT_SIZE_KB = 131072
+MAX_RESULT_SIZE_KB = 524288
 DOC = \"\"\"
 This test runs the drawElements Quality Program test suite.
 \"\"\"
@@ -102,8 +102,8 @@ def get_controlfilename(test, shard=0):
 
 
 def get_attributes(test):
-    if test.suite == Suite.bvtpb:
-        return ATTRIBUTES_BVT_PB
+    if test.suite == Suite.infra:
+        return ATTRIBUTES_INFRA
     if test.suite == Suite.daily:
         return ATTRIBUTES_DAILY
     return ''

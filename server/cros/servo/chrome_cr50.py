@@ -83,7 +83,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     GETTIME = ['= (\S+)']
     FWMP_LOCKED_PROD = ["Managed device console can't be unlocked"]
     FWMP_LOCKED_DBG = ['Ignoring FWMP unlock setting']
-    MAX_RETRY_COUNT = 5
+    MAX_RETRY_COUNT = 10
     CCDSTATE_MAX_RETRY_COUNT = 20
     START_STR = ['((Havn|UART).*Console is enabled;)']
     REBOOT_DELAY_WITH_CCD = 60

@@ -296,6 +296,17 @@ class ServoTopology(object):
         logging.debug('Detected devices: %s', len(children))
         return children
 
+    def update_servo_version(self, device=None):
+        """Update version of servo device.
+
+        @params device: ConnectedServo instance.
+        """
+        if not device:
+            logging.debug('Device is not provided')
+            return
+        device._version = self._read_file(device.get_path(), 'configuration')
+        logging.debug('New servo version: %s', device.get_version())
+
     def _get_vid_pid(self, path):
         """Read VID and PID of the device.
 
@@ -326,7 +337,8 @@ class ServoTopology(object):
         servo_type = stc.VID_PID_SERVO_TYPES.get(vid_pid)
         if not servo_type:
             return None
-        return ConnectedServo(device_product=product,
+        return ConnectedServo(device_path=path,
+                              device_product=product,
                               device_serial=serial,
                               device_type=servo_type,
                               device_vid_pid=vid_pid,
@@ -375,12 +387,14 @@ class ConnectedServo(object):
     """Class to hold info about connected detected."""
 
     def __init__(self,
+                 device_path=None,
                  device_product=None,
                  device_serial=None,
                  device_type=None,
                  device_vid_pid=None,
                  device_hub_path=None,
                  device_version=None):
+        self._path = device_path
         self._product = device_product
         self._serial = device_serial
         self._type = device_type
@@ -404,6 +418,10 @@ class ConnectedServo(object):
     def get_type(self):
         """Servo type."""
         return self._type
+
+    def get_path(self):
+        """Path to servo folder in sysfs."""
+        return self._path
 
     def get_serial_number(self):
         """Servo serial number."""

@@ -45,6 +45,11 @@ class _BaseUpdateServoFw(object):
     DEFAULT_FW_CHANNEL = 'stable'
 
     def __init__(self, servo_host, device):
+        """Init servo-updater instance.
+
+        @params servo_host: ServoHost instance to run terminal commands
+        @params device:     ConnectedServo instance provided servo info
+        """
         self._host = servo_host
         self._device = device
 
@@ -105,6 +110,10 @@ class _BaseUpdateServoFw(object):
         """Return servo type supported by updater."""
         raise NotImplementedError('Please implement method to return'
                                   ' servo type')
+
+    def get_device(self):
+        """Return ConnectedServo instance"""
+        return self._device
 
     def get_serial_number(self):
         """Return serial number for servo device"""
@@ -247,10 +256,12 @@ SERVO_UPDATERS = {
 }
 
 
-def _run_update_attempt(updater, try_count, force_update, ignore_version):
+def _run_update_attempt(updater, topology, try_count, force_update,
+                        ignore_version):
     """Run servo update attempt.
 
     @params updater:        Servo updater instance.
+    @params topology:       ServoTopology instance to update version.
     @params try_count:      Count of attempt to run update.
     @params force_update:   Run updater with force option.
     @params ignore_version: Do not check the version on the device.
@@ -260,14 +271,16 @@ def _run_update_attempt(updater, try_count, force_update, ignore_version):
     board = updater.get_board()
     success = False
     for a in range(try_count):
-        msg = 'Starting attempt: %s to update "%s".'
+        msg = 'Starting attempt: %d (of %d) to update "%s".'
         if force_update:
             msg += ' with force'
-        logging.info(msg, a + 1, board)
+        logging.info(msg, a + 1, try_count, board)
         try:
             updater.update(force_update=force_update,
                            ignore_version=ignore_version)
-            success = True
+            topology.update_servo_version(updater.get_device())
+            if not updater.need_update(ignore_version=ignore_version):
+                success = True
         except Exception as e:
             logging.debug('(Not critical) fail to update %s; %s', board, e)
         if success:
@@ -345,8 +358,9 @@ def update_servo_firmware(host,
     # Collection to count which board failed to update
     fail_boards = []
 
+    servo_topology = host.get_topology()
     # Get list connected servos
-    for device in host.get_topology().get_list_of_devices():
+    for device in servo_topology.get_list_of_devices():
         # Verify that device can provide serial and servo_type.
         if not device.is_good():
             continue
@@ -362,6 +376,7 @@ def update_servo_firmware(host,
         updater = updater_type(host, device)
         is_success_update = _run_update_attempt(
                 updater=updater,
+                topology=servo_topology,
                 try_count=try_attempt_count,
                 force_update=use_force_option_as_first_attempt,
                 ignore_version=ignore_version)
@@ -370,6 +385,7 @@ def update_servo_firmware(host,
         if not is_success_update and try_force_update:
             is_success_update = _run_update_attempt(
                     updater=updater,
+                    topology=servo_topology,
                     try_count=1,
                     force_update=True,
                     ignore_version=ignore_version)

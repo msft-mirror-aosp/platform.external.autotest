@@ -1213,7 +1213,7 @@ class FirmwareTest(test.test):
         """
         Wait for certain power state.
 
-        @param power_state: power state you are expecting
+        @param power_state: regex of power state you are expecting
         @param retries: retries.  This is necessary if AP is powering down
         and transitioning through different states.
         @param retry_delay: delay between retries in seconds
@@ -1221,11 +1221,8 @@ class FirmwareTest(test.test):
         logging.info('Checking power state "%s" maximum %d times.',
                      power_state, retries)
 
-        # Reset the cache, in case previous calls silently changed it on servod
-        self.ec.set_uart_regexp('None')
-
         while retries > 0:
-            logging.info("try count: %d", retries)
+            logging.debug("try count: %d", retries)
             start_time = time.time()
             try:
                 retries = retries - 1
@@ -1238,7 +1235,7 @@ class FirmwareTest(test.test):
                 time.sleep(delay_time)
         return False
 
-    def run_shutdown_cmd(self):
+    def run_shutdown_cmd(self, wait_for_offline=True):
         """Shut down the DUT by running '/sbin/shutdown -P now'."""
         self.faft_client.disconnect()
         # Shut down in the background after sleeping so the call gets a reply.
@@ -1250,7 +1247,8 @@ class FirmwareTest(test.test):
                 logging.warn("Ignoring error from ssh: %s", e)
             else:
                 raise
-        self.switcher.wait_for_client_offline()
+        if wait_for_offline:
+            self.switcher.wait_for_client_offline()
         self._client.close_main_ssh()
 
     def suspend(self):

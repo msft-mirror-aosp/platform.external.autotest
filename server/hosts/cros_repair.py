@@ -1185,7 +1185,7 @@ class ServoInstallRepair(hosts.RepairAction):
             _, update_url = host.stage_image_for_servo()
         afe_utils.clean_provision_labels(host)
         host.servo_install(update_url,
-                           install_timeout=host.ADMIN_INSTALL_TIMEOUT,
+                           install_timeout=host.ADMIN_INSTALL_TIMEOUT * 2,
                            is_repair=True)
         afe_utils.add_provision_labels(host, host.VERSION_PREFIX, image_name)
         # Collect info which USB-key used for successful re-image.

@@ -56,7 +56,13 @@ def run(machine):
     lacros_gcs_path = args_dict.get('lacros_gcs_path')
     if lacros_gcs_path:
         logging.info('Expect to download lacros from %s', lacros_gcs_path)
-        utils.system_output('gsutil cp %s /tmp/lacros.zip' % lacros_gcs_path)
+        # Skip the default boto config to apply the service account of
+        # drones. The GCS bucket storing Chrome builds only allows this
+        # service account to access.
+        utils.system_output('BOTO_CONFIG= '
+            'gsutil -o Credentials:gs_service_key_file='
+            '/creds/service_accounts/skylab-drone.json cp %s /tmp/lacros.zip' %
+            lacros_gcs_path)
         utils.system_output('unzip -o /tmp/lacros.zip -d /tmp/lacros')
         host.send_file('/tmp/lacros', '/usr/local/', delete_dest=True)
         varslist.append('lacrosDeployedBinary=/usr/local/lacros')

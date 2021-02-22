@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.11_r3.arm.tradefed-run-collect-tests-only-internal'
-ATTRIBUTES = 'suite:arc-cts-r'
+ATTRIBUTES = 'suite:arc-cts-r, suite:arc-cts-qual'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 0
 TEST_TYPE = 'server'

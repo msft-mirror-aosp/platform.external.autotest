@@ -289,6 +289,7 @@ def get_controlfile_name(module,
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
+    module = re.sub(r'\[[^]]*\]', '', module)
     return 'control.%s' % get_extension(module, abi, revision, is_public, led_provision,
                                         camera_facing)
 
@@ -1154,7 +1155,7 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
 
 
 def write_qualification_controlfiles(modules, abi, revision, build, uri,
-                                     is_public):
+                                     is_public, is_latest):
     """Write all control files to run "all" tests for qualification.
 
     Qualification was performed on N by running all tests using tradefed
@@ -1164,12 +1165,14 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
     """
     combined = combine_modules_by_bookmark(set(modules))
     for key in combined:
-        write_controlfile('all.' + key, combined[key], abi, revision, build,
-                          uri, CONFIG.get('QUAL_SUITE_NAMES'), is_public)
+        write_controlfile('all.' + key, combined[key],
+                          abi, revision, build, uri,
+                          CONFIG.get('QUAL_SUITE_NAMES'), is_public, is_latest)
 
 
 def write_qualification_and_regression_controlfile(modules, abi, revision,
-                                                   build, uri, is_public):
+                                                   build, uri, is_public,
+                                                   is_latest):
     """Write a control file to run "all" tests for qualification and regression.
     """
     # For cts-instant, qualication control files are expected to cover
@@ -1186,6 +1189,7 @@ def write_qualification_and_regression_controlfile(modules, abi, revision,
                           uri,
                           suites,
                           is_public,
+                          is_latest,
                           whole_module_set=module_set)
 
 
@@ -1220,7 +1224,8 @@ def write_extra_controlfiles(_modules, abi, revision, build, uri, is_public,
                               is_latest)
 
 
-def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
+def write_extra_camera_controlfiles(abi, revision, build, uri, is_public,
+                                    is_latest):
     """Control files for CtsCameraTestCases.camerabox.*"""
     module = 'CtsCameraTestCases'
     for facing in ['back', 'front']:
@@ -1235,6 +1240,7 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public):
                                               uri,
                                               None,
                                               is_public,
+                                              is_latest,
                                               led_provision=led_provision,
                                               camera_facing=facing)
             with open(name, 'w') as f:
@@ -1273,17 +1279,19 @@ def run(uris, is_public, is_latest, cache_dir):
             else:
                 if CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS']:
                     write_qualification_and_regression_controlfile(
-                            modules, abi, revision, build, uri, is_public)
+                            modules, abi, revision, build, uri, is_public,
+                            is_latest)
                 else:
                     write_regression_controlfiles(modules, abi, revision,
                                                   build, uri, is_public,
                                                   is_latest)
                     write_qualification_controlfiles(modules, abi, revision,
-                                                     build, uri, is_public)
+                                                     build, uri, is_public,
+                                                     is_latest)
 
                 if CONFIG['CONTROLFILE_WRITE_CAMERA']:
                     write_extra_camera_controlfiles(abi, revision, build, uri,
-                                                    is_public)
+                                                    is_public, is_latest)
 
             if CONFIG.get('CONTROLFILE_WRITE_COLLECT', True):
                 write_collect_controlfiles(modules, abi, revision, build, uri,

@@ -31,7 +31,7 @@ CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # On moblab everything runs in the same suite.
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts-r']
-CONFIG['QUAL_SUITE_NAMES'] = []
+CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -86,7 +86,30 @@ CONFIG['BVT_TIMEOUT'] = 0.1
 # We allow a very long runtime for qualification (2 days).
 CONFIG['QUAL_TIMEOUT'] = 48
 
-CONFIG['QUAL_BOOKMARKS'] = sorted([])
+CONFIG['QUAL_BOOKMARKS'] = sorted([
+        'A',  # A bookend to simplify partition algorithm.
+        'CtsAccessibilityServiceTestCases',  # TODO(ihf) remove when b/121291711 fixed. This module causes problems. Put it into its own control file.
+        'CtsAccessibilityServiceTestCasesz',
+        'CtsActivityManagerDevice',  # Runs long enough. (3h)
+        'CtsActivityManagerDevicez',
+        'CtsDeqpTestCases',
+        'CtsDeqpTestCasesz',  # Put Deqp in one control file. Long enough, fairly stable.
+        'CtsFileSystemTestCases',  # Runs long enough. (3h)
+        'CtsFileSystemTestCasesz',
+        'CtsMediaBitstreamsTestCases',  # Put each Media module in its own control file. Long enough.
+        'CtsMediaHostTestCases',
+        'CtsMediaStressTestCases',
+        'CtsMediaTestCases',
+        'CtsMediaTestCasesz',
+        'CtsJvmti',
+        'CtsSecurityHostTestCases',  # TODO(ihf): remove when passing cleanly.
+        'CtsSecurityHostTestCasesz',
+        'CtsSensorTestCases',  # TODO(ihf): Remove when not needing 30 retries.
+        'CtsSensorTestCasesz',
+        'CtsViewTestCases',  # TODO(b/126741318): Fix performance regression and remove this.
+        'CtsViewTestCasesz',
+        'zzzzz'  # A bookend to simplify algorithm.
+])
 
 CONFIG['SMOKE'] = []
 

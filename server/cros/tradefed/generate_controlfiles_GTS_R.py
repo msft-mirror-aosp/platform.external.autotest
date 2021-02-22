@@ -37,7 +37,7 @@ CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-gts/tools/gts-tradefed'
 # TODO(kinaba): move to arc-gts and arc-gts-qual after R
 # got out from the experimental state.
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts-r']
-CONFIG['QUAL_SUITE_NAMES'] = []
+CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-gts-qual']
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -68,8 +68,13 @@ CONFIG['BVT_TIMEOUT'] = 0.1
 # We allow a very long runtime for qualification (1 day).
 CONFIG['QUAL_TIMEOUT'] = 24
 
-# TODO(kinab): Set up when we move the test to arc-gts-qual
-CONFIG['QUAL_BOOKMARKS'] = sorted([])
+CONFIG['QUAL_BOOKMARKS'] = sorted([
+        'A',  # A bookend to simplify partition algorithm.
+        'GtsExoPlayerTestCases',
+        'GtsMediaTestCases',
+        'GtsMediaTestCasesz',  # runs the biggest module in a single job.
+        'zzzzz'  # A bookend to simplify algorithm.
+])
 
 CONFIG['SMOKE'] = []
 
@@ -143,4 +148,3 @@ from generate_controlfiles_common import main
 
 if __name__ == '__main__':
     main(CONFIG)
-

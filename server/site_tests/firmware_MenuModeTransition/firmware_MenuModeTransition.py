@@ -248,7 +248,7 @@ class firmware_MenuModeTransition(FirmwareTest):
 
         # Trigger to-norm by menu navigation
         logging.info('Trigger to-norm by menu navigation.')
-        self.switcher.disable_rec_mode_and_reboot()
+        self.switcher.simple_reboot()
         self.switcher.wait_for_client_offline()
         navigator.trigger_dev_to_normal()
         self.switcher.wait_for_client()

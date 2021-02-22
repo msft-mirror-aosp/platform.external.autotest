@@ -68,7 +68,7 @@ class platform_SuspendResumeTiming(test.test):
         if log_count != 1:
             raise error.TestError('Log \"%s\" is found %d times!'
                                   % (pwrd_log, log_count))
-        return parse_timestamp(out_log)
+        return self.parse_timestamp(out_log)
 
 
     def get_display_mode_timestamp(self):
@@ -82,7 +82,7 @@ class platform_SuspendResumeTiming(test.test):
             % (_RESUME_START_LOG.replace("\"",""),
                _POWERD_LOG_PATH, _RESUME_END_LOG))
         out_log = self.host.run(cmd, ignore_status=True).stdout.strip()
-        return parse_timestamp(out_log)
+        return self.parse_timestamp(out_log)
 
 
     def get_suspend_resume_time(self):

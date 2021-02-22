@@ -43,8 +43,8 @@ class network_WiFi_UpdateRouter(test.test):
         # them.
         'whirlwind': StableVersion('whirlwind-test-ap-tryjob/R85-13310.60.0-b4641849',
                                    '13310.60.2020_08_25_0212'),
-        'gale': StableVersion('gale-test-ap-tryjob/R85-13310.54.0-b4637444',
-                              '13310.54.2020_08_19_1536'),
+        'gale': StableVersion('gale-test-ap-tryjob/R88-13597.100.0-b4802789',
+                              '13597.100.2021_02_22_0025'),
     }
 
     # List of files to remove.

@@ -36,7 +36,7 @@ CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-gts/tools/gts-tradefed'
 # For now only run as a part of arc-cts-r.
 # TODO(kinaba): move to arc-gts and arc-gts-qual after R
 # got out from the experimental state.
-CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts-r']
+CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts-r', 'suite:arc-gts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-gts-qual']
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'

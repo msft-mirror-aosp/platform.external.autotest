@@ -30,7 +30,9 @@ CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-cts/tools/cts-tradefed'
 CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # On moblab everything runs in the same suite.
-CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts-r']
+CONFIG['INTERNAL_SUITE_NAMES'] = [
+        'suite:arc-cts-r', 'suite:arc-cts', 'suite:arc-cts-unibuild'
+]
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
@@ -122,7 +124,11 @@ CONFIG['BVT_PERBUILD'] = [
 
 CONFIG['NEEDS_POWER_CYCLE'] = []
 
-CONFIG['HARDWARE_DEPENDENT_MODULES'] = []
+CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
+        'CtsSensorTestCases',
+        'CtsCameraTestCases',
+        'CtsBluetoothTestCases',
+]
 
 # The suite is divided based on the run-time hint in the *.config file.
 CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()

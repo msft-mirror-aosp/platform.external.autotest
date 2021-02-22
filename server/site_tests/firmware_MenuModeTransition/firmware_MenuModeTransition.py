@@ -66,9 +66,9 @@ class LegacyMenuNavigator(BaseMenuNavigator):
         self.test.wait_for('firmware_screen')
         for _ in range(3, 0, -1):
             self.menu_up()
-            self.test.wait_for('confirm_screen')
+            self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Developer Options"...')
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Boot From Internal Disk"...')
 
     def trigger_dev_to_normal(self):
@@ -92,9 +92,9 @@ class LegacyMenuNavigator(BaseMenuNavigator):
         self.test.wait_for('firmware_screen')
         for _ in range(3, 2, -1):
             self.menu_up()
-            self.test.wait_for('confirm_screen')
+            self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Enable OS Verification"...')
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         self.menu_select('Selecing "Confirm Enabling OS Verification"...')
 
 
@@ -144,14 +144,14 @@ class MenuNavigator(BaseMenuNavigator):
         # Since the default selection is unknown, navigate to item 5 first
         for _ in range(0, 5):
             self.menu_down()
-            self.test.wait_for('confirm_screen')
+            self.test.wait_for('keypress_delay')
         # Navigate to "Advanced options"
         self.menu_up()
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Advanced options"...')
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Enable developer mode"...')
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         # Confirm to-dev transition
         self._confirm_to_dev()
 
@@ -170,11 +170,11 @@ class MenuNavigator(BaseMenuNavigator):
         # Since the default selection is unknown, navigate to item 0 first
         for _ in range(5, 0, -1):
             self.menu_up()
-            self.test.wait_for('confirm_screen')
+            self.test.wait_for('keypress_delay')
         # Navigate to "Boot from internal disk"
         for _ in range(0, 2):
             self.menu_down()
-            self.test.wait_for('confirm_screen')
+            self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Boot from internal disk"...')
 
     def trigger_dev_to_normal(self):
@@ -200,12 +200,12 @@ class MenuNavigator(BaseMenuNavigator):
         # Since the default selection is unknown, navigate to item 0 first
         for _ in range(5, 0, -1):
             self.menu_up()
-            self.test.wait_for('confirm_screen')
+            self.test.wait_for('keypress_delay')
         # Navigate to "Return to secure mode"
         self.menu_down()
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         self.menu_select('Selecting "Return to secure mode"...')
-        self.test.wait_for('confirm_screen')
+        self.test.wait_for('keypress_delay')
         self.menu_select('Selecing "Confirm"...')
 
 

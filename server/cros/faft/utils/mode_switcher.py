@@ -163,7 +163,8 @@ class _KeyboardBypasser(_BaseFwBypasser):
         """Trigger to the dev mode from the rec screen."""
         self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+d')
         self.servo.ctrl_d()
-        self.faft_framework.wait_for('confirm_screen', 'Pressing button to switch to dev mode')
+        self.faft_framework.wait_for('keypress_delay',
+                                     'Pressing button to switch to dev mode')
         if self.faft_config.rec_button_dev_switch:
             logging.info('RECOVERY button pressed to switch to dev mode')
             self.servo.toggle_recovery_switch()
@@ -181,7 +182,7 @@ class _KeyboardBypasser(_BaseFwBypasser):
         self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+s')
         self.servo.ctrl_s()
         # Select "Confirm"
-        self.faft_framework.wait_for('confirm_screen', 'Pressing enter')
+        self.faft_framework.wait_for('keypress_delay', 'Pressing enter')
         self.servo.enter_key()
 
 
@@ -197,7 +198,7 @@ class _LegacyKeyboardBypasser(_KeyboardBypasser):
         """Trigger to the normal mode from the dev screen."""
         self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
         self.servo.enter_key()
-        self.faft_framework.wait_for('confirm_screen', 'Pressing enter')
+        self.faft_framework.wait_for('keypress_delay', 'Pressing enter')
         self.servo.enter_key()
 
 
@@ -256,7 +257,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
     def set_button(self, button, duration, info):
         """Helper method that sets the button hold time for UI selections"""
         self.servo.set_nocheck(button, duration)
-        self.faft_framework.wait_for('confirm_screen')
+        self.faft_framework.wait_for('keypress_delay')
         logging.info(info)
 
 
@@ -380,9 +381,9 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         """
         self.faft_framework.wait_for('firmware_screen', 'Pressing volume up')
         self.servo.set_nocheck('volume_up_hold', 100)
-        self.faft_framework.wait_for('confirm_screen', 'Pressing volume up')
+        self.faft_framework.wait_for('keypress_delay', 'Pressing volume up')
         self.servo.set_nocheck('volume_up_hold', 100)
-        self.faft_framework.wait_for('confirm_screen', 'Pressing volume up')
+        self.faft_framework.wait_for('keypress_delay', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power '
                         'as enter key to select Developer Options'))
         self.servo.power_short_press()
@@ -404,7 +405,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         """
         self.faft_framework.wait_for('firmware_screen', 'Pressing volume up + volume down')
         self.set_button('volume_up_down_hold', 100, ('Enter Recovery Menu.'))
-        self.faft_framework.wait_for('confirm_screen', 'Pressing volume up')
+        self.faft_framework.wait_for('keypress_delay', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power as '
                         'enter key to select Confirm Enabling Developer Mode'))
         self.servo.power_short_press()
@@ -470,9 +471,9 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         # a generic action and wait for next action of either Lid close or
         # power button press.
         self.servo.set_nocheck('volume_down_hold', 100)
-        self.faft_framework.wait_for('confirm_screen', 'Pressing volume down')
+        self.faft_framework.wait_for('keypress_delay', 'Pressing volume down')
         self.servo.set_nocheck('volume_down_hold', 100)
-        self.faft_framework.wait_for('confirm_screen')
+        self.faft_framework.wait_for('keypress_delay')
 
 
 class _BaseModeSwitcher(object):

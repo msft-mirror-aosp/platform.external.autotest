@@ -172,6 +172,25 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # If the event happened before the timeout
         difference = event_timestamp - self._current_timestamp
+
+        # We check if the difference > 7 hs. If so we assume that this is due to
+        # timezone jump from local to utc caused by log format change
+        # crrev.com/c/2652108 and adjust accordingly. Another assumption here is
+        # that the DUT are in PST timezone. The jump will be 7 hs with DST and 8
+        # hs without. This hack should be removed once reasonable time has
+        # passed and we do not need to consider the old log format anymore.
+        # TODO(crbug.com/c/1178930): Remove the hack below.
+        if difference > timedelta(hours=7):
+            logging.info(
+                    'Detected a timezone jump with difference %s with event %s',
+                    difference,
+                    uee.get_event_type(
+                            expected_event._expected_attrs['event_type']))
+            if difference > timedelta(hours=8):
+                difference -= timedelta(hours=8)
+            else:
+                difference -= timedelta(hours=7)
+
         if difference < timedelta(seconds=expected_event._timeout):
             logging.info('Event took %s seconds to fire during the '
                          'update', difference.seconds)
@@ -432,6 +451,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             is_dst = time.daylight and time.localtime().tm_isdst > 0
             utc_offset = timedelta(
                     seconds=(time.altzone if is_dst else time.timezone))
+            if utc_offset > timedelta(seconds=0):
+                logging.info('Parsing old log format. Adding utc offset of %s',
+                             utc_offset)
+            else:
+                logging.warning(
+                        'Local time to UTC conversion might fail. utc_offset=%s. time.altzone=%s, time.timezone=%s',
+                        utc_offset, time.altzone, time.timezone)
             timestamps = [
                     # Just use the current year since the logs don't have the year
                     # value. Let's all hope tests don't start to fail on new year's

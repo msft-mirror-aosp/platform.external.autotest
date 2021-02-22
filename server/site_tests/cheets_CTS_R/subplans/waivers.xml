@@ -7,6 +7,7 @@
     of test cases is confused. See b/151779432.
   -->
   <Entry include="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCantSaveStateLaunchAndSwitch" />
+  <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[0]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[1]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[2]" />
@@ -71,6 +72,22 @@
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[259(video/x-vnd.on2.vp9143)]" />
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[262(video/x-vnd.on2.vp9161)]" />
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[263(video/x-vnd.on2.vp9163)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[58(video/avc111)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[59(video/avc113)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[62(video/avc121)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[63(video/avc123)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[66(video/avc141)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[67(video/avc143)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[70(video/avc161)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[71(video/avc163)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[82(video/avc211)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[83(video/avc213)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[86(video/avc221)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[87(video/avc223)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[90(video/avc241)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[91(video/avc243)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[94(video/avc261)]" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[95(video/avc263)]" />
   <Entry include="CtsOsTestCases android.os.cts.AutoRevokeTest#testUnusedApp_getsPermissionRevoked" />
   <Entry include="CtsSyncAccountAccessOtherCertTestCases com.android.cts.content.CtsSyncAccountAccessOtherCertTestCases#testAccountAccess_otherCertAsAuthenticatorCanNotSeeAccount" />
   <Entry include="CtsThemeHostTestCases android.theme.cts.ThemeHostTest#testThemes" />

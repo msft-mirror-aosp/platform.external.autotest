@@ -31,6 +31,12 @@ class firmware_ECCharging(FirmwareTest):
     # The delay to wait for the AC state to update.
     AC_STATE_UPDATE_DELAY = 3
 
+    # Wait a few seconds after discharging for voltage to stabilize
+    BEGIN_CHARGING_TIMEOUT = 15
+
+    # Sleep for a second between retries when waiting for voltage to stabilize
+    BEGIN_CHARGING_RETRY_TIME = 1
+
     # The dict to cache the battery information
     BATTERY_INFO = {}
 
@@ -78,6 +84,7 @@ class firmware_ECCharging(FirmwareTest):
             else:
                 self.BATTERY_INFO[battery_params[i]] = int(
                         battery_regex_match[i][1])
+        logging.debug('Battery info: %s', self.BATTERY_INFO)
 
     def _get_battery_desired_voltage(self):
         """Get battery desired voltage value."""
@@ -219,6 +226,14 @@ class firmware_ECCharging(FirmwareTest):
             while time.time() < deadline:
                 self._update_battery_info()
                 if self._get_battery_charging_allowed():
+                    deadline = time.time() + self.BEGIN_CHARGING_TIMEOUT
+                    while time.time() < deadline:
+                        self._update_battery_info()
+                        if self._get_battery_actual_current() >= 0:
+                            break
+                        logging.info(
+                                'Battery actual voltage too low, wait a bit.')
+                        time.sleep(self.BEGIN_CHARGING_RETRY_TIME)
                     return
                 else:
                     logging.info("Wait for the battery to discharge (%d mAh).",
@@ -226,7 +241,8 @@ class firmware_ECCharging(FirmwareTest):
                 # Run a CPU intensive program to force the battery to drain faster.
                 # Switch to servo drain after b/140965614.
                 self._client.run("stressapptest -s %d " %
-                                 self.CHECK_BATT_STATE_WAIT)
+                                 self.CHECK_BATT_STATE_WAIT,
+                                 ignore_status=True)
             raise error.TestFail(
                     "The battery does not report charging allowed "
                     "before timeout is reached.")

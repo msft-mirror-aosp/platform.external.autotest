@@ -29,7 +29,7 @@ class TestRunner {
     this.peerConnections = [];
     this.numConnections = numConnections;
     this.iteration = 0;
-    this.startTime = 0;  // initialized to dummy value
+    this.startTime = 0;  // initialized to placeholder value
     this.status = this.getStatusInternal_();
   }
 

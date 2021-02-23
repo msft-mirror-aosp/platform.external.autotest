@@ -271,7 +271,7 @@ class BaseDashboard(object):
         checkpoint_event_list = sorted(checkpoint_event_list,
                                        key=operator.itemgetter(1))
 
-        # Add dummy check point at 1e9 seconds.
+        # Add placeholder check point at 1e9 seconds.
         checkpoint_event_list.append(('dummy', 1e9, True))
 
         interval_set = set()

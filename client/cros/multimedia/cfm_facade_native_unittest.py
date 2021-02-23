@@ -44,21 +44,22 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
 
     @mock.patch.object(cfm_facade_native, 'kiosk_utils')
     def test_check_hangout_extension_context(self, mock_kiosk_utils):
-        dummy_ctx = create_mock_context('foo.bar?screen=dummy')
-        dummy_ctx.EvaluateJavaScript.return_value = (
-            '%s/%s' % (self.extension_path, HANGOUT_WINDOW_0))
+        stub_ctx = create_mock_context('foo.bar?screen=stub')
+        stub_ctx.EvaluateJavaScript.return_value = (
+                '%s/%s' % (self.extension_path, HANGOUT_WINDOW_0))
 
-        mock_kiosk_utils.wait_for_kiosk_ext.return_value = [dummy_ctx]
+        mock_kiosk_utils.wait_for_kiosk_ext.return_value = [stub_ctx]
         self.cfm_facade.check_hangout_extension_context()
         mock_kiosk_utils.wait_for_kiosk_ext.assert_called_with(self.browser,
             self.cfm_facade._EXT_ID)
 
     @mock.patch.object(cfm_facade_native, 'kiosk_utils')
     def test_webview_context_property(self, mock_kiosk_utils):
-        dummy_ctx = create_mock_context('foo.bar?screen=dummy')
+        stub_ctx = create_mock_context('foo.bar?screen=stub')
         hotrod_ctx = create_mock_context('www.qbc?screen=%s' % self.screen)
-        mock_kiosk_utils.get_webview_contexts.return_value = [dummy_ctx,
-                                                              hotrod_ctx]
+        mock_kiosk_utils.get_webview_contexts.return_value = [
+                stub_ctx, hotrod_ctx
+        ]
         self.assertEqual(self.cfm_facade._webview_context, hotrod_ctx)
         mock_kiosk_utils.get_webview_contexts.assert_called_with(self.browser,
             self.cfm_facade._EXT_ID)
@@ -66,10 +67,11 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
     @mock.patch.object(cfm_facade_native, 'kiosk_utils')
     def test_get_webview_context_by_screen_two_screens(self, mock_kiosk_utils):
         screen_param = 'foo'
-        dummy_ctx = create_mock_context('foo.bar?screen=dummy')
+        stub_ctx = create_mock_context('foo.bar?screen=stub')
         hotrod_ctx = create_mock_context('www.qbc?screen=%s' % screen_param)
-        mock_kiosk_utils.get_webview_contexts.return_value = [dummy_ctx,
-                                                              hotrod_ctx]
+        mock_kiosk_utils.get_webview_contexts.return_value = [
+                stub_ctx, hotrod_ctx
+        ]
         found_ctx = self.cfm_facade._get_webview_context_by_screen(screen_param)
         self.assertEqual(found_ctx, hotrod_ctx)
 
@@ -77,7 +79,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
     def test_get_webview_context_by_screen_only_hotrod_screen(self,
                                                               mock_kiosk_utils):
         screen_param = 'foo'
-        dummy_ctx = create_mock_context('foo.bar?screen=dummy')
+        stub_ctx = create_mock_context('foo.bar?screen=stub')
         hotrod_ctx = create_mock_context('www.qbc?screen=%s' % screen_param)
         mock_kiosk_utils.get_webview_contexts.return_value = [hotrod_ctx]
         found_ctx = self.cfm_facade._get_webview_context_by_screen(screen_param)
@@ -117,13 +119,13 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
 
     @mock.patch.object(cfm_facade_native, 'kiosk_utils')
     def test_reboot_device_with_chrome_api(self, mock_kiosk_utils):
-        dummy_ctx = create_mock_context('foo.bar?screen=dummy')
-        dummy_ctx.EvaluateJavaScript.return_value = (
-            '%s/%s' % (self.extension_path, BACKGROUD_PAGE))
-        mock_kiosk_utils.wait_for_kiosk_ext.return_value = [dummy_ctx]
+        stub_ctx = create_mock_context('foo.bar?screen=stub')
+        stub_ctx.EvaluateJavaScript.return_value = (
+                '%s/%s' % (self.extension_path, BACKGROUD_PAGE))
+        mock_kiosk_utils.wait_for_kiosk_ext.return_value = [stub_ctx]
         self.cfm_facade.reboot_device_with_chrome_api()
-        dummy_ctx.ExecuteJavaScript.assert_called_with(
-            'chrome.runtime.restart();')
+        stub_ctx.ExecuteJavaScript.assert_called_with(
+                'chrome.runtime.restart();')
 
     @mock.patch.object(cfm_facade_native, 'kiosk_utils')
     def test_large_integers_in_media_info_data_points(self, mock_kiosk_utils):

@@ -1098,9 +1098,12 @@ class test_status_logger(unittest.TestCase):
         self.logger = base_job.status_logger(self.job, self.indenter)
 
 
-    def make_dummy_entry(self, rendered_text, start=False, end=False,
-                         subdir=None):
-        """Helper to make a dummy status log entry with custom rendered text.
+    def make_placeholder_entry(self,
+                               rendered_text,
+                               start=False,
+                               end=False,
+                               subdir=None):
+        """Helper to make a placeholder status log entry with custom rendered text.
 
         Helpful when validating the logging since it lets the test control
         the rendered text and so it doesn't depend on the exact formatting
@@ -1113,24 +1116,26 @@ class test_status_logger(unittest.TestCase):
             of a nested group.
         @param subdir: An optional value to use for the entry subdir field.
 
-        @return: A dummy status log entry object with the given subdir field
-            and a render implementation that returns rendered_text.
+        @return: A placeholder status log entry object with the given subdir
+            field and a render implementation that returns rendered_text.
         """
         assert not start or not end  # real entries would never be both
-        class dummy_entry(object):
+
+        class placeholder_entry(object):
             def is_start(self):
                 return start
             def is_end(self):
                 return end
             def render(self):
                 return rendered_text
-        entry = dummy_entry()
+
+        entry = placeholder_entry()
         entry.subdir = subdir
         return entry
 
 
     def test_render_includes_indent(self):
-        entry = self.make_dummy_entry('LINE0')
+        entry = self.make_placeholder_entry('LINE0')
         self.assertEqual('LINE0', self.logger.render_entry(entry))
         self.indenter.increment()
         self.indenter.increment()
@@ -1138,13 +1143,13 @@ class test_status_logger(unittest.TestCase):
 
 
     def test_render_handles_start(self):
-        entry = self.make_dummy_entry('LINE10', start=True)
+        entry = self.make_placeholder_entry('LINE10', start=True)
         self.indenter.increment()
         self.assertEqual('\tLINE10', self.logger.render_entry(entry))
 
 
     def test_render_handles_end(self):
-        entry = self.make_dummy_entry('LINE20', end=True)
+        entry = self.make_placeholder_entry('LINE20', end=True)
         self.indenter.increment()
         self.indenter.increment()
         self.indenter.increment()
@@ -1152,7 +1157,7 @@ class test_status_logger(unittest.TestCase):
 
 
     def test_writes_toplevel_log(self):
-        entries = [self.make_dummy_entry('LINE%d' % x) for x in range(3)]
+        entries = [self.make_placeholder_entry('LINE%d' % x) for x in range(3)]
         for entry in entries:
             self.logger.record_entry(entry)
         self.assertEqual('LINE0\nLINE1\nLINE2\n', open('status').read())
@@ -1163,9 +1168,11 @@ class test_status_logger(unittest.TestCase):
         self.logger = base_job.status_logger(self.job, self.indenter,
                                              global_filename='global.log',
                                              subdir_filename='subdir.log')
-        self.logger.record_entry(self.make_dummy_entry('LINE1', subdir='sub'))
-        self.logger.record_entry(self.make_dummy_entry('LINE2', subdir='sub'))
-        self.logger.record_entry(self.make_dummy_entry('LINE3'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE1', subdir='sub'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE2', subdir='sub'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE3'))
 
         self.assertEqual('LINE1\nLINE2\nLINE3\n', open('global.log').read())
         self.assertEqual('LINE1\nLINE2\n', open('sub/subdir.log').read())
@@ -1181,12 +1188,14 @@ class test_status_logger(unittest.TestCase):
         self.logger = base_job.status_logger(self.job, self.indenter,
                                              global_filename='global.log',
                                              subdir_filename='subdir.log')
-        self.logger.record_entry(self.make_dummy_entry('LINE1', subdir='sub2'))
-        self.logger.record_entry(self.make_dummy_entry('LINE2'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE1', subdir='sub2'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE2'))
         self.logger.global_filename = 'global.log2'
         self.logger.subdir_filename = 'subdir.log2'
-        self.logger.record_entry(self.make_dummy_entry('LINE3', subdir='sub2'))
-        self.logger.record_entry(self.make_dummy_entry('LINE4'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE3', subdir='sub2'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE4'))
 
         self.assertEqual('LINE1\nLINE2\n', open('global.log').read())
         self.assertEqual('LINE1\n', open('sub2/subdir.log').read())
@@ -1197,10 +1206,13 @@ class test_status_logger(unittest.TestCase):
     def test_writes_subdir_logs(self):
         os.mkdir('abc')
         os.mkdir('123')
-        self.logger.record_entry(self.make_dummy_entry('LINE1'))
-        self.logger.record_entry(self.make_dummy_entry('LINE2', subdir='abc'))
-        self.logger.record_entry(self.make_dummy_entry('LINE3', subdir='abc'))
-        self.logger.record_entry(self.make_dummy_entry('LINE4', subdir='123'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE1'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE2', subdir='abc'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE3', subdir='abc'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE4', subdir='123'))
 
         self.assertEqual('LINE1\nLINE2\nLINE3\nLINE4\n', open('status').read())
         self.assertEqual('LINE2\nLINE3\n', open('abc/status').read())
@@ -1209,11 +1221,14 @@ class test_status_logger(unittest.TestCase):
 
     def test_writes_no_subdir_when_disabled(self):
         os.mkdir('sub')
-        self.logger.record_entry(self.make_dummy_entry('LINE1'))
-        self.logger.record_entry(self.make_dummy_entry('LINE2', subdir='sub'))
-        self.logger.record_entry(self.make_dummy_entry(
-            'LINE3', subdir='sub_nowrite'), log_in_subdir=False)
-        self.logger.record_entry(self.make_dummy_entry('LINE4', subdir='sub'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE1'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE2', subdir='sub'))
+        self.logger.record_entry(self.make_placeholder_entry(
+                'LINE3', subdir='sub_nowrite'),
+                                 log_in_subdir=False)
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE4', subdir='sub'))
 
         self.assertEqual('LINE1\nLINE2\nLINE3\nLINE4\n', open('status').read())
         self.assertEqual('LINE2\nLINE4\n', open('sub/status').read())
@@ -1221,14 +1236,18 @@ class test_status_logger(unittest.TestCase):
 
 
     def test_indentation(self):
-        self.logger.record_entry(self.make_dummy_entry('LINE1', start=True))
-        self.logger.record_entry(self.make_dummy_entry('LINE2'))
-        self.logger.record_entry(self.make_dummy_entry('LINE3', start=True))
-        self.logger.record_entry(self.make_dummy_entry('LINE4'))
-        self.logger.record_entry(self.make_dummy_entry('LINE5'))
-        self.logger.record_entry(self.make_dummy_entry('LINE6', end=True))
-        self.logger.record_entry(self.make_dummy_entry('LINE7', end=True))
-        self.logger.record_entry(self.make_dummy_entry('LINE8'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE1', start=True))
+        self.logger.record_entry(self.make_placeholder_entry('LINE2'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE3', start=True))
+        self.logger.record_entry(self.make_placeholder_entry('LINE4'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE5'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE6',
+                                                             end=True))
+        self.logger.record_entry(self.make_placeholder_entry('LINE7',
+                                                             end=True))
+        self.logger.record_entry(self.make_placeholder_entry('LINE8'))
 
         expected_log = ('LINE1\n\tLINE2\n\tLINE3\n\t\tLINE4\n\t\tLINE5\n'
                         '\tLINE6\nLINE7\nLINE8\n')
@@ -1236,11 +1255,14 @@ class test_status_logger(unittest.TestCase):
 
 
     def test_multiline_indent(self):
-        self.logger.record_entry(self.make_dummy_entry('LINE1\n  blah\n'))
-        self.logger.record_entry(self.make_dummy_entry('LINE2', start=True))
         self.logger.record_entry(
-            self.make_dummy_entry('LINE3\n  blah\n  two\n'))
-        self.logger.record_entry(self.make_dummy_entry('LINE4', end=True))
+                self.make_placeholder_entry('LINE1\n  blah\n'))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE2', start=True))
+        self.logger.record_entry(
+                self.make_placeholder_entry('LINE3\n  blah\n  two\n'))
+        self.logger.record_entry(self.make_placeholder_entry('LINE4',
+                                                             end=True))
 
         expected_log = ('LINE1\n  blah\nLINE2\n'
                         '\tLINE3\n  blah\n  two\nLINE4\n')
@@ -1248,7 +1270,7 @@ class test_status_logger(unittest.TestCase):
 
 
     def test_hook_is_called(self):
-        entries = [self.make_dummy_entry('LINE%d' % x) for x in range(5)]
+        entries = [self.make_placeholder_entry('LINE%d' % x) for x in range(5)]
         recorded_entries = []
         def hook(entry):
             recorded_entries.append(entry)

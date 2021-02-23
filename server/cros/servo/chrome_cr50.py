@@ -200,7 +200,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Send command through UART.
 
         Cr50 will drop characters input to the UART when it resumes from sleep.
-        If servo is not using ccd, send some dummy characters before sending the
+        If servo is not using ccd, send some characters before sending the
         real command to make sure cr50 is awake.
 
         @param commands: the command string to send to cr50
@@ -396,7 +396,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Send command through UART and wait for response.
 
         Cr50 will drop characters input to the UART when it resumes from sleep.
-        If servo is not using ccd, send some dummy characters before sending the
+        If servo is not using ccd, send some characters before sending the
         real command to make sure cr50 is awake.
 
         @param command: the command to send

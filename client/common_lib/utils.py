@@ -1406,16 +1406,16 @@ class run_randomly:
             fn(*args, **dargs)
 
 
-def import_site_module(path, module, dummy=None, modulefile=None):
+def import_site_module(path, module, placeholder=None, modulefile=None):
     """
     Try to import the site specific module if it exists.
 
     @param path full filename of the source file calling this (ie __file__)
     @param module full module name
-    @param dummy dummy value to return in case there is no symbol to import
+    @param placeholder value to return in case there is no symbol to import
     @param modulefile module filename
 
-    @return site specific module or dummy
+    @return site specific module or placeholder
 
     @raises ImportError if the site file exists but imports fails
     """
@@ -1426,33 +1426,33 @@ def import_site_module(path, module, dummy=None, modulefile=None):
 
     if os.path.exists(os.path.join(os.path.dirname(path), modulefile)):
         return __import__(module, {}, {}, [short_module])
-    return dummy
+    return placeholder
 
 
-def import_site_symbol(path, module, name, dummy=None, modulefile=None):
+def import_site_symbol(path, module, name, placeholder=None, modulefile=None):
     """
     Try to import site specific symbol from site specific file if it exists
 
     @param path full filename of the source file calling this (ie __file__)
     @param module full module name
     @param name symbol name to be imported from the site file
-    @param dummy dummy value to return in case there is no symbol to import
+    @param placeholder value to return in case there is no symbol to import
     @param modulefile module filename
 
-    @return site specific symbol or dummy
+    @return site specific symbol or placeholder
 
     @raises ImportError if the site file exists but imports fails
     """
     module = import_site_module(path, module, modulefile=modulefile)
     if not module:
-        return dummy
+        return placeholder
 
     # special unique value to tell us if the symbol can't be imported
     cant_import = object()
 
     obj = getattr(module, name, cant_import)
     if obj is cant_import:
-        return dummy
+        return placeholder
 
     return obj
 
@@ -1489,7 +1489,7 @@ def import_site_class(path, module, classname, baseclass, modulefile=None):
     return res
 
 
-def import_site_function(path, module, funcname, dummy, modulefile=None):
+def import_site_function(path, module, funcname, placeholder, modulefile=None):
     """
     Try to import site specific function from site specific file if it exists
 
@@ -1497,15 +1497,15 @@ def import_site_function(path, module, funcname, dummy, modulefile=None):
         path: full filename of the source file calling this (ie __file__)
         module: full module name
         funcname: function name to be imported from site file
-        dummy: dummy function to return in case there is no function to import
+        placeholder: function to return in case there is no function to import
         modulefile: module filename
 
-    Returns: site specific function object or dummy
+    Returns: site specific function object or placeholder
 
     Raises: ImportError if the site file exists but imports fails
     """
 
-    return import_site_symbol(path, module, funcname, dummy, modulefile)
+    return import_site_symbol(path, module, funcname, placeholder, modulefile)
 
 
 def _get_pid_path(program_name):
@@ -1964,13 +1964,13 @@ def get_moblab_serial_number():
     present, however fallback is the ethernet mac address.
     """
     for vpd_key in ['serial_number', 'ethernet_mac']:
-      try:
-          cmd_result = run('sudo vpd -g %s' % vpd_key)
-          if cmd_result and cmd_result.stdout:
-            return cmd_result.stdout
-      except error.CmdError as e:
-          logging.error(str(e))
-          logging.info(vpd_key)
+        try:
+            cmd_result = run('sudo vpd -g %s' % vpd_key)
+            if cmd_result and cmd_result.stdout:
+                return cmd_result.stdout
+        except error.CmdError as e:
+            logging.error(str(e))
+            logging.info(vpd_key)
     return 'NoSerialNumber'
 
 

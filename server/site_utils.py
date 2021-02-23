@@ -399,9 +399,9 @@ def get_test_views_from_tko(suite_job_id, tko):
     @param tko: an instance of TKO as defined in server/frontend.py.
     @return: A defaultdict where keys are test names and values are
              lists of test statuses, e.g.,
-             {'dummy_Fail.Error': ['ERROR'. 'ERROR'],
-              'dummy_Fail.NAError': ['TEST_NA'],
-              'dummy_Fail.RetrySuccess': ['ERROR', 'GOOD'],
+             {'stub_Fail.Error': ['ERROR'. 'ERROR'],
+              'stub_Fail.NAError': ['TEST_NA'],
+              'stub_Fail.RetrySuccess': ['ERROR', 'GOOD'],
               }
     @raise: Exception when there is no test view found.
 
@@ -422,7 +422,7 @@ def get_data_key(prefix, suite, build, board):
     Constructs a key string from parameters.
 
     @param prefix: Prefix for the generating key.
-    @param suite: a suite name. e.g., bvt-cq, bvt-inline, dummy
+    @param suite: a suite name. e.g., bvt-cq, bvt-inline, infra_qual
     @param build: The build string. This string should have a consistent
         format eg: x86-mario-release/R26-3570.0.0. If the format of this
         string changes such that we can't determine build_type or branch

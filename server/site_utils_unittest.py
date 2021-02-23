@@ -63,17 +63,17 @@ class SiteUtilsUnittests(mox.MoxTestBase):
         """Test method get_test_views_from_tko
         """
         test_results = [
-            ('dummy_Pass', 'GOOD'),
-            ('dummy_Fail.RetrySuccess', 'GOOD'),
-            ('dummy_Fail.RetrySuccess', 'FAIL'),
-            ('dummy_Fail.Fail', 'FAIL'),
-            ('dummy_Fail.Fail', 'FAIL'),
+                ('stub_Pass', 'GOOD'),
+                ('stub_Fail.RetrySuccess', 'GOOD'),
+                ('stub_Fail.RetrySuccess', 'FAIL'),
+                ('stub_Fail.Fail', 'FAIL'),
+                ('stub_Fail.Fail', 'FAIL'),
         ]
 
         expected_test_views = {
-            'dummy_Pass': ['GOOD'],
-            'dummy_Fail.RetrySuccess': ['FAIL', 'GOOD'],
-            'dummy_Fail.Fail': ['FAIL', 'FAIL'],
+                'stub_Pass': ['GOOD'],
+                'stub_Fail.RetrySuccess': ['FAIL', 'GOOD'],
+                'stub_Fail.Fail': ['FAIL', 'FAIL'],
         }
 
         self.mox.UnsetStubs()

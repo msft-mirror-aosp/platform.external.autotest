@@ -10,8 +10,8 @@ from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 class camera_HAL3Server(test.test):
     """
-    Server side camera_HAL3 test for configure dummy image on chart tablet and
-    run test on DUT.
+    Server side camera_HAL3 test for configure placeholder image on chart
+    tablet and run test on DUT.
     """
     version = 1
     DISPLAY_LEVEL = 96.0

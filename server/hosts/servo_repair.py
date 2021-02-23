@@ -753,7 +753,7 @@ class _PowerButtonVerifier(hosts.Verifier):
     indicates that the ribbon cable is disconnected.
     """
     # TODO (crbug.com/646593) - Remove list below once servo has been updated
-    # with a dummy pwr_button signal.
+    # with a fake pwr_button signal.
     _BOARDS_WO_PWR_BUTTON = ['arkham', 'gale', 'mistral', 'storm', 'whirlwind']
 
     @ignore_exception_for_non_cros_host

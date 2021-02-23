@@ -250,8 +250,8 @@ class TestAutotest(unittest.TestCase):
 
 
     def _expect_failed_run(self, command):
-        (self.host.run.expect_call(command)
-         .and_raises(error.AutoservRunError('dummy', object())))
+        (self.host.run.expect_call(command).and_raises(
+                error.AutoservRunError('placeholder', object())))
 
 
     def test_get_installed_autodir(self):

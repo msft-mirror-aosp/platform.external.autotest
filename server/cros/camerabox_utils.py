@@ -16,7 +16,7 @@ from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 
 
 class ChartFixture:
-    """Sets up chart tablet to display dummy scene image."""
+    """Sets up chart tablet to display placeholder scene image."""
     DISPLAY_SCRIPT = '/usr/local/autotest/bin/display_chart.py'
     OUTPUT_LOG = '/tmp/chart_service.log'
 

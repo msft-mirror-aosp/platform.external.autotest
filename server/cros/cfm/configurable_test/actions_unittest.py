@@ -106,15 +106,17 @@ class TestActions(unittest.TestCase):
         action.execute(self.context_with_mocks)
 
     def test_select_scenario_at_random(self):
-        dummy_action1 = DummyAction()
-        dummy_action2 = DummyAction()
-        scenarios = [scenario.Scenario(dummy_action1),
-                     scenario.Scenario(dummy_action2)]
+        placeholder_action1 = DummyAction()
+        placeholder_action2 = DummyAction()
+        scenarios = [
+                scenario.Scenario(placeholder_action1),
+                scenario.Scenario(placeholder_action2)
+        ]
         action = actions.SelectScenarioAtRandom(scenarios, 10)
         action.execute(self.context_with_mocks)
         # Assert that our actions were executed the expected number of times.
-        total_executes = (dummy_action1.executed_times
-                          + dummy_action2.executed_times)
+        total_executes = (placeholder_action1.executed_times +
+                          placeholder_action2.executed_times)
         self.assertEqual(10, total_executes)
 
     def test_select_scenario_at_random_str_contains_seed(self):
@@ -229,4 +231,3 @@ class RaisesFirstTimeAction(actions.Action):
         if not self.executed:
             self.executed = True
             raise AssertionError()
-

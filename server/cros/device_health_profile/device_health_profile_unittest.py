@@ -3,7 +3,6 @@
 
 import time
 import unittest
-import mock
 
 import common
 from autotest_lib.server.cros.device_health_profile import device_health_profile
@@ -37,10 +36,10 @@ class MockHost(object):
 
 
 def create_device_health_profile():
-    servohost = MockHost('dummy_servohost_hostname')
+    servohost = MockHost('placeholder_servohost_hostname')
     host_info = MockHostInfoStore()
     dhp = device_health_profile.DeviceHealthProfile(
-            hostname='dummy_dut_hostname',
+            hostname='placeholder_dut_hostname',
             host_info=host_info,
             result_dir=None)
     dhp.init_profile(servohost)
@@ -53,7 +52,7 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_shows_not_loaded_till_profile_host_provided(self):
         host_info = MockHostInfoStore()
         dhp = device_health_profile.DeviceHealthProfile(
-                hostname='dummy_dut_hostname',
+                hostname='placeholder_dut_hostname',
                 host_info=host_info,
                 result_dir=None)
         self.assertFalse(dhp.is_loaded())
@@ -91,16 +90,16 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_cros_stable_version(self):
         self.assertEqual(self.dhp.get_cros_stable_version(),
                          profile_constants.DEFAULT_STRING_VALUE)
-        self.dhp.set_cros_stable_version('dummy-release/R80-10000.0.0')
+        self.dhp.set_cros_stable_version('placeholder-release/R80-10000.0.0')
         self.assertEqual(self.dhp.get_cros_stable_version(),
-                         'dummy-release/R80-10000.0.0')
+                         'placeholder-release/R80-10000.0.0')
 
     def test_firmware_stable_version(self):
         self.assertEqual(self.dhp.get_firmware_stable_version(),
                          profile_constants.DEFAULT_STRING_VALUE)
-        self.dhp.set_firmware_stable_version('dummy_firmware_release')
+        self.dhp.set_firmware_stable_version('placeholder_firmware_release')
         self.assertEqual(self.dhp.get_firmware_stable_version(),
-                         'dummy_firmware_release')
+                         'placeholder_firmware_release')
 
     def test_last_update_time(self):
         cached_time = self.dhp.get_last_update_time()
@@ -148,31 +147,31 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
         self.assertEqual(self.dhp.get_provision_fail_count(), cached_count + 1)
 
     def test_failed_verifiers(self):
-        tag = 'dummy_verifier'
+        tag = 'placeholder_verifier'
         self.assertEqual(self.dhp.get_failed_verifiers(), {})
         self.assertEqual(self.dhp.get_failed_verifier(tag), 0)
         self.dhp.insert_failed_verifier(tag)
         self.assertEqual(self.dhp.get_failed_verifier(tag), 1)
         self.assertEqual(self.dhp.get_failed_verifiers(),
-                         {'dummy_verifier': 1})
+                         {'placeholder_verifier': 1})
 
     def test_succeed_repair_action(self):
-        tag = 'dummy_succeed_action'
+        tag = 'placeholder_succeed_action'
         self.assertEqual(self.dhp.get_succeed_repair_actions(), {})
         self.assertEqual(self.dhp.get_succeed_repair_action(tag), 0)
         self.dhp.insert_succeed_repair_action(tag)
         self.assertEqual(self.dhp.get_succeed_repair_action(tag), 1)
         self.assertEqual(self.dhp.get_succeed_repair_actions(),
-                         {'dummy_succeed_action': 1})
+                         {'placeholder_succeed_action': 1})
 
     def test_failed_repair_action(self):
-        tag = 'dummy_failed_action'
+        tag = 'placeholder_failed_action'
         self.assertEqual(self.dhp.get_failed_repair_actions(), {})
         self.assertEqual(self.dhp.get_failed_repair_action(tag), 0)
         self.dhp.insert_failed_repair_action(tag)
         self.assertEqual(self.dhp.get_failed_repair_action(tag), 1)
         self.assertEqual(self.dhp.get_failed_repair_actions(),
-                         {'dummy_failed_action': 1})
+                         {'placeholder_failed_action': 1})
 
     def test_get_badblocks_ro_run_time(self):
         cached_time = self.dhp.get_badblocks_ro_run_time()

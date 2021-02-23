@@ -174,8 +174,8 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
             # Clean up router and client state for the next run.
             self.context.client.shill.disconnect(self.context.router.get_ssid())
             self.context.router.deconfig()
-            self.cleanup_bluetooth_audio(device, A2DP)
 
+        self.cleanup_bluetooth_audio(device, A2DP)
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)
 

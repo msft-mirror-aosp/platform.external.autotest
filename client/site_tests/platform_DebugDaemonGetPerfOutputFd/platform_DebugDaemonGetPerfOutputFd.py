@@ -28,7 +28,7 @@ class platform_DebugDaemonGetPerfOutputFd(test.test):
         if len(perf_data) < 10:
             raise error.TestFail('Perf output (%s) too small' % perf_data)
 
-        # Perform basic sanity checks of the perf data: it should contain
+        # Perform basic confidence checks of the perf data: it should contain
         # [kernel.kallsyms] and /usr/bin/perf
         if (perf_data.find('[kernel.kallsyms]') == -1 or
                 perf_data.find('/usr/bin/perf') == -1):

@@ -86,7 +86,7 @@ class VirtualEthernetPair(object):
     def setup(self):
         """
         Installs a virtual ethernet interface and configures one side with an IP
-        address.  First does some sanity checking and tries to remove an
+        address.  First does some confidence checking and tries to remove an
         existing interface by the same name, and logs messages on failures.
         """
         self._is_healthy = False
@@ -122,8 +122,8 @@ class VirtualEthernetPair(object):
     def teardown(self):
         """
         Removes the interface installed by VirtualEthernetPair.setup(), with
-        some simple sanity checks that print warnings when either the interface
-        isn't there or fails to be removed.
+        some simple confidence checks that print warnings when either the
+        interface isn't there or fails to be removed.
         """
         for name in (self._interface_name, self._peer_interface_name):
             self._run('iptables -w -D INPUT -i %s -j ACCEPT' % name,

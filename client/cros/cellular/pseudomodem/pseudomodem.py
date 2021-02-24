@@ -425,7 +425,7 @@ def ParseArguments(arg_string=None):
 
     opts = parser.parse_args(arg_string)
 
-    # Extra sanity checks.
+    # Extra confidence checks.
     if opts.family == 'CDMA' and opts.roaming_networks > 0:
         raise argparse.ArgumentTypeError('CDMA networks do not support '
                                          'roaming networks.')

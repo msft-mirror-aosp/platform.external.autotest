@@ -20,7 +20,7 @@ o.connect(c.destination); o.start();
 """
 
 class audio_CrasSanity(test.test):
-    """Verifies cras sanity using its status, active streams and crashes"""
+    """Verifies cras using its status, active streams and crashes"""
 
     version = 1
     _check = {'crashes_on_boot': False,

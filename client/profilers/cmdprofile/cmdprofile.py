@@ -22,7 +22,7 @@ class cmdprofile(profiler.profiler):
     def initialize(self, cmds=['ps'], interval=60, outputfile='cmdprofile',
                    outputfiles=None):
 
-        # do some basic sanity checking on the parameters
+        # do some basic confidence checking on the parameters
         if not outputfiles and not outputfile:
             raise error.TestError(
                 'cmdprofile cannot run if neither outputfile nor outputfile '

@@ -12,7 +12,8 @@ TEST_TYPE = "client"
 
 DOC = """
 This test suite runs automated TPM Smogcheck tests. The purpose of
-the suite is to sanity test basic TPM functionality in less than 10 minutes.
+the suite is to confidence test basic TPM functionality in less than 10
+minutes.
 """
 
 # TPM_TakeOwnership

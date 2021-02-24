@@ -23,7 +23,7 @@ from autotest_lib.client.cros.graphics import graphics_utils
 
 class graphics_Sanity(graphics_utils.GraphicsTest):
     """
-    This test is meant to be used as a quick sanity check for GL/GLES.
+    This test is meant to be used as a quick confidence check for GL/GLES.
     """
     version = 1
 

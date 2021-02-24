@@ -184,7 +184,7 @@ class BasicPrologixTest(unittest.TestCase):
     def _get_idns_and_verify(self, instruments, opc=False):
         """
         Get the idn string from all the instruments, and check that it
-        contains the desired substring. This is a quick sanity check only.
+        contains the desired substring. This is a quick confidence check only.
         """
         for instr in instruments:
             scpi_connection = self._open_prologix(instr, opc_on_stanza=opc)

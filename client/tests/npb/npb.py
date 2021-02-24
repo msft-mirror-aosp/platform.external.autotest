@@ -34,7 +34,7 @@ class npb(test.test):
         """
         Run each benchmark twice, with different number of threads.
 
-        A sanity check is made on each benchmark executed:
+        A confidence check is made on each benchmark executed:
         The ratio between the times
         time_ratio = time_one_thrd / time_full_thrds
 
@@ -43,7 +43,7 @@ class npb(test.test):
         lower_bound = full_thrds * (1 - (1/n_cpus))
 
         Otherwise, we throw an exception (this test might be running under a
-        virtual machine and sanity check failure might mean bugs on smp
+        virtual machine and confidence check failure might mean bugs on smp
         implementation).
         """
         os.chdir(self.srcdir)
@@ -88,7 +88,7 @@ class npb(test.test):
             self.write_test_keyval({'mops_total': mops_total})
             self.write_test_keyval({'mops_per_thread': mops_per_thread})
 
-            # A little extra sanity check comes handy
+            # A little extra confidence check comes handy
             if int(m.groups()[0]) != utils.count_cpus():
                 raise error.TestError("NPB test suite evaluated the number "
                                       "of threads incorrectly: System appears "
@@ -128,11 +128,11 @@ class npb(test.test):
             violates_upper_bound = time_ratio > upper_bound
             violates_lower_bound = time_ratio < lower_bound
             if violates_upper_bound or violates_lower_bound:
-                logging.error('NPB benchmark %s failed sanity check '
+                logging.error('NPB benchmark %s failed confidence check '
                               '- time ratio outside bounds' % itest_cmd)
                 self.n_fail += 1
             else:
-                logging.debug('NPB benchmark %s sanity check PASS' % itest_cmd)
+                logging.debug('NPB benchmark %s confidence check PASS' % itest_cmd)
 
 
     def cleanup(self):

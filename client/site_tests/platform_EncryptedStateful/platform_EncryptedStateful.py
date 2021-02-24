@@ -271,13 +271,13 @@ class platform_EncryptedStateful(test.test):
         # Examine the existing encrypted partition.
         encstate = EncryptedStateful("/")
 
-        # Perform post-mount sanity checks (and handle unfinalized devices).
+        # Perform post-mount confidence check (and handle unfinalized devices).
         encstate.check_sizes(finalized=os.path.exists(encstate.key))
 
     def no_tpm(self):
         """
-        Do a no-write, no-TPM test with sanity checks. Also do a reclamation
-        check against the encrypted stateful partition.
+        Do a no-write, no-TPM test with confidence checks. Also do a
+        reclamation check against the encrypted stateful partition.
         """
         encstate = EncryptedStateful()
 
@@ -299,7 +299,7 @@ class platform_EncryptedStateful(test.test):
             if os.path.exists(off):
                 utils.system("mv %s %s" % (off, tpm))
 
-        # Perform post-mount sanity checks.
+        # Perform post-mount confidence checks.
         encstate.check_sizes(finalized=True)
 
         # Check disk reclamation for kernels that support PUNCH_HOLE.
@@ -314,6 +314,6 @@ class platform_EncryptedStateful(test.test):
         # Do a no-write test of system's existing encrypted partition.
         self.existing_partition()
 
-        # Do a no-write, no-TPM test with sanity checks. Also do a reclamation
-        # check against the encrypted stateful partition.
+        # Do a no-write, no-TPM test with confidence checks. Also do a
+        # reclamation check against the encrypted stateful partition.
         self.no_tpm()

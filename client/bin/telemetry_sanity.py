@@ -6,7 +6,7 @@
 
 '''Sanity tests for Chrome on Chrome OS.
 
-This script runs a number of sanity tests to ensure that Chrome browser on
+This script runs a number of confidence tests to ensure that Chrome browser on
 Chrome OS is functional.
 '''
 
@@ -29,7 +29,7 @@ from six.moves import range
 
 
 class TelemetrySanity(object):
-  """Class for running sanity tests to verify telemetry."""
+  """Class for running confidence tests to verify telemetry."""
 
 
   def __init__(self, count=1, run_cryptohome=True, run_incognito=True,

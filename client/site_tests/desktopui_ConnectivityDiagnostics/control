@@ -4,7 +4,7 @@
 
 AUTHOR = "zork, ebeach"
 NAME = "desktopui_ConnectivityDiagnostics"
-PURPOSE = "Basic sanity check of connectivity diagnostics in Chrome."
+PURPOSE = "Basic confidence check of connectivity diagnostics in Chrome."
 CRITERIA = "This test will fail if the connectivity diagnostics smoke tests fail."
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

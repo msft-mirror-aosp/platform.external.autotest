@@ -362,7 +362,7 @@ class FlashromHandler(object):
 
         gbb_section = self.fum.get_section(self.image, 'FV_GBB')
 
-        # do some sanity checks
+        # do some confidence checks
         try:
             sig, _, rootk_offs, rootk_size = struct.unpack_from(
                     gbb_header_format, gbb_section)

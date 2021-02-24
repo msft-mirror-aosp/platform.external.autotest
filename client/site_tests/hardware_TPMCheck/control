@@ -13,7 +13,7 @@ TEST_CLASS = "Hardware"
 TEST_TYPE = "client"
 
 DOC = """
-    A basic sanity check of the state of the TPM (Trusted Platform Module)
+    A basic confidence check of the state of the TPM (Trusted Platform Module)
 """
 
 job.run_test('hardware_TPMCheck')

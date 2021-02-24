@@ -127,7 +127,7 @@ def verify_pkcs11_initialized():
     __run_cmd(verify_cmd)
 
     verify_result = True
-    # Do additional sanity tests.
+    # Do additional confidence tests.
     if not __verify_tokenname(token_path_list[0]):
         logging.error('Verification of token name failed!')
         verify_result = False

@@ -24,8 +24,8 @@ BUG_TEMPLATE = {
 }
 
 DOC = '''
-Test checks for basic audio sanity by checking cras status, crashes and active
-streams.
+Test checks for basic audio confidence by checking cras status, crashes and
+active streams.
 '''
 
 job.run_test('audio_CrasSanity')

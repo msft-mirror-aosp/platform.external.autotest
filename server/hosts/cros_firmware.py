@@ -429,9 +429,10 @@ class FirmwareVersionVerifier(hosts.Verifier):
                               ' with exception: %s', e)
 
         if stable_firmware is None:
+            logging.debug('Expected FW version not found')
             # This DUT doesn't have a firmware update target
             return
-
+        logging.debug('Expected FW version: %s', stable_firmware)
         # For tests 3 and 4:  If the output from `crossystem` or
         # `chromeos-firmwareupdate` isn't what we expect, we log an
         # error, but don't fail:  We don't want DUTs unable to test a
@@ -443,6 +444,7 @@ class FirmwareVersionVerifier(hosts.Verifier):
         if current_firmware is None:
             logging.error('DUT firmware version can\'t be determined.')
             return
+        logging.debug('Current FW version: %s', current_firmware)
         if current_firmware == stable_firmware:
             return
         # Test 4 - The firmware supplied in the running OS build is not

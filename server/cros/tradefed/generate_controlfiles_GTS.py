@@ -39,7 +39,7 @@ CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-gts-qual']
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = False
-CONFIG['CONTROLFILE_WRITE_EXTRA'] = False
+CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 2
 CONFIG['CTS_QUAL_RETRIES'] = 9
@@ -51,6 +51,7 @@ CONFIG['CTS_TIMEOUT_DEFAULT'] = 0.2
 CONFIG['CTS_TIMEOUT'] = {
         'GtsAssistantMicHostTestCases': 0.5,
         'GtsExoPlayerTestCases': 1.5,
+        'GtsExoPlayerTestCases.others': 1.5,
         'GtsGmscoreHostTestCases': 1.0,
         'GtsMediaTestCases': 4,
         'GtsNetworkWatchlistTestCases': 1.0,
@@ -68,11 +69,12 @@ CONFIG['BVT_TIMEOUT'] = 0.1
 CONFIG['QUAL_TIMEOUT'] = 24
 
 CONFIG['QUAL_BOOKMARKS'] = sorted([
-    'A',  # A bookend to simplify partition algorithm.
-    'GtsExoPlayerTestCases',
-    'GtsMediaTestCases',
-    'GtsMediaTestCasesz',  # runs the biggest module in a single job.
-    'zzzzz'  # A bookend to simplify algorithm.
+        'A',  # A bookend to simplify partition algorithm.
+        'GtsExoPlayerTestCases',
+        'GtsExoPlayerTestCasesz',  # TODO(b/178432852) runs GtsExo alone
+        'GtsMediaTestCases',
+        'GtsMediaTestCasesz',  # runs the biggest module in a single job.
+        'zzzzz'  # A bookend to simplify algorithm.
 ])
 
 CONFIG['SMOKE'] = []
@@ -138,10 +140,44 @@ CONFIG['OVERRIDE_TEST_LENGTH'] = {
 # individual tests finish in the order of 10ms or less (b/118836700). Specify
 # modules here to not enable the flag.
 CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([])
-CONFIG['EXTRA_MODULES'] = {}
+CONFIG['EXTRA_MODULES'] = {
+        'GtsExoPlayerTestCases': {
+                'SUBMODULES':
+                set([
+                        'GtsExoPlayerTestCases.cbc1',
+                        'GtsExoPlayerTestCases.cbcs',
+                        'GtsExoPlayerTestCases.cenc',
+                        'GtsExoPlayerTestCases.others',
+                ]),
+                'SUITES': ['suite:arc-gts-qual'],
+        }
+}
 CONFIG['PUBLIC_EXTRA_MODULES'] = {}
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {}
-CONFIG['EXTRA_COMMANDLINE'] = {}
+CONFIG['EXTRA_COMMANDLINE'] = {
+        'GtsExoPlayerTestCases.cbc1': [
+                '--include-filter',
+                'GtsExoPlayerTestCases com.google.android.exoplayer.gts.DashTest#testWidevineH264AdaptiveWithSeekingCbc1',
+        ],
+        'GtsExoPlayerTestCases.cbcs': [
+                '--include-filter',
+                'GtsExoPlayerTestCases com.google.android.exoplayer.gts.DashTest#testWidevineH264AdaptiveWithSeekingCbcs',
+        ],
+        'GtsExoPlayerTestCases.cenc': [
+                '--include-filter',
+                'GtsExoPlayerTestCases com.google.android.exoplayer.gts.DashTest#testWidevineH264AdaptiveWithSeekingCenc',
+        ],
+        'GtsExoPlayerTestCases.others': [
+                '--module',
+                'GtsExoPlayerTestCases',
+                '--exclude-filter',
+                'GtsExoPlayerTestCases com.google.android.exoplayer.gts.DashTest#testWidevineH264AdaptiveWithSeekingCbc1',
+                '--exclude-filter',
+                'GtsExoPlayerTestCases com.google.android.exoplayer.gts.DashTest#testWidevineH264AdaptiveWithSeekingCbcs',
+                '--exclude-filter',
+                'GtsExoPlayerTestCases com.google.android.exoplayer.gts.DashTest#testWidevineH264AdaptiveWithSeekingCenc',
+        ],
+}
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'tradefed-run-collect-tests-only-internal': ['suite:arc-gts'],
 }

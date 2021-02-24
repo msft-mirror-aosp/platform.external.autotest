@@ -22,14 +22,10 @@ from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import common_label
 from autotest_lib.server.hosts import servo_constants
-from autotest_lib.site_utils import hwid_lib
 from six.moves import zip
 
 # pylint: disable=missing-docstring
 LsbOutput = collections.namedtuple('LsbOutput', ['unibuild', 'board'])
-
-# fallback values if we can't contact the HWID server
-HWID_LABELS_FALLBACK = ['sku', 'phase', 'touchscreen', 'touchpad', 'variant', 'stylus']
 
 # Repair and Deploy taskName
 REPAIR_TASK_NAME = 'repair'
@@ -335,111 +331,6 @@ def _parse_hwid_labels(hwid_info_list):
     return res
 
 
-class HWIDLabel(base_label.StringLabel):
-    """Return all the labels generated from the hwid."""
-
-    # We leave out _NAME because hwid_lib will generate everything for us.
-
-    def __init__(self):
-        # Grab the key file needed to access the hwid service.
-        self.key_file = global_config.global_config.get_config_value(
-                'CROS', 'HWID_KEY', type=str)
-
-
-    @staticmethod
-    def _merge_hwid_label_lists(new, old):
-        """merge a list of old and new values for hwid_labels.
-        preferring new values if available
-
-        @returns: list of labels"""
-        # TODO(gregorynisbet): what is the appropriate way to merge
-        # old and new information?
-        retained = set(x for x in old)
-        for label in new:
-            key, sep, value = label.partition(':')
-            # If we have a key-value key such as variant:aaa,
-            # then we remove all the old labels with the same key.
-            if sep:
-                retained = set(x for x in retained if (not x.startswith(key + ':')))
-        return list(sorted(retained.union(new)))
-
-
-    def _hwid_label_names(self):
-        """get the labels that hwid_lib controls.
-
-        @returns: hwid_labels
-        """
-        all_hwid_labels, _ = self.get_all_labels()
-        # If and only if get_all_labels was unsuccessful,
-        # it will return a falsey value.
-        out = all_hwid_labels or HWID_LABELS_FALLBACK
-
-        # TODO(gregorynisbet): remove this
-        # TODO(crbug.com/999785)
-        if "sku" not in out:
-            logging.info("sku-less label names %s", out)
-
-        return out
-
-
-    def _old_label_values(self, host):
-        """get the hwid_lib labels on previous run
-
-        @returns: hwid_labels"""
-        out = []
-        info = host.host_info_store.get()
-        for hwid_label in self._hwid_label_names():
-            for label in info.labels:
-                # NOTE: we want *all* the labels starting
-                # with this prefix.
-                if label.startswith(hwid_label):
-                    out.append(label)
-        return out
-
-
-    def generate_labels(self, host):
-        # use previous values as default
-        old_hwid_labels = self._old_label_values(host)
-        logging.info("old_hwid_labels: %r", old_hwid_labels)
-        hwid = host.run_output('crossystem hwid').strip()
-        hwid_info_list = []
-        try:
-            hwid_info_response = hwid_lib.get_hwid_info(
-                hwid=hwid,
-                info_type=hwid_lib.HWID_INFO_LABEL,
-                key_file=self.key_file,
-            )
-            logging.info("hwid_info_response: %r", hwid_info_response)
-            hwid_info_list = hwid_info_response.get('labels', [])
-        except hwid_lib.HwIdException as e:
-            logging.info("HwIdException: %s", e)
-
-        new_hwid_labels = _parse_hwid_labels(hwid_info_list)
-        logging.info("new HWID labels: %r", new_hwid_labels)
-
-        return HWIDLabel._merge_hwid_label_lists(
-            old=old_hwid_labels,
-            new=new_hwid_labels,
-        )
-
-
-    def get_all_labels(self):
-        """We need to try all labels as a prefix and as standalone.
-
-        We don't know for sure which labels are prefix labels and which are
-        standalone so we try all of them as both.
-        """
-        all_hwid_labels = []
-        try:
-            all_hwid_labels = hwid_lib.get_all_possible_dut_labels(
-                    self.key_file)
-        except IOError:
-            logging.error('Can not open key file: %s', self.key_file)
-        except hwid_lib.HwIdException as e:
-            logging.error('hwid service: %s', e)
-        return all_hwid_labels, all_hwid_labels
-
-
 CROS_LABELS = [
     AudioLoopbackDongleLabel(), #STATECONFIG
     BluetoothPeerLabel(), #STATECONFIG
@@ -447,7 +338,6 @@ CROS_LABELS = [
     ChameleonLabel(), #STATECONFIG
     common_label.OSLabel(),
     DeviceSkuLabel(), #LABCONFIG
-    HWIDLabel(),
     ServoTypeLabel(), #LABCONFIG
     # Temporarily add back as there's no way to reference cr50 configs.
     # See crbug.com/1057145 for the root cause.

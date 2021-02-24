@@ -243,35 +243,6 @@ class Cr50ROKeyidTests(unittest.TestCase):
         self.assertEqual(Cr50ROKeyidLabel().get(host), [])
 
 
-class HWIDLabelTests(unittest.TestCase):
-    def test_merge_hwid_label_lists_empty(self):
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists([], []), [])
-
-    def test_merge_hwid_label_lists_singleton(self):
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists([], ["4"]),
-                         ["4"])
-        self.assertEqual(cros_label.HWIDLabel._merge_hwid_label_lists(["7"], []),
-                         ["7"])
-
-    def test_merge_hwid_label_lists_override(self):
-        self.assertEqual(
-            cros_label.HWIDLabel._merge_hwid_label_lists(old=["7:a"], new=["7:b"]),
-            ["7:b"])
-
-    def test_merge_hwid_label_lists_no_override(self):
-        self.assertEqual(
-            cros_label.HWIDLabel._merge_hwid_label_lists(old=["7a"], new=["7b"]),
-            ["7a", "7b"])
-
-    def test_hwid_label_names(self):
-        class HWIDLabelTester(cros_label.HWIDLabel):
-            def get_all_labels(self):
-                return [], []
-
-        item = HWIDLabelTester()
-        self.assertEqual(item._hwid_label_names(), cros_label.HWID_LABELS_FALLBACK)
-
-
 class AudioLoopbackDongleLabelTests(unittest.TestCase):
     def test_update_for_task(self):
         self.assertTrue(AudioLoopbackDongleLabel().update_for_task(''))

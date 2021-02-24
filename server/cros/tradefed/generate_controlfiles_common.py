@@ -215,7 +215,13 @@ def get_bundle_abi(filename):
     return ''
 
 
-def get_extension(module, abi, revision, is_public=False, led_provision=None, camera_facing=None):
+def get_extension(module,
+                  abi,
+                  revision,
+                  is_public=False,
+                  led_provision=None,
+                  camera_facing=None,
+                  abi_bits=None):
     """Defines a unique string.
 
     Notice we chose module revision first, then abi, as the module revision
@@ -228,6 +234,8 @@ def get_extension(module, abi, revision, is_public=False, led_provision=None, ca
                           light or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
+    @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
+                     abi to run.
     @return string: unique string for specific tests. If public=True then the
                     string is "<abi>.<module>", otherwise, the unique string is
                     "<revision>.<abi>.<module>". Note that if abi is empty, the
@@ -243,6 +251,8 @@ def get_extension(module, abi, revision, is_public=False, led_provision=None, ca
         ext_parts += [led_provision]
     if camera_facing:
         ext_parts += ['camerabox', camera_facing]
+    if not CONFIG.get('SINGLE_CONTROL_FILE') and abi and abi_bits:
+        ext_parts += [str(abi_bits)]
     return '.'.join(ext_parts)
 
 
@@ -273,7 +283,8 @@ def get_controlfile_name(module,
                          revision,
                          is_public=False,
                          led_provision=None,
-                         camera_facing=None):
+                         camera_facing=None,
+                         abi_bits=None):
     """Defines the control file name.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -284,14 +295,16 @@ def get_controlfile_name(module,
                           for specific camera facing or not.
     @param led_provision: string or None indicate whether the camerabox has led
                           light or not.
+    @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
+                     abi to run.
     @return string: control file for specific tests. If public=True or
                     module=all, then the name will be "control.<abi>.<module>",
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
     module = re.sub(r'\[[^]]*\]', '', module)
-    return 'control.%s' % get_extension(module, abi, revision, is_public, led_provision,
-                                        camera_facing)
+    return 'control.%s' % get_extension(module, abi, revision, is_public,
+                                        led_provision, camera_facing, abi_bits)
 
 
 def get_sync_count(_modules, _abi, _is_public):
@@ -789,6 +802,7 @@ def get_controlfile_content(combined,
                             suites=None,
                             is_public=False,
                             is_latest=False,
+                            abi_bits=None,
                             led_provision=None,
                             camera_facing=None,
                             whole_module_set=None):
@@ -801,8 +815,8 @@ def get_controlfile_content(combined,
     """
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
-    tag = '%s' % get_extension(combined, abi, revision, is_public, led_provision,
-                               camera_facing)
+    tag = '%s' % get_extension(combined, abi, revision, is_public,
+                               led_provision, camera_facing, abi_bits)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
@@ -817,6 +831,12 @@ def get_controlfile_content(combined,
     for target, config in get_extra_modules_dict(is_public, abi).items():
         if combined in config['SUBMODULES']:
             target_module = target
+    abi_to_run = {
+            ("arm", 32): 'armeabi-v7a',
+            ("arm", 64): 'arm64-v8a',
+            ("x86", 32): 'x86',
+            ("x86", 64): 'x86_64'
+    }.get((abi, abi_bits), None)
     return _CONTROLFILE_TEMPLATE.render(
             year=CONFIG['COPYRIGHT_YEAR'],
             name=name,
@@ -845,7 +865,7 @@ def get_controlfile_content(combined,
                                           is_public,
                                           abi_to_run=CONFIG.get(
                                                   'REPRESENTATIVE_ABI',
-                                                  {}).get(abi, None),
+                                                  {}).get(abi, abi_to_run),
                                           whole_module_set=whole_module_set),
             retry_template=get_retry_template(modules, is_public),
             target_module=target_module,
@@ -1090,9 +1110,14 @@ def write_controlfile(name,
                       suites,
                       is_public,
                       is_latest=False,
-                      whole_module_set=None):
+                      whole_module_set=None,
+                      abi_bits=None):
     """Write a single control file."""
-    filename = get_controlfile_name(name, abi, revision, is_public)
+    filename = get_controlfile_name(name,
+                                    abi,
+                                    revision,
+                                    is_public,
+                                    abi_bits=abi_bits)
     content = get_controlfile_content(name,
                                       modules,
                                       abi,
@@ -1102,7 +1127,8 @@ def write_controlfile(name,
                                       suites,
                                       is_public,
                                       is_latest,
-                                      whole_module_set=whole_module_set)
+                                      whole_module_set=whole_module_set,
+                                      abi_bits=abi_bits)
     with open(filename, 'w') as f:
         f.write(content)
 
@@ -1150,8 +1176,21 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
     else:
         combined = combine_modules_by_common_word(set(modules))
         for key in combined:
-            write_controlfile(key, combined[key], abi, revision, build, uri,
-                              None, is_public, is_latest)
+            if combined[key] & set(CONFIG.get('SPLIT_BY_BITS_MODULES', [])):
+                for abi_bits in [32, 64]:
+                    write_controlfile(key,
+                                      combined[key],
+                                      abi,
+                                      revision,
+                                      build,
+                                      uri,
+                                      None,
+                                      is_public,
+                                      is_latest,
+                                      abi_bits=abi_bits)
+            else:
+                write_controlfile(key, combined[key], abi, revision, build,
+                                  uri, None, is_public, is_latest)
 
 
 def write_qualification_controlfiles(modules, abi, revision, build, uri,
@@ -1165,9 +1204,23 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
     """
     combined = combine_modules_by_bookmark(set(modules))
     for key in combined:
-        write_controlfile('all.' + key, combined[key],
-                          abi, revision, build, uri,
-                          CONFIG.get('QUAL_SUITE_NAMES'), is_public, is_latest)
+        if combined[key] & set(CONFIG.get('SPLIT_BY_BITS_MODULES', [])):
+            for abi_bits in [32, 64]:
+                write_controlfile('all.' + key,
+                                  combined[key],
+                                  abi,
+                                  revision,
+                                  build,
+                                  uri,
+                                  CONFIG.get('QUAL_SUITE_NAMES'),
+                                  is_public,
+                                  is_latest,
+                                  abi_bits=abi_bits)
+        else:
+            write_controlfile('all.' + key, combined[key], abi,
+                              revision, build, uri,
+                              CONFIG.get('QUAL_SUITE_NAMES'), is_public,
+                              is_latest)
 
 
 def write_qualification_and_regression_controlfile(modules, abi, revision,

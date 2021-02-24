@@ -181,6 +181,9 @@ CONFIG['MEDIA_MODULES'] = [
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
     'CtsMediaTestCases.audio',
 ]
+CONFIG['SPLIT_BY_BITS_MODULES'] = [
+        'CtsDeqpTestCases',
+]
 
 # See b/149889853. Non-media test basically does not require dynamic
 # config. To reduce the flakiness, let us suppress the config.

@@ -126,6 +126,8 @@ class tast(test.test):
                    varsfiles=[],
                    download_data_lazily=True,
                    clear_tpm=False,
+                   totalshards=1,
+                   shardindex=0,
                    varslist=[]):
         """
         @param host: remote.RemoteHost instance representing DUT.
@@ -181,6 +183,8 @@ class tast(test.test):
         self._varslist = varslist
         self._download_data_lazily = download_data_lazily
         self._clear_tpm = clear_tpm
+        self._totalshards = totalshards
+        self._shardindex = shardindex
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -356,6 +360,8 @@ class tast(test.test):
             '-sshretries=%d' % self._SSH_CONNECT_RETRIES,
             '-downloaddata=%s' % (
                 'lazy' if self._download_data_lazily else 'batch'),
+            '-totalshards=%s' % self._totalshards,
+            '-shardindex=%s' % self._shardindex,
         ]
         if self._build:
             cmd.extend([

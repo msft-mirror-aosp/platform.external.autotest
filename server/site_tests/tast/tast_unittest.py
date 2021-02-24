@@ -132,7 +132,8 @@ class TastTest(unittest.TestCase):
     def _init_tast_commands(self, tests, ssp=False, build=False,
                             build_bundle='fakebundle', run_private_tests=False,
                             run_vars=[], run_varsfiles=[],
-                            download_data_lazily=False):
+                            download_data_lazily=False,
+                            totalshards=1, shardindex=0):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
         @param tests: List of TestInfo objects.
@@ -148,6 +149,8 @@ class TastTest(unittest.TestCase):
             'patterns=%s' % self.TEST_PATTERNS,
             'sshretries=%d' % tast.tast._SSH_CONNECT_RETRIES,
             'downloaddata=%s' % ('lazy' if download_data_lazily else 'batch'),
+            'totalshards=%d' % totalshards,
+            'shardindex=%d' % shardindex,
             'target=%s:%d' % (self.HOST, self.PORT),
             'verbose=True',
         ]
@@ -206,6 +209,8 @@ class TastTest(unittest.TestCase):
                   run_private_tests=False,
                   varsfiles=[],
                   download_data_lazily=False,
+                  totalshards=1,
+                  shardindex=0,
                   varslist=[]):
         """Writes fake_tast.py's configuration and runs the test.
 
@@ -238,6 +243,8 @@ class TastTest(unittest.TestCase):
                               run_private_tests=run_private_tests,
                               varsfiles=varsfiles,
                               download_data_lazily=download_data_lazily,
+                              totalshards=totalshards,
+                              shardindex=shardindex,
                               varslist=varslist)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
@@ -441,6 +448,12 @@ class TastTest(unittest.TestCase):
             self._run_test()
         self.assertEqual(status_string(get_status_entries_from_tests(tests)),
                          status_string(self._job.status_entries))
+
+    def testRunCommandWithSharding(self):
+        """Tests that sharding parameter is passing thru without issues."""
+        tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
+        self._init_tast_commands(tests=tests, totalshards=2, shardindex=1)
+        self._run_test(totalshards=2, shardindex=1)
 
     def testNoResultsFile(self):
         """Tests that an error is raised if no results file is written."""

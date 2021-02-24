@@ -6,7 +6,7 @@ AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_HiddenRemains'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wificell-cq')
+ATTRIBUTES = ''
 DEPENDENCIES = 'wificell'
 
 DOC = """

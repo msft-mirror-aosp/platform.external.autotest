@@ -264,7 +264,7 @@ class RpcServerTracker(object):
 
         This method exists to facilitate communication with goofy (which is
         the default system manager on all factory images) and as such, leaves
-        most of the rpc server sanity checking to the caller. Unlike
+        most of the rpc server confidence checking to the caller. Unlike
         xmlrpc_connect, this method does not facilitate the creation of a remote
         jsonrpc server, as the only clients of this code are factory tests,
         for which the goofy system manager is built in to the image and starts

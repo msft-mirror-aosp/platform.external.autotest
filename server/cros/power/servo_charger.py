@@ -56,7 +56,7 @@ class ServoV4ChargeManager(object):
 
         Make sure that Servo is v4 and can manage charging. Make sure that DUT
         responds to Servo charging commands. Restore Servo v4 power role after
-        sanity check.
+        confidence check.
 
         @param host: CrosHost object representing the DUT or None.
                      If host is None, then the is_ac_connected check on the

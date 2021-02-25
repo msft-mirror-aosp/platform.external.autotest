@@ -15,7 +15,7 @@ JOB_RETRIES = 3
 
 DOC = """
 This test clears the TPM if necessary, enrolls the device into CFM and runs a
-series of sanity test actions in the meet app.
+series of confidence test actions in the meet app.
 It clears the TPM at the end of the test run. Every time the TPM is cleared,
 the system is rebooted.
 """

@@ -746,7 +746,7 @@ class _TopologyVerifier(hosts.Verifier):
 
 class _PowerButtonVerifier(hosts.Verifier):
     """
-    Verifier to check sanity of the `pwr_button` signal.
+    Verifier to check the `pwr_button` signal.
 
     Tests that the `pwr_button` signal shows the power button has been
     released.  When `pwr_button` is stuck at `press`, it commonly
@@ -838,7 +838,7 @@ class _BatteryVerifier(hosts.Verifier):
 
 class _LidVerifier(hosts.Verifier):
     """
-    Verifier to check sanity of the `lid_open` signal.
+    Verifier to check the `lid_open` signal.
     """
 
     @ignore_exception_for_non_cros_host

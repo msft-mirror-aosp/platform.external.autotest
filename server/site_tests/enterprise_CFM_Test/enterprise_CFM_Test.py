@@ -742,7 +742,7 @@ class enterprise_CFM_Test(cfm_base_test.CfmBaseTest):
                     logging.info('\n\nEnterprise_CFM_Test_Failed.')
                     raise error.TestFail('Sanity Check on CfM fails.')
         self.ip_addr = cfm_helper.get_mgmt_ipv4(self.client)
-        logging.info('CfM %s passes sanity check, will start test.',
+        logging.info('CfM %s passes confidence check, will start test.',
                       self.ip_addr)
 
         self.initialize_action_check_config(action_config,

@@ -24,7 +24,7 @@ class network_WiFi_RoamNatural(wifi_cell_test_base.WiFiCellTestBase):
     we can't expect to see a good roam signal on every scan even where there
     should be one.
 
-    This test is used to sanity check that "normal" roaming behavior is not
+    This test is used to check that "normal" roaming behavior is not
     broken by any roaming algorithm changes. A couple failed associations is
     acceptable, but any more than that is a good indication that roaming has
     become too sticky."""

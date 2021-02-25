@@ -11,7 +11,7 @@ LONG_TIMEOUT = 10
 
 class enterprise_CFM_MeetAppSanity(cfm_base_test.CfmBaseTest):
     """
-    Basic sanity test for Meet App to be expanded to cover more cases like
+    Basic confidence test for Meet App to be expanded to cover more cases like
     enterprise_CFM_Sanity test.
     """
     version = 1

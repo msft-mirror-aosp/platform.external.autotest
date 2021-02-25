@@ -374,7 +374,7 @@ class FirmwareVersionVerifier(hosts.Verifier):
         the firmware was built.  This function checks that the hardware
         identified by `version_a` and `version_b` is the same.
 
-        This is a sanity check to protect us from installing the wrong
+        This is a confidence check to protect us from installing the wrong
         firmware on a DUT when a board label has somehow gone astray.
 
         @param version_a  First firmware version for the comparison.

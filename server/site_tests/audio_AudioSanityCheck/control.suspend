@@ -24,7 +24,7 @@ This test remotely tests if suspend, audio tests rely on, work correctly.
 
 def run(machine):
     host = hosts.create_host(machine)
-    # The suspend_only flag is for crbug:978593, which causes sanity check to
+    # The suspend_only flag is for crbug:978593, which causes the check to
     # always fail. however, we still want to check the suspend operation as it
     # also potentially fails the audio tests. This should be removed once the
     # blocker is fixed

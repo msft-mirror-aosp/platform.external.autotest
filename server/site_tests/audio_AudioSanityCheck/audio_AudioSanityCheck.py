@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 """
-This is a server side audio sanity test testing assumptions other audio tests
+This is a server side audio test testing assumptions other audio tests
 rely on.
 """
 
@@ -28,9 +28,9 @@ class audio_AudioSanityCheck(audio_test.AudioTest):
         audio_test_utils.suspend_resume_and_verify(self.host, self.factory)
 
     def run_once(self, suspend_only=False):
-        """Runs Audio sanity test to make sure chrome api works. """
+        """Runs Audio confidence test to make sure chrome api works. """
 
-        # The suspend_only flag is for crbug:978593, which causes sanity check
+        # The suspend_only flag is for crbug:978593, which causes the check
         # to always fail. however, we still want to check the suspend operation
         # as it also potentially fails the audio tests. This should be removed
         # once the blocker is fixed

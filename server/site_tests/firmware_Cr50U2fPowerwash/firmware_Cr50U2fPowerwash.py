@@ -12,8 +12,8 @@ U2F_AUTH_ENFORCE=3
 
 class firmware_Cr50U2fPowerwash(FirmwareTest):
     """
-    A test that runs sanity checks for U2F register and authenticate functions,
-    and checks that key handles are invalidated after TPM clear.
+    A test that runs confidence checks for U2F register and authenticate
+    functions, and checks that key handles are invalidated after TPM clear.
     """
     version = 1
 

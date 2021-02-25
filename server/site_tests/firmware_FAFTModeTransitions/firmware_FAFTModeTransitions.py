@@ -14,7 +14,7 @@ class firmware_FAFTModeTransitions(FirmwareTest):
     NEEDS_SERVO_USB = True
 
     def _checked_reboot(self, to_mode):
-        """Reboots DUT to mode and sanity checks that it has done so.
+        """Reboots DUT to mode and checks that it has done so.
 
         @param to_mode: mode_switcher mode to reboot into
         @type to_mode: string

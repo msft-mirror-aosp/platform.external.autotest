@@ -12,7 +12,7 @@ TEST_TYPE = "server"
 ATTRIBUTES = 'suite:reboot_stress'
 
 DOC = """
-Checks if audio subsystem passes sanity test across reboots.
+Checks if audio subsystem passes confidence test across reboots.
 """
 
 def run_reboot_stress(machine):

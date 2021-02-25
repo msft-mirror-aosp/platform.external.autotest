@@ -26,6 +26,12 @@ from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.client.bin import utils
 from six.moves import range
 
+PROFILE_CONNECT_WAIT = 15
+SUSPEND_SEC = 15
+EXPECT_NO_WAKE_SUSPEND_SEC = 30
+EXPECT_PEER_WAKE_SUSPEND_SEC = 60
+
+
 class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
     """This class provide wrapper function for Bluetooth quick health test
     batches or packages.
@@ -719,3 +725,122 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             if in_lab:
                 logging.info('Uploading result')
                 utils.run(cmd)
+
+
+    # ---------------------------------------------------------------
+    # Wake from suspend tests
+    # ---------------------------------------------------------------
+
+    def run_peer_wakeup_device(self,
+                               device_type,
+                               device,
+                               device_test=None,
+                               iterations=1,
+                               should_wake=True,
+                               should_pair=True):
+        """ Uses paired peer device to wake the device from suspend.
+
+        @param device_type: the device type (used to determine if it's LE)
+        @param device: the meta device with the paired device
+        @param device_test: What to test to run after waking and connecting the
+                            adapter/host
+        @param iterations: Number of suspend + peer wake loops to run
+        @param should_wake: Whether wakeup should occur on this test. With HID
+                            peers, this should be True. With non-HID peers, this
+                            should be false.
+        @param should_pair: Pair and connect the device first before running
+                            the wakeup test.
+        """
+        boot_id = self.host.get_boot_id()
+
+        if should_wake:
+            sleep_time = EXPECT_PEER_WAKE_SUSPEND_SEC
+            resume_time = SUSPEND_SEC
+            resume_slack = 5  # Allow 5s slack for resume timeout
+        else:
+            sleep_time = EXPECT_NO_WAKE_SUSPEND_SEC
+            resume_time = EXPECT_NO_WAKE_SUSPEND_SEC
+            # Negative resume slack lets us wake a bit earlier than expected
+            # If suspend takes a while to enter, this may be necessary to get
+            # the timings right.
+            resume_slack = -5
+
+        try:
+            if should_pair:
+                # Clear wake before testing
+                self.test_adapter_set_wake_disabled()
+                self.assert_discover_and_pair(device)
+                self.assert_on_fail(
+                        self.test_device_set_discoverable(device, False))
+
+                # Confirm connection completed
+                self.assert_on_fail(
+                        self.test_device_is_connected(device.address))
+
+            # Profile connection may not have completed yet and this will
+            # race with a subsequent disconnection (due to suspend). Use the
+            # device test to force profile connect or wait if no test was
+            # given.
+            if device_test is not None:
+                self.assert_on_fail(device_test(device))
+            else:
+                time.sleep(PROFILE_CONNECT_WAIT)
+
+            for it in range(iterations):
+                logging.info(
+                        'Running iteration {}/{} of suspend peer wake'.format(
+                                it + 1, iterations))
+
+                # Start a new suspend instance
+                suspend = self.suspend_async(suspend_time=sleep_time,
+                                             expect_bt_wake=should_wake)
+                start_time = self.bluetooth_facade.get_device_time()
+
+                if should_wake:
+                    self.test_device_wake_allowed(device.address)
+                    # Also wait until powerd marks adapter as wake enabled
+                    self.test_adapter_wake_enabled()
+                else:
+                    self.test_device_wake_not_allowed(device.address)
+
+                # Trigger suspend, asynchronously wake and wait for resume
+                self.test_suspend_and_wait_for_sleep(suspend,
+                                                     sleep_timeout=SUSPEND_SEC)
+
+                # Trigger peer wakeup
+                adapter_address = self.bluetooth_facade.address
+                peer_wake = self.device_connect_async(device_type,
+                                                      device,
+                                                      adapter_address,
+                                                      delay_wake=5,
+                                                      should_wake=should_wake)
+                peer_wake.start()
+
+                # Expect a quick resume. If a timeout occurs, test fails. Since
+                # we delay sending the wake signal, we should accommodate that
+                # in our expected timeout.
+                self.test_wait_for_resume(boot_id,
+                                          suspend,
+                                          resume_timeout=resume_time,
+                                          test_start_time=start_time,
+                                          resume_slack=resume_slack,
+                                          fail_on_timeout=should_wake,
+                                          fail_early_wake=not should_wake)
+
+                # Finish peer wake process
+                peer_wake.join()
+
+                # Only check peer device connection state if we expected to wake
+                # from it. Otherwise, we may or may not be connected based on
+                # the specific profile's reconnection policy.
+                if should_wake:
+                    # Make sure we're actually connected
+                    self.test_device_is_connected(device.address)
+
+                    # Verify the profile is working
+                    if device_test is not None:
+                        device_test(device)
+
+        finally:
+            if should_pair:
+                self.test_remove_pairing(device.address)

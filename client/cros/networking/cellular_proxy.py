@@ -4,7 +4,6 @@
 
 import dbus
 import logging
-import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.networking import shill_proxy
@@ -61,7 +60,10 @@ class CellularProxy(shill_proxy.ShillProxy):
                 service found.
 
         """
-        return self.find_object('Service', {'Type': self.TECHNOLOGY_CELLULAR})
+        return self.find_object('Service', {
+                'Type': self.TECHNOLOGY_CELLULAR,
+                'Connectable': True
+        })
 
 
     def wait_for_cellular_service_object(

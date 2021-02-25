@@ -32,9 +32,11 @@ class EthernetDongle(object):
         }
 
     def GetParam(self, parameter):
+        """ pylint wants a docstring. """
         return self.expected_parameters[parameter]
 
 class network_EthernetStressPlug(test.test):
+    """ base class for test """
     version = 1
 
     def initialize(self, interface=None):
@@ -244,13 +246,14 @@ class network_EthernetStressPlug(test.test):
                 except:
                     raise error.TestError('Could not write 0x%x to %s' %
                                           (newval, self.eth_flagspath))
-                logging.debug("eth flags: 0x%x to 0x%x" % (val, newval))
+                logging.debug("eth flags: 0x%x to 0x%x", val, newval)
 
         # else use ifconfig eth0 up/down to switch
         else:
-            logging.warning('plug/unplug event control not found. '
-                            'Use ifconfig %s %s instead' %
-                            (self.interface, 'up' if power else 'down'))
+            logging.warning(
+                    'plug/unplug event control not found. '
+                    'Use ifconfig %s %s instead', self.interface,
+                    'up' if power else 'down')
             result = subprocess.check_call(['ifconfig', self.interface,
                                             'up' if power else 'down'])
             if result:
@@ -441,12 +444,12 @@ class network_EthernetStressPlug(test.test):
                 else:
                     parameters[current_key] = current_line[2].strip()
             else:
-              if (current_key == 'Supported link modes' or
-                  current_key == 'Advertised link modes'):
-                  parameters[current_key] += \
-                      self._ParseEthTool_LinkModes(current_line[0])
-              else:
-                  parameters[current_key]+=current_line[0].strip()
+                if (current_key == 'Supported link modes' or
+                            current_key == 'Advertised link modes'):
+                    parameters[current_key] += \
+                        self._ParseEthTool_LinkModes(current_line[0])
+                else:
+                    parameters[current_key] += current_line[0].strip()
 
         return parameters
 
@@ -485,7 +488,7 @@ class network_EthernetStressPlug(test.test):
             #Sleep for a random duration between .5 and 2 seconds
             #for unplug and plug scenarios.
             for i in range(num_iterations):
-                logging.debug('Iteration: %d start' % i)
+                logging.debug('Iteration: %d start', i)
                 linkdown_time = self.TestPowerEthernet(power=0)
                 linkdown_wait = self.test_status['last_wait']
                 if linkdown_time > self.secs_before_warning:
@@ -500,9 +503,9 @@ class network_EthernetStressPlug(test.test):
                     self.warning_count+=1
 
                 self.RandSleep(500, 2000)
-                logging.debug('Iteration: %d end (down:%f/%d up:%f/%d)' %
-                              (i, linkdown_wait, linkdown_time,
-                               linkup_wait, linkup_time))
+                logging.debug('Iteration: %d end (down:%f/%d up:%f/%d)', i,
+                              linkdown_wait, linkdown_time, linkup_wait,
+                              linkup_time)
 
                 if self.warning_count > num_iterations * self.warning_threshold:
                     raise error.TestFail('ERROR: %.2f%% of total runs (%d) '

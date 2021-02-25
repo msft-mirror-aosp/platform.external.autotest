@@ -24,7 +24,7 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 _GTS_TIMEOUT_SECONDS = 3600
 # TODO: fix it when we prepare the public control files.
 _PARTNER_GTS_BUCKET = 'gs://chromeos-partner-gts/'
-_PARTNER_GTS_LOCATION = _PARTNER_GTS_BUCKET + 'gts-8-R2-R-6955212.zip'
+_PARTNER_GTS_LOCATION = _PARTNER_GTS_BUCKET + 'gts-8-R3-R-7133222.zip'
 _PARTNER_GTS_AUTHKEY = _PARTNER_GTS_BUCKET + 'gts-arc.json'
 _GTS_MEDIA_URI = ('https://storage.googleapis.com/youtube-test-media/gts/' +
                   'GtsYouTubeTestCases-media-1.2.zip')

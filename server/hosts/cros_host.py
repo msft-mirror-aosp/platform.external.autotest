@@ -1019,45 +1019,28 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 tmpd.clean()
 
 
-    def servo_install(self,
-                      image_url=None,
-                      usb_boot_timeout=USB_BOOT_TIMEOUT,
-                      install_timeout=INSTALL_TIMEOUT,
-                      is_repair=False):
-        """
-        Re-install the OS on the DUT by:
-        1) installing a test image on a USB storage device attached to the Servo
-                board,
-        2) booting that image in recovery mode, and then
-        3) installing the image with chromeos-install.
+    def install_image_to_servo_usb(self, image_url=None):
+        """Installing a test image on a USB storage device.
 
-        @param image_url: If specified use as the url to install on the DUT.
-                otherwise boot the currently staged image on the USB stick.
-        @param usb_boot_timeout: The usb_boot_timeout to use during reimage.
-                Factory images need a longer usb_boot_timeout than regular
-                cros images.
-        @param install_timeout: The timeout to use when installing the chromeos
-                image. Factory images need a longer install_timeout.
-        @param is_repair: Indicates if the method is called from a repair task.
+        Download image to USB-storage attached to the Servo board.
 
-        @raises AutoservError if the image fails to boot.
+        @param image_url:       If specified use as the url to download to
+                                USB-storage.
+
+        @raises AutoservError if the image fails to download.
 
         """
-        if image_url:
-            logging.info('Downloading image to USB, then booting from it.'
-                         ' Usb boot timeout = %s', usb_boot_timeout)
-        else:
-            logging.info('Booting from USB directly. Usb boot timeout = %s',
-                    usb_boot_timeout)
+        if not image_url:
+            logging.debug('Skip download as image_url not provided!')
+            return
 
+        logging.info('Downloading image to USB')
         metrics_field = {'download': bool(image_url)}
         metrics.Counter(
-            'chromeos/autotest/provision/servo_install/download_image'
-            ).increment(fields=metrics_field)
-
+                'chromeos/autotest/provision/servo_install/download_image'
+        ).increment(fields=metrics_field)
         with metrics.SecondsTimer(
-                'chromeos/autotest/provision/servo_install/boot_duration'):
-            self.servo.get_power_state_controller().power_off()
+                'chromeos/autotest/servo_install/download_image_time'):
             try:
                 self.servo.image_to_servo_usb(image_path=image_url,
                                               power_off_dut=False)
@@ -1066,11 +1049,28 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                 ).increment(
                                         fields={'host': self.hostname or ''})
                 six.reraise(error.AutotestError, str(e), sys.exc_info()[2])
-            # Give the DUT some time to power_off if we skip
-            # download image to usb. (crbug.com/982993)
-            if not image_url:
-                time.sleep(10)
-            need_snk = self.require_snk_mode_in_recovery()
+
+    def boot_in_recovery_mode(self,
+                              usb_boot_timeout=USB_BOOT_TIMEOUT,
+                              need_snk=False):
+        """Booting host  in recovery mode.
+
+        Boot device in recovery mode and verify that device booted from
+        external storage as expected.
+ 
+        @param usb_boot_timeout:    The usb_boot_timeout to use wait the host
+                                    to boot. Factory images need a longer
+                                    usb_boot_timeout than regular cros images.
+        @param snk_mode:            If True, switch servo_v4 role to 'snk'
+                                    mode before boot DUT into recovery mode.
+
+        @raises AutoservError if the image fails to boot.
+
+        """
+        logging.info('Booting from USB directly. Usb boot timeout: %s',
+                     usb_boot_timeout)
+        with metrics.SecondsTimer(
+                'chromeos/autotest/provision/servo_install/boot_duration'):
             self.servo.boot_in_recovery_mode(snk_mode=need_snk)
             if not self.wait_up(timeout=usb_boot_timeout):
                 if need_snk:
@@ -1087,6 +1087,35 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     'a usb stick), however it seems still boot from an'
                     ' internal storage.', 'boot_from_internal_storage')
 
+    def run_install_image(self,
+                          install_timeout=INSTALL_TIMEOUT,
+                          need_snk=False,
+                          is_repair=False):
+        """Installing the image with chromeos-install.
+
+        Steps included:
+        1) Recover TPM on the device
+        2) Run chromeos-install
+        2.a) if success: power off/on the device
+        2.b) if fail:
+        2.b.1) Mark for replacement if fail with hardware issue
+        2.b.2) Run internal storage check. (Only if is_repair=True)
+        3) Wait the device to boot as verifier of success install
+
+        Device has to booted from external storage.
+
+        @param install_timeout:     The timeout to use when installing the
+                                    chromeos image. Factory images need a
+                                    longer install_timeout.
+        @param snk_mode:            If True, switch servo_v4 role to 'snk'
+                                    mode before boot DUT into recovery mode.
+        @param is_repair:           Indicates if the method is called from a
+                                    repair task.
+
+        @raises AutoservError if the fail in process of install image.
+        @raises AutoservRepairError if fail to boot after install image.
+
+        """
         # The new chromeos-tpm-recovery has been merged since R44-7073.0.0.
         # In old CrOS images, this command fails. Skip the error.
         logging.info('Resetting the TPM status')
@@ -1094,7 +1123,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.run('chromeos-tpm-recovery')
         except error.AutoservRunError:
             logging.warn('chromeos-tpm-recovery is too old.')
-
 
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/install_duration'):
@@ -1163,6 +1191,50 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                             self.BOOT_TIMEOUT,
                                             'failed_to_boot_post_install')
 
+    def servo_install(self,
+                      image_url=None,
+                      usb_boot_timeout=USB_BOOT_TIMEOUT,
+                      install_timeout=INSTALL_TIMEOUT,
+                      is_repair=False):
+        """Re-install the OS on the DUT by:
+
+        Steps:
+        1) Power off the host
+        2) Installing an image on a USB-storage attached to the Servo board
+        3) Booting that image in recovery mode
+        4) Installing the image with chromeos-install.
+
+        @param image_url:           If specified use as the url to install on
+                                    the DUT otherwise boot the currently
+                                    staged image on the USB stick.
+        @param usb_boot_timeout:    The usb_boot_timeout to use during
+                                    re-image. Factory images need a longer
+                                    usb_boot_timeout than regular cros images.
+        @param install_timeout:     The timeout to use when installing the
+                                    chromeos image. Factory images need a
+                                    longer install_timeout.
+        @param is_repair:           Indicates if the method is called from a
+                                    repair task.
+
+        @raises AutoservError if the image fails to boot.
+
+        """
+        self.servo.get_power_state_controller().power_off()
+        if image_url:
+            self.install_image_to_servo_usb(image_url=image_url)
+        else:
+            # Give the DUT some time to power_off if we skip
+            # download image to usb. (crbug.com/982993)
+            time.sleep(10)
+
+        need_snk = self.require_snk_mode_in_recovery()
+
+        self.boot_in_recovery_mode(usb_boot_timeout=usb_boot_timeout,
+                                   need_snk=need_snk)
+
+        self.run_install_image(install_timeout=install_timeout,
+                               need_snk=need_snk,
+                               is_repair=is_repair)
 
     def set_servo_host(self, host, servo_state=None):
         """Set our servo host member, and associated servo.

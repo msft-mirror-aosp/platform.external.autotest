@@ -34,7 +34,7 @@ class platform_SuspendResumeTiming(test.test):
         self.host.servo.set('usb_mux_sel3', 'servo_sees_usbkey')
 
 
-    def parse_timestamp(out_log):
+    def parse_timestamp(self, out_log):
         """ Parses timestamp.
 
         @param out_log: log string to parse for timestamp

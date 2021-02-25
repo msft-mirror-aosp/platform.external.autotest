@@ -101,6 +101,7 @@ COMMON_FAILURES = {
         '/var/spool/crash/bluetoothd': 'bluetoothd_crashed',
         'btintel_hw_error': 'intel hardware error detected',
         'qca_hw_error': 'qca hardware error detected',
+        'cmd_cnt 0 cmd queued ([5-9]|[1-9][0-9]+)': 'controller cmd capacity',
 }
 
 # TODO(b/150898182) - Don't run some tests on tablet form factors

@@ -83,7 +83,7 @@ class LogManager(object):
         """
 
         for line in self.log_contents:
-            if search_str in line:
+            if re.search(search_str, line):
                 return True
 
         return False

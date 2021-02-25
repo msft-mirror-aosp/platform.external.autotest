@@ -766,6 +766,36 @@ class StopStartUIVerifier(hosts.Verifier):
         return 'The DUT image works fine when stop ui/start ui.'
 
 
+class GscToolPresentVerifier(hosts.Verifier):
+    """Verify that GSC tool is functional.
+
+    If board/model expected to have GSC tool but it does not have it then need
+    to re-image the host to recover it.
+    If host-info has label 'cr50' then we expect to have GSC tool on the host.
+    """
+
+    VERIFY_GSC_CMD = 'gsctool -a -f'
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        r = host.run(self.VERIFY_GSC_CMD, ignore_status=True, timeout=10)
+        if r.exit_status != 0:
+            raise hosts.AutoservNonCriticalVerifyError(
+                    "GSC tool issue detected.")
+        logging.debug('GSC tool is functional.')
+
+    def _is_applicable(self, host):
+        host_info = host.host_info_store.get()
+        if host_info.get_label_value('cr50'):
+            return True
+        logging.info('GSC is not on the host.')
+        return False
+
+    @property
+    def description(self):
+        return 'Verify GSC tool is functional.'
+
+
 class ServoUSBDriveVerifier(hosts.Verifier):
     """Verify that USB drive on Servo is good to use.
 
@@ -1344,6 +1374,7 @@ def _cros_verify_extended_dag():
     return (
             (StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
             (DUTStorageVerifier, 'storage', ('ssh', )),
+            (GscToolPresentVerifier, 'dut_gsctool', ('ssh', )),
             (ServoKeyboardMapVerifier, 'dut_servo_keyboard', ('ssh', )),
             (ServoMacAddressVerifier, 'dut_servo_macaddr', ('ssh', )),
     )
@@ -1437,7 +1468,10 @@ def _cros_repair_actions():
     firmware_triggers = _CROS_FIRMWARE_TRIGGERS
     ac_triggers = _CROS_AC_TRIGGERS
     usb_dependencies = _CROS_USB_DEPENDENCIES
-    provision_triggers = _CROS_PROVISION_TRIGGERS + ('stop_start_ui', )
+    provision_triggers = _CROS_PROVISION_TRIGGERS + (
+            'stop_start_ui',
+            'dut_gsctool',
+    )
     powerwash_triggers = _CROS_POWERWASH_TRIGGERS
     usb_triggers = _CROS_USB_TRIGGERS
 

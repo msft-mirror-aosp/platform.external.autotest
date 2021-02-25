@@ -37,6 +37,7 @@ CROS_VERIFY_DAG = (
         (cros_repair.CrosVerisionVerifier, 'cros_version_label', ('ssh', )),
         (cros_repair.StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
         (cros_repair.DUTStorageVerifier, 'storage', ('ssh', )),
+        (cros_repair.GscToolPresentVerifier, 'dut_gsctool', ('ssh', )),
         (cros_repair.ServoKeyboardMapVerifier, 'dut_servo_keyboard',
          ('ssh', )),
         (cros_repair.ServoMacAddressVerifier, 'dut_servo_macaddr', ('ssh', )),
@@ -86,14 +87,15 @@ CROS_REPAIR_ACTIONS = (
         (cros_repair.ProvisionRepair, 'provision',
          ('ping', 'ssh', 'writable', 'tpm', 'good_provision',
           'ext4'), ('power', 'rwfw', 'fwstatus', 'python', 'hwid', 'cros',
-                    'dev_default_boot', 'stop_start_ui')),
+                    'dev_default_boot', 'stop_start_ui', 'dut_gsctool')),
         (cros_repair.PowerWashRepair, 'powerwash', ('ping', 'ssh', 'writable'),
          ('tpm', 'good_provision', 'ext4', 'power', 'rwfw', 'fwstatus',
-          'python', 'hwid', 'cros', 'dev_default_boot', 'stop_start_ui')),
+          'python', 'hwid', 'cros', 'dev_default_boot', 'stop_start_ui',
+          'dut_gsctool')),
         (cros_repair.ServoInstallRepair, 'usb', ('usb_drive', ),
          ('ping', 'ssh', 'writable', 'tpm', 'good_provision', 'ext4', 'power',
           'rwfw', 'fwstatus', 'python', 'hwid', 'cros', 'dev_default_boot',
-          'stop_start_ui', 'faft_tpm')),
+          'stop_start_ui', 'dut_gsctool', 'faft_tpm')),
 )
 
 MOBLAB_VERIFY_DAG = (

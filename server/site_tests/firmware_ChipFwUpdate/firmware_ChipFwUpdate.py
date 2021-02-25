@@ -73,7 +73,7 @@ class firmware_ChipFwUpdate(FirmwareTest):
 
         self.clear_set_gbb_flags(
             vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC |
-            vboot.GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC, 0)
+            vboot.GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC, 0)
 
         self.dut_bios_path = None
         self.cbfs_work_dir = None

@@ -27,7 +27,7 @@ def run_TS(machine):
         target_module='vm-tests-tf',
         target_plan=None,
         bundle='arm',
-        uri='gs://chromeos-arc-images/cts/bundle/P/android-cts-9.0_r15-linux_x86-arm.zip',
+        uri='LATEST',
         timeout=3600)
 
 parallel_simple(run_TS, machines)

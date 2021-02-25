@@ -29,7 +29,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         extra_artifacts_host=['/tmp/diff_*.png'],
-        uri='gs://chromeos-arc-images/cts/bundle/P/android-cts-9.0_r15-linux_x86-x86.zip',
+        uri='LATEST',
         prerequisites=['bluetooth', 'region_us'],
         timeout=77400)
 

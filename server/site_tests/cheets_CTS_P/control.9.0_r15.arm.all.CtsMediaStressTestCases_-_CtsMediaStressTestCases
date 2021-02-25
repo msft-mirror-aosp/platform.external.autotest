@@ -29,7 +29,7 @@ def run_TS(machine):
         target_module='all.CtsMediaStressTestCases_-_CtsMediaStressTestCases',
         target_plan=None,
         bundle='arm',
-        uri='gs://chromeos-arc-images/cts/bundle/P/android-cts-9.0_r15-linux_x86-arm.zip',
+        uri='LATEST',
         timeout=18000)
 
 parallel_simple(run_TS, machines)

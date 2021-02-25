@@ -26,19 +26,23 @@ def lock(filename):
     # has very poor temporal granularity (timeout/10), which is unsuitable for
     # our needs. See /usr/lib64/python2.7/site-packages/lockfile/
     attempts = 0
+    total_wait_seconds = 0
     while not filelock.i_am_locking():
         try:
             attempts += 1
             logging.info('Waiting for cache lock...')
+            # Cap the wait by 2 minutes. Setting too long wait makes long-lived
+            # tasks to have less chance to obtain the lock, leading to failures.
             # We must not use a random integer as the filelock implementations
             # may underflow an integer division.
-            filelock.acquire(random.uniform(0.0, pow(2.0, attempts)))
+            wait = min(120.0, random.uniform(0.0, pow(2.0, attempts)))
+            total_wait_seconds += wait
+            filelock.acquire(wait)
         except (lockfile.AlreadyLocked, lockfile.LockTimeout):
             # Our goal is to wait long enough to be sure something very bad
-            # happened to the locking thread. 11 attempts is between 15 and
-            # 30 minutes.
-            if attempts > 11:
-                # Normally we should aqcuire the lock immediately. Once we
+            # happened to the locking thread. Wait 2 hours at maximum
+            if total_wait_seconds >= 7200:
+                # Normally we should acquire the lock immediately. Once we
                 # wait on the order of 10 minutes either the dev server IO is
                 # overloaded or a lock didn't get cleaned up. Take one for the
                 # team, break the lock and report a failure. This should fix

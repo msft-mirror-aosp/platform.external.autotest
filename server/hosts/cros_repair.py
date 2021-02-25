@@ -1430,26 +1430,75 @@ def _cros_extended_repair_actions(provision_triggers=_CROS_PROVISION_TRIGGERS,
     return repair_actions
 
 
-def _cros_dedicated_repair_actions(firmware_triggers=_CROS_FIRMWARE_TRIGGERS,
-                                   ac_triggers=_CROS_AC_TRIGGERS,
-                                   usb_dependencies=_CROS_USB_DEPENDENCIES):
-    """Return the repair actions that only works for `CrosHost`"""
+def _cros_repair_actions():
+    """Return the repair actions for a `CrosHost`."""
+
+    servo_reset_trigger = DEFAULT_SERVO_RESET_TRIGGER
+    firmware_triggers = _CROS_FIRMWARE_TRIGGERS
+    ac_triggers = _CROS_AC_TRIGGERS
+    usb_dependencies = _CROS_USB_DEPENDENCIES
+    provision_triggers = _CROS_PROVISION_TRIGGERS + ('stop_start_ui', )
+    powerwash_triggers = _CROS_POWERWASH_TRIGGERS
+    usb_triggers = _CROS_USB_TRIGGERS
 
     repair_actions = (
+            # RPM cycling must precede Servo reset:  if the DUT has a dead
+            # battery, we need to reattach AC power before we reset via servo.
+            (repair_utils.RPMCycleRepair, 'rpm', (), (
+                    'ping',
+                    'ssh',
+                    'power',
+            )),
+            (ServoResetRepair, 'servoreset', (), servo_reset_trigger),
+            (ServoCr50RebootRepair, 'cr50_reset', (), servo_reset_trigger),
+            (ServoSysRqRepair, 'sysrq', (), (
+                    'ping',
+                    'ssh',
+            )),
+            (LabelCleanupRepair, 'label_cleanup', ('ssh', ),
+             ('cros_version_label', )),
+
+            # N.B. FaftFirmwareRepair can't fix a 'good_provision' failure
+            # directly, because it doesn't remove the flag file that triggers
+            # the failure.  We include it as a repair trigger because it's
+            # possible the the last update failed because of the firmware,
+            # and we want the repair steps below to be able to trust the
+            # firmware.
+            (cros_firmware.FaftFirmwareRepair, 'faft_firmware_repair', (), (
+                    'ping',
+                    'ssh',
+                    'fwstatus',
+                    'good_provision',
+            )),
+            (DevDefaultBootRepair, 'set_default_boot', ('ssh', ),
+             ('dev_default_boot', )),
+            (CrosRebootRepair, 'reboot', ('ssh', ), (
+                    'devmode',
+                    'writable',
+            )),
+            (EnrollmentCleanupRepair, 'cleanup_enrollment', ('ssh', ),
+             ('enrollment_state', )),
             (cros_firmware.GeneralFirmwareRepair, 'general_firmware',
              usb_dependencies, firmware_triggers),
             (RecoverACPowerRepair, 'ac_recover', (), ac_triggers),
+            (ProvisionRepair, 'provision', usb_triggers + powerwash_triggers,
+             provision_triggers),
+            (PowerWashRepair, 'powerwash', usb_triggers,
+             powerwash_triggers + provision_triggers),
+            (
+                    ServoInstallRepair,
+                    'usb',
+                    usb_dependencies,
+                    # faft_tpm is a trigger of usb repair action but should
+                    # not be dependence of provision and powerwash repair
+                    # action, due to restriction of current structure, we
+                    # hardcode it here instead of put it into
+                    # _CROS_USB_TRIGGERS. TODO(xianuowang@) refactor the logic
+                    # to create action/verifier DAG for different host type
+                    # after we decouple infra from test autotest repo.
+                    usb_triggers + powerwash_triggers + provision_triggers +
+                    ('faft_tpm', )),
     )
-    return repair_actions
-
-
-def _cros_repair_actions():
-    """Return the repair actions for a `CrosHost`."""
-    repair_actions = (_cros_basic_repair_actions() +
-                      _cros_dedicated_repair_actions() +
-                      _cros_extended_repair_actions(
-                              provision_triggers=_CROS_PROVISION_TRIGGERS +
-                              ('stop_start_ui', )))
     return repair_actions
 
 

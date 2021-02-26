@@ -31,6 +31,7 @@ from autotest_lib.server import test
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.utils.frozen_chromite.lib import auto_updater
 from autotest_lib.utils.frozen_chromite.lib import auto_updater_transfer
+from autotest_lib.utils.frozen_chromite.lib import gs
 from autotest_lib.utils.frozen_chromite.lib import remote_access
 from autotest_lib.utils.frozen_chromite.lib import retry_util
 
@@ -61,6 +62,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     _TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
+    # Paygen.json file provides information about all builds on all channels.
+    _PAYGEN_JSON_URI = 'gs://chromeos-build-release-console/paygen.json'
 
     def initialize(self, host=None, hosts=None):
         """
@@ -895,3 +898,29 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             finally:
                 self._copy_generated_nebraska_logs(
                     updater.request_logs_dir, identifier=tag)
+
+    def _get_paygen_json(self):
+        """Return the paygen.json file as a json dictionary."""
+        return json.loads(gs.GSContext().Cat(self._PAYGEN_JSON_URI))
+
+    def _paygen_json_lookup(self, board, channel, delta_type):
+        """
+        Filters the paygen.json file by board, channel, and payload type.
+
+        @param board: The board name.
+        @param channel: The ChromeOS channel.
+        @param delta_type: OMAHA, FSI, MILESTONE. STEPPING_STONE.
+
+        @returns json results filtered by the input params.
+
+        """
+        paygen_data = self._get_paygen_json()
+        result = []
+        if channel.endswith('-channel'):
+            channel = channel[:-len('-channel')]
+        for delta in paygen_data['delta']:
+            if ((delta['board']['public_codename'] == board) and
+                (delta.get('channel', None) == channel) and
+                (delta.get('delta_type', None) == delta_type)):
+                result.append(delta)
+        return result

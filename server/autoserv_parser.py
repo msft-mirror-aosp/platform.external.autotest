@@ -237,6 +237,11 @@ class autoserv_parser(object):
                                  default='2',
                                  type=str,
                                  choices=['2', '3'])
+        self.parser.add_argument('-ch',
+                                 action='store',
+                                 type=str,
+                                 dest='companion_hosts',
+                                 help='list of companion hosts for the test.')
 
         #
         # Warning! Please read before adding any new arguments!

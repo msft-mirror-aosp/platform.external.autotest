@@ -17,10 +17,15 @@ autoserv_directory = os.path.join(AUTOTEST_INSTALL_DIR, 'server')
 autoserv_path = os.path.join(autoserv_directory, 'autoserv')
 
 
-def autoserv_run_job_command(autoserv_directory, machines,
-                             results_directory=None, extra_args=[], job=None,
-                             queue_entry=None, verbose=True,
-                             write_pidfile=True, fast_mode=False,
+def autoserv_run_job_command(autoserv_directory,
+                             machines,
+                             results_directory=None,
+                             extra_args=[],
+                             job=None,
+                             queue_entry=None,
+                             verbose=True,
+                             write_pidfile=True,
+                             fast_mode=False,
                              ssh_verbosity=0,
                              no_console_prefix=False,
                              ssh_options=None,
@@ -28,7 +33,8 @@ def autoserv_run_job_command(autoserv_directory, machines,
                              in_lab=False,
                              host_attributes=None,
                              use_virtualenv=False,
-                             host_info_subdir=''):
+                             host_info_subdir='',
+                             companion_hosts=None):
     """
     Construct an autoserv command from a job or host queue entry.
 
@@ -68,6 +74,10 @@ def autoserv_run_job_command(autoserv_directory, machines,
                            support everywhere. Default: False.
     @param host_info_subdir: When set, a sub-directory of the results directory
                              where host info file(s) are stored.
+    @param companion_hosts: a str or list of hosts to be used as companions
+                            for the and provided to test. NOTE: these are
+                            different than  machines, where each host is a host
+                            that the test would be run on.
 
     @returns The autoserv command line as a list of executable + parameters.
 
@@ -95,6 +105,11 @@ def autoserv_run_job_command(autoserv_directory, machines,
 
     if machines:
         command += ['-m', machines]
+
+    if companion_hosts:
+        if not isinstance(companion_hosts, list):
+            companion_hosts = [companion_hosts]
+        command += ['-ch', ",".join(companion_hosts)]
 
     if ssh_verbosity:
         command += ['--ssh_verbosity', str(ssh_verbosity)]

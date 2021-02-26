@@ -252,7 +252,7 @@ def run_provisioning_job(provision_label, host, info, autotest_path,
 def run_job(job, host, info, autotest_path, results_directory, fast_mode,
             id_digits=1, ssh_verbosity=0, ssh_options=None,
             args=None, pretend=False,
-            autoserv_verbose=False):
+            autoserv_verbose=False, companion_hosts=None):
     """
     Shell out to autoserv to run an individual test job.
 
@@ -274,6 +274,7 @@ def run_job(job, host, info, autotest_path, results_directory, fast_mode,
     @param pretend: If True, will print out autoserv commands rather than
                     running them.
     @param autoserv_verbose: If true, pass the --verbose flag to autoserv.
+    @param companion_hosts: Companion hosts for the test.
 
     @returns: a tuple, return code of the job and absolute path of directory
               where results were stored.
@@ -305,7 +306,8 @@ def run_job(job, host, info, autotest_path, results_directory, fast_mode,
                 no_console_prefix=True,
                 use_packaging=False,
                 host_attributes=info.attributes,
-                host_info_subdir=_HOST_INFO_SUBDIR)
+                host_info_subdir=_HOST_INFO_SUBDIR,
+                companion_hosts=companion_hosts)
 
         code = _run_autoserv(command, pretend)
         return code, results_directory
@@ -454,7 +456,8 @@ def perform_local_run(autotest_path,
                       autoserv_verbose=False,
                       iterations=1,
                       host_attributes={},
-                      job_retry=True):
+                      job_retry=True,
+                      companion_hosts=None):
     """Perform local run of tests.
 
     This method enforces satisfaction of test dependencies for tests that are
@@ -483,6 +486,7 @@ def perform_local_run(autotest_path,
     @param iterations: int number of times to schedule tests.
     @param host_attributes: Dict of host attributes to pass into autoserv.
     @param job_retry: If False, tests will not be retried at all.
+    @param companion_hosts: companion hosts for the test.
 
     @returns: A list of return codes each job that has run. Or [1] if
               provision failed prior to running any jobs.
@@ -544,6 +548,7 @@ def perform_local_run(autotest_path,
                 args,
                 pretend,
                 autoserv_verbose,
+                companion_hosts
         )
         codes.append(code)
         logging.debug("Code: %s, Results in %s", code, abs_dir)
@@ -696,7 +701,8 @@ def perform_run_from_autotest_root(autotest_path,
                                    debug=False,
                                    allow_chrome_crashes=False,
                                    host_attributes={},
-                                   job_retry=True):
+                                   job_retry=True,
+                                   companion_hosts=None):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -730,6 +736,7 @@ def perform_run_from_autotest_root(autotest_path,
     @param allow_chrome_crashes: If True, allow chrome crashes.
     @param host_attributes: Dict of host attributes to pass into autoserv.
     @param job_retry: If False, tests will not be retried at all.
+    @param companion_hosts: companion hosts for the test.
 
     @return: A return code that test_that should exit with.
     """
@@ -766,8 +773,8 @@ def perform_run_from_autotest_root(autotest_path,
                               autoserv_verbose=debug,
                               iterations=iterations,
                               host_attributes=host_attributes,
-                              job_retry=job_retry)
-
+                              job_retry=job_retry,
+                              companion_hosts=companion_hosts)
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0

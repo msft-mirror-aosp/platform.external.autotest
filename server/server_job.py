@@ -255,7 +255,8 @@ class server_job(base_job.base_job):
                  control_filename=SERVER_CONTROL_FILENAME,
                  parent_job_id=None, in_lab=False,
                  use_client_trampoline=False,
-                 sync_offload_dir=''):
+                 sync_offload_dir='',
+                 companion_hosts=None):
         """
         Create a server side job object.
 
@@ -295,6 +296,10 @@ class server_job(base_job.base_job):
                 control file.
         @param sync_offload_dir: String; relative path to synchronous offload
                 dir, relative to the results directory. Ignored if empty.
+        @param companion_hosts: a str or list of hosts to be used as companions
+                for the and provided to test. NOTE: these are different than
+                machines, where each host is a host that the test would be run
+                on.
         """
         super(server_job, self).__init__(resultdir=resultdir)
         self.control = control
@@ -327,6 +332,7 @@ class server_job(base_job.base_job):
         self._control_filename = control_filename
         self._disable_sysinfo = disable_sysinfo
         self._use_client_trampoline = use_client_trampoline
+        self._companion_hosts = companion_hosts
 
         self.logging = logging_manager.get_logging_manager(
                 manage_stdout_and_stderr=True, redirect_fds=True)
@@ -844,6 +850,8 @@ class server_job(base_job.base_job):
                     logging.debug("Results dir is %s", self.resultdir)
                     logging.debug("Synchronous offload dir is %s", sync_dir)
                 logging.info("Processing control file")
+                if self._companion_hosts:
+                    namespace['companion_hosts'] = self._companion_hosts
                 namespace['use_packaging'] = use_packaging
                 namespace['synchronous_offload_dir'] = sync_dir
                 namespace['extended_timeout'] = self.extended_timeout

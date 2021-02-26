@@ -187,6 +187,20 @@ def _verify_connectivity(connectivity_class, hostname, **args):
                  ignore_timeout=False)
 
 
+def create_companion_hosts(companion_hosts):
+    """Wrapped for create_hosts for making host objects on companion duts.
+
+    @param companion_hosts: str or list of extra_host hostnames
+
+    @returns: A list of host objects for each host in companion_hosts
+    """
+    if not isinstance(companion_hosts, list):
+        companion_hosts = [companion_hosts]
+    hosts = []
+    for host in companion_hosts:
+        hosts.append(create_host(host))
+    return hosts
+
 # TODO(kevcheng): Update the creation method so it's not a research project
 # determining the class inheritance model.
 def create_host(machine, host_class=None, connectivity_class=None, **args):

@@ -22,6 +22,8 @@ try:
     # factory function
     from autotest_lib.server.hosts.factory import create_host
     from autotest_lib.server.hosts.factory import create_target_machine
+    from autotest_lib.server.hosts.factory import create_companion_hosts
+
 except ImportError:
     # host abstract classes
     from base_classes import Host
@@ -37,3 +39,4 @@ except ImportError:
     # factory function
     from factory import create_host
     from factory import create_target_machine
+    from factory import create_companion_hosts

@@ -164,6 +164,10 @@ def _parse_arguments_internal(argv):
     parser.add_argument('--ssh_private_key', action='store',
                         default=test_runner_utils.TEST_KEY_PATH,
                         help='Path to the private ssh key.')
+    parser.add_argument('--companion_hosts',
+                        action='store',
+                        default=None,
+                        help='Companion duts for the test.')
     return parser.parse_args(argv), remote_argv
 
 
@@ -329,7 +333,8 @@ def _main_for_local_run(argv, arguments):
                 debug=arguments.debug,
                 allow_chrome_crashes=arguments.allow_chrome_crashes,
                 pretend=arguments.pretend,
-                job_retry=arguments.retry)
+                job_retry=arguments.retry,
+                companion_hosts=arguments.companion_hosts)
 
 
 def _main_for_lab_run(argv, arguments):

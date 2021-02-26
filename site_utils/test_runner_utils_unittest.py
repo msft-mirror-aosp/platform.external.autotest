@@ -216,6 +216,7 @@ class TestRunnerUnittests(mox.MoxTestBase):
                     mox.StrContains(self.args),
                     False,
                     False,
+                    None,
             ).AndReturn((0, '/fake/dir'))
 
         self.mox.ReplayAll()

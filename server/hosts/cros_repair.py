@@ -24,6 +24,7 @@ from autotest_lib.server import afe_utils
 from autotest_lib.server import crashcollect
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.servo.keyboard import servo_keyboard_flasher
 from autotest_lib.server.cros.repair import mac_address_helper
 from autotest_lib.server.hosts import cros_constants
@@ -230,18 +231,23 @@ class ACPowerVerifier(hosts.Verifier):
         return 'The DUT is plugged in to AC power and battery is charging'
 
 
-class CrosVerisionVerifier(hosts.Verifier):
+class ProvisioningLabelsVerifier(hosts.Verifier):
     """Confirm that current ChromeOS image on the host is matches
-    to provision-cros_version label.
+    to provision labels.
 
     Some tests behavior may changed DUT image while they don't update
-    provision-cros_version label, which could cause the next test run
-    on the same host gets an unexpected OS version and yields false
-    positive test result.
+    provision-cros_version or provisioning-job_repo_url labels, which could
+    cause the next test run on the same host gets an unexpected data and
+    yields false positive test result.
     """
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
+        self._verify_cros_version(host)
+        self._verify_job_repo_url(host)
+
+    def _verify_cros_version(self, host):
+        """Verify that cros-version match version on the host."""
         label_match = True
         try:
             label_match = host.verify_cros_version_label()
@@ -256,6 +262,19 @@ class CrosVerisionVerifier(hosts.Verifier):
         if not label_match:
             raise hosts.AutoservVerifyError('ChromeOS image on the host'
                                             ' does not match to cros-version'
+                                            ' label.')
+
+    def _verify_job_repo_url(self, host):
+        """Verify that job_repo_url match version on the host."""
+        info = host.host_info_store.get()
+        job_repo_url = info.attributes.get(ds_constants.JOB_REPO_URL, '')
+        if not job_repo_url:
+            logging.debug('job_repo_url is empty. Skip check.')
+            return
+        os_from_host = host.get_release_builder_path()
+        if not os_from_host in job_repo_url:
+            raise hosts.AutoservVerifyError('ChromeOS image on the host'
+                                            ' does not match to job_repo_url'
                                             ' label.')
 
     @property
@@ -1078,28 +1097,21 @@ class CrosRebootRepair(repair_utils.RebootRepair):
         return 'Reset GBB flags and Reboot the host'
 
 
-class LabelCleanupRepair(hosts.RepairAction):
-    """Cleanup unexpected labels for the host, e.g. mismatched
-    cros-version label.
+class ProvisioningLabelsRepair(hosts.RepairAction):
+    """Repair issue with provisioning labels for the host.
+
+    The repair is doing simple clean up of labels as next provisioning will
+    re-generate required fields.
     """
-    # The repair action currently only cleanup cros-version label, however
-    # we can extent it to cleanup other labels when there is need, and it
-    # should be able to determine which label to clean based on check the
-    # cached result from it's trigger list. (example: trigger verifiers can
-    # be access via self._trigger_list, and we can tell which verifier failed
-    # by check Verifier._is_good() method.)
 
     @timeout_util.TimeoutDecorator(cros_constants.SHORT_REPAIR_TIMEOUT_SEC)
     def repair(self, host):
-        logging.info('Removing %s label from the host', host.VERSION_PREFIX)
-        info = host.host_info_store.get()
-        info.clear_version_labels()
-        host.host_info_store.commit(info)
+        afe_utils.clean_provision_labels(host)
 
     @property
     def description(self):
         # pylint: disable=missing-docstring
-        return 'Cleanup unexpected labels for the host'
+        return 'Cleanup provisioning labels for the host'
 
 
 class EnrollmentCleanupRepair(hosts.RepairAction):
@@ -1364,7 +1376,7 @@ def _cros_verify_base_dag():
             (FirmwareVersionVerifier, 'rwfw', ('ssh', )),
             (PythonVerifier, 'python', ('ssh', )),
             (repair_utils.LegacyHostVerifier, 'cros', ('ssh', )),
-            (CrosVerisionVerifier, 'cros_version_label', ('ssh', )),
+            (ProvisioningLabelsVerifier, 'provisioning_labels', ('ssh', )),
     )
     return verify_dag
 
@@ -1402,8 +1414,8 @@ def _cros_basic_repair_actions(
                     'ping',
                     'ssh',
             )),
-            (LabelCleanupRepair, 'label_cleanup', ('ssh', ),
-             ('cros_version_label', )),
+            (ProvisioningLabelsRepair, 'provisioning_labels_repair', ('ssh', ),
+             ('provisioning_labels', )),
 
             # N.B. FaftFirmwareRepair can't fix a 'good_provision' failure
             # directly, because it doesn't remove the flag file that triggers
@@ -1489,8 +1501,8 @@ def _cros_repair_actions():
                     'ping',
                     'ssh',
             )),
-            (LabelCleanupRepair, 'label_cleanup', ('ssh', ),
-             ('cros_version_label', )),
+            (ProvisioningLabelsRepair, 'provisioning_labels_repair', ('ssh', ),
+             ('provisioning_labels', )),
 
             # N.B. FaftFirmwareRepair can't fix a 'good_provision' failure
             # directly, because it doesn't remove the flag file that triggers

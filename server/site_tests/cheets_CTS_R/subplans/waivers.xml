@@ -8,6 +8,7 @@
   -->
   <Entry include="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCantSaveStateLaunchAndSwitch" />
   <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
+  <Entry include="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testSingleCapture" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[0]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[1]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[2]" />

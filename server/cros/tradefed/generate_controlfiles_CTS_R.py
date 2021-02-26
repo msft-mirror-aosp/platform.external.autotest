@@ -174,10 +174,12 @@ CONFIG['LOGIN_PRECONDITION'] = {}
 CONFIG['PUBLIC_PRECONDITION'] = {
         'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS,
         'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS,
         'CtsNetTestCases': _WIFI_CONNECT_COMMANDS,
         'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS,
         'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
         'CtsStatsdHostTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsWifiTestCases': _WIFI_CONNECT_COMMANDS,
 }
 CONFIG['PUBLIC_DEPENDENCIES'] = {
         'CtsCameraTestCases': ['lighting'],

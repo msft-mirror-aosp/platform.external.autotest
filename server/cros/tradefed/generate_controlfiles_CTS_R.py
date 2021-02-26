@@ -76,6 +76,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsSensorTestCases': 2.0,
         'CtsStatsdHostTestCases': 2.0,
         'CtsVideoTestCases': 1.5,
+        'CtsViewTestCases': 2.5,
         'CtsWidgetTestCases': 2.0,
         _COLLECT: 2.5,
         _PUBLIC_COLLECT: 2.5,

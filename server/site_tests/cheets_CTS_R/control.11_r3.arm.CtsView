@@ -29,6 +29,6 @@ def run_TS(machine):
         bundle='arm',
         uri='LATEST',
         use_jdk9=True,
-        timeout=16200)
+        timeout=23400)
 
 parallel_simple(run_TS, machines)

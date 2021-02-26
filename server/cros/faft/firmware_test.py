@@ -1238,35 +1238,6 @@ class FirmwareTest(test.test):
                 time.sleep(delay_time)
         return False
 
-    def wait_power_states(self, power_states, retries, retry_delay=0):
-        """
-        Wait for certain power states.
-
-        @param power_states: array of power states you are expecting
-        @param retries: retries.  This is necessary if AP is powering down
-        and transitioning through different states.
-        @param retry_delay: delay between retries in seconds
-        """
-        logging.info('Checking power state maximum %d times.', retries)
-
-        # Reset the cache, in case previous calls silently changed it on servod
-        self.ec.set_uart_regexp('None')
-
-        while retries > 0:
-            logging.info("try count: %d", retries)
-            start_time = time.time()
-            try:
-                retries = retries - 1
-                power_state = self.get_power_state()
-                if power_state in power_states:
-                    return True
-            except error.TestFail:
-                pass
-            delay_time = retry_delay - time.time() + start_time
-            if delay_time > 0:
-                time.sleep(delay_time)
-        return False
-
     def run_shutdown_cmd(self):
         """Shut down the DUT by running '/sbin/shutdown -P now'."""
         self.faft_client.disconnect()

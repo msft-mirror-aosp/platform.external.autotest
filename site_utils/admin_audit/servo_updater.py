@@ -70,7 +70,6 @@ class _BaseUpdateServoFw(object):
             return False
         elif not ignore_version:
             return self._is_outdated_version()
-        logging.info('The board %s is need update.', self.get_board())
         return True
 
     def update(self, force_update=False, ignore_version=False):
@@ -194,9 +193,9 @@ class _BaseUpdateServoFw(object):
         """Compare version to determine request to update the Servo or not.
         """
         current_version = self._current_version()
-        logging.debug('Servo fw on the device: %s', current_version)
+        logging.debug('Servo fw on the device: "%s"', current_version)
         latest_version = self._latest_version()
-        logging.debug('Latest servo fw: %s', latest_version)
+        logging.debug('Latest servo fw: "%s"', latest_version)
         if not current_version:
             return True
         if not latest_version:
@@ -391,9 +390,9 @@ def update_servo_firmware(host,
                     ignore_version=ignore_version)
         if not is_success_update:
             logging.info('Fail update firmware for %s', board)
-            host = host.get_dut_hostname() or host.hostname
+            hostname = host.get_dut_hostname() or host.hostname
             metrics.Counter('chromeos/autotest/servo/fw_update_fail'
-                            ).increment(fields={'host': host})
+                            ).increment(fields={'host': hostname})
             fail_boards.append(board)
 
     if len(fail_boards) == 0:

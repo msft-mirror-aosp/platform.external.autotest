@@ -954,9 +954,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if channel.endswith('-channel'):
             channel = channel[:-len('-channel')]
         for delta in paygen_data['delta']:
-            if ((delta['board']['public_codename'] == board) and
-                (delta.get('channel', None) == channel) and
-                (delta.get('delta_type', None) == delta_type)):
+            if ((delta['board']['public_codename'] == board)
+                        and (delta.get('channel', None) == channel)
+                        and (delta.get('delta_type', None) == delta_type)):
                 result.append(delta)
         return result
 
@@ -972,9 +972,15 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
       """
         board = self._host.get_board().split(':')[1]
+        # Boards like auron_paine are auron-paine in paygen.json and builders.
+        if '_' in board:
+            board = board.replace('_', '-')
         channel = 'stable-channel'
         delta_type = 'OMAHA'
         stable_paygen_data = self._paygen_json_lookup(board, channel,
                                                       delta_type)
+        if not stable_paygen_data:
+            raise error.TestFail(
+                    'No stable build found in paygen.json for %s' % board)
         return os.path.join(channel, board,
                             stable_paygen_data[0]["chrome_os_version"])

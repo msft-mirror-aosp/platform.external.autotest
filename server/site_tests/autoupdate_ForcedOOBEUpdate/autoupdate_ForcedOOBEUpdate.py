@@ -6,10 +6,12 @@ import logging
 import random
 import time
 
+from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.common_lib.cros import tpm_utils
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
@@ -99,8 +101,13 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                                  desc='post-reboot event to fire after reboot')
 
 
-    def run_once(self, full_payload=True, cellular=False,
-                 interrupt=None, job_repo_url=None, moblab=False):
+    def run_once(self,
+                 full_payload=True,
+                 cellular=False,
+                 interrupt=None,
+                 job_repo_url=None,
+                 moblab=False,
+                 m2n=False):
         """
         Runs a forced autoupdate during ChromeOS OOBE.
 
@@ -113,11 +120,27 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                              The test will read this from a host argument
                              when run in the lab.
         @param moblab: True if we are running on moblab.
+        @param m2n: True if we should first provision the latest stable version
+                    for the current board so that we can perform a M->N update.
 
         """
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
             raise error.TestFail('Unknown interrupt type: %s' % interrupt)
         tpm_utils.ClearTPMOwnerRequest(self._host)
+
+        if m2n:
+            # Provision latest stable build for the current build.
+            build_name = self._get_latest_serving_stable_build()
+
+            # Install the matching build with quick provision.
+            autotest_devserver = dev_server.ImageServer.resolve(
+                    build_name, self._host.hostname)
+            update_url = autotest_devserver.get_update_url(build_name)
+            logging.info('Installing source image with update url: %s',
+                         update_url)
+            provisioner.ChromiumOSProvisioner(
+                    update_url, host=self._host,
+                    is_release_bucket=True).run_provision()
 
         # This test can be used with Nebraska (cellular tests) or a devserver
         # (non-cellular) tests. Each passes a different value to the client:

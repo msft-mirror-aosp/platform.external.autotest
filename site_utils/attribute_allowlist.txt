@@ -13,6 +13,7 @@ suite:arc-cts-unibuild
 suite:arc-cts-unibuild-hw
 suite:arc-gts
 suite:arc-gts-qual
+suite:au-m2n
 suite:au-oobe
 suite:au-perbuild
 suite:au_fsi

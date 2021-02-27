@@ -27,12 +27,13 @@ _HTML_CHART_STR = '''
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js">
 </script>
 <script type="text/javascript">
-    google.charts.load('current', {{'packages':['corechart']}});
+    google.charts.load('current', {{'packages':['corechart', 'table']}});
     google.charts.setOnLoadCallback(drawChart);
     function drawChart() {{
-        var data = google.visualization.arrayToDataTable([
+        var dataArray = [
 {data}
-        ]);
+        ];
+        var data = google.visualization.arrayToDataTable(dataArray);
         var numDataCols = data.getNumberOfColumns() - 1;
         var unit = '{unit}';
         var options = {{
@@ -56,6 +57,15 @@ _HTML_CHART_STR = '''
                         '#f0f4c3', '#c8e6c9', '#cddc39', '#81c784', '#43a047'];
             }}
             chart = new google.visualization.SteppedAreaChart(element);
+        }} else if (data.getNumberOfRows() == 2 && unit == 'point') {{
+            var newArray = [['key', 'value']];
+            for (var i = 1; i < dataArray[0].length; i++) {{
+                newArray.push([dataArray[0][i], dataArray[1][i]]);
+            }}
+            data = google.visualization.arrayToDataTable(newArray);
+            delete options.width;
+            delete options.height;
+            chart = new google.visualization.Table(element);
         }} else {{
             chart = new google.visualization.LineChart(element);
         }}

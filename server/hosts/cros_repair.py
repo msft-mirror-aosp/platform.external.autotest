@@ -1025,6 +1025,11 @@ class ServoResetRepair(_ResetRepairAction):
         host.servo.get_power_state_controller().reset()
         self._check_reset_success(host)
 
+    def _is_applicable(self, host):
+        if host.servo:
+            return True
+        return False
+
     @property
     def description(self):
         # pylint: disable=missing-docstring
@@ -1196,6 +1201,7 @@ class ServoInstallRepair(hosts.RepairAction):
     # stage image to usb drive, install chromeos image.
     @timeout_util.TimeoutDecorator(60 * 60)
     def repair(self, host):
+        self.boot_in_recovery = False
         # pylint: disable=missing-docstring
         repair_utils.require_servo(host, ignore_state=True)
         image_name = host.get_cros_repair_image_name()
@@ -1226,9 +1232,24 @@ class ServoInstallRepair(hosts.RepairAction):
             logging.info('Staging image: %s on caching server.', image_name)
             _, update_url = host.stage_image_for_servo()
         afe_utils.clean_provision_labels(host)
-        host.servo_install(update_url,
-                           install_timeout=host.ADMIN_INSTALL_TIMEOUT * 2,
-                           is_repair=True)
+        # Start process to install new image from USB
+        need_snk = host.require_snk_mode_in_recovery()
+
+        host.servo.get_power_state_controller().power_off()
+        if update_url:
+            host.install_image_to_servo_usb(image_url=update_url)
+        else:
+            # Give the DUT some time to power_off if we skip
+            # download image to usb. (crbug.com/982993)
+            time.sleep(10)
+
+        host.boot_in_recovery_mode(need_snk=need_snk)
+        # Note that device successful booted from USB
+        # That mean fw RO is good.
+        self.boot_in_recovery = True
+        host.run_install_image(install_timeout=host.ADMIN_INSTALL_TIMEOUT * 2,
+                               need_snk=need_snk,
+                               is_repair=True)
         afe_utils.add_provision_labels(host, host.VERSION_PREFIX, image_name)
         # Collect info which USB-key used for successful re-image.
         host_info = host.host_info_store.get()
@@ -1243,6 +1264,43 @@ class ServoInstallRepair(hosts.RepairAction):
     def description(self):
         # pylint: disable=missing-docstring
         return 'Reinstall from USB using servo'
+
+
+class ServoResetAfterUSBRepair(_ResetRepairAction):
+    """Repair a host by resetting it with servo.
+
+    This is follow up action for cases when device fail to boot as part of
+    USB-install. The repair will be applicable only if device was successful
+    booted from USB-key.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        # pylint: disable=missing-docstring
+        host.servo.get_power_state_controller().reset()
+        self._check_reset_success(host)
+
+    def _is_applicable(self, host):
+        if not host.servo:
+            return False
+        if host.is_marked_for_replacement():
+            logging.debug('The device marked for replacement.'
+                          ' Skip the action.')
+            return False
+        usb_install = host.get_repair_strategy_node('usb')
+        if not usb_install:
+            logging.debug('Strategy node not found! Skip repair action.')
+            return False
+        if not getattr(usb_install, 'boot_in_recovery', False):
+            logging.debug('Device did not boot in recovery mode.'
+                          ' Skip repair action.')
+            return False
+        return True
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Reset the DUT via servo after USB-install'
 
 
 class RecoverACPowerRepair(_ResetRepairAction):
@@ -1544,6 +1602,11 @@ def _cros_repair_actions():
                     # after we decouple infra from test autotest repo.
                     usb_triggers + powerwash_triggers + provision_triggers +
                     ('faft_tpm', )),
+            (ServoResetAfterUSBRepair, 'servo_reset_after_usb',
+             (usb_dependencies), (
+                     'ping',
+                     'ssh',
+             )),
     )
     return repair_actions
 

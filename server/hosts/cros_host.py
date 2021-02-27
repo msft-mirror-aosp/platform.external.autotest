@@ -1410,11 +1410,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             self.set_health_profile_dut_state(profile_state)
 
     def get_verifier_state(self, tag):
-        """Return the state of servo verifier.
+        """Return the state of host verifier by tag.
 
         @returns: bool or None
         """
         return self._repair_strategy.verifier_is_good(tag)
+
+    def get_repair_strategy_node(self, tag):
+        """Return the instance of verifier/repair node for host by tag.
+
+        @returns: _DependencyNode or None
+        """
+        return self._repair_strategy.node_by_tag(tag)
 
     def close(self):
         """Close connection."""
@@ -2987,6 +2994,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def get_device_repair_state(self):
         """Get device repair state"""
         return self._device_repair_state
+
+    def is_marked_for_replacement(self):
+        """Verify if device was marked for replacemnet during admin task."""
+        expected_state = cros_constants.DEVICE_STATE_NEEDS_REPLACEMENT
+        return self.get_device_repair_state() == expected_state
 
     def set_device_repair_state(self, state, resultdir=None):
         """Set device repair state.

@@ -97,6 +97,8 @@ CROS_REPAIR_ACTIONS = (
          ('ping', 'ssh', 'writable', 'tpm', 'good_provision', 'ext4', 'power',
           'rwfw', 'fwstatus', 'python', 'hwid', 'cros', 'dev_default_boot',
           'stop_start_ui', 'dut_gsctool', 'faft_tpm')),
+        (cros_repair.ServoResetAfterUSBRepair, 'servo_reset_after_usb',
+         ('usb_drive', ), ('ping', 'ssh')),
 )
 
 MOBLAB_VERIFY_DAG = (

@@ -986,14 +986,40 @@ class _Run(object):
 
 
     @staticmethod
-    def _strip_stderr_prologue(stderr):
+    def _strip_stderr_prologue(stderr, monitor_cmd):
         """Strips the 'standard' prologue that get pre-pended to every
         remote command and returns the text that was actually written to
-        stderr by the remote command."""
-        stderr_lines = stderr.split("\n")[1:]
+        stderr by the remote command.
+
+        This will always strip atleast the first line ('standard' prologue),
+        and strip any extra messages prior. The following are common 'extra'
+        messages which could appear.
+
+        1.) Any warnings. For example, on CrOS version R90, any script running
+            in python2 result in the following warning in the stderr:
+            "warning: Python 2.7 is deprecated and will be removed from CrOS by
+            end of 2021. All users must migrate ASAP"
+        2.) The actual command used to launch autotestd_monitor (monitor_cmd)
+
+        Additionally there is a NOTE line that could be present needing also to
+        be stripped.
+        """
+        stderr_lines = stderr.split("\n")
         if not stderr_lines:
             return ""
-        elif stderr_lines[0].startswith("NOTE: autotestd_monitor"):
+
+        # If no warnings/monitor_cmd, strip only the first line
+        skipn = 1
+        for i, line in enumerate(stderr_lines):
+            if monitor_cmd in line:
+                # add *2* (1 for the index, 1 for the 'standard prolouge'
+                # which follows this line).
+                skipn = i + 2
+                break
+
+        stderr_lines = stderr_lines[skipn:]
+
+        if stderr_lines[0].startswith("NOTE: autotestd_monitor"):
             del stderr_lines[0]
         return "\n".join(stderr_lines)
 
@@ -1038,7 +1064,9 @@ class _Run(object):
                         "NETWORK")
 
                 stdout_read += len(result.stdout)
-                stderr_read += len(self._strip_stderr_prologue(result.stderr))
+                stderr_read += len(
+                        self._strip_stderr_prologue(result.stderr,
+                                                    monitor_cmd))
 
                 if result.exit_status is not None:
                     # TODO (crosbug.com/38224)- sbasi: Remove extra logging.

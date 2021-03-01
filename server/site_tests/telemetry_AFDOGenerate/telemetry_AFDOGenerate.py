@@ -87,9 +87,11 @@ TELEMETRY_AFDO_BENCHMARKS = (
                              '--story-tag-filter=typical')),
         ('loading.desktop', ('--pageset-repeat=1',
                              '--story-tag-filter=intl_ja_zh')),
-        ('rendering.desktop',
-         ('--story-tag-filter=tough_canvas',
-          '--story-filter="bouncing\\*\\|canvas\\*\\|microsoft\\*"')),
+        # TODO(crbug/1181001): Temporary disable rendering.desktop to unblock
+        # Chrome AFDO pipeline. Enable when fixed.
+        # ('rendering.desktop',
+        #  ('--story-tag-filter=tough_canvas',
+        #   '--story-filter="bouncing\\*\\|canvas\\*\\|microsoft\\*"')),
         ('octane', ),
         ('kraken', ),
         ('speedometer2', ),

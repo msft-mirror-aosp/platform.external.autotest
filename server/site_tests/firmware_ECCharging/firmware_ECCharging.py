@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.servo import servo
 
 
 class firmware_ECCharging(FirmwareTest):
@@ -75,8 +76,20 @@ class firmware_ECCharging(FirmwareTest):
                 regex_str_list.append(p +
                                       r':\s+0x[0-9a-f]*\s+=\s+([0-9-]+)\s+')
 
-        battery_regex_match = self.ec.send_command_get_output('battery',
-                                                              regex_str_list)
+        # For unknown reasons, servod doesn't always capture the ec
+        # command output. It doesn't happen often, but retry if it does.
+        # Try 2 times catching errors, then once without the try-except.
+        for _ in range(2):
+            try:
+                battery_regex_match = self.ec.send_command_get_output(
+                        'battery', regex_str_list)
+                break
+            except servo.UnresponsiveConsoleError as e:
+                logging.warning('Failed to get battery status. %s', e)
+        else:
+            battery_regex_match = self.ec.send_command_get_output(
+                'battery', regex_str_list)
+
         for i in range(len(battery_params)):
             if battery_params[i] == 'Charging':
                 self.BATTERY_INFO[

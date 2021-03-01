@@ -302,7 +302,6 @@ def get_controlfile_name(module,
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
-    module = re.sub(r'\[[^]]*\]', '', module)
     return 'control.%s' % get_extension(module, abi, revision, is_public,
                                         led_provision, camera_facing, abi_bits)
 
@@ -1096,7 +1095,7 @@ def combine_modules_by_bookmark(modules):
         # New name is first element '_-_' last element.
         # Notice there is a bug in $ADB_VENDOR_KEYS path name preventing
         # arbitrary characters.
-        prefix = v[0] + '_-_' + v[-1]
+        prefix = re.sub(r'\[[^]]*\]', '', v[0] + '_-_' + v[-1])
         combined[prefix] = set(v)
     return combined
 

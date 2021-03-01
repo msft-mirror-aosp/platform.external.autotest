@@ -5,7 +5,7 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'ARC++ Team'
-NAME = 'cheets_CTS_R.11_r3.arm.all.CtsMediaStressTestCases_-_CtsMediaStressTestCases[secondary_user]'
+NAME = 'cheets_CTS_R.11_r3.arm.all.CtsMediaStressTestCases_-_CtsMediaStressTestCases'
 ATTRIBUTES = 'suite:arc-cts-qual'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
@@ -22,11 +22,11 @@ def run_TS(machine):
         iterations=1,
         max_retry=9,
         needs_push_media=True,
-        tag='11_r3.arm.all.CtsMediaStressTestCases_-_CtsMediaStressTestCases[secondary_user]',
-        test_name='cheets_CTS_R.11_r3.arm.all.CtsMediaStressTestCases_-_CtsMediaStressTestCases[secondary_user]',
+        tag='11_r3.arm.all.CtsMediaStressTestCases_-_CtsMediaStressTestCases',
+        test_name='cheets_CTS_R.11_r3.arm.all.CtsMediaStressTestCases_-_CtsMediaStressTestCases',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaStressTestCases', '--include-filter', 'CtsMediaStressTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
-        target_module='all.CtsMediaStressTestCases_-_CtsMediaStressTestCases[secondary_user]',
+        target_module='all.CtsMediaStressTestCases_-_CtsMediaStressTestCases',
         target_plan=None,
         bundle='arm',
         uri='LATEST',

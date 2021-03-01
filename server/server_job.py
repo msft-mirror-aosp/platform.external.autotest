@@ -399,6 +399,12 @@ class server_job(base_job.base_job):
                     control, raise_warnings=False)
             self.fast = parsed_control.fast
             self.max_result_size_KB = parsed_control.max_result_size_KB
+            # wrap this in a try to prevent client/SSP issues. Note: if the
+            # except is hit, the timeout will be ignored.
+            try:
+                self.extended_timeout = parsed_control.extended_timeout
+            except AttributeError:
+                self.extended_timeout = None
         else:
             self.fast = False
             # Set the maximum result size to be the default specified in
@@ -840,6 +846,7 @@ class server_job(base_job.base_job):
                 logging.info("Processing control file")
                 namespace['use_packaging'] = use_packaging
                 namespace['synchronous_offload_dir'] = sync_dir
+                namespace['extended_timeout'] = self.extended_timeout
                 os.environ[OFFLOAD_ENVVAR] = sync_dir
                 self._execute_code(server_control_file, namespace)
                 logging.info("Finished processing control file")

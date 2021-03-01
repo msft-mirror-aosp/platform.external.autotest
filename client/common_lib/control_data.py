@@ -107,6 +107,7 @@ class ControlData(object):
         self.attributes = set()
         self.max_result_size_KB = DEFAULT_MAX_RESULT_SIZE_KB
         self.priority = priorities.Priority.DEFAULT
+        self.extended_timeout = None
         self.fast = False
 
         _validate_control_file_fields(self.path, vars, raise_warnings)
@@ -316,6 +317,10 @@ class ControlData(object):
 
     def set_attributes(self, val):
         self._set_set('attributes', val)
+
+    def set_extended_timeout(self, val):
+        """In seconds."""
+        self._set_int('extended_timeout', val)
 
 
 def _extract_const(expr):

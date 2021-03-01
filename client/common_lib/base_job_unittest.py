@@ -95,7 +95,7 @@ class test_init(unittest.TestCase):
             'sysinfo', 'tag', 'user', 'use_sequence_number',
             'warning_loggers', 'warning_manager', 'label',
             'parent_job_id', 'in_lab', 'machine_dict_list',
-            'max_result_size_KB', 'fast'
+            'max_result_size_KB', 'fast', 'extended_timeout'
             ])
 
         OPTIONAL_ATTRIBUTES = set([
@@ -103,7 +103,8 @@ class test_init(unittest.TestCase):
 
             'automatic_test_tag', 'control', 'harness', 'num_tests_run',
             'num_tests_failed', 'tag', 'warning_manager', 'warning_loggers',
-            'label', 'parent_job_id', 'max_result_size_KB', 'fast'
+            'label', 'parent_job_id', 'max_result_size_KB', 'fast',
+            'extended_timeout'
             ])
 
         OPTIONAL_ATTRIBUTES_DEVICE_ERROR = set(['failed_with_device_error'])

@@ -798,7 +798,8 @@ class base_job(object):
         '_state', 'max_result_size_KB', 0)
     fast = _job_state.property_factory(
         '_state', 'fast', False)
-
+    extended_timeout = _job_state.property_factory(
+        '_state', 'extended_timeout', None)
     # the use_sequence_number property
     _sequence_number = _job_state.property_factory(
         '_state', '_sequence_number', None)

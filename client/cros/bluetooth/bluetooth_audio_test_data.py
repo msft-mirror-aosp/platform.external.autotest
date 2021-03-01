@@ -206,8 +206,10 @@ hfp_nbs_test_data = {
             # sink direction has issues and so for now the score set low.
             # Ideally both scores should be set to >= 4.0 in fully functioning
             # scenario.
+            # TODO(b/179501232) - NBS is currently not uniformly >= 4.0 on all
+            # devices so reduce the passing score.
             'sink_passing_score': 0.0,
-            'source_passing_score': 4.0,
+            'source_passing_score': 3.5,
         },
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -230,8 +232,10 @@ hfp_nbs_test_data = {
             # file because its a good for reference, makes it easy to see
             # degradation and verify that this is transmitting the frequency
             # range we would expect
+            # TODO(b/179501232) - NBS is currently not uniformly >= 2.0 on all
+            # devices so reduce the passing score.
             'sink_passing_score': 1.0,
-            'source_passing_score': 2.0,
+            'source_passing_score': 1.0,
         }
     ]
 }

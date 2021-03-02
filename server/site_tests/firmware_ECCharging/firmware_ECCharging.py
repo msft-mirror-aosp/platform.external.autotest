@@ -33,10 +33,14 @@ class firmware_ECCharging(FirmwareTest):
     AC_STATE_UPDATE_DELAY = 3
 
     # Wait a few seconds after discharging for voltage to stabilize
-    BEGIN_CHARGING_TIMEOUT = 15
+    BEGIN_CHARGING_TIMEOUT = 60
 
     # Sleep for a second between retries when waiting for voltage to stabilize
     BEGIN_CHARGING_RETRY_TIME = 1
+
+    # After the battery reports it is not full, keep discharging for this long.
+    # This should be >= BEGIN_CHARGING_TIMEOUT
+    EXTRA_DISCHARGE_TIME = BEGIN_CHARGING_TIMEOUT + 30
 
     # The dict to cache the battery information
     BATTERY_INFO = {}
@@ -88,7 +92,7 @@ class firmware_ECCharging(FirmwareTest):
                 logging.warning('Failed to get battery status. %s', e)
         else:
             battery_regex_match = self.ec.send_command_get_output(
-                'battery', regex_str_list)
+                    'battery', regex_str_list)
 
         for i in range(len(battery_params)):
             if battery_params[i] == 'Charging':
@@ -178,10 +182,20 @@ class firmware_ECCharging(FirmwareTest):
         """
         if (self._get_charger_target_voltage() >=
                 1.05 * self._get_battery_desired_voltage()):
-            raise error.TestFail("Charger target voltage is too high.")
+            raise error.TestFail(
+                    "Charger target voltage is too high. %d/%d=%f" %
+                    (self._get_charger_target_voltage(),
+                     self._get_battery_desired_voltage(),
+                     float(self._get_charger_target_voltage()) /
+                     self._get_battery_desired_voltage()))
         if (self._get_charger_target_current() >=
                 1.05 * self._get_battery_desired_current()):
-            raise error.TestFail("Charger target current is too high.")
+            raise error.TestFail(
+                    "Charger target current is too high. %d/%d=%f" %
+                    (self._get_charger_target_current(),
+                     self._get_battery_desired_current(),
+                     float(self._get_charger_target_current()) /
+                     self._get_battery_desired_current()))
 
     def _check_actual_value(self):
         """Check actual voltage/current values are correct.
@@ -191,10 +205,20 @@ class firmware_ECCharging(FirmwareTest):
         """
         if (self._get_battery_actual_voltage() >=
                 1.05 * self._get_charger_target_voltage()):
-            raise error.TestFail("Battery actual voltage is too high.")
+            raise error.TestFail(
+                    "Battery actual voltage is too high. %d/%d=%f" %
+                    (self._get_battery_actual_voltage(),
+                     self._get_charger_target_voltage(),
+                     float(self._get_battery_actual_voltage()) /
+                     self._get_charger_target_voltage()))
         if (self._get_battery_actual_current() >=
                 1.05 * self._get_charger_target_current()):
-            raise error.TestFail("Battery actual current is too high.")
+            raise error.TestFail(
+                    "Battery actual current is too high. %d/%d=%f" %
+                    (self._get_battery_actual_current(),
+                     self._get_charger_target_current(),
+                     float(self._get_battery_actual_current()) /
+                     self._get_charger_target_current()))
 
     def _check_if_discharge_on_ac(self):
         """Check if DUT is performing discharge on AC"""
@@ -223,8 +247,8 @@ class firmware_ECCharging(FirmwareTest):
             return True
         return False
 
-    def _discharge_below_100(self):
-        """Remove AC power until the battery is not full."""
+    def _set_battery_discharge(self):
+        """Instruct the EC to drain the battery."""
         # Ask EC to drain the battery
         self.ec.send_command("chgstate discharge on")
         time.sleep(self.AC_STATE_UPDATE_DELAY)
@@ -232,41 +256,70 @@ class firmware_ECCharging(FirmwareTest):
         # Verify discharging. Either AC off or charge control discharge is good.
         if not self._check_battery_discharging():
             raise error.TestFail("Battery is not discharging.")
+
+    def _set_battery_normal(self):
+        """Instruct the EC to charge the battery as normal."""
+        self.ec.send_command("chgstate discharge off")
+        time.sleep(self.AC_STATE_UPDATE_DELAY)
+
+        # Verify AC is on and charge control is normal.
+        if self._check_battery_discharging():
+            raise error.TestFail("Fail to plug AC and enable charging.")
+        self._update_battery_info()
+
+    def _consume_battery(self, deadline):
+        """Perform battery intensive operation to make the battery discharge faster."""
+        # Switch to servo drain after b/140965614.
+        stress_time = deadline - time.time()
+        if stress_time > self.CHECK_BATT_STATE_WAIT:
+            stress_time = self.CHECK_BATT_STATE_WAIT
+        self._client.run("stressapptest -s %d " % stress_time,
+                         ignore_status=True)
+
+    def _discharge_below_100(self):
+        """Remove AC power until the battery is not full."""
+        self._set_battery_discharge()
         logging.info(
                 "Keep discharging until the battery reports charging allowed.")
+
         try:
+            # Wait until DISCHARGE_TIMEOUT or charging allowed
             deadline = time.time() + self.DISCHARGE_TIMEOUT
             while time.time() < deadline:
                 self._update_battery_info()
                 if self._get_battery_charging_allowed():
-                    deadline = time.time() + self.BEGIN_CHARGING_TIMEOUT
-                    while time.time() < deadline:
-                        self._update_battery_info()
-                        if self._get_battery_actual_current() >= 0:
-                            break
-                        logging.info(
-                                'Battery actual voltage too low, wait a bit.')
-                        time.sleep(self.BEGIN_CHARGING_RETRY_TIME)
-                    return
-                else:
-                    logging.info("Wait for the battery to discharge (%d mAh).",
-                                 self._get_battery_remaining())
-                # Run a CPU intensive program to force the battery to drain faster.
-                # Switch to servo drain after b/140965614.
-                self._client.run("stressapptest -s %d " %
-                                 self.CHECK_BATT_STATE_WAIT,
-                                 ignore_status=True)
-            raise error.TestFail(
-                    "The battery does not report charging allowed "
-                    "before timeout is reached.")
-        finally:
-            self.ec.send_command("chgstate discharge off")
-            time.sleep(self.AC_STATE_UPDATE_DELAY)
+                    break
+                logging.info("Wait for the battery to discharge (%d mAh).",
+                             self._get_battery_remaining())
+                self._consume_battery(deadline)
+            else:
+                raise error.TestFail(
+                        "The battery does not report charging allowed "
+                        "before timeout is reached.")
 
-            # Verify AC is on and charge control is normal.
-            if self._check_battery_discharging():
-                raise error.TestFail("Fail to plug AC and enable charging.")
+            # Wait another EXTRA_DISCHARGE_TIME just to be sure
+            deadline = time.time() + self.EXTRA_DISCHARGE_TIME
+            while time.time() < deadline:
+                self._update_battery_info()
+                logging.info(
+                        "Wait for the battery to discharge even more (%d mAh).",
+                        self._get_battery_remaining())
+                self._consume_battery(deadline)
+        finally:
+            self._set_battery_normal()
+
+        # For many devices, it takes some time after discharging for the
+        # battery to actually start charging.
+        deadline = time.time() + self.BEGIN_CHARGING_TIMEOUT
+        while time.time() < deadline:
             self._update_battery_info()
+            if self._get_battery_actual_current() >= 0:
+                break
+            logging.info(
+                    'Battery actual current (%d) too low, wait a bit. (%d mAh)',
+                    self._get_battery_actual_current(),
+                    self._get_battery_remaining())
+            time.sleep(self.BEGIN_CHARGING_RETRY_TIME)
 
     def run_once(self):
         """Execute the main body of the test.
@@ -274,21 +327,22 @@ class firmware_ECCharging(FirmwareTest):
         if not self.check_ec_capability(['battery', 'charging']):
             raise error.TestNAError(
                     "Nothing needs to be tested on this device")
-        if not self._get_battery_charging_allowed():
+        if not self._get_battery_charging_allowed(
+        ) or self._get_battery_actual_current() < 0:
             logging.info(
-                    "Battery is full. Forcing battery discharge to test charging."
+                    "Battery is full or discharging. Forcing battery discharge to test charging."
             )
             self._discharge_below_100()
-        if not self._get_battery_charging_allowed():
-            raise error.TestFail(
-                    'Battery reports charging is not allowed, even after discharging.'
-            )
+            if not self._get_battery_charging_allowed():
+                raise error.TestFail(
+                        'Battery reports charging is not allowed, even after discharging.'
+                )
         if self._check_if_discharge_on_ac():
-            logging.info("DUT is performing discharge on AC. Unable to test.")
-            return
+            raise error.TestNAError(
+                    "DUT is performing discharge on AC. Unable to test.")
         if self._get_trickle_charging():
-            logging.info("Trickling charging battery. Unable to test.")
-            return
+            raise error.TestNAError(
+                    "Trickling charging battery. Unable to test.")
         if self._get_battery_actual_current() < 0:
             raise error.TestFail(
                     "The device is not charging. Is the test run with AC plugged?"

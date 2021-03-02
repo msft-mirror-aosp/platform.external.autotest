@@ -1040,16 +1040,23 @@ class _PowerDeliveryRepair(hosts.RepairAction):
     src --  servo in power delivery mode and passes power to the DUT.
     snk --  servo in normal mode and not passes power to DUT.
     """
+    # How many time retry to set PD in correct mode and verify that is stay.
+    # Set 5 as each attempt has 10 attempts inside 'set' method.
+    _SET_ATTEMPT_COUNT = 5
 
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
-        for x in range(10):
+        host.get_servo().set_nocheck('servo_v4_role', 'snk')
+        time.sleep(1)
+        for x in range(self._SET_ATTEMPT_COUNT):
+            logging.debug('Try set servo_v4_role to src.'
+                          ' Attempt: %s', x + 1)
             try:
-                host.get_servo().set_nocheck('servo_v4_role', 'snk')
-                time.sleep(1)
-                host.get_servo().set_nocheck('servo_v4_role', 'src')
-                time.sleep(1)
-            except Exception as e:
+                host.get_servo().set('servo_v4_role', 'src')
+                # Waiting a few seconds as it can be change to snk if PD
+                # on servo has issue.
+                time.sleep(5)
+            except BaseException as e:
                 logging.debug('Setting PD with retries failed %s', e)
             if host.get_servo().get('servo_v4_role') == 'src':
                 break

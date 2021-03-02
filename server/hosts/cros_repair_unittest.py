@@ -56,12 +56,8 @@ CROS_REPAIR_ACTIONS = (
                 'stop_start_ui',
                 'power',
         )),
-        (
-                cros_repair.ServoCr50RebootRepair,
-                'cr50_reset',
-                (),
-                ('ping', 'ssh', 'stop_start_ui', 'power'),
-        ),
+        (cros_repair.ServoCr50RebootRepair, 'cr50_reset', (),
+         ('ping', 'ssh', 'stop_start_ui', 'power')),
         (cros_repair.ServoSysRqRepair, 'sysrq', (), (
                 'ping',
                 'ssh',
@@ -98,6 +94,8 @@ CROS_REPAIR_ACTIONS = (
           'rwfw', 'fwstatus', 'python', 'hwid', 'cros', 'dev_default_boot',
           'stop_start_ui', 'dut_gsctool', 'faft_tpm')),
         (cros_repair.ServoResetAfterUSBRepair, 'servo_reset_after_usb',
+         ('usb_drive', ), ('ping', 'ssh')),
+        (cros_repair.RecoverFwAfterUSBRepair, 'recover_fw_after_usb',
          ('usb_drive', ), ('ping', 'ssh')),
 )
 

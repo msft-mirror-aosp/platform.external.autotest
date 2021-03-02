@@ -1303,6 +1303,99 @@ class ServoResetAfterUSBRepair(_ResetRepairAction):
         return 'Reset the DUT via servo after USB-install'
 
 
+class RecoverFwAfterUSBRepair(_ResetRepairAction):
+    """Recover FW on the host when host can boot in recovery mode.
+
+    This is follow up action for cases when device fail to boot as part of
+    USB-install but successful booted in recovery mode.
+
+    If host can boot in recovery mode but fail boot in default mode then
+    probably we have corrupted firmware. The repair try to recover firmware
+    on the host by booting from USB-key.
+    """
+
+    # Command to update firmware located on host
+    _FW_UPDATE_CMD = 'chromeos-firmwareupdate --mode=recovery'
+
+    @timeout_util.TimeoutDecorator(cros_constants.LONG_REPAIR_TIMEOUT_SEC)
+    def repair(self, host):
+        # pylint: disable=missing-docstring
+        # Switch USB_key to servo to wake up it as sometimes it can show
+        # USB-key direction to DUT but it is not yet seeing by DUT.
+        host.servo.switch_usbkey('host')
+        time.sleep(host.servo.USB_DETECTION_DELAY)
+        # Power off the DUT as in this case the host will boot
+        # in recovery mode with higher chance.
+        host.servo.get_power_state_controller().power_off()
+        # Give the DUT some time to power_off if we skip
+        # download image to usb. (crbug.com/982993)
+        time.sleep(10)
+
+        # Boot host in recovery mode as it is working and verified
+        # by another repair action.
+        need_snk = host.require_snk_mode_in_recovery()
+        try:
+            host.boot_in_recovery_mode(need_snk=need_snk)
+            logging.debug('Host booted in recovery mode')
+
+            result = host.run(self._FW_UPDATE_CMD, ignore_status=True)
+            if result.exit_status != 0:
+                logging.error('chromeos-firmwareupdate failed: %s',
+                              result.stdout.strip())
+            host.halt()
+        finally:
+            # We need reset the DUT no matter success or not,
+            # as we don't want leave the DUT in boot from usb state.
+            # N.B. The Servo API requires that we use power_on() here
+            # for two reasons:
+            #  1) After turning on a DUT in recovery mode, you must turn
+            #     it off and then on with power_on() once more to
+            #     disable recovery mode (this is a Parrot specific
+            #     requirement).
+            #  2) After power_off(), the only way to turn on is with
+            #     power_on() (this is a Storm specific requirement).
+            logging.debug('Power cycling DUT through servo.')
+            host.servo.get_power_state_controller().power_off()
+            host.servo.switch_usbkey('off')
+            if need_snk:
+                # Attempt to restore servo_v4 role to 'src' mode.
+                host.servo.set_servo_v4_role('src')
+            # Use cold-reset instead 'on' to increase the chance to boot DUT
+            host.servo.get_power_state_controller().reset()
+        self._check_reset_success(host)
+
+    def _is_applicable(self, host):
+        if not host.servo:
+            return False
+        if host.is_marked_for_replacement():
+            logging.debug('The device marked for replacement.'
+                          ' Skip the action.')
+            return False
+        usb_install = host.get_repair_strategy_node('usb')
+        if not usb_install:
+            logging.debug('Strategy node not found! Skip repair action.')
+            return False
+        if not getattr(usb_install, 'boot_in_recovery', False):
+            logging.debug('Device did not boot in recovery mode.'
+                          ' Skip repair action.')
+            return False
+        dhp = host.health_profile
+        if not dhp:
+            logging.info('Device health profile is not available, cannot'
+                         ' determine if firmware repair is needed.')
+            return False
+        if dhp.get_failed_repair_action(self.tag) > 2:
+            logging.info('Firmware recovery has been attempted and failed 3'
+                         ' times, no need to retry.')
+            return False
+        return True
+
+    @property
+    def description(self):
+        # pylint: disable=missing-docstring
+        return 'Recover FW on the host after USB-install'
+
+
 class RecoverACPowerRepair(_ResetRepairAction):
     """Recover AC detection if AC is not detected.
 
@@ -1603,6 +1696,11 @@ def _cros_repair_actions():
                     usb_triggers + powerwash_triggers + provision_triggers +
                     ('faft_tpm', )),
             (ServoResetAfterUSBRepair, 'servo_reset_after_usb',
+             (usb_dependencies), (
+                     'ping',
+                     'ssh',
+             )),
+            (RecoverFwAfterUSBRepair, 'recover_fw_after_usb',
              (usb_dependencies), (
                      'ping',
                      'ssh',

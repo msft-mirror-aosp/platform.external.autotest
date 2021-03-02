@@ -210,6 +210,7 @@ hfp_nbs_test_data = {
             # devices so reduce the passing score.
             'sink_passing_score': 0.0,
             'source_passing_score': 3.5,
+            'reporting_type': 'voice-8k',
         },
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -236,6 +237,7 @@ hfp_nbs_test_data = {
             # devices so reduce the passing score.
             'sink_passing_score': 1.0,
             'source_passing_score': 1.0,
+            'reporting_type': 'sine-3.5k',
         }
     ]
 }
@@ -277,6 +279,7 @@ hfp_wbs_test_data = {
             # scenario.
             'sink_passing_score': 0.0,
             'source_passing_score': 4.0,
+            'reporting_type': 'voice-16k',
         },
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -300,6 +303,7 @@ hfp_wbs_test_data = {
             # scenario.
             'sink_passing_score': 0.0,
             'source_passing_score': 4.0,
+            'reporting_type': 'sine-7k',
         }
     ]
 }

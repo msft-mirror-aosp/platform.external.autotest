@@ -731,6 +731,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             passed = score >= test_file['source_passing_score']
             visqol_results[filename] = passed
 
+            # Track visqol performance
+            test_desc = '{}_{}_{}'.format(test_profile, 'source',
+                                          test_file['reporting_type'])
+            self.write_perf_keyval({test_desc: score})
+
             if not passed:
                 logging.warning('Failed: {}'.format(filename))
 
@@ -793,6 +798,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                     filename, score, test_file['sink_passing_score']))
             passed = score >= test_file['sink_passing_score']
             visqol_results[filename] = passed
+
+            # Track visqol performance
+            test_desc = '{}_{}_{}'.format(test_profile, 'sink',
+                                          test_file['reporting_type'])
+            self.write_perf_keyval({test_desc: score})
 
             if not passed:
                 logging.warning('Failed: {}'.format(filename))

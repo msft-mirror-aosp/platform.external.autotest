@@ -30,6 +30,9 @@ def run_TS(machine):
         target_plan=None,
         uri='LATEST',
         use_jdk9=True,
+        # This module has a known crash bug (b/181176656). As long as the
+        # executed test count matches the known number, assume all tests ran.
+        executable_test_count=[1802, 3604, 5406, 7208],
         timeout=3600)
 
 parallel_simple(run_TS, machines)

@@ -696,8 +696,47 @@ class TradefedTest(test.test):
         dir2 = os.path.basename(cache_path)
         dir1 = os.path.basename(os.path.dirname(cache_path))
         instance_path = os.path.join(self._tradefed_install, dir1, dir2)
-        logging.info('Copying %s to instance %s', cache_path, instance_path)
-        shutil.copytree(cache_path, instance_path)
+        # TODO(kinaba): Fix in a safer way.
+        # Below is a workaround to avoid copying large CTS/GTS tree in test lab.
+        # Contents of $cache_path/android-cts are symlinked to the destination
+        # rather than copied.
+        #  1) Why not symlink 'android-cts' itself? Because the tests will
+        #     create results/ logs/ subplans/ subdirectory there. We do not
+        #     want to write to the shared cache.
+        #  2) Why not hardlink? Cache and the local directory may be on
+        #     different mount points, so hardlink may not work.
+        #  3) Why this isn't safe? Cache is cleared when it became full, even
+        #     during the test is run on an instance.
+        #  4) Why this is acceptable despite the unsatefy? Cache clearance is
+        #     a rare event (once in 6 months). Skylab drones won't usually
+        #     live that long, and even if it did, the failure is once in 6
+        #     months after all.
+        special_src = None
+        special_dest = None
+        if utils.is_in_container() and not client_utils.is_moblab():
+            for xts_name in ['android-cts', 'android-gts', 'android-sts']:
+                xts_root = os.path.join(cache_path, xts_name)
+                if os.path.exists(xts_root):
+                    special_src = xts_root
+                    special_dest = os.path.join(instance_path, xts_name)
+                    break
+        if special_src:
+            logging.info('SYMLINK&COPY contents of %s to instance %s',
+                         cache_path, instance_path)
+            self._safe_makedirs(special_dest)
+            for entry in os.listdir(special_src):
+                # Subdirectories are created by relative path from
+                # tools/cts_tradefed. So for 'tools' dir we copy.
+                if entry == 'tools':
+                    shutil.copytree(os.path.join(special_src, entry),
+                                    os.path.join(special_dest, entry))
+                else:
+                    os.symlink(os.path.join(special_src, entry),
+                               os.path.join(special_dest, entry))
+        else:
+            logging.info('Copying %s to instance %s', cache_path,
+                         instance_path)
+            shutil.copytree(cache_path, instance_path)
         return instance_path
 
     def _install_bundle(self, gs_uri):

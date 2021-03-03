@@ -116,9 +116,8 @@ class network_ChromeCellularNetworkProperties(test.test):
                         'Expected 1 cellular network, found ' +
                         str(len(networks)))
             network = networks[0]
-            test_utils.simple_network_sanity_check(
-                    network,
-                    pm_constants.DEFAULT_TEST_NETWORK_PREFIX,
+            test_utils.simple_network_check(
+                    network, pm_constants.DEFAULT_TEST_NETWORK_PREFIX,
                     self._chrome.CHROME_NETWORK_TYPE_CELLULAR)
             return network
 

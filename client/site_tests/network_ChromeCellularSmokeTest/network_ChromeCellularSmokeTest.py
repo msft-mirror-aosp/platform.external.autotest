@@ -42,7 +42,7 @@ class network_ChromeCellularSmokeTest(test.test):
             raise error.TestFail(
                     'Expected 1 cellular network, found ' + str(len(networks)))
         network = networks[0]
-        test_utils.simple_network_sanity_check(
+        test_utils.simple_network_check(
                 network, pm_constants.DEFAULT_TEST_NETWORK_PREFIX,
                 self._chrome_testing.CHROME_NETWORK_TYPE_CELLULAR)
         return network

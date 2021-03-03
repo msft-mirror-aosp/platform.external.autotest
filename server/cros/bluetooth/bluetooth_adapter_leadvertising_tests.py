@@ -1464,7 +1464,6 @@ class bluetooth_AdapterLEAdvertising(
         # We set a specific advertisement that uses the 'broadcast' mode
         advertisements = [advertisements_data.NEARBY_BROADCAST_ADV]
 
-        self.bluetooth_le_facade = self.bluetooth_facade
         self.test_reset_advertising()
 
         # Verify that registration is successful, and that all configured
@@ -1562,3 +1561,6 @@ class bluetooth_AdapterLEAdvertising(
         elif test_type == 'nearby':
             self.test_case_nearby_mediums_fast()
             self.test_case_adv_before_scan()
+
+        elif test_type == 'broadcast':
+            self.test_case_broadcast()

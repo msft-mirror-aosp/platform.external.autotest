@@ -87,7 +87,10 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     def adv_broadcast_test(self):
         """Verify broadcast advertising capability"""
 
-        self.test_case_broadcast()
+        self.run_le_advertising_test(self.host,
+                                     advertisements_data.ADVERTISEMENTS,
+                                     'broadcast',
+                                     num_iterations=1)
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Advertising suspend peer test',

@@ -4,6 +4,7 @@
 
 import logging
 import re
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
@@ -39,6 +40,32 @@ class firmware_Cr50Keygen(FirmwareTest):
     # threshold in ms.
     ECC_MAX_THRESHOLD = 500
 
+    def wait_for_client_after_changing_ccd(self, enable):
+        """Change CCD and wait for client.
+
+        @param enable: True to enable ccd. False to disable it.
+        @raises TestError if the DUT isn't pingable after changing ccd.
+        """
+        if not self.cr50:
+            return
+
+        if enable:
+            self.cr50.ccd_enable()
+        else:
+            self.cr50.ccd_disable()
+
+        time.sleep(5)
+
+        if self.host.ping_wait_up(180):
+            return
+        msg = ('DUT is not pingable after %sabling ccd' %
+               'en' if enable else 'dis')
+        logging.info(msg)
+        logging.info('Resetting DUT')
+        self.host.reset_via_servo()
+        if not self.host.ping_wait_up(180):
+            raise error.TestError(msg)
+
     def get_key_attr(self, attr):
         """Get the attribute for the type of key the test is generating."""
         return getattr(self, self.key_type + '_' + attr)
@@ -49,9 +76,11 @@ class firmware_Cr50Keygen(FirmwareTest):
 
     def run_once(self, host, key_type='RSA'):
         """Check ECC and RSA Keygen times."""
+        self.host = host
         self.key_type = key_type.upper()
-        if self.servo:
-            self.servo.set_dts_mode('off')
+
+        self.wait_for_client_after_changing_ccd(False)
+
         cmd = self.get_keygen_cmd()
         logging.info(cmd)
         full_cmd = ('for i in {1..%d} ; do echo $i ; %s || break; done' %
@@ -64,8 +93,7 @@ class firmware_Cr50Keygen(FirmwareTest):
         max_time = max(times)
         logging.info('Average time: %s', avg_time)
         logging.info('Max time: %s', max_time)
-        if self.servo:
-            self.servo.set_dts_mode('on')
+        self.wait_for_client_after_changing_ccd(True)
         if len(times) != self.RUNS:
             raise error.TestFail('did not generate %d keys' % self.RUNS)
         max_threshold = self.get_key_attr('MAX_THRESHOLD')

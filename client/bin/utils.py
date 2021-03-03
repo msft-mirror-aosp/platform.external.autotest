@@ -309,6 +309,8 @@ def get_cpu_soc_family():
     return family
 
 
+# When adding entries here, also add them at the right spot in the
+# INTEL_*_ORDER lists below.
 INTEL_UARCH_TABLE = {
     '06_4C': 'Airmont',
     '06_1C': 'Atom',
@@ -366,6 +368,15 @@ INTEL_UARCH_TABLE = {
     '06_2F': 'Westmere',
 }
 
+INTEL_ATOM_ORDER = ['Silvermont', 'Airmont', 'Goldmont', 'Tremont']
+
+INTEL_BIGCORE_ORDER = [
+        'Prescott', 'Presler', 'Dothan', 'Merom', 'Nehalem', 'Westmere',
+        'Sandy Bridge', 'Ivy Bridge', 'Ivy Bridge-E', 'Haswell', 'Haswell-E',
+        'Broadwell', 'Skylake', 'Kaby Lake', 'Coffee Lake', 'Whiskey Lake',
+        'Cannon Lake', 'Comet Lake', 'Ice Lake', 'Tiger Lake'
+]
+
 
 def get_intel_cpu_uarch(numeric=False):
     """Return the Intel microarchitecture we're running on, or None.
@@ -386,7 +397,43 @@ def get_intel_cpu_uarch(numeric=False):
     return INTEL_UARCH_TABLE.get(family_model, family_model)
 
 
-INTEL_SILVERMONT_BCLK_TABLE = [83333, 100000, 133333, 116667, 80000];
+def is_intel_uarch_older_than(reference):
+    """Returns True if the DUT's is older than reference, False otherwise.
+
+    Raises a test error exception if the uarch is unknown to make developers
+    add entries to the tables above.
+    """
+
+    uarch = get_intel_cpu_uarch()
+    if uarch is None:
+        raise error.TestError("Doing Intel test for non-Intel hardware.")
+
+    if "_" in uarch:
+        raise error.TestError("Intel uarch unknown. Add to tables.")
+
+    if reference not in INTEL_BIGCORE_ORDER and reference not in INTEL_ATOM_ORDER:
+        raise error.TestError("Testing for unknown reference Intel uarch.")
+
+    result = False
+
+    if reference in INTEL_BIGCORE_ORDER:
+        for v in INTEL_BIGCORE_ORDER:
+            if v == reference:
+                break
+            if v == uarch:
+                result = True
+
+    elif reference in INTEL_ATOM_ORDER:
+        for v in INTEL_ATOM_ORDER:
+            if v == reference:
+                break
+            if v == uarch:
+                result = True
+
+    return result
+
+
+INTEL_SILVERMONT_BCLK_TABLE = [83333, 100000, 133333, 116667, 80000]
 
 
 def get_intel_bclk_khz():

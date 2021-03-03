@@ -78,6 +78,12 @@ class UpdateEngineUtil(object):
     _BEFORE_INTERRUPT_FILENAME = 'before_interrupt.png'
     _AFTER_INTERRUPT_FILENAME = 'after_interrupt.png'
 
+    # Test name
+    _CLIENT_TEST = 'autoupdate_CannedOmahaUpdate'
+
+    # Feature name
+    _REPEATED_UPDATES_FEATURE = 'feature-repeated-updates'
+
 
     def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
         """
@@ -245,8 +251,11 @@ class UpdateEngineUtil(object):
         return status_dict
 
 
-    def _check_update_engine_log_for_entry(self, entry, raise_error=False,
+    def _check_update_engine_log_for_entry(self,
+                                           entry,
+                                           raise_error=False,
                                            err_str=None,
+                                           min_count=1,
                                            update_engine_log=None):
         """
         Checks for entries in the update_engine log.
@@ -254,6 +263,8 @@ class UpdateEngineUtil(object):
         @param entry: String or tuple of strings to search for.
         @param raise_error: Fails tests if log doesn't contain entry.
         @param err_str: The error string to raise if we cannot find entry.
+        @param min_count: The minimum number of times each item should be
+                          found in the log. Default one.
         @param update_engine_log: Update engine log string you want to
                                   search. If None, we will read from the
                                   current update engine log.
@@ -268,7 +279,7 @@ class UpdateEngineUtil(object):
         if not update_engine_log:
             update_engine_log = self._get_update_engine_log()
 
-        if all(msg in update_engine_log for msg in entry):
+        if all(update_engine_log.count(msg) >= min_count for msg in entry):
             return True
 
         if not raise_error:
@@ -278,6 +289,20 @@ class UpdateEngineUtil(object):
                      '%s' % entry)
         logging.debug(error_str)
         raise error.TestFail(err_str if err_str else error_str)
+
+
+    def _set_feature(self, feature_name, enable=True):
+        """
+        Enables or disables feature from update engine client.
+        @param feature_name: Name of the feature to enable or disable
+        @param enable: Enables feature if true, disables if false.
+                       Default True.
+        """
+        if not enable:
+            feature_request = '--disable_feature=' + feature_name
+        else:
+            feature_request = '--enable_feature=' + feature_name
+        self._run([self._UPDATE_ENGINE_CLIENT_CMD, feature_request])
 
 
     def _is_update_finished_downloading(self, status=None):

@@ -15,8 +15,10 @@ class firmware_ECWatchdog(FirmwareTest):
     version = 1
 
 
-    # Delay of spin-wait in ms. Should be long enough to trigger watchdog reset.
-    WATCHDOG_DELAY = 3000
+    # Delay of spin-wait in ms. Must be at least 2x CONFIG_WATCHDOG_PERIOD_MS
+    # of the slowest board that this test will run against. Currently it
+    # appears that all ChromeOS ECs set CONFIG_WATCHDOG_PERIOD_MS to 1600.
+    WATCHDOG_DELAY = 1600 * 2 + 500
 
     # Delay of EC power on.
     EC_BOOT_DELAY = 1000

@@ -29,6 +29,10 @@ def run_TS(machine):
         bundle='arm',
         uri='LATEST',
         use_jdk9=True,
+        # This module has a known crash bug (b/181179516) to be fixed in 11r4.
+        # As long as the executed test count matches the known number, assume
+        # all tests ran.
+        executable_test_count=[255],
         timeout=12600)
 
 parallel_simple(run_TS, machines)

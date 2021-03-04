@@ -726,8 +726,17 @@ class BluetoothAdapterTests(test.test):
     USBMON_DIR_LOG_PATH = '/var/log/usbmon'
 
     # The agent capability of various device types.
+    # Currently all is set to NoInputNoOutput since currently we don't have
+    # a way to report the displayed passkey to the device in case of
+    # Passkey Entry. Therefore, use 'Just Works'.
+    # TODO(b/181945748) update the capabilities when Passkey Entry is supported.
     AGENT_CAPABILITY = {
+            'BLE_MOUSE': 'NoInputNoOutput',
+            'BLE_KEYBOARD': 'NoInputNoOutput',
+            'BLE_PHONE': 'NoInputNoOutput',
             'BLUETOOTH_AUDIO': 'NoInputNoOutput',
+            'KEYBOARD': 'NoInputNoOutput',
+            'MOUSE': 'NoInputNoOutput',
     }
 
     def assert_on_fail(self, result, raiseNA=False):

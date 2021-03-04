@@ -149,6 +149,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         @param enable: True to enable ccd. False to disable it.
         @returns an error message
         """
+        start_msg = ('' if self._dut_is_responsive() else
+                     'DUT unresponsive after suspend/resume')
+        logging.info('SSH state afters suspend resume %r', start_msg or 'ok')
         if enable:
             self.cr50.ccd_enable()
         else:
@@ -165,8 +168,12 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         # TODO(b/135147658): Raise an error once CCD disable is fixed.
         logging.info('Resetting DUT')
         self.host.reset_via_servo()
-        if not self._dut_is_responsive():
-            return msg
+
+        is_sshable = self._dut_is_responsive()
+
+        rv = start_msg or ('' if is_sshable else msg)
+        logging.info('ssh state: %r', rv or 'ok')
+        return rv
 
 
     def run_suspend_resume(self, suspend_count):
@@ -307,25 +314,27 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             main_error = e
 
         errors = []
-        # Collect logs for debugging
         # Autotest has some stages in between run_once and cleanup that may
         # be run if the test succeeds. Do this here to make sure this is
         # always run immediately after the suspend/resume cycles.
+        # Collect logs for debugging
+        # Console information
         self.cr50.dump_nvmem()
-        # Reenable CCD. Reestablish network connection.
-        rv = self.wait_for_client_after_changing_ccd(True)
-        if rv:
-            errors.append(rv)
-        rv = self.check_flog_output(original_flog)
-        if rv:
-            errors.append(rv)
-        rv = self.check_fwmp()
-        if rv:
-            errors.append(rv)
         rv = self.check_cr50_deep_sleep(suspend_count)
         if rv:
             errors.append(rv)
         rv = self.check_cr50_version(self.original_cr50_version)
+        if rv:
+            errors.append(rv)
+        # Reenable CCD. Reestablish network connection.
+        rv = self.wait_for_client_after_changing_ccd(True)
+        if rv:
+            errors.append(rv)
+        # Information that requires ssh
+        rv = self.check_fwmp()
+        if rv:
+            errors.append(rv)
+        rv = self.check_flog_output(original_flog)
         if rv:
             errors.append(rv)
         secondary_error = 'Suspend issues: %s' % ', '.join(errors)

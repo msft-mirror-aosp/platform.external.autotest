@@ -2292,6 +2292,26 @@ class BluetoothFacadeNative(object):
 
         return None
 
+    def get_advertising_manager_property(self, prop_name):
+        """Grab property of the bluez advertising manager
+
+        This allows us to understand the DUT's advertising capabilities, for
+        instance the maximum number of advertising instances supported, so that
+        we can test these capabilities.
+
+        @param adv_path: string path of the dbus object
+        @param prop_name: string name of the property required
+
+        @returns: the value of the property in standard (non-dbus) type if the
+                    property exists, else None
+        """
+
+        prop_val = self._adapter.Get(self.BLUEZ_LE_ADVERTISING_MANAGER_IFACE,
+                                     prop_name,
+                                     dbus_interface=self.DBUS_PROP_IFACE)
+
+        return dbus_util.dbus2primitive(prop_val)
+
     def reset_advertising(self):
         """Reset advertising.
 

@@ -1136,6 +1136,23 @@ class BluetoothDevice(object):
         return self._proxy.get_advertisement_property(adv_path, prop_name)
 
     @proxy_thread_safe
+    def get_advertising_manager_property(self, prop_name):
+        """Grab property of the bluez advertising manager
+
+        This allows us to understand the DUT's advertising capabilities, for
+        instance the maximum number of advertising instances supported, so that
+        we can test these capabilities.
+
+        @param adv_path: string path of the dbus object
+        @param prop_name: string name of the property required
+
+        @returns: the value of the property in standard (non-dbus) type if the
+                    property exists, else None
+        """
+
+        return self._proxy.get_advertising_manager_property(prop_name)
+
+    @proxy_thread_safe
     def reset_advertising(self):
         """Reset advertising.
 

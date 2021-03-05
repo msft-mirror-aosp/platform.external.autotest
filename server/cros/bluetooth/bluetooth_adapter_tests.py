@@ -109,17 +109,6 @@ COMMON_FAILURES = {
 # the ones that were not launched
 TABLET_MODELS = ['kakadu', 'kodama', 'krane', 'dru', 'druwl', 'dumo']
 
-# TODO(b/161005264) - Some tests rely on software rotation to pass, so we must
-# know which models don't use software rotation. Use a static list until we can
-# query the bluez API instead. Extended advertising is supported on platforms
-# on 4.19 and 5.4, with HrP2, JfP2, CcP2, RTL8822C, or QCN3991 chipsets.
-EXT_ADV_MODELS = ['ezkinil', 'trembyle', 'drawcia', 'drawlat', 'drawman',
-                  'maglia', 'magolor', 'sarien', 'arcada', 'akemi',
-                  'drallion', 'drallion360', 'hatch', 'stryke', 'helios',
-                  'dragonair', 'dratini', 'duffy', 'jinlon', 'kaisa',
-                  'kindred', 'kled', 'puff', 'kohaku', 'nightfury', 'morphius',
-                  'lazor', 'trogdor']
-
 # TODO(b/158336394) Realtek: Powers down during suspend due to high power usage
 #                            during S3.
 # TODO(b/168152910) Marvell: Powers down during suspend due to flakiness when
@@ -2899,9 +2888,11 @@ class BluetoothAdapterTests(test.test):
 
         @returns True if extended advertising is supported, else False
         """
-        platform = self.get_base_platform_name()
-        return platform in EXT_ADV_MODELS
 
+        adv_features = self.bluetooth_facade.get_advertising_manager_property(
+                'SupportedFeatures')
+
+        return 'HardwareOffload' in adv_features
 
     def _verify_adv_tx_power(self, advertising_data):
         """ Verify that advertisement uses Tx Power correctly via the following:

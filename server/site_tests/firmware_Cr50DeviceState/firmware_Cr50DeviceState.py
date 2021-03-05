@@ -375,9 +375,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def ap_is_on_after_power_button_press(self):
         """Returns True if the AP is on after pressing the power button"""
-        # TODO (mruthven): use self.servo.power_short_press() once kukui power
-        # button issues are figured out.
-        self.servo.power_key(1)
+        self.servo.power_normal_press()
         # Give the AP some time to turn on
         time.sleep(self.cr50.SHORT_WAIT)
         return self.cr50.ap_is_on()

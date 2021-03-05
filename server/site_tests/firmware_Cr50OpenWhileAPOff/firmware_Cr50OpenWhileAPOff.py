@@ -142,7 +142,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # ccdstate which is useful for debugging. Do that first, so it always
         # happens.
         if not self.cr50.ap_is_on() and state == 'on':
-            self.servo.power_short_press()
+            self.servo.power_normal_press()
             time.sleep(self.SHORT_DELAY)
 
 

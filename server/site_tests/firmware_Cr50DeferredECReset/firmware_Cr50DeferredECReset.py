@@ -143,7 +143,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             self.servo.set_nocheck('pwr_button', 'release')
             time.sleep(self.PD_SETTLE_TIME)
 
-            self.servo.power_short_press()            # Wake up AP
+            self.servo.power_normal_press()  # Wake up AP
 
         logging.info('Initialization is done')
 

@@ -123,7 +123,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             time.sleep(self.MIN_SUSPEND)
 
             # Power on the device
-            self.servo.power_short_press()
+            self.servo.power_normal_press()
             time.sleep(self.MIN_RESUME)
 
             rv = self.check_cr50_deep_sleep(i + 1)

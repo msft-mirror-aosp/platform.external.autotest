@@ -22,8 +22,8 @@ class check_python_version:
             return
         self.desired_version = desired_version
         if self.desired_version == 3:
-            logging.warning("Python3 not not ready yet. Swapping to Python 2.")
-            self.desired_version = 2
+            logging.warning("Python 3 in Autotest is experimental.")
+
         # The change to prefer 2.4 really messes up any systems which have both
         # the new and old version of Python, but where the newer is default.
         # This is because packages, libraries, etc are all installed into the

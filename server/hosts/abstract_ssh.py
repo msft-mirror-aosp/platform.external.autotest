@@ -833,7 +833,7 @@ class AbstractSSHHost(remote.RemoteHost):
         if host_is_down:
             # Since we expect the host to be down when this is called, if there is
             # an existing ssh main connection close it.
-            self._main_ssh.close()
+            self.close_main_ssh()
         current_time = int(time.time())
         end_time = current_time + timeout
 
@@ -989,6 +989,16 @@ class AbstractSSHHost(remote.RemoteHost):
         if self.tls_client:
             self.close_tls_client()
 
+
+    def close_main_ssh(self):
+        """Stop the ssh main connection.
+
+        Intended for situations when the host is known to be down and we don't
+        need a ssh timeout to tell us it is down. For example, if you just
+        instructed the host to shutdown or hibernate.
+        """
+        logging.debug("Stopping main ssh connection")
+        self._main_ssh.close()
 
     def restart_main_ssh(self):
         """

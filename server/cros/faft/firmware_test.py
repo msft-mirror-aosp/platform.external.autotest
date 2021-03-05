@@ -1251,6 +1251,7 @@ class FirmwareTest(test.test):
             else:
                 raise
         self.switcher.wait_for_client_offline()
+        self._client.close_main_ssh()
 
     def suspend(self):
         """Suspends the DUT."""

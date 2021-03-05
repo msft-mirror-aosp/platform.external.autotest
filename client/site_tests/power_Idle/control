@@ -10,7 +10,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-ATTRIBUTES = ("suite:bvt-perbuild, suite:power_idle, suite:power_sanity, "
+ATTRIBUTES = ("suite:bvt-perbuild, suite:power_idle, suite:power_check, "
               "suite:power_monitoring")
 
 DOC = """

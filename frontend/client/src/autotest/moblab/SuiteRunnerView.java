@@ -72,7 +72,7 @@ public class SuiteRunnerView extends TabView {
     "power_loadtest_1hour",
     "power_loadtest_fast",
     "power_measurement_wrapper",
-    "power_sanity",
+    "power_check",
     "usb-camera",
     "wifi_matfunc",
     "wifi_perf"

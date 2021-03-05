@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "power_sanity"
-PURPOSE = "Daily power sanity tests"
+NAME = "power_check"
+PURPOSE = "Daily power check tests"
 
 TIME = "SHORT"
 TEST_CATEGORY = "General"
@@ -12,7 +12,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-Daily power sanity tests.
+Daily power check tests.
 """
 
 import common

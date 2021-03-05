@@ -172,12 +172,12 @@ class ServoTopology(object):
         return True
 
     def is_servo_serial_provided(self):
-        """Verify that core servo serial is provided."""
-        core_servo_serial = self._host.servo_serial
-        if not core_servo_serial:
-            logging.info('Core servo serial is not provided.')
+        """Verify that root servo serial is provided."""
+        root_servo_serial = self._host.servo_serial
+        if not root_servo_serial:
+            logging.info('Root servo serial is not provided.')
             return False
-        logging.debug('Core servo serial: %s', core_servo_serial)
+        logging.debug('Root servo serial: %s', root_servo_serial)
         return True
 
     def _process_error(self, message, raise_error):
@@ -208,23 +208,23 @@ class ServoTopology(object):
         logging.debug('Trying generate a servo-topology')
         if not self.is_servo_serial_provided():
             return
-        core_servo_serial = self._host.servo_serial
-        main_device = None
+        root_servo_serial = self._host.servo_serial
+        root_servo = None
         children = []
         devices = self.get_list_of_devices()
         for device in devices:
             if not device.is_good():
                 logging.info('Skip %s as missing some data', device)
                 continue
-            if device.get_serial_number() == core_servo_serial:
-                main_device = device.get_topology_item()
+            if device.get_serial_number() == root_servo_serial:
+                root_servo = device.get_topology_item()
             else:
                 children.append(device.get_topology_item())
-        if not main_device:
-            logging.debug('Core device missed some data')
+        if not root_servo:
+            logging.debug('Root servo missed!')
             return None
         topology = {
-                stc.ST_DEVICE_MAIN: main_device,
+                stc.ST_DEVICE_MAIN: root_servo,
                 stc.ST_DEVICE_CHILDREN: children
         }
         logging.debug('Servo topology: %s', topology)
@@ -233,19 +233,19 @@ class ServoTopology(object):
     def _get_servo_hub_path(self, servo_serial):
         """Get path to the servo hub.
 
-        The core servo is connected directly to the servo-hub. To find other
+        The root servo is connected directly to the servo-hub. To find other
         servos connected to the hub we need find the path to the servo-hub.
         The servod-tool always return direct path to the servo, like:
             /sys/bus/usb/devices/1-3.2.1
             base path:  /sys/bus/usb/devices/
-            core-servo:  1-3.2.1
+            root-servo:  1-3.2.1
         the alternative path is '/sys/bus/usb/devices/1-3.2/1-3.2.1/'
         where '1-3.2' is path to servo-hub. To extract path to servo-hub
-        logic parse parse and remove last digit of the port where core servo
+        logic parse parse and remove last digit of the port where root servo
         connected to the servo-hub.
             base path:  /sys/bus/usb/devices/
             servo-hub:  1-3.2
-            core-servo: .1
+            root-servo: .1
         After we will join only base path with servo-hub.
 
         @params servo_serial    Serial number of the servo connected to hub
@@ -259,9 +259,9 @@ class ServoTopology(object):
             logging.info('Servo not detected.')
             return None
         base_path = os.path.dirname(servo_path)
-        core_servo_tail = os.path.basename(servo_path)
+        root_servo_tail = os.path.basename(servo_path)
         # Removing last port as
-        servo_hub_tail = string.join(core_servo_tail.split('.')[:-1], '.')
+        servo_hub_tail = string.join(root_servo_tail.split('.')[:-1], '.')
         return os.path.join(base_path, servo_hub_tail)
 
     def get_list_of_devices(self):

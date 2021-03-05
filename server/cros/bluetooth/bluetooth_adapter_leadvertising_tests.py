@@ -508,7 +508,7 @@ class bluetooth_AdapterLEAdvertising(
         # Wait for device to come out of suspend
         self.test_wait_for_resume(boot_id,
                                   suspend,
-                                  resume_timeout=suspend_time + 5,
+                                  resume_timeout=suspend_time,
                                   test_start_time=start_time)
 
         # Verify reception of advertisements again

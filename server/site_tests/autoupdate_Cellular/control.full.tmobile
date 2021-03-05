@@ -3,14 +3,14 @@
 # found in the LICENSE file.
 
 AUTHOR = "dhaddock, Chromium OS"
-NAME = "autoupdate_Cellular.full"
+NAME = "autoupdate_Cellular.full.tmobile"
 PURPOSE = "Test autoupdate over cellular."
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
-# Disable this test until it can be fixed: http://b/163367994
-# ATTRIBUTES = "suite:cellular_au"
+ATTRIBUTES = "suite:cellular_au"
+DEPENDENCIES = "carrier:tmobile"
 DOC = """
 This tests autoupdate over a cellular connection.
 

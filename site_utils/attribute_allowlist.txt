@@ -118,6 +118,8 @@ suite:camera-libcamera
 suite:camera-postsubmit
 suite:camerabox_facing-back
 suite:camerabox_facing-front
+suite:cellular_au
+suite:cellular_au_nightly
 suite:cellular_endtoend
 suite:cellular_mbim_compliance
 suite:cellular_modem_repair

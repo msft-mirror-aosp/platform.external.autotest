@@ -23,12 +23,6 @@ class ServoFwVersionMissedError(Exception):
 class _BaseUpdateServoFw(object):
     """Base class to update firmware on servo"""
 
-    # Command to update servo device.
-    # param 1: servo board (servo_v4|servo_micro)
-    # param 2: serial number of main device on the board
-    UPDATER = 'servo_updater -b %s -s "%s" --reboot'
-    UPDATER_FORCE = UPDATER + ' --force'
-
     # Commands to kill active servo_updater fail with timeout
     ACTIVE_UPDATER_CORE = 'ps aux | grep -ie [s]ervo_updater |grep "%s" '
     ACTIVE_UPDATER_PRINT = ACTIVE_UPDATER_CORE + "| awk '{print $2}' "
@@ -52,11 +46,16 @@ class _BaseUpdateServoFw(object):
         """
         self._host = servo_host
         self._device = device
+        # TODO(otabek@) remove when lab will use labstation R92
+        self._updater_accept_channel = False
 
-    def need_update(self, ignore_version=False):
+    def need_update(self, ignore_version=False, channel=DEFAULT_FW_CHANNEL):
         """Verify that servo_update is required.
 
         @params ignore_version: Do not check the version on the device.
+        @params channel:        Channel for servo firmware. Supported from
+                                version R90. Possible values: stable, prev,
+                                dev, alpha.
 
         @returns: True if update required, False if not
         """
@@ -69,10 +68,13 @@ class _BaseUpdateServoFw(object):
         elif not self._custom_verifier():
             return False
         elif not ignore_version:
-            return self._is_outdated_version()
+            return self._is_outdated_version(channel=channel)
         return True
 
-    def update(self, force_update=False, ignore_version=False):
+    def update(self,
+               force_update=False,
+               ignore_version=False,
+               channel=DEFAULT_FW_CHANNEL):
         """Update firmware on the servo.
 
         Steps:
@@ -82,8 +84,11 @@ class _BaseUpdateServoFw(object):
 
         @params force_update:   Run updater with force option.
         @params ignore_version: Do not check the version on the device.
+        @params channel:        Channel for servo firmware. Supported from
+                                version R90. Possible values: stable, prev,
+                                dev, alpha.
         """
-        if not self.need_update(ignore_version):
+        if not self.need_update(ignore_version, channel=channel):
             logging.info("The board %s doesn't need update.", self.get_board())
             return
         if not self.get_serial_number():
@@ -94,7 +99,7 @@ class _BaseUpdateServoFw(object):
             logging.info('Attempt use incorrect updater for %s. Expected: %s.',
                          self._device.get_type(), self.get_board())
             return
-        self._update_firmware(force_update)
+        self._update_firmware(force_update, channel)
 
     def _custom_verifier(self):
         """Custom verifier to block update proceed.
@@ -118,25 +123,33 @@ class _BaseUpdateServoFw(object):
         """Return serial number for servo device"""
         return self._device.get_serial_number()
 
-    def _get_updater_cmd(self, force_update):
+    def _get_updater_cmd(self, force_update, channel):
         """Return command to run firmware updater for the servo device.
 
-        @params force_update: run updater with force option.
+        @params force_update:   Run updater with force option.
+        @params channel:        Channel for servo firmware.
         """
         board = self.get_board()
         serial_number = self.get_serial_number()
+        # Using inline command line build as creating separate constants
+        # make code more complicated on this stage.
+        # TODO(otabek@) use constants when lab will use labstation R92
+        cmd = 'servo_updater -b %s -s "%s"' % (board, serial_number)
+        if self._updater_accept_channel and channel:
+            cmd += ' -c %s ' % channel.lower()
+        # always reboot servo after updating the firmware
+        cmd += ' --reboot '
         if force_update:
-            cmd = self.UPDATER_FORCE
-        else:
-            cmd = self.UPDATER
-        return cmd % (board, serial_number)
+            cmd += ' --force '
+        return cmd
 
-    def _update_firmware(self, force_update):
+    def _update_firmware(self, force_update, channel):
         """Execute firmware updater command.
 
-        @params force_update: run updater with force option.
+        @params force_update:   Run updater with force option.
+        @params channel:        UpdateCompare version from special firmware channel
         """
-        cmd = self._get_updater_cmd(force_update)
+        cmd = self._get_updater_cmd(force_update, channel)
         logging.info('Try to update servo fw update by running: %s', cmd)
         try:
             res = self._host.run(cmd, timeout=120)
@@ -157,21 +170,28 @@ class _BaseUpdateServoFw(object):
         """Get current version on servo device"""
         return self._device.get_version()
 
-    def _latest_version(self):
-        """Get latest version available on servo-host."""
+    def _latest_version(self, channel):
+        """Get latest version available on servo-host.
+
+        @params channel: Compare version from special firmware channel
+        """
         # New R90 moved firmware files and introduced new way to check
         # the available firmware version on labstation. The servo_updater
         # introduced new option 'print'.
         cmd = 'servo_updater --help | grep print'
         result = self._host.run(cmd, ignore_status=True)
         if result.exit_status == 0:
-            return self._latest_version_from_updater()
+            self._updater_accept_channel = True
+            return self._latest_version_from_updater(channel)
+        self._updater_accept_channel = False
         return self._latest_version_from_binary()
 
-    def _latest_version_from_updater(self):
-        """Get latest available version from servo_updater."""
-        cmd = (self.LATEST_VERSION_CMD %
-               (self.get_board(), self.DEFAULT_FW_CHANNEL))
+    def _latest_version_from_updater(self, channel):
+        """Get latest available version from servo_updater.
+
+        @params channel: Compare version from special firmware channel
+        """
+        cmd = self.LATEST_VERSION_CMD % (self.get_board(), channel.lower())
         re = self._host.run(cmd, ignore_status=True)
         if re.exit_status == 0:
             result = re.stdout.strip().split(':')
@@ -189,12 +209,14 @@ class _BaseUpdateServoFw(object):
         logging.debug('Latest version: %s', version)
         return version
 
-    def _is_outdated_version(self):
+    def _is_outdated_version(self, channel):
         """Compare version to determine request to update the Servo or not.
+
+        @params channel: Compare version from special firmware channel
         """
         current_version = self._current_version()
         logging.debug('Servo fw on the device: "%s"', current_version)
-        latest_version = self._latest_version()
+        latest_version = self._latest_version(channel)
         logging.debug('Latest servo fw: "%s"', latest_version)
         if not current_version:
             return True
@@ -256,7 +278,7 @@ SERVO_UPDATERS = {
 
 
 def _run_update_attempt(updater, topology, try_count, force_update,
-                        ignore_version):
+                        ignore_version, channel):
     """Run servo update attempt.
 
     @params updater:        Servo updater instance.
@@ -264,6 +286,7 @@ def _run_update_attempt(updater, topology, try_count, force_update,
     @params try_count:      Count of attempt to run update.
     @params force_update:   Run updater with force option.
     @params ignore_version: Do not check the version on the device.
+    @params channel:        Request servo firmware from special channel
 
     @returns:   True is finished without any error, False - with error
     """
@@ -276,7 +299,8 @@ def _run_update_attempt(updater, topology, try_count, force_update,
         logging.info(msg, a + 1, try_count, board)
         try:
             updater.update(force_update=force_update,
-                           ignore_version=ignore_version)
+                           ignore_version=ignore_version,
+                           channel=channel)
             topology.update_servo_version(updater.get_device())
             if not updater.need_update(ignore_version=ignore_version):
                 success = True
@@ -309,7 +333,8 @@ def any_servo_needs_firmware_update(host):
             continue
         # Creating update instance
         updater = updater_type(host, device)
-        if updater.need_update(ignore_version=False):
+        if updater.need_update(ignore_version=False,
+                               channel=host.servo_fw_channel):
             logging.info('The servo: %s requires firmware update!', board)
             has_servo_requires_update = True
     return has_servo_requires_update
@@ -378,7 +403,8 @@ def update_servo_firmware(host,
                 topology=servo_topology,
                 try_count=try_attempt_count,
                 force_update=use_force_option_as_first_attempt,
-                ignore_version=ignore_version)
+                ignore_version=ignore_version,
+                channel=host.servo_fw_channel)
         # If fail to update and we got requested to try force option then
         # run second time with force.
         if not is_success_update and try_force_update:
@@ -387,7 +413,8 @@ def update_servo_firmware(host,
                     topology=servo_topology,
                     try_count=1,
                     force_update=True,
-                    ignore_version=ignore_version)
+                    ignore_version=ignore_version,
+                    channel=host.servo_fw_channel)
         if not is_success_update:
             logging.info('Fail update firmware for %s', board)
             hostname = host.get_dut_hostname() or host.hostname

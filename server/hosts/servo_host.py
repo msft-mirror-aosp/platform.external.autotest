@@ -142,6 +142,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_serial = None
         self.servo_setup = None
         self.servo_recovery = None
+        self.servo_fw_channel = None
         self.additional_servod_args = None
         self._dut_health_profile = None
         # The flag that indicate if a servo is connected to a smart usbhub.
@@ -167,6 +168,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     servo_serial=None,
                     servo_setup=None,
                     servo_recovery=None,
+                    servo_fw_channel=None,
                     additional_servod_args=None,
                     is_in_lab=None,
                     *args,
@@ -200,6 +202,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_serial = servo_serial
         self.servo_setup = servo_setup
         self.servo_recovery = servo_recovery
+        self.servo_fw_channel = servo_fw_channel
         self.additional_servod_args = additional_servod_args
 
         # The location of the log files on the servo host for this instance.

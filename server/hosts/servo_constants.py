@@ -17,6 +17,7 @@ SERVO_MODEL_ATTR = 'servo_model'
 SERVO_SERIAL_ATTR = 'servo_serial'
 # Indicates what type of servo setup, example value: REGULAR or DUAL_V4.
 SERVO_SETUP_ATTR = 'servo_setup'
+SERVO_FW_CHANNEL_ATTR = 'servo_fw_channel'
 SERVO_SETUP_VALUE_DUAL_V4 = 'DUAL_V4'
 SERVO_RECOVERY_MODE = 'servo_recovery'
 SERVO_ATTR_KEYS = (
@@ -26,6 +27,7 @@ SERVO_ATTR_KEYS = (
         SERVO_PORT_ATTR,
         SERVO_SERIAL_ATTR,
         SERVO_SETUP_ATTR,
+        SERVO_FW_CHANNEL_ATTR,
 )
 
 # Additional args that will be appended to servod start command.

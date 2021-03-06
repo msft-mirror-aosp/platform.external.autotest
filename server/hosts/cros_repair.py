@@ -32,6 +32,7 @@ from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.server.hosts import repair_utils
 from autotest_lib.site_utils.admin_audit import verifiers as audit_verify
 from autotest_lib.site_utils.admin_audit import constants as audit_const
+from autotest_lib.site_utils.admin_audit import battery_validator
 from six.moves import range
 
 try:
@@ -892,6 +893,43 @@ class DUTStorageVerifier(hosts.Verifier):
         return 'Ensure DUT storage SMART information is in good state.'
 
 
+class AuditBattery(hosts.Verifier):
+    """Verify that battery on DUT is good to use.
+
+    Check if DUT drive is providing good SMART stats which not showing any
+    issues on it. The verifier can mark DUT for replacement if SMART stats
+    show outworn data.
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        # pylint: disable=missing-docstring
+        state = None
+        try:
+            state = self._get_validator(host).validate()
+        except Exception as e:
+            # We do not want stop main process if it fail.
+            logging.debug('(Not critical) %s', e)
+        if not state:
+            raise hosts.AutoservNonCriticalVerifyError(
+                    'DUT battery did not detected or state cannot extracted.')
+        if state == audit_const.HW_STATE_NEED_REPLACEMENT:
+            logging.info('Detected issue with storage on the DUT.')
+            host.set_device_needs_replacement()
+
+    def _is_applicable(self, host):
+        return self._get_validator(host).is_battery_expected()
+
+    def _get_validator(self, host):
+        if not getattr(self, '_validator', None):
+            self._validator = battery_validator.BatteryValidator(host)
+        return self._validator
+
+    @property
+    def description(self):
+        return 'Ensure DUT battery is in good state.'
+
+
 class ServoKeyboardMapVerifier(hosts.Verifier):
     """Not critical verify to flash servo keyboard for the host.
 
@@ -1537,6 +1575,7 @@ def _cros_verify_extended_dag():
     return (
             (StopStartUIVerifier, 'stop_start_ui', ('ssh', )),
             (DUTStorageVerifier, 'storage', ('ssh', )),
+            (AuditBattery, 'audit_battery', ()),
             (GscToolPresentVerifier, 'dut_gsctool', ('ssh', )),
             (ServoKeyboardMapVerifier, 'dut_servo_keyboard', ('ssh', )),
             (ServoMacAddressVerifier, 'dut_servo_macaddr', ('ssh', )),

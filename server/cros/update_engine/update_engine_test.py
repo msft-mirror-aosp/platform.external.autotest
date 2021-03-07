@@ -28,10 +28,10 @@ from autotest_lib.client.cros.update_engine import update_engine_event as uee
 from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
+from autotest_lib.server.cros import gsutil_wrapper
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.utils.frozen_chromite.lib import auto_updater
 from autotest_lib.utils.frozen_chromite.lib import auto_updater_transfer
-from autotest_lib.utils.frozen_chromite.lib import gs
 from autotest_lib.utils.frozen_chromite.lib import remote_access
 from autotest_lib.utils.frozen_chromite.lib import retry_util
 
@@ -927,7 +927,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def _get_paygen_json(self):
         """Return the paygen.json file as a json dictionary."""
-        return json.loads(gs.GSContext().Cat(self._PAYGEN_JSON_URI))
+        bucket, paygen_file = self._PAYGEN_JSON_URI.rsplit('/', 1)
+        tmpdir = '/tmp/m2n/'
+        self._host.run('mkdir -p %s' % tmpdir)
+        gsutil_wrapper.copy_private_bucket(host=self._host,
+                                           bucket=bucket,
+                                           filename=paygen_file,
+                                           destination=tmpdir)
+        return json.loads(
+                self._host.run('cat %s' %
+                               os.path.join(tmpdir, paygen_file)).stdout)
 
     def _paygen_json_lookup(self, board, channel, delta_type):
         """
@@ -950,3 +959,22 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 (delta.get('delta_type', None) == delta_type)):
                 result.append(delta)
         return result
+
+    def _get_latest_serving_stable_build(self):
+        """
+      Returns the latest serving stable build on Omaha for the current board.
+
+      It will lookup the paygen.json file and return the build label that can
+      be passed to quick_provision. This is useful for M2N tests to easily find
+      the first build to provision.
+
+      @returns latest stable serving omaha build.
+
+      """
+        board = self._host.get_board().split(':')[1]
+        channel = 'stable-channel'
+        delta_type = 'OMAHA'
+        stable_paygen_data = self._paygen_json_lookup(board, channel,
+                                                      delta_type)
+        return os.path.join(channel, board,
+                            stable_paygen_data[0]["chrome_os_version"])

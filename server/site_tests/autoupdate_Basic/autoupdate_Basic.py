@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-import os
 
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
@@ -27,15 +26,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         """
         if m2n:
             # Provision latest stable build for the current build.
-            board = self._host.get_board().split(':')[1]
-            channel = 'stable-channel'
-            delta_type = 'OMAHA'
-
-            stable_paygen_data = self._paygen_json_lookup(
-                    board, channel, delta_type)
-            # Combine the channel, board and OS version into a build label.
-            build_name = os.path.join(
-                    channel, board, stable_paygen_data[0]["chrome_os_version"])
+            build_name = self._get_latest_serving_stable_build()
 
             # Install the matching build with quick provision.
             autotest_devserver = dev_server.ImageServer.resolve(

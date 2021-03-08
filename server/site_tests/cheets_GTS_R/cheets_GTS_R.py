@@ -85,6 +85,7 @@ class cheets_GTS_R(tradefed_test.TradefedTest):
                  target_plan=None,
                  needs_push_media=False,
                  enable_default_apps=False,
+                 executable_test_count=None,
                  precondition_commands=[],
                  login_precondition_commands=[],
                  authkey=None,
@@ -105,6 +106,7 @@ class cheets_GTS_R(tradefed_test.TradefedTest):
         @param target_module: the name of test module to run.
         @param target_plan: the name of the test plan to run.
         @param needs_push_media: need to push test media streams.
+        @param executable_test_count: the known number of tests in the run.
         @param timeout: time after which tradefed can be interrupted.
         @param precondition_commands: a list of scripts to be run on the
         dut before the test is run, the scripts must already be installed.
@@ -119,18 +121,19 @@ class cheets_GTS_R(tradefed_test.TradefedTest):
                 authkey or self._get_default_authkey(), tmpdir)
 
             self._run_tradefed_with_retries(
-                test_name=test_name,
-                run_template=run_template,
-                retry_template=retry_template,
-                timeout=timeout,
-                target_module=target_module,
-                target_plan=target_plan,
-                media_asset=tradefed_test.MediaAsset(
-                    _GTS_MEDIA_URI if needs_push_media else None,
-                    _GTS_MEDIA_LOCALPATH),
-                enable_default_apps=enable_default_apps,
-                login_precondition_commands=login_precondition_commands,
-                precondition_commands=precondition_commands,
-                prerequisites=prerequisites)
+                    test_name=test_name,
+                    run_template=run_template,
+                    retry_template=retry_template,
+                    timeout=timeout,
+                    target_module=target_module,
+                    target_plan=target_plan,
+                    media_asset=tradefed_test.MediaAsset(
+                            _GTS_MEDIA_URI if needs_push_media else None,
+                            _GTS_MEDIA_LOCALPATH),
+                    enable_default_apps=enable_default_apps,
+                    executable_test_count=executable_test_count,
+                    login_precondition_commands=login_precondition_commands,
+                    precondition_commands=precondition_commands,
+                    prerequisites=prerequisites)
         finally:
             shutil.rmtree(tmpdir)

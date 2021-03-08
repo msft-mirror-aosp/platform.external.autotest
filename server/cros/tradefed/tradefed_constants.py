@@ -34,13 +34,12 @@ TRADEFED_CACHE_LOCAL = '/tmp/autotest-tradefed-cache'
 TRADEFED_CACHE_CONTAINER = '/usr/local/autotest/results/shared/cache'
 TRADEFED_CACHE_CONTAINER_LOCK = '/usr/local/autotest/results/shared/lock'
 # The maximum size of the shared global cache. It needs to be able to hold
-# N, M, x86, arm CTS bundles (500MB), the GTS bundle and media stress videos
-# (2GB) zipped to not thrash. In addition it needs to be able to hold one
-# different revision per Chrome OS branch. While this sounds  like a lot,
-# only a single bundle is copied into each lxc instance (500MB), hence the
-# impact of running say 100 CTS tests in parallel is acceptable (quarter
-# servers have 500GB of disk, while full servers have 2TB).
-TRADEFED_CACHE_MAX_SIZE = (20 * 1024 * 1024 * 1024)
+# P, R, x86, arm, official, dev CTS bundles, as well as GTS bundles, and
+# media assets. (See b/126165348#comment40 for the calculation.)
+# In the current implementation, each test instance just symlinks to the
+# shared cache for majority of the content, so running multiple parallel
+# CTS tests should be acceptable in terms of storage.
+TRADEFED_CACHE_MAX_SIZE = (100 * 1024 * 1024 * 1024)
 # The path that cts-tradefed uses to place media assets. By downloading and
 # expanding the archive here beforehand, tradefed can reuse the content.
 TRADEFED_MEDIA_PATH = '/tmp/android-cts-media'

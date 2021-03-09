@@ -384,10 +384,12 @@ class ChromeEC(ChromeConsole):
            Additionally, can be used to verify if EC console is available.
         """
         self.send_command("chan 0")
-        expected_output = ["Chip:\s+([^\r\n]*)\r\n",
-                           "RO:\s+([^\r\n]*)\r\n",
-                           "RW_?[AB]?:\s+([^\r\n]*)\r\n",
-                           "Build:\s+([^\r\n]*)\r\n"]
+        # Use " " here and not \s because sometimes the version is blank,
+        # i.e. 'RO:   \r\n' which matches RO:\s+
+        expected_output = [
+                "Chip: +([^\r\n]*)\r\n", "RO: +([^\r\n]*)\r\n",
+                "RW_?[AB]?: +([^\r\n]*)\r\n", "Build: +([^\r\n]*)\r\n"
+        ]
         l = self.send_command_get_output("version", expected_output)
         self.send_command("chan 0xffffffff")
         return l

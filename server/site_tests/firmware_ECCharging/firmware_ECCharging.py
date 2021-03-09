@@ -82,13 +82,17 @@ class firmware_ECCharging(FirmwareTest):
 
         # For unknown reasons, servod doesn't always capture the ec
         # command output. It doesn't happen often, but retry if it does.
-        # Try 2 times catching errors, then once without the try-except.
-        for _ in range(2):
+        retries = 3
+        while retries > 0:
+            retries -= 1
             try:
                 battery_regex_match = self.ec.send_command_get_output(
                         'battery', regex_str_list)
                 break
-            except servo.UnresponsiveConsoleError as e:
+            except (servo.UnresponsiveConsoleError,
+                    servo.ResponsiveConsoleError) as e:
+                if retries <= 0:
+                    raise
                 logging.warning('Failed to get battery status. %s', e)
         else:
             battery_regex_match = self.ec.send_command_get_output(
@@ -236,9 +240,19 @@ class firmware_ECCharging(FirmwareTest):
 
     def _check_battery_discharging(self):
         """Check if AC is attached and if charge control is normal."""
-        output = self.ec.send_command_get_output(
-                "chgstate",
-                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=\s*(\d)\s*"])
+        retries = 3
+        while retries > 0:
+            retries -= 1
+            try:
+                output = self.ec.send_command_get_output(
+                        "chgstate",
+                        [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=\s*(\d)\s*"])
+                break
+            except (servo.UnresponsiveConsoleError,
+                    servo.ResponsiveConsoleError) as e:
+                if retries <= 0:
+                    raise
+                logging.warning('Failed to get chgstate. %s', e)
         ac_state = int(output[0][1])
         chg_ctl_mode = int(output[1][1])
         if ac_state == 0:

@@ -15,10 +15,12 @@ class firmware_ECWatchdog(FirmwareTest):
     version = 1
 
 
-    # Delay of spin-wait in ms. Must be at least 2x CONFIG_WATCHDOG_PERIOD_MS
-    # of the slowest board that this test will run against. Currently it
-    # appears that all ChromeOS ECs set CONFIG_WATCHDOG_PERIOD_MS to 1600.
-    WATCHDOG_DELAY = 1600 * 2 + 500
+    # Delay of spin-wait in ms. Nuvoton boards set the hardware watchdog to
+    # 3187.5ms and also sets a timer to 2200ms. Set the timeout long enough to
+    # exceed the hardware watchdog timer because the timer isn't 100% reliable.
+    # If there are other platforms that use a longer watchdog timeout, this
+    # may need to be adjusted.
+    WATCHDOG_DELAY = 3700  # 3187.5ms + 500ms safety margin, rounded up.
 
     # Delay of EC power on.
     EC_BOOT_DELAY = 1000

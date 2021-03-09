@@ -1154,8 +1154,8 @@ class FirmwareTest(test.test):
         else:
             self._restore_power_mode = False
             raise error.TestFail('System fail to enter %s state. '
-                    'Current state: %s', target_power_state,
-                    self.get_power_state())
+                                 'Current state: %s' %
+                                 (target_power_state, self.get_power_state()))
 
     def restore_ap_on_power_mode(self):
         """

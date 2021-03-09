@@ -11,7 +11,8 @@ __author__ = 'kdlucas@chromium.org (Kelly Lucas)'
 
 import logging, re
 
-from autotest_lib.client.bin import utils, test
+from autotest_lib.client.bin import utils
+from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 
 
@@ -50,6 +51,8 @@ class platform_MemCheck(test.test):
         # read physical HW size from mosys and adjust memref if need
         cmd = 'mosys memory spd print geometry -s size_mb'
         phy_size_run = utils.run(cmd)
+        logging.info('Ran command: `%s`', cmd)
+        logging.info('Output: "%s"', phy_size_run.stdout)
         phy_size = 0
         for line in phy_size_run.stdout.split():
             phy_size += int(line)
@@ -94,6 +97,8 @@ class platform_MemCheck(test.test):
         # DDR3-800, DDR3-1066, DDR3-1333, DDR3-1600
         pattern = '[A-Z]*DDR([3-9]|[1-9]\d+)[A-Z]*-(?P<speed>\d+)'
         timing_run = utils.run(cmd)
+        logging.info('Ran command: `%s`', cmd)
+        logging.info('Output: "%s"', timing_run.stdout)
 
         keyval['speedref'] = speedref
         for dimm, line in enumerate(timing_run.stdout.split('\n')):
@@ -121,10 +126,14 @@ class platform_MemCheck(test.test):
         # result example (1 module of memory per result line)
         # 0 | 1-45: SK Hynix (Hyundai) | 128d057e | HMT425S6CFR6A-PB
         # 1 | 1-45: SK Hynix (Hyundai) | 121d0581 | HMT425S6CFR6A-PB
-        mem_ids = utils.run(cmd).stdout.split('\n')
-        for dimm, line in enumerate(mem_ids):
-            if not line:
-                continue
+        mem_ids = utils.run(cmd)
+        logging.info('Ran command: `%s`', cmd)
+        logging.info('Output: "%s"', mem_ids.stdout)
+
+        mem_ids_list = [line for line in mem_ids.stdout.split('\n') if line]
+        keyval['number_of_channel'] = len(mem_ids_list)
+
+        for dimm, line in enumerate(mem_ids_list):
             keyval['memory_id_dimm_%d' % dimm] = line
 
         if board.startswith('rambi') or board.startswith('expresso'):
@@ -134,5 +143,7 @@ class platform_MemCheck(test.test):
             # If self.error is not zero, there were errors.
             error_list_str = ', '.join(error_list)
             raise error.TestFail('Found incorrect values: %s' % error_list_str)
+
+        keyval['cpu_name'] = utils.get_cpu_name()
 
         self.write_perf_keyval(keyval)

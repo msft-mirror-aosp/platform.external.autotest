@@ -42,6 +42,10 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
 
     _MTKWIFI_RESET_PATH = "/sys/kernel/debug/ieee80211/%s/mt76/chip_reset"
 
+    _RTW88_RESET_PATH = '/sys/kernel/debug/ieee80211/%s/rtw88/fw_crash'
+    _RTW88_RESET_TIMEOUT = 10
+    _RTW88_RESET_INTERVAL = 1
+
     _NUM_RESETS = 15
     _NUM_SUSPENDS = 5
     _SUSPEND_DELAY = 10
@@ -168,6 +172,32 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
         self.context.client.wait_for_service_states(ssid, ['idle'],
                 timeout_seconds=20)
 
+    def rtw88_reset_path(self):
+        """Get path to rtw88 debugfs fw crash file"""
+        phy_name = self.context.client.wifi_phy_name
+        return self._RTW88_RESET_PATH % phy_name
+
+    def rtw88_reset_exists(self):
+        """@return True if rtw88 debugfs fw crash file exists"""
+        return self.context.client.host.path_exists(self.rtw88_reset_path())
+
+    def rtw88_reset_done(self):
+        """@return True if rtw88 isn't doing reset'"""
+        cmd = 'cat ' + self.rtw88_reset_path()
+        chk = self.context.client.host.run(cmd).stdout.strip()
+        return True if chk == '0' else False
+
+    def rtw88_reset(self):
+        """
+        Simulate rtw88 firmware crash.
+        """
+        self.context.client.host.run('echo 1 > ' + self.rtw88_reset_path())
+        utils.poll_for_condition(
+                condition=self.rtw88_reset_done,
+                exception=error.TestFail('Failed to complete device %s reset' %
+                                         self.context.client.wifi_if),
+                timeout=self._RTW88_RESET_TIMEOUT,
+                sleep_interval=self._RTW88_RESET_INTERVAL)
 
     def get_reset_driver(self):
         DRIVER_LIST = [
@@ -186,6 +216,10 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
                 self.DriverReset(
                         supported=self.mtkwifi_reset_exists,
                         do_reset=self.mtkwifi_reset,
+                ),
+                self.DriverReset(
+                        supported=self.rtw88_reset_exists,
+                        do_reset=self.rtw88_reset,
                 ),
         ]
 

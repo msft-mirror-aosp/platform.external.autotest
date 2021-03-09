@@ -7,11 +7,14 @@ import logging
 import random
 import time
 
-from autotest_lib.client.bin import test
+from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.networking import cellular_proxy
 from autotest_lib.client.cros.networking import shill_context
 from autotest_lib.client.cros.networking import shill_proxy
+
+SERVICE_DISABLE_TIMEOUT = 60
+SERVICE_ENABLE_TIMEOUT = 60
 
 
 class cellular_SafetyDance(test.test):
@@ -36,6 +39,21 @@ class cellular_SafetyDance(test.test):
                 raise error
         return v, ''
 
+    def _ensure_disabled(self):
+        """
+        Ensure modem is disabled.
+
+        Raises:
+            error.TestFail if the states are not consistent.
+        """
+        utils.poll_for_condition(
+                lambda: not self.test_env.modem.IsEnabled(),
+                error.TestFail('Modem failed to enter state Disabled.'))
+        utils.poll_for_condition(
+                lambda: not self.test_env.shill.find_cellular_service_object(),
+                error.TestFail('Service should not be available.'),
+                timeout=SERVICE_DISABLE_TIMEOUT)
+
     def _enable(self):
         logging.info('Enable')
         self._filterexns(lambda:
@@ -45,6 +63,7 @@ class cellular_SafetyDance(test.test):
         logging.info('Disable')
         self._filterexns(lambda:
             self.test_env.shill.manager.DisableTechnology('cellular'))
+        self._ensure_disabled()
 
     def _ignoring(self, reason):
         if ('AlreadyConnected' in reason or

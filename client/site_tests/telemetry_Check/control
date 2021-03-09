@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "telemetry_Sanity"
-PURPOSE = "Run telemetry_sanity.py."
+NAME = "telemetry_Check"
+PURPOSE = "Run telemetry_check.py."
 CRITERIA = """
-Test will fail if telemetry_sanity fails.
+Test will fail if telemetry_check fails.
 """
 # crbug.com/930157: This test is flaky and blocks CQ, disable it until fixed.
 ATTRIBUTES = "suite:bvt-perbuild, suite:smoke"
@@ -16,10 +16,10 @@ TEST_CLASS = "login"
 TEST_TYPE = "client"
 
 DOC = """
-This test runs telemetry_sanity.py
+This test runs telemetry_check.py
 """
 
-job.run_test('telemetry_Sanity',
+job.run_test('telemetry_Check',
              count=1,
              run_cryptohome=True,
              run_incognito=False,  # crbug.com/970065.

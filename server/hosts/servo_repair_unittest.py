@@ -14,22 +14,15 @@ from autotest_lib.server.hosts import repair_utils
 
 SERVO_VERIFY_DAG = (
         (repair_utils.SshVerifier, 'servo_ssh', []),
-        (servo_repair._RootServoPresentVerifier, 'servo_root_present',
-         ['servo_ssh']),
-        (servo_repair._RootServoV3PresentVerifier, 'servo_v3_root_present',
-         ['servo_ssh']),
-        (servo_repair._ServoFwVerifier, 'servo_fw', ['servo_root_present']),
+        (servo_repair._ServoFwVerifier, 'servo_fw', ['servo_ssh']),
         (servo_repair._DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
-        (servo_repair._UpdateVerifier, 'servo_update',
-         ['servo_v3_root_present']),
+        (servo_repair._UpdateVerifier, 'servo_update', ['servo_ssh']),
         (servo_repair._BoardConfigVerifier, 'servo_config_board',
          ['servo_ssh']),
         (servo_repair._SerialConfigVerifier, 'servo_config_serial',
          ['servo_ssh']),
-        (servo_repair._ServodJobVerifier, 'servod_started', [
-                'servo_fw', 'servo_v3_root_present', 'servo_config_board',
-                'servo_config_serial', 'servo_disk_space'
-        ]),
+        (servo_repair._ServodJobVerifier, 'servod_started',
+         ['servo_config_board', 'servo_config_serial', 'servo_disk_space']),
         (servo_repair._TopologyVerifier, 'servo_topology', ['servod_started']),
         (servo_repair._ServodConnectionVerifier, 'servod_connection',
          ['servod_started']),

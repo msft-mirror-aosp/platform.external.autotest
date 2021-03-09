@@ -101,69 +101,6 @@ class _UpdateVerifier(hosts.Verifier):
         return 'Servo_v3 host software is up-to-date'
 
 
-class _RootServoPresentVerifier(hosts.Verifier):
-    """Verifier that first servo is present."""
-
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
-    def verify(self, host):
-        device = None
-        try:
-            topology = host.get_topology()
-            device = topology.get_root_servo()
-        except:
-            host.request_reboot()
-            logging.info('Reboot labstation requested, it will be handled'
-                         ' by labstation AdminRepair task.')
-        if device and device.is_good():
-            logging.debug('Root servo is present')
-        else:
-            raise hosts.AutoservVerifyError('Root servo not found!')
-
-    def _is_applicable(self, host):
-        # Run only for servos under labstations.
-        if not host.is_labstation():
-            return False
-        # Only run if the host is in the physical lab.
-        if not host.is_in_lab() or host.is_localhost():
-            return False
-        return True
-
-    @property
-    def description(self):
-        return 'Root servo is present'
-
-
-class _RootServoV3PresentVerifier(hosts.Verifier):
-    """Verifier that first servo is present."""
-
-    RETRY_COUNT = 3
-
-    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
-    def verify(self, host):
-        for a in range(self.RETRY_COUNT):
-            logging.debug('Attempt: %s find servo board on servo_v3.', a + 1)
-            present = host.is_servo_board_present_on_servo_v3()
-            if present == False:
-                raise hosts.AutoservVerifyError('Servo board not found!')
-            elif present == True:
-                logging.debug('Servo board is present')
-                return
-        raise hosts.AutoservVerifyError('Fail to find servo board!')
-
-    def _is_applicable(self, host):
-        # Do not run for servos under labstations.
-        if host.is_labstation():
-            return False
-        # Only run if the host is in the physical lab.
-        if not host.is_in_lab() or host.is_localhost():
-            return False
-        return True
-
-    @property
-    def description(self):
-        return 'Servo board on servo_v3 is present'
-
-
 class _ServoFwVerifier(hosts.Verifier):
     """Verifier to check is a servo fw is up-to-date."""
 
@@ -1291,20 +1228,16 @@ def _servo_verifier_actions():
     """
     Return a verifiers for a `ServoHost`.
     """
+    config = ['servo_config_board', 'servo_config_serial']
     return (
             (repair_utils.SshVerifier, 'servo_ssh', []),
-            (_RootServoPresentVerifier, 'servo_root_present', ['servo_ssh']),
-            (_RootServoV3PresentVerifier, 'servo_v3_root_present',
-             ['servo_ssh']),
-            (_ServoFwVerifier, 'servo_fw', ['servo_root_present']),
+            (_ServoFwVerifier, 'servo_fw', ['servo_ssh']),
             (_DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
-            (_UpdateVerifier, 'servo_update', ['servo_v3_root_present']),
+            (_UpdateVerifier, 'servo_update', ['servo_ssh']),
             (_BoardConfigVerifier, 'servo_config_board', ['servo_ssh']),
             (_SerialConfigVerifier, 'servo_config_serial', ['servo_ssh']),
-            (_ServodJobVerifier, 'servod_started', [
-                    'servo_fw', 'servo_v3_root_present', 'servo_config_board',
-                    'servo_config_serial', 'servo_disk_space'
-            ]),
+            (_ServodJobVerifier, 'servod_started',
+             config + ['servo_disk_space']),
             (_TopologyVerifier, 'servo_topology', ['servod_started']),
             (_ServodConnectionVerifier, 'servod_connection',
              ['servod_started']),

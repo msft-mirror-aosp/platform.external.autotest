@@ -37,6 +37,7 @@ def run(machine):
                              ')'],
                  ignore_test_failures=False, max_run_sec=3600,
                  command_args=args,
-                 clear_tpm=True)
+                 clear_tpm=True,
+                 varslist=['pita.windowsLicensed=true'])
 
 parallel_simple(run, machines)

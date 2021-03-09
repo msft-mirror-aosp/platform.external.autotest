@@ -6,9 +6,7 @@ AUTHOR = 'Chromium OS team'
 NAME = 'tast.informational-parallels'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-# TODO(crbug.com/1154072): Remove from 'suite:bvt-tast-informational' once the
-# parallels suite is scheduled.
-ATTRIBUTES = 'suite:bvt-tast-informational, suite:bvt-tast-parallels-informational'
+ATTRIBUTES = 'suite:bvt-tast-parallels-informational'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0  # Do not retry informational tests.
 
@@ -41,6 +39,7 @@ def run(machine):
                  ignore_test_failures=True,
                  max_run_sec=3*60*60,
                  command_args=args,
-                 clear_tpm=True)
+                 clear_tpm=True,
+                 varslist=['pita.windowsLicensed=true'])
 
 parallel_simple(run, machines)

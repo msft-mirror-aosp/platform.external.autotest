@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Implementation of the graphics_TraceReplayExtended server test."""
 
+from enum import Enum
 import logging
 import os
 import threading
@@ -12,6 +13,21 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server.cros.graphics import graphics_power
 from autotest_lib.server.site_tests.tast import tast
+
+
+class TastTestResult():
+    """Stores the test result for a single Tast subtest"""
+
+    class TestStatus(Enum):
+        """Encodes all actionable Tast subtest completion statuses"""
+        Passed = 1
+        Skipped = 2
+        Failed = 3
+
+    def __init__(self, name, status, errors):
+        self.name = name  # type: str
+        self.status = status  # type: self.TestStatus
+        self.errors = errors  # type: List[json-string]
 
 
 class TastManagerThread(threading.Thread):
@@ -55,6 +71,35 @@ class TastManagerThread(threading.Thread):
     def run(self):
         logging.info('Started thread: %s', self.__class__.__name__)
         self.tast.run_once()
+
+    def get_subtest_results(self):
+        """Returns the status for the tast subtest managed by this class.
+
+        Parses the Tast client tests' json-formatted result payloads to
+        determine the status and associated messages for each.
+
+        self.tast._test_results is populated with JSON objects for each test
+        during self.tast.run_once(). The JSON spec is detailed at
+        src/platform/tast/src/chromiumos/tast/cmd/tast/internal/run/results.go.
+        """
+        subtest_results = []
+        for res in self.tast._test_results:
+            name = res.get('name')
+            skip_reason = res.get('skipReason')
+            errors = res.get('errors')
+            if skip_reason:
+                logging.info('Tast subtest "%s" was skipped with reason: %s',
+                             name, skip_reason)
+                status = TastTestResult.TestStatus.Skipped
+            elif errors:
+                logging.info('Tast subtest "%s" failed with errors: %s', name,
+                             str([err.get('reason') for err in errors]))
+                status = TastTestResult.TestStatus.Failed
+            else:
+                logging.info('Tast subtest "%s" succeeded.', name)
+                status = TastTestResult.TestStatus.Passed
+            subtest_results.append(TastTestResult(name, status, errors))
+        return subtest_results
 
 
 class graphics_TraceReplayExtended(test.test):
@@ -226,6 +271,20 @@ class graphics_TraceReplayExtended(test.test):
                                  thread.__class__.__name__)
                     threads.remove(thread)
             time.sleep(1)
+
+        # Aggregate subtest results and report overall test result
+        subtest_results = tast_manager_thread.get_subtest_results()
+        num_failed_subtests = 0
+        for res in subtest_results:
+            num_failed_subtests += int(
+                res.status == TastTestResult.TestStatus.Failed)
+        if num_failed_subtests:
+            raise error.TestFail('%d of %d Tast subtests have failed.' %
+                                 (num_failed_subtests, len(subtest_results)))
+        elif all([res.status == TastTestResult.TestStatus.Skipped
+                  for res in subtest_results]):
+            raise error.TestNAError('All %d Tast subtests have been skipped' %
+                                    len(subtest_results))
 
         client_result_dir = os.path.join(self.outputdir, 'client_results')
         logging.info('Saving client results to %s', client_result_dir)

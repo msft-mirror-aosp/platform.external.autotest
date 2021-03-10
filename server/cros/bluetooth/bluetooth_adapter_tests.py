@@ -930,7 +930,7 @@ class BluetoothAdapterTests(test.test):
 
             for btpeer in self.btpeer_group[device_type][:number]:
                 logging.info("getting emulated %s", device_type)
-                device = self.reset_device(btpeer, device_type, on_start)
+                device = self.reset_btpeer(btpeer, device_type, on_start)
 
                 self.devices[device_type].append(device)
 
@@ -956,23 +956,21 @@ class BluetoothAdapterTests(test.test):
         """
 
         self.devices[device_type].append(
-                self.reset_device(self.host.btpeer, device_type, on_start))
+                self.reset_btpeer(self.host.btpeer, device_type, on_start))
 
         return self.devices[device_type][-1]
 
 
-    def reset_device(self, peer, device_type, clear_device=True):
-        """Reset the peer device in order to be used as a different type.
+    def reset_emulated_device(self, device, device_type, clear_device=True):
+        """Reset the emulated device in order to be used as a different type.
 
-        @param peer: the peer device to reset with new device type
+        @param peer: the emulated peer device to reset with new device type
         @param device_type : the new bluetooth device type, e.g., 'MOUSE'
         @param clear_device: whether to clear the device state
 
         @returns: the bluetooth device object
 
         """
-        device = get_bluetooth_emulated_device(peer, device_type)
-
         # Re-fresh device to clean state if test is starting
         if clear_device:
             self.clear_raspi_device(device, next_device_type=device_type)
@@ -992,6 +990,19 @@ class BluetoothAdapterTests(test.test):
 
         return device
 
+    def reset_btpeer(self, peer, device_type, clear_device=True):
+        """Reset the btpeer device in order to be used as a different type.
+
+        @param peer: the btpeer device to reset with new device type
+        @param device_type : the new bluetooth device type, e.g., 'MOUSE'
+        @param clear_device: whether to clear the device state
+
+        @returns: the bluetooth device object
+
+        """
+        device = get_bluetooth_emulated_device(peer, device_type)
+
+        return self.reset_emulated_device(device, device_type, clear_device)
 
     def is_device_available(self, btpeer, device_type):
         """Determines if the named device is available on the linked peer

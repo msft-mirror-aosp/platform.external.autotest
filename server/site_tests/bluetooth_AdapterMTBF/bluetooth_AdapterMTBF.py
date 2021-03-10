@@ -211,7 +211,7 @@ class bluetooth_AdapterMTBF(BluetoothAdapterBetterTogether,
         """Test the device can connect after suspending and resuming"""
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=15)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
 
         self.test_device_set_discoverable(mouse, False)
 

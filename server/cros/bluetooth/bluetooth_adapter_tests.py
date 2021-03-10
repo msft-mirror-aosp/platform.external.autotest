@@ -1085,7 +1085,7 @@ class BluetoothAdapterTests(test.test):
         """
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=suspend_time)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
 
         # Give the system some time to enter suspend
         self.test_suspend_and_wait_for_sleep(
@@ -4231,6 +4231,15 @@ class BluetoothAdapterTests(test.test):
                         'No recent suspend attempt found. '
                         'Started test at {} but last suspend ended at {}'.
                         format(test_start, wake_at))
+
+            # If the last suspend attempt recorded time is some time in the
+            # future, probably a time conversion error occurred.
+            current_time = self.bluetooth_facade.get_device_utc_time()
+            if current_time < wake_at:
+                raise error.TestFail(
+                        'Timezone conversion error found. '
+                        'Last suspend ended at {} but current time is {}'.
+                        format(wake_at, current_time))
 
             return True
 

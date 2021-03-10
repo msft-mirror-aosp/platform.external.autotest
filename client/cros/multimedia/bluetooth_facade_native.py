@@ -3511,9 +3511,9 @@ class BluetoothFacadeNative(object):
 
         return None
 
-    def get_device_time(self):
-        """ Get the current device time. """
-        return datetime.now().strftime(self.OUT_DATE_FORMAT)
+    def get_device_utc_time(self):
+        """ Get the current device time in UTC. """
+        return datetime.utcnow().strftime(self.OUT_DATE_FORMAT)
 
     def cleanup(self):
         """Cleanup before exiting the client xmlrpc process."""

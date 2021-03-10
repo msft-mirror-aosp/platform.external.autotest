@@ -110,7 +110,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
                 # Start the suspend process
                 suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
-                start_time = self.bluetooth_facade.get_device_time()
+                start_time = self.bluetooth_facade.get_device_utc_time()
 
                 # Trigger suspend, wait for regular resume, verify we can reconnect
                 # and run device specific test
@@ -376,7 +376,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
 
         self.test_discoverable()
         self.test_suspend_and_wait_for_sleep(suspend,
@@ -406,7 +406,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['MOUSE'][0]
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
 
         # Pair device so we have something to do in suspend
         self.assert_discover_and_pair(device)

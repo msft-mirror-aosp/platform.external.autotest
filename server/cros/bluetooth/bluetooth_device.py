@@ -1747,9 +1747,9 @@ class BluetoothDevice(object):
         return self._proxy.get_bt_module_name()
 
     @proxy_thread_safe
-    def get_device_time(self):
-        """ Get the current device time. """
-        return datetime.strptime(self._proxy.get_device_time(),
+    def get_device_utc_time(self):
+        """ Get the current device time in UTC. """
+        return datetime.strptime(self._proxy.get_device_utc_time(),
                                  self.NATIVE_DATE_FORMAT)
 
     @proxy_thread_safe

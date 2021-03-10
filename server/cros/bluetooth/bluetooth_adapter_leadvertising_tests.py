@@ -497,7 +497,7 @@ class bluetooth_AdapterLEAdvertising(
         # Trigger suspend, asynchronously trigger wake and wait for resume
         boot_id = self.host.get_boot_id()
         suspend = self.suspend_async(suspend_time=suspend_time)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
         self.test_suspend_and_wait_for_sleep(suspend, sleep_timeout=5)
 
         # Verify they can not be discovered

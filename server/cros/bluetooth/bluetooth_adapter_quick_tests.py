@@ -794,7 +794,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 # Start a new suspend instance
                 suspend = self.suspend_async(suspend_time=sleep_time,
                                              expect_bt_wake=should_wake)
-                start_time = self.bluetooth_facade.get_device_time()
+                start_time = self.bluetooth_facade.get_device_utc_time()
 
                 if should_wake:
                     self.test_device_wake_allowed(device.address)

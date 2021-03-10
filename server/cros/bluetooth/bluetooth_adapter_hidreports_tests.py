@@ -99,17 +99,30 @@ class BluetoothAdapterHIDReportTests(
             self.test_device_name(device.address, device.name)
 
         if reboot:
+            # If we expect the DUT to automatically reconnect to the peer on
+            # boot, we reset the peer into a connectable state
+            if self.platform_will_reconnect_on_boot():
+                logging.info(
+                        'Restarting peer to accept DUT connection on boot')
+                device_type = self.get_peer_device_type(device)
+                self.reset_emulated_device(device, device_type)
+
             self.reboot()
 
             time.sleep(self.HID_TEST_SLEEP_SECS)
             # TODO(b/173146480) - Power on the adapter for now until this bug
             # is resolved.
-            self.test_power_on_adapter()
+            if not self.bluetooth_facade.is_powered_on():
+                self.test_power_on_adapter()
 
             self.test_device_is_paired(device.address)
 
             time.sleep(self.HID_TEST_SLEEP_SECS)
-            self.test_connection_by_device(device)
+            if not self.platform_will_reconnect_on_boot():
+                self.test_connection_by_device(device)
+
+            else:
+                self.test_device_is_connected(device.address)
 
             time.sleep(self.HID_TEST_SLEEP_SECS)
             self.test_device_name(device.address, device.name)

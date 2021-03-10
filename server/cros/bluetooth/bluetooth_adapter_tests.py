@@ -109,6 +109,12 @@ COMMON_FAILURES = {
 # the ones that were not launched
 TABLET_MODELS = ['kakadu', 'kodama', 'krane', 'dru', 'druwl', 'dumo']
 
+# Some platforms do not have built-in I/O hardware, and so they are configured
+# to automatically reconnect to paired HID devices on boot. We note these
+# platform types here as there will be different behavior expectations around
+# reboot.
+RECONNECT_PLATFORM_TYPES = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
+
 # TODO(b/158336394) Realtek: Powers down during suspend due to high power usage
 #                            during S3.
 # TODO(b/168152910) Marvell: Powers down during suspend due to flakiness when
@@ -779,6 +785,16 @@ class BluetoothAdapterTests(test.test):
 
         return platform.replace('_signed', '').replace('_unsigned', '')
 
+    def platform_will_reconnect_on_boot(self):
+        """Indicates if we should expect DUT to automatically reconnect on boot
+
+        Some platforms do not have built-in I/O (i.e. ChromeBox) and will
+        automatically reconnect to paired HID devices on boot.
+
+        @returns: True if platform will reconnect on boot, else False
+        """
+
+        return self.host.get_board_type() in RECONNECT_PLATFORM_TYPES
 
     def group_btpeers_type(self):
         """Group all Bluetooth peers by the type of their detected device."""
@@ -942,6 +958,24 @@ class BluetoothAdapterTests(test.test):
 
         return True
 
+    def get_peer_device_type(self, device):
+        """Determine the type of peer a device is emulating
+
+        Sometimes it is useful to be able to flexibly determine what type of
+        peripheral a device is emulating. This helper function does a reverse
+        look-up to determine what type it was registered as.
+
+        @param device: the emulated peer device
+
+        @returns: the emulated device type if found, e.g. 'MOUSE' or
+            'BLE_KEYBOARD', else None
+        """
+
+        for device_type, device_list in self.devices.items():
+            if device in device_list:
+                return device_type
+
+        return None
 
     def get_device(self, device_type, on_start=True):
         """Get the bluetooth device object.

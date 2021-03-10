@@ -345,7 +345,7 @@ class Container(object):
 
     @metrics.SecondsTimerDecorator(
         '%s/container_start_duration' % constants.STATS_KEY)
-    def start(self, wait_for_network=True):
+    def start(self, result_dir, wait_for_network=True):
         """Start the container.
 
         @param wait_for_network: True to wait for network to be up. Default is
@@ -353,7 +353,9 @@ class Container(object):
 
         @raise ContainerError: If container does not exist, or fails to start.
         """
-        cmd = 'sudo lxc-start -P %s -n %s -d' % (self.container_path, self.name)
+        cmd = 'sudo lxc-start -P %s -n %s -d --logpriority=DEBUG -L %s' % (
+                self.container_path, self.name,
+                os.path.join(result_dir, 'ssp_logs/debug/lxc-console.log'))
         output = utils.run(cmd).stdout
         if not self.is_running():
             raise error.ContainerError(

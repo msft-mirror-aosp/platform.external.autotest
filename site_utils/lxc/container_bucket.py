@@ -274,7 +274,8 @@ class ContainerBucket(object):
         utils.run('sudo chown -R root "%s"' % autotest_path)
         utils.run('sudo chgrp -R root "%s"' % autotest_path)
 
-        container.start(wait_for_network=True)
+        container.start(constants.RESULT_DIR_FMT % job_folder,
+                        wait_for_network=True)
         deploy_config_manager.deploy_post_start()
 
         # Update the hostname of the test container to be `dut-name`.

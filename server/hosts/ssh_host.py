@@ -189,7 +189,6 @@ class SSHHost(abstract_ssh.AbstractSSHHost):
                 # Note the TLS as unstable so we do not attempt to re-start it.
                 self.tls_unstable = True
 
-        logging.debug("Running %s via SSH", command)
         ssh_cmd = self.ssh_command(connect_timeout, options)
         if not env.strip():
             env = ""

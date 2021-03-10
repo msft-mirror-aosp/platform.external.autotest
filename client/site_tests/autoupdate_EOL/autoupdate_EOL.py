@@ -78,7 +78,11 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
         tab.Navigate('chrome://os-settings/help/details')
         tab.WaitForDocumentReadyStateToBeComplete()
         eol_js = '''
-            settings.AboutPageBrowserProxyImpl.getInstance().getEndOfLifeInfo()
+            async function getEOL() {
+                return await import('chrome://os-settings/chromeos/os_settings.js').then(m =>
+                    m.AboutPageBrowserProxyImpl.getInstance().getEndOfLifeInfo());
+            }
+            getEOL();
         '''
         eol_promise = tab.EvaluateJavaScript(eol_js, promise=True)
         expected_eol_date = self._get_expected_eol_date(eol_date)

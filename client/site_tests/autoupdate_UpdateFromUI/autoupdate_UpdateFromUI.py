@@ -81,9 +81,15 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
                 tab.Navigate('chrome://os-settings/help')
                 tab.WaitForDocumentReadyStateToBeComplete()
                 self._take_screenshot('before_check_for_updates.png')
+                request_update_js = '''
+                    async function checkForUpdate() {
+                        return await import('chrome://os-settings/chromeos/os_settings.js').then(m =>
+                          m.AboutPageBrowserProxyImpl.getInstance().requestUpdate());
+                    }
+                    checkForUpdate();
+                '''
                 try:
-                    tab.EvaluateJavaScript('settings.AboutPageBrowserProxyImpl'
-                                           '.getInstance().requestUpdate()')
+                    tab.EvaluateJavaScript(request_update_js)
                 except exceptions.EvaluateException:
                     raise error.TestFail(
                         'Failed to find and click Check For Updates button.')

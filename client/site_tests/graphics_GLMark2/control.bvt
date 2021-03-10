@@ -5,7 +5,10 @@
 NAME = 'graphics_GLMark2.bvt'
 AUTHOR = 'chromeos-gfx'
 PURPOSE = 'Benchmark the graphics library performance.'
-ATTRIBUTES = 'suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system, suite:infra_qual'
+ATTRIBUTES = (
+	"suite:bvt-perbuild, suite:graphics, suite:graphics_per-day,"
+	" suite:graphics_system, suite:infra_qual, suite:pvs-uprev-exit"
+)
 TIME='MEDIUM'
 TEST_CATEGORY = 'Performance'
 TEST_CLASS = "gl"

@@ -8,7 +8,7 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:power_dashboard"
+ATTRIBUTES = "suite:power_dashboard, suite:pvs-uprev-exit"
 
 DOC = """
 Control file for running power_VideoPlayback in power lab.

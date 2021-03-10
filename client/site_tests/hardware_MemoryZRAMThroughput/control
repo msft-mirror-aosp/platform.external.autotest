@@ -5,7 +5,7 @@
 NAME = 'hardware_MemoryZRAMThroughput'
 AUTHOR = 'The Chromium OS Authors'
 PURPOSE = 'Measure page access throughput, with and without ZRAM.'
-ATTRIBUTES = "suite:crosbolt_perf_weekly"
+ATTRIBUTES = "suite:crosbolt_perf_weekly, suite:pvs-uprev-exit"
 TIME='SHORT'
 TEST_CATEGORY = 'Performance'
 TEST_CLASS = "hardware"

@@ -134,15 +134,6 @@ class ServoHost(base_servohost.BaseServoHost):
     # run.
     OLD_LOG_SUFFIX = 'old'
 
-    # Mapping servo board with their vid-pid
-    SERVO_VID_PID = {
-            'servo_v4': '18d1:501b',
-            'ccd_cr50': '18d1:5014',
-            'servo_micro': '18d1:501a',
-            'servo_v3': ['18d1:5004', '0403:6014'],
-            'c2d2': '1d81:5041',
-    }
-
     def _init_attributes(self):
         self._servo_state = None
         self.servo_port = None
@@ -1245,44 +1236,10 @@ class ServoHost(base_servohost.BaseServoHost):
                 'host': self.get_dut_hostname() or self.hostname,
                 'board': self.servo_board or ''}
 
-    def _is_servo_device_connected(self, servo_type, serial):
-        """Check if device is connected to the labstation.
-
-        Works for all servo devices connected to the labstation.
-        For servo_v3 please use 'self._is_servo_board_present_on_servo_v3'
-
-        @param servo_type:  The type of servo device. Expecting value can be
-                            servo_v4 or servo_micro.
-        @param serial:      The serial number of the device to detect it.
-        """
-        vid_pid = self.SERVO_VID_PID.get(servo_type)
-        if not vid_pid or not serial:
-            # device cannot detected without VID/PID or serial number
-            return False
-        logging.debug('Started to detect %s', servo_type)
-        try:
-            cmd = 'lsusb -v -d %s |grep iSerial |grep %s' % (vid_pid, serial)
-            result = self.run(cmd, ignore_status=True, timeout=30)
-            if result.exit_status == 0 and result.stdout.strip():
-                logging.debug('The %s is plugged in to the host.', servo_type)
-                return True
-            logging.debug('%s device is not detected; %s', servo_type, result)
-            return False
-        except Exception as e:
-            # can be triggered by timeout issue due running the script
-            metrics.Counter(
-                'chromeos/autotest/repair/servo_detection/timeout'
-                ).increment(fields=self._get_host_metrics_data())
-            logging.error('%s device is not detected; %s', servo_type, str(e))
-        return None
-
-    def _is_servo_board_present_on_servo_v3(self):
+    def is_servo_board_present_on_servo_v3(self):
         """Check if servo board is detected on servo_v3"""
-        vid_pids = self.SERVO_VID_PID['servo_v3']
-        if not vid_pids or len(vid_pids) == 0:
-            # device cannot detected without VID/PID
-            return False
         logging.debug('Started to detect servo board on servo_v3')
+        vid_pids = ['18d1:5004', '0403:6014']
         not_detected = 'The servo board is not detected on servo_v3'
         try:
             cmd = 'lsusb | grep "%s"' % "\|".join(vid_pids)
@@ -1299,44 +1256,6 @@ class ServoHost(base_servohost.BaseServoHost):
                 ).increment(fields=self._get_host_metrics_data())
             logging.error('%s; %s', not_detected, str(e))
         return None
-
-    def _is_main_device_not_detected_on_servo_v4(self):
-        """Check if servod cannot find main device on servo.
-
-        The check based on reading servod logs for servo_v4.
-        """
-        if not self._initial_instance_ts:
-            # latest log not found
-            return False
-        logging.debug('latest log for servod created at %s',
-                      self._initial_instance_ts)
-        try:
-            log_created = calendar.timegm(time.strptime(
-                self._initial_instance_ts,
-                "%Y-%m-%d--%H-%M-%S.%f"))
-        except ValueError as e:
-            logging.debug('Cannot read time from log file name: %s',
-                          self._initial_instance_ts)
-            return False
-        min_time_created = calendar.timegm(time.gmtime())
-        if min_time_created > log_created + 3600:
-            # the log file is old we cannot use it
-            logging.debug('log file was created more than hour ago, too old')
-            return False
-        logging.debug('latest log was created not longer then 1 hour ago')
-
-        # check if servod can detect main device by servo_v4
-        message = 'ERROR - No servo micro or CCD detected for board'
-        cmd = ('cat /var/log/servod_%s/log.%s.INFO |grep "%s"'
-               % (self.servo_port, self._initial_instance_ts, message))
-        result = self.run(cmd, ignore_status=True)
-        if result.stdout.strip():
-            logging.info('Servod cannot detect main device on the servo; '
-                        'Can be caused by bad hardware of servo or '
-                        'issue on the DUT side.')
-            return True
-        logging.debug('The main device is detected')
-        return False
 
     def _require_cr50_servod_config(self):
         """Check whether we need start servod with CONFIG=cr50.xml"""
@@ -1363,6 +1282,8 @@ class ServoHost(base_servohost.BaseServoHost):
         them.
         """
         ssh = self.get_verifier_state('servo_ssh')
+        servo_root_present = self.get_verifier_state('servo_root_present')
+        servo_v3_present = self.get_verifier_state('servo_v3_root_present')
         servo_fw = self.get_verifier_state('servo_fw')
         disk_space = self.get_verifier_state('servo_disk_space')
         start_servod = self.get_verifier_state('servod_started')
@@ -1381,31 +1302,27 @@ class ServoHost(base_servohost.BaseServoHost):
 
         if not ssh:
             return servo_constants.SERVO_STATE_NO_SSH
+        if servo_root_present == hosts.VERIFY_FAILED:
+            if not self.servo_serial:
+                return servo_constants.SERVO_STATE_WRONG_CONFIG
+            return servo_constants.SERVO_STATE_NOT_CONNECTED
+        if servo_v3_present == hosts.VERIFY_FAILED:
+            # if we cannot find required board on servo_v3
+            return servo_constants.SERVO_STATE_NEED_REPLACEMENT
         if servo_fw == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_NEED_REPLACEMENT
-
-        if (start_servod == hosts.VERIFY_FAILED
-                    or create_servo == hosts.VERIFY_FAILED):
-            # sometimes servo can start with out present servo
-            if self.is_labstation():
-                if not self.servo_serial:
-                    return servo_constants.SERVO_STATE_WRONG_CONFIG
-                if self._is_servo_device_connected(
-                    'servo_v4',
-                    self.servo_serial) == False:
-                    return servo_constants.SERVO_STATE_NOT_CONNECTED
-            elif self._is_servo_board_present_on_servo_v3() == False:
-                return servo_constants.SERVO_STATE_NOT_CONNECTED
 
         if dut_connected == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
         if hub_connected == hosts.VERIFY_FAILED:
             logging.info('Servo HUB not connected')
             return servo_constants.SERVO_STATE_DUT_NOT_CONNECTED
+
         if cr50_low_sbu == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SBU_LOW_VOLTAGE
         if cr50_off == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_CR50_NOT_ENUMERATED
+
         if servo_topology == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_TOPOLOGY_ISSUE
 
@@ -1418,28 +1335,6 @@ class ServoHost(base_servohost.BaseServoHost):
 
         if start_servod == hosts.VERIFY_FAILED:
             return servo_constants.SERVO_STATE_SERVOD_ISSUE
-
-        if create_servo == hosts.VERIFY_FAILED:
-            if (self.is_labstation()
-                and self._is_main_device_not_detected_on_servo_v4()):
-                servo_type = None
-                if self.get_dut_host_info():
-                    servo_type = self.get_dut_host_info().get_label_value(
-                        servo_constants.SERVO_TYPE_LABEL_PREFIX)
-                if servo_type and 'servo_micro' in servo_type:
-                    serial = self.get_servo_micro_serial_number()
-                    logging.debug('servo_micro serial: %s', serial)
-                    if self._is_servo_device_detected('servo_micro',
-                                                      serial):
-                        return servo_constants.SERVO_STATE_BAD_RIBBON_CABLE
-                # Device can be not detected because of DUT
-                # TODO (otabek) update after b/159755652 and b/159754985
-                metrics.Counter(
-                    'chromeos/autotest/repair/servo_state/needs_replacement'
-                    ).increment(fields=self._get_host_metrics_data())
-            elif not self.is_labstation():
-                # Here need logic to check if flex cable is connected
-                pass
 
         # one of the reason why servo can not initialized
         if cr50_console == hosts.VERIFY_FAILED:

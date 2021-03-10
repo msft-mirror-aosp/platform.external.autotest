@@ -208,17 +208,6 @@ class _ServoFwVerifier(hosts.Verifier):
                     ' Please file a bug agains Fleet Automation team (go/fleet-bug)'
             )
 
-        # If all servos are up-to-date so now we can start servod.
-        # We still do not fail if we have issue with starting the servod
-        # so just log issue if detected.
-        try:
-            host.restart_servod(quick_startup=True)
-        except Exception as e:
-            logging.warning(
-                    "Start servod failed due to:\n%s\n"
-                    "This error is forgiven here, we will retry"
-                    " in further repair actions.", e)
-
     def _is_applicable(self, host):
         # Run only for servos under labstations.
         if not host.is_labstation():
@@ -1319,16 +1308,23 @@ def _servo_verifier_actions():
     """
     Return a verifiers for a `ServoHost`.
     """
-    config = ['servo_config_board', 'servo_config_serial']
     return (
             (repair_utils.SshVerifier, 'servo_ssh', []),
-            (_ServoFwVerifier, 'servo_fw', ['servo_ssh']),
+            (_RootServoPresentVerifier, 'servo_root_present', ['servo_ssh']),
+            (_RootServoV3PresentVerifier, 'servo_v3_root_present',
+             ['servo_ssh']),
+            (_ServoFwVerifier, 'servo_fw', ['servo_root_present']),
+            (_StartServodVerifier, 'start_servod',
+             ['servo_fw', 'servo_v3_root_present']),
             (_DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
-            (_UpdateVerifier, 'servo_update', ['servo_ssh']),
+            (_UpdateVerifier, 'servo_update', ['servo_v3_root_present']),
             (_BoardConfigVerifier, 'servo_config_board', ['servo_ssh']),
             (_SerialConfigVerifier, 'servo_config_serial', ['servo_ssh']),
-            (_ServodJobVerifier, 'servod_started',
-             config + ['servo_disk_space']),
+            (_ServodJobVerifier, 'servod_started', [
+                    'start_servod', 'servo_v3_root_present',
+                    'servo_config_board', 'servo_config_serial',
+                    'servo_disk_space'
+            ]),
             (_TopologyVerifier, 'servo_topology', ['servod_started']),
             (_ServodConnectionVerifier, 'servod_connection',
              ['servod_started']),
@@ -1357,16 +1353,11 @@ def _servo_repair_actions():
     Return a `RepairStrategy` for a `ServoHost`.
     """
     config = ['servo_config_board', 'servo_config_serial']
-    servod_deps = [
+    base_triggers = [
             'servod_started', 'servo_topology', 'servod_connection',
             'servod_control', 'servo_dut_connected', 'servo_hub_connected',
             'servo_pwr_button', 'servo_cr50_console', 'servo_cr50_low_sbu',
-            'servo_cr50_off'
-    ]
-    pd_triggers = [
-            'servo_power_delivery', 'servo_topology', 'servo_dut_connected',
-            'servo_hub_connected', 'servo_cr50_low_sbu', 'servo_cr50_off',
-            'servo_cr50_console'
+            'servo_cr50_off', 'servo_power_delivery'
     ]
     dut_triggers = [
             'servod_control', 'servo_lid_open', 'servo_ec_board',
@@ -1382,14 +1373,14 @@ def _servo_repair_actions():
             (_ServoMicroFlashRepair, 'servo_micro_flash',
              ['servo_ssh', 'servo_topology'], ['servo_dut_connected']),
             (_RestartServod, 'servod_restart', ['servo_ssh'],
-             config + servod_deps),
-            (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], servod_deps),
+             config + base_triggers),
+            (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'], base_triggers),
             (_PowerDeliveryRepair, 'servo_pd_recover', ['servod_connection'],
-             pd_triggers),
+             base_triggers),
             (_FakedisconnectRepair, 'servo_fakedisconnect',
-             ['servod_connection'], servod_deps),
+             ['servod_connection'], base_triggers),
             (_ToggleCCLineRepair, 'servo_cc', ['servod_connection'],
-             servod_deps),
+             base_triggers),
             (_DutRebootRepair, 'servo_dut_reboot', ['servod_connection'],
              dut_triggers),
             (_ECRebootRepair, 'servo_ec_reboot', ['servod_connection'],

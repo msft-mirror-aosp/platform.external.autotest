@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import json
 import logging
+import sys
 import time
 import math
 
@@ -1275,7 +1276,16 @@ class ServoInstallRepair(hosts.RepairAction):
 
         host.servo.get_power_state_controller().power_off()
         if update_url:
-            host.install_image_to_servo_usb(image_url=update_url)
+            try:
+                host.install_image_to_servo_usb(image_url=update_url)
+            except Exception as e:
+                # Format USB-storage as incorrect download image can cause
+                # false believe that image downloaded.
+                self._format_usb_storage(host)
+                # Powering DUT on as if leave it in off mode can cause issue
+                # with detecting ccd_cr50 on the board.
+                host.servo.get_power_state_controller().power_on()
+                six.reraise(error.AutotestError, str(e), sys.exc_info()[2])
         else:
             # Give the DUT some time to power_off if we skip
             # download image to usb. (crbug.com/982993)
@@ -1297,6 +1307,18 @@ class ServoInstallRepair(hosts.RepairAction):
             metrics_data = {'host': host.hostname, 'usb_state': usb_state}
             metrics.Counter('chromeos/autotest/usbkey_install_success'
                             ).increment(fields=metrics_data)
+
+    def _format_usb_storage(self, host):
+        """Format USB-storage connected to servo."""
+        try:
+            # Format USB-storage to prevent corrupted image to be
+            # counted as good image.
+            usb_path = host.servo.probe_host_usb_dev()
+            logging.info('Formating %s', usb_path)
+            cmd = 'mkfs.ext4 -F %s' % usb_path
+            host._servo_host.run(cmd, ignore_status=True)
+        except Exception as e:
+            logging.info('(Not critical) fail to format USB-storage: %s', e)
 
     @property
     def description(self):

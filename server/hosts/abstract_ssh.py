@@ -586,16 +586,10 @@ class AbstractSSHHost(remote.RemoteHost):
             source = [source]
 
         client_symlink = _client_symlink(source)
-        # The client symlink *must* be preserved, so if this flag is set,
-        # make an initial rsync with these links preserved
-        if client_symlink and not preserve_symlinks:
+        # The client symlink *must* be preserved, and should not be sent with
+        # the main send_file in case scp is used, which does not support symlink
+        if client_symlink:
             source.remove(client_symlink)
-            self._send_file(dest=dest,
-                            source=[client_symlink],
-                            local_sources=client_symlink,
-                            delete_dest=delete_dest,
-                            excludes=excludes,
-                            preserve_symlinks=True)
 
         local_sources = self._encode_local_paths(source)
         if not local_sources:
@@ -611,6 +605,34 @@ class AbstractSSHHost(remote.RemoteHost):
                 delete_dest=delete_dest,
                 excludes=excludes,
                 preserve_symlinks=preserve_symlinks)
+
+        # Send the client symlink after the rest of the autotest repo has been
+        # sent.
+        if client_symlink:
+            self._send_client_symlink(dest=dest,
+                                      source=[client_symlink],
+                                      local_sources=client_symlink,
+                                      delete_dest=delete_dest,
+                                      excludes=excludes,
+                                      preserve_symlinks=True)
+
+    def _send_client_symlink(self, dest, source, local_sources, delete_dest,
+                             excludes, preserve_symlinks):
+        if self.use_rsync():
+            if self._send_using_rsync(dest=dest,
+                                      local_sources=local_sources,
+                                      delete_dest=delete_dest,
+                                      preserve_symlinks=preserve_symlinks,
+                                      excludes=excludes):
+                return
+        # Manually create the symlink if rsync is not available, or fails.
+        try:
+            self.run('mkdir {f} && touch {f}/__init__.py && cd {f} && '
+                     'ln -s ../ client'.format(
+                             f=os.path.join(dest, 'autotest_lib')))
+        except Exception as e:
+            raise error.AutotestHostRunError(
+                    "Could not create client symlink on host: %s" % e)
 
     def _send_file(self, dest, source, local_sources, delete_dest, excludes,
                    preserve_symlinks):

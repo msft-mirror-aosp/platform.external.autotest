@@ -1489,7 +1489,7 @@ def create_servo_host(dut,
                       servo_args,
                       try_lab_servo=False,
                       try_servo_repair=False,
-                      try_servo_recovery=False,
+                      try_servo_recovery=True,
                       dut_host_info=None,
                       dut_health_profile=None):
     """Create a ServoHost object for a given DUT, if appropriate.
@@ -1529,22 +1529,23 @@ def create_servo_host(dut,
       * If no other options are found, the parameters will be taken
         from the `servo_args` dict passed in from the caller.
 
-    @param dut            An instance of `Host` from which to take
-                          servo parameters (if available).
-    @param servo_args     A dictionary with servo parameters to use if
-                          they can't be found from `dut`.  If this
-                          argument is supplied, unrepaired exceptions
-                          from `verify()` will be passed back to the
-                          caller.
-    @param try_lab_servo  If not true, servo host creation will be
-                          skipped unless otherwise required by the
-                          caller.
-    @param try_servo_repair  If true, check a servo host with
-                          `repair()` instead of `verify()`.
-    @param try_servo_recovery  If true, start servod in recovery mode.
-    @param dut_host_info: A HostInfo object of the DUT that connected
-                          to this servo.
-    @param dut_health_profile: DUT repair info with history.
+    @param dut:                 An instance of `Host` from which to take
+                                servo parameters (if available).
+    @param servo_args:          A dictionary with servo parameters to use if
+                                they can't be found from `dut`.  If this
+                                argument is supplied, unrepaired exceptions
+                                from `verify()` will be passed back to the
+                                caller.
+    @param try_lab_servo:       If not true, servo host creation will be
+                                skipped unless otherwise required by the
+                                caller.
+    @param try_servo_repair:    If true, check a servo host with
+                                `repair()` instead of `verify()`.
+    @param try_servo_recovery:  If true, start servod in recovery mode.
+                                Default value is True.
+    @param dut_host_info:       A HostInfo object of the DUT that connected
+                                to this servo.
+    @param dut_health_profile:  DUT repair info with history.
 
     @returns: A ServoHost object or None. See comments above.
 

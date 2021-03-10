@@ -51,6 +51,9 @@ class ServoTopology(object):
     # Command to get usb-path to device
     SERVOD_TOOL_USB_PATH = 'servodtool device -s %s usb-path'
 
+    # Minimal length of usb-path for servo devices connected to the host.
+    MIN_SERVO_PATH = len('/sys/bus/usb/devices/X')
+
     def __init__(self, servo_host):
         self._host = servo_host
         self.reset()
@@ -255,7 +258,7 @@ class ServoTopology(object):
         cmd_hub = self.SERVOD_TOOL_USB_PATH % servo_serial
         servo_path = self._read_line(cmd_hub)
         logging.debug('Servo %s path: %s', servo_serial, servo_path)
-        if not servo_path or len(servo_path) < 3:
+        if not servo_path or len(servo_path) < self.MIN_SERVO_PATH:
             logging.info('Servo not detected.')
             return None
         base_path = os.path.dirname(servo_path)
@@ -263,6 +266,24 @@ class ServoTopology(object):
         # Removing last port as
         servo_hub_tail = string.join(root_servo_tail.split('.')[:-1], '.')
         return os.path.join(base_path, servo_hub_tail)
+
+    def get_root_servo(self):
+        """Get root servo device.
+
+        @returns: ConnectedServo if device found.
+        """
+        logging.debug('Try to find a root servo')
+        if not self.is_servo_serial_provided():
+            return None
+        # Find the path to the servo-hub folder.
+        root_servo_serial = self._host.servo_serial
+        cmd_hub = self.SERVOD_TOOL_USB_PATH % root_servo_serial
+        servo_path = self._read_line(cmd_hub)
+        logging.debug('Servo %s path: %s', root_servo_serial, servo_path)
+        if not servo_path or len(servo_path) < self.MIN_SERVO_PATH:
+            logging.info('Servo not detected.')
+            return None
+        return self._get_device(servo_path)
 
     def get_list_of_devices(self):
         """Generate list of devices with serials.

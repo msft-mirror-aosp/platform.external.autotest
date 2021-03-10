@@ -101,6 +101,97 @@ class _UpdateVerifier(hosts.Verifier):
         return 'Servo_v3 host software is up-to-date'
 
 
+class _StartServodVerifier(hosts.Verifier):
+    """First start of servod on the host.
+
+    Single running action to start servod in the first time.
+    This verifier created to fit current flow and will be revisited later.
+    Action never fails!
+    """
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        if not hasattr(self, 'started'):
+            logging.info('Starting servod!')
+            try:
+                host.restart_servod(quick_startup=True)
+            except Exception as e:
+                logging.warning(
+                        "Start servod failed due to:\n%s\n"
+                        "This error is forgiven here, we will retry"
+                        " in further repair actions.", e)
+        # caching the value to prevent restart service when trigger verifier.
+        self.started = True
+
+    @property
+    def description(self):
+        return 'Initial servod start'
+
+
+class _RootServoPresentVerifier(hosts.Verifier):
+    """Verifier that first servo is present."""
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        device = None
+        try:
+            topology = host.get_topology()
+            device = topology.get_root_servo()
+        except:
+            host.request_reboot()
+            logging.info('Reboot labstation requested, it will be handled'
+                         ' by labstation AdminRepair task.'
+                         ' Unable to detect root servo info from topology.')
+        if device and device.is_good():
+            logging.debug('Root servo is present')
+        else:
+            raise hosts.AutoservVerifyError('Root servo not found!')
+
+    def _is_applicable(self, host):
+        # Run only for servos under labstations.
+        if not host.is_labstation():
+            return False
+        # Only run if the host is in the physical lab.
+        if not host.is_in_lab() or host.is_localhost():
+            return False
+        return True
+
+    @property
+    def description(self):
+        return 'Root servo is present'
+
+
+class _RootServoV3PresentVerifier(hosts.Verifier):
+    """Verifier that first servo is present."""
+
+    RETRY_COUNT = 3
+
+    @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
+    def verify(self, host):
+        for a in range(self.RETRY_COUNT):
+            logging.debug('Attempt: %s find servo board on servo_v3.', a + 1)
+            present = host.is_servo_board_present_on_servo_v3()
+            if present == False:
+                raise hosts.AutoservVerifyError('Servo board not found!')
+            elif present == True:
+                logging.debug('Servo board is present')
+                return
+        raise hosts.AutoservVerifyError('Fail to find servo board!')
+
+    def _is_applicable(self, host):
+        # Do not run for servos under labstations.
+        if host.is_labstation():
+            return False
+        # Only run if the host is in the physical lab.
+        if not host.is_in_lab() or host.is_localhost():
+            return False
+        return True
+
+    @property
+    def description(self):
+        return 'Servo board on servo_v3 is present'
+
+
 class _ServoFwVerifier(hosts.Verifier):
     """Verifier to check is a servo fw is up-to-date."""
 

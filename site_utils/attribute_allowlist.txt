@@ -9,6 +9,7 @@ suite:arc-cts-camera
 suite:arc-cts-deqp
 suite:arc-cts-qual
 suite:arc-cts-r
+suite:arc-cts-s
 suite:arc-cts-unibuild
 suite:arc-cts-unibuild-hw
 suite:arc-gts

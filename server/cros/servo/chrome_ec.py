@@ -249,6 +249,9 @@ class ChromeEC(ChromeConsole):
     This class is to abstract these interfaces.
     """
 
+    # The dict to cache the battery information
+    BATTERY_INFO = {}
+
     def __init__(self, servo, name="ec_uart"):
         super(ChromeEC, self).__init__(servo, name)
 
@@ -439,6 +442,110 @@ class ChromeEC(ChromeConsole):
         feat_bitmap = int(result[0][1], 16)
 
         return ((1 << (feat_id - feat_start)) & feat_bitmap) != 0
+
+    def update_battery_info(self):
+        """Get the battery info we care for this test."""
+        # The battery parameters we care for this test. The order must match
+        # the output of EC battery command.
+        battery_params = [
+                'V', 'V-desired', 'I', 'I-desired', 'Charging', 'Remaining'
+        ]
+        regex_str_list = []
+
+        for p in battery_params:
+            if p == 'Remaining':
+                regex_str_list.append(p + ':\s+(\d+)\s+')
+            elif p == 'Charging':
+                regex_str_list.append(p + r':\s+(Not Allowed|Allowed)\s+')
+            else:
+                regex_str_list.append(p +
+                                      r':\s+0x[0-9a-f]*\s+=\s+([0-9-]+)\s+')
+
+        # For unknown reasons, servod doesn't always capture the ec
+        # command output. It doesn't happen often, but retry if it does.
+        retries = 3
+        while retries > 0:
+            retries -= 1
+            try:
+                battery_regex_match = self.send_command_get_output(
+                        'battery', regex_str_list)
+                break
+            except (servo.UnresponsiveConsoleError,
+                    servo.ResponsiveConsoleError) as e:
+                if retries <= 0:
+                    raise
+                logging.warning('Failed to get battery status. %s', e)
+        else:
+            battery_regex_match = self.send_command_get_output(
+                    'battery', regex_str_list)
+
+        for i in range(len(battery_params)):
+            if battery_params[i] == 'Charging':
+                self.BATTERY_INFO[
+                        battery_params[i]] = battery_regex_match[i][1]
+            else:
+                self.BATTERY_INFO[battery_params[i]] = int(
+                        battery_regex_match[i][1])
+        logging.debug('Battery info: %s', self.BATTERY_INFO)
+
+    def get_battery_desired_voltage(self, print_result=True):
+        """Get battery desired voltage value."""
+        if not self.BATTERY_INFO:
+            self.update_battery_info()
+        if print_result:
+            logging.info('Battery desired voltage = %d mV',
+                         self.BATTERY_INFO['V-desired'])
+        return self.BATTERY_INFO['V-desired']
+
+    def get_battery_desired_current(self, print_result=True):
+        """Get battery desired current value."""
+        if not self.BATTERY_INFO:
+            self.update_battery_info()
+        if print_result:
+            logging.info('Battery desired current = %d mA',
+                         self.BATTERY_INFO['I-desired'])
+        return self.BATTERY_INFO['I-desired']
+
+    def get_battery_actual_voltage(self, print_result=True):
+        """Get the actual voltage from charger to battery."""
+        if not self.BATTERY_INFO:
+            self.update_battery_info()
+        if print_result:
+            logging.info('Battery actual voltage = %d mV',
+                         self.BATTERY_INFO['V'])
+        return self.BATTERY_INFO['V']
+
+    def get_battery_actual_current(self, print_result=True):
+        """Get the actual current from charger to battery."""
+        if not self.BATTERY_INFO:
+            self.update_battery_info()
+        if print_result:
+            logging.info('Battery actual current = %d mA',
+                         self.BATTERY_INFO['I'])
+        return self.BATTERY_INFO['I']
+
+    def get_battery_remaining(self, print_result=True):
+        """Get battery charge remaining in mAh."""
+        if not self.BATTERY_INFO:
+            self.update_battery_info()
+        if print_result:
+            logging.info("Battery charge remaining = %d mAh",
+                         self.BATTERY_INFO['Remaining'])
+        return self.BATTERY_INFO['Remaining']
+
+    def get_battery_charging_allowed(self, print_result=True):
+        """Get the battery charging state.
+
+        Returns True if charging is allowed.
+        """
+        if not self.BATTERY_INFO:
+            self.update_battery_info()
+        if print_result:
+            logging.info("Battery charging = %s",
+                         self.BATTERY_INFO['Charging'])
+        if self.BATTERY_INFO['Charging'] == 'Allowed':
+            return True
+        return False
 
 
 class ChromeUSBPD(ChromeEC):

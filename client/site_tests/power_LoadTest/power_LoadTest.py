@@ -420,6 +420,8 @@ class power_LoadTest(arc.ArcTest):
         psr.refresh()
         self._tmp_keyvals['minutes_battery_life_tested'] = (t1 - t0) / 60
         self._tmp_keyvals.update(psr.get_keyvals())
+        self._start_time = t0
+        self._end_time = t1
 
 
     def postprocess_iteration(self):
@@ -550,6 +552,25 @@ class power_LoadTest(arc.ArcTest):
                                            value=value,
                                            units='percent',
                                            higher_is_better=False)
+
+        logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
+
+        # Add audio/docs/email/web fail load to power dashboard
+        for task in ('audio', 'docs', 'email', 'web'):
+            key = 'ext_%s_failed_loads' % task
+            vals = (int(x) for x in keyvals[key].split('_'))
+            for index, val in enumerate(vals):
+                log_name = 'loop%2d_%s_failed_load' % (index, task)
+                logger.add_item(log_name, val, 'point', 'perf')
+
+        # Add ext_ms_page_load_time_mean to power dashboard
+        vals = (float(x)
+                for x in keyvals['ext_ms_page_load_time_mean'].split('_'))
+        for index, val in enumerate(vals):
+            log_name = 'loop%02d_ms_page_load_time' % index
+            logger.add_item(log_name, val, 'point', 'perf')
+
+        self._meas_logs.append(logger)
 
         self.write_perf_keyval(core_keyvals)
         for log in self._meas_logs:

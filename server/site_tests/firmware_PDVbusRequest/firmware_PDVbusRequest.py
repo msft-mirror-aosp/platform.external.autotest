@@ -64,6 +64,14 @@ class firmware_PDVbusRequest(FirmwareTest):
             result = 'PASS'
         return result, result_str
 
+    def _is_batt_full(self):
+        """Check if battery is full
+
+        @returns: True if battery is full, False otherwise
+        """
+        self.ec.update_battery_info()
+        return not self.ec.get_battery_charging_allowed(print_result=False)
+
     def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
                    init_power_mode=None):
         super(firmware_PDVbusRequest, self).initialize(host, cmdline_args)
@@ -73,9 +81,14 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.setup_pdtester(flip_cc, dts_mode)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
+
+        self.shutdown_power_mode = False
         if init_power_mode:
             # Set the DUT to suspend or shutdown mode
             self.set_ap_off_power_mode(init_power_mode)
+            if init_power_mode == "shutdown":
+                self.shutdown_power_mode = True
+
         self.usbpd.send_command('chan 0')
         logging.info('Disallow PR_SWAP request from DUT')
         self.pdtester.allow_pr_swap(False)
@@ -116,10 +129,31 @@ class firmware_PDVbusRequest(FirmwareTest):
 
         dut_voltage_limit = self.faft_config.usbc_input_voltage_limit
         dut_power_voltage_limit = dut_voltage_limit
+        dut_shutdown_and_full_batt_voltage_limit = (
+                self.faft_config.usbc_voltage_on_shutdown_and_full_batt)
+
         is_override = self.faft_config.charger_profile_override
         if is_override:
             logging.info('*** Custom charger profile takes over, which may '
                          'cause voltage-not-matched. It is OK to fail. *** ')
+
+        # Test will expect reduced voltage when battery is full and...:
+        # 1. We are running 'shutdown' variant of PDVbusRequest test (indicated
+        #    by self.shutdown_power_mode)
+        # 2. EC has battery capability
+        # 3. 'dut_shutdown_and_full_batt_voltage_limit' value will be less than
+        #    'dut_voltage_limit'. By default reduced voltage is set to maximum
+        #    voltage which means that no limit applies. Every board needs to
+        #    override this to correct value (most likely 5 or 9 volts)
+        is_voltage_reduced_if_batt_full = (
+                self.shutdown_power_mode
+                and self.check_ec_capability(['battery']) and
+                dut_shutdown_and_full_batt_voltage_limit < dut_voltage_limit)
+        if is_voltage_reduced_if_batt_full:
+            logging.info(
+                    '*** This DUT may reduce input voltage to %d volts '
+                    'when battery is full. ***',
+                    dut_shutdown_and_full_batt_voltage_limit)
 
         # Obtain voltage limit due to maximum charging power. Note that this
         # voltage limit applies only when EC follows the default policy. There
@@ -177,6 +211,10 @@ class firmware_PDVbusRequest(FirmwareTest):
                 expected_vbus_voltage = (self.USBC_SINK_VOLTAGE
                         if self.get_power_state() == 'S0' else 0)
                 ok_to_fail = False
+            elif (is_voltage_reduced_if_batt_full and self._is_batt_full()):
+                expected_vbus_voltage = min(
+                        voltage, dut_shutdown_and_full_batt_voltage_limit)
+                ok_to_fail = False
             else:
                 expected_vbus_voltage = min(voltage, dut_voltage_limit)
                 ok_to_fail = is_override or voltage > dut_power_voltage_limit
@@ -197,6 +235,13 @@ class firmware_PDVbusRequest(FirmwareTest):
                 logging.error('%s', fail)
             number = len(pdtester_failures)
             raise error.TestFail('PDTester failed %d times' % number)
+
+        if (is_voltage_reduced_if_batt_full and self._is_batt_full()):
+            logging.warn('This DUT reduces input voltage when chipset is in '
+                         'G3/S5 and battery is full. DUT initiated tests '
+                         'will be skipped. Please discharge battery to level '
+                         'that allows charging and run this test again')
+            return
 
         # The DUT must be in SNK mode for the pd <port> dev <voltage>
         # command to have an effect.

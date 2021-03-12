@@ -79,6 +79,8 @@ class firmware_ECUsbPorts(FirmwareTest):
             is_ioex = self.faft_config.custom_usb_enable_pins[idx].get(
                     'ioex', False)
             gpio_name = self.faft_config.custom_usb_enable_pins[idx]['name']
+            # change the unicode to ascii
+            gpio_name = str(gpio_name)
         _, val = self.ec.send_command_get_output(
                 '%sget %s' % (('gpio', 'ioex')[is_ioex], gpio_name),
                 ['([01])[^\n\r]*\s%s' % gpio_name])[0]

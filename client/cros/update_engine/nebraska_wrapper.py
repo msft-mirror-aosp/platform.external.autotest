@@ -204,3 +204,15 @@ class NebraskaWrapper(object):
             raise error.TestError(
                 'Failed to get update payload properties: %s with error: %s' %
                 (payload_props_url, err))
+
+    def update_config(self, **kwargs):
+        """
+        Updates the current running nebraska's config.
+
+        @param kwargs: A dictionary of key/values to update the nebraska's
+                       config.  See platform/dev/nebraska/nebraska.py for more
+                       information.
+
+        """
+        requests.post('http://127.0.0.1:%d/update_config' % self._port,
+                      json=kwargs)

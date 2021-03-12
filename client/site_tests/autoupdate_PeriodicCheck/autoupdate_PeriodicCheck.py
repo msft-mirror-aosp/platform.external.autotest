@@ -43,8 +43,8 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
                 log_dir=self.resultsdir, payload_url=payload_url) as nebraska:
 
             logging.info('Setting first update response to return no update.')
-            self._create_custom_lsb_release(
-                    nebraska.get_update_url(no_update=True))
+            nebraska.update_config(no_update=True)
+            self._create_custom_lsb_release(nebraska.get_update_url())
             self._restart_update_engine()
 
             # Wait for the first update check.
@@ -60,7 +60,7 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
             logging.info('First periodic update was initiated.')
 
             logging.info('Setting the next update response to be an update.')
-            self._create_custom_lsb_release(nebraska.get_update_url())
+            nebraska.update_config(no_update=False)
 
             # Wait for the second update check.
             try:

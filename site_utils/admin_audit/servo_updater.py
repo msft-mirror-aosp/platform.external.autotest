@@ -180,7 +180,7 @@ class _BaseUpdateServoFw(object):
         # introduced new option 'print'.
         cmd = 'servo_updater --help | grep print'
         result = self._host.run(cmd, ignore_status=True)
-        if result.exit_status == 0:
+        if result.exit_status == 0 and channel:
             self._updater_accept_channel = True
             return self._latest_version_from_updater(channel)
         self._updater_accept_channel = False
@@ -302,7 +302,8 @@ def _run_update_attempt(updater, topology, try_count, force_update,
                            ignore_version=ignore_version,
                            channel=channel)
             topology.update_servo_version(updater.get_device())
-            if not updater.need_update(ignore_version=ignore_version):
+            if not updater.need_update(ignore_version=ignore_version,
+                                       channel=channel):
                 success = True
         except Exception as e:
             logging.debug('(Not critical) fail to update %s; %s', board, e)

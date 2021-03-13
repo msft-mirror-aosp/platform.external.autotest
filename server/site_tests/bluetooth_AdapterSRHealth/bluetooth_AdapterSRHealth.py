@@ -325,7 +325,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # Test discovery without setting discovery filter
         # ----------------------------------------------------------------------
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
 
         # We don't pair to the peer device because we don't want it in the
         # allowlist. However, we want an advertising peer in this test
@@ -348,7 +348,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # Test discovery with discovery filter set
         # ----------------------------------------------------------------------
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
-        start_time = self.bluetooth_facade.get_device_time()
+        start_time = self.bluetooth_facade.get_device_utc_time()
 
         self.test_set_discovery_filter({'Transport': 'auto'})
         self.test_start_discovery()

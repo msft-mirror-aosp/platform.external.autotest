@@ -12,6 +12,7 @@ from autotest_lib.client.cros.cellular import hermes_utils
 from autotest_lib.client.cros.networking import mm1_proxy
 
 log = cellular_logging.SetupCellularLogging('HermesMMInstallEnable')
+
 class cellular_HermesMM_InstallEnable(test.test):
     """
     Tests Install & Enable functions on active/inactive Euicc and
@@ -94,15 +95,9 @@ class cellular_HermesMM_InstallEnable(test.test):
         self.mm_proxy, self.hermes_manager, euicc_path = \
                     hermes_utils.initialize_test(is_prod_ci)
 
-        self.installed_iccid = None
-        if not self.is_prod_ci:
-            self.installed_iccid = \
-            hermes_utils.install_profile_test(euicc_path, self.hermes_manager)
-        else:
-            # getting a disabled profile on a prod esim, so that we can
-            # test enable next.
-            self.installed_iccid = hermes_utils.get_profile(
-            euicc_path, self.hermes_manager, False)
+        logging.info('Getting profile to enable')
+        self.installed_iccid = hermes_utils.get_iccid_of_disabled_profile(
+            euicc_path, self.hermes_manager, self.is_prod_ci)
 
         hermes_utils.enable_or_disable_profile_test(
         euicc_path, self.hermes_manager, self.installed_iccid, True)
@@ -110,5 +105,4 @@ class cellular_HermesMM_InstallEnable(test.test):
         # Validate esim profile enabled is same as MM sim profile
         self._validate_sim_data(euicc_path)
 
-        logging.info('Profile Install & Enable Test MM-SIM Validation success')
         logging.info('HermesMMInstallEnableTest Completed')

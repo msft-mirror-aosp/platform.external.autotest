@@ -8,8 +8,9 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.cros.cellular import cellular_logging
 from autotest_lib.client.cros.cellular import hermes_utils
 
-log = cellular_logging.SetupCellularLogging('HermesEuiccEnableDisableTest')
-class cellular_HermesEuiccEnableDisable(test.test):
+log = cellular_logging.SetupCellularLogging('HermesSingleProfileTest')
+
+class cellular_Hermes_SingleProfile(test.test):
     """
     Tests Enable and Disable functions on active/inactive Euicc present
 
@@ -55,4 +56,4 @@ class cellular_HermesEuiccEnableDisable(test.test):
             hermes_utils.uninstall_profile_test(
             euicc_path, self.hermes_manager, self.installed_iccid)
 
-        logging.info('HermesEuiccEnableDisableTest Completed')
+        logging.info('HermesSingleProfileTest Completed')

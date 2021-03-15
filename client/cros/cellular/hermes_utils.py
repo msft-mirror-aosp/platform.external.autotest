@@ -272,6 +272,28 @@ def get_profile(euicc_path, hermes_manager, is_active):
     except dbus.DBusException as e:
         raise error.TestFail('get_profile failed :', repr(e))
 
+def get_iccid_of_disabled_profile(euicc_path, hermes_manager, is_prod_ci):
+    """
+    Get profile with disabled status and return its iccid
+
+    For test esim install new profile and return iccid of that profile
+    For prod esim having two profiles is prerequisite, return disabled profile
+
+    @param euicc_path: esim path based on testci/prodci
+    @param hermes_manager: hermes manager object
+    @param is_prod_ci:  true if it is prodci test and false for testci
+    @return iccid: iccid of the installed profile or None
+
+    """
+    if not is_prod_ci:
+        installed_iccid = install_profile_test(euicc_path, hermes_manager)
+    else:
+        # getting a disabled profile on a prod esim, so that we can
+        # test enable next.
+        installed_iccid = get_profile(euicc_path, hermes_manager, False)
+
+    return installed_iccid
+
 # Test functions
 def enable_or_disable_profile_test(
     euicc_path, hermes_manager, iccid, is_enable):
@@ -302,7 +324,8 @@ def enable_or_disable_profile_test(
             if not (hermes_constants.ProfileStateToString(profile.state) ==
                     target_state):
                 if iccid is None or iccid == profile.iccid:
-                    logging.info('Profile to enable:%s', profile.iccid)
+                    logging.info('Profile to %s:%s', profile_action,
+                                profile.iccid)
                     profile_found = True
                     set_profile_state(is_enable, profile=profile)
                     logging.info('===enable_or_disable_profile_test '
@@ -310,7 +333,7 @@ def enable_or_disable_profile_test(
                     break
         if not profile_found:
             raise error.TestFail('enable_or_disable_profile_test failed -'
-                    'No profile to ', profile_action)
+                    'No profile to ' + profile_action)
         # Check all profiles state
         validate_profile_state(euicc_path, hermes_manager, iccid, is_enable)
     except dbus.DBusException as e:

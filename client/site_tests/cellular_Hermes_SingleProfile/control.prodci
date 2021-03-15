@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "cellular_HermesEuiccEnableDisable.prodci"
+NAME = "cellular_Hermes_SingleProfile.prodci"
 PURPOSE = "Verify that a failed hermes connect attempt reported"
 CRITERIA = """
 This test will fail if could not able to Enable/Disable a given Euicc through
@@ -26,5 +26,5 @@ DOC = """
 from autotest_lib.client.cros.cellular import test_environment
 
 test_env = test_environment.CellularESIMTestEnvironment()
-job.run_test('cellular_HermesEuiccEnableDisable', test_env=test_env,
+job.run_test('cellular_Hermes_SingleProfile', test_env=test_env,
             is_prod_ci=True)

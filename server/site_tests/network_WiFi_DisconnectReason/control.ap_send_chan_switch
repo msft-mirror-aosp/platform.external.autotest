@@ -12,9 +12,7 @@ TEST_TYPE = 'Server'
 #       https://chromium-review.googlesource.com/c/604753/.
 #       Removing from all test suites for now.
 
-ATTRIBUTES = (
-#             'suite:wifi_matfunc'
-)
+ATTRIBUTES = ''
 DEPENDENCIES = 'wificell'
 
 DOC = """

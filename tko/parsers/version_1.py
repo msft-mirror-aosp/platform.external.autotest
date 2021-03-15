@@ -572,6 +572,8 @@ class parser(base.parser):
                 tko_utils.dprint(msg)
                 new_tests.append(new_test)
 
+        if current_reason and not running_job.reason:
+            running_job.reason = current_reason
         # The job is finished; produce the final SERVER_JOB entry and exit.
         final_job = test.parse_test(self.job, '----', 'SERVER_JOB',
                                     self.job.exit_status(), running_job.reason,

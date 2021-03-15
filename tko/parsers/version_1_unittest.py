@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 
-import datetime, time, unittest
+from autotest_lib.tko import models
+import datetime, time, unittest, mock
 
 import common
 from autotest_lib.client.common_lib import utils
@@ -364,6 +365,34 @@ class DummyAbortTestCase(unittest.TestCase):
         self.assertEquals(
             abort, '%sEND ABORT\t%s\t%s\t%s' % (
             '\t' * self.indent, self.subdir, self.testname, self.reason))
+
+
+class test_parse_file(unittest.TestCase):
+    """Tests for parsing a status.log file."""
+
+    class fake_job(models.job):
+        """Fake job object."""
+
+        def exit_status(self):
+            """Fake exit_status method."""
+            return 'FAIL'
+
+    @staticmethod
+    def _parse_host_keyval(job_dir, hostname):
+        return {}
+
+    @mock.patch.object(models.test, 'parse_host_keyval', _parse_host_keyval)
+    def test_top_level_fail_with_reason(self):
+        """Tests that a status.log with a FAIL keeps the reason."""
+        job = self.fake_job('dir', 'user', 'label', 'machine', None, None,
+                            None, None, None, None, None, None)
+        parser = version_1.parser()
+        parser.start(job)
+        tests = parser.end([
+                'FAIL\t----\t----\ttimestamp=1615249387\tlocaltime=Mar 09 00:23:07\tThis is the reason.'
+        ])
+        self.assertEquals(tests[0].status, 'FAIL')
+        self.assertEquals(tests[0].reason, 'This is the reason.')
 
 
 if __name__ == '__main__':

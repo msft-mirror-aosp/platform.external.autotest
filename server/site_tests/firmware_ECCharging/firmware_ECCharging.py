@@ -234,7 +234,7 @@ class firmware_ECCharging(FirmwareTest):
                     'Battery actual current (%d) too low, wait a bit. (%d mAh)',
                     self.ec.get_battery_actual_current(),
                     self.ec.get_battery_remaining())
-            time.sleep(self.BEGIN_CHARGING_RETRY_TIME)
+            self._consume_battery(deadline)
 
     def run_once(self):
         """Execute the main body of the test.

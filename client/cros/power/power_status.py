@@ -1894,8 +1894,9 @@ class MeasurementLogger(threading.Thread):
 
     def run(self):
         """Threads run method."""
-        loop = 0
+        loop = 1
         start_time = time.time()
+        time.sleep(self.seconds_period)
         while(not self.done):
             # TODO (dbasehore): We probably need proper locking in this file
             # since there have been race conditions with modifying and accessing

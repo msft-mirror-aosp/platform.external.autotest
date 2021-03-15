@@ -7,11 +7,6 @@ NAME = 'network_WiFi_DisconnectReason.ap_send_chan_switch'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 
-# TODO: This test seems broken, because it passes even though DUTs with Intel
-#       WiFi drivers don't support CSA: Full discussion at
-#       https://chromium-review.googlesource.com/c/604753/.
-#       Removing from all test suites for now.
-
 ATTRIBUTES = ''
 DEPENDENCIES = 'wificell'
 

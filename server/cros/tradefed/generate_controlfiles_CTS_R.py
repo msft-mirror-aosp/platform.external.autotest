@@ -104,9 +104,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'CtsDeqpTestCasesz',  # Put Deqp in one control file. Long enough, fairly stable.
         'CtsFileSystemTestCases',  # Runs long enough. (3h)
         'CtsFileSystemTestCasesz',
-        'CtsMediaBitstreamsTestCases',  # Put each Media module in its own control file. Long enough.
-        'CtsMediaHostTestCases',
-        'CtsMediaStressTestCases',
+        'CtsMediaStressTestCases',  # Put heavy  Media module in its own control file. Long enough.
         'CtsMediaTestCases',
         'CtsMediaTestCasesz',
         'CtsJvmti',

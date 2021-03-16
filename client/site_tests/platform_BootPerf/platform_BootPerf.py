@@ -98,7 +98,6 @@ class platform_BootPerf(test.test):
     _UPTIME_PREFIX = 'uptime-'
     _DISK_PREFIX = 'disk-'
 
-    _FIRMWARE_TIME_FILE = '/tmp/firmware-boot-time'
 
     _BOOTSTAT_ARCHIVE_GLOB = '/var/log/metrics/shutdown.[0-9]*'
     _UPTIME_FILE_GLOB = os.path.join('/tmp', _UPTIME_PREFIX + '*')
@@ -115,10 +114,6 @@ class platform_BootPerf(test.test):
                             glob.glob(self._DISK_FILE_GLOB))
         for fname in statlist:
             shutil.copy(fname, self.resultsdir)
-        try:
-            shutil.copy(self._FIRMWARE_TIME_FILE, self.resultsdir)
-        except Exception:
-            pass
 
     def _copy_console_ramoops(self):
         """Copy console_ramoops from previous reboot."""
@@ -212,29 +207,19 @@ class platform_BootPerf(test.test):
     def _gather_firmware_boot_time(self, results):
         """Read and report firmware startup time.
 
-        send-boot-metrics.cong writes the firmware startup time to the
-        file named in `_FIRMWARE_TIME_FILE`.  Read the time and record
-        it in `results` as the keyval seconds_power_on_to_kernel.
+        `cbmem -t` reports firmware boot time with format of
+        'Total Time: {comma separated microseconds}'. Read the time
+        and record it in `results` as the keyval
+        seconds_power_on_to_kernel.
 
         @param results  Keyvals dictionary.
 
         """
 
-        # crbug.com/1098635 - don't race with send-boot-metrics.conf
-        # TODO(grundler): directly read the firmware_time instead of depending
-        # on send-boot-metrics to create _FIRMWARE_TIME_FILE.
-        cnt = 1
-        while cnt < 60:
-            if  os.path.exists(self._FIRMWARE_TIME_FILE):
-                break
-            time.sleep(1)
-            cnt += 1
+        data = utils.system_output('cbmem -t | grep \'Total Time:\' |'
+                                   'awk \'{print $NF}\'')
+        firmware_time = round(float(data.replace(',', '')) / (1000 * 1000), 2)
 
-        # If the firmware boot time is not available, the file
-        # will not exist and we should throw an exception here.
-        data = utils.read_one_line(self._FIRMWARE_TIME_FILE)
-
-        firmware_time = float(data)
         boot_time = results['seconds_kernel_to_login']
         results['seconds_power_on_to_kernel'] = firmware_time
         results['seconds_power_on_to_login'] = (

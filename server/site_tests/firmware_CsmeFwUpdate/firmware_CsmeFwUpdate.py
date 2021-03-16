@@ -375,7 +375,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
 
         # Abort if downgrade me_rw version is same as spi me_rw version
         if (spi_me_version in downgrade_me_version):
-            raise error.TestError("Test setup issue : CSME RW version is " \
+            raise error.TestNAError("Test setup issue : CSME RW version is " \
                                     "same in both of the images.")
 
         for slot in ["A", "B"]:

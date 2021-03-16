@@ -2444,6 +2444,10 @@ class BluetoothAdapterTests(test.test):
                   False otherwise.
 
         """
+        # TODO(b/182864322) - remove the following statement when the bug
+        # is fixed.
+        device.SetRemoteAddress(self.bluetooth_facade.address)
+
         method_name = 'test_disconnection_by_device'
         disconnection_by_device = False
         try:

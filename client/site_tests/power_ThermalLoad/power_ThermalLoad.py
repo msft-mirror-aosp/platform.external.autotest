@@ -73,15 +73,19 @@ class FishTankFpsLogger(power_status.MeasurementLogger):
         super(FishTankFpsLogger, self).__init__([], seconds_period,
                                                     checkpoint_logger)
         self._tab = tab
-        self._lastFrameCount = 0
-        fishCount = self._tab.EvaluateJavaScript('fishCount')
+        (fishCount, frameCount, frameTime) = self._tab.EvaluateJavaScript(
+                '[fishCount, frameCount, Date.now()/1000]')
         self.domains = ['avg_fps_%04d_fishes' % fishCount]
-        self.refresh()
+        self._lastFrameCount = frameCount
+        self._lastFrameTime = frameTime
 
     def refresh(self):
-        frameCount = self._tab.EvaluateJavaScript('frameCount')
-        fps = (frameCount - self._lastFrameCount) / self.seconds_period
+        (frameCount, frameTime
+         ) = self._tab.EvaluateJavaScript('[frameCount, Date.now()/1000]')
+        period = frameTime - self._lastFrameTime
+        fps = (frameCount - self._lastFrameCount) / period
         self._lastFrameCount = frameCount
+        self._lastFrameTime = frameTime
         return [fps]
 
     def save_results(self, resultsdir, fname_prefix=None):

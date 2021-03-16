@@ -349,7 +349,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
 
         # Check if me_rw blob is present in FW_MAIN
         if not self.check_if_me_blob_exist_in_image(self.downgrade_bios):
-            raise error.TestError("Test setup issue : me_rw blob is not " \
+            raise error.TestNAError("Test setup issue : me_rw blob is not " \
                                     "present in downgrade bios.")
 
         # Check if both of the bios versions use same fmap structure for me_rw

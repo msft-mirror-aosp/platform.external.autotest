@@ -108,7 +108,7 @@ class ControlData(object):
         self.max_result_size_KB = DEFAULT_MAX_RESULT_SIZE_KB
         self.priority = priorities.Priority.DEFAULT
         self.extended_timeout = None
-        self.fast = False
+        self.fast = True
 
         _validate_control_file_fields(self.path, vars, raise_warnings)
 

@@ -138,6 +138,7 @@
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[94(video/avc261)]" />
   <Entry include="CtsMediaV2TestCases android.mediav2.cts.EncoderColorAspectsTest#testColorAspects[95(video/avc263)]" />
   <Entry include="CtsOsTestCases android.os.cts.AutoRevokeTest#testUnusedApp_getsPermissionRevoked" />
+  <Entry include="CtsOsTestCases android.os.cts.FileObserverTest#testFileObserver_multipleFilesFull" />
   <Entry include="CtsSyncAccountAccessOtherCertTestCases com.android.cts.content.CtsSyncAccountAccessOtherCertTestCases#testAccountAccess_otherCertAsAuthenticatorCanNotSeeAccount" />
   <Entry include="CtsThemeHostTestCases android.theme.cts.ThemeHostTest#testThemes" />
   <Entry include="CtsWidgetTestCases android.widget.cts.ToastTest#testCustomToastBlocked_whenBehindTranslucentActivity" />

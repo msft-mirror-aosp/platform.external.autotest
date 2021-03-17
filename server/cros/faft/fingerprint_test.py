@@ -91,6 +91,7 @@ class FingerprintTest(test.test):
             _FP_BOARD_NAME_BLOONCHIPPER: {
                     'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
                     'zork': 'bloonchipper_v2.0.5938-197506c1',
+                    'volteer': 'bloonchipper_v2.0.5938-197506c1',
             },
             _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
             _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',

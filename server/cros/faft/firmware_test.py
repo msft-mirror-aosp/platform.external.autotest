@@ -9,27 +9,24 @@ import logging
 import os
 import pprint
 import re
-import StringIO
 import time
 import uuid
+from xml.parsers import expat
 
+import StringIO
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import global_config
-from autotest_lib.client.common_lib.cros import retry
-from autotest_lib.client.common_lib.cros import tpm_utils
+from autotest_lib.client.common_lib import error, global_config
+from autotest_lib.client.common_lib.cros import retry, tpm_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import vboot_constants as vboot
-from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
+from autotest_lib.server.cros.faft import telemetry
 from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
 from autotest_lib.server.cros.faft.utils import mode_switcher
+from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.faft.utils.faft_checkers import FAFTCheckers
 from autotest_lib.server.cros.power import utils as PowerUtils
-from autotest_lib.server.cros.servo import chrome_base_ec
-from autotest_lib.server.cros.servo import chrome_cr50
-from autotest_lib.server.cros.servo import chrome_ec
-from autotest_lib.server.cros.servo import servo
-from autotest_lib.server.cros.faft import telemetry
+from autotest_lib.server.cros.servo import (chrome_base_ec, chrome_cr50,
+                                            chrome_ec, servo)
 
 # Experimentally tuned time in minutes to wait for partition device nodes on a
 # USB stick to be ready after plugging in the stick.
@@ -1186,7 +1183,7 @@ class FirmwareTest(test.test):
 
         try:
             match = self.ec.send_command_get_output("powerinfo", [pattern])
-        except error.TestFail as err:
+        except (error.TestFail, expat.ExpatError) as err:
             logging.warn("powerinfo command encountered an error: %s", err)
             return None
         if not match:
@@ -1228,7 +1225,7 @@ class FirmwareTest(test.test):
                 retries = retries - 1
                 if self._check_power_state(power_state):
                     return True
-            except error.TestFail:
+            except (error.TestFail, expat.ExpatError):
                 pass
             delay_time = retry_delay - time.time() + start_time
             if delay_time > 0:

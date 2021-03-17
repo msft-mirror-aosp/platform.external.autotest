@@ -4,10 +4,12 @@
 
 import logging
 import time
+from xml.parsers import expat
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.servo import servo
+
 
 class firmware_ECCharging(FirmwareTest):
     """
@@ -58,19 +60,30 @@ class firmware_ECCharging(FirmwareTest):
             logging.error("Caught exception: %s", str(e))
         super(firmware_ECCharging, self).cleanup()
 
+    def _retry_send_cmd(self, command, regex_list):
+        """Send an EC command, and retry if it fails."""
+        retries = 3
+        while retries > 0:
+            retries -= 1
+            try:
+                return self.ec.send_command_get_output(command, regex_list)
+            except (servo.UnresponsiveConsoleError,
+                    servo.ResponsiveConsoleError, expat.ExpatError) as e:
+                if retries <= 0:
+                    raise
+                logging.warning('Failed to send EC cmd. %s', e)
+
     def _get_charger_target_voltage(self):
         """Get target charging voltage set in charger."""
         voltage = int(
-                self.ec.send_command_get_output("charger",
-                                                ["V_batt:\s+(\d+)\s"])[0][1])
+                self._retry_send_cmd("charger", ["V_batt:\s+(\d+)\s"])[0][1])
         logging.info("Charger target voltage = %d mV", voltage)
         return voltage
 
     def _get_charger_target_current(self):
         """Get target charging current set in charger."""
         current = int(
-                self.ec.send_command_get_output("charger",
-                                                ["I_batt:\s+(\d+)\s"])[0][1])
+                self._retry_send_cmd("charger", ["I_batt:\s+(\d+)\s"])[0][1])
         logging.info("Charger target current = %d mA", current)
         return current
 
@@ -127,7 +140,7 @@ class firmware_ECCharging(FirmwareTest):
 
     def _check_if_discharge_on_ac(self):
         """Check if DUT is performing discharge on AC"""
-        match = self.ec.send_command_get_output("battery", [
+        match = self._retry_send_cmd("battery", [
                 r"Status:\s*(0x[0-9a-f]+)\s", r"Param flags:\s*([0-9a-f]+)\s"
         ])
         status = int(match[0][1], 16)
@@ -141,19 +154,9 @@ class firmware_ECCharging(FirmwareTest):
 
     def _check_battery_discharging(self):
         """Check if AC is attached and if charge control is normal."""
-        retries = 3
-        while retries > 0:
-            retries -= 1
-            try:
-                output = self.ec.send_command_get_output(
-                        "chgstate",
-                        [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=\s*(\d)\s*"])
-                break
-            except (servo.UnresponsiveConsoleError,
-                    servo.ResponsiveConsoleError) as e:
-                if retries <= 0:
-                    raise
-                logging.warning('Failed to get chgstate. %s', e)
+        output = self._retry_send_cmd(
+                "chgstate",
+                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=\s*(\d)\s*"])
         ac_state = int(output[0][1])
         chg_ctl_mode = int(output[1][1])
         if ac_state == 0:

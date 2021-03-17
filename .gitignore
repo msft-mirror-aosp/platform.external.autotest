@@ -52,6 +52,7 @@ monitor_db.pid
 server/cros/chaos_shadow_ap_list.conf
 server/site_tests/network_WiFiChaosPSK/control.local
 manifest-versions
+server/cros/bluetooth/LATEST_STABLE_AUTOTEST_COMMIT
 
 # These exist on the production servers.
 bug_filing_oauth_credentials.dat

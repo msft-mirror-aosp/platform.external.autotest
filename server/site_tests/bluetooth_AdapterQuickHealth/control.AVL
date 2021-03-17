@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
+from autotest_lib.server.cros.bluetooth.bluetooth_test_version_control\
+        import test_version_setup
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterQuickHealth.AVL'
@@ -23,6 +25,9 @@ DOC = """
 args_dict = utils.args_to_dict(args)
 
 def run(machine):
+    if not test_version_setup():
+        return
+
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterQuickHealth', host=host,
                  num_iterations=1, args_dict=args_dict,

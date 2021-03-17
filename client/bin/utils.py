@@ -1678,7 +1678,7 @@ def get_ec_temperatures():
     except Exception as e:
         logging.warning('Unable to read temperature sensors using ectool %s.',
                         e)
-    # Sanity check for real world values.
+    # Check for real world values.
     if not all(10.0 <= temperature <= 150.0 for temperature in temperatures):
         logging.warning('Unreasonable EC temperatures: %s.', temperatures)
     return temperatures
@@ -1695,7 +1695,7 @@ def get_current_temperature_max():
         temperature = max(all_temps)
     else:
         temperature = -1
-    # Sanity check for real world values.
+    # Check for real world values.
     assert ((temperature > 10.0) and
             (temperature < 150.0)), ('Unreasonable temperature %.1fC.' %
                                      temperature)
@@ -1718,7 +1718,7 @@ def get_cpu_max_frequency():
         except IOError:
             continue
         max_frequency = max(frequency, max_frequency)
-    # Sanity check.
+    # Confidence check.
     assert max_frequency > 1e8, ('Unreasonably low CPU frequency: %.1f' %
             max_frequency)
     return max_frequency
@@ -1909,7 +1909,7 @@ def get_mem_total():
     Returns the total memory available in the system in MBytes.
     """
     mem_total = _get_float_from_file(_MEMINFO, 'MemTotal:', 'MemTotal:', ' kB')
-    # Sanity check, all Chromebooks have at least 1GB of memory.
+    # Confidence check, all Chromebooks have at least 1GB of memory.
     assert mem_total > 256 * 1024, 'Unreasonable amount of memory.'
     return int(mem_total / 1024)
 

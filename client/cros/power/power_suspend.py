@@ -94,7 +94,7 @@ class Suspender(object):
     # enough to include ACPI Wake Reason... 10 should be far on the safe side.
     _RELEVANT_EVENTLOG_LINES = 10
 
-    # Sanity check value to catch overlong resume times (from missed RTC wakes)
+    # Check value to catch overlong resume times (from missed RTC wakes)
     _MAX_RESUME_TIME = 10
 
     # File written by powerd_suspend containing the hwclock time at resume.
@@ -605,7 +605,7 @@ class Suspender(object):
 
                 if not self._check_resume_finished():
                     if not self._aborted_due_to_locking():
-                        raise error.TestError("Sanity check failed: did not try to suspend.")
+                        raise error.TestError("Confidence check failed: did not try to suspend.")
                     logging.warning('Aborted suspend due to power override, will retry\n')
                     continue
                 if not self._check_for_errors(ignore_kernel_warns):
@@ -637,7 +637,7 @@ class Suspender(object):
                 # can be missing on non-SMP machines
                 cpu_up = None
             if total_up > self._MAX_RESUME_TIME:
-                raise error.TestError('Sanity check failed: missed RTC wakeup.')
+                raise error.TestError('Confidence check failed: missed RTC wakeup.')
 
             logging.info('Success(%d): %g down, %g up, %g board, %g firmware, '
                          '%g kernel, %g cpu, %g devices',

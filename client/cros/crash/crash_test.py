@@ -666,7 +666,7 @@ class CrashTest(test.test):
             self._push_consent()
 
         if must_run_all:
-            # Sanity check test_names is complete
+            # Check test_names is complete
             for attr in dir(self):
                 if attr.find('_test_') == 0:
                     test_name = attr[6:]

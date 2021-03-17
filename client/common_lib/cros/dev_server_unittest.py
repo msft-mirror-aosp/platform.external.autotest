@@ -797,7 +797,7 @@ class DevServerTest(mox.MoxTestBase):
 
 
     def testStagedFileUrl(self):
-        """Sanity tests that the staged file url looks right."""
+        """Tests that the staged file url looks right."""
         devserver_label = 'x86-mario-release/R30-1234.0.0'
         url = self.dev_server.get_staged_file_url('stateful.tgz',
                                                   devserver_label)

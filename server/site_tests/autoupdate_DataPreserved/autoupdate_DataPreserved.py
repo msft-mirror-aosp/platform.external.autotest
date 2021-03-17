@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
+from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -29,6 +33,19 @@ class autoupdate_DataPreserved(update_engine_test.UpdateEngineTest):
                              when run in the lab.
 
         """
+        # Provision latest stable build for the current board.
+        build_name = self._get_latest_serving_stable_build()
+
+        # Install the matching build with quick provision.
+        autotest_devserver = dev_server.ImageServer.resolve(
+                build_name, self._host.hostname)
+        update_url = autotest_devserver.get_update_url(build_name)
+        logging.info('Installing source image with update url: %s', update_url)
+        provisioner.ChromiumOSProvisioner(
+                update_url, host=self._host,
+                is_release_bucket=True).run_provision()
+
+        # Get payload for the update to ToT.
         payload_url = self.get_payload_for_nebraska(job_repo_url,
                                                     full_payload=full_payload)
 

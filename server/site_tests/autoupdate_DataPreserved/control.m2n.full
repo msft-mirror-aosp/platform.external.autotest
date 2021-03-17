@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 AUTHOR = "dhaddock, Chromium OS"
-NAME = "autoupdate_DataPreserved.full"
+NAME = "autoupdate_DataPreserved.m2n.full"
 PURPOSE = "Tests user data is not reset by updating."
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-m2n"
 DOC = """
 This tests that user's timezone, input methods, and downloaded files remain
 unchanged after an update.

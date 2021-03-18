@@ -28,7 +28,7 @@ class infra_TLSExecDUTCommand(test.test):
         @param case: The case to run.
 
         """
-        tlsconn = connection.TLSCConnection()
+        tlsconn = connection.TLSConnection()
         self.tlsclient = exec_dut_command.TLSExecDutCommandClient(
                 tlsconn, host.hostname)
         if case == "basic":

@@ -14,7 +14,7 @@ TLS_PORT = 7152
 TLS_IP = '10.254.254.254'
 
 
-class TLSCConnection(object):
+class TLSConnection(object):
     """The client side connection to Common-TLS service running in a drone."""
 
     def __init__(self):

@@ -15,7 +15,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.global_config import global_config
 from autotest_lib.server import utils
 from autotest_lib.server.hosts import base_classes
-from autotest_lib.server.hosts.tls_client.connection import TLSCConnection
+from autotest_lib.server.hosts.tls_client.connection import TLSConnection
 
 
 class RemoteHost(base_classes.Host):
@@ -54,7 +54,7 @@ class RemoteHost(base_classes.Host):
 
         self.tls_connection = None
         if get_value('AUTOSERV', 'enable_tls', type=bool, default=False):
-            self.tls_connection = TLSCConnection()
+            self.tls_connection = TLSConnection()
 
     def __repr__(self):
         return "<remote host: %s>" % self.hostname

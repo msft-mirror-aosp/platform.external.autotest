@@ -103,6 +103,7 @@ def _log_item(item, buf, tee):
     """
     if not item:
         return
+    # TODO dbeckett@ (crbug.com/990593), adjust this to be PY3 compatible.
     buf.write(item)
     if tee is not None and tee is not utils.TEE_TO_LOGS:
         tee.write(item)

@@ -18,22 +18,25 @@ class power_LW(test.test):
     SERVO_V4_ETH_VENDOR = '0bda'
     SERVO_V4_ETH_PRODUCT = '8153'
     WIFI_SSID = 'powertest_ap'
+    WIFI_PASSWORD = 'chromeos'
 
     def _get_wlan_ip(self, host):
         """Connect to wifi and return wlan ip address."""
         wlan_ip = host.get_wlan_ip()
+        logging.info('wlan_ip=%s', wlan_ip)
         if wlan_ip:
             return wlan_ip
 
-        if not host.connect_to_wifi(self.WIFI_SSID):
+        if not host.connect_to_wifi(self.WIFI_SSID, self.WIFI_PASSWORD):
             logging.info('Script to connect to wifi is probably missing.'
                          'Run dummy_Pass as a workaround to install it.')
             autotest_client = autotest.Autotest(host)
             autotest_client.run_test('dummy_Pass')
-            if not host.connect_to_wifi(self.WIFI_SSID):
+            if not host.connect_to_wifi(self.WIFI_SSID, self.WIFI_PASSWORD):
                 raise error.TestError('Can not connect to wifi.')
 
         wlan_ip = host.get_wlan_ip()
+        logging.info('After connected to wifi wlan_ip=%s', wlan_ip)
         if not wlan_ip:
             raise error.TestError('Can not find wlan ip.')
         return wlan_ip

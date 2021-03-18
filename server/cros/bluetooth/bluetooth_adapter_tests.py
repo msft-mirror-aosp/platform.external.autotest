@@ -3037,6 +3037,11 @@ class BluetoothAdapterTests(test.test):
                         advertisement_data),
                 logging_timespan=logging_timespan)
 
+        # _get_btmon_log will store the return value of the registration request
+        # in self.advertising_msg. If the request was successful, the return
+        # value was an empty string
+        registration_succeeded = (self.advertising_msg == '')
+
         # Verify that a new advertisement is added.
         advertisement_added = (
                 self.bluetooth_le_facade.btmon_find('Advertising Added') and
@@ -3103,6 +3108,7 @@ class BluetoothAdapterTests(test.test):
         tx_power_correct = self._verify_adv_tx_power(advertisement_data)
 
         self.results = {
+                'registration_succeeded': registration_succeeded,
                 'advertisement_added': advertisement_added,
                 'manufacturer_data_found': manufacturer_data_found,
                 'service_uuids_found': service_uuids_found,

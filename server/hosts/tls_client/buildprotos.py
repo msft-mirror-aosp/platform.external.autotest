@@ -62,6 +62,8 @@ def modify_proto():
     """Change the full path for the dependencies for a local one."""
     # This is likely a dirty hack, but compiling with the full src in autotest
     # doesn't work. Open to suggestions for alternatives.
+
+    #TODO (dbeckett@) b/183220746, work on a better thats not a hack...
     with open(DEST_PROTO_NAME, 'r+') as f:
         original = f.read()
     new = original.replace(

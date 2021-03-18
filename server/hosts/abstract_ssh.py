@@ -40,6 +40,11 @@ enable_main_ssh = get_value('AUTOSERV',
                             type=bool,
                             default=False)
 
+ENABLE_EXEC_DUT_COMMAND = get_value('AUTOSERV',
+                                    'enable_tls',
+                                    type=bool,
+                                    default=False)
+
 # Number of seconds to use the cached up status.
 _DEFAULT_UP_STATUS_EXPIRATION_SECONDS = 300
 _DEFAULT_SSH_PORT = 22
@@ -1063,6 +1068,8 @@ class AbstractSSHHost(remote.RemoteHost):
     @property
     def tls_exec_dut_command_client(self):
         # If client is already initialized, return that.
+        if not ENABLE_EXEC_DUT_COMMAND:
+            return None
         if self.tls_unstable:
             return None
         if self._tls_exec_dut_command_client is not None:

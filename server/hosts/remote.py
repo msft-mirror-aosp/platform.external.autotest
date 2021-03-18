@@ -53,8 +53,10 @@ class RemoteHost(base_classes.Host):
         get_value = global_config.get_config_value
 
         self.tls_connection = None
-        if get_value('AUTOSERV', 'enable_tls', type=bool, default=False):
+        try:
             self.tls_connection = TLSConnection()
+        except Exception as e:
+            logging.warning("Could not establish TLS connection %s", e)
 
     def __repr__(self):
         return "<remote host: %s>" % self.hostname

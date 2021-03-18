@@ -448,7 +448,10 @@ class _Uart(object):
     def start_capture(self):
         """Start capturing UART streams."""
         for uart in self._UartToCapture:
-            if self._start_stop_capture(uart, True):
+            # Always try to start the uart. Only add it to _streams if it's not
+            # in the list.
+            if (self._start_stop_capture(uart, True)
+                        and uart not in self._streams):
                 self._streams.append(uart)
 
     def get_logfile(self, uart):

@@ -25,6 +25,9 @@ class firmware_ECUpdateId(FirmwareTest):
             raise error.TestNAError("Nothing needs to be tested on this device")
         if not self.faft_client.ec.is_efs():
             raise error.TestNAError("Nothing needs to be tested for non-EFS")
+        if self._no_ec_sync:
+            raise error.TestNAError(
+                    "User selected to disable EC software sync")
         # In order to test software sync, it must be enabled.
         self.clear_set_gbb_flags(vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC, 0)
         self.backup_firmware()

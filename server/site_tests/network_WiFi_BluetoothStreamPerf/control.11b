@@ -27,7 +27,7 @@ def run(machine):
                for channel in (6,)]
     job.run_test('network_WiFi_BluetoothStreamPerf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args, args_dict=args_dict,
-                 additional_params=configs)
+                 additional_params=configs, test_name='coex_test')
 
 
 parallel_simple(run, machines)

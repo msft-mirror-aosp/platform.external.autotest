@@ -189,9 +189,9 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
         """
         self.coex_test()
 
-    def run_once(self, host):
+    def run_once(self, host, test_name=None):
         self.host = host
 
         self.quick_test_init(host, use_btpeer=True)
-        self.coex_health_batch_run()
+        self.coex_health_batch_run(test_name=test_name)
         self.quick_test_cleanup()

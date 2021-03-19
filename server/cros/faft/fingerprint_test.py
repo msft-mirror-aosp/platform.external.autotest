@@ -150,6 +150,7 @@ class FingerprintTest(test.test):
     }
 
     _BIOD_UPSTART_JOB_NAME = 'biod'
+    _POWERD_UPSTART_JOB_NAME = 'powerd'
     # TODO(crbug.com/925545)
     _TIMBERSLIDE_UPSTART_JOB_NAME = \
         'timberslide LOG_PATH=/sys/kernel/debug/cros_fp/console_log'
@@ -230,6 +231,15 @@ class FingerprintTest(test.test):
             logging.info('Stopping %s', self._BIOD_UPSTART_JOB_NAME)
             self.host.upstart_stop(self._BIOD_UPSTART_JOB_NAME)
 
+        # TODO(b/183123775): Remove when bug is fixed.
+        #  Disabling powerd to prevent the display from turning off, which kills
+        #  USB on some platforms.
+        self._powerd_running = self.host.upstart_status(
+            self._POWERD_UPSTART_JOB_NAME)
+        if self._powerd_running:
+            logging.info('Stopping %s', self._POWERD_UPSTART_JOB_NAME)
+            self.host.upstart_stop(self._POWERD_UPSTART_JOB_NAME)
+
         # On some platforms an AP reboot is needed after flashing firmware to
         # rebind the driver.
         self._dut_needs_reboot = self.get_host_board() == 'zork'
@@ -300,6 +310,10 @@ class FingerprintTest(test.test):
         self._initialize_hw_and_sw_write_protect(
             enable_hardware_write_protect=True,
             enable_software_write_protect=True)
+        # TODO(b/183123775)
+        if hasattr(self, '_powerd_running') and self._powerd_running:
+            logging.info('Restarting powerd')
+            self.host.upstart_restart(self._POWERD_UPSTART_JOB_NAME)
         if hasattr(self, '_biod_running') and self._biod_running:
             logging.info('Restarting biod')
             self.host.upstart_restart(self._BIOD_UPSTART_JOB_NAME)

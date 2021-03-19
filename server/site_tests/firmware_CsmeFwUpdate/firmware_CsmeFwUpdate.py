@@ -27,6 +27,8 @@ class firmware_CsmeFwUpdate(FirmwareTest):
     # Region to use for flashrom wp-region commands
     WP_REGION = 'WP_RO'
     MODE = 'recovery'
+    CBFSTOOL = 'cbfstool'
+    CMPTOOL = 'cmp'
 
     def initialize(self, host, cmdline_args, dev_mode = False):
         # Parse arguments from command line
@@ -281,6 +283,133 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         else:
             return True
 
+    def cmp_local_files(self,
+                        local_filename_1,
+                        local_filename_2):
+        """
+        Compare two local files
+
+        @param local_filename_1: Path to first local file to compare
+        @param local_filename_2: Path to second local file to compare
+
+        @returns "None" if files are identical, or
+                 string response from "cmp" command if files differ.
+        """
+        compare_cmd = ('%s %s %s' %
+                       (self.CMPTOOL, local_filename_1, local_filename_2))
+        try:
+            return self.faft_client.system.run_shell_command_get_output(
+                        compare_cmd, True)
+        except error.CmdError:
+            # already logged by run_shell_command()
+            return None
+
+    def cbfs_read(self,
+                  filename,
+                  extension,
+                  region='ME_RW_A',
+                  local_filename=None,
+                  arch=None,
+                  bios=None):
+        """
+        Reads an arbitrary file from cbfs.
+
+        @param filename: Filename in cbfs, including extension
+        @param extension: Extension of the file, including '.'
+        @param region: region (the default is just 'ME_RW_A')
+        @param local_filename: Path to use on the DUT, overriding the default in
+                           the cbfs work dir.
+        @param arch: Specific machine architecture to extract (default unset)
+        @param bios: Image from which the cbfs file to be read
+        @return: The full path of the read file, or None
+        """
+        if bios is None:
+            bios = os.path.join(self._cbfs_work_path, self._bios_path)
+
+        cbfs_filename = filename + extension
+        if local_filename is None:
+            local_filename = os.path.join(self._cbfs_work_path,
+                                          filename + extension)
+
+        extract_cmd = ('%s %s extract -r %s -n %s%s -f %s' %
+                       (self.CBFSTOOL, bios, region, filename,
+                        extension, local_filename))
+        if arch:
+            extract_cmd += ' -m %s' % arch
+
+        try:
+            self.faft_client.system.run_shell_command(extract_cmd)
+            return os.path.abspath(local_filename)
+        except error.CmdError:
+            # already logged by run_shell_command()
+            return None
+
+    def abort_if_me_rw_blobs_identical(self,
+                                       downgrade_bios,
+                                       spi_bios):
+        """
+        Determine if the CSME RW blob in the downgrade bios image is
+        different from the CSME RW blob in the spi bios image.
+
+        @param downgrade_bios: Downgrade bios path
+        @param spi_bios: Bios from spi flash path
+        @returns "None" if CSME RW blobs are identical, or
+                 string response from "diff" command if blobs differ.
+        """
+        # Extract me_rw blobs
+        cbfs_name = "me_rw"
+        downgrade_name = "me_rw"
+        spi_me_a_name = "me_rw_spi_a"
+        spi_me_b_name = "me_rw_spi_b"
+        temp_dir = self.faft_client.system.create_temp_dir()
+        downgrade_me_blob = os.path.join(temp_dir, downgrade_name)
+        spi_me_a_blob = os.path.join(temp_dir, spi_me_a_name)
+        spi_me_b_blob = os.path.join(temp_dir, spi_me_b_name)
+
+        downgrade_rw_path = self.cbfs_read(cbfs_name, '','ME_RW_A',
+                                           downgrade_me_blob, 'x86',
+                                           downgrade_bios)
+        if downgrade_rw_path is None:
+            self.faft_client.system.remove_dir(temp_dir)
+            raise error.TestError("Failed to read %s me_rw blob from " \
+                                  "the downgrade bios %s" % (downgrade_me_blob,
+                                                             downgrade_bios))
+
+        spi_rw_a_path = self.cbfs_read(cbfs_name, '','ME_RW_A', spi_me_a_blob,
+                                       'x86', spi_bios)
+        if spi_rw_a_path is None:
+            self.faft_client.system.remove_dir(temp_dir)
+            raise error.TestError("Failed to read %s me_rw_a blob from " \
+                                  "the downgrade bios %s" % (spi_me_a_blob,
+                                                             spi_bios))
+
+        spi_rw_b_path = self.cbfs_read(cbfs_name, '','ME_RW_B', spi_me_b_blob,
+                                       'x86', spi_bios)
+        if spi_rw_b_path is None:
+            self.faft_client.system.remove_dir(temp_dir)
+            raise error.TestError("Failed to read %s me_rw_b blob from " \
+                                  "the spi bios %s" % (spi_me_b_blob, spi_bios))
+
+        # Are the blobs different?
+        diff_a = self.cmp_local_files(downgrade_rw_path, spi_rw_a_path)
+        diff_b = self.cmp_local_files(downgrade_rw_path, spi_rw_b_path)
+        if diff_a and diff_b:
+            logging.info("CSME RW version is same, but downgrade me_rw " \
+                         "differs from both me_rw blobs in spi flash.")
+        elif diff_a:
+            logging.info("CSME RW version is same, but downgrade me_rw and " \
+                         "FW_MAIN_A me_rw differ.")
+        elif diff_b:
+            logging.info("CSME RW version is same, but downgrade me_rw and " \
+                         "FW_MAIN_B me_rw differ.")
+        else:
+            # Blobs are the same
+            self.faft_client.system.remove_dir(temp_dir)
+            raise error.TestNAError("CSME RW blobs are the same in downgrade " \
+                                    "and spi bios. Test skipped.")
+
+        self.faft_client.system.remove_dir(temp_dir)
+
     def prepare_shellball(self, bios_image, append = None):
         """Prepare a shellball with the given bios image.
 
@@ -342,7 +471,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
 
         if not self.check_if_me_blob_exist_in_image(self.spi_bios):
             raise error.TestError("Test setup issue : me_rw blob is not " \
-                                "present in the current bios.!")
+                                "present in the current bios!")
 
         # Check fmap scheme of the default bios in shellball
         downgrade_bios_fmap = self.check_fmap_format(self.downgrade_bios)
@@ -375,8 +504,9 @@ class firmware_CsmeFwUpdate(FirmwareTest):
 
         # Abort if downgrade me_rw version is same as spi me_rw version
         if (spi_me_version in downgrade_me_version):
-            raise error.TestNAError("Test setup issue : CSME RW version is " \
-                                    "same in both of the images.")
+            # Version is the same, abort test if blob content is the same
+            self.abort_if_me_rw_blobs_identical(self.downgrade_bios,
+                                                self.spi_bios)
 
         for slot in ["A", "B"]:
             operation = "downgrade"

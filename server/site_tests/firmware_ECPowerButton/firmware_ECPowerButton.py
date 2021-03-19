@@ -31,8 +31,9 @@ class firmware_ECPowerButton(FirmwareTest):
     # Number of tries when checking power state
     POWER_STATE_CHECK_TRIES = 20
 
-    # Delay between checking power state
-    POWER_STATE_CHECK_DELAY = 1
+    # After the device has reached the wanted shutdown power states (S5 or G3),
+    # wait for a short time before executing a power button wakeup.
+    SHUTDOWN_STABLE_DELAY = 1
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECPowerButton, self).initialize(host, cmdline_args)
@@ -77,10 +78,13 @@ class firmware_ECPowerButton(FirmwareTest):
         self.servo.power_key(shutdown_powerkey_duration)
 
         # Wait for the system to enter the requested power mode
-        if not self.wait_power_state(power_state, self.POWER_STATE_CHECK_TRIES,
-                                     self.POWER_STATE_CHECK_DELAY):
+        if not self.wait_power_state(power_state,
+                                     self.POWER_STATE_CHECK_TRIES):
             raise error.TestFail('The device failed to reach %s.' %
                                  power_state)
+
+        # Add a delay to confirm the system is stabily shut down
+        time.sleep(self.SHUTDOWN_STABLE_DELAY)
 
         # Send a new line to wakeup EC from deepsleep,
         # it can happen if the EC console is not used for some time.

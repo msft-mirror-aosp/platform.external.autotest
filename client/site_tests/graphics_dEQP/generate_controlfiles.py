@@ -41,21 +41,11 @@ VK_MASTER_FILE = os.path.join(test_file_folder, 'vk-master.txt')
 hasty_exclude_list = ['dEQP-VK-master']
 
 tests = [
-    Test('bvt',                    Suite.infra, shards=1,  hasty=False, time='FAST',     tag='bvt',           test_file=BVT_MASTER_FILE,    perf_failure_description='Failures_BVT'),
-    Test('dEQP-GLES2-master',      Suite.daily, shards=1,  hasty=False, time='LENGTHY',  tag='gles2-master',  test_file=GLES2_MASTER_FILE,  perf_failure_description='Failures_GLES2'),
-    # As we are following tot with dEQP the hasty shards have too much noise that is impossible to expect.
-    #Test('dEQP-GLES2-master',      Suite.bvtpb, shards=10, hasty=True,  time='FAST',     tag='gles2-master',  test_file=GLES2_MASTER_FILE,  perf_failure_description=None),
-    # The stress, accuracy and performance tests are not part of -master lists.
-    # Hence we create control files in case we want to run them. But there is
-    # no strict requirement to keep them passing.
-    Test('dEQP-GLES3.accuracy',    Suite.none,  shards=1,  hasty=False, time='FAST',     tag=None,            test_file=None,               perf_failure_description=None),
-    Test('dEQP-GLES3-master',      Suite.daily, shards=1,  hasty=False, time='LENGTHY',  tag='gles3-master',  test_file=GLES3_MASTER_FILE,  perf_failure_description='Failures_GLES3'),
-    #Test('dEQP-GLES3-master',      Suite.bvtpb, shards=10, hasty=True,  time='FAST',     tag='gles3-master',  test_file=GLES3_MASTER_FILE,  perf_failure_description=None),
-    Test('dEQP-GLES3.performance', Suite.none,  shards=1,  hasty=False, time='LONG',     tag=None,            test_file=None,               perf_failure_description=None),
-    # It is not worth running GLES3.stress in addition to GLES2.stress and GLES31.stress just to find stability issues.
-    Test('dEQP-GLES31-master',     Suite.daily, shards=1,  hasty=False, time='LENGTHY',  tag='gles31-master', test_file=GLES31_MASTER_FILE, perf_failure_description='Failures_GLES31'),
-    #Test('dEQP-GLES31-master',     Suite.bvtpb, shards=10, hasty=True,  time='FAST',     tag='gles31-master', test_file=GLES31_MASTER_FILE, perf_failure_description=None),
-    Test('dEQP-VK-master',         Suite.daily, shards=1,  hasty=True,  time='LENGTHY',  tag='vk-master',     test_file=VK_MASTER_FILE,     perf_failure_description='Failures_VK'),
+    Test('bvt',                Suite.infra, shards=1, hasty=False, time='FAST',    tag='bvt',           test_file=BVT_MASTER_FILE,    perf_failure_description='Failures_BVT'),
+    Test('dEQP-GLES2-master',  Suite.daily, shards=1, hasty=False, time='LENGTHY', tag='gles2-master',  test_file=GLES2_MASTER_FILE,  perf_failure_description='Failures_GLES2'),
+    Test('dEQP-GLES3-master',  Suite.daily, shards=1, hasty=False, time='LENGTHY', tag='gles3-master',  test_file=GLES3_MASTER_FILE,  perf_failure_description='Failures_GLES3'),
+    Test('dEQP-GLES31-master', Suite.daily, shards=1, hasty=False, time='LENGTHY', tag='gles31-master', test_file=GLES31_MASTER_FILE, perf_failure_description='Failures_GLES31'),
+    Test('dEQP-VK-master',     Suite.daily, shards=1, hasty=True,  time='LENGTHY', tag='vk-master',     test_file=VK_MASTER_FILE,     perf_failure_description='Failures_VK'),
 ]
 
 CONTROLFILE_TEMPLATE = Template(
@@ -76,6 +66,7 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'graphics'
 TEST_TYPE = 'client'
 MAX_RESULT_SIZE_KB = 524288
+EXTENDED_TIMEOUT = 86400
 DOC = \"\"\"
 This test runs the drawElements Quality Program test suite.
 \"\"\"
@@ -127,7 +118,7 @@ def get_testname(test, shard=0):
 
 
 def write_controlfile(filename, content):
-    print 'Writing %s.' % filename
+    print(('Writing %s.' % filename))
     with open(filename, 'w+') as f:
         f.write(content)
 
@@ -136,7 +127,7 @@ def write_controlfiles(test):
     attributes = get_attributes(test)
     time = get_time(test)
 
-    for shard in xrange(0, test.shards):
+    for shard in range(0, test.shards):
         testname = get_testname(test, shard)
         filename = get_controlfilename(test, shard)
         content = CONTROLFILE_TEMPLATE.render(

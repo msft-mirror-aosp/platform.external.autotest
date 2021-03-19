@@ -1007,6 +1007,18 @@ class SixPackage(ExternalPackage):
             ExternalPackage._build_and_install_current_dir_setup_py)
 
 
+class SetuptoolsScmPackage(ExternalPackage):
+    """setuptools_scm package."""
+    version = '5.0.2'
+    url_filename = 'setuptools_scm-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename, )
+    hex_sum = '28ec9ce4a5270f82f07e919398c74221da67a8bb'
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+            ExternalPackage._build_and_install_current_dir_setup_py)
+
+
 class LruCachePackage(ExternalPackage):
     """backports.functools_lru_cache package (dependency for astroid)."""
     version = '1.4'

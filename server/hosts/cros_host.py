@@ -234,6 +234,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return chameleon_args
 
     @staticmethod
+    def get_btattenuator_arguments(args_dict):
+        """Extract btattenuator options from `args_dict` and return the result.
+
+        @param args_dict Dictionary from which to extract the btattenuator
+          arguments.
+        """
+        logging.debug("args dict in croshost is  %s", args_dict)
+        btattenuator_args = {
+                key: args_dict[key]
+                for key in ('btatten_addr', ) if key in args_dict
+        }
+
+        return btattenuator_args
+
+    @staticmethod
     def get_btpeer_arguments(args_dict):
         """Extract btpeer options from `args_dict` and return the result.
 

@@ -22,6 +22,7 @@ import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.client.bin import utils
 from six.moves import range
@@ -177,6 +178,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             # /var/log/messages occupying too much space
             self.clean_bluetooth_kernel_log(clean_log)
 
+        # Some test beds has a attenuator for Bluetooth. If Bluetooth
+        # attenuator is present, set its attenuation to 0
+        self.bt_attenuator = bluetooth_attenuator.init_btattenuator(
+                self.host, args_dict)
+
+        logging.debug("Bluetooth attenuator is %s", self.bt_attenuator)
+
         if self.use_btpeer:
             self.input_facade = self.factory.create_input_facade()
 
@@ -205,7 +213,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             # Create copy of btpeer_group
             self.btpeer_group_copy = dict()
             self.group_btpeers_type()
-
 
         # Clear the active devices for this test
         self.active_test_devices = {}

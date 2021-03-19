@@ -17,9 +17,7 @@ class firmware_ECUpdateId(FirmwareTest):
     version = 1
 
     def initialize(self, host, cmdline_args, dev_mode=False):
-        # If EC isn't write-protected, it won't do EFS. Should enable WP.
-        super(firmware_ECUpdateId, self).initialize(host, cmdline_args,
-                                                    ec_wp=True)
+        super(firmware_ECUpdateId, self).initialize(host, cmdline_args)
         # Don't bother if there is no Chrome EC or if the EC is non-EFS.
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
@@ -28,6 +26,8 @@ class firmware_ECUpdateId(FirmwareTest):
         if self._no_ec_sync:
             raise error.TestNAError(
                     "User selected to disable EC software sync")
+        # If EC isn't write-protected, it won't do EFS. Should enable WP.
+        self._setup_ec_write_protect(True)
         # In order to test software sync, it must be enabled.
         self.clear_set_gbb_flags(vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC, 0)
         self.backup_firmware()

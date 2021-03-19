@@ -50,7 +50,9 @@ class cellular_Hermes_Restart_SlotSwitch(test.test):
         # hermes takes 15+ sec to load all apis, wait on hermes dbus not enough
         time.sleep(hermes_constants.HERMES_RESTART_WAIT_SECONDS)
         self.hermes_manager = hermes_utils.connect_to_hermes()
-        self.hermes_manager.set_test_mode(not self.is_prod_ci)
+
+        euicc = self.hermes_manager.get_euicc(self.euicc_path)
+        euicc.use_test_certs(not self.is_prod_ci)
         logging.debug('restart_hermes done')
 
         if not self.hermes_manager:
@@ -180,8 +182,8 @@ class cellular_Hermes_Restart_SlotSwitch(test.test):
         self.test_env = test_env
         self.is_prod_ci = is_prod_ci
 
-        self.mm_proxy, self.hermes_manager, euicc_path = \
+        self.mm_proxy, self.hermes_manager, self.euicc_path = \
                     hermes_utils.initialize_test(is_prod_ci)
 
-        self.hermes_operations_test(euicc_path)
+        self.hermes_operations_test(self.euicc_path)
         logging.info('HermesRestartSlotSwitchTest Completed')

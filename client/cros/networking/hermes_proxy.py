@@ -87,20 +87,6 @@ class HermesManagerProxy(object):
         """@return the DBus Hermes Manager object."""
         return self._manager
 
-    def set_test_mode(self, test_mode):
-        """
-        Sets Hermes daemon to test mode, required to run autotests
-
-        @param test_mode boolean to set true or false
-
-        """
-        try:
-            logging.info('Hermes call SetTestMode')
-            self._manager.SetTestMode(dbus.Boolean(test_mode))
-            return True
-        except dbus.DBusException as e:
-            logging.error('Hermes SetTestMode failed with error:%s', e)
-
     @property
     def iface_properties(self):
         """@return org.freedesktop.DBus.Properties DBus interface."""
@@ -367,6 +353,23 @@ class EuiccProxy(object):
             'Request pending profile call here for %s bus %s',
                 self._euicc, self._bus)
         return self.iface_euicc.RequestPendingProfiles(dbus.String(root_smds))
+
+    def use_test_certs(self, is_test_certs):
+        """
+        Sets Hermes daemon to test mode, required to run autotests
+
+        Set to true if downloading profiles from an SMDX with a test
+        certificate. This method used to download profiles to an esim from a
+        test CI.
+
+        @param is_test_certs boolean to set true or false
+
+        """
+        try:
+            logging.info('Hermes call UseTestCerts')
+            self.iface_euicc.UseTestCerts(dbus.Boolean(is_test_certs))
+        except dbus.DBusException as e:
+            logging.error('Hermes UseTestCerts failed with error:%s', e)
 
     def install_profile_from_activation_code(self, act_code, conf_code):
         """ Install the profile from given act code, confirmation code """

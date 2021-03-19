@@ -148,7 +148,8 @@ def initialize_test(is_prod_ci):
     euicc_path = prod_euicc_path if is_prod_ci \
         else test_euicc_path
 
-    hermes_manager.set_test_mode(not is_prod_ci)
+    euicc = hermes_manager.get_euicc(euicc_path)
+    euicc.use_test_certs(not is_prod_ci)
 
     if not is_prod_ci:
         uninstall_all_profiles(euicc_path, hermes_manager)

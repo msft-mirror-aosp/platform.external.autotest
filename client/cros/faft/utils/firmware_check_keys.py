@@ -55,7 +55,11 @@ class firmwareCheckKeys(object):
         # the down and up events.  We're not interested in precisely how many
         # repeats of the key there is, just what is the sequence of keys,
         # so, we will make the list unique.
-        uniq_actual_output = sorted(list(set(self.actual_output)))
+        uniq_actual_output = []
+        for i, key in enumerate(self.actual_output):
+            if key not in self.actual_output[:i]:
+                uniq_actual_output.append(key)
+
         if uniq_actual_output != expected_sequence:
             print 'Keys mismatched %s' % pprint.pformat(uniq_actual_output)
             return -1

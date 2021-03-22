@@ -8,8 +8,8 @@ PURPOSE = "Run telemetry_check.py."
 CRITERIA = """
 Test will fail if telemetry_check fails.
 """
-# crbug.com/930157: This test is flaky and blocks CQ, disable it until fixed.
-ATTRIBUTES = "suite:bvt-perbuild, suite:smoke"
+# crbug.com/1188852: Test fails on novato consistently.
+ATTRIBUTES = "suite:bvt-perbuild"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "login"

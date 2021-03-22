@@ -253,6 +253,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
                                    env=self._env,
                                    ignore_status=True,
                                    stdout_tee=utils.TEE_TO_LOGS,
+                                   stdout_level=logging.INFO,
                                    stderr_tee=utils.TEE_TO_LOGS)
         except error.CmdError:
             raise error.TestFail("Failed starting '%s'" % command)

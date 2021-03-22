@@ -3908,31 +3908,6 @@ class BluetoothAdapterTests(test.test):
     # Bluetooth keyboard related tests
     # -------------------------------------------------------------------
 
-    # TODO may be deprecated as stated in b:140515628
-    @test_retry_and_log
-    def test_keyboard_input_from_string(self, device, string_to_send):
-        """Test that the keyboard's key events could be received correctly.
-
-        @param device: the meta device containing a bluetooth HID device
-        @param string_to_send: the set of keys that will be pressed one-by-one
-
-        @returns: True if the report received by the host matches the
-                  expected one. False otherwise.
-
-        """
-
-        gesture = lambda: device.KeyboardSendString(string_to_send)
-
-        actual_events = self._record_input_events(device,
-                                                  gesture,
-                                                  address=device.address)
-
-        resulting_string = bluetooth_test_utils.reconstruct_string(
-                           actual_events)
-
-        return string_to_send == resulting_string
-
-
     @test_retry_and_log
     def test_keyboard_input_from_trace(self, device, trace_name):
         """ Tests that keyboard events can be transmitted and received correctly

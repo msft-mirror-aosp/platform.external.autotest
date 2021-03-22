@@ -221,7 +221,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         command.append('--deqp=%s' % executable)
         command.append('--caselist=%s' % self._caselist)
         if self._shard_number != 0:
-            command.append('--fraction-start=%d' % self._shard_number + 1)
+            command.append('--fraction-start=%d' % (self._shard_number + 1))
         if self._shard_count != 1:
             command.append('--fraction=%d' % self._shard_count)
 

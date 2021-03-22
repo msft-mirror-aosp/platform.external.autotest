@@ -166,7 +166,7 @@ _EJECT_REMOVABLE_DISK_COMMAND = (
 _WIFI_CONNECT_COMMANDS = [
         # These needs to be in order.
         "'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass)",
-        "'/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi'"
+        "'android-sh -c \\'dumpsys wifi transports -eth\\''"
 ]
 
 # Preconditions applicable to public and internal tests.

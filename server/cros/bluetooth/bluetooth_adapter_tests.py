@@ -4580,6 +4580,9 @@ class BluetoothAdapterTests(test.test):
         finally:
             self.test_stop_discovery()
 
+            for address in address_list:
+                logging.info('Clearing device for test: {}'.format(address))
+                self.bluetooth_facade.remove_device_object(address)
 
     def verify_controller_capability(self, required_roles=[],
                                      test_type=''):

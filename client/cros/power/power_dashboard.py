@@ -602,6 +602,8 @@ class CPUStatsLoggerDashboard(MeasurementLoggerDashboard):
 
     def _convert(self):
         power_dict = super(CPUStatsLoggerDashboard, self)._convert()
+        if not power_dict or not power_dict['data']:
+            return None
         remove_rail = []
         for rail in power_dict['data']:
             if rail.startswith('wavg_cpu'):

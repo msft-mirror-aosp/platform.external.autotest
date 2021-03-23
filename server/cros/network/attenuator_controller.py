@@ -11,6 +11,8 @@ from autotest_lib.server.cros.network import attenuator_hosts
 from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 HOST_TO_FIXED_ATTENUATIONS = attenuator_hosts.HOST_FIXED_ATTENUATIONS
+# Fake entry to deal with attenuator not added to attenuator_hosts.py file
+FAKE_HOST = HOST_TO_FIXED_ATTENUATIONS['fake-atten-host']
 
 
 class AttenuatorController(object):
@@ -20,6 +22,9 @@ class AttenuatorController(object):
     This allows us to measure throughput as a function of signal strength and
     test some roaming situations.  The throughput vs signal strength tests
     are referred to rate vs range (RvR) tests in places.
+
+    Fixed attenuatations should be recorded in attenuator_hosts.py else
+    TestError will be raised when fixed attentuations are accessed.
 
     """
 
@@ -37,10 +42,13 @@ class AttenuatorController(object):
         """
         self.hostname = hostname
         super(AttenuatorController, self).__init__()
-        part = hostname.split('.', 1)[0]
+        part = hostname.split('.cros', 1)[0]
         if part not in HOST_TO_FIXED_ATTENUATIONS.keys():
-            raise error.TestError('Unexpected RvR host name %r.' % hostname)
-        self._fixed_attenuations = HOST_TO_FIXED_ATTENUATIONS[part]
+            logging.debug('Attenuator %s not found in attenuator_host list',
+                          part)
+            self._fixed_attenuations = FAKE_HOST
+        else:
+            self._fixed_attenuations = HOST_TO_FIXED_ATTENUATIONS[part]
         num_atten = len(self.supported_attenuators)
 
         self._attenuator = attenuator.Attenuator(hostname, num_atten)
@@ -57,8 +65,11 @@ class AttenuatorController(object):
                 attenuator has a different fixed path loss per frequency.
         @param freq: int frequency in MHz.
         @returns int approximate frequency from self._fixed_attenuations.
+        @raises TestError if attenuator is not in attenuator_hosts.py
 
         """
+        self._fail_if_fake()
+
         old_offset = None
         approx_freq = None
         for defined_freq in self._fixed_attenuations[attenuator_num].keys():
@@ -89,8 +100,11 @@ class AttenuatorController(object):
                 varies with frequency.
         @param attenuator_num: int attenuator to change, or None to
                 set all variable attenuators.
+        @raises TestError if attenuator is not in attenuator_hosts.py
 
         """
+        self._fail_if_fake()
+
         affected_attenuators = self.supported_attenuators
         if attenuator_num is not None:
             affected_attenuators = [attenuator_num]
@@ -137,8 +151,11 @@ class AttenuatorController(object):
         minimal total attenuation when stepping through attenuation levels.
 
         @return maximum starting attenuation value
+        @raises TestError if attenuator is not in attenuator_hosts.py
 
         """
+        self._fail_if_fake()
+
         max_atten = 0
         for atten_num in self._fixed_attenuations.iterkeys():
             atten_values = self._fixed_attenuations[atten_num].values()
@@ -214,3 +231,14 @@ class AttenuatorController(object):
         if min_sig <= curr_sig_level <= max_sig:
             return True
         return False
+
+    def _fail_if_fake(self):
+        """ Raises test error if this attenuator is missing
+
+        If an attenuator is missing, we use use a fake entry. This function
+        will fail the test if the current attenuator is fake.
+        """
+        if self._fixed_attenuations == FAKE_HOST:
+            raise error.TestError(
+                    'Attenuator %r  not found in attenuator_hosts.py' %
+                    self.hostname)

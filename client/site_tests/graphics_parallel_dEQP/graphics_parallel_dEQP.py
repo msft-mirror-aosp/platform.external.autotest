@@ -76,10 +76,10 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         """Check if specific api is supported in this board."""
         return api in self._api_helper.get_supported_apis()
 
-    def read_board_file(self, filename):
+    def read_file(self, filename):
         expects_path = os.path.join(self.autodir, 'tests',
                                     'graphics_parallel_dEQP', 'boards',
-                                    self._board + '-' + filename)
+                                    filename)
         try:
             with open(expects_path) as f:
                 logging.debug(
@@ -140,9 +140,12 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             self._skips.append('dEQP-GLES.*.functional.flush_finish.*')
 
         # Add any board-specific expectations
-        self._skips += self.read_board_file('skips.txt')
-        self._fails += self.read_board_file('fails.txt')
-        self._flakes += self.read_board_file('flakes.txt')
+        self._skips += self.read_file(self._board + '-' + 'skips.txt')
+        self._skips += self.read_file(self._gpu_type + '-' + 'skips.txt')
+        self._fails += self.read_file(self._board + '-' + 'fails.txt')
+        self._fails += self.read_file(self._gpu_type + '-' + 'fails.txt')
+        self._flakes += self.read_file(self._board + '-' + 'flakes.txt')
+        self._flakes += self.read_file(self._gpu_type + '-' + 'flakes.txt')
         # TODO: Add more fails lists for various boards
         # TODO: Fix the Missing results from the runner on trogdor
         # TODO: Add the other VK shards on trogdor

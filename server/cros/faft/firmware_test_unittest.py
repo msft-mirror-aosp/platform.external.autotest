@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import mock
-import re
 import unittest
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft import firmware_test
@@ -111,29 +110,10 @@ class TestCheckPowerState(unittest.TestCase):
     # Mock out EC behavior to return definable power states
     class MockedECFirmwareTest(firmware_test.FirmwareTest):
         """A stubbed out FirmwareTest to check the precision behavior"""
-        class FakeEC:
-            """A stub EC class providing what's needed for this test"""
-            def __init__(self):
-                self.test = None
-                self.match = None
-
-            def set_test_string(self, s):
-                """Sets the string to test again"""
-                self.test = s
-
-            def send_command_get_output(self, _cmd, regex_list):
-                """Stub to simulate matching EC output against regex_list"""
-                self.match = None
-
-                for r in regex_list:
-                    result = re.search(r, self.test)
-                    if result is not None:
-                        self.match = result.group(0)
-                        break
 
         def __init__(self, *_args, **_dargs):
             # pylint: disable=super-init-not-called
-            self.ec = self.FakeEC()
+            pass
 
     # power_state is supposed to be a string, but lists seem somewhat common,
     # so guard against them.
@@ -141,25 +121,32 @@ class TestCheckPowerState(unittest.TestCase):
         ft = self.MockedECFirmwareTest()
 
         with self.assertRaises(error.TestError):
-            ft._check_power_state([])
+            ft._check_power_state([], 'S0')
 
     def test_s0ix_isnt_s0(self):
         ft = self.MockedECFirmwareTest()
 
-        ft.ec.set_test_string("S0ix")
-        ft._check_power_state("S0")
-        self.assertIsNone(ft.ec.match)
+        self.assertEqual(False, ft._check_power_state("S0", "S0ix"))
 
-    def test_s0_in_parens_is_found(self):
+    def test_s0_is_found(self):
         ft = self.MockedECFirmwareTest()
 
-        ft.ec.set_test_string("(S0)")
-        ft._check_power_state("S0")
-        self.assertEqual(ft.ec.match, "S0")
+        self.assertEqual(True, ft._check_power_state("S0", "S0"))
+
+    def test_s0_or_s3_is_found(self):
+        ft = self.MockedECFirmwareTest()
+
+        self.assertEqual(True, ft._check_power_state("(S0|S3)", "S0"))
+        self.assertEqual(True, ft._check_power_state("(S0|S3)", "S3"))
+        self.assertEqual(False, ft._check_power_state("(S0|S3)", "G3"))
 
 
 class Test_stage_build_to_usbkey(unittest.TestCase):
+    """stage_build_to_usbkey test"""
+
     class MockFirmwareTest(firmware_test.FirmwareTest):
+        """Mock of FirmwareTest"""
+
         def __init__(self):
             self._client = mock.MagicMock()
 

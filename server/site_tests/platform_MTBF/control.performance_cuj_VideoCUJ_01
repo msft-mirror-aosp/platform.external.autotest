@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from autotest_lib.client.common_lib import utils
-
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
 NAME = 'VideoCUJ_01'
 ATTRIBUTES = 'suite:performance_cuj'
@@ -25,18 +23,29 @@ more information.
 
 See http://go/tast-failures for information about investigating failures.
 '''
+import common
+import json
+import logging
 import tempfile
+from six.moves import urllib
 import yaml
 
-def run(machine):
-    args_dict = globals().get('args_dict', dict())
+from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
+test_args = dict()
+test_args['test_version'] = 1
+
+def parse_config(config_url):
+  response = urllib.urlopen(config_url)
+  vars = json.loads(response.read())
+  for key in vars:
+    test_args[key] = vars[key]
+  logging.info('Read %d values from remote configuration.', length(vars))
+
+def run(machine):
     with tempfile.NamedTemporaryFile(suffix='.yaml') as temp_file:
         # Writing test arguments to yaml file except for wrapper-related arguments.
-        test_args = dict()
-        for key in args_dict:
-            if key.startswith('tast_'):
-                test_args[key] = args_dict[key]
         yaml.dump(test_args, stream=temp_file, default_flow_style=False)
 
         job.run_test('tast',
@@ -46,5 +55,19 @@ def run(machine):
                     max_run_sec=3600,
                     command_args=args,
                     varsfiles=[temp_file.name])
+
+if 'devserver_url' in globals():
+  ds = dev_server.ImageServer(devserver_url)
+  gs_bucket = ds._get_image_storage_server()
+  if gs_bucket:
+    config_path = '/config/perf_cuj/'
+    config_file = 'perf_cuj.config'
+    archive_url = gs_bucket + config_path
+    logging.info('Staging configuration from %s.', gs_bucket)
+    ds.stage_artifacts(build,
+                       archive_url = archive_url,
+                       files = [config_file])
+    logging.info('Parsing configuration from %s.', archive_url)
+    parse_config(devserver_url + '/static' + config_path + config_file)
 
 parallel_simple(run, machines)

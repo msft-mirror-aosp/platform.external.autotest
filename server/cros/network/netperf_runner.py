@@ -434,6 +434,10 @@ class NetperfConfig(object):
 
         return self.test_type
 
+    @property
+    def test_type_name(self):
+        """@return string test type name."""
+        return self.test_type
 
     @property
     def server_serves(self):

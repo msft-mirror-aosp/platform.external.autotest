@@ -324,6 +324,23 @@ class HostapConfig(object):
 
         raise error.TestFail('Invalid mode.')
 
+    @property
+    def mode(self):
+        """@return string hardware mode."""
+        return self._mode
+
+    @property
+    def channel_width(self):
+        """@return object channel width.
+        Note: This property ignores legacy rate (e.g., 11g), It will return
+              None for these rate.
+        """
+        if self.vht_channel_width is not None:
+            return self.vht_channel_width
+        ht_channel_width = self._ht_mode
+        if ht_channel_width:
+            return ht_channel_width
+        return None
 
     @property
     def _is_11n(self):

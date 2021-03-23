@@ -8,6 +8,7 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
+from autotest_lib.server.cros.network import expected_performance_results
 from autotest_lib.server.cros.network import netperf_runner
 from autotest_lib.server.cros.network import netperf_session
 from autotest_lib.server.cros.network import wifi_cell_test_base
@@ -38,8 +39,9 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
             # valid governor was passed in
             if self._governor not in ('performance', 'powersave', 'userspace',
                                       'ondemand', 'conservative', 'schedutil'):
-                logging.warning('Unrecognized CPU governor "%s". Running test '
-                        'without setting CPU governor...' % self._governor)
+                logging.warning(
+                        'Unrecognized CPU governor %s. Running test '
+                        'without setting CPU governor...', self._governor)
                 self._governor = None
         else:
             self._governor = None
@@ -99,7 +101,14 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         signal_level = self.context.client.wifi_signal_level
         signal_description = '_'.join([ap_config_tag, 'signal'])
         self.write_perf_keyval({signal_description: signal_level})
-        for config, expected_throughput in netperf_configs:
+        for config in netperf_configs:
+            ch_width = ap_config.channel_width
+            if ch_width is None:
+                raise error.TestFail(
+                        'Failed to get the channel width used by the AP and client'
+                )
+            expected_throughput = expected_performance_results.get_expected_throughput_wifi(
+                    config.test_type_name, ap_config.mode, ch_width)
             results = session.run(config)
             if not results:
                 logging.error('Failed to take measurement for %s',
@@ -124,7 +133,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                     self.context.client.host)
             utils.restore_scaling_governor_states(router_governor,
                     self.context.router.host)
-        all_configs = set([config[0] for config in netperf_configs])
+        all_configs = set(netperf_configs)
         return all_configs.difference(failed_configs), failed_configs
 
 

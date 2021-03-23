@@ -1359,12 +1359,17 @@ class TradefedTest(test.test):
                     # enough disk space for 16GB storage devices: b/156075084.
                     if not keep_media:
                         self._clean_crash_logs()
-                # Prevent screen from turning off
-                self._override_powerd_prefs()
+                # TODO(b/182397469): speculatively disable the "screen-on"
+                # handler for dEQP. Revert when the issue is resolved.
+                keep_screen_on = not (target_module
+                                      and "CtsDeqpTestCases" in target_module)
+                if keep_screen_on:
+                    self._override_powerd_prefs()
                 try:
                     waived_tests, acc = self._run_and_parse_tradefed(command)
                 finally:
-                    self._restore_powerd_prefs()
+                    if keep_screen_on:
+                        self._restore_powerd_prefs()
                 if media_asset:
                     self._fail_on_unexpected_media_download(media_asset)
                 result = self._run_tradefed_list_results()

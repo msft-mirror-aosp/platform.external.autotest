@@ -173,6 +173,7 @@ class BluetoothFacadeNative(object):
     BLUEZ_DEBUG_LOG_IFACE = 'org.chromium.Bluetooth.Debug'
     BLUEZ_MANAGER_IFACE = 'org.freedesktop.DBus.ObjectManager'
     BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
+    BLUEZ_ADMIN_POLICY_IFACE = 'org.bluez.AdminPolicy1'
     BLUEZ_BATTERY_IFACE = 'org.bluez.Battery1'
     BLUEZ_DEVICE_IFACE = 'org.bluez.Device1'
     BLUEZ_GATT_SERV_IFACE = 'org.bluez.GattService1'
@@ -3536,6 +3537,36 @@ class BluetoothFacadeNative(object):
     def get_device_utc_time(self):
         """ Get the current device time in UTC. """
         return datetime.utcnow().strftime(self.OUT_DATE_FORMAT)
+
+    @xmlrpc_server.dbus_safe(False)
+    def policy_get_service_allow_list(self):
+        """Get the service allow list for enterprise policy.
+
+        @returns: array of strings representing the allowed service UUIDs.
+        """
+        uuids = self._adapter.Get(self.BLUEZ_ADMIN_POLICY_IFACE,
+                                  'ServiceAllowList',
+                                  dbus_interface=dbus.PROPERTIES_IFACE)
+        logging.debug('ServiceAllowList: %s', dbus_util.dbus2primitive(uuids))
+        return dbus_util.dbus2primitive(uuids)
+
+    @dbus_print_error(False)
+    def policy_set_service_allow_list(self, uuids):
+        """Set the service allow list for enterprise policy.
+
+        @param uuids: a string representing the uuids; e.g., "1234,0xabcd" or ""
+
+        @returns: (True, '') on success, (False, '<error>') on failure.
+        """
+        dbus_array = dbus.Array([], signature=dbus.Signature('y'))
+        if bool(uuids.strip()):
+            for uuid in uuids.split(','):
+                dbus_array.append(dbus.String(uuid.strip()))
+
+        logging.debug('policy_set_service_allow_list: %s', dbus_array)
+        self._adapter.SetServiceAllowList(
+                dbus_array, dbus_interface=self.BLUEZ_ADMIN_POLICY_IFACE)
+        return (True, '')
 
     def cleanup(self):
         """Cleanup before exiting the client xmlrpc process."""

@@ -1793,3 +1793,24 @@ class BluetoothDevice(object):
         elif hasattr(self, '_bt_direct_proxy'):
             self.host.rpc_server_tracker.disconnect(
                     constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT)
+
+
+    @proxy_thread_safe
+    def policy_get_service_allow_list(self):
+        """Get the service allow list for enterprise policy.
+
+        @returns: array of strings representing the allowed service UUIDs.
+        """
+        return self._proxy.policy_get_service_allow_list()
+
+
+    @proxy_thread_safe
+    def policy_set_service_allow_list(self, uuids):
+        """Get the service allow list for enterprise policy.
+
+        @param uuids: a string representing the uuids
+                      e.g., "0x1234,0xabcd" or ""
+
+        @returns: (True, '') on success, (False, '<error>') on failure
+        """
+        return self._proxy.policy_set_service_allow_list(uuids)

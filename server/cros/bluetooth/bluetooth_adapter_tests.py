@@ -4061,6 +4061,137 @@ class BluetoothAdapterTests(test.test):
 
 
     # -------------------------------------------------------------------
+    # Enterprise policy tests
+    # -------------------------------------------------------------------
+
+    def _test_check_set_allowlist(self, uuids, expected_result):
+        """The test to set valid and invalid allowlists test.
+
+        @param uuids: the uuids in the allowlist to set.
+        @param expected_result: True if the test is expected to pass.
+        """
+        create_uuid = bluetooth_test_utils.Bluetooth_UUID.create_valid_uuid
+        exp_res_str = 'valid' if expected_result else 'invalid'
+        logging.info('%s uuids: "%s"', exp_res_str, uuids)
+
+        result, err_msg = self.bluetooth_facade.policy_set_service_allow_list(
+                uuids)
+        logging.debug('result %s (%s)', result, err_msg)
+
+        if expected_result:
+            check_set_allowlist = result
+        else:
+            check_set_allowlist = ('org.bluez.Error.InvalidArguments' in err_msg
+                                   and not result)
+
+        # Query bluez to read the allow list.
+        actual_uuids_list = [
+                create_uuid(uuid) for uuid in
+                self.bluetooth_facade.policy_get_service_allow_list()]
+        actual_uuids_list.sort()
+
+        # Convert the original UUIDs into a list of full-length UUIDs and
+        # remove duplicate UUIDs in order to compare the original UUIDs
+        # with the actual UUIDs set by bluez.
+        orig_uuids_list = []
+        if expected_result and uuids != '':
+            for uuid in uuids.split(','):
+                u = create_uuid(uuid)
+                if u is None:
+                    raise error.TestFail('uuid %s in uuids %s is not valid' %
+                                         (uuid, uuids))
+                orig_uuids_list.append(u)
+        orig_dedup_uuids = list(set(orig_uuids_list))
+        orig_dedup_uuids.sort()
+        uuids_comp_result = actual_uuids_list == orig_dedup_uuids
+
+        self.results = {'uuids': uuids,
+                        'expected_set_allowlist_result': expected_result,
+                        'actual_set_allowlist_result': result,
+                        'orig_dedup_uuids': orig_dedup_uuids,
+                        'actual_uuids_list': actual_uuids_list,
+                        'check_set_allowlist': check_set_allowlist,
+                        'uuids_comp_result': uuids_comp_result}
+        logging.debug('actual_uuids_list %s', actual_uuids_list)
+        logging.debug('orig_uuids_list %s', orig_uuids_list)
+
+        return (check_set_allowlist and uuids_comp_result)
+
+
+    @test_retry_and_log(False)
+    def test_check_set_allowlist(self, uuids, expected_result):
+        """The test to set valid and invalid allowlists test.
+
+        @param uuids: the uuids in the allowlist to set.
+        @param expected_result: True if the test is expected to pass.
+        """
+        return self._test_check_set_allowlist(uuids, expected_result)
+
+
+    @test_retry_and_log(False)
+    def test_reset_allowlist(self):
+        """The test to reset the allowlists.
+
+        The test is used to clean up the allowlist.
+        """
+        return self._test_check_set_allowlist('', True)
+
+
+    def policy_is_blocked(self, device):
+        """Check if the device is blocked by policy.
+
+        @param device: the connected device.
+
+        @returns: True if the device is blocked; False otherwise.
+        """
+        return self.bluetooth_facade.get_device_property(device.address,
+                                                         'IsBlockedByPolicy')
+
+
+    @test_retry_and_log(False)
+    def test_blocked_by_policy(self, device):
+        """A test that the device is blocked by policy
+
+        @param device: the peripheral device
+        @returns: True if the device is blocked; False otherwise.
+        """
+        result = self.policy_is_blocked(device)
+        logging.debug('IsBlockedByPolicy: %s', result)
+        self.results = {'expected_result': 'True (blocked)',
+                        'actual_result': result}
+        return result
+
+
+    @test_retry_and_log(False)
+    def test_not_blocked_by_policy(self, device):
+        """A test that the device is not blocked by policy
+
+        @param device: the peripheral device
+        @returns: True if the device is not blocked; False otherwise.
+        """
+        result = self.policy_is_blocked(device)
+        logging.debug('IsBlockedByPolicy: %s', result)
+        self.results = {'expected_result': 'False (not blocked)',
+                        'actual_result': result}
+        return not result
+
+
+    def check_if_blocked_by_policy(self, device, expected_result):
+        """A test that the device policy is enforced correctly
+
+        @param device: the peripheral device
+        @param expected_result: True if the test is expected to pass.
+
+        @returns: True if the device is blocked or not blocked per
+                  expected_result; False otherwise.
+        """
+        if expected_result:
+            return self.test_blocked_by_policy(device)
+        else:
+            return self.test_not_blocked_by_policy(device)
+
+
+    # -------------------------------------------------------------------
     # Servod related tests
     # -------------------------------------------------------------------
 

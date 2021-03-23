@@ -367,6 +367,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         # Reset the adapter
         self.test_reset_on_adapter()
+
+        # Reset the policy allowlist so that all UUIDs are allowed.
+        self.test_reset_allowlist()
+
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
         self.initialize()
         # Start and peer HID devices
@@ -438,6 +442,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.test_is_facade_valid()
 
         self.bluetooth_facade.stop_discovery()
+
+        # Reset the policy allowlist so that all UUIDs are allowed.
+        self.test_reset_allowlist()
 
         # Store a copy of active devices for raspi reset in the final step
         self.active_test_devices = self.devices

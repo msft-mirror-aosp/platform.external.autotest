@@ -199,6 +199,10 @@ message ProvisionDutRequest {
   }
   // dlc_specs specifies which DLCs to install on the DUT after provisioning.
   repeated DLCSpec dlc_specs = 3;
+  // preserve_stateful specifies whether the stateful partition should be preserved during
+  // provisioning. If preserve_stateful is not set to true, the stateful partition is
+  // block-level wiped and reset during provisioning.
+  bool preserve_stateful = 4;
 }
 
 message ProvisionDutResponse {

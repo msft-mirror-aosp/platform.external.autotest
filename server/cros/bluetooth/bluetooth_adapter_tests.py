@@ -51,9 +51,13 @@ CHIPSET_TO_VIDPID = {
         'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
         'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],
         'QCA-6174A-5-USB': [(('0x168c', '0x003e'), 'USB')],
-        'QCA-6174A-3-UART': [(('0x271', '0x050a'), 'UART')],
+        'QCA-6174A-3-UART': [(('0x0271', '0x050a'), 'UART')],
         'Intel-AX200': [(('0x8086', '0x2723'), 'USB')],  # CcP2
-        'Intel-AX201': [(('0x8086', '0x02f0'), 'USB')],  # HrP2
+        'Intel-AX201': [
+                (('0x8086', '0x02f0'), 'USB'),
+                (('0x8086', '0x4df0'), 'USB'),
+                (('0x8086', '0xa0f0'), 'USB'),
+        ],  # HrP2
         'Intel-AC9260': [(('0x8086', '0x2526'), 'USB')],  # ThP2
         'Intel-AC9560': [
                 (('0x8086', '0x31dc'), 'USB'),  # JfP2

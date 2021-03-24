@@ -151,11 +151,13 @@ class device_setup_utilsTest(unittest.TestCase):
         self.dut.run.assert_called_once_with(
                 'run command;', ignore_status=True)
         # Error status causes log fatal.
-        logging.warning.assert_called_once_with(
-                'Command execution on DUT lumpy.cros2 failed.\n'
-                'Failing command: run command;\nreturned 1\n'
-                'Error message: Error!\n'
-                '(Failure is considered non-fatal. Continue.)')
+        calls = [
+                mock.call('Command execution on DUT lumpy.cros2 failed.\n'
+                          'Failing command: run command;\nreturned 1\n'
+                          'Error message: Error!'),
+                mock.call('Failure is considered non-fatal. Continue.'),
+        ]
+        logging.warning.assert_has_calls(calls)
 
 
     @mock.patch.object(device_setup_utils, 'run_command_on_dut')
@@ -299,15 +301,15 @@ class device_setup_utilsTest(unittest.TestCase):
         """Test that not exposed cpu0/online will still be in the list."""
 
         def run_command(dut, cmd):
-          """Helper function."""
-          if '/sys/devices/system/cpu/cpu' in cmd:
-              # Cpu0 online is not exposed.
-              return (0, '/sys/devices/system/cpu/cpu1/online 1\n', '')
-          elif '/sys/devices/system/cpu/online' in cmd:
-              # All online cores shows cpu0.
-              return (0, '0-1', '')
-          else:
-              return (1, '', '')
+            """Helper function."""
+            if '/sys/devices/system/cpu/cpu' in cmd:
+                # Cpu0 online is not exposed.
+                return (0, '/sys/devices/system/cpu/cpu1/online 1\n', '')
+            elif '/sys/devices/system/cpu/online' in cmd:
+                # All online cores shows cpu0.
+                return (0, '0-1', '')
+            else:
+                return (1, '', '')
 
         mock_run_command.side_effect = run_command
         cpu_online = device_setup_utils.get_cpu_online(self.dut)

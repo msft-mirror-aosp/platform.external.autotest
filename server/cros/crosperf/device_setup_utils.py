@@ -41,8 +41,8 @@ def run_command_on_dut(dut, command, ignore_status=False):
                    'returned %d\n'
                    'Error message: %s' % (dut.hostname, command, ret, err_msg))
         if ignore_status:
-            logging.warning(err_msg +
-                            '\n(Failure is considered non-fatal. Continue.)')
+            logging.warning(err_msg)
+            logging.warning('Failure is considered non-fatal. Continue.')
         else:
             logging.error(err_msg)
 
@@ -273,8 +273,8 @@ def get_cpu_online(dut):
     # If cpu0 not in the online list and it exists in all online CPUs
     # add it to the online list.
     if 0 not in cpu_online and '0' in all_online_str:
-      # Add core0 to online cores.
-      cpu_online[0] = 1
+        # Add core0 to online cores.
+        cpu_online[0] = 1
     # At least one CPU has to be online.
     assert cpu_online
 
@@ -373,9 +373,9 @@ def wait_cooldown(dut, cooldown_time, cooldown_temp):
     # cooldown limits accordingly.
     while waittime < timeout_in_sec:
         _, temp_output, _ = run_command_on_dut(
-            dut,
-            'cat /sys/class/thermal/thermal_zone*/temp',
-            ignore_status=True)
+                dut,
+                'cat /sys/class/thermal/thermal_zone*/temp',
+                ignore_status=True)
         if any(int(temp) > temp_in_ucels for temp in temp_output.split()):
             time.sleep(sleep_interval)
             waittime += sleep_interval

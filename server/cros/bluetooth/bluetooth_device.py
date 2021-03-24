@@ -1738,6 +1738,14 @@ class BluetoothDevice(object):
         return self._proxy.get_wlan_vid_pid()
 
     @proxy_thread_safe
+    def get_bt_transport(self):
+        """ Return the transport used by Bluetooth module
+
+        @returns: USB/UART/SDIO on success; None on failure
+        """
+        return self._proxy.get_bt_transport()
+
+    @proxy_thread_safe
     def get_bt_module_name(self):
         """ Return bluetooth module name for non-USB devices
 

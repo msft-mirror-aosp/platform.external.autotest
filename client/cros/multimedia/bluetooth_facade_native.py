@@ -3424,6 +3424,28 @@ class BluetoothFacadeNative(object):
         logging.debug('returning vid:%s pid:%s', vid, pid)
         return (vid, pid)
 
+    def get_bt_transport(self):
+        """ Return transport (UART/USB/SDIO) used by BT module
+
+        @returns: USB/UART/SDIO on success; None on failure
+        """
+        try:
+            transport_str = os.path.realpath(
+                    '/sys/class/bluetooth/hci0/device/driver/module')
+            logging.debug('transport is %s', transport_str)
+            transport = transport_str.split('/')[-1]
+            if transport == 'btusb':
+                return 'USB'
+            elif transport == 'hci_uart':
+                return 'UART'
+            elif transport == 'btmrvl_sdio':
+                return 'SDIO'
+            else:
+                return None
+        except Exception as e:
+            logging.error('Exception %s in get_bt_transport', str(e))
+            return None
+
     def get_bt_module_name(self):
         """ Return bluetooth module name for non-USB devices
 

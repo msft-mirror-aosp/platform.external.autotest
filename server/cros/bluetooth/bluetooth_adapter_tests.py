@@ -48,26 +48,30 @@ from six.moves import zip
 Event = recorder.Event
 
 CHIPSET_TO_VIDPID = {
-        'MVL-8897': [('0x02df', '0x912d')],
-        'MVL-8997': [('0x1b4b', '0x2b42')],
-        'QCA-6174A-5': [('0x168c', '0x003e')],
-        'QCA-6174A-3': [('0x271', '0x050a')],  # UART
-        'Intel-AX200': [('0x8086', '0x2723')],  # CcP2
-        'Intel-AX201': [('0x8086', '0x02f0')],  # HrP2
-        'Intel-AC9260': [('0x8086', '0x2526')],  # ThP2
+        'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
+        'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],
+        'QCA-6174A-5-USB': [(('0x168c', '0x003e'), 'USB')],
+        'QCA-6174A-3-UART': [(('0x271', '0x050a'), 'UART')],
+        'Intel-AX200': [(('0x8086', '0x2723'), 'USB')],  # CcP2
+        'Intel-AX201': [(('0x8086', '0x02f0'), 'USB')],  # HrP2
+        'Intel-AC9260': [(('0x8086', '0x2526'), 'USB')],  # ThP2
         'Intel-AC9560': [
-                ('0x8086', '0x31dc'),  # JfP2
-                ('0x8086', '0x9df0')
+                (('0x8086', '0x31dc'), 'USB'),  # JfP2
+                (('0x8086', '0x9df0'), 'USB')
         ],
         'Intel-AC7260': [
-                ('0x8086', '0x08b1'),  # WP2
-                ('0x8086', '0x08b2')
+                (('0x8086', '0x08b1'), 'USB'),  # WP2
+                (('0x8086', '0x08b2'), 'USB')
         ],
         'Intel-AC7265': [
-                ('0x8086', '0x095a'),  # StP2
-                ('0x8086', '0x095b')
+                (('0x8086', '0x095a'), 'USB'),  # StP2
+                (('0x8086', '0x095b'), 'USB')
         ],
-        'Realtek-RTL8822C-USB': [('0x10ec', '0xc822')]
+        'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],
+        'Realtek-RTL8822C-UART': [(('0x10ec', '0xc822'), 'UART')]
+
+        # The following doesn't expose vid:pid
+        # 'WCN3991-UART'
 }
 
 # We have a number of chipsets that are no longer supported. Known issues
@@ -4536,6 +4540,8 @@ class BluetoothAdapterTests(test.test):
         """
         (vid,pid) = self.bluetooth_facade.get_wlan_vid_pid()
         logging.debug('Bluetooth module vid pid is %s %s', vid, pid)
+        transport = self.bluetooth_facade.get_bt_transport()
+        logging.debug('Bluetooth transport is %s', transport)
         if vid is None or pid is None:
             # Controllers that aren't WLAN+BT combo chips does not expose
             # Vendor ID/Product ID. Use alternate method.
@@ -4543,7 +4549,7 @@ class BluetoothAdapterTests(test.test):
             # the name of chipset read from DUT
             return self.bluetooth_facade.get_bt_module_name()
         for name, l in CHIPSET_TO_VIDPID.items():
-            if (vid, pid) in l:
+            if ((vid, pid), transport) in l:
                 return name
         return ''
 

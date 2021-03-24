@@ -279,6 +279,7 @@ class RemoteHost(base_classes.Host):
         it.
         """
         template = os.path.join(parent, self.TMP_DIR_TEMPLATE)
+        parent = os.path.dirname(template)
         dir_name = self.run('mkdir -p %s && mktemp -d %s' % (parent, template)).stdout.rstrip()
         self.tmp_dirs.append(dir_name)
         return dir_name

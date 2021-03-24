@@ -171,7 +171,13 @@ _WIFI_CONNECT_COMMANDS = [
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {}
-CONFIG['LOGIN_PRECONDITION'] = {}
+CONFIG['LOGIN_PRECONDITION'] = {
+        'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsJobSchedulerTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsMediaTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsOsTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsProviderTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+}
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {

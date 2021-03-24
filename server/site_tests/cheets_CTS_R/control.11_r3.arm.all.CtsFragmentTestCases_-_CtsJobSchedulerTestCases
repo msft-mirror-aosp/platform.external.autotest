@@ -29,6 +29,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
+        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
         use_jdk9=True,
         timeout=172800)
 

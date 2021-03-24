@@ -47,28 +47,32 @@ from six.moves import zip
 
 Event = recorder.Event
 
-CHIPSET_TO_VIDPID = { 'BRCM-4354':[('0x002d','0x4354')],
-                      'MVL-8897':[('0x02df','0x912d')],
-                      'MVL-8997':[('0x1b4b','0x2b42')],
-                      'QCA-9462': [('0x168c', '0x0034')],
-                      'QCA-6174A-5':[('0x168c','0x003e')],
-                      'QCA-6174A-3':[('0x271','0x050a')],   # UART
-                      'Intel-AX200':[('0x8086', '0x2723')], # CcP2
-                      'Intel-AX201':[('0x8086','0x02f0')],  # HrP2
-                      'Intel-AC9260':[('0x8086','0x2526')], # ThP2
-                      'Intel-AC9560':[('0x8086','0x31dc'),  # JfP2
-                                      ('0x8086','0x9df0')],
-                      'Intel-AC7260':[('0x8086','0x08b1'),  # WP2
-                                      ('0x8086','0x08b2')],
-                      'Intel-AC7265':[('0x8086','0x095a'),  # StP2
-                                      ('0x8086','0x095b')],
-                      'Realtek-RTL8822C-USB':[('0x10ec','0xc822')] }
+CHIPSET_TO_VIDPID = {
+        'MVL-8897': [('0x02df', '0x912d')],
+        'MVL-8997': [('0x1b4b', '0x2b42')],
+        'QCA-6174A-5': [('0x168c', '0x003e')],
+        'QCA-6174A-3': [('0x271', '0x050a')],  # UART
+        'Intel-AX200': [('0x8086', '0x2723')],  # CcP2
+        'Intel-AX201': [('0x8086', '0x02f0')],  # HrP2
+        'Intel-AC9260': [('0x8086', '0x2526')],  # ThP2
+        'Intel-AC9560': [
+                ('0x8086', '0x31dc'),  # JfP2
+                ('0x8086', '0x9df0')
+        ],
+        'Intel-AC7260': [
+                ('0x8086', '0x08b1'),  # WP2
+                ('0x8086', '0x08b2')
+        ],
+        'Intel-AC7265': [
+                ('0x8086', '0x095a'),  # StP2
+                ('0x8086', '0x095b')
+        ],
+        'Realtek-RTL8822C-USB': [('0x10ec', '0xc822')]
+}
 
 # We have a number of chipsets that are no longer supported. Known issues
 # related to firmware will be ignored on these devices (b/169328792).
-UNSUPPORTED_CHIPSETS = [
-        'BRCM-4354', 'MVL-8897', 'MVL-8997', 'Intel-AC7260', 'Intel-AC7265'
-]
+UNSUPPORTED_CHIPSETS = ['MVL-8897', 'MVL-8997', 'Intel-AC7260', 'Intel-AC7265']
 
 # Location of data traces relative to this (bluetooth_adapter_tests.py) file
 BT_ADAPTER_TEST_PATH = os.path.dirname(__file__)

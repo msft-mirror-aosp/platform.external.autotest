@@ -70,7 +70,7 @@ def strip_kernelnext_suffix(board_name):
 
 BOARDS_WITH_HOTWORDING = [
         'atlas', 'coral', 'eve', 'kevin', 'nami', 'nocturne', 'pyro', 'rammus',
-        'samus'
+        'samus', 'volteer'
 ]
 
 
@@ -95,7 +95,7 @@ def has_echo_reference(board_name):
 
     """
     board_name = strip_kernelnext_suffix(board_name)
-    return board_name in ['nocturne', 'atlas']
+    return board_name in ['nocturne', 'atlas', 'volteer']
 
 
 BoardInfo = collections.namedtuple('BoardInfo', ['board', 'model', 'sku'])

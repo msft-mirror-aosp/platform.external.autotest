@@ -92,9 +92,7 @@ class UserCrashTest(crash_test.CrashTest):
         os.mkdir(self._symbol_dir)
 
         basename = os.path.basename(self._crasher_path)
-        utils.system('/usr/bin/dump_syms %s > %s.sym' %
-                     (self._crasher_path,
-                      basename))
+        utils.system('dump_syms %s > %s.sym' % (self._crasher_path, basename))
         sym_name = '%s.sym' % basename
         symbols = utils.read_file(sym_name)
         # First line should be like:
@@ -350,7 +348,7 @@ class UserCrashTest(crash_test.CrashTest):
 
     def _check_minidump_stackwalk(self, minidump_path, basename,
                                   from_crash_reporter):
-        stack = utils.system_output('/usr/bin/minidump_stackwalk %s %s' %
+        stack = utils.system_output('minidump_stackwalk %s %s' %
                                     (minidump_path, self._symbol_dir))
         self._verify_stack(stack, basename, from_crash_reporter)
 

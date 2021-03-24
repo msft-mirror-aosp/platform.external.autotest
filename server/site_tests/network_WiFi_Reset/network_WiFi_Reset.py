@@ -40,6 +40,8 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
     # effectively causes a restart, but we'll leave it aside for now.
     _IWLWIFI_RESET_PATH = '/sys/kernel/debug/iwlwifi/%s/iwlmvm/fw_restart'
 
+    _MTKWIFI_RESET_PATH = "/sys/kernel/debug/ieee80211/%s/mt76/chip_reset"
+
     _NUM_RESETS = 15
     _NUM_SUSPENDS = 5
     _SUSPEND_DELAY = 10
@@ -144,6 +146,29 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
         """
         self.context.client.host.run('echo 1 > ' + self.iwlwifi_reset_path())
 
+
+    def mtkwifi_reset_path(self):
+        """Get the path of mtkwifi debugfs reset file"""
+        phy_name = self.context.client.wifi_phy_name
+        return self._MTKWIFI_RESET_PATH % phy_name
+
+    def mtkwifi_reset_exists(self):
+        """Check if mtkwifi debugfs reset file exists"""
+        return self.context.client.host.path_exists(self.mtkwifi_reset_path())
+
+    def mtkwifi_reset(self):
+        """
+        Trigger mtkwifi firmware crash.
+        Then firmware crash will let WiFi reset.
+        """
+        self.context.client.host.run('echo 1 > ' + self.mtkwifi_reset_path())
+
+        # Wait for disconnection and reconnection
+        ssid = self.context.router.get_ssid()
+        self.context.client.wait_for_service_states(ssid, ['idle'],
+                timeout_seconds=20)
+
+
     def get_reset_driver(self):
         DRIVER_LIST = [
                 self.DriverReset(
@@ -157,6 +182,10 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
                 self.DriverReset(
                         supported=self.iwlwifi_reset_exists,
                         do_reset=self.iwlwifi_reset,
+                ),
+                self.DriverReset(
+                        supported=self.mtkwifi_reset_exists,
+                        do_reset=self.mtkwifi_reset,
                 ),
         ]
 

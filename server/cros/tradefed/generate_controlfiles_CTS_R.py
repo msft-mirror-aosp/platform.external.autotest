@@ -112,6 +112,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'CtsSecurityHostTestCasesz',
         'CtsSensorTestCases',  # TODO(ihf): Remove when not needing 30 retries.
         'CtsSensorTestCasesz',
+        'CtsSystem',  # TODO(b/183170604): Remove when flakiness is fixed.
         'CtsViewTestCases',  # TODO(b/126741318): Fix performance regression and remove this.
         'CtsViewTestCasesz',
         'zzzzz'  # A bookend to simplify algorithm.

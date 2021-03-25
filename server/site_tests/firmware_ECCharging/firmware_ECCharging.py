@@ -34,7 +34,7 @@ class firmware_ECCharging(FirmwareTest):
     AC_STATE_UPDATE_DELAY = 3
 
     # Wait a few seconds after discharging for voltage to stabilize
-    BEGIN_CHARGING_TIMEOUT = 60
+    BEGIN_CHARGING_TIMEOUT = 120
 
     # Sleep for a second between retries when waiting for voltage to stabilize
     BEGIN_CHARGING_RETRY_TIME = 1
@@ -73,70 +73,71 @@ class firmware_ECCharging(FirmwareTest):
                     raise
                 logging.warning('Failed to send EC cmd. %s', e)
 
-    def _get_charger_target_voltage(self):
-        """Get target charging voltage set in charger."""
-        voltage = int(
-                self._retry_send_cmd("charger", ["V_batt:\s+(\d+)\s"])[0][1])
-        logging.info("Charger target voltage = %d mV", voltage)
-        return voltage
-
-    def _get_charger_target_current(self):
-        """Get target charging current set in charger."""
-        current = int(
-                self._retry_send_cmd("charger", ["I_batt:\s+(\d+)\s"])[0][1])
-        logging.info("Charger target current = %d mA", current)
-        return current
+    def _get_charge_state(self):
+        """Get charger and battery information in a single call."""
+        output = self._retry_send_cmd("chgstate", [
+                r"chg\.\*:",
+                r"voltage = (\d+)mV",
+                r"current = (\d+)mA",
+                r"batt\.\*:",
+                r"voltage = (\d+)mV",
+                r"current = (\d+)mA",
+                r"desired_voltage = (\d+)mV",
+                r"desired_current = (\d+)mA",
+        ])
+        result = {
+                "charger_target_voltage": int(output[1][1]),
+                "charger_target_current": int(output[2][1]),
+                "battery_actual_voltage": int(output[4][1]),
+                "battery_actual_current": int(output[5][1]),
+                "battery_desired_voltage": int(output[6][1]),
+                "battery_desired_current": int(output[7][1]),
+        }
+        logging.info("Charger & battery info: %s", result)
+        return result
 
     def _get_trickle_charging(self):
         """Check if we are trickle charging battery."""
         return (self.ec.get_battery_desired_current() <
                 self.TRICKLE_CHARGE_THRESHOLD)
 
-    def _check_target_value(self):
-        """Check charger target values are correct.
+    def _check_voltages_and_currents(self):
+        """Check that the battery and charger voltages and currents are within
+        acceptable limits.
 
         Raise:
           error.TestFail: Raised when check fails.
         """
-        if (self._get_charger_target_voltage() >=
-                    1.05 * self.ec.get_battery_desired_voltage()):
+        state = self._get_charge_state()
+        target_voltage = state['charger_target_voltage']
+        desired_voltage = state['battery_desired_voltage']
+        target_current = state['charger_target_current']
+        desired_current = state['battery_desired_current']
+        actual_voltage = state['battery_actual_voltage']
+        actual_current = state['battery_actual_current']
+        logging.info("Checking charger target values...")
+        if (target_voltage >= 1.05 * desired_voltage):
             raise error.TestFail(
                     "Charger target voltage is too high. %d/%d=%f" %
-                    (self._get_charger_target_voltage(),
-                     self.ec.get_battery_desired_voltage(),
-                     float(self._get_charger_target_voltage()) /
-                     self.ec.get_battery_desired_voltage()))
-        if (self._get_charger_target_current() >=
-                    1.05 * self.ec.get_battery_desired_current()):
+                    (target_voltage, desired_voltage,
+                     float(target_voltage) / desired_voltage))
+        if (target_current >= 1.05 * desired_current):
             raise error.TestFail(
                     "Charger target current is too high. %d/%d=%f" %
-                    (self._get_charger_target_current(),
-                     self.ec.get_battery_desired_current(),
-                     float(self._get_charger_target_current()) /
-                     self.ec.get_battery_desired_current()))
+                    (target_current, desired_current,
+                     float(target_current) / desired_current))
 
-    def _check_actual_value(self):
-        """Check actual voltage/current values are correct.
-
-        Raise:
-          error.TestFail: Raised when check fails.
-        """
-        if (self.ec.get_battery_actual_voltage() >=
-                    1.05 * self._get_charger_target_voltage()):
+        logging.info("Checking battery actual values...")
+        if (actual_voltage >= 1.05 * target_voltage):
             raise error.TestFail(
                     "Battery actual voltage is too high. %d/%d=%f" %
-                    (self.ec.get_battery_actual_voltage(),
-                     self._get_charger_target_voltage(),
-                     float(self.ec.get_battery_actual_voltage()) /
-                     self._get_charger_target_voltage()))
-        if (self.ec.get_battery_actual_current() >=
-                    1.05 * self._get_charger_target_current()):
+                    (actual_voltage, target_voltage,
+                     float(actual_voltage) / target_voltage))
+        if (actual_current >= 1.05 * target_current):
             raise error.TestFail(
                     "Battery actual current is too high. %d/%d=%f" %
-                    (self.ec.get_battery_actual_current(),
-                     self._get_charger_target_current(),
-                     float(self.ec.get_battery_actual_current()) /
-                     self._get_charger_target_current()))
+                    (actual_current, target_current,
+                     float(actual_current) / target_current))
 
     def _check_if_discharge_on_ac(self):
         """Check if DUT is performing discharge on AC"""
@@ -171,7 +172,8 @@ class firmware_ECCharging(FirmwareTest):
         self.ec.send_command("chgstate discharge on")
         time.sleep(self.AC_STATE_UPDATE_DELAY)
 
-        # Verify discharging. Either AC off or charge control discharge is good.
+        # Verify discharging. Either AC off or charge control discharge is
+        # good.
         if not self._check_battery_discharging():
             raise error.TestFail("Battery is not discharging.")
 
@@ -266,8 +268,4 @@ class firmware_ECCharging(FirmwareTest):
                     "The device is not charging. Is the test run with AC plugged?"
             )
 
-        logging.info("Checking charger target values...")
-        self._check_target_value()
-
-        logging.info("Checking battery actual values...")
-        self._check_actual_value()
+        self._check_voltages_and_currents()

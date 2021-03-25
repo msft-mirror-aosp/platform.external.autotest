@@ -132,7 +132,7 @@ def get_testname(test, shard=0):
 
 
 def write_controlfile(filename, content):
-    print 'Writing %s.' % filename
+    print('Writing %s.' % filename)
     with open(filename, 'w+') as f:
         f.write(content)
 
@@ -141,7 +141,7 @@ def write_controlfiles(test):
     attributes = get_attributes(test)
     time = get_time(test)
 
-    for shard in xrange(0, test.shards):
+    for shard in range(0, test.shards):
         testname = get_testname(test, shard)
         filename = get_controlfilename(test, shard)
         content = CONTROLFILE_TEMPLATE.render(

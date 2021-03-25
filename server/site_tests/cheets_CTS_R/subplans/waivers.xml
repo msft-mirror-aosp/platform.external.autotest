@@ -11,6 +11,8 @@
   <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testSingleCapture" />
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.PerformanceTest#testSingleCapture" />
+  <Entry include="CtsDropBoxManagerTestCases android.dropboxmanager.cts.DropBoxTests#testLowPriorityRateLimitingWithEnabledEntries" />
+  <Entry include="CtsDropBoxManagerTestCases android.dropboxmanager.cts.DropBoxTests#testLowPrioritySustainedRapidEntryLimiting" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[0]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[1]" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[2]" />

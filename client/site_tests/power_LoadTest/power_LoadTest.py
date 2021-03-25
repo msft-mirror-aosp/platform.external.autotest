@@ -542,16 +542,12 @@ class power_LoadTest(arc.ArcTest):
                             keyvals)
         # Avoid polluting the keyvals with non-core domains.
         core_keyvals = power_utils.get_core_keyvals(keyvals)
-        if not self._gaia_login:
-            core_keyvals = {'INVALID_%s' % str(k): v for k, v in
-                            core_keyvals.iteritems()}
-        else:
-            for key, value in core_keyvals.iteritems():
-                if re.match(r'percent_[cg]pu(idle|pkg).*_R?C0(_C1)?_time', key):
-                    self.output_perf_value(description=key,
-                                           value=value,
-                                           units='percent',
-                                           higher_is_better=False)
+        for key, value in core_keyvals.iteritems():
+            if re.match(r'percent_[cg]pu(idle|pkg).*_R?C0(_C1)?_time', key):
+                self.output_perf_value(description=key,
+                                       value=value,
+                                       units='percent',
+                                       higher_is_better=False)
 
         logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
 

@@ -360,6 +360,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
            as well as peer devices. In addition the methods prints test start
            traces.
         """
+        # Every test_method should pass by default.
+        # This should be placed before any following self.test_xxx tests
+        # in this quick_test_test_start() method.
+        self._expected_result = True
+
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()

@@ -592,16 +592,33 @@ def test_retry_and_log(test_method_or_retry_flag,
                 if messages_stop:
                     syslog_captured = instance.bluetooth_facade.messages_stop()
 
-                if test_result:
-                    logging.info('[*** passed: {}]'.format(
-                            test_method.__name__))
+                logging.debug('instance._expected_result : %s',
+                              instance._expected_result)
+                if instance._expected_result:
+                    if test_result:
+                        logging.info('[*** passed: {}]'.format(
+                                test_method.__name__))
+                    else:
+                        if syslog_captured:
+                            _flag_common_failures(instance)
+                        fail_msg = '[--- failed: {} ({})]'.format(
+                                test_method.__name__, str(instance.results))
+                        logging.error(fail_msg)
+                        instance.fails.append(fail_msg)
                 else:
-                    if syslog_captured:
-                        _flag_common_failures(instance)
-                    fail_msg = '[--- failed: {} ({})]'.format(
-                            test_method.__name__, str(instance.results))
-                    logging.error(fail_msg)
-                    instance.fails.append(fail_msg)
+                    if test_result:
+                        # The test is expected to fail; but it passed.
+                        reason = 'expected fail, actually passed'
+                        fail_msg = '[--- failed: {} ({})]'.format(
+                                test_method.__name__, reason)
+                        logging.error(fail_msg)
+                        instance.fails.append(fail_msg)
+                    else:
+                        # The test is expected to fail; and it did fail.
+                        reason = 'expected fail, actually failed'
+                        logging.info('[*** passed: {} ({})]'.format(
+                                test_method.__name__, reason))
+
             # Log TestError and TestNA and let the quicktest wrapper catch it.
             # Those errors should skip out of the testcase entirely.
             except error.TestNAError as e:
@@ -609,12 +626,14 @@ def test_retry_and_log(test_method_or_retry_flag,
                         test_method.__name__, str(e))
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
+                instance._expected_result = True
                 raise
             except error.TestError as e:
                 fail_msg = '[--- error {} ({})]'.format(
                         test_method.__name__, str(e))
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
+                instance._expected_result = True
                 raise
             except error.TestFail as e:
                 fail_msg = '[--- failed {} ({})]'.format(
@@ -622,6 +641,9 @@ def test_retry_and_log(test_method_or_retry_flag,
                 logging.error(fail_msg)
                 instance.fails.append(fail_msg)
                 should_raise = True
+
+            # Next test_method should pass by default.
+            instance._expected_result = True
 
             # Check whether we should fail fast
             if fail_msg and should_raise:
@@ -779,6 +801,76 @@ class BluetoothAdapterTests(test.test):
                 raise error.TestNAError(failure_msg)
             else:
                 raise error.TestFail(failure_msg)
+
+
+    def expect_fail(self, test_method, *args, **kwargs):
+        """Run the test_method which is expected to fail.
+
+        Here a test means one that comes with the @test_retry_and_log
+        decorator.
+
+        In most cases, a test is expected to pass by default. However, in
+        some cases, we may expect a test to fail. As an example, a test is
+        expected to fail if the behavior is disallowed by the policy. In
+        this case, the failure is considered a pass. The example statements
+        look like
+
+            # Set an arbitrary UUID that disallows the HID device.
+            self.test_check_set_allowlist('0xabcd', True)
+
+            # Since the HID device is disallowed above,
+            # the self.test_keyboard_input_from_trace test itself would
+            # fail which is expected.
+            self.expect_fail(self.test_keyboard_input_from_trace,
+                             device, "simple_text")
+
+        In the log, the message would show that the keyboard input failed as
+
+            test_keyboard_input_from_trace: InputEventRecorderError: Failed to
+            find the device node of KEYBD_REF.
+
+        As a result, the log message shows that the test conceptually passed.
+
+            [*** passed: test_keyboard_input_from_trace (expected fail,
+                                                         actually failed)]
+
+        @param test_method: the test method to run.
+
+        @returns: True if the test method failed; False otherwise.
+        """
+        self._expected_result = False
+        logging.debug('self._expected_result %s', self._expected_result)
+        return test_method(*args, **kwargs)
+
+
+    def expect_test(self, expected_result, test_method, *args, **kwargs):
+        """Run the test method and expect the test result as expected_result.
+
+        This little helper is used to make simple the following statements
+
+            if expected_result:
+                self.test_xxx(device)
+            else:
+                self.expect_fail(self.test_xxx, device)
+
+        which can be converted to
+
+            self.expect_test(expected_result, self.test_xxx, device)
+
+        @param expected_result: True if the test is expected to pass;
+                False otherwise.
+        @param test_method: the test method to run.
+
+        @returns: True if the test result matches expected_result;
+                False otherwise.
+        """
+        if expected_result:
+            # If the test is expected to pass, just run it normally.
+            return test_method(*args, **kwargs)
+        else:
+            # If the test is expected to fail, run it throuigh self.expect_fail
+            # to handle the failure.
+            return self.expect_fail(test_method, *args, **kwargs)
 
 
     # TODO(b/131170539) remove when sarien/arcada no longer have _signed

@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import shutil
-import tempfile
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cros_logging, service_stopper
@@ -27,7 +26,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
     _width = 256  # Use smallest width for which all tests run/pass.
     _height = 256  # Use smallest height for which all tests7 run/pass.
     _caselist = None
-    _log_path = None  # Location for detailed test output logs (in /tmp/).
+    _log_path = None  # Location for detailed test output logs
     _debug = False  # Analyze kernel messages.
     _log_reader = None  # Reader to analyze (kernel) messages log.
     _log_filter = re.compile('.* .* kernel:')  # kernel messages filter.
@@ -204,8 +203,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # Create a place to put detailed test output logs.
         filter_name = self._filter or os.path.basename(self._caselist)
         logging.info('dEQP test filter = %s', filter_name)
-        self._log_path = os.path.join(tempfile.gettempdir(),
-                                      '%s-logs' % filter_name)
+        self._log_path = os.path.join(os.getcwd(), 'deqp-runner')
         shutil.rmtree(self._log_path, ignore_errors=True)
         os.mkdir(self._log_path)
 
@@ -279,7 +277,5 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         if run_result.exit_status != 0:
             raise error.TestFail('dEQP run failed with status code %d' %
                                  run_result.exit_status)
-
-        # TODO: Figure out how to get autotest to save off our self._log_path
 
         # self.write_perf_keyval(test_results) # XXX

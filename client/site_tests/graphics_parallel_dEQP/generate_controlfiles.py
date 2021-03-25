@@ -31,43 +31,43 @@ class Suite(Enum):
 
 
 deqp_dir = '/usr/local/deqp'
-GLES2_MASTER_FILE = os.path.join(deqp_dir, 'master', 'gles2-master.txt')
-GLES3_MASTER_FILE = os.path.join(deqp_dir, 'master', 'gles3-master.txt')
-GLES31_MASTER_FILE = os.path.join(deqp_dir, 'master', 'gles31-master.txt')
-VK_MASTER_FILE = os.path.join(deqp_dir, 'master', 'vk-master.txt')
+GLES2_FILE = os.path.join(deqp_dir, 'master', 'gles2-master.txt')
+GLES3_FILE = os.path.join(deqp_dir, 'master', 'gles3-master.txt')
+GLES31_FILE = os.path.join(deqp_dir, 'master', 'gles31-master.txt')
+VK_FILE = os.path.join(deqp_dir, 'master', 'vk-master.txt')
 
 tests = [
-        Test('dEQP-GLES2-master',
+        Test('dEQP-GLES2',
              Suite.bvtpb,
              shards=1,
              time='MEDIUM',
-             tag='gles2-master',
+             tag='gles2',
              api='gles2',
-             caselist=GLES2_MASTER_FILE,
+             caselist=GLES2_FILE,
              perf_failure_description='Failures_GLES2'),
-        Test('dEQP-GLES3-master',
+        Test('dEQP-GLES3',
              Suite.bvtpb,
              shards=1,
              time='LONG',
-             tag='gles3-master',
+             tag='gles3',
              api='gles3',
-             caselist=GLES3_MASTER_FILE,
+             caselist=GLES3_FILE,
              perf_failure_description='Failures_GLES3'),
-        Test('dEQP-GLES31-master',
+        Test('dEQP-GLES31',
              Suite.bvtpb,
              shards=1,
              time='LONG',
-             tag='gles31-master',
+             tag='gles31',
              api='gles31',
-             caselist=GLES31_MASTER_FILE,
+             caselist=GLES31_FILE,
              perf_failure_description='Failures_GLES31'),
-        Test('dEQP-VK-master',
+        Test('dEQP-VK',
              Suite.bvtpb,
              shards=4,
              time='LONG',
-             tag='vk-master',
+             tag='vk',
              api='vk',
-             caselist=VK_MASTER_FILE,
+             caselist=VK_FILE,
              perf_failure_description='Failures_VK'),
 ]
 

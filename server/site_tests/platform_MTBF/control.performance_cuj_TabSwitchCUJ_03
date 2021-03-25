@@ -23,51 +23,25 @@ more information.
 
 See http://go/tast-failures for information about investigating failures.
 '''
-import common
-import json
-import logging
-import tempfile
-from six.moves import urllib
-import yaml
 
-from autotest_lib.client.common_lib.cros import dev_server
-from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+import os
 
-test_args = dict()
-test_args['test_version'] = 1
+default_vars_file = '/tmp/performance_cuj_vars.yaml'
 
-def parse_config(config_url):
-  response = urllib.urlopen(config_url)
-  vars = json.loads(response.read())
-  for key in vars:
-    test_args[key] = vars[key]
-  logging.info('Read %d values from remote configuration.', length(vars))
+varsfiles = []
+if 'args_dict' in globals() and 'vars_file' in args_dict.keys():
+  varsfiles = args_dict['vars_file']
+elif os.path.isfile(default_vars_file):
+  # Default vars file.
+  varsfiles = [default_vars_file]
 
 def run(machine):
-    with tempfile.NamedTemporaryFile(suffix='.yaml') as temp_file:
-        # Writing test arguments to yaml file except for wrapper-related arguments.
-        yaml.dump(test_args, stream=temp_file, default_flow_style=False)
-
-        job.run_test('tast',
-                    host=hosts.create_host(machine),
-                    test_exprs=['ui.TabSwitchCUJ'],
-                    ignore_test_failures=False,
-                    max_run_sec=3600,
-                    command_args=args,
-                    varsfiles=[temp_file.name])
-
-if 'devserver_url' in globals():
-  ds = dev_server.ImageServer(devserver_url)
-  gs_bucket = ds._get_image_storage_server()
-  if gs_bucket:
-    config_path = '/config/perf_cuj/'
-    config_file = 'perf_cuj.config'
-    archive_url = gs_bucket + config_path
-    logging.info('Staging configuration from %s.', gs_bucket)
-    ds.stage_artifacts(build,
-                       archive_url = archive_url,
-                       files = [config_file])
-    logging.info('Parsing configuration from %s.', archive_url)
-    parse_config(devserver_url + '/static' + config_path + config_file)
+  job.run_test('tast',
+              host=hosts.create_host(machine),
+              test_exprs=['ui.TabSwitchCUJ'],
+              ignore_test_failures=False,
+              max_run_sec=3600,
+              command_args=args,
+              varsfiles=varsfiles)
 
 parallel_simple(run, machines)

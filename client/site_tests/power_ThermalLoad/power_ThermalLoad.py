@@ -10,6 +10,19 @@ from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
 
+FISHES_COUNT = {
+        1: 'setSetting0',
+        100: 'setSetting1',
+        500: 'setSetting2',
+        1000: 'setSetting3',
+        5000: 'setSetting4',
+        10000: 'setSetting5',
+        15000: 'setSetting6',
+        20000: 'setSetting7',
+        25000: 'setSetting8',
+        30000: 'setSetting9',
+
+    }
 
 class power_ThermalLoad(power_test.power_Test):
     """class for power_ThermalLoad test.
@@ -19,7 +32,15 @@ class power_ThermalLoad(power_test.power_Test):
     FISHTANK_URL = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_ThermalLoad/aquarium/aquarium.html'
     HOUR = 60 * 60
 
-    def run_once(self, test_url=FISHTANK_URL, duration=2.5*HOUR, numFish=3000):
+    def select_fishes(self, tab, fish_settings):
+        """Simple wrapper to select the required fish count
+
+        @param tab: An Autotest Chrome tab instance.
+        @param fish_settings: Webgl fish count settings
+        """
+        tab.ExecuteJavaScript('%s.click();' % fish_settings)
+
+    def run_once(self, test_url=FISHTANK_URL, duration=2.5*HOUR, numFish=5000):
         """run_once method.
 
         @param test_url: url of webgl heavy page.
@@ -38,10 +59,11 @@ class power_ThermalLoad(power_test.power_Test):
 
             self.backlight.set_percent(100)
 
-            url = test_url + "?numFish=" + str(numFish)
-            logging.info('Navigating to url: %s', url)
-            tab.Navigate(url)
+            logging.info('Navigating to url: %s', test_url)
+            tab.Navigate(test_url)
             tab.WaitForDocumentReadyStateToBeComplete()
+            logging.info("Selecting %d Fishes", numFish)
+            self.select_fishes(tab, FISHES_COUNT[numFish])
 
             self._flog = FishTankFpsLogger(tab,
                     seconds_period=self._seconds_period,
@@ -73,11 +95,20 @@ class FishTankFpsLogger(power_status.MeasurementLogger):
         super(FishTankFpsLogger, self).__init__([], seconds_period,
                                                     checkpoint_logger)
         self._tab = tab
-        (fishCount, frameCount, frameTime) = self._tab.EvaluateJavaScript(
-                '[fishCount, frameCount, Date.now()/1000]')
+        (frameCount, frameTime) = self._tab.EvaluateJavaScript(
+                '[frameCount, Date.now()/1000]')
+        fishCount = self.get_fish_count(tab)
         self.domains = ['avg_fps_%04d_fishes' % fishCount]
         self._lastFrameCount = frameCount
         self._lastFrameTime = frameTime
+
+    def get_fish_count(self, tab):
+        style_string = 'color: red;'
+        for count, setting in FISHES_COUNT.items():
+            style = tab.EvaluateJavaScript('%s.getAttribute("style")' %
+                                           setting)
+            if style == style_string:
+                return count
 
     def refresh(self):
         (frameCount, frameTime

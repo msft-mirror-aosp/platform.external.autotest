@@ -39,7 +39,7 @@ test_args = dict()
 test_args['test_version'] = 1
 
 def parse_config(config_url):
-  response = urllib.urlopen(config_url)
+  response = urllib.request.urlopen(config_url)
   vars = json.loads(response.read())
   for key in vars:
     test_args[key] = vars[key]

@@ -24,43 +24,8 @@ Supposed to be run by partners (OEMs, ODMs) using Moblab.
 """
 
 import common
-import json
-import logging
-import tempfile
-from six.moves import urllib
-import yaml
 
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
-
-vars_file = '/tmp/performance_cuj_vars.yaml'
-
-test_args = dict()
-test_args['test_version'] = 1
-
-def parse_config(config_url):
-  response = urllib.request.urlopen(config_url)
-  vars = json.loads(response.read())
-  for key in vars:
-    test_args[key] = vars[key]
-  logging.info('Read %d values from remote configuration.', length(vars))
-
-if 'devserver_url' in globals():
-  ds = dev_server.ImageServer(devserver_url)
-  gs_bucket = dev_server._get_image_storage_server()
-  if gs_bucket:
-    config_path = 'config/perf_cuj/'
-    config_file = 'perf_cuj.config'
-    archive_url = gs_bucket + config_path
-    logging.info('Staging configuration from %s.', gs_bucket)
-    ds.stage_artifacts(build,
-                       archive_url = archive_url,
-                       files = [config_file])
-    logging.info('Parsing configuration from %s.', archive_url)
-    parse_config(devserver_url + '/static/' + config_path + config_file)
-
-with open(vars_file, 'w') as file:
-  yaml.dump(test_args, stream=file, default_flow_style=False)
 
 args_dict['name'] = NAME
 args_dict['job'] = job

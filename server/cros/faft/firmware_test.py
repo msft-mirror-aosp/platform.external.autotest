@@ -1193,24 +1193,20 @@ class FirmwareTest(test.test):
         logging.debug("power state info %r", match)
         return state_name
 
-    def _check_power_state(self, expected_power_state, actual_power_state):
+    def _check_power_state(self, power_state):
         """
         Check for correct power state of the AP (via EC 'powerinfo' command)
 
         @return: the line and the match, if the output matched.
         @raise error.TestFail: if output didn't match after the delay.
         """
-        if not isinstance(expected_power_state, str):
+        if not isinstance(power_state, str):
             raise error.TestError('%s is not a string while it should be.' %
-                                  expected_power_state)
-        if not isinstance(actual_power_state, str):
-            raise error.TestError('%s is not a string while it should be.' %
-                                  actual_power_state)
-        if re.match('^' + expected_power_state + '$', actual_power_state):
-            return True
-        return False
+                                  power_state)
+        return self.ec.send_command_get_output("powerinfo",
+            ['\\b' + power_state + '\\b'])
 
-    def wait_power_state(self, power_state, retries, retry_delay=3):
+    def wait_power_state(self, power_state, retries, retry_delay=0):
         """
         Wait for certain power state.
 
@@ -1222,18 +1218,13 @@ class FirmwareTest(test.test):
         logging.info('Checking power state "%s" maximum %d times.',
                      power_state, retries)
 
-        last_power_state = ''
         while retries > 0:
             logging.debug("try count: %d", retries)
             start_time = time.time()
             try:
                 retries = retries - 1
-                actual_power_state = self.get_power_state()
-                if last_power_state != actual_power_state:
-                    logging.info("power state: %s", actual_power_state)
-                if self._check_power_state(power_state, actual_power_state):
+                if self._check_power_state(power_state):
                     return True
-                last_power_state = actual_power_state
             except (error.TestFail, expat.ExpatError):
                 pass
             delay_time = retry_delay - time.time() + start_time

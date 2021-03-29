@@ -277,5 +277,5 @@ class platform_ServoPowerStateController(test.test):
         self.controller = host.servo.get_power_state_controller()
 
         self.test_with_usb_unplugged()
-        if usb_available:
+        if usb_available and host.is_servo_usb_usable():
             self.test_with_usb_plugged_in()

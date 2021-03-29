@@ -1675,6 +1675,6 @@ def is_servo_host_information_valid(hostname, port):
     if port_int < 1 or port_int > 65000:
         return False
     # we expecting host contain only latters, digits and '-' or '_'
-    if not re.match('[a-zA-Z0-9-_\.]*$', hostname) or len(hostname) < 5:
+    if not re.match('[a-zA-Z0-9-_\.:]*$', hostname) or len(hostname) < 5:
         return False
     return True

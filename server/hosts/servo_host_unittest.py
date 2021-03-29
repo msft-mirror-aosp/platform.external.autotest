@@ -103,6 +103,9 @@ class ServoHostInformationValidator(unittest.TestCase):
         self.assertTrue(servo_host.is_servo_host_information_valid(hostname, port))
         hostname = 'my.dut-1'
         self.assertTrue(servo_host.is_servo_host_information_valid(hostname, port))
+        hostname = '192.168.0.1:8022'
+        self.assertTrue(
+                servo_host.is_servo_host_information_valid(hostname, port))
         # diff ports
         self.assertTrue(servo_host.is_servo_host_information_valid(hostname, 7000))
         self.assertTrue(servo_host.is_servo_host_information_valid(hostname, 1234))

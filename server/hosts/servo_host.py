@@ -23,7 +23,6 @@ import json
 import time
 import six
 import six.moves.xmlrpc_client
-import calendar
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -36,7 +35,6 @@ from autotest_lib.server.hosts import base_servohost
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.cros.faft.utils import config
 from autotest_lib.client.common_lib import global_config
-from autotest_lib.site_utils.admin_audit import servo_updater
 from autotest_lib.server.cros.servo.topology import servo_topology
 
 try:

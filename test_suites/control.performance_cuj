@@ -29,6 +29,5 @@ from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
 args_dict['name'] = NAME
 args_dict['job'] = job
-args_dict['vars_file'] = vars_file
 
 dynamic_suite.reimage_and_run(**args_dict)

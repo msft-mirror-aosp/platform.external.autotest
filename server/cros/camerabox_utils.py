@@ -182,6 +182,13 @@ class DUTFixture:
 
     @contextlib.contextmanager
     def _stop_camera_service(self):
+        # Ensure camera service is running or the
+        # upstart_stop()/upstart_restart() may failed due to in
+        # "start|post-stop" sleep for respawning state. See b/183904344 for
+        # detail.
+        logging.info('Wait for presence of camera service')
+        self.host.wait_for_service('cros-camera')
+
         self.host.upstart_stop('cros-camera')
         yield
         self.host.upstart_restart('cros-camera')
@@ -207,8 +214,8 @@ class DUTFixture:
     def cleanup(self):
         """Cleanup camera filter."""
         logging.info('Remove filter option and restore camera service')
-        self.host.run('rm', args=('-f', self.TEST_CONFIG_PATH))
-        self.host.upstart_restart('cros-camera')
+        with self._stop_camera_service():
+            self.host.run('rm', args=('-f', self.TEST_CONFIG_PATH))
 
         logging.info('Restore camera profile in ARC++ container')
         self.host.run('restart ui')

@@ -1907,6 +1907,14 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     @retry.retry(error.AutoservError, timeout_min=5, delay_sec=10)
+    def wait_for_service(self, service_name):
+        """Wait for target status of an upstart init script.
+
+        @param service_name: Service to wait for.
+        """
+        if not self.upstart_status(service_name):
+            raise error.AutoservError('Service %s not running.' % service_name)
+
     def wait_for_system_services(self):
         """Waits for system-services to be running.
 
@@ -1914,9 +1922,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         should give this some time to finish. See crbug.com/765686#c38 for
         details.
         """
-        if not self.upstart_status('system-services'):
-            raise error.AutoservError('Chrome failed to reach login. '
-                                      'System services not running.')
+        self.wait_for_service('system-services')
 
 
     def verify(self):

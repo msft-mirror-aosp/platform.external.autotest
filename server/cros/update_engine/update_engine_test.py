@@ -982,5 +982,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if not stable_paygen_data:
             raise error.TestFail(
                     'No stable build found in paygen.json for %s' % board)
+        latest_stable_paygen_data = max(
+                stable_paygen_data, key=(lambda key: key['chrome_os_version']))
         return os.path.join(channel, board,
-                            stable_paygen_data[0]["chrome_os_version"])
+                            latest_stable_paygen_data["chrome_os_version"])

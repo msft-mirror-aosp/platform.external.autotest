@@ -507,18 +507,21 @@ def perform_local_run(autotest_path,
     job_queue = []
     test_num = 0
 
-    for test in tests:
-        ctrl_files = get_all_control_files(test, autotest_path)
-        for control in ctrl_files:
-            test_num += 1
-            job = SimpleJob(name="adhoc/{}".format(test),
-                            owner='autotest_system',
-                            test_num=test_num)
-            job.set_control_file(control)
-            if ignore_deps:
-                job_queue.append(job)
-            elif job.deps_satisfied(labels):
-                job_queue.append(job)
+    if iterations > 1:
+        logging.info("Scheduling for %s iterations", iterations)
+    for _ in range(iterations):
+        for test in tests:
+            ctrl_files = get_all_control_files(test, autotest_path)
+            for control in ctrl_files:
+                test_num += 1
+                job = SimpleJob(name="adhoc/{}".format(test),
+                                owner='autotest_system',
+                                test_num=test_num)
+                job.set_control_file(control)
+                if ignore_deps:
+                    job_queue.append(job)
+                elif job.deps_satisfied(labels):
+                    job_queue.append(job)
 
     codes = []
     job_id_digits = 0

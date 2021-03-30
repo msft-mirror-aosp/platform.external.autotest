@@ -84,3 +84,5 @@ server/cros/faft/fw-testing-configs/
 .idea
 .vscode
 .cipd_bin
+
+autotest.iml

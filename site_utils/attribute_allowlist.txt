@@ -115,6 +115,7 @@ suite:bvt-tast-cq-wilco
 suite:bvt-tast-informational
 suite:bvt-tast-parallels-cq
 suite:bvt-tast-parallels-informational
+suite:calibration
 suite:camera-libcamera
 suite:camera-postsubmit
 suite:camerabox_facing-back

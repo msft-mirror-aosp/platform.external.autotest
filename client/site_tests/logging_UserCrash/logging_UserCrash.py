@@ -2,15 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging, os, time
+import os, time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cros_ui, upstart
 from autotest_lib.client.cros.crash import user_crash_test
 
 
-_COLLECTION_ERROR_SIGNATURE = 'crash_reporter-user-collection'
-_MAX_CRASH_DIRECTORY_SIZE = 32
 _CRASH_REPORTER_ENABLED_PATH = '/var/lib/crash_reporter/crash-handling-enabled'
 
 
@@ -86,51 +84,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
         results = self._check_crashing_process('root', consent=False)
 
 
-    def _test_max_enqueued_crashes(self):
-        """Test that _MAX_CRASH_DIRECTORY_SIZE is enforced."""
-        self._log_reader.set_start_by_current()
-        username = 'root'
-
-        crash_dir = self._get_crash_dir(username)
-        full_message = ('Crash directory %s already full with %d pending '
-                        'reports' % (crash_dir, _MAX_CRASH_DIRECTORY_SIZE))
-
-        # Fill up the queue.
-        for i in range(0, _MAX_CRASH_DIRECTORY_SIZE):
-            result = self._run_crasher_process(username)
-            if not result['crashed']:
-                raise error.TestFail('failure while setting up queue: %d' %
-                                     result['returncode'])
-            if self._log_reader.can_find(full_message):
-                raise error.TestFail('unexpected full message: ' +
-                                     full_message)
-
-        crash_dir_size = len(os.listdir(crash_dir))
-        # For debugging
-        utils.system('ls -l %s' % crash_dir)
-        logging.info('Crash directory had %d entries', crash_dir_size)
-
-        # Crash a bunch more times, but make sure no new reports
-        # are enqueued.
-        for i in range(0, 10):
-            self._log_reader.set_start_by_current()
-            result = self._run_crasher_process(username)
-            logging.info('New log messages: %s', self._log_reader.get_logs())
-            if not result['crashed']:
-                raise error.TestFail('failure after setting up queue: %d' %
-                                     result['returncode'])
-            utils.poll_for_condition(
-                    lambda: self._log_reader.can_find(full_message),
-                    timeout=20,
-                    exception=error.TestFail('expected full message: ' +
-                                             full_message))
-            if crash_dir_size != len(os.listdir(crash_dir)):
-                utils.system('ls -l %s' % crash_dir)
-                raise error.TestFail('expected no new files (now %d were %d)',
-                                     len(os.listdir(crash_dir)),
-                                     crash_dir_size)
-
-
     def initialize(self):
         user_crash_test.UserCrashTest.initialize(self)
 
@@ -154,10 +107,9 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
                               initialize_crash_reporter=False,
                               must_run_all=False)
 
-        self.run_crash_tests(['reporter_startup',
-                              'chronos_crasher',
-                              'chronos_crasher_no_consent',
-                              'root_crasher',
-                              'root_crasher_no_consent',
-                              'max_enqueued_crashes'],
-                              initialize_crash_reporter=True)
+        self.run_crash_tests([
+                'reporter_startup', 'chronos_crasher',
+                'chronos_crasher_no_consent', 'root_crasher',
+                'root_crasher_no_consent'
+        ],
+                             initialize_crash_reporter=True)

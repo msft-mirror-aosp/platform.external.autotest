@@ -97,9 +97,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             raise error.TestFail('Disabling the internet connection failed.')
 
 
-    def _disconnect_reconnect_network_test(self, update_url,
-                                          time_without_network=120,
-                                          accepted_movement=0.015):
+    def _disconnect_reconnect_network_test(self,
+                                           update_url,
+                                           time_without_network=25,
+                                           accepted_movement=0.015):
         """
         Disconnects the network for a period of time, verifies that the update
         pauses, reconnects the network, and ensures that the update picks up

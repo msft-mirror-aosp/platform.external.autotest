@@ -2277,9 +2277,11 @@ def recursive_func(obj, func, types, sequence_types=(list, tuple, set),
                     return result_obj
                 except ValueError:
                     pass
-
-        result_obj = func(obj)
-        return result_obj
+        try:
+            result_obj = func(obj)
+            return result_obj
+        except UnicodeEncodeError:
+            pass
     else:
         return obj
 

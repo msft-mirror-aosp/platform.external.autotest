@@ -2086,13 +2086,16 @@ class CPUStatsLogger(MeasurementLogger):
         self._stats = get_available_cpu_stats()
         self._stats.append(GPUFreqStats())
         self.domains = []
+        self._refresh_count = 0
+        self._last_wavg = collections.defaultdict(int)
+
+    def _set_domains(self):
+        self.domains = []
         for stat in self._stats:
             self.domains.extend([stat.name + '_' + str(state_name)
                                  for state_name in stat.refresh()])
             if stat.weighted_average():
                 self.domains.append('wavg_' + stat.name)
-        self._refresh_count = 0
-        self._last_wavg = collections.defaultdict(int)
 
     def refresh(self):
         self._refresh_count += 1
@@ -2113,6 +2116,15 @@ class CPUStatsLogger(MeasurementLogger):
                     ret.append(wavg * count - last_wavg * (count - 1))
                 else:
                     ret.append(wavg)
+        if not self.domains:
+            self._set_domains()
+        elif len(self.domains) != len(ret):
+            # This would make data jumble but better than IndexError.
+            # Add the log to help detecting the root cause.
+            logging.warning('b:162610351 len(self.domains) != len(ret)')
+            logging.warning('old_domains: (%s)', ', '.join(self.domains))
+            self._set_domains()
+            logging.warning('new_domains: (%s)', ', '.join(self.domains))
         return ret
 
     def save_results(self, resultsdir, fname_prefix=None):

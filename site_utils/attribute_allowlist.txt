@@ -32,6 +32,7 @@ suite:bluestreak-partners
 suite:bluestreak-pre-cq
 suite:bluetooth
 suite:bluetooth_e2e
+suite:bluetooth_e2e_cq
 suite:bluetooth_flaky
 suite:bluetooth_health
 suite:bluetooth_mtbf

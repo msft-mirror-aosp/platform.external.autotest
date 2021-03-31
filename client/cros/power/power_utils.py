@@ -146,11 +146,9 @@ def get_power_supply():
              'power:AC_only' when the device has no battery at all.
     """
     try:
-        psu = utils.system_output('mosys psu type')
+        psu = utils.system_output('cros_config /hardware-properties psu-type')
     except Exception:
-        # The psu command for mosys is not included for all platforms. The
-        # assumption is that the device will have a battery if the command
-        # is not found.
+        # Assume battery if unspecified in cros_config.
         return 'power:battery'
 
     psu_str = psu.strip()
@@ -176,24 +174,7 @@ def has_battery():
     Returns:
         Boolean, False if known not to have battery, True otherwise.
     """
-    rv = True
-    power_supply = get_power_supply()
-    if power_supply == 'power:battery':
-        # TODO(tbroch) if/when 'power:battery' param is reliable
-        # remove board type logic.  Also remove verbose mosys call.
-        _NO_BATTERY_BOARD_TYPE = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
-        board_type = utils.get_board_type()
-        if board_type in _NO_BATTERY_BOARD_TYPE:
-            logging.warn('Do NOT believe type %s has battery. '
-                         'See debug for mosys details', board_type)
-            psu = utils.system_output('mosys -vvvv psu type',
-                                      ignore_status=True)
-            logging.debug(psu)
-            rv = False
-    elif power_supply == 'power:AC_only':
-        rv = False
-
-    return rv
+    return get_power_supply() == 'power:battery'
 
 
 def get_low_battery_shutdown_percent():

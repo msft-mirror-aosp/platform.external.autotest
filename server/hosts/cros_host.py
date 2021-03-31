@@ -2731,11 +2731,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         for extended use (for moving the machine, etc)
                  'power:AC_only' when the device has no battery at all.
         """
-        psu = self.run(command='mosys psu type', ignore_status=True)
+        psu = self.run(command='cros_config /hardware-properties psu-type',
+                       ignore_status=True)
         if psu.exit_status:
-            # The psu command for mosys is not included for all platforms. The
-            # assumption is that the device will have a battery if the command
-            # is not found.
+            # Assume battery if unspecified in cros_config.
             return 'power:battery'
 
         psu_str = psu.stdout.strip()
@@ -2751,22 +2750,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         Returns:
             Boolean, False if known not to have battery, True otherwise.
         """
-        rv = True
-        power_supply = self.get_power_supply()
-        if power_supply == 'power:battery':
-            _NO_BATTERY_BOARD_TYPE = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
-            board_type = self.get_board_type()
-            if board_type in _NO_BATTERY_BOARD_TYPE:
-                logging.warn('Do NOT believe type %s has battery. '
-                             'See debug for mosys details', board_type)
-                psu = utils.system_output('mosys -vvvv psu type',
-                                         ignore_status=True)
-                logging.debug(psu)
-                rv = False
-        elif power_supply == 'power:AC_only':
-            rv = False
-
-        return rv
+        return self.get_power_supply() == 'power:battery'
 
 
     def get_servo(self):

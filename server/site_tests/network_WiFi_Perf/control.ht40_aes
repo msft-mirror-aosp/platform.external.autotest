@@ -18,7 +18,6 @@ transmitting throughput on a DUT with an AES encrypted HT40 802.11n network.
 
 from autotest_lib.server.cros.network import hostap_config
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
-from autotest_lib.server.cros.network import netperf_runner
 
 
 def run(machine):
@@ -29,23 +28,13 @@ def run(machine):
             psk='chromeos',
             wpa_mode=xmlrpc_security_types.WPAConfig.MODE_PURE_WPA2,
             wpa_ciphers=[xmlrpc_security_types.WPAConfig.CIPHER_CCMP])
-    ap_configs = [hostap_config.HostapConfig(n_capabilities=caps,
+    configs = [hostap_config.HostapConfig(n_capabilities=caps,
                                           channel=channel, mode=mode,
                                           security_config=wpa_config)
                for channel in (1, 157)]
-    netperf_configs = [
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM),
-    ]
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,
-                 additional_params=[(ap_config, netperf_configs) for ap_config in ap_configs])
+                 additional_params=configs)
 
 
 parallel_simple(run, machines)

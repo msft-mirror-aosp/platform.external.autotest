@@ -19,15 +19,17 @@ var o = c.createOscillator();
 o.connect(c.destination); o.start();
 """
 
-class audio_CrasSanity(test.test):
+
+class audio_CrasCheck(test.test):
     """Verifies cras using its status, active streams and crashes"""
 
     version = 1
-    _check = {'crashes_on_boot': False,
-              'stream_activation': False,
-              'cras_status': False,
-              'crashes_at_end': False
-             }
+    _check = {
+            'crashes_on_boot': False,
+            'stream_activation': False,
+            'cras_status': False,
+            'crashes_at_end': False
+    }
 
     def run_once(self):
         # Check for existing cras crashes which might occur during UI bring up.
@@ -57,8 +59,8 @@ class audio_CrasSanity(test.test):
             total_tests = 2
             active_streams = cras_utils.get_active_stream_count()
             logging.debug(
-                'Number of active streams after opening all tabs: %d.',
-                active_streams)
+                    'Number of active streams after opening all tabs: %d.',
+                    active_streams)
             if active_streams >= total_tests:
                 self._check['stream_activation'] = True
 
@@ -72,8 +74,8 @@ class audio_CrasSanity(test.test):
                 time.sleep(1)
             active_streams = cras_utils.get_active_stream_count()
             logging.debug(
-                'Number of active streams after closing all tabs: %d.',
-                active_streams)
+                    'Number of active streams after closing all tabs: %d.',
+                    active_streams)
 
             # Capturing cras pid after closing all audio/stream streams.
             cras_pid_4 = utils.get_oldest_pid_by_name('/usr/bin/cras')
@@ -82,16 +84,16 @@ class audio_CrasSanity(test.test):
                 self._check['cras_status'] = True
 
         new_crash_reports = self.collect_cras_crash()
-        new_reports = list(set(new_crash_reports) -
-                           set(existing_crash_reports))
+        new_reports = list(
+                set(new_crash_reports) - set(existing_crash_reports))
         if len(new_reports) == 0:
             self._check['crashes_at_end'] = True
 
         err_msg = ''
         if self._check.values().count(False) > 0:
             if not self._check['crashes_on_boot']:
-                err_msg = ('1. Found cras crashes on boot: %s.\n'
-                           % existing_crash_reports)
+                err_msg = ('1. Found cras crashes on boot: %s.\n' %
+                           existing_crash_reports)
             if not self._check['stream_activation']:
                 err_msg += ('2. CRAS stream count is not matching with '
                             'number of streams.\n')
@@ -103,7 +105,6 @@ class audio_CrasSanity(test.test):
                             new_reports)
             raise error.TestError(err_msg)
 
-
     def push_new_stream(self, tab):
         """Starts next audio stream from self._streams list.
 
@@ -112,8 +113,7 @@ class audio_CrasSanity(test.test):
         tab.Activate()
         tab.Navigate("file:///")
         tab.ExecuteJavaScript(_JS)
-        time.sleep(1) # Adding a delay so cras can update the active count.
-
+        time.sleep(1)  # Adding a delay so cras can update the active count.
 
     def collect_cras_crash(self):
         """Check for cras crashes.
@@ -126,6 +126,8 @@ class audio_CrasSanity(test.test):
             logging.debug('No cras crash detected!')
         else:
             cras_reports = os.listdir(_CRASH_PATH)
-            crash_reports = [report for report in cras_reports
-                             if report.startswith('cras')]
+            crash_reports = [
+                    report for report in cras_reports
+                    if report.startswith('cras')
+            ]
         return crash_reports

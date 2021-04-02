@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "derat, chromeos-ui"
-NAME = "desktopui_ChromeSanity"
+NAME = "desktopui_ChromeCheck"
 ATTRIBUTES = "suite:bvt-perbuild"
 TIME = "SHORT"
 TEST_CATEGORY = "General"
@@ -34,4 +34,4 @@ The info log provides high-level information about what the test is doing and
 can hopefully be used to narrow down the location of failure.
 """
 
-job.run_test('desktopui_ChromeSanity')
+job.run_test('desktopui_ChromeCheck')

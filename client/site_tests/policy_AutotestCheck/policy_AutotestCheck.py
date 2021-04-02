@@ -4,8 +4,7 @@
 from autotest_lib.client.cros.enterprise import enterprise_policy_base
 
 
-class policy_AutotestSanity(
-        enterprise_policy_base.EnterprisePolicyTest):
+class policy_AutotestCheck(enterprise_policy_base.EnterprisePolicyTest):
     """
     Super small autotest to be put on CQ.
 
@@ -20,7 +19,6 @@ class policy_AutotestSanity(
     version = 1
 
     POLICY_NAME = 'AllowDinosaurEasterEgg'
-
 
     def run_once(self):
         """

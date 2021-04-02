@@ -246,7 +246,7 @@ class LogdirTestCase(unittest.TestCase):
                         msg='Failed to copy to %s' % destination_path)
 
     def test_pickle_unpickle_equal(self):
-        """Sanity check pickle-unpickle round-trip."""
+        """Check pickle-unpickle round-trip."""
         logdir = site_sysinfo.logdir(
                 self.from_dir,
                 excludes=(site_sysinfo.logdir.DEFAULT_EXCLUDES + ('a',)))

@@ -9,20 +9,15 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.a11y import a11y_test_base
 
 
-class accessibility_Sanity(a11y_test_base.a11y_test_base):
+class accessibility_Check(a11y_test_base.a11y_test_base):
     """Enables then disables all a11y features via accessibilityFeatures API."""
     version = 1
 
     # Features that do not have their own separate tests
     _FEATURE_LIST = [
-        'largeCursor',
-        'stickyKeys',
-        'highContrast',
-        'screenMagnifier',
-        'autoclick',
-        'virtualKeyboard'
+            'largeCursor', 'stickyKeys', 'highContrast', 'screenMagnifier',
+            'autoclick', 'virtualKeyboard'
     ]
-
 
     def _check_chromevox(self):
         """Run ChromeVox specific checks.
@@ -40,7 +35,6 @@ class accessibility_Sanity(a11y_test_base.a11y_test_base):
         # Turn ChromeVox off.
         self._toggle_chromevox()
         self._confirm_chromevox_state(False)
-
 
     def run_once(self):
         """Entry point of this test."""

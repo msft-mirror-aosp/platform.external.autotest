@@ -16,7 +16,7 @@ from autotest_lib.client.cros.graphics import graphics_utils
 from dbus.mainloop.glib import DBusGMainLoop
 
 
-class desktopui_ChromeSanity(test.test):
+class desktopui_ChromeCheck(test.test):
     """Performs basic integration testing for Chrome.
 
     This test performs very basic tests to verify that Chrome is somewhat
@@ -31,12 +31,10 @@ class desktopui_ChromeSanity(test.test):
     _TEST_CONTENT = 'Page loaded successfully.'
 
     _SCREENSHOT_DIR = '/usr/local/autotest/results/default/' \
-            'desktopui_ChromeSanity/results/'
-
+            'desktopui_ChromeCheck/results/'
 
     def initialize(self):
-        super(desktopui_ChromeSanity, self).initialize()
-
+        super(desktopui_ChromeCheck, self).initialize()
 
     def run_once(self):
         """
@@ -81,9 +79,8 @@ class desktopui_ChromeSanity(test.test):
                 logging.info('Saw expected content')
             except Exception as e:
                 prefix = 'screenshot-%s' % time.strftime('%Y%m%d-%H%M%S')
-                logging.info(
-                        'Got exception; saving screenshot to %s/%s',
-                        self._SCREENSHOT_DIR, prefix)
+                logging.info('Got exception; saving screenshot to %s/%s',
+                             self._SCREENSHOT_DIR, prefix)
                 if not os.path.exists(self._SCREENSHOT_DIR):
                     os.makedirs(self._SCREENSHOT_DIR)
                 graphics_utils.take_screenshot(self._SCREENSHOT_DIR, prefix)

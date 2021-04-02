@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'rzakarian'
-NAME = 'policy_AutotestSanity'
+NAME = 'policy_AutotestCheck'
 ATTRIBUTES = 'suite:ent-nightly, suite:policy, suite:bvt-perbuild, suite:smoke'
 TIME = 'SHORT'
 TEST_CATEGORY = 'General'
@@ -22,4 +22,4 @@ Enteprise autotest work. Policy is set and applied.
 
 args_dict = utils.args_to_dict(args)
 
-job.run_test('policy_AutotestSanity', **args_dict)
+job.run_test('policy_AutotestCheck', **args_dict)

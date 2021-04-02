@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'rohitbm@chromium.org, ChromeOS Audio'
-NAME = 'audio_CrasSanity'
+NAME = 'audio_CrasCheck'
 PURPOSE = 'Performs basic audio check for active streams and crashes'
 CRITERIA = '''
 Test will fail if 1. cras is not running 2. cras crashes 3. active stream count
@@ -28,4 +28,4 @@ Test checks for basic audio confidence by checking cras status, crashes and
 active streams.
 '''
 
-job.run_test('audio_CrasSanity')
+job.run_test('audio_CrasCheck')

@@ -33,7 +33,7 @@ class platform_SessionManagerStateKeyGeneration(test.test):
         state_keys = session_manager_proxy.GetServerBackedStateKeys(
             byte_arrays=True)
 
-        # Sanity-check the state keys.
+        # Check the state keys.
         if len(state_keys) < 3:
             raise error.TestFail("Not enough state keys")
         if len(state_keys) != len(set(state_keys)):

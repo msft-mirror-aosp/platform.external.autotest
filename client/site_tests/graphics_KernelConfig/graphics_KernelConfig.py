@@ -16,28 +16,28 @@ class graphics_KernelConfig(GraphicsTest):
     userspace_arch = None
 
     IS_BUILTIN = [
-        # Sanity checks; should be present in builds as builtins.
+            # Confidence checks; should be present in builds as builtins.
     ]
     IS_MODULE = [
-        # Sanity checks; should be present in builds as modules.
+            # Confidence checks; should be present in builds as modules.
     ]
     IS_ENABLED = [
-        # Sanity checks; should be enabled.
+            # Confidence checks; should be enabled.
     ]
     IS_MISSING = [
-        # Sanity checks; should be disabled.
-        'DRM_KMS_FB_HELPER'
-        'FB',
-        'FB_CFB_COPYAREA',
-        'FB_CFB_FILLRECT',
-        'FB_CFB_IMAGEBLIT',
-        'FB_CFB_REV_PIXELS_IN_BYTE',
-        'FB_SIMPLE',
-        'FB_SYS_COPYAREA',
-        'FB_SYS_FOPS',
-        'FB_SYS_FILLRECT',
-        'FB_SYS_IMAGEBLIT',
-        'FB_VIRTUAL'
+            # Confidence checks; should be disabled.
+            'DRM_KMS_FB_HELPER'
+            'FB',
+            'FB_CFB_COPYAREA',
+            'FB_CFB_FILLRECT',
+            'FB_CFB_IMAGEBLIT',
+            'FB_CFB_REV_PIXELS_IN_BYTE',
+            'FB_SIMPLE',
+            'FB_SYS_COPYAREA',
+            'FB_SYS_FOPS',
+            'FB_SYS_FILLRECT',
+            'FB_SYS_IMAGEBLIT',
+            'FB_VIRTUAL'
     ]
 
     def setup(self):

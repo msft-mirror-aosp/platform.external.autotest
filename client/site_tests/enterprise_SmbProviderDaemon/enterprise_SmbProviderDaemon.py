@@ -53,7 +53,7 @@ class enterprise_SmbProviderDaemon(test.test):
         @param mount_path: Address of the SMB share.
         """
 
-        self.sanity_test(mount_path)
+        self.run_test(mount_path)
 
     def _generate_random_id(self, size):
         """
@@ -71,10 +71,10 @@ class enterprise_SmbProviderDaemon(test.test):
         return ''.join(random.choice(string.ascii_uppercase +
                                 string.digits) for i in range(size))
 
-    def sanity_test(self, mount_path):
+    def run_test(self, mount_path):
         """
-        Sanity test that runs through all filesystem operations
-        on the SmbProvider Daemon.
+        Test that runs through all filesystem operations on the SmbProvider
+        Daemon.
 
         @param mount_path: Address of the SMB share.
 
@@ -328,8 +328,8 @@ class enterprise_SmbProviderDaemon(test.test):
         if data != read_data:
             logging.error('Failed: Written data does not match Read data')
             raise error.TestFail(
-                    'Unexpected mismatch of written data and read data.\
-                    Expected: %s , but got: %s' % (data, read_data))
+                    'Unexpected mismatch of written data and read data. '
+                    'Expected: %s , but got: %s' % (data, read_data))
 
     def _check_create_directory(self, mount_id,
                                       directory_path,

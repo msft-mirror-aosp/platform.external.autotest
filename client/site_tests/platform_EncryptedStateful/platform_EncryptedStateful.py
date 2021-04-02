@@ -138,7 +138,7 @@ class EncryptedStateful(object):
         chk.check(os.path.exists(keyfile), "%s exists" % (keyfile))
         chk.check(not os.path.exists(other), "%s does not exist" % (other))
 
-        # Sanity check the key file stat.
+        # Check the key file stat.
         info = os.stat(keyfile)
         chk.check(stat.S_ISREG(info.st_mode),
                   "%s is regular file" % (keyfile))
@@ -148,7 +148,7 @@ class EncryptedStateful(object):
                   "%s is S_IRUSR | S_IWUSR" % (keyfile))
         chk.check(info.st_size == 48, "%s is 48 bytes" % (keyfile))
 
-        # Sanity check the block file stat.
+        # Check the block file stat.
         info = os.stat(self.block)
         chk.check(stat.S_ISREG(info.st_mode),
                   "%s is regular file" % (self.block))

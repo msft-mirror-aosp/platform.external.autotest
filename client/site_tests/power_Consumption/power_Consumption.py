@@ -485,7 +485,7 @@ class power_Consumption(test.test):
 
             # Verify that we have a functioning browser and local web server.
             self._tab.Activate()
-            self._web_echo("Sanity_test")
+            self._web_echo("Confidence_test")
             self._tab.WaitForDocumentReadyStateToBeComplete()
 
             # Video test must have the data from download test

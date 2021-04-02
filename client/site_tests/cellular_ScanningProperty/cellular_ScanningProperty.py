@@ -164,7 +164,7 @@ class cellular_ScanningProperty(test.test):
             self._bus = dbus.SystemBus()
             self._cellular_proxy.set_logging_for_cellular_test()
 
-            logging.info('Sanity check initial values')
+            logging.info('Check initial values')
             utils.poll_for_condition(
                     self._cellular_proxy.find_cellular_device_object,
                     exception=error.TestFail(
@@ -232,7 +232,7 @@ class cellular_ScanningProperty(test.test):
             self._bus = dbus.SystemBus()
             self._cellular_proxy.set_logging_for_cellular_test()
 
-            logging.info('Sanity check initial values')
+            logging.info('Check initial values')
             enable_machine = self._itesting_machine(
                     pm_constants.STATE_MACHINE_ENABLE)
             utils.poll_for_condition(

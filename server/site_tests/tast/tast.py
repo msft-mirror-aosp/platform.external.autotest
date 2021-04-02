@@ -128,6 +128,7 @@ class tast(test.test):
                    clear_tpm=False,
                    totalshards=1,
                    shardindex=0,
+                   companion_duts={},
                    varslist=[]):
         """
         @param host: remote.RemoteHost instance representing DUT.
@@ -158,6 +159,11 @@ class tast(test.test):
             lazily between tests. If false, external data files are downloaded
             in a batch before running tests.
         @param clear_tpm: clear the TPM first before running the tast tests.
+        @param totalshards: Total number of shards.
+        @param shardindex: The shard index to be run.
+        @param companion_duts: A map of role to DUT name to tast run command as
+            |-companiondut| arguments. Each entry in the map will be formatted
+            as "role:dut" for each -companiondut argument.
         @param varslist: list of strings to pass to tast run command as |-vars|
             arguments. Each string should be formatted as "name=value".
 
@@ -185,6 +191,7 @@ class tast(test.test):
         self._clear_tpm = clear_tpm
         self._totalshards = totalshards
         self._shardindex = shardindex
+        self._companion_duts = companion_duts
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -462,6 +469,9 @@ class tast(test.test):
 
         for var in self._varslist:
             args.append('-var=%s' % var)
+
+        for role, dut in sorted(self._companion_duts.items()):
+            args.append('-companiondut=%s:%s' % (role, dut))
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
         self._run_tast('run', args, self._max_run_sec + tast._RUN_EXIT_SEC,

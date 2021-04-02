@@ -133,7 +133,8 @@ class TastTest(unittest.TestCase):
                             build_bundle='fakebundle', run_private_tests=False,
                             run_vars=[], run_varsfiles=[],
                             download_data_lazily=False,
-                            totalshards=1, shardindex=0):
+                            totalshards=1, shardindex=0,
+                            companion_duts={}):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
         @param tests: List of TestInfo objects.
@@ -143,6 +144,9 @@ class TastTest(unittest.TestCase):
         @param run_varsfiles: filenames should be passed to 'run' via -varsfile.
         @param download_data_lazily: Whether to download external data files
             lazily.
+        @param totalshards: total number of shards.
+        @param shardindex: shard index to be run.
+        @param companion_duts: mapping between roles and DUTs.
         """
         list_args = [
             'build=%s' % build,
@@ -180,7 +184,11 @@ class TastTest(unittest.TestCase):
         ]
         if run_varsfiles:
             run_args.append('varsfile=%s' % run_varsfiles)
-
+        if companion_duts:
+            role_dut_pairs = []
+            for role, dut in sorted(companion_duts.items()):
+                role_dut_pairs.append('%s:%s' % (role, dut))
+            run_args.append('companiondut=%s' % role_dut_pairs)
         test_list = json.dumps([t.test() for t in tests])
         run_files = {
             self._results_path(): ''.join(
@@ -211,6 +219,7 @@ class TastTest(unittest.TestCase):
                   download_data_lazily=False,
                   totalshards=1,
                   shardindex=0,
+                  companion_duts={},
                   varslist=[]):
         """Writes fake_tast.py's configuration and runs the test.
 
@@ -245,6 +254,7 @@ class TastTest(unittest.TestCase):
                               download_data_lazily=download_data_lazily,
                               totalshards=totalshards,
                               shardindex=shardindex,
+                              companion_duts=companion_duts,
                               varslist=varslist)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
@@ -454,6 +464,13 @@ class TastTest(unittest.TestCase):
         tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
         self._init_tast_commands(tests=tests, totalshards=2, shardindex=1)
         self._run_test(totalshards=2, shardindex=1)
+
+    def testRunCommandWithCompanionDUTs(self):
+        """Tests that companion dut parameter is passing thru without issues."""
+        tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
+        companion_duts = {'role1':'dut1', 'role2':'dut2'}
+        self._init_tast_commands(tests=tests, companion_duts=companion_duts)
+        self._run_test(companion_duts=companion_duts)
 
     def testNoResultsFile(self):
         """Tests that an error is raised if no results file is written."""

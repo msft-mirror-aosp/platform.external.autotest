@@ -1548,7 +1548,24 @@ def create_servo_host(dut,
     @returns: A ServoHost object or None. See comments above.
 
     """
-    servo_dependency = servo_args is not None
+    # We are explicitly looking for if servo_args is None here(which means
+    # servo not needed), as servo_args == {} means servo is needed and
+    # we expect load servo_args from host_info_store.
+    if servo_args is None:
+        servo_dependency = False
+        local_run = False
+    else:
+        servo_dependency = True
+        # If servo_args pass in directly, then this is a local test run.
+        local_run = servo_constants.SERVO_HOST_ATTR in servo_args
+
+    if local_run:
+        logging.warning('User input servo_args detected, will attempt'
+                        ' to start servod and initialize servo conncetion'
+                        ' directly. All servo/servohost verify and repair'
+                        ' steps will be skipped.')
+
+    # Loading servo args from host_info_store.
     if dut is not None and (try_lab_servo or servo_dependency):
         servo_args_override = get_servo_args_for_host(dut)
         if servo_args_override is not None:
@@ -1562,7 +1579,7 @@ def create_servo_host(dut,
             )
             servo_args = servo_args_override
 
-    if servo_args is None:
+    if not servo_args:
         logging.debug('No servo_args provided, and failed to find overrides.')
         if try_lab_servo or servo_dependency:
             return None, servo_constants.SERVO_STATE_MISSING_CONFIG
@@ -1572,21 +1589,40 @@ def create_servo_host(dut,
 
     servo_hostname = servo_args.get(servo_constants.SERVO_HOST_ATTR)
     servo_port = servo_args.get(servo_constants.SERVO_PORT_ATTR)
-    if not _is_servo_host_information_exist(servo_hostname, servo_port):
-        logging.debug(
-            'Servo connection info missed hostname: %s , port: %s',
-            servo_hostname, servo_port)
-        return None, servo_constants.SERVO_STATE_MISSING_CONFIG
-    if not is_servo_host_information_valid(servo_hostname, servo_port):
-        logging.debug(
-            'Servo connection info is incorrect hostname: %s , port: %s',
-            servo_hostname, servo_port)
-        return None, servo_constants.SERVO_STATE_WRONG_CONFIG
+    if not local_run:
+        if not _is_servo_host_information_exist(servo_hostname, servo_port):
+            logging.debug(
+                    'Servo connection info missed hostname: %s , port: %s',
+                    servo_hostname, servo_port)
+            return None, servo_constants.SERVO_STATE_MISSING_CONFIG
+        if not is_servo_host_information_valid(servo_hostname, servo_port):
+            logging.debug(
+                    'Servo connection info is incorrect hostname: %s , port: %s',
+                    servo_hostname, servo_port)
+            return None, servo_constants.SERVO_STATE_WRONG_CONFIG
 
-    if try_servo_recovery == True:
-        servo_args[servo_constants.SERVO_RECOVERY_MODE] = True
+        if try_servo_recovery == True:
+            servo_args[servo_constants.SERVO_RECOVERY_MODE] = True
 
     newhost = ServoHost(**servo_args)
+    if local_run:
+        try:
+            newhost.start_servod()
+        except:
+            # If we failed to start servod here, we can assume the servod
+            # either already started or the test is running against a
+            # non-standard servohost so the user will resiponsble for ensure
+            # servod is running.
+            pass
+        try:
+            newhost.initilize_servo()
+            newhost.initialize_dut_for_servo()
+            newhost._servo_state = servo_constants.SERVO_STATE_WORKING
+            return newhost, newhost.get_servo_state()
+        except Exception as e:
+            logging.error('Failed to initialize servo. %s', e)
+            return None, servo_constants.SERVO_STATE_BROKEN
+
     if newhost.use_icmp and not newhost.is_up_fast(count=3):
         # ServoHost has internal check to wait if servo-host is in reboot
         # process. If servo-host still is not available this check will stop
@@ -1654,7 +1690,6 @@ def _is_servo_host_information_exist(hostname, port):
             int(port)
         except ValueError:
             return False
-
     return True
 
 

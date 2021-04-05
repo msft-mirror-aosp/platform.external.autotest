@@ -47,7 +47,6 @@ try:
     from autotest_lib.client.bin.result_tools import dedupe_file_throttler
     from autotest_lib.client.bin.result_tools import delete_file_throttler
     from autotest_lib.client.bin.result_tools import result_info
-    from autotest_lib.client.bin.result_tools import shrink_file_throttler
     from autotest_lib.client.bin.result_tools import throttler_lib
     from autotest_lib.client.bin.result_tools import utils_lib
     from autotest_lib.client.bin.result_tools import zip_file_throttler
@@ -55,7 +54,6 @@ except ImportError:
     import dedupe_file_throttler
     import delete_file_throttler
     import result_info
-    import shrink_file_throttler
     import throttler_lib
     import utils_lib
     import zip_file_throttler
@@ -277,9 +275,7 @@ def _throttle_results(summary, max_result_size_KB):
     args_skip_autotest_log['skip_autotest_log'] = True
     # Apply the throttlers in following order.
     throttlers = [
-            (shrink_file_throttler, copy.copy(args_skip_autotest_log)),
             (zip_file_throttler, copy.copy(args_skip_autotest_log)),
-            (shrink_file_throttler, copy.copy(args)),
             (dedupe_file_throttler, copy.copy(args)),
             (zip_file_throttler, copy.copy(args)),
             ]

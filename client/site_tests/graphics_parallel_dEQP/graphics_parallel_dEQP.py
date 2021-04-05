@@ -242,10 +242,6 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
 
         command = ' '.join(command)
 
-        # Must be in the executable directory when running for it to find it's
-        # test data files!
-        os.chdir(os.path.dirname(executable))
-
         # Must initialize because some errors don't repopulate
         # run_result, leaving old results.
         run_result = {}

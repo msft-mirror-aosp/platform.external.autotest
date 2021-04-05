@@ -63,7 +63,6 @@ dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_sten
 dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_stencil.3d.x8_d24_unorm_pack32_x8_d24_unorm_pack32.general_optimal_nearest,Fail
 dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_stencil.3d.x8_d24_unorm_pack32_x8_d24_unorm_pack32.optimal_general_nearest,Fail
 dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.depth_stencil.3d.x8_d24_unorm_pack32_x8_d24_unorm_pack32.optimal_optimal_nearest,Fail
-dEQP-VK.api.device_init.create_instance_device_intentional_alloc_fail,Timeout
 dEQP-VK.graphicsfuzz.spv-double-branch-to-same-block2,Fail
 dEQP-VK.graphicsfuzz.spv-double-branch-to-same-block3,Fail
 dEQP-VK.graphicsfuzz.spv-double-branch-to-same-block,Crash

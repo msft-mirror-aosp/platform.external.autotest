@@ -1330,7 +1330,6 @@ dEQP-VK.pipeline.timestamp.misc_tests.consistent_results,Fail
 dEQP-VK.query_pool.occlusion_query.copy_results_conservative_size_32_wait_queue_without_availability_draw_triangles,Fail
 dEQP-VK.query_pool.occlusion_query.copy_results_size_64_stride_104_without_availability,Fail
 dEQP-VK.query_pool.occlusion_query.copy_results_size_64_stride_16_with_availability,Fail
-dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13,Timeout
 dEQP-VK.transform_feedback.simple.query_copy_0_4_32bits,Fail
 dEQP-VK.transform_feedback.simple.query_copy_0_509_32bits,Fail
 dEQP-VK.transform_feedback.simple.query_copy_1_61_32bits,Fail

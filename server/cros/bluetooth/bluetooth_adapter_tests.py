@@ -4410,7 +4410,8 @@ class BluetoothAdapterTests(test.test):
                              test_start_time,
                              resume_slack=RESUME_DELTA,
                              fail_on_timeout=False,
-                             fail_early_wake=True):
+                             fail_early_wake=True,
+                             collect_resume_time=False):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id
@@ -4420,6 +4421,7 @@ class BluetoothAdapterTests(test.test):
         @param resume_slack: Allow some slack on resume timeout.
         @param fail_on_timeout: Fails if timeout is reached
         @param fail_early_wake: Fails if timeout isn't reached
+        @param collect_resume_time: Collect time to resume as perf keyval.
 
         @return True if suspend sub-process completed without error.
         """
@@ -4531,6 +4533,15 @@ class BluetoothAdapterTests(test.test):
                 raise
         finally:
             suspend.join()
+
+        # Log wake performance
+        if collect_resume_time:
+            test_desc = '{}_wake_time'.format(self.test_name.replace(' ', '_'))
+            wake_time = results.get('powerd time to resume',
+                                    results.get('time to resume', 0))
+            # Only write perf if wake time exists (non-zero)
+            if wake_time:
+                self.write_perf_keyval({test_desc: wake_time})
 
         results['success'] = success
         results['suspend exit code'] = suspend.exitcode

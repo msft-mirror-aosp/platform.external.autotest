@@ -769,6 +769,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             sleep_time = EXPECT_PEER_WAKE_SUSPEND_SEC
             resume_time = SUSPEND_SEC
             resume_slack = 5  # Allow 5s slack for resume timeout
+            measure_resume = True
         else:
             sleep_time = EXPECT_NO_WAKE_SUSPEND_SEC
             resume_time = EXPECT_NO_WAKE_SUSPEND_SEC
@@ -776,6 +777,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             # If suspend takes a while to enter, this may be necessary to get
             # the timings right.
             resume_slack = -5
+            measure_resume = False
 
         try:
             if should_pair:
@@ -837,7 +839,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                           test_start_time=start_time,
                                           resume_slack=resume_slack,
                                           fail_on_timeout=should_wake,
-                                          fail_early_wake=not should_wake)
+                                          fail_early_wake=not should_wake,
+                                          collect_resume_time=measure_resume)
 
                 # Finish peer wake process
                 peer_wake.join()

@@ -138,6 +138,11 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
                               ] or self._gpu_type.startswith('Mali'):
             self._skips.append('dEQP-GLES.*.functional.flush_finish.*')
 
+        # This test flakes across all Mesa drivers (Intel KBL+GLK, AMD, and Qualcomm, at least).
+        # https://gitlab.freedesktop.org/mesa/mesa/-/issues/4575
+        self._flakes.append(
+                'dEQP-VK.wsi.display.get_display_plane_capabilities')
+
         # Add any board-specific expectations
         self._skips += self.read_file(self._board + '-' + 'skips.txt')
         self._skips += self.read_file(self._gpu_type + '-' + 'skips.txt')

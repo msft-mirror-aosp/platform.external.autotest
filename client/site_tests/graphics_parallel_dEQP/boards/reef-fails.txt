@@ -1145,4 +1145,3 @@ dEQP-VK.transform_feedback.simple.query_copy_0_509_32bits,Fail
 dEQP-VK.transform_feedback.simple.query_copy_0_509_64bits,Fail
 dEQP-VK.transform_feedback.simple.query_copy_1_127_32bits,Fail
 dEQP-VK.transform_feedback.simple.query_copy_3_509_32bits,Fail
-dEQP-VK.wsi.display.get_display_plane_capabilities,Fail

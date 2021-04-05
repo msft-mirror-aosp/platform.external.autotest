@@ -30,6 +30,7 @@ PROFILE_CONNECT_WAIT = 15
 SUSPEND_SEC = 15
 EXPECT_NO_WAKE_SUSPEND_SEC = 30
 EXPECT_PEER_WAKE_SUSPEND_SEC = 60
+EXPECT_PEER_WAKE_RESUME_BY = 30
 
 
 class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
@@ -767,7 +768,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         if should_wake:
             sleep_time = EXPECT_PEER_WAKE_SUSPEND_SEC
-            resume_time = SUSPEND_SEC
+            resume_time = EXPECT_PEER_WAKE_RESUME_BY
             resume_slack = 5  # Allow 5s slack for resume timeout
             measure_resume = True
         else:

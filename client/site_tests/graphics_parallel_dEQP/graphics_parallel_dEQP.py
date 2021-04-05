@@ -240,8 +240,6 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # TODO: Get the deqp ebuild to include testlog-to-xml and the
         # stylesheets, and have the runner invoke it for failures.
 
-        command = ' '.join(command)
-
         # Must initialize because some errors don't repopulate
         # run_result, leaving old results.
         run_result = {}

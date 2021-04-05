@@ -229,7 +229,8 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         self.add_filter_arg(command, self._flakes, '--flakes',
                             'known_flakes.txt')
         self.add_filter_arg(command, self._skips, '--skips', 'skips.txt')
-        self.add_filter_arg(command, self._fails, '--baseline', 'fails.txt')
+        self.add_filter_arg(command, self._fails, '--baseline',
+                            'expected-fails.txt')
 
         command.append('--')
         command.append('--deqp-surface-type=%s' % self._surface)

@@ -37,6 +37,14 @@ class DLCUtil(object):
                          overwritten to run remotely from a server test.
 
         """
+        self.set_run(run_func)
+
+    def set_run(self, run_func):
+        """Initializes the run function if it has been changed.
+
+        @param run_func: See __init__.
+
+        """
         self._run = run_func
 
 

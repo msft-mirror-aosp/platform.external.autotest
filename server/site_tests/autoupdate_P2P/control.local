@@ -30,7 +30,7 @@ test. When you are running locally you need to pass in a job_repo_url. An
 example is:
 http://100.115.245.194:8082/static/caroline-release/R82-12887.0.0/autotest/packages
 
-test_that <hostname>.cros autoupdate_P2P.local --args="host2=<hostname>.cros job_repo_url=<job_repo_url>"
+test_that <hostname>.cros autoupdate_P2P.local --args="host2=<hostname>.cros job_repo_url=<job_repo_url> with_dlc=True"
 
 """
 
@@ -43,7 +43,8 @@ def run(machine):
     if all(arg in args_dict for arg in ['host2', 'job_repo_url']):
         host1 = hosts.create_host(machine)
         host2 = hosts.create_host(args_dict.get('host2'))
-        job.run_test('autoupdate_P2P', hosts=[host1, host2], job_repo_url=args_dict.get('job_repo_url'))
+        with_dlc = bool(args_dict.get('with_dlc', False))
+        job.run_test('autoupdate_P2P', hosts=[host1, host2], job_repo_url=args_dict.get('job_repo_url'), with_dlc=with_dlc)
     else:
         logging.info('Please provide both "host2" and "job_repo_url" args to test_that.')
 

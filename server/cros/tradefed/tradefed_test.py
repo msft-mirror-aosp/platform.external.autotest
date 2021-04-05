@@ -94,7 +94,8 @@ class TradefedTest(test.test):
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
                    hard_reboot_on_failure=False,
-                   use_jdk9=False):
+                   use_jdk9=False,
+                   use_old_adb=False):
         """Sets up the tools and binary bundles for the test."""
         if utils.is_in_container() and not client_utils.is_moblab():
             self._job_deadline = time.time() + self._MAX_LAB_JOB_LENGTH_IN_SEC
@@ -135,8 +136,8 @@ class TradefedTest(test.test):
         permission = (
             stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH
             | stat.S_IXOTH)
-        self._install_files(constants.ADB_DIR, constants.ADB_FILES,
-                            permission)
+        adb_dir = constants.ADB_DIR_OLD if use_old_adb else constants.ADB_DIR
+        self._install_files(adb_dir, constants.ADB_FILES, permission)
         self._install_files(constants.SDK_TOOLS_DIR,
                             constants.SDK_TOOLS_FILES, permission)
 

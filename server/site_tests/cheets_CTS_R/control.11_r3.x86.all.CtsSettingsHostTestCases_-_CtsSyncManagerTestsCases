@@ -30,6 +30,7 @@ def run_TS(machine):
         bundle='x86',
         uri='LATEST',
         use_jdk9=True,
+        use_old_adb=True,
         timeout=172800)
 
 parallel_simple(run_TS, machines)

@@ -6,6 +6,8 @@
 SDK_TOOLS_DIR = 'gs://chromeos-arc-images/builds/git_nyc-mr1-arc-linux-static_sdk_tools/3544738'
 SDK_TOOLS_FILES = ['aapt']
 
+# Use old version of adb for a speculative workaround for b/183438202
+ADB_DIR_OLD = 'gs://chromeos-arc-images/builds/git_qt-release-static_sdk_tools/6118618'
 # adb 31.0.0 from https://developer.android.com/studio/releases/platform-tools
 ADB_DIR = 'gs://chromeos-arc-images/builds/aosp-sdk-release/7110759/'
 ADB_FILES = ['adb']

@@ -1,0 +1,5 @@
+# timeouts on dedede.  buffer_device_address has workarounds in VK-GL-CTS
+# to extend the watchdog during pipeline creation, so we're probably just
+# slow in the compiler.
+dEQP-VK.binding_model.buffer_device_address.set3.depth3.basessbo.convertcheck.*
+dEQP-VK.binding_model.buffer_device_address.set3.depth3.baseubo.convertcheck.*

@@ -211,7 +211,7 @@ def fetch_orphaned_crashdumps(host, infodir):
     try:
         for file in _find_orphaned_crashdumps(host):
             logging.info('Collecting %s...', file)
-            collect_log_file(host, file, infodir, clean=True)
+            collect_log_file(host, file, infodir, clean=False)
             orphans.append(file)
     except Exception as e:
         logging.warning('Collection of orphaned crash dumps failed %s', e)

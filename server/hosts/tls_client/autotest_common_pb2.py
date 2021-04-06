@@ -13,7 +13,9 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from dependencies.longrunning import operations_pb2 as dependencies_dot_longrunning_dot_operations__pb2
+
+import common
+from autotest_lib.server.hosts.tls_client.dependencies.longrunning import operations_pb2 as dependencies_dot_longrunning_dot_operations__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

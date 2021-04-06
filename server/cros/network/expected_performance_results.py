@@ -38,6 +38,10 @@ Expected_Throughput_WiFi = {
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 110
+                },
+                hostap_config.HostapConfig.MODE_11AC_PURE: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
                 }
         },
         netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM: {
@@ -50,6 +54,10 @@ Expected_Throughput_WiFi = {
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 100
+                },
+                hostap_config.HostapConfig.MODE_11AC_PURE: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
                 }
         },
         netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS: {
@@ -62,6 +70,10 @@ Expected_Throughput_WiFi = {
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 260
+                },
+                hostap_config.HostapConfig.MODE_11AC_PURE: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
                 }
         },
         netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM: {
@@ -74,6 +86,10 @@ Expected_Throughput_WiFi = {
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 130
+                },
+                hostap_config.HostapConfig.MODE_11AC_PURE: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
                 }
         }
 }
@@ -95,6 +111,9 @@ def get_expected_throughput_wifi(tag, mode, channel_width):
         if mode in Expected_Throughput_WiFi[tag]:
             if channel_width in Expected_Throughput_WiFi[tag][mode]:
                 return Expected_Throughput_WiFi[tag][mode][channel_width]
+    ret_mode = hostap_config.HostapConfig.VHT_NAMES[channel_width]
+    if ret_mode is None:
+        ret_mode = hostap_config.HostapConfig.HT_NAMES[channel_width]
     raise error.TestFail(
-            'Failed to find the expected throughput from the key values, test type = %s, mode = %s, channel width = %d',
-            tag, mode, channel_width)
+            'Failed to find the expected throughput from the key values, test type = %s, mode = %s, channel width = %s'
+            % (tag, mode, ret_mode))

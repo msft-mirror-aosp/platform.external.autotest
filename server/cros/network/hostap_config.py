@@ -168,6 +168,7 @@ class HostapConfig(object):
         HT_CHANNEL_WIDTH_40_MINUS: 'HT40-',
     }
 
+    VHT_CHANNEL_WIDTH_20 = object()
     VHT_CHANNEL_WIDTH_40 = object()
     VHT_CHANNEL_WIDTH_80 = object()
     VHT_CHANNEL_WIDTH_160 = object()
@@ -175,10 +176,11 @@ class HostapConfig(object):
 
     # Human readable names for these channel widths.
     VHT_NAMES = {
-        VHT_CHANNEL_WIDTH_40: 'VHT40',
-        VHT_CHANNEL_WIDTH_80: 'VHT80',
-        VHT_CHANNEL_WIDTH_160: 'VHT160',
-        VHT_CHANNEL_WIDTH_80_80: 'VHT80+80',
+            VHT_CHANNEL_WIDTH_20: 'VHT20',
+            VHT_CHANNEL_WIDTH_40: 'VHT40',
+            VHT_CHANNEL_WIDTH_80: 'VHT80',
+            VHT_CHANNEL_WIDTH_160: 'VHT160',
+            VHT_CHANNEL_WIDTH_80_80: 'VHT80+80',
     }
 
     # This is a loose merging of the rules for US and EU regulatory
@@ -335,9 +337,12 @@ class HostapConfig(object):
         Note: This property ignores legacy rate (e.g., 11g), It will return
               None for these rate.
         """
-        if self.vht_channel_width is not None:
-            return self.vht_channel_width
         ht_channel_width = self._ht_mode
+        if self.vht_channel_width is not None:
+            if self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40:
+                if ht_channel_width == self.HT_CHANNEL_WIDTH_20:
+                    return self.VHT_CHANNEL_WIDTH_20
+            return self.vht_channel_width
         if ht_channel_width:
             return ht_channel_width
         return None

@@ -22,19 +22,38 @@ TEMPLATE_FILE = 'template.control.performance_cuj'
 TEST_PREFIX = 'ui.'
 
 # Following tests will be included in the generated test suite.
-# TODO(abergman): replace with real CUJ test cases once submitted.
 TESTS = [{
-        'test': 'Quick Check',
-        'tast_name': 'QuickCheckCUJ',
-        'repeats': 1
-}, {
-        'test': 'Tab Switch',
-        'tast_name': 'TabSwitchCUJ',
+        'test': 'Google Meet Basic 2',
+        'tast_name': 'GoogleMeetCUJ.basic_two',
         'repeats': 3
 }, {
-        'test': 'Video',
-        'tast_name': 'VideoCUJ',
-        'repeats': 5
+        'test': 'Google Meet Basic Small',
+        'tast_name': 'GoogleMeetCUJ.basic_small',
+        'repeats': 3
+}, {
+        'test': 'Google Meet Basic Large',
+        'tast_name': 'GoogleMeetCUJ.basic_large',
+        'repeats': 3
+}, {
+        'test': 'Google Meet Basic Large',
+        'tast_name': 'GoogleMeetCUJ.basic_large',
+        'repeats': 3
+}, {
+        'test': 'Google Meet Basic Class',
+        'tast_name': 'GoogleMeetCUJ.basic_class',
+        'repeats': 3
+}, {
+        'test': 'Google Meet Plus Small',
+        'tast_name': 'GoogleMeetCUJ.plus_small',
+        'repeats': 3
+}, {
+        'test': 'Google Meet Plus Class',
+        'tast_name': 'GoogleMeetCUJ.plus_class',
+        'repeats': 3
+}, {
+        'test': 'Google Meet Premium Large',
+        'tast_name': 'GoogleMeetCUJ.premium_large',
+        'repeats': 3
 }]
 
 

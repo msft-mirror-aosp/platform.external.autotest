@@ -130,6 +130,10 @@ class firmware_PDTrySrc(FirmwareTest):
                 except NotImplementedError:
                     raise error.TestFail('Both devices must support DRP')
 
+            # Setting DRP on ServoV4 ('usbc_action drp') triggers reconnect
+            # Wait some time to ensure that no operation will occur during test
+            time.sleep(port_pair[p_idx].utils.CONNECT_TIME)
+
             # Check to see if DUT supports Try.SRC mode
             try_src_supported = port_pair[d_idx].try_src(True)
 

@@ -19,6 +19,7 @@ ADVERTISEMENT1 = {
         'ScanResponseData': {
                 '0x16': [0xcd, 0xab] + list(range(1, 21))
         },
+        'Discoverable': True,
         'IncludeTxPower': True,
         'MinInterval': 100,
         'MaxInterval': 100,
@@ -39,6 +40,7 @@ ADVERTISEMENT2 = {
         'ScanResponseData': {
                 '0x16': [0xcd, 0xab] + list(range(22, 42))
         },
+        'Discoverable': True,
         'IncludeTxPower': True,
         'MinInterval': 100,
         'MaxInterval': 100,
@@ -56,6 +58,7 @@ ADVERTISEMENT3 = {
         'ServiceData': {
                 '9993': [0x31, 0x32, 0x33, 0x34, 0x35]
         },
+        'Discoverable': True,
         'IncludeTxPower': True,
         'MinInterval': 100,
         'MaxInterval': 100,
@@ -73,6 +76,7 @@ ADVERTISEMENT4 = {
         'ServiceData': {
                 '9994': [0x41, 0x42, 0x43, 0x44, 0x45]
         },
+        'Discoverable': True,
         'IncludeTxPower': True,
         'MinInterval': 100,
         'MaxInterval': 100,
@@ -90,6 +94,7 @@ ADVERTISEMENT5 = {
         'ServiceData': {
                 '9995': [0x51, 0x52, 0x53, 0x54, 0x55]
         },
+        'Discoverable': True,
         'IncludeTxPower': True,
         'MinInterval': 100,
         'MaxInterval': 100,
@@ -107,6 +112,7 @@ ADVERTISEMENT6 = {
         'ServiceData': {
                 '9996': [0x61, 0x62, 0x63, 0x64, 0x65]
         },
+        'Discoverable': True,
         'IncludeTxPower': True,
         'MinInterval': 100,
         'MaxInterval': 100,

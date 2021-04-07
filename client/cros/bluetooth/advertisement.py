@@ -80,6 +80,8 @@ class Advertisement(dbus.service.Object):
 
         self.include_tx_power = advertisement_data.get('IncludeTxPower')
 
+        self.discoverable = advertisement_data.get('Discoverable')
+
         self.scan_response = advertisement_data.get('ScanResponseData')
 
         self.min_interval = advertisement_data.get('MinInterval')
@@ -138,6 +140,9 @@ class Advertisement(dbus.service.Object):
         if self.service_data is not None:
             properties['ServiceData'] = dbus.Dictionary(self.service_data,
                                                         signature='sv')
+        if self.discoverable is not None:
+            properties['Discoverable'] = dbus.Boolean(self.discoverable)
+
         if self.include_tx_power is not None:
             properties['IncludeTxPower'] = dbus.Boolean(self.include_tx_power)
 

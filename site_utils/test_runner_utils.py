@@ -518,7 +518,7 @@ def perform_local_run(autotest_path,
             ctrl_files = get_all_control_files(test, autotest_path)
             for control in ctrl_files:
                 test_num += 1
-                job = SimpleJob(name="adhoc/{}".format(test),
+                job = SimpleJob(name="adhoc/{}".format(control.name),
                                 owner='autotest_system',
                                 test_num=test_num)
                 job.set_control_file(control)

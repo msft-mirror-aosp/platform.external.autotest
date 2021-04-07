@@ -64,6 +64,7 @@ class fake_tests(object):
         self.text = text
         self.test_type = 'client'
         self.dependencies = deps
+        self.name = None
 
 
 class TestRunnerUnittests(mox.MoxTestBase):

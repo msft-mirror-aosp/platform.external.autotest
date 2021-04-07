@@ -61,6 +61,9 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
                 'user space crash handling was not started during last boot')
 
 
+    # This test has a critical tast counterpart, but we leave it here because
+    # it verifies that the in_progress_integration_test variable will be set in
+    # autotests.
     def _test_chronos_crasher(self):
         """Test a user space crash when running as chronos is handled."""
         self._check_crashing_process(
@@ -73,10 +76,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
         """Test that without consent no files are stored."""
         results = self._check_crashing_process('chronos', consent=False)
 
-
-    def _test_root_crasher(self):
-        """Test a user space crash when running as root is handled."""
-        self._check_crashing_process('root')
 
 
     def _test_root_crasher_no_consent(self):
@@ -93,9 +92,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
             cros_ui.restart()
 
 
-    # TODO(kmixter): Test crashing a process as ntp or some other
-    # non-root, non-chronos user.
-
     def run_once(self):
         """ Run all tests once """
         self._prepare_crasher()
@@ -109,7 +105,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
 
         self.run_crash_tests([
                 'reporter_startup', 'chronos_crasher',
-                'chronos_crasher_no_consent', 'root_crasher',
-                'root_crasher_no_consent'
+                'chronos_crasher_no_consent', 'root_crasher_no_consent'
         ],
                              initialize_crash_reporter=True)

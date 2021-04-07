@@ -24,8 +24,9 @@ class firmware_ECCharging(FirmwareTest):
     # Threshold of trickle charging current in mA
     TRICKLE_CHARGE_THRESHOLD = 100
 
-    # We wait for up to 45 minutes for the battery to allow charging.
-    DISCHARGE_TIMEOUT = 60 * 45
+    # We wait for up to 60 minutes for the battery to allow charging.
+    # kodama in particular takes a long time to discharge
+    DISCHARGE_TIMEOUT = 60 * 60
 
     # The period to check battery state while discharging.
     CHECK_BATT_STATE_WAIT = 60

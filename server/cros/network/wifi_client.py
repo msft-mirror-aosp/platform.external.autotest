@@ -636,7 +636,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
 
     def wait_for_bsses(self, ssid, num_bss_expected, timeout_seconds=15):
-      """Wait for all BSSes associated with given SSID to be discovered in the
+        """Wait for all BSSes associated with given SSID to be discovered in the
       scan.
 
       @param ssid string name of network being queried
@@ -644,41 +644,42 @@ class WiFiClient(site_linux_system.LinuxSystem):
       @param timeout_seconds int seconds to wait for BSSes to be discovered
 
       """
-      # If the scan returns None, return 0, else return the matching count
+        # If the scan returns None, return 0, else return the matching count
 
-      # Wrap num_bss_actual as a mutable object, list, so that an inner function
-      # can update the value without making an assignment to it. Without any
-      # assignment, the inner function will look for the variable in outer scope
-      # instead of creating a new local one.
-      num_bss_actual = [0]
-      def are_all_bsses_discovered():
-          """Determine if all BSSes associated with the SSID from parent
+        # Wrap num_bss_actual as a mutable object, list, so that an inner function
+        # can update the value without making an assignment to it. Without any
+        # assignment, the inner function will look for the variable in outer scope
+        # instead of creating a new local one.
+        num_bss_actual = [0]
+
+        def are_all_bsses_discovered():
+            """Determine if all BSSes associated with the SSID from parent
           function are discovered in the scan
 
           @return boolean representing whether the expected bss count matches
           how many in the scan match the given ssid
           """
-          self.claim_wifi_if() # Stop shill/supplicant scans
-          try:
-            scan_results = self.iw_runner.scan(
-                    self.wifi_if,
-                    frequencies=[],
-                    ssids=[ssid])
-            if scan_results is None:
-                return False
-            num_bss_actual[0] = sum(ssid == bss.ssid for bss in scan_results)
-            return num_bss_expected == num_bss_actual[0]
-          finally:
-            self.release_wifi_if()
-      try:
-          utils.poll_for_condition(
-              condition=are_all_bsses_discovered,
-              timeout=timeout_seconds,
-              sleep_interval=0.5)
-      except utils.TimeoutError:
-          raise error.TestFail('Failed to discover all BSSes. Found %d,'
-                               ' wanted %d with SSID %s' %
-                               (num_bss_actual[0], num_bss_expected, ssid))
+            self.claim_wifi_if()  # Stop shill/supplicant scans
+            try:
+                scan_results = self.iw_runner.scan(self.wifi_if,
+                                                   frequencies=[],
+                                                   ssids=[ssid])
+                if scan_results is None:
+                    return False
+                num_bss_actual[0] = sum(ssid == bss.ssid
+                                        for bss in scan_results)
+                return num_bss_expected == num_bss_actual[0]
+            finally:
+                self.release_wifi_if()
+
+        try:
+            utils.poll_for_condition(condition=are_all_bsses_discovered,
+                                     timeout=timeout_seconds,
+                                     sleep_interval=0.5)
+        except utils.TimeoutError:
+            raise error.TestFail('Failed to discover all BSSes. Found %d,'
+                                 ' wanted %d with SSID %s' %
+                                 (num_bss_actual[0], num_bss_expected, ssid))
 
     def wait_for_service_states(self, ssid, states, timeout_seconds):
         """Waits for a WiFi service to achieve one of |states|.
@@ -1208,13 +1209,13 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
         found = False
         for line in reversed(lines):
-          match = disconnect_reason_regex.search(line)
-          if match is not None:
-            disconnect_reasons.append(match.group(1))
-            found = True
-          else:
-            if (found):
-                break
+            match = disconnect_reason_regex.search(line)
+            if match is not None:
+                disconnect_reasons.append(match.group(1))
+                found = True
+            else:
+                if (found):
+                    break
         return list(reversed(disconnect_reasons))
 
 

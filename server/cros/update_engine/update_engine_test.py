@@ -30,6 +30,8 @@ from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros import gsutil_wrapper
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.hosts.tls_client import connection
+from autotest_lib.server.hosts.tls_client import fake_omaha
 from autotest_lib.utils.frozen_chromite.lib import auto_updater
 from autotest_lib.utils.frozen_chromite.lib import auto_updater_transfer
 from autotest_lib.utils.frozen_chromite.lib import remote_access
@@ -822,6 +824,56 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Update URL: %s', url)
         return url
 
+
+    def get_update_url_from_fake_omaha(self,
+                                       job_repo_url=None,
+                                       full_payload=True,
+                                       payload_id='ROOTFS',
+                                       critical_update=True,
+                                       exposed_via_proxy=True,
+                                       return_noupdate_starting=0):
+        """
+        Starts a FakeOmaha instance with TLS and returns is update url.
+
+        Some tests that require an omaha instance to survive a reboot will use
+        the FakeOmaha TLS.
+
+        @param job_repo_url: string url containing the current build.
+        @param full_payload: bool whether we want a full payload.
+        @param payload_id: ROOTFS or DLC
+        @param critical_update: True if we want a critical update response.
+        @param exposed_via_proxy: True to tell TLS we want the fakeomaha to be
+                                  accessible after a reboot.
+        @param return_noupdate_starting: int of how many valid update responses
+                                         to return before returning noupdate
+                                        forever.
+
+        @returns an update url on the FakeOmaha instance for tests to use.
+
+        """
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
+        if not self._job_repo_url:
+            raise error.TestFail('There was no job_repo_url so we cannot get '
+                                 'a payload to use.')
+        gs = dev_server._get_image_storage_server()
+        _, build = tools.get_devserver_build_from_package_url(
+                self._job_repo_url)
+        target_build = gs + build
+        payload_type = 'FULL' if full_payload else 'DELTA'
+        tlsconn = connection.TLSConnection()
+        self.fake_omaha = fake_omaha.TLSFakeOmaha(tlsconn)
+        fake_omaha_url = self.fake_omaha.start_omaha(
+                self._host.hostname,
+                target_build=target_build,
+                payloads=[{
+                        'payload_id': payload_id,
+                        'payload_type': payload_type,
+                }],
+                exposed_via_proxy=True,
+                critical_update=critical_update,
+                return_noupdate_starting=return_noupdate_starting)
+        logging.info('Fake Omaha update URL: %s', fake_omaha_url)
+        return fake_omaha_url
 
     def get_payload_url_on_public_bucket(self, job_repo_url=None,
                                          full_payload=True, is_dlc=False):

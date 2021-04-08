@@ -69,6 +69,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 # if status is IDLE we need to figure out if an error occurred
                 # or the DUT autorebooted.
                 elif self._is_update_engine_idle(status):
+                    self._host.run(
+                            'ls /mnt/stateful_partition/etc/lsb-release')
                     if self._is_update_finished_downloading(last_status):
                         if len(self._get_update_engine_logs()) > logs_before:
                             return
@@ -152,8 +154,14 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             payload_url = self.get_payload_url_on_public_bucket(
                 job_repo_url, full_payload=full_payload)
         else:
-            update_url = self.get_update_url_for_test(
-                job_repo_url, full_payload=full_payload)
+            if moblab:
+                update_url = self.get_update_url_for_test(
+                        job_repo_url, full_payload=full_payload)
+            else:
+                update_url = self.get_update_url_from_fake_omaha(
+                        job_repo_url,
+                        full_payload=full_payload,
+                        return_noupdate_starting=2)
         before_version = self._host.get_release_version()
 
         # Clear any previously started updates.

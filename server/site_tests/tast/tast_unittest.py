@@ -187,7 +187,7 @@ class TastTest(unittest.TestCase):
         if companion_duts:
             role_dut_pairs = []
             for role, dut in sorted(companion_duts.items()):
-                role_dut_pairs.append('%s:%s' % (role, dut))
+                role_dut_pairs.append('%s:%s:%d' % (role, dut.hostname, dut.port))
             run_args.append('companiondut=%s' % role_dut_pairs)
         test_list = json.dumps([t.test() for t in tests])
         run_files = {
@@ -468,7 +468,7 @@ class TastTest(unittest.TestCase):
     def testRunCommandWithCompanionDUTs(self):
         """Tests that companion dut parameter is passing thru without issues."""
         tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
-        companion_duts = {'role1':'dut1', 'role2':'dut2'}
+        companion_duts = {'role1': FakeHost('dut1', 22), 'role2':FakeHost('dut2', 22)}
         self._init_tast_commands(tests=tests, companion_duts=companion_duts)
         self._run_test(companion_duts=companion_duts)
 

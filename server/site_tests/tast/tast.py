@@ -471,7 +471,7 @@ class tast(test.test):
             args.append('-var=%s' % var)
 
         for role, dut in sorted(self._companion_duts.items()):
-            args.append('-companiondut=%s:%s' % (role, dut))
+            args.append('-companiondut=%s:%s:%d' % (role, dut.hostname, dut.port))
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
         self._run_tast('run', args, self._max_run_sec + tast._RUN_EXIT_SEC,

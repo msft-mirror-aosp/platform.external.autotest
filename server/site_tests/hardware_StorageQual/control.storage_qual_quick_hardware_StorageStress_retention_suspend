@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 80
 DEPENDENCIES = "retention"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageStress_retention_suspend"
 

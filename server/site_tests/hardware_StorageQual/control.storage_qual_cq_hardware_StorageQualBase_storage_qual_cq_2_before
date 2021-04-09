@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 100
 DEPENDENCIES = "storage_qual_cq_2"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageQualBase_storage_qual_cq_2_before"
 

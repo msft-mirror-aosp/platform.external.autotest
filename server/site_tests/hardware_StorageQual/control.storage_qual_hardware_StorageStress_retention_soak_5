@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 90
 DEPENDENCIES = "retention"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageStress_retention_soak_5"
 

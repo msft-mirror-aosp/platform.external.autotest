@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 80
 DEPENDENCIES = "storage_qual_external"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageQualSuspendStress_storage_qual_external_suspend_0"
 

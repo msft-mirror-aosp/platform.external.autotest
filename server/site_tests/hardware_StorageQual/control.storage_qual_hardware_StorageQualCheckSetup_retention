@@ -20,6 +20,7 @@ REQUIRE_SSP = False
 PRIORITY = 110
 DEPENDENCIES = "retention"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageQualCheckSetup_retention"
 

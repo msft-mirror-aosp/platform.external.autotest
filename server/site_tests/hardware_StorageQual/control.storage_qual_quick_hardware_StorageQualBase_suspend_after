@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 70
 DEPENDENCIES = "suspend"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageQualBase_suspend_after"
 

@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 90
 DEPENDENCIES = "suspend"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageStress_suspend_soak_10"
 

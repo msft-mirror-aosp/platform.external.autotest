@@ -20,6 +20,7 @@ REQUIRE_SSP = True
 PRIORITY = 80
 DEPENDENCIES = "trim"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "hardware_StorageQualTrimStress_trim_1"
 

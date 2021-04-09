@@ -4,7 +4,9 @@
 
 AUTHOR = 'bfreed'
 NAME = 'network_WiFi_BluetoothStreamPerf.11n'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+# This test is flaky but adding to  'suite:bluetooth_flaky' will use up
+# a lot of lab capacity
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1'

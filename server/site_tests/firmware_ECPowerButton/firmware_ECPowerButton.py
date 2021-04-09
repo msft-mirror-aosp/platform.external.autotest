@@ -19,9 +19,6 @@ class firmware_ECPowerButton(FirmwareTest):
     # Delay between recovery screen and shutdown by power button
     RECOVERY_SCREEN_SHUTDOWN_DELAY = 3
 
-    # Duration of holding down power button to shut down with powerd
-    POWER_BUTTON_POWERD_DURATION = 6
-
     # Duration of holding down power button to test ignoring power button press
     POWER_BUTTON_IGNORE_PRESS_DURATION = 0.2
 
@@ -38,6 +35,9 @@ class firmware_ECPowerButton(FirmwareTest):
     def initialize(self, host, cmdline_args):
         super(firmware_ECPowerButton, self).initialize(host, cmdline_args)
 
+        # Duration of holding down power button to shut down with powerd
+        self.POWER_BUTTON_POWERD_DURATION = (
+                self.faft_config.hold_pwr_button_poweroff)
         # Duration of holding down power button to shut down without powerd
         self.POWER_BUTTON_NO_POWERD_DURATION = max(
                 self.faft_config.hold_pwr_button_nopowerd_shutdown, 11)

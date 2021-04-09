@@ -309,6 +309,7 @@ REQUIRE_SSP = {ssp}
 PRIORITY = {priority}
 DEPENDENCIES = "{label}"
 JOB_RETRIES = 0
+FAST = False
 
 DOC = "{name}"
 

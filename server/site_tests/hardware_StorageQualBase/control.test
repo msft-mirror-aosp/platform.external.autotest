@@ -8,6 +8,7 @@ TIME = "LONG"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "suite"
 TEST_TYPE = "server"
+FAST = False
 
 DOC = """
 Check the test hardware_StorageQualBase is working as expected.

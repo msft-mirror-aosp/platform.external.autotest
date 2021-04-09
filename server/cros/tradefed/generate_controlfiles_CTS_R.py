@@ -51,6 +51,8 @@ CONFIG['LAB_DEPENDENCY'] = {'x86': ['cts_abi_x86']}
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 1
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {
+        # TODO(b/183196062): Remove once the flakiness is fixed.
+        'CtsHardwareTestCases': 30,
         # TODO(b/168262403): Remove once the flakiness is fixed.
         'CtsIncidentHostTestCases': 10,
         # TODO(b/181543065): Remove once the flakiness is fixed.
@@ -218,6 +220,8 @@ CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {
 # This information is changed based on regular analysis of the failure rate on
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
+        # TODO(b/183196062): Remove once the flakiness is fixed.
+        'CtsHardwareTestCases': 30,
         # TODO(b/168262403): Remove once the flakiness is fixed.
         'CtsIncidentHostTestCases': 10,
         # TODO(b/181543065): Remove once the flakiness is fixed.

@@ -6,6 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="GtsPackageManagerHostTestCases com.google.android.pm.gts.PackageManagerHostTest#test169414761fixed" />
   <Entry include="GtsSettingsTestCases com.google.android.settings.gts.LegalInformationTest#launchLegalInformation_shouldAlwaysShowGooglePlaySystemUpdateLicensesItem" />
   <Entry include="GtsSettingsTestCases com.google.android.settings.gts.PrivacySettingsDisplayTest#launchPrivacy_shouldAlwaysShowGooglePrivacyItems" />
 </SubPlan>

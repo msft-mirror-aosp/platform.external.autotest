@@ -1176,5 +1176,5 @@ class BluetoothSDPTests(bluetooth_SDP_ServiceAttributeRequest,
                         bluetooth_SDP_ServiceBrowse,
                         bluetooth_SDP_ServiceSearchAttributeRequest,
                         bluetooth_SDP_ServiceSearchRequestBasic):
-    """Master class that simplifies inheritance of sdp tests"""
+    """Derived class that simplifies inheritance of sdp tests"""
     pass

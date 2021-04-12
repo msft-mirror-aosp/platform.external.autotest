@@ -146,7 +146,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
 
     # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
-    # connection is initiated by slave. Skip the test until 2021 uprev
+    # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE secondary Test',
                   devices={'BLE_KEYBOARD': 1},
                   skip_models=LAB_VEYRON_MODELS + ['bob'])
@@ -268,7 +268,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
 
     # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
-    # connection is initiated by slave. Skip the test until 2021 uprev
+    # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
                   skip_models=LAB_VEYRON_MODELS + ['bob'])

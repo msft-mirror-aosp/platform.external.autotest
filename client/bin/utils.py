@@ -368,7 +368,7 @@ INTEL_UARCH_TABLE = {
     '06_2F': 'Westmere',
 }
 
-INTEL_ATOM_ORDER = ['Silvermont', 'Airmont', 'Goldmont', 'Tremont']
+INTEL_ATOM_ORDER = ['Silvermont', 'Airmont', 'Goldmont', 'Tremont', 'Gracemont']
 
 INTEL_BIGCORE_ORDER = [
         'Prescott', 'Presler', 'Dothan', 'Merom', 'Nehalem', 'Westmere',

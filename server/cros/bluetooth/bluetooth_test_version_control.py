@@ -56,14 +56,16 @@ def fetech_target_commit():
 
     output = utils.run('wget -O {} {}'.format(
             LATEST_STABLE_AUTOTEST_COMMIT,
-            HTTP_LATEST_STABLE_AUTOTEST_COMMIT_URL))
+            HTTP_LATEST_STABLE_AUTOTEST_COMMIT_URL),
+                       ignore_status=True)
 
     if output.exit_status != 0:
+        logging.info('Failed to fetech the latest commit from the server')
         logging.info(output.stdout)
         logging.info(output.stderr)
     else:
         with open(LATEST_STABLE_AUTOTEST_COMMIT) as commit_file:
-            target_commit = commit_file.readline()
+            target_commit = commit_file.readline().strip()
 
     logging.info('The latest commit will be used is:\n%s', target_commit)
     return current_commit, target_commit

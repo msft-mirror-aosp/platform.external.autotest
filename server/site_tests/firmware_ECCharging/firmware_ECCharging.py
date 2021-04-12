@@ -170,7 +170,14 @@ class firmware_ECCharging(FirmwareTest):
     def _set_battery_discharge(self):
         """Instruct the EC to drain the battery."""
         # Ask EC to drain the battery
-        self.ec.send_command("chgstate discharge on")
+        output = self._retry_send_cmd("chgstate discharge on", [
+                r"state =|Parameter 1 invalid",
+        ])
+        logging.debug("chgstate returned %s", output)
+        if output[0] == 'Parameter 1 invalid':
+            raise error.TestNAError(
+                    "Device doesn't support CHARGER_DISCHARGE_ON_AC, "
+                    "please drain battery below full and run the test again.")
         time.sleep(self.AC_STATE_UPDATE_DELAY)
 
         # Verify discharging. Either AC off or charge control discharge is
@@ -189,7 +196,8 @@ class firmware_ECCharging(FirmwareTest):
         self.ec.update_battery_info()
 
     def _consume_battery(self, deadline):
-        """Perform battery intensive operation to make the battery discharge faster."""
+        """Perform battery intensive operation to make the battery discharge
+        faster."""
         # Switch to servo drain after b/140965614.
         stress_time = deadline - time.time()
         if stress_time > self.CHECK_BATT_STATE_WAIT:
@@ -251,13 +259,13 @@ class firmware_ECCharging(FirmwareTest):
         if not self.ec.get_battery_charging_allowed(
         ) or self.ec.get_battery_actual_current() < 0:
             logging.info(
-                    "Battery is full or discharging. Forcing battery discharge to test charging."
-            )
+                    "Battery is full or discharging. Forcing battery discharge "
+                    "to test charging.")
             self._discharge_below_100()
             if not self.ec.get_battery_charging_allowed():
                 raise error.TestFail(
-                        'Battery reports charging is not allowed, even after discharging.'
-                )
+                        "Battery reports charging is not allowed, even after "
+                        "discharging.")
         if self._check_if_discharge_on_ac():
             raise error.TestNAError(
                     "DUT is performing discharge on AC. Unable to test.")
@@ -266,7 +274,7 @@ class firmware_ECCharging(FirmwareTest):
                     "Trickling charging battery. Unable to test.")
         if self.ec.get_battery_actual_current() < 0:
             raise error.TestFail(
-                    "The device is not charging. Is the test run with AC plugged?"
-            )
+                    "The device is not charging. Is the test run with AC "
+                    "plugged?")
 
         self._check_voltages_and_currents()

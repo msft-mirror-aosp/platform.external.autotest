@@ -133,3 +133,5 @@ class BluetoothPolicy(object):
     ALLOWLIST_AUDIO_INCOMPLETE = to_allowlist(UUIDSET_AUDIO -
                                               {UUID_A2DP, UUID_AUDIO_SINK,
                                                UUID_AUDIO_SOURCE})
+    ALLOWLIST_BLE_HID_AUDIO = to_allowlist(UUIDSET_BLE_HID.union(UUIDSET_AUDIO))
+    ALLOWLIST_CLASSIC_BLE_HID = to_allowlist(UUIDSET_BLE_HID.union({UUID_HID}))

@@ -67,11 +67,8 @@ class firmware_CheckEOPState(test.test):
 
         return eop_state
 
-    def run_once(self, expect_me_present=True):
-        """Fail unless ME returns Post-Boot State
-
-        @param expect_me_present: False means the system has no ME.
-        """
+    def run_once(self):
+        """Fail unless ME returns Post-Boot State"""
         cpu_family = utils.get_cpu_soc_family()
         if cpu_family not in ('x86_64', 'i386'):
             raise error.TestNAError(

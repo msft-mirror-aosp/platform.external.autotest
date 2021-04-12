@@ -92,11 +92,44 @@ class BluetoothPolicy(object):
     Refer to
     https://www.bluetooth.com/specifications/assigned-numbers/service-discovery/
     """
+
+    def to_allowlist(uuids):
+        """Helper function to convert a group of uuids to allowlist format
+
+        @param uuids: an iterable object of UUID string
+
+        @returns: comma-separated UUID string
+        """
+        return ','.join(list(uuids))
+
     UUID_HID = '0x1124'
     UUID_HOG = '0x1812'
     UUID_DIS = '0x180a'
     UUID_BATT = '0x180f'
 
+    UUID_A2DP = '0x110d'
+    UUID_AUDIO_SOURCE = '0x110a'
+    UUID_AUDIO_SINK = '0x110b'
+    UUID_AVRCP = '0x110e'
+    UUID_AVRCP_TARGET = '0x110c'
+    UUID_AVRCP_CONTROLLER = '0x110f'
+    UUID_GENERIC_AUDIO = '0x1203'
+    UUID_HANDSFREE = '0x111e'
+    UUID_HANDSFREE_AUDIO_GATEWAY = '0x111f'
+    UUID_HEADSET = '0x1108'
+    UUID_HEADSET_AUDIO_GATEWAY = '0x1112'
+
+    UUIDSET_BLE_HID = {UUID_HOG, UUID_DIS, UUID_BATT}
+    UUIDSET_AUDIO = {UUID_A2DP, UUID_AUDIO_SINK, UUID_AUDIO_SOURCE,
+                     UUID_AVRCP, UUID_AVRCP_TARGET, UUID_AVRCP_CONTROLLER,
+                     UUID_GENERIC_AUDIO,
+                     UUID_HANDSFREE, UUID_HANDSFREE_AUDIO_GATEWAY,
+                     UUID_HEADSET, UUID_HEADSET_AUDIO_GATEWAY}
+
     ALLOWLIST_CLASSIC_HID = UUID_HID
-    ALLOWLIST_BLE_HID = ','.join([UUID_HOG, UUID_DIS, UUID_BATT])
-    ALLOWLIST_BLE_HID_INCOMPLETE = ','.join([UUID_HOG, UUID_BATT])
+    ALLOWLIST_BLE_HID = to_allowlist(UUIDSET_BLE_HID)
+    ALLOWLIST_BLE_HID_INCOMPLETE = to_allowlist(UUIDSET_BLE_HID - {UUID_DIS})
+    ALLOWLIST_AUDIO = to_allowlist(UUIDSET_AUDIO)
+    ALLOWLIST_AUDIO_INCOMPLETE = to_allowlist(UUIDSET_AUDIO -
+                                              {UUID_A2DP, UUID_AUDIO_SINK,
+                                               UUID_AUDIO_SOURCE})

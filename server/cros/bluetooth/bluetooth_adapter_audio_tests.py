@@ -848,12 +848,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         logging.info('%s test for %d seconds.', test_profile, duration)
 
         # Wait for pulseaudio a2dp bluez source
-        desc = 'waiting for pulseaudio a2dp bluez source'
-        logging.debug(desc)
-        self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_a2dp(device,
-                                                               test_profile),
-                desc=desc)
+        check_connection = lambda: self._get_pulseaudio_bluez_source_a2dp(
+                device, A2DP)
+        is_connected = self._wait_for_condition(check_connection,
+                                                'test_device_a2dp_connected',
+                                                timeout=20)
+        if not is_connected:
+            self.results = {'peer a2dp connected': is_connected}
+            # Fail early if host can not connect to the peer.
+            return False
 
         # Select audio output node so that we do not rely on chrome to do it.
         self.select_audio_output_node()

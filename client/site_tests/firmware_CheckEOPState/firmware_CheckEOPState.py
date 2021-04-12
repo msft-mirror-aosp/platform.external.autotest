@@ -77,6 +77,8 @@ class firmware_CheckEOPState(test.test):
                     'Such devices do not have an ME (Management Engine)')
 
         if utils.is_intel_uarch_older_than('Tiger Lake'):
-            raise error.TestNAError('Skipping test for EOP on pre-TGL')
+            raise error.TestNAError('Skipping test on pre-TGL')
+        if utils.is_intel_uarch_older_than('Gracemont'):
+            raise error.TestNAError('Skipping test on production Atom designs')
 
         self.read_post_boot_state()

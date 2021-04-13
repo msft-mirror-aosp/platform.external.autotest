@@ -6,6 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSlowSwipe_initiatesTouchExploration" />
   <Entry include="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCantSaveStateLaunchAndSwitch" />
   <Entry include="CtsAppTestCases[instant] android.app.cts.ActivityManagerProcessStateTest#testCantSaveStateLaunchAndSwitch" />
   <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
@@ -145,4 +146,8 @@
   <Entry include="CtsThemeHostTestCases android.theme.cts.ThemeHostTest#testThemes" />
   <Entry include="CtsWidgetTestCases android.widget.cts.ToastTest#testCustomToastBlocked_whenBehindTranslucentActivity" />
   <Entry include="CtsWidgetTestCases[instant] android.widget.cts.ToastTest#testCustomToastBlocked_whenBehindTranslucentActivity" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_andLoseControl[ime]" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_immediately_hide[ime]" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_transition_hide_interpolator[ime]" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_transition_hide[ime]" />
 </SubPlan>

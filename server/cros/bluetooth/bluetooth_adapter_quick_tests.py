@@ -454,8 +454,18 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         self.bluetooth_facade.stop_discovery()
 
-        # Reset the policy allowlist so that all UUIDs are allowed.
-        self.test_reset_allowlist()
+        # Catch possible exceptions in test_reset_allowlist().
+        # Refer to b/184947150 for more context.
+        try:
+            # Reset the policy allowlist so that all UUIDs are allowed.
+            self.test_reset_allowlist()
+        except:
+            msg = ('Failed to reset the policy allowlist.\n'
+                   '### Note: reset the allowlist manually if needed. ###\n\n'
+                   'dbus-send --system --print-reply --dest=org.bluez '
+                   '/org/bluez/hci0 org.bluez.AdminPolicy1.SetServiceAllowList '
+                   'array:string:"" \n')
+            logging.error(msg)
 
         # Store a copy of active devices for raspi reset in the final step
         self.active_test_devices = self.devices

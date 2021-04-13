@@ -765,7 +765,7 @@ class DevServer(object):
                             '%s/%d.', hostname, host_ip, ip, mask)
                     devservers |= set(
                             cls.get_devservers_in_same_subnet(ip, mask))
-                return list(devservers), False
+                return sorted(devservers), False
 
         # If prefer_local_devserver is set to True and the host is not in
         # restricted subnet, pick a devserver in the same subnet if possible.

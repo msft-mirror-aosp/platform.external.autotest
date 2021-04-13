@@ -652,10 +652,8 @@ RPC_CATEGORIES = [
                         },
                         {
                                 "method_names": [
-                                        "corrupt_sig",
-                                        "restore_sig",
-                                        "corrupt_body",
-                                        "restore_body",
+                                        "get_sig_one_byte",
+                                        "get_body_one_byte",
                                         "move_version_backward",
                                         "move_version_forward",
                                 ],
@@ -668,6 +666,20 @@ RPC_CATEGORIES = [
                                         ONE_INT_ARG,
                                         ("c", ),
                                 ]
+                        },
+                        {
+                                "method_names": [
+                                        "modify_sig",
+                                        "modify_body",
+                                ],
+                                "passing_args": [
+                                        ("a", 0, 0xff),
+                                        ("b", 1, 0xff),
+                                ],
+                                "failing_args": [
+                                        NO_ARGS,
+                                        ONE_INT_ARG,
+                                ],
                         },
                         {
                                 "method_names": [

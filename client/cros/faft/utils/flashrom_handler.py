@@ -411,24 +411,8 @@ class FlashromHandler(object):
                         self.section_file(section.get_body_name()))
                 self.os_if.run_shell_command(cmd)
 
-    def _modify_section(self,
-                        section,
-                        delta,
-                        body_or_sig=False,
-                        corrupt_all=False):
-        """Modify a firmware section inside the image, either body or signature.
-
-        If corrupt_all is set, the passed in delta is added to all bytes in the
-        section. Otherwise, the delta is added to the value located at 2% offset
-        into the section blob, either body or signature.
-
-        Calling this function again for the same section the complimentary
-        delta value would restore the section contents.
-        """
-
-        if not self.image:
-            raise FlashromHandlerError(
-                    'Attempt at using an uninitialized object')
+    def _get_subsection_name(self, section, body_or_sig):
+        """Get the subsection name of body or signature."""
         if section not in self.fv_sections:
             raise FlashromHandlerError('Unknown FW section %s' % section)
 
@@ -437,80 +421,64 @@ class FlashromHandler(object):
             subsection_name = self.fv_sections[section].get_body_name()
         else:
             subsection_name = self.fv_sections[section].get_sig_name()
-        blob = self.fum.get_section(self.image, subsection_name)
-
-        # Modify the byte in it within 2% of the section blob.
-        modified_index = len(blob) / 50
-        if corrupt_all:
-            blob_list = [('%c' % ((ord(x) + delta) % 0x100)) for x in blob]
-        else:
-            blob_list = list(blob)
-            blob_list[modified_index] = (
-                    '%c' % ((ord(blob[modified_index]) + delta) % 0x100))
-        self.image = self.fum.put_section(self.image, subsection_name,
-                                          ''.join(blob_list))
-
         return subsection_name
 
-    def corrupt_section(self, section, corrupt_all=False):
-        """Corrupt a section signature of the image"""
+    def _get_subsection_one_byte(self, subsection):
+        """Get a specific byte within 2% of the subsection."""
+        if not self.image:
+            raise FlashromHandlerError(
+                    'Attempt at using an uninitialized object')
+        blob = self.fum.get_section(self.image, subsection)
+        offset = len(blob) / 50
+        return offset, ord(blob[offset])
 
-        return self._modify_section(
-                section,
-                self.DELTA,
-                body_or_sig=False,
-                corrupt_all=corrupt_all)
+    def get_firmware_sig_one_byte(self, section):
+        """Get a specific byte of firmware signature of the section."""
+        subsection = self._get_subsection_name(section, body_or_sig=False)
+        return self._get_subsection_one_byte(subsection)
 
-    def corrupt_section_body(self, section, corrupt_all=False):
-        """Corrupt a section body of the image"""
+    def get_firmware_body_one_byte(self, section):
+        """Get a specific byte of firmware body of the section."""
+        subsection = self._get_subsection_name(section, body_or_sig=True)
+        return self._get_subsection_one_byte(subsection)
 
-        return self._modify_section(
-                section, self.DELTA, body_or_sig=True, corrupt_all=corrupt_all)
+    def _modify_subsection(self, subsection, offset, value):
+        """Modify a byte of subsection in the FLASHROM."""
+        if not self.image:
+            raise FlashromHandlerError(
+                    'Attempt at using an uninitialized object')
+        blob = self.fum.get_section(self.image, subsection)
+        blob_list = list(blob)
+        blob_list[offset] = chr(value % 0x100)
+        self.image = self.fum.put_section(self.image, subsection,
+                                          ''.join(blob_list))
+        self.fum.write_partial(self.image, (subsection, ))
 
-    def restore_section(self, section, restore_all=False):
-        """Restore a previously corrupted section signature of the image."""
+    def modify_firmware_sig(self, section, offset, value):
+        """Modify a byte in firmware signature in the FLASHROM."""
+        subsection = self._get_subsection_name(section, body_or_sig=False)
+        self._modify_subsection(subsection, offset, value)
 
-        return self._modify_section(
-                section,
-                -self.DELTA,
-                body_or_sig=False,
-                corrupt_all=restore_all)
+    def modify_firmware_body(self, section, offset, value):
+        """Modify a byte in firmware body in the FLASHROM."""
+        subsection = self._get_subsection_name(section, body_or_sig=True)
+        self._modify_subsection(subsection, offset, value)
 
-    def restore_section_body(self, section, restore_all=False):
-        """Restore a previously corrupted section body of the image."""
+    def corrupt_firmware_body(self, section):
+        """Corrupt the whole firmware body in the FLASHROM."""
+        subsection = self._get_subsection_name(section, body_or_sig=True)
+        if not self.image:
+            raise FlashromHandlerError(
+                    'Attempt at using an uninitialized object')
+        blob = self.fum.get_section(self.image, subsection)
+        blob_list = [chr((ord(x) + self.DELTA) % 0x100) for x in blob]
+        self.image = self.fum.put_section(self.image, subsection,
+                                          ''.join(blob_list))
+        self.fum.write_partial(self.image, (subsection, ))
 
-        return self._modify_section(
-                section,
-                -self.DELTA,
-                body_or_sig=True,
-                corrupt_all=restore_all)
-
-    def corrupt_firmware(self, section, corrupt_all=False):
-        """Corrupt a section signature in the FLASHROM!!!"""
-
-        subsection_name = self.corrupt_section(
-                section, corrupt_all=corrupt_all)
-        self.fum.write_partial(self.image, (subsection_name, ))
-
-    def corrupt_firmware_body(self, section, corrupt_all=False):
-        """Corrupt a section body in the FLASHROM!!!"""
-
-        subsection_name = self.corrupt_section_body(
-                section, corrupt_all=corrupt_all)
-        self.fum.write_partial(self.image, (subsection_name, ))
-
-    def restore_firmware(self, section, restore_all=False):
-        """Restore the previously corrupted section sig in the FLASHROM!!!"""
-
-        subsection_name = self.restore_section(
-                section, restore_all=restore_all)
-        self.fum.write_partial(self.image, (subsection_name, ))
-
-    def restore_firmware_body(self, section, restore_all=False):
-        """Restore the previously corrupted section body in the FLASHROM!!!"""
-
-        subsection_name = self.restore_section_body(section, restore_all=False)
-        self.fum.write_partial(self.image, (subsection_name, ))
+    def corrupt_mrc_cache(self):
+        """Corrupt MRC cache in the FLASHROM."""
+        self.corrupt_firmware_body('rec')
 
     def firmware_sections_equal(self):
         """Check if firmware sections A and B are equal.

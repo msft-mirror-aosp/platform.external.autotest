@@ -318,35 +318,47 @@ class BiosServicer(object):
         """
         return self._bios_handler.get_section_fwid(section)
 
-    def corrupt_sig(self, section):
-        """Corrupt the requested firmware section signature.
+    def get_sig_one_byte(self, section):
+        """Get a specific byte of firmware signature of the section.
 
         @param section: A firmware section, either 'a' or 'b'.
+        @return: Tuple of (offset, byte).
         """
-        self._bios_handler.corrupt_firmware(section)
+        return self._bios_handler.get_firmware_sig_one_byte(section)
 
-    def restore_sig(self, section):
-        """Restore the previously corrupted firmware section signature.
+    def modify_sig(self, section, offset, value):
+        """Modify a byte of firmware signature of the section.
 
         @param section: A firmware section, either 'a' or 'b'.
+        @offset: Offset of section to be modified.
+        @value: The byte value.
         """
-        self._bios_handler.restore_firmware(section)
+        return self._bios_handler.modify_firmware_sig(section, offset, value)
 
-    def corrupt_body(self, section, corrupt_all=False):
-        """Corrupt the requested firmware section body.
+    def get_body_one_byte(self, section):
+        """Get a specific byte of firmware body of the section.
 
         @param section: A firmware section, either 'a' or 'b'.
-        @param corrupt_all (optional): Corrupt all bytes of the fw section,
-                                       rather than just one byte.
+        @return: Tuple of (offset, byte).
         """
-        self._bios_handler.corrupt_firmware_body(section, corrupt_all)
+        return self._bios_handler.get_firmware_body_one_byte(section)
 
-    def restore_body(self, section):
-        """Restore the previously corrupted firmware section body.
+    def modify_body(self, section, offset, value):
+        """Modify a byte of firmware body of the section.
 
         @param section: A firmware section, either 'a' or 'b'.
+        @offset: Offset of section to be modified.
+        @value: The byte value.
         """
-        self._bios_handler.restore_firmware_body(section)
+        return self._bios_handler.modify_firmware_body(section, offset, value)
+
+    def corrupt_mrc_cache(self):
+        """Corrupt MRC cache.
+
+        NOTE: This method is not idempotent. A second call will still change the
+        flashrom content of the client.
+        """
+        self._bios_handler.corrupt_mrc_cache()
 
     def _modify_version(self, section, delta):
         """Modify firmware version for the requested section, by adding delta.
@@ -555,9 +567,12 @@ class EcServicer(object):
     def corrupt_body(self, section):
         """Corrupt the requested EC section body.
 
+        NOTE: This method is not idempotent. A second call will still change the
+        flashrom content of the client.
+
         @param section: An EC section, either 'a' or 'b'.
         """
-        self._ec_handler.corrupt_firmware_body(section, corrupt_all=True)
+        self._ec_handler.corrupt_firmware_body(section)
 
     def dump_firmware(self, ec_path):
         """Dump the current EC firmware to a file, specified by ec_path.

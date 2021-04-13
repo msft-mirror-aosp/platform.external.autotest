@@ -34,12 +34,13 @@ class firmware_CorruptFwBodyA(FirmwareTest):
         """Runs a single iteration of the test."""
         logging.info("Corrupt firmware body A.")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
-        self.faft_client.bios.corrupt_body('a')
+        offset_a, byte_a = self.faft_client.bios.get_body_one_byte('a')
+        self.faft_client.bios.modify_body('a', offset_a, byte_a + 1)
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot and restore firmware A.")
         self.check_state((self.checkers.fw_tries_checker, ('B', False)))
-        self.faft_client.bios.restore_body('a')
+        self.faft_client.bios.modify_body('a', offset_a, byte_a)
         self.switcher.mode_aware_reboot()
 
         expected_slot = 'B' if self.fw_vboot2 else 'A'

@@ -41,6 +41,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         @param commandline_args dict of parsed parameters from the autotest.
         @param additional_params list of HostapConfig objects.
         """
+        self._should_required = 'should' in commandline_args
         if 'governor' in commandline_args:
             self._governor = commandline_args['governor']
             # validate governor string. Not all machines will support all of
@@ -55,6 +56,37 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         else:
             self._governor = None
         self._ap_configs = additional_params
+
+    def verify_result(self, result, must_expected_throughput,
+                      should_expected_throughput, config, failed_configs):
+        """Verfiy that netperf result pass the must and should throughputs.
+
+        @param result: the netperf thoughput result
+        @param must_expected_throughput: the min must expected throughput
+        @param should_expected_throughput: the min should expected throughput
+        @param config: the netperf test type/configuration
+        @param failed_configs: a set of failed configuration
+        """
+        mustAssertion = netperf_runner.NetperfAssertion(
+                throughput_min=must_expected_throughput)
+        if not mustAssertion.passes(result):
+            logging.error(
+                    'Throughput is too low for %s. Expected (must) %0.2f Mbps, got %0.2f.',
+                    config.tag, must_expected_throughput, result.throughput)
+            failed_configs.add(config)
+        shouldAssertion = netperf_runner.NetperfAssertion(
+                throughput_min=should_expected_throughput)
+        if not shouldAssertion.passes(result):
+            if self._should_required:
+                logging.error(
+                        'Throughput is too low for %s. Expected (should) %0.2f Mbps, got %0.2f.',
+                        config.tag, should_expected_throughput,
+                        result.throughput)
+                failed_configs.add(config)
+            else:
+                logging.info(
+                    'Throughput is below (should) expectation for %s. Expected (should) %0.2f Mbps, got %0.2f.',
+                    config.tag, should_expected_throughput, result.throughput)
 
     def do_run(self, ap_config, session, power_save, governor):
         """Run a single set of perf tests, for a given AP and DUT config.
@@ -125,13 +157,8 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                                    higher_is_better=True,
                                    graph=ap_config_tag)
             result = netperf_runner.NetperfResult.from_samples(results)
-            assertion = netperf_runner.NetperfAssertion(
-                    throughput_min=expected_throughput)
-            if not assertion.passes(result):
-                logging.error(
-                        'Throughput is too low for %s. Expected %0.2f Mbps, got %0.2f.',
-                        config.tag, expected_throughput, result.throughput)
-                failed_configs.add(config)
+            self.verify_result(result, expected_throughput[0],
+                               expected_throughput[1], config, failed_configs)
             self.write_perf_keyval(result.get_keyval(
                 prefix='_'.join([ap_config_tag, config.tag])))
         if governor:

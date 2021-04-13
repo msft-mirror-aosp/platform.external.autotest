@@ -30,70 +30,85 @@ In the meantime, the expected throughput values depend on the following paramete
 Expected_Throughput_WiFi = {
         netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
-                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: 85,
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                        (61, 86),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
-                        110,
+                        (115, 166),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
-                        110
+                        (115, 166)
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 110
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                        (200, 400)
                 },
                 hostap_config.HostapConfig.MODE_11AC_PURE: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                        (74, 103),
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                        (153, 221)
                 }
         },
         netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
-                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: 85,
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                        (61, 86),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
-                        140,
+                        (115, 166),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
-                        140
+                        (115, 166)
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 100
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                        (200, 400)
                 },
                 hostap_config.HostapConfig.MODE_11AC_PURE: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                        (74, 103),
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                        (153, 221)
                 }
         },
         netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
-                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: 90,
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                        (72, 101),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
-                        160,
+                        (135, 195),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
-                        160
+                        (135, 195)
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 260
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                        (347, 500)
                 },
                 hostap_config.HostapConfig.MODE_11AC_PURE: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                        (87, 121),
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                        (180, 260)
                 }
         },
         netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
-                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: 95,
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                        (72, 101),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
-                        180,
+                        (135, 195),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
-                        180
+                        (135, 195)
                 },
                 hostap_config.HostapConfig.MODE_11AC_MIXED: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: 130
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                        (347, 500)
                 },
                 hostap_config.HostapConfig.MODE_11AC_PURE: {
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20: 0,
-                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: 0
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                        (87, 121),
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                        (180, 260)
                 }
         }
 }
-
 
 def get_expected_throughput_wifi(tag, mode, channel_width):
     """returns the expected throughput for WiFi only performance tests.
@@ -104,7 +119,7 @@ def get_expected_throughput_wifi(tag, mode, channel_width):
 
     @param channel_width: the channel width used in the test.
 
-    @return an integer value of the expected throughputs in Mbps.
+    @return a tuple of two integers (must,should) of the expected throughputs in Mbps.
 
     """
     if tag in Expected_Throughput_WiFi:

@@ -1102,7 +1102,7 @@ class BluetoothAdapterTests(test.test):
     def reset_emulated_device(self, device, device_type, clear_device=True):
         """Reset the emulated device in order to be used as a different type.
 
-        @param peer: the emulated peer device to reset with new device type
+        @param device: the emulated peer device to reset with new device type
         @param device_type : the new bluetooth device type, e.g., 'MOUSE'
         @param clear_device: whether to clear the device state
 

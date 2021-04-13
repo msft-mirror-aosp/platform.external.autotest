@@ -33,10 +33,25 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    def ep_outgoing_keyboard(self, device, expected_pass):
-        """Run outoging keyboard report tests
+    def get_device_verifier(self, device):
+        """Helper function to get a proper test method for verifying device
+           avalibility depending on its type
 
-        @param device: the keyboard device
+        @param device: a peer device
+        @returns: a test method if the device type can be recongnized,
+                  None otherwise.
+        """
+        if device.device_type == 'KEYBOARD':
+            return self.run_keyboard_tests
+        else:
+            raise error.TestError('Failed to find verifier for device type %s' %
+                                  device.device_type)
+
+
+    def ep_outgoing_connection(self, device, expected_pass):
+        """Run outoging connection tests
+
+        @param device: the peer device
         @param expected_pass: True if the test is expected to pass
         """
         self.test_discover_device(device.address)
@@ -47,14 +62,16 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
         self.check_if_blocked_by_policy(device, not expected_pass)
 
+        verifier = self.get_device_verifier(device)
+
         # Whether the test should pass or fail depends on expected_pass.
-        self.expect_test(expected_pass, self.run_keyboard_tests, device)
+        self.expect_test(expected_pass, verifier, device)
 
 
-    def ep_incoming_keyboard(self, device, expected_pass):
-        """Run incoming keyboard report tests
+    def ep_incoming_connection(self, device, expected_pass):
+        """Run incoming connection tests
 
-        @param device: the keyboard device
+        @param device: the peer device
         @param expected_pass: True if the test is expected to pass
         """
         self.test_discover_device(device.address)
@@ -71,8 +88,10 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
         self.check_if_blocked_by_policy(device, not expected_pass)
 
+        verifier = self.get_device_verifier(device)
+
         # Whether the test should pass or fail depends on expected_pass.
-        self.expect_test(expected_pass, self.run_keyboard_tests, device)
+        self.expect_test(expected_pass, verifier, device)
 
 
     def reset_allowlist_and_raise_fail(self, err_msg):
@@ -89,7 +108,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         """Run a specified ep_test_method.
 
         @param ep_test_method: the test method to run
-        @param device: the keyboard device
+        @param device: a peer device
         @param uuids: the uuids in the allowlist to set.
                 If uuids is None, it means not to set Allowlist.
                 The default value is '' which means to allow all UUIDs.
@@ -132,69 +151,74 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist('aaaaaaaa-bbbb-cccc-dddd', False)
 
 
-    @test_wrapper('Outgoing: Service in Allowlist', devices={'KEYBOARD':1})
-    def ep_outgoing_service_in_allowlist(self):
+    @test_wrapper('Outgoing: HID: Service in Allowlist', devices={'KEYBOARD':1})
+    def ep_outgoing_hid_service_in_allowlist(self):
         """The test with service in allowlist for outgoing connection."""
         device = self.devices['KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=BluetoothPolicy.UUID_HID, expected_pass=True)
 
 
-    @test_wrapper('Outgoing: Service not in Allowlist', devices={'KEYBOARD':1})
-    def ep_outgoing_service_not_in_allowlist(self):
+    @test_wrapper('Outgoing: HID: Service not in Allowlist',
+                  devices={'KEYBOARD':1})
+    def ep_outgoing_hid_service_not_in_allowlist(self):
         """The test with service not in allowlist for outgoing connection."""
         device = self.devices['KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids='0xaabb', expected_pass=False)
 
 
-    @test_wrapper('Outgoing: Empty Allowlist', devices={'KEYBOARD':1})
-    def ep_outgoing_empty_allowlist(self):
+    @test_wrapper('Outgoing: HID: Empty Allowlist', devices={'KEYBOARD':1})
+    def ep_outgoing_hid_empty_allowlist(self):
         """The test with an empty allowlist for outgoing connection."""
         device = self.devices['KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids='', expected_pass=True)
 
 
-    @test_wrapper('Incoming: Service in Allowlist', devices={'KEYBOARD':1})
-    def ep_incoming_service_in_allowlist(self):
+    @test_wrapper('Incoming: HID: Service in Allowlist',
+                  devices={'KEYBOARD':1})
+    def ep_incoming_hid_service_in_allowlist(self):
         """Service in allowlist for incoming reconnection from device."""
         device = self.devices['KEYBOARD'][0]
-        self.run_test_method(self.ep_incoming_keyboard, device,
+        self.run_test_method(self.ep_incoming_connection, device,
                              uuids=BluetoothPolicy.UUID_HID, expected_pass=True)
 
 
     @test_wrapper('Incoming: Service not in Allowlist', devices={'KEYBOARD':1})
-    def ep_incoming_service_not_in_allowlist(self):
+    def ep_incoming_hid_service_not_in_allowlist(self):
         """Service not in allowlist for incoming reconnection from device."""
         device = self.devices['KEYBOARD'][0]
-        self.run_test_method(self.ep_incoming_keyboard, device,
+        self.run_test_method(self.ep_incoming_connection, device,
                              uuids='0xaabb', expected_pass=False)
 
 
-    @test_wrapper('Gatt: Services in Allowlist', devices={'BLE_KEYBOARD':1})
-    def ep_gatt_services_in_allowlist(self):
+    @test_wrapper('Outgoing: BLE Keyboard: Services in Allowlist',
+                  devices={'BLE_KEYBOARD':1})
+    def ep_outgoing_ble_hid_services_in_allowlist(self):
         """The test for BLE gatt services in allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=BluetoothPolicy.ALLOWLIST_BLE_HID,
                              expected_pass=True)
 
 
-    @test_wrapper('Gatt: Services not in Allowlist', devices={'BLE_KEYBOARD':1})
-    def ep_gatt_services_not_in_allowlist(self):
+    @test_wrapper('Outgoing: BLE Keyboard: Services not in Allowlist',
+                  devices={'BLE_KEYBOARD':1})
+    def ep_outgoing_ble_hid_services_not_in_allowlist(self):
         """The test for BLE gatt services not in allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=BluetoothPolicy.ALLOWLIST_BLE_HID_INCOMPLETE,
                              expected_pass=False)
 
 
-    @test_wrapper('Gatt: Empty Allowlist', devices={'BLE_KEYBOARD':1})
-    def ep_gatt_empty_allowlist(self):
+    @test_wrapper('Outgoing: BLE Keyboard: Empty Allowlist',
+                  devices={'BLE_KEYBOARD':1})
+    def ep_outgoing_ble_hid_empty_allowlist(self):
         """The test for BLE gatt services and an empty allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids='', expected_pass=True)
 
 
@@ -202,7 +226,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     def ep_combo_set_allowlist_and_disconnect(self):
         """Set a new allowlist and current connection should be terminated."""
         device = self.devices['KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=BluetoothPolicy.UUID_HID, expected_pass=True)
 
         # Setting a non-HID UUID should disconnect the device.
@@ -220,7 +244,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist('abcd', True)
 
         # A subsequent HID UUID should supersede the previous setting.
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=BluetoothPolicy.UUID_HID, expected_pass=True)
 
 
@@ -231,7 +255,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         device = self.devices['KEYBOARD'][0]
         self.test_check_set_allowlist(BluetoothPolicy.UUID_HID, True)
         self.test_reset_on_adapter()
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_pass=True)
 
 
@@ -242,7 +266,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         device = self.devices['KEYBOARD'][0]
         self.test_check_set_allowlist('abcd', True)
         self.test_reset_on_adapter()
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_pass=False)
 
 
@@ -254,7 +278,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist(BluetoothPolicy.UUID_HID, True)
         self.test_stop_bluetoothd()
         self.test_start_bluetoothd()
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_pass=True)
 
 
@@ -266,7 +290,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist('abcd', True)
         self.test_stop_bluetoothd()
         self.test_start_bluetoothd()
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_pass=False)
 
 
@@ -277,7 +301,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         device = self.devices['KEYBOARD'][0]
         self.test_check_set_allowlist(BluetoothPolicy.UUID_HID, True)
         self.reboot()
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_pass=True)
 
 
@@ -288,7 +312,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         device = self.devices['KEYBOARD'][0]
         self.test_check_set_allowlist('aaaa', True)
         self.reboot()
-        self.run_test_method(self.ep_outgoing_keyboard, device,
+        self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_pass=False)
 
 
@@ -300,18 +324,19 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         @param test_name: specific test to run otherwise None to run the
                 whole batch
         """
+
         self.ep_check_set_allowlist()
 
-        self.ep_outgoing_service_in_allowlist()
-        self.ep_outgoing_service_not_in_allowlist()
-        self.ep_outgoing_empty_allowlist()
+        self.ep_outgoing_hid_service_in_allowlist()
+        self.ep_outgoing_hid_service_not_in_allowlist()
+        self.ep_outgoing_hid_empty_allowlist()
 
-        self.ep_incoming_service_in_allowlist()
-        self.ep_incoming_service_not_in_allowlist()
+        self.ep_outgoing_ble_hid_services_in_allowlist()
+        self.ep_outgoing_ble_hid_services_not_in_allowlist()
+        self.ep_outgoing_ble_hid_empty_allowlist()
 
-        self.ep_gatt_services_in_allowlist()
-        self.ep_gatt_services_not_in_allowlist()
-        self.ep_gatt_empty_allowlist()
+        self.ep_incoming_hid_service_in_allowlist()
+        self.ep_incoming_hid_service_not_in_allowlist()
 
         self.ep_combo_set_allowlist_and_disconnect()
         self.ep_combo_successive_allowlists()
@@ -321,7 +346,6 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.ep_combo_non_hid_persists_bluetoothd_restart()
         self.ep_combo_hid_persists_reboot()
         self.ep_combo_non_hid_persists_reboot()
-
 
     def run_once(self,
                  host,

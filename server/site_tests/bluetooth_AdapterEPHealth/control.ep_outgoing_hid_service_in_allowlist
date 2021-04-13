@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterEPHealth.ep_incoming_service_not_in_allowlist'
+NAME = 'bluetooth_AdapterEPHealth.ep_outgoing_hid_service_in_allowlist'
 PURPOSE = ('Batch of Bluetooth enterprise policy health tests')
 CRITERIA = 'Pass the health test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
@@ -17,8 +17,8 @@ DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 
 DOC = """
 
-    Server side bluetooth test with service not in allowlist for
-    incoming reconnection from device.
+    Server side bluetooth test with service in allowlist for
+    outgoing connection."
 
     """
 

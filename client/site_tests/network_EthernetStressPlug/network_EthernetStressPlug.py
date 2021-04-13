@@ -83,7 +83,7 @@ class network_EthernetStressPlug(test.test):
                 except:
                     pass
 
-                if link_status == 'up' and duplex_status == 'full':
+                if link_status == 'up':
                     return iface
 
             raise error.TestError('Network Interface %s not usable (%s, %s)'

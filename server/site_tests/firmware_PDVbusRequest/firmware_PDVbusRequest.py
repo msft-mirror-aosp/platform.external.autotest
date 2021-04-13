@@ -260,8 +260,10 @@ class firmware_PDVbusRequest(FirmwareTest):
                              v, dut_voltage_limit)
                 continue
             if v not in charging_voltages:
-                logging.info('Target = %02dV: skipped, voltage unsupported, '
-                             'update hdctools and servo_v4 firmware', v)
+                logging.info(
+                        'Target = %02dV: skipped, voltage unsupported, '
+                        'update hdctools and servo_v4 firmware '
+                        'or attach a different charger', v)
                 continue
             # Build 'pd <port> dev <voltage> command
             cmd = 'pd %d dev %d' % (self.dut_port.port, v)

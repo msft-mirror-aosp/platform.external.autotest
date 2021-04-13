@@ -158,7 +158,11 @@ class PDTester(chrome_ec.ChromeEC):
         # insert 0 voltage for sink
         vols = [0]
         for pdo in srccaps:
-            vols.append(pdo[0]/1000)
+            # Only include the voltages that are in USBC_CHARGING_VOLTAGES
+            if pdo[0] / 1000 in self.USBC_CHARGING_VOLTAGES:
+                vols.append(pdo[0] / 1000)
+            else:
+                logging.debug("Omitting unsupported PDO = %s", pdo)
         return vols
 
     def charge(self, voltage):
@@ -168,14 +172,23 @@ class PDTester(chrome_ec.ChromeEC):
         """
         charging_voltages = self.get_charging_voltages()
         if voltage not in charging_voltages:
-            logging.warning('Unsupported voltage(%s) of the adapter. '
-                            'Maybe firmware or servod too old? '
-                            'sudo servo_updater -b servo_v4; '
-                            'sudo emerge hdctools' % voltage)
+            logging.warning(
+                    'Unsupported voltage(%s) of the adapter. '
+                    'Maybe firmware or servod too old? '
+                    'sudo servo_updater -b servo_v4; '
+                    'sudo emerge hdctools', voltage)
+        if voltage not in self.USBC_CHARGING_VOLTAGES:
+            raise PDTesterError(
+                    'Cannot set voltage to %s, not supported by %s' %
+                    (voltage, self.USBC_PR))
 
         try:
             self.set(self.USBC_PR, self.USBC_CHARGING_VOLTAGES[voltage])
         except:
+            if voltage not in self.USBC_CHARGING_VOLTAGES_LEGACY:
+                raise PDTesterError(
+                        'Cannot set voltage to %s, not supported by %s' %
+                        (voltage, self.USBC_ROLE))
             self.set(self.USBC_ROLE,
                      self.USBC_CHARGING_VOLTAGES_LEGACY[voltage])
         time.sleep(self.USBC_COMMAND_DELAY)
@@ -186,10 +199,11 @@ class PDTester(chrome_ec.ChromeEC):
         try:
             usbc_pr = self.get(self.USBC_PR)
         except:
-            logging.warn('Unsupported control(%s). '
-                         'Maybe firmware or servod too old? '
-                         'sudo servo_updater -b servo_v4; '
-                         'sudo emerge hdctools' % self.USBC_PR)
+            logging.warn(
+                    'Unsupported control(%s). '
+                    'Maybe firmware or servod too old? '
+                    'sudo servo_updater -b servo_v4; '
+                    'sudo emerge hdctools', self.USBC_PR)
             usbc_pr = self.get(self.USBC_ROLE)
         m = re.match(self.RE_USBC_ROLE_VOLTAGE, usbc_pr)
         if m:

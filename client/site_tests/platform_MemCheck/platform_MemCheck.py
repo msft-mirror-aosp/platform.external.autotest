@@ -9,7 +9,7 @@
 
 __author__ = 'kdlucas@chromium.org (Kelly Lucas)'
 
-import logging, re
+import logging
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin import test
@@ -38,7 +38,6 @@ class platform_MemCheck(test.test):
             memref = 700000
             vmemref = 210000
 
-        speedref = 1333
         os_reserve_min = 600000
         os_reserve_ratio = 0.04
 
@@ -90,36 +89,6 @@ class platform_MemCheck(test.test):
                     logging.warning('%s should be within 10%% of %d', k, ref[k])
                     errors += 1
                     error_list += [k]
-
-        # read spd timings
-        cmd = 'mosys memory spd print timings -s speeds'
-        # result example
-        # DDR3-800, DDR3-1066, DDR3-1333, DDR3-1600
-        pattern = '[A-Z]*DDR([3-9]|[1-9]\d+)[A-Z]*-(?P<speed>\d+)'
-        timing_run = utils.run(cmd)
-        logging.info('Ran command: `%s`', cmd)
-        logging.info('Output: "%s"', timing_run.stdout)
-
-        keyval['speedref'] = speedref
-        for dimm, line in enumerate(timing_run.stdout.split('\n')):
-            if not line:
-                continue
-            max_timing = line.split(', ')[-1]
-            keyval['timing_dimm_%d' % dimm] = max_timing
-            m = re.match(pattern, max_timing)
-            if not m:
-                logging.warning('Error parsing timings for dimm #%d (%s)',
-                             dimm, max_timing)
-                errors += 1
-                continue
-            logging.info('dimm #%d timings: %s', dimm, max_timing)
-            max_speed = int(m.group('speed'))
-            keyval['speed_dimm_%d' % dimm] = max_speed
-            if max_speed < speedref:
-                logging.warning('ram speed is %s', max_timing)
-                logging.warning('ram speed should be at least %d', speedref)
-                error_list += ['speed_dimm_%d' % dimm]
-                errors += 1
 
         # Log memory ids
         cmd = 'mosys memory spd print id'

@@ -23,6 +23,18 @@ TEST_PREFIX = 'ui.'
 
 # Following tests will be included in the generated test suite.
 TESTS = [{
+        'test': 'Tab Switch Basic Noproxy',
+        'tast_name': 'TabSwitchCUJ2.basic_noproxy',
+        'repeats': 3
+}, {
+        'test': 'Tab Switch Plus Noproxy',
+        'tast_name': 'TabSwitchCUJ2.plus_noproxy',
+        'repeats': 3
+}, {
+        'test': 'Tab Switch Premium Noproxy',
+        'tast_name': 'TabSwitchCUJ2.premium_noproxy',
+        'repeats': 3
+}, {
         'test': 'Google Meet Basic 2',
         'tast_name': 'GoogleMeetCUJ.basic_two',
         'repeats': 3
@@ -35,16 +47,12 @@ TESTS = [{
         'tast_name': 'GoogleMeetCUJ.basic_large',
         'repeats': 3
 }, {
-        'test': 'Google Meet Basic Large',
-        'tast_name': 'GoogleMeetCUJ.basic_large',
-        'repeats': 3
-}, {
         'test': 'Google Meet Basic Class',
         'tast_name': 'GoogleMeetCUJ.basic_class',
         'repeats': 3
 }, {
-        'test': 'Google Meet Plus Small',
-        'tast_name': 'GoogleMeetCUJ.plus_small',
+        'test': 'Google Meet Plus Large',
+        'tast_name': 'GoogleMeetCUJ.plus_large',
         'repeats': 3
 }, {
         'test': 'Google Meet Plus Class',

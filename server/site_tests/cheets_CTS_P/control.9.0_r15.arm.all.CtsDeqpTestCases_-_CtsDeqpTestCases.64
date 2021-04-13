@@ -20,7 +20,7 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
-        max_retry=30,
+        max_retry=15,
         tag='9.0_r15.arm.all.CtsDeqpTestCases_-_CtsDeqpTestCases.64',
         test_name='cheets_CTS_P.9.0_r15.arm.all.CtsDeqpTestCases_-_CtsDeqpTestCases.64',
         run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsDeqpTestCases', '--abi', 'arm64-v8a', '--dynamic-config-url='],

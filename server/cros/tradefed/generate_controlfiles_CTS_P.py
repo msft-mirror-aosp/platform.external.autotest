@@ -56,9 +56,9 @@ CONFIG['LAB_DEPENDENCY'] = {
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 1
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {
-        'CtsDeqpTestCases': 30,  # TODO(b/126787654, b/182397469)
-        'CtsGraphicsTestCases': 5,  # TODO(b/155056869)
-        'CtsSensorTestCases': 30,  # TODO(b/124528412)
+    'CtsDeqpTestCases':         15,  # TODO(b/126787654)
+    'CtsGraphicsTestCases':      5,  # TODO(b/155056869)
+    'CtsSensorTestCases':       30,  # TODO(b/124528412)
 }
 
 # Timeout in hours.
@@ -257,18 +257,18 @@ CONFIG['PUBLIC_DEPENDENCIES'] = {
 # This information is changed based on regular analysis of the failure rate on
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
-        'CtsAccessibilityServiceTestCases': 12,
-        'CtsActivityManagerDeviceTestCases': 12,
-        'CtsBluetoothTestCases': 10,
-        'CtsDeqpTestCases': 30,
-        'CtsFileSystemTestCases': 10,
-        'CtsGraphicsTestCases': 12,
-        'CtsIncidentHostTestCases': 12,
-        'CtsNetTestCases': 10,
-        'CtsSecurityHostTestCases': 10,
-        'CtsSensorTestCases': 12,
-        'CtsUsageStatsTestCases': 10,
-        _PUBLIC_COLLECT: 0,
+    'CtsAccessibilityServiceTestCases':  12,
+    'CtsActivityManagerDeviceTestCases': 12,
+    'CtsBluetoothTestCases':             10,
+    'CtsDeqpTestCases':                  15,
+    'CtsFileSystemTestCases':            10,
+    'CtsGraphicsTestCases':              12,
+    'CtsIncidentHostTestCases':          12,
+    'CtsNetTestCases':                   10,
+    'CtsSecurityHostTestCases':          10,
+    'CtsSensorTestCases':                12,
+    'CtsUsageStatsTestCases':            10,
+    _PUBLIC_COLLECT: 0,
 }
 
 CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {

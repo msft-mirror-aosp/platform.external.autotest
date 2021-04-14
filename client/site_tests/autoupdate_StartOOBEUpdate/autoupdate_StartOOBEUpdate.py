@@ -28,13 +28,32 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._clear_custom_lsb_release()
 
 
-    def _skip_to_oobe_update_screen(self):
-        """Skips to the OOBE update check screen."""
-        self._oobe.WaitForJavaScriptCondition("typeof Oobe == 'function' && "
-                                              "Oobe.readyForTesting",
-                                              timeout=30)
-        self._oobe.ExecuteJavaScript('Oobe.skipToUpdateForTesting()')
-
+    def _navigate_to_oobe_update_screen(self):
+        """Navigates to the OOBE update check screen."""
+        timeout = 30
+        self._oobe.WaitForJavaScriptCondition(
+                "typeof Oobe == 'function' && typeof OobeAPI == 'object' && "
+                "Oobe.readyForTesting",
+                timeout=timeout)
+        self._oobe.WaitForJavaScriptCondition(
+                "OobeAPI.screens.WelcomeScreen.isVisible()", timeout=timeout)
+        self._oobe.ExecuteJavaScript(
+                "OobeAPI.screens.WelcomeScreen.clickNext()")
+        self._oobe.WaitForJavaScriptCondition(
+                "OobeAPI.screens.NetworkScreen.isVisible()", timeout=timeout)
+        self._oobe.ExecuteJavaScript(
+                "OobeAPI.screens.NetworkScreen.clickNext()")
+        if not self._oobe.EvaluateJavaScript(
+                "OobeAPI.screens.EulaScreen.shouldSkip()"):
+            self._oobe.WaitForJavaScriptCondition(
+                    "OobeAPI.screens.EulaScreen.isVisible()", timeout=timeout)
+            self._oobe.WaitForJavaScriptCondition(
+                    "OobeAPI.screens.EulaScreen.nextButton.isEnabled()",
+                    timeout=timeout)
+            self._oobe.ExecuteJavaScript(
+                    "OobeAPI.screens.EulaScreen.clickNext()")
+        self._oobe.WaitForJavaScriptCondition(
+                "OobeAPI.screens.UpdateScreen.isVisible()", timeout=timeout)
 
     def _start_oobe_update(self, update_url, critical_update, full_payload):
         """
@@ -52,10 +71,11 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         extra_browser_args = []
         if lsbrelease_utils.get_device_type() != 'CHROMEBOOK':
             extra_browser_args.append('--disable-hid-detection-on-oobe')
+        extra_browser_args.append('--enable-oobe-test-api')
         self._chrome = chrome.Chrome(auto_login=False,
                                      extra_browser_args=extra_browser_args)
         self._oobe = self._chrome.browser.oobe
-        self._skip_to_oobe_update_screen()
+        self._navigate_to_oobe_update_screen()
 
         timeout = 180
         err_str = 'Update did not start within %d seconds.' % timeout

@@ -64,7 +64,8 @@ def run(machine):
             '/creds/service_accounts/skylab-drone.json cp %s /tmp/lacros.zip' %
             lacros_gcs_path)
         utils.system_output('unzip -o /tmp/lacros.zip -d /tmp/lacros')
-        host.send_file('/tmp/lacros', '/usr/local/', delete_dest=True)
+        host.run('mkdir -p /usr/local/lacros/')
+        host.send_file('/tmp/lacros/', '/usr/local/lacros/', delete_dest=True)
         varslist.append('lacrosDeployedBinary=/usr/local/lacros')
         # Clean the files downloaded to drone server.
         utils.system_output('rm -rf /tmp/lacros.zip /tmp/lacros')

@@ -365,23 +365,23 @@ class Suspender(object):
         phase_times = []
         regex = re.compile(r'PM: (\w+ )?(resume|suspend) of devices complete')
         for line in self._logs:
-          match = regex.search(line)
-          if match:
-            ts = cros_logging.extract_kernel_timestamp(line)
-            phase = match.group(1)
-            if not phase:
-              phase = 'REG'
-            phase_times.append((phase.upper(), ts))
+            match = regex.search(line)
+            if match:
+                ts = cros_logging.extract_kernel_timestamp(line)
+                phase = match.group(1)
+                if not phase:
+                    phase = 'REG'
+                phase_times.append((phase.upper(), ts))
         return sorted(phase_times, key = lambda entry: entry[1])
 
 
     def _get_phase(self, ts, phase_table, dev):
-      for entry in phase_table:
-        #checking if timestamp was before that phase's cutoff
-        if ts < entry[1]:
-          return entry[0]
-      raise error.TestError('Device %s has a timestamp after all devices %s',
-                            dev, 'had already resumed')
+        for entry in phase_table:
+            #checking if timestamp was before that phase's cutoff
+            if ts < entry[1]:
+                return entry[0]
+        raise error.TestError('Device %s has a timestamp after all devices %s',
+                              dev, 'had already resumed')
 
 
     def _individual_device_times(self, start_resume):
@@ -391,35 +391,35 @@ class Suspender(object):
         regex = re.compile(r'call ([^ ]+)\+ returned 0 after ([0-9]+) usecs')
         phase_table = self._get_phase_times()
         for line in self._logs:
-          match = regex.search(line)
-          if match:
-            device = match.group(1).replace(':', '-')
-            key = 'seconds_dev_' + device
-            secs = float(match.group(2)) / 1e6
-            ts = cros_logging.extract_kernel_timestamp(line)
-            if ts > start_resume:
-              key += '_resume'
-            else:
-              key += '_suspend'
-            #looking if we're in a special phase
-            phase = self._get_phase(ts, phase_table, device)
-            dev = dev_details[key]
-            if phase in dev:
-              logging.warning('Duplicate %s entry for device %s, +%f', phase,
-                              device, secs)
-              dev[phase] += secs
-            else:
-              dev[phase] = secs
+            match = regex.search(line)
+            if match:
+                device = match.group(1).replace(':', '-')
+                key = 'seconds_dev_' + device
+                secs = float(match.group(2)) / 1e6
+                ts = cros_logging.extract_kernel_timestamp(line)
+                if ts > start_resume:
+                    key += '_resume'
+                else:
+                    key += '_suspend'
+                #looking if we're in a special phase
+                phase = self._get_phase(ts, phase_table, device)
+                dev = dev_details[key]
+                if phase in dev:
+                    logging.warning('Duplicate %s entry for device %s, +%f',
+                                    phase, device, secs)
+                    dev[phase] += secs
+                else:
+                    dev[phase] = secs
 
         for dev_key, dev in dev_details.iteritems():
-          total_secs = sum(dev.values())
-          self.device_times[-1][dev_key] = total_secs
-          report = '%s: %f TOT' % (dev_key, total_secs)
-          for phase in dev.keys():
-            if phase is 'REG':
-              continue
-            report += ', %f %s' % (dev[phase], phase)
-          logging.debug(report)
+            total_secs = sum(dev.values())
+            self.device_times[-1][dev_key] = total_secs
+            report = '%s: %f TOT' % (dev_key, total_secs)
+            for phase in dev.keys():
+                if phase is 'REG':
+                    continue
+                report += ', %f %s' % (dev[phase], phase)
+            logging.debug(report)
 
 
     def _identify_driver(self, device):
@@ -536,8 +536,8 @@ class Suspender(object):
 
 
     def get_suspend_delay(self):
-            return self._SUSPEND_DELAY.get(self._get_board(),
-                                           self._DEFAULT_SUSPEND_DELAY)
+        return self._SUSPEND_DELAY.get(self._get_board(),
+                                       self._DEFAULT_SUSPEND_DELAY)
 
 
     def suspend(self, duration=10, ignore_kernel_warns=False,

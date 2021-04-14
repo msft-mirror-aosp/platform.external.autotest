@@ -203,8 +203,12 @@ class Suspender(object):
         """
         Returns timestamp of last matching line or None
         """
-        with open(filename) as f:
-            lines = f.readlines()
+        try:
+            with open(filename) as f:
+                lines = f.readlines()
+        except IOError:
+            logging.info('Cannot open %s to retrieve the latest ts.', filename)
+        else:
             for line in reversed(lines):
                 if re.search(pattern, line):
                     matches = re.search(self._POWERD_TS_RE, line)

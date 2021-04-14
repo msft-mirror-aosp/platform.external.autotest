@@ -48,14 +48,14 @@ class firmware_ECBootTime(FirmwareTest):
         # regular expression to say that EC is ready. For systems that
         # run out of ram there is a second boot where the PMIC is
         # asked to power cycle the EC to be 100% sure (I wish) that
-        # the code is clean. Looking for the "Inits done" generates a
-        # match after the first boot, and introduces a race between
-        # the EC booting the second time and the test sending the
-        # power_cmd.
+        # the code is clean. Looking for the "Inits done" or "VB Exit"
+        # generates a match after the first boot, and introduces a
+        # race between the EC booting the second time and the test
+        # sending the power_cmd.
         if self._doubleboot:
             ec_ready = ["(?ms)UART.*UART.*?\[([0-9.]+) "]
         else:
-            ec_ready = ["([0-9.]+) Inits done"]
+            ec_ready = ["([0-9.]+) (Inits done|VB Exit)"]
 
         if self.faft_config.ec_has_powerbtn_cmd:
             # powerbtn takes ms while hold_pwr_button_powero is seconds.

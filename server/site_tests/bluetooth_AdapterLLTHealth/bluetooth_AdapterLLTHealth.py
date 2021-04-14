@@ -54,8 +54,7 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         self.test_set_advertising_intervals(DEFAULT_MIN_ADV_INTERVAL,
                                             DEFAULT_MAX_ADV_INTERVAL)
         self.test_register_advertisement(advertisements_data.ADVERTISEMENTS[0],
-                                         1, DEFAULT_MIN_ADV_INTERVAL,
-                                         DEFAULT_MAX_ADV_INTERVAL)
+                                         1)
 
 
     def pair_and_test_central(self, peripheral):

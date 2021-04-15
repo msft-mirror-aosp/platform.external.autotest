@@ -360,31 +360,19 @@ class BiosServicer(object):
         """
         self._bios_handler.corrupt_mrc_cache()
 
-    def _modify_version(self, section, delta):
-        """Modify firmware version for the requested section, by adding delta.
-
-        The passed in delta, a positive or a negative number, is added to the
-        original firmware version.
-        """
-        original_version = self.get_version(section)
-        new_version = original_version + delta
-        flags = self._bios_handler.get_section_flags(section)
-        self._os_if.log('Setting firmware section %s version from %d to %d' %
-                        (section, original_version, new_version))
-        self._bios_handler.set_section_version(
-                section, new_version, flags, write_through=True)
-
-    def move_version_backward(self, section):
-        """Decrement firmware version for the requested section."""
-        self._modify_version(section, -1)
-
-    def move_version_forward(self, section):
-        """Increase firmware version for the requested section."""
-        self._modify_version(section, 1)
-
     def get_version(self, section):
         """Retrieve firmware version of a section."""
         return self._bios_handler.get_section_version(section)
+
+    def set_version(self, section, version):
+        """Set firmware version of a section."""
+        flags = self._bios_handler.get_section_flags(section)
+        self._os_if.log('Setting firmware section %s version to %d' %
+                        (section, version))
+        self._bios_handler.set_section_version(section,
+                                               version,
+                                               flags,
+                                               write_through=True)
 
     def get_datakey_version(self, section):
         """Return firmware data key version."""

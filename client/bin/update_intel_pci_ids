@@ -42,7 +42,8 @@ def map_gpu_name(mesa_name):
         'CML': 'cometlake',
         'WHL': 'whiskeylake',
         'TGL': 'tigerlake',
-        'JSL': 'jasperlake'
+        'JSL': 'jasperlake',
+        'ADL': 'alderlake'
     }
 
     for name in family_name_map:

@@ -912,13 +912,6 @@ class _BaseModeSwitcher(object):
         @param orig_boot_id: A string containing the original boot id.
         @raise ConnectionError: Failed to wait DUT offline.
         """
-        # When running against panther, we see that sometimes
-        # ping_wait_down() does not work correctly. There needs to
-        # be some investigation to the root cause.
-        # If we sleep for 120s before running get_boot_id(), it
-        # does succeed. But if we change this to ping_wait_down()
-        # there are implications on the wait time when running
-        # commands at the fw screens.
         if not self.client_host.ping_wait_down(timeout):
             if orig_boot_id and self.client_host.get_boot_id() != orig_boot_id:
                 logging.warn('Reboot done very quickly.')

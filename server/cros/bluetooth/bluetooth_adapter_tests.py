@@ -3211,7 +3211,7 @@ class BluetoothAdapterTests(test.test):
 
         # Verify new APIs were used
         new_apis_used = self.bluetooth_le_facade.btmon_find(
-                'MGMT Command: Add Ext Adv Params')
+                'Add Ext Adv Params')
 
         tx_power_correct = self._verify_adv_tx_power(advertisement_data)
 

@@ -5,6 +5,8 @@
 import json
 import logging
 import os
+import shutil
+import tempfile
 
 import dateutil.parser
 
@@ -53,10 +55,9 @@ class tast(test.test):
     version = 1
 
     # Maximum time to wait for various tast commands to complete, in seconds.
-    # Note that _LIST_TIMEOUT_SEC includes time to download private test bundles
-    # if run_private_tests=True.
     _VERSION_TIMEOUT_SEC = 10
-    _LIST_TIMEOUT_SEC = 60
+    _DOWNLOAD_TIMEOUT_SEC = 120
+    _LIST_TIMEOUT_SEC = 30
 
     # Additional time to add to the run timeout (e.g. for collecting crashes and
     # logs).
@@ -221,6 +222,8 @@ class tast(test.test):
         self._log_version()
         self._find_devservers()
 
+        self._ensure_bundles()
+
         # Shortcut if no test belongs to the specified test_exprs.
         if not self._get_tests_to_run():
             return
@@ -344,16 +347,23 @@ class tast(test.test):
         except error.CmdError as e:
             logging.error('Failed to log tast version: %s', str(e))
 
-    def _run_tast(self, subcommand, extra_subcommand_args, timeout_sec,
-                  log_stdout=False):
+    def _run_tast(self,
+                  subcommand,
+                  extra_subcommand_args,
+                  test_exprs,
+                  timeout_sec,
+                  log_stdout=False,
+                  ignore_status=False):
         """Runs the tast command locally to e.g. list available tests or perform
         testing against the DUT.
 
         @param subcommand: Subcommand to pass to the tast executable, e.g. 'run'
             or 'list'.
         @param extra_subcommand_args: List of additional subcommand arguments.
+        @param test_exprs: Array of strings describing tests to run.
         @param timeout_sec: Integer timeout for the command in seconds.
         @param log_stdout: If true, write stdout to log.
+        @param ignore_status: If true, command execution errors are ignored.
 
         @returns client.common_lib.utils.CmdResult object describing the result.
 
@@ -400,20 +410,20 @@ class tast(test.test):
         cmd.extend(self._devserver_args)
         cmd.extend(extra_subcommand_args)
         cmd.append('%s:%d' % (self._host.hostname, self._host.port))
-        cmd.extend(self._test_exprs)
+        cmd.extend(test_exprs)
 
         logging.info('Running %s',
                      ' '.join([utils.sh_quote_word(a) for a in cmd]))
         try:
-            return utils.run(cmd,
-                             ignore_status=False,
-                             timeout=timeout_sec,
-                             stdout_tee=(utils.TEE_TO_LOGS if log_stdout
-                                         else None),
-                             stderr_tee=utils.TEE_TO_LOGS,
-                             stderr_is_expected=True,
-                             stdout_level=logging.INFO,
-                             stderr_level=logging.ERROR)
+            return utils.run(
+                    cmd,
+                    ignore_status=ignore_status,
+                    timeout=timeout_sec,
+                    stdout_tee=(utils.TEE_TO_LOGS if log_stdout else None),
+                    stderr_tee=utils.TEE_TO_LOGS,
+                    stderr_is_expected=True,
+                    stdout_level=logging.INFO,
+                    stderr_level=logging.ERROR)
         except error.CmdError as e:
             # The tast command's output generally ends with a line describing
             # the error that was encountered; include it in the first line of
@@ -428,6 +438,37 @@ class tast(test.test):
         except error.CmdTimeoutError as e:
             raise error.TestFail('Got timeout while running tast: %s' % str(e))
 
+    def _ensure_bundles(self):
+        """Runs the tast command to ensure all test bundles are available.
+
+        If private test bundles are available, they are downloaded from cloud
+        storage and installed to the DUT. Otherwise it is no-nop.
+
+        Note that "tast list" also downloads private test bundles if they are
+        missing. Nevertheless we attempt to download them in advance because
+        "tast list" cannot emit detailed logs due to technical limitations and
+        often make it difficult to debug issues related to private test bundle
+        installation.
+        """
+        logging.info('Downloading private test bundles (if any)')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            args = ['-resultsdir=' + temp_dir] + self._get_cloud_storage_info()
+            for role, dut in sorted(self._companion_duts.items()):
+                args.append('-companiondut=%s:%s' % (role, dut))
+
+            # Start "tast run" with an attribute expression matching no test
+            # to trigger a private test bundle download.
+            # Note that Tast CLI will exit abnormally when no test matches,
+            # so we set ignore_status=True to avoid throwing TestFail.
+            self._run_tast('run',
+                           args, ['("group:none")'],
+                           tast._DOWNLOAD_TIMEOUT_SEC,
+                           log_stdout=True,
+                           ignore_status=True)
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
     def _get_tests_to_run(self):
         """Runs the tast command to update the list of tests that will be run.
 
@@ -437,7 +478,8 @@ class tast(test.test):
         """
         logging.info('Getting list of tests that will be run')
         args = ['-json=true'] + self._get_cloud_storage_info()
-        result = self._run_tast('list', args, self._LIST_TIMEOUT_SEC)
+        result = self._run_tast('list', args, self._test_exprs,
+                                self._LIST_TIMEOUT_SEC)
         try:
             self._tests_to_run = _encode_utf8_json(
                 json.loads(result.stdout.strip()))
@@ -474,7 +516,10 @@ class tast(test.test):
             args.append('-companiondut=%s:%s:%d' % (role, dut.hostname, dut.port))
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
-        self._run_tast('run', args, self._max_run_sec + tast._RUN_EXIT_SEC,
+        self._run_tast('run',
+                       args,
+                       self._test_exprs,
+                       self._max_run_sec + tast._RUN_EXIT_SEC,
                        log_stdout=True)
 
     def _read_run_error(self):

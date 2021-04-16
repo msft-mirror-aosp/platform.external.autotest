@@ -39,17 +39,21 @@ def main():
     if not cmd:
         raise RuntimeError('Unexpected command "%s"' % args.command)
 
-    for arg in cmd.get('required_args', []):
-        name, expected_value = arg.split('=', 1)
-        # argparse puts the repeated "pattern" args into a list of lists
-        # instead of a single list. Pull the args back out in this case.
-        val = getattr(args, name)
-        if isinstance(val, list) and len(val) == 1 and isinstance(val[0], list):
-            val = val[0]
-        actual_value = str(val)
-        if actual_value != expected_value:
-            raise RuntimeError('Got arg %s with value "%s"; want "%s"' %
-                               (name, actual_value, expected_value))
+    # If patterns is ("group:none"), this is a warm-up run, so skip checking
+    # arguments.
+    if args.patterns != [['("group:none")']]:
+        for arg in cmd.get('required_args', []):
+            name, expected_value = arg.split('=', 1)
+            # argparse puts the repeated "pattern" args into a list of lists
+            # instead of a single list. Pull the args back out in this case.
+            val = getattr(args, name)
+            if isinstance(val, list) and len(val) == 1 and isinstance(
+                    val[0], list):
+                val = val[0]
+            actual_value = str(val)
+            if actual_value != expected_value:
+                raise RuntimeError('Got arg %s with value "%s"; want "%s"' %
+                                   (name, actual_value, expected_value))
 
     if cmd.get('stdout'):
         sys.stdout.write(cmd['stdout'])

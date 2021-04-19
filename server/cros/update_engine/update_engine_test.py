@@ -786,8 +786,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                      err_msg))
 
 
-    def get_update_url_for_test(self, job_repo_url=None, full_payload=True,
-                                stateful=False):
+    def get_update_url_for_test(self,
+                                job_repo_url=None,
+                                full_payload=True,
+                                stateful=False,
+                                moblab=False,
+                                return_noupdate_starting=2):
         """
         Returns a devserver update URL for tests that cannot use a Nebraska
         instance on the DUT for updating.
@@ -797,10 +801,22 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param job_repo_url: string url containing the current build.
         @param full_payload: bool whether we want a full payload.
         @param stateful: bool whether we want to stage stateful payload too.
+        @param moblab: bool whether we are running on moblab.
+        @param return_noupdate_starting: (Number of times - 1) we want
+                                         FakeOmaha to return an update before
+                                         returning noupdate. 1 means never
+                                         return noupdate. 2 means return
+                                         noupdate after 1 update response.
 
         @returns a valid devserver update URL.
 
         """
+        if not moblab:
+            return self.get_update_url_from_fake_omaha(
+                    job_repo_url,
+                    full_payload=full_payload,
+                    return_noupdate_starting=return_noupdate_starting)
+
         self._job_repo_url = self._get_job_repo_url(job_repo_url)
         if not self._job_repo_url:
             raise error.TestFail('There was no job_repo_url so we cannot get '

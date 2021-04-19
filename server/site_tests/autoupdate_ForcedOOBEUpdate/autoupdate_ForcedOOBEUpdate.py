@@ -109,7 +109,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                  interrupt=None,
                  job_repo_url=None,
                  moblab=False,
-                 m2n=False):
+                 m2n=False,
+                 return_noupdate_starting=2):
         """
         Runs a forced autoupdate during ChromeOS OOBE.
 
@@ -124,6 +125,11 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param moblab: True if we are running on moblab.
         @param m2n: True if we should first provision the latest stable version
                     for the current board so that we can perform a M->N update.
+        @param return_noupdate_starting: (Number of times - 1) we want
+                                         FakeOmaha to return an update before
+                                         returning noupdate. 1 means never
+                                         return noupdate. 2 means return
+                                         noupdate after 1 update response.
 
         """
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
@@ -154,14 +160,11 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             payload_url = self.get_payload_url_on_public_bucket(
                 job_repo_url, full_payload=full_payload)
         else:
-            if moblab:
-                update_url = self.get_update_url_for_test(
-                        job_repo_url, full_payload=full_payload)
-            else:
-                update_url = self.get_update_url_from_fake_omaha(
-                        job_repo_url,
-                        full_payload=full_payload,
-                        return_noupdate_starting=2)
+            update_url = self.get_update_url_for_test(
+                    job_repo_url,
+                    full_payload=full_payload,
+                    moblab=moblab,
+                    return_noupdate_starting=return_noupdate_starting)
         before_version = self._host.get_release_version()
 
         # Clear any previously started updates.

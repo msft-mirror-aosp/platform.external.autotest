@@ -19,7 +19,11 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         super(autoupdate_Interruptions, self).cleanup()
 
 
-    def run_once(self, full_payload=True, interrupt=None, job_repo_url=None):
+    def run_once(self,
+                 full_payload=True,
+                 interrupt=None,
+                 job_repo_url=None,
+                 return_noupdate_starting=2):
         """
         Runs an update with interruptions from the user.
 
@@ -29,6 +33,11 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
                              out the current build and the devserver to use.
                              The test will read this from a host argument
                              when run in the lab.
+        @param return_noupdate_starting: (Number of times - 1) we want
+                                         FakeOmaha to return an update before
+                                         returning noupdate. 1 means never
+                                         return noupdate. 2 means return
+                                         noupdate after 1 update response.
 
         """
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
@@ -38,8 +47,10 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         self._remove_update_engine_pref(self._UPDATE_CHECK_RESPONSE_HASH)
         self._restart_update_engine(ignore_status=True)
 
-        update_url = self.get_update_url_for_test(job_repo_url,
-                                                  full_payload=full_payload)
+        update_url = self.get_update_url_for_test(
+                job_repo_url,
+                full_payload=full_payload,
+                return_noupdate_starting=return_noupdate_starting)
         chromeos_version = self._host.get_release_version()
         active, inactive = kernel_utils.get_kernel_state(self._host)
         # Choose a random downloaded progress to interrupt the update.

@@ -49,7 +49,7 @@ class _BaseUpdateServoFw(object):
         # TODO(otabek@) remove when lab will use labstation R92
         self._updater_accept_channel = False
 
-    def need_update(self, ignore_version=False, channel=DEFAULT_FW_CHANNEL):
+    def need_update(self, ignore_version=False, channel=None):
         """Verify that servo_update is required.
 
         @params ignore_version: Do not check the version on the device.
@@ -59,6 +59,9 @@ class _BaseUpdateServoFw(object):
 
         @returns: True if update required, False if not
         """
+        # Check if channel passed. If not then set stable as default.
+        if not channel:
+            channel = self.DEFAULT_FW_CHANNEL
         if not self._host:
             return False
         elif not self.get_serial_number():
@@ -71,10 +74,7 @@ class _BaseUpdateServoFw(object):
             return self._is_outdated_version(channel=channel)
         return True
 
-    def update(self,
-               force_update=False,
-               ignore_version=False,
-               channel=DEFAULT_FW_CHANNEL):
+    def update(self, force_update=False, ignore_version=False, channel=None):
         """Update firmware on the servo.
 
         Steps:
@@ -88,6 +88,9 @@ class _BaseUpdateServoFw(object):
                                 version R90. Possible values: stable, prev,
                                 dev, alpha.
         """
+        # Check if channel passed. If not then set stable as default.
+        if not channel:
+            channel = self.DEFAULT_FW_CHANNEL
         if not self.need_update(ignore_version, channel=channel):
             logging.info("The board %s doesn't need update.", self.get_board())
             return
@@ -135,7 +138,7 @@ class _BaseUpdateServoFw(object):
         # make code more complicated on this stage.
         # TODO(otabek@) use constants when lab will use labstation R92
         cmd = 'servo_updater -b %s -s "%s"' % (board, serial_number)
-        if self._updater_accept_channel and channel:
+        if self._updater_accept_channel:
             cmd += ' -c %s ' % channel.lower()
         # always reboot servo after updating the firmware
         cmd += ' --reboot '
@@ -180,7 +183,7 @@ class _BaseUpdateServoFw(object):
         # introduced new option 'print'.
         cmd = 'servo_updater --help | grep print'
         result = self._host.run(cmd, ignore_status=True)
-        if result.exit_status == 0 and channel:
+        if result.exit_status == 0:
             self._updater_accept_channel = True
             return self._latest_version_from_updater(channel)
         self._updater_accept_channel = False

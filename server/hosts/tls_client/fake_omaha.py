@@ -15,7 +15,7 @@ PAYLOAD_TYPE = {
         'TYPE_UNSPECIFIED':
         autotest_common_pb2.FakeOmaha.Payload.TYPE_UNSPECIFIED,
         'FULL': autotest_common_pb2.FakeOmaha.Payload.FULL,
-        'DETLA': autotest_common_pb2.FakeOmaha.Payload.DELTA
+        'DELTA': autotest_common_pb2.FakeOmaha.Payload.DELTA
 }
 
 
@@ -88,7 +88,7 @@ class TLSFakeOmaha():
             result = self.stub.CreateFakeOmaha(req)
             return result.omaha_url
         except Exception as e:
-            logging.error("TLS FakeOmaha Debug String: %s" %
+            logging.error("TLS FakeOmaha Debug String: %s",
                           e.debug_error_string())
             raise error.TestError(
                     "Could not start FakeOmaha Server because %s", e.details())

@@ -260,11 +260,6 @@ def define_tests():
             main_package = '',
         ),
         test_common.define_test(
-            'network/WiFi_ConnectionIdentifier',
-            suites = ['wifi_matfunc', 'wificell-cq'],
-            main_package = '',
-        ),
-        test_common.define_test(
             'network/WiFi_DarkResumeActiveScans',
             suites = ['wifi_lucidsleep'],
             main_package = '',

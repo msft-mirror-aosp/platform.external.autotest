@@ -52,6 +52,7 @@ suite:bvt-perbuild
 suite:bvt-tast-android-pfq
 suite:bvt-tast-chrome-pfq
 suite:bvt-tast-cq
+suite:bvt-tast-cq-a11y
 suite:bvt-tast-cq-ad
 suite:bvt-tast-cq-ambient
 suite:bvt-tast-cq-apps
@@ -73,6 +74,7 @@ suite:bvt-tast-cq-documentscanapi
 suite:bvt-tast-cq-enterprise
 suite:bvt-tast-cq-example
 suite:bvt-tast-cq-factory
+suite:bvt-tast-cq-familylink
 suite:bvt-tast-cq-feedback
 suite:bvt-tast-cq-filemanager
 suite:bvt-tast-cq-firmware
@@ -87,6 +89,7 @@ suite:bvt-tast-cq-lacros
 suite:bvt-tast-cq-launcher
 suite:bvt-tast-cq-logs
 suite:bvt-tast-cq-meta
+suite:bvt-tast-cq-mlservice
 suite:bvt-tast-cq-multivm
 suite:bvt-tast-cq-nacl
 suite:bvt-tast-cq-nearbyshare
@@ -102,16 +105,18 @@ suite:bvt-tast-cq-qemu
 suite:bvt-tast-cq-scanapp
 suite:bvt-tast-cq-scanner
 suite:bvt-tast-cq-sched
+suite:bvt-tast-cq-screenshot
 suite:bvt-tast-cq-security
 suite:bvt-tast-cq-session
 suite:bvt-tast-cq-shelf
 suite:bvt-tast-cq-storage
+suite:bvt-tast-cq-typec
 suite:bvt-tast-cq-u2fd
 suite:bvt-tast-cq-ui
-suite:bvt-tast-cq-unicorn
 suite:bvt-tast-cq-video
 suite:bvt-tast-cq-vm
 suite:bvt-tast-cq-webrtc
+suite:bvt-tast-cq-wifi
 suite:bvt-tast-cq-wilco
 suite:bvt-tast-informational
 suite:bvt-tast-parallels-cq

@@ -5,24 +5,24 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.category-unicorn'
+NAME = 'tast.category-screenshot'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-unicorn'
+ATTRIBUTES = 'suite:bvt-tast-cq-screenshot'
 MAX_RESULT_SIZE_KB = 256 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
 DOC = '''
-Run the critical Tast tests in the "unicorn" category.
+Run the critical Tast tests in the "screenshot" category.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
 
-This test runs Tast tests in the "unicorn" category that are required to pass
+This test runs Tast tests in the "screenshot" category that are required to pass
 against a remote DUT. It fails if any individual Tast tests fail.
 
 See http://go/tast-failures for information about investigating failures.
@@ -38,7 +38,7 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              '!informational && '
-                             '"name:unicorn.*"'
+                             '"name:screenshot.*"'
                              ')'],
                  ignore_test_failures=False, max_run_sec=1800,
                  command_args=args,

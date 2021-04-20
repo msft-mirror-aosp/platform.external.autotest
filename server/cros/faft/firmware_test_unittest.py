@@ -156,6 +156,7 @@ class Test_stage_build_to_usbkey(unittest.TestCase):
 
         def __init__(self):
             self._client = mock.MagicMock()
+            self.faft_client = mock.MagicMock()
 
     def setUp(self):
         self.test = self.MockFirmwareTest()
@@ -196,7 +197,8 @@ class Test_stage_build_to_usbkey(unittest.TestCase):
             "another_build")
         self.test.assert_test_image_in_usb_disk = mock.MagicMock()
         self.test.set_servo_v4_role_to_snk = mock.MagicMock()
-        self.test.setup_usbkey(usbkey=True)
+        with mock.patch('time.sleep'):
+            self.test.setup_usbkey(usbkey=True)
         self.test._client.stage_build_to_usb.assert_called_with(
                 "placeholder_build")
         self.test.assert_test_image_in_usb_disk.assert_called()

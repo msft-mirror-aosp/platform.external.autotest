@@ -88,6 +88,10 @@ class FirmwareTest(test.test):
     # Delay for establishing state after changing PD settings
     PD_RESYNC_DELAY = 2
 
+    # Delay to wait for servo USB to work after power role swap:
+    # tPSSourceOff (920ms) + tPSSourceOn (480ms) + buffer
+    POWER_ROLE_SWAP_DELAY = 2
+
     # The default number of power state check retries (each try takes 3 secs)
     DEFAULT_PWR_RETRIES = 5
 
@@ -717,6 +721,12 @@ class FirmwareTest(test.test):
             # TODO(waihong): Add a check to see if the battery level is too
             # low and sleep for a while for charging.
             self.set_servo_v4_role_to_snk()
+
+            # Force reconnection; otherwise, the next RPC call will timeout
+            logging.info('Waiting for reconnection after power role swap...')
+            time.sleep(self.POWER_ROLE_SWAP_DELAY)
+            self.faft_client.disconnect()
+            self.faft_client.connect()
 
     def set_servo_v4_role_to_snk(self, pd_comm=False):
         """Set the servo v4 role to SNK.

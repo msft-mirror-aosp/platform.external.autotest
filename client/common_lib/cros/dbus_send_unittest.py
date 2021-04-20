@@ -87,10 +87,6 @@ EXAMPLE_SHILL_GET_PROPERTIES_OUTPUT = (
          variant             string "gateway.2wire.net"
       )
       dict entry(
-         string "LinkMonitorTechnologies"
-         variant             string "wifi"
-      )
-      dict entry(
          string "NoAutoConnectTechnologies"
          variant             string ""
       )
@@ -167,7 +163,6 @@ PARSED_SHILL_GET_PROPERTIES_OUTPUT = {
     'EnabledTechnologies': ['ethernet'],
     'HostName': '',
     'IgnoredDNSSearchPaths': 'gateway.2wire.net',
-    'LinkMonitorTechnologies': 'wifi',
     'NoAutoConnectTechnologies': '',
     'OfflineMode': False,
     'PortalCheckInterval': 30,

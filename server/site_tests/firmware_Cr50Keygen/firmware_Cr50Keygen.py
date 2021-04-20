@@ -46,7 +46,7 @@ class firmware_Cr50Keygen(FirmwareTest):
         @param enable: True to enable ccd. False to disable it.
         @raises TestError if the DUT isn't pingable after changing ccd.
         """
-        if not self.cr50:
+        if not hasattr(self, 'cr50') or not self.cr50:
             return
 
         if enable:

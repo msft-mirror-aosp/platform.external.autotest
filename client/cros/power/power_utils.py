@@ -481,8 +481,8 @@ class KbdBacklight(object):
             raise KbdBacklightException('Keyboard backlight support' +
                                         'is not enabled')
         try:
-            cmd = \
-                "backlight_tool --keyboard --get_initial_brightness 2>/dev/null"
+            cmd = ("backlight_tool --keyboard --get_initial_brightness "
+                   "--lux=0 2>/dev/null")
             self._default_backlight_level = int(
                 utils.system_output(cmd).rstrip())
             logging.info("Default keyboard backlight brightness level = %d",

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.appcompat'
+NAME = 'tast.appcompat-shard-0'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:appcompat'
@@ -28,7 +28,9 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['("group:appcompat")'],
-                 ignore_test_failures=True, max_run_sec=10800,
+                 ignore_test_failures=True, max_run_sec=16200, 
+                 totalshards=3,
+                 shardindex=0,
                  command_args=args)
 
 parallel_simple(run, machines)

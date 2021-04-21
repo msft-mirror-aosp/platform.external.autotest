@@ -238,10 +238,10 @@ class ServoHost(base_servohost.BaseServoHost):
     def connect_servo(self):
         """ Initialize and setup servo for later use.
         """
-        self.initilize_servo()
+        self.initialize_servo()
         self.initialize_dut_for_servo()
 
-    def initilize_servo(self):
+    def initialize_servo(self):
         """Establish a connection to the servod server on this host.
 
         Initializes `self._servo` and then verifies that all network
@@ -1615,7 +1615,7 @@ def create_servo_host(dut,
             # servod is running.
             pass
         try:
-            newhost.initilize_servo()
+            newhost.initialize_servo()
             newhost.initialize_dut_for_servo()
             newhost._servo_state = servo_constants.SERVO_STATE_WORKING
             return newhost, newhost.get_servo_state()

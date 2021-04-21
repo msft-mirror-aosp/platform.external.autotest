@@ -409,7 +409,7 @@ class _ServodConnectionVerifier(hosts.Verifier):
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
-        host.initilize_servo()
+        host.initialize_servo()
 
     @property
     def description(self):

@@ -2,11 +2,12 @@
 import glob
 import logging
 import os
+import re
 import sys
 
 PY_GLOBS = {
-        3: ['/usr/bin/python3', '/usr/local/bin/python3'],
-        2: ['/usr/bin/python2', '/usr/local/bin/python2']
+        3: ['/usr/bin/python3*', '/usr/local/bin/python3*'],
+        2: ['/usr/bin/python2*', '/usr/local/bin/python2*']
 }
 
 
@@ -39,14 +40,42 @@ class check_python_version:
             except ImportError:
                 self.restart()
 
+    def extract_version(self, path):
+        """Return a matching python version to the provided path."""
+        match = re.search(r'/python(\d+)\.(\d+)$', path)
+        if match:
+            return (int(match.group(1)), int(match.group(2)))
+        else:
+            return None
+
     def find_desired_python(self):
         """Returns the path of the desired python interpreter."""
-        # CrOS only ever has Python 2.7 available, so pick whatever matches.
-        pyv_strings = PY_GLOBS[self.desired_version]
         pythons = []
-        for glob_str in pyv_strings:
+        for glob_str in PY_GLOBS[self.desired_version]:
             pythons.extend(glob.glob(glob_str))
-        return pythons[0]
+
+        possible_versions = []
+        for python in pythons:
+            version = self.extract_version(python)
+            if not version:
+                continue
+            # Autotest in Python2 is written to 2.4 and above.
+            if self.desired_version == 2:
+                if version < (2, 4):
+                    continue
+            if self.desired_version == 3:
+                # Autotest in Python3 is written to 3.6 and above.
+                if version < (3, 6):
+                    continue
+            possible_versions.append((version, python))
+
+        possible_versions.sort()
+
+        if not possible_versions:
+            raise ValueError('Python %s.x not found' % self.desired_version)
+
+        # Return the lowest compatible major version possible
+        return possible_versions[0][1]
 
     def restart(self):
         python = self.find_desired_python()

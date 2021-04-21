@@ -97,6 +97,7 @@ class platform_BootPerf(test.test):
 
     _UPTIME_PREFIX = 'uptime-'
     _DISK_PREFIX = 'disk-'
+    _FW_TIMESTAMPS = 'cbmem-timestamps'
 
 
     _BOOTSTAT_ARCHIVE_GLOB = '/var/log/metrics/shutdown.[0-9]*'
@@ -124,6 +125,12 @@ class platform_BootPerf(test.test):
                 break
             except Exception:
                 pass
+
+    def _store_fw_timestamps(self):
+        """Store detailed firmware timestamps for debugging."""
+        with open(os.path.join(self.resultsdir, self._FW_TIMESTAMPS),
+                  'w') as f:
+            utils.run('cbmem -t', stdout_tee=f)
 
     def _parse_bootstat(self, filename, fieldnum, required=False):
         """Read values from a bootstat event file.
@@ -444,6 +451,7 @@ class platform_BootPerf(test.test):
 
         self._copy_timestamp_files()
         self._copy_console_ramoops()
+        self._store_fw_timestamps()
 
         self.write_perf_keyval(results)
 

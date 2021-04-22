@@ -111,6 +111,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'CtsMediaTestCases',
         'CtsMediaTestCasesz',
         'CtsJvmti',
+        'CtsProvider',  # TODO(b/184680306): Remove once the USB stick issue is resolved.
         'CtsSecurityHostTestCases',  # TODO(ihf): remove when passing cleanly.
         'CtsSecurityHostTestCasesz',
         'CtsSensorTestCases',  # TODO(ihf): Remove when not needing 30 retries.

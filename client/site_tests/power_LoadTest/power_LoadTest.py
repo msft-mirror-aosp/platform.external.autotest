@@ -21,7 +21,6 @@ from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 from autotest_lib.client.cros import backchannel
-from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros import memory_bandwidth_logger
 from autotest_lib.client.cros import service_stopper
@@ -32,6 +31,7 @@ from autotest_lib.client.cros.networking import wifi_proxy
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
+from autotest_lib.client.cros.power import force_discharge_utils
 from telemetry.core import exceptions
 
 params_dict = {
@@ -57,7 +57,7 @@ class power_LoadTest(arc.ArcTest):
                  wifi_pw='', wifi_timeout=60, use_cellular_network=False,
                  tasks='', volume_level=10, mic_gain=10, low_batt_margin_p=2,
                  ac_ok=False, log_mem_bandwidth=False, gaia_login=None,
-                 force_discharge=False, pdash_note=''):
+                 force_discharge='false', pdash_note=''):
         """
         percent_initial_charge_min: min battery charge at start of test
         check_network: check that Ethernet interface is not running
@@ -84,8 +84,12 @@ class power_LoadTest(arc.ArcTest):
         log_mem_bandwidth: boolean to log memory bandwidth during the test
         gaia_login: whether real GAIA login should be attempted.  If 'None'
             (default) then boolean is determined from URL.
-        force_discharge: boolean of whether to tell ec to discharge battery even
-            when the charger is plugged in.
+        force_discharge: string of whether to tell ec to discharge battery even
+            when the charger is plugged in. 'false' means no forcing discharge;
+            'true' means forcing discharge and raising an error when it fails;
+            'optional' means forcing discharge when possible but not raising an
+            error when it fails, which is more friendly to devices without a
+            battery.
         pdash_note: note of the current run to send to power dashboard.
         """
         self._backlight = None
@@ -118,20 +122,13 @@ class power_LoadTest(arc.ArcTest):
         self._log_mem_bandwidth = log_mem_bandwidth
         self._wait_time = 60
         self._stats = collections.defaultdict(list)
-        self._force_discharge = force_discharge
         self._pdash_note = pdash_note
 
         self._power_status = power_status.get_status()
 
-        if force_discharge:
-            if not self._power_status.battery:
-                raise error.TestNAError('DUT does not have battery. '
-                                        'Could not force discharge.')
-            if not ec.has_cros_ec():
-                raise error.TestNAError('DUT does not have CrOS EC. '
-                                        'Could not force discharge.')
-            if not power_utils.charge_control_by_ectool(False):
-                raise error.TestError('Could not run battery force discharge.')
+        self._force_discharge_success = force_discharge_utils.process(
+                force_discharge, self._power_status.battery)
+        if self._force_discharge_success:
             self._ac_ok = True
 
         if not self._power_status.battery:
@@ -142,8 +139,8 @@ class power_LoadTest(arc.ArcTest):
                 rsp = "Skipping test for device without battery and powercap."
                 raise error.TestNAError(rsp)
 
-        self._tmp_keyvals['b_on_ac'] = (not force_discharge and
-                                        self._power_status.on_ac())
+        self._tmp_keyvals['b_on_ac'] = (not self._force_discharge_success
+                                        and self._power_status.on_ac())
 
         self._gaia_login = gaia_login
         if gaia_login is None:
@@ -585,8 +582,7 @@ class power_LoadTest(arc.ArcTest):
 
 
     def cleanup(self):
-        if self._force_discharge:
-            power_utils.charge_control_by_ectool(True)
+        force_discharge_utils.restore(self._force_discharge_success)
         if self._backlight:
             self._backlight.restore()
         if self._services:

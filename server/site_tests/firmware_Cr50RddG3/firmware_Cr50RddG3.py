@@ -17,6 +17,16 @@ class firmware_Cr50RddG3(Cr50Test):
     # Cr50 debounces disconnects. We need to wait before checking Rdd state
     RDD_DEBOUNCE = 3
 
+    def initialize(self, host, cmdline_args, full_args):
+        """Initialize the test"""
+        super(firmware_Cr50RddG3, self).initialize(host, cmdline_args,
+                                                   full_args)
+
+        # TODO(b/186535695): EC hibernate puts cr50 into reset, so the test
+        # can't verify cr50 behavior while the EC is hibernate.
+        if 'c2d2' in self.servo.get_servo_type():
+            raise error.TestNAError('Cannot run test with c2d2')
+
     def rdd_is_connected(self):
         """Return True if Cr50 detects Rdd."""
         time.sleep(2)

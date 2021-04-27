@@ -79,19 +79,26 @@ _HTML_CHART_STR = '''
 </html>
 '''
 
-_HTML_LINK_STR = '''
-<!DOCTYPE html>
-<html>
-<body>
+_HWID_LINK_STR = '''
+<a href="http://goto.google.com/pdash-hwid?query={hwid}">
+  Link to hwid lookup.
+</a><br />
+'''
+
+_PDASH_LINK_STR = '''
 <a href="http://chrome-power.appspot.com/dashboard?board={board}&test={test}&datetime={datetime}">
   Link to power dashboard.
 </a><br />
-<a href="http://goto.google.com/pdash-hwid?query={hwid}">
-  Link to hwid lookup.
-</a>
-</body>
-</html>
 '''
+
+_TDASH_LINK_STR = '''
+<a href="http://chrome-power.appspot.com/thermal_dashboard?note={note}">
+  Link to thermal dashboard.
+</a><br />
+'''
+
+# Global variable to avoid duplicate dashboard link in BaseDashboard._save_html
+generated_dashboard_link = False
 
 
 class BaseDashboard(object):
@@ -169,6 +176,34 @@ class BaseDashboard(object):
         with file(filename, 'a') as f:
             f.write(json_str)
 
+    def _generate_dashboard_link(self, powerlog_dict):
+        """Generate link to power and thermal dashboard"""
+        # Use global variable to generate this only once.
+        global generated_dashboard_link
+        if generated_dashboard_link:
+            return ''
+        generated_dashboard_link = True
+
+        board = powerlog_dict['dut']['board']
+        test = powerlog_dict['test']
+        datetime = time.strftime('%Y%m%d%H%M',
+                                 time.gmtime(powerlog_dict['timestamp']))
+        hwid = powerlog_dict['dut']['sku']['hwid']
+        note = powerlog_dict['dut']['note']
+
+        html_str = '<!DOCTYPE html><html><body>'
+        html_str += _HWID_LINK_STR.format(hwid=hwid)
+        html_str += _PDASH_LINK_STR.format(board=board,
+                                           test=test,
+                                           datetime=datetime)
+
+        if note.startswith('ThermalQual.full'):
+            html_str += _TDASH_LINK_STR.format(note=note)
+
+        html_str += '</body></html>'
+
+        return html_str
+
     def _save_html(self, powerlog_dict, resultsdir, filename='power_log.html'):
         """Convert powerlog dict to chart in HTML page and append to
         <resultsdir>/<filename>.
@@ -181,17 +216,7 @@ class BaseDashboard(object):
             resultsdir: directory to save HTML page
             filename: filename to append to
         """
-        # Generate link to power dashboard,
-        board = powerlog_dict['dut']['board']
-        test = powerlog_dict['test']
-        datetime = time.strftime('%Y%m%d%H%M',
-                                 time.gmtime(powerlog_dict['timestamp']))
-        hwid = powerlog_dict['dut']['sku']['hwid']
-
-        html_str = _HTML_LINK_STR.format(board=board,
-                                         test=test,
-                                         datetime=datetime,
-                                         hwid=hwid)
+        html_str = self._generate_dashboard_link(powerlog_dict)
 
         # Create dict from type to sorted list of rail names.
         rail_type = collections.defaultdict(list)

@@ -35,12 +35,16 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
 
+        # c2d2 uses cr50 for ec reset. The setting doesn't survive deep sleep.
+        # This test needs ec reset to survive deep sleep to keep the AP off.
+        if 'c2d2' in self.servo.get_servo_type():
+            raise error.TestNAError('Cannot rely on ecrst with c2d2')
+
         # TODO(mruthven): replace with dependency on servo v4 with servo micro
         # and type c cable.
         if ('servo_v4' not in self.servo.get_servo_type()
                     or not self.servo.main_device_is_flex()):
-            raise error.TestNAError('Must use servo v4 with flex(c2d2 or '
-                                    'servo_micro)')
+            raise error.TestNAError('Must use servo v4 with servo_micro')
 
         if not self.cr50.servo_dts_mode_is_valid():
             raise error.TestNAError('Plug in servo v4 type c cable into ccd '

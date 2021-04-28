@@ -86,18 +86,53 @@ class firmware_ECUsbPorts(FirmwareTest):
                 ['([01])[^\n\r]*\s%s' % gpio_name])[0]
         return val == '1'
 
-    def get_port_count(self):
-        """Get the number of USB ports."""
+    def probe_port_count(self):
+        """Probe the EC's gpio pins to determine the number of USB-A ports"""
         for cnt in xrange(10):
             try:
                 self.__check_usb_enabled(cnt)
             except error.TestFail:
-                logging.info("Found %d USB ports", cnt)
+                # Enforce that zero ports are specified explicitly. Without
+                # this, the TEST_NA result tends to get ignored until final
+                # FSI signoff, at which point it becomes an emergency when
+                # someone notices this device does indeed have USB-A ports.
+                if cnt == 0:
+                    raise error.TestFail(
+                            "No USB A ports could be found. If this device has "
+                            "no USB-A ports, specify usb_a_port_count: 0 in your "
+                            "fw-testing-configs")
+
+                logging.info("Found %d USB ports via probe", cnt)
                 return cnt
         # Limit reached. Probably something went wrong.
         raise error.TestFail("Unexpected error while trying to determine " +
                              "number of USB ports")
 
+    def get_port_count(self):
+        """Get the number of USB ports."""
+
+        # Prefer an explicit count.
+        count = self.faft_config.usb_a_port_count
+        if count is not None:
+            logging.info("%d USB ports specified via config", count)
+            # Allow -1 as an escape hatch back to dynamic probing for
+            # devices whose USB-A port counts may vary by SKU.
+            if count == -1:
+                try:
+                    count = self.probe_port_count()
+                except error.TestFail:
+                    count = 0
+
+            return count
+
+        # Next use the custom enable as a proxy, if it's non-zero.
+        if self.faft_config.custom_usb_enable_pins:
+            count = len(self.faft_config.custom_usb_enable_pins)
+            logging.info("%d USB ports counted by pins", count)
+            return count
+
+        # Finally, fall back to probing if unspecified.
+        return self.probe_port_count()
 
     def check_power_off_mode(self):
         """Shutdown the system and check USB ports are disabled."""

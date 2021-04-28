@@ -92,6 +92,19 @@ class NetperfResult(object):
 
             result = NetperfResult(test_type, duration_seconds,
                                    transaction_rate=float(lines[0].split()[5]))
+        elif test_type in NetperfConfig.BIDIRECTIONAL_TESTS:
+            """Parses the following which works for both bidirectional (TCP and UDP)
+            tests and returns the sum of the two throughputs.
+            46.92
+            58.35
+            """
+            if len(lines) < 2:
+                return None
+
+            result = NetperfResult(test_type,
+                                   duration_seconds,
+                                   throughput=float(lines[0]) +
+                                   float(lines[1]))
         else:
             raise error.TestFail('Invalid netperf test type: %r.' % test_type)
 
@@ -357,6 +370,8 @@ class NetperfConfig(object):
     # server to the DUT by running the netperf server on the DUT and the
     # client on the server and then doing a UDP_STREAM test.
     TEST_TYPE_UDP_MAERTS = 'UDP_MAERTS'
+    TEST_TYPE_TCP_BIDIRECTIONAL = 'TCP'
+    TEST_TYPE_UDP_BIDIRECTIONAL = 'UDP'
     # Different kinds of tests have different output formats.
     REQUEST_RESPONSE_TESTS = [ TEST_TYPE_TCP_CRR,
                                TEST_TYPE_TCP_RR,
@@ -366,24 +381,35 @@ class NetperfConfig(object):
                          TEST_TYPE_TCP_STREAM ]
     UDP_STREAM_TESTS = [ TEST_TYPE_UDP_STREAM,
                          TEST_TYPE_UDP_MAERTS ]
+    BIDIRECTIONAL_TESTS = [
+            TEST_TYPE_TCP_BIDIRECTIONAL, TEST_TYPE_UDP_BIDIRECTIONAL
+    ]
 
-    SHORT_TAGS = { TEST_TYPE_TCP_CRR: 'tcp_crr',
-                   TEST_TYPE_TCP_MAERTS: 'tcp_rx',
-                   TEST_TYPE_TCP_RR: 'tcp_rr',
-                   TEST_TYPE_TCP_SENDFILE: 'tcp_stx',
-                   TEST_TYPE_TCP_STREAM: 'tcp_tx',
-                   TEST_TYPE_UDP_RR: 'udp_rr',
-                   TEST_TYPE_UDP_STREAM: 'udp_tx',
-                   TEST_TYPE_UDP_MAERTS: 'udp_rx' }
+    SHORT_TAGS = {
+            TEST_TYPE_TCP_CRR: 'tcp_crr',
+            TEST_TYPE_TCP_MAERTS: 'tcp_rx',
+            TEST_TYPE_TCP_RR: 'tcp_rr',
+            TEST_TYPE_TCP_SENDFILE: 'tcp_stx',
+            TEST_TYPE_TCP_STREAM: 'tcp_tx',
+            TEST_TYPE_UDP_RR: 'udp_rr',
+            TEST_TYPE_UDP_STREAM: 'udp_tx',
+            TEST_TYPE_UDP_MAERTS: 'udp_rx',
+            TEST_TYPE_TCP_BIDIRECTIONAL: 'tcp_tx_rx',
+            TEST_TYPE_UDP_BIDIRECTIONAL: 'udp_tx_rx'
+    }
 
-    READABLE_TAGS = { TEST_TYPE_TCP_CRR: 'tcp_connect_roundtrip_rate',
-                      TEST_TYPE_TCP_MAERTS: 'tcp_downstream',
-                      TEST_TYPE_TCP_RR: 'tcp_roundtrip_rate',
-                      TEST_TYPE_TCP_SENDFILE: 'tcp_upstream_sendfile',
-                      TEST_TYPE_TCP_STREAM: 'tcp_upstream',
-                      TEST_TYPE_UDP_RR: 'udp_roundtrip',
-                      TEST_TYPE_UDP_STREAM: 'udp_upstream',
-                      TEST_TYPE_UDP_MAERTS: 'udp_downstream' }
+    READABLE_TAGS = {
+            TEST_TYPE_TCP_CRR: 'tcp_connect_roundtrip_rate',
+            TEST_TYPE_TCP_MAERTS: 'tcp_downstream',
+            TEST_TYPE_TCP_RR: 'tcp_roundtrip_rate',
+            TEST_TYPE_TCP_SENDFILE: 'tcp_upstream_sendfile',
+            TEST_TYPE_TCP_STREAM: 'tcp_upstream',
+            TEST_TYPE_UDP_RR: 'udp_roundtrip',
+            TEST_TYPE_UDP_STREAM: 'udp_upstream',
+            TEST_TYPE_UDP_MAERTS: 'udp_downstream',
+            TEST_TYPE_TCP_BIDIRECTIONAL: 'tcp_upstream_downstream',
+            TEST_TYPE_UDP_BIDIRECTIONAL: 'udp_upstream_downstream'
+    }
 
 
     @staticmethod
@@ -393,9 +419,10 @@ class NetperfConfig(object):
         @param test_type string test type.
 
         """
-        if (test_type not in NetperfConfig.REQUEST_RESPONSE_TESTS and
-            test_type not in NetperfConfig.TCP_STREAM_TESTS and
-            test_type not in NetperfConfig.UDP_STREAM_TESTS):
+        if (test_type not in NetperfConfig.REQUEST_RESPONSE_TESTS
+                    and test_type not in NetperfConfig.TCP_STREAM_TESTS
+                    and test_type not in NetperfConfig.UDP_STREAM_TESTS
+                    and test_type not in NetperfConfig.BIDIRECTIONAL_TESTS):
             raise error.TestFail('Invalid netperf test type: %r.' % test_type)
 
 
@@ -563,19 +590,24 @@ class NetperfRunner(object):
         @return NetperfResult summarizing a netperf run.
 
         """
-        netperf = '%s -H %s -p %s -t %s -l %d -- -P 0,%d' % (
-                self._command_netperf,
-                self._target_ip,
-                self.NETPERF_PORT,
-                self._config.netperf_test_type,
-                self._config.test_time,
-                self.NETPERF_DATA_PORT)
+        if self._config.netperf_test_type in NetperfConfig.BIDIRECTIONAL_TESTS:
+            netperf = 'for i in 1; do %s -H %s -t omni -T %s -l %d -P 0 -- -d stream -s 256K -S 256K -o throughput & %s -H %s -t omni -T %s -l %d -P 0 -- -d maerts -s 256K -S 256K -o throughput; done' % (
+                    self._command_netperf, self._target_ip,
+                    self._config.netperf_test_type, self._config.test_time,
+                    self._command_netperf, self._target_ip,
+                    self._config.netperf_test_type, self._config.test_time)
+        else:
+            netperf = '%s -H %s -p %s -t %s -l %d -- -P 0,%d' % (
+                    self._command_netperf, self._target_ip, self.NETPERF_PORT,
+                    self._config.netperf_test_type, self._config.test_time,
+                    self.NETPERF_DATA_PORT)
         logging.debug('Running netperf client.')
         logging.info('Running netperf for %d seconds.', self._config.test_time)
         timeout = self._config.test_time + self.NETPERF_COMMAND_TIMEOUT_MARGIN
         for _ in range(retry_count):
             start_time = time.time()
-            result = self._client_host.run(netperf, ignore_status=True,
+            result = self._client_host.run(netperf,
+                                           ignore_status=True,
                                            ignore_timeout=ignore_failures,
                                            timeout=timeout)
             if not result:

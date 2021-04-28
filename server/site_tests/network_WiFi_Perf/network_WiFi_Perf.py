@@ -33,6 +33,10 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                     netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM),
             netperf_runner.NetperfConfig(
                     netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS),
+            netperf_runner.NetperfConfig(
+                    netperf_runner.NetperfConfig.TEST_TYPE_TCP_BIDIRECTIONAL),
+            netperf_runner.NetperfConfig(
+                    netperf_runner.NetperfConfig.TEST_TYPE_UDP_BIDIRECTIONAL),
     ]
 
     def parse_additional_arguments(self, commandline_args, additional_params):

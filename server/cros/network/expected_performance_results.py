@@ -28,6 +28,40 @@ In the meantime, the expected throughput values depend on the following paramete
 """
 
 Expected_Throughput_WiFi = {
+        netperf_runner.NetperfConfig.TEST_TYPE_TCP_BIDIRECTIONAL: {
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                        (0, 0),
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                        (0, 0)
+                },
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: (0, 0)
+                },
+                hostap_config.HostapConfig.MODE_11AC_PURE: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                        (0, 0),
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: (0, 0)
+                }
+        },
+        netperf_runner.NetperfConfig.TEST_TYPE_UDP_BIDIRECTIONAL: {
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                        (0, 0),
+                        hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                        (0, 0)
+                },
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: (0, 0)
+                },
+                hostap_config.HostapConfig.MODE_11AC_PURE: {
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                        (0, 0),
+                        hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: (0, 0)
+                }
+        },
         netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:

@@ -73,7 +73,7 @@ def fetech_target_commit():
 
 def checkout_commit(commit):
     """ Checkout the autotest directory to the specified commit."""
-    output = utils.run('git checkout {}'.format(commit))
+    output = utils.run('git checkout {}'.format(commit), ignore_status=True)
     if output.exit_status != 0:
         logging.info(output.stderr)
         logging.info('Failed to checkout target commit, please retry '

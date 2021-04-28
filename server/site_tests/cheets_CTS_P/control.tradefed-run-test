@@ -97,6 +97,7 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
+        enable_default_apps=True,
         max_retry=cts_retry,
         needs_push_media=True,
         tag=tag,

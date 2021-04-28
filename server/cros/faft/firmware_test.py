@@ -150,6 +150,8 @@ class FirmwareTest(test.test):
         self.run_id = str(uuid.uuid4())
         self._client = host
         self.servo = host.servo
+        if self.servo is None:
+            raise error.TestError('FirmwareTest failed to set up servo')
 
         self.lockfile = '/usr/local/tmp/faft/lock'
         self._backup_gbb_flags = None

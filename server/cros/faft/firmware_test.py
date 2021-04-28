@@ -1247,6 +1247,8 @@ class FirmwareTest(test.test):
                 actual_power_state = self.get_power_state()
                 if last_power_state != actual_power_state:
                     logging.info("power state: %s", actual_power_state)
+                if actual_power_state is None:
+                    continue
                 if self._check_power_state(power_state, actual_power_state):
                     return True
                 last_power_state = actual_power_state

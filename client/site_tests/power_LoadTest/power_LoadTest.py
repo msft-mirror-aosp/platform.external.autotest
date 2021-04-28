@@ -48,16 +48,33 @@ class power_LoadTest(arc.ArcTest):
     """test class"""
     version = 2
 
-    def initialize(self, percent_initial_charge_min=None,
-                 check_network=True, loop_time=3600, loop_count=1,
-                 should_scroll='true', should_scroll_up='true',
-                 scroll_loop='false', scroll_interval_ms='10000',
-                 scroll_by_pixels='600', test_low_batt_p=3,
-                 verbose=True, force_wifi=False, wifi_ap='', wifi_sec='none',
-                 wifi_pw='', wifi_timeout=60, use_cellular_network=False,
-                 tasks='', volume_level=10, mic_gain=10, low_batt_margin_p=2,
-                 ac_ok=False, log_mem_bandwidth=False, gaia_login=None,
-                 force_discharge='false', pdash_note=''):
+    def initialize(self,
+                   percent_initial_charge_min=None,
+                   check_network=True,
+                   loop_time=3600,
+                   loop_count=1,
+                   should_scroll='true',
+                   should_scroll_up='true',
+                   scroll_loop='false',
+                   scroll_interval_ms='10000',
+                   scroll_by_pixels='600',
+                   test_low_batt_p=3,
+                   verbose=True,
+                   force_wifi=False,
+                   wifi_ap='',
+                   wifi_sec='none',
+                   wifi_pw='',
+                   wifi_timeout=60,
+                   use_cellular_network=False,
+                   tasks='',
+                   volume_level=10,
+                   mic_gain=10,
+                   low_batt_margin_p=2,
+                   ac_ok=False,
+                   log_mem_bandwidth=False,
+                   gaia_login=None,
+                   force_discharge='false',
+                   pdash_note=''):
         """
         percent_initial_charge_min: min battery charge at start of test
         check_network: check that Ethernet interface is not running

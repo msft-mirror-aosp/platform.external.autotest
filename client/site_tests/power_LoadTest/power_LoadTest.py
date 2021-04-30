@@ -158,6 +158,7 @@ class power_LoadTest(arc.ArcTest):
 
         self._tmp_keyvals['b_on_ac'] = (not self._force_discharge_success
                                         and self._power_status.on_ac())
+        self._tmp_keyvals['force_discharge'] = self._force_discharge_success
 
         self._gaia_login = gaia_login
         if gaia_login is None:
@@ -516,7 +517,8 @@ class power_LoadTest(arc.ArcTest):
         keyvals['wh_energy_powerlogger'] = \
                              self._energy_use_from_powerlogger(keyvals)
 
-        if not self._power_status.on_ac() and keyvals['ah_charge_used'] > 0:
+        if (self._force_discharge_success or not self._power_status.on_ac()
+            ) and keyvals['ah_charge_used'] > 0:
             # For full runs, we should use charge to scale for battery life,
             # since the voltage swing is accounted for.
             # For short runs, energy will be a better estimate.

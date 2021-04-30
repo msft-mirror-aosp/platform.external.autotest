@@ -1290,7 +1290,6 @@ class TradefedTest(test.test):
 
         steps = -1  # For historic reasons the first iteration is not counted.
         self.summary = ''
-        accurate = []
         board = self._get_board_name()
         session_id = None
         toggle_ndk = board == 'rammus-arc-r' # Toggle to ndk translation for this board
@@ -1367,7 +1366,7 @@ class TradefedTest(test.test):
                 if keep_screen_on:
                     self._override_powerd_prefs()
                 try:
-                    waived_tests, acc = self._run_and_parse_tradefed(command)
+                    waived_tests = self._run_and_parse_tradefed(command)
                 finally:
                     if keep_screen_on:
                         self._restore_powerd_prefs()
@@ -1401,10 +1400,6 @@ class TradefedTest(test.test):
                     if media_asset:
                         self._cleanup_media(media_asset)
 
-                # If the result is |acc|urate according to the log, or the
-                # inaccuracy is recognized by tradefed (not all_done), then
-                # it is fine.
-                accurate.append(acc or not last_all_done)
                 if last_failed < last_waived:
                     logging.error(
                         'Error: Internal waiver bookkeeping has become '
@@ -1467,11 +1462,6 @@ class TradefedTest(test.test):
             raise error.TestFail('Error: Could not find any tests in module.')
 
         if failed <= waived and all_done:
-            if not all(accurate):
-                raise error.TestFail(
-                    'Failed: Not all tests were executed. After %d '
-                    'retries passing %d tests, waived=%d. %s' % (
-                        steps, passed, waived, self.summary))
             # TODO(ihf): Make this error.TestPass('...') once
             # available.
             if steps > 0 and self._warn_on_test_retry:
@@ -1482,8 +1472,7 @@ class TradefedTest(test.test):
             return
 
         raise error.TestFail(
-            'Failed: after %d retries giving up. '
-            'passed=%d, failed=%d, waived=%d%s%s. %s' %
-            (steps, passed, failed, waived, '' if all_done else ', notexec>=1',
-             '' if all(accurate) else ', Tests may not be accurate.',
-             self.summary))
+                'Failed: after %d retries giving up. '
+                'passed=%d, failed=%d, waived=%d%s. %s' %
+                (steps, passed, failed, waived,
+                 '' if all_done else ', notexec>=1', self.summary))

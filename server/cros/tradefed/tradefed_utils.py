@@ -148,7 +148,7 @@ def parse_tradefed_testresults_xml(test_result_xml_path, waivers=None):
             logging.info('Waived failure for %s %d time(s)',
                          testname, fail_count)
         logging.info('>> Total waived = %s', waived)
-        return waived, True
+        return waived
 
     except Exception as e:
         logging.warning(

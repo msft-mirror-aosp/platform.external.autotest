@@ -28,12 +28,12 @@ def _parse(force_discharge):
     @raise error.TestError: for invalid force discharge setting.
 
     """
-    ret = str(force_discharge).lower()
-    if force_discharge not in _FORCE_DISCHARGE_SETTINGS:
+    setting = str(force_discharge).lower()
+    if setting not in _FORCE_DISCHARGE_SETTINGS:
         raise error.TestError(
                 'Force discharge setting \'%s\' need to be one of %s.' %
                 (str(force_discharge), _FORCE_DISCHARGE_SETTINGS))
-    return ret
+    return setting
 
 
 def process(force_discharge, battery):
@@ -95,4 +95,5 @@ def restore(force_discharge_success):
             successfully, set DUT back to charging.
     """
     if force_discharge_success:
-        power_utils.charge_control_by_ectool(True)
+        if not power_utils.charge_control_by_ectool(True):
+            logging.warn('Can not restore from force discharge.')

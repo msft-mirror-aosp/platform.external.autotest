@@ -9,9 +9,9 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros.network import interface
-from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.camera import camera_utils
+from autotest_lib.client.cros.power import force_discharge_utils
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_telemetry_utils
@@ -27,13 +27,18 @@ class power_Test(test.test):
     hist_percentile_re = '^(\d+).+\{(\d+)\.\d+\%\}'
 
     def initialize(self, seconds_period=20., pdash_note='',
-                   force_discharge=False,
+                   force_discharge='false',
                    check_network=False):
         """Perform necessary initialization prior to power test run.
 
         @param seconds_period: float of probing interval in seconds.
         @param pdash_note: note of the current run to send to power dashboard.
-        @param force_discharge: force battery to discharge during the test.
+        @param force_discharge: string of whether to tell ec to discharge
+                battery even when the charger is plugged in. 'false' means no
+                forcing discharge; 'true' means forcing discharge and raising an
+                error when it fails; 'optional' means forcing discharge when
+                possible but not raising an error when it fails, which is more
+                friendly to devices without a battery.
         @param check_network: check that Ethernet interface is not running.
 
         @var backlight: power_utils.Backlight object.
@@ -57,16 +62,8 @@ class power_Test(test.test):
         self._checkpoint_logger = power_status.CheckpointLogger()
         self._seconds_period = seconds_period
 
-        self._force_discharge = force_discharge
-        if force_discharge:
-            if not self.status.battery:
-                raise error.TestNAError('DUT does not have battery. '
-                                        'Could not force discharge.')
-            if not ec.has_cros_ec():
-                raise error.TestNAError('DUT does not have CrOS EC. '
-                                        'Could not force discharge.')
-            if not power_utils.charge_control_by_ectool(False):
-                raise error.TestError('Could not run battery force discharge.')
+        self._force_discharge_success = force_discharge_utils.process(
+                force_discharge, self.status.battery)
 
         ifaces = [iface for iface in interface.get_interfaces()
                 if (not iface.is_wifi_device() and
@@ -208,11 +205,16 @@ class power_Test(test.test):
         keyvals['level_backlight_max'] = self.backlight.get_max_level()
         keyvals['level_backlight_current'] = self.backlight.get_level()
 
-        # record battery stats if not on AC
-        if not self._force_discharge and self.status.on_ac():
+        # record battery stats if battery exists
+        if not self._force_discharge_success and self.status.on_ac():
             keyvals['b_on_ac'] = 1
         else:
             keyvals['b_on_ac'] = 0
+
+        if self._force_discharge_success:
+            keyvals['force_discharge'] = 1
+        else:
+            keyvals['force_discharge'] = 0
 
         if self.status.battery:
             keyvals['ah_charge_full'] = self.status.battery.charge_full
@@ -304,9 +306,7 @@ class power_Test(test.test):
 
     def cleanup(self):
         """Reverse setting change in initialization."""
-        if self._force_discharge:
-            if not power_utils.charge_control_by_ectool(True):
-                logging.warn('Can not restore from force discharge.')
+        force_discharge_utils.restore(self._force_discharge_success)
         if self.backlight:
             self.backlight.restore()
         self._services.restore_services()

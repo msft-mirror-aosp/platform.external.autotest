@@ -13,7 +13,7 @@ The test fails in cases of DUT is:
 """
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform, desktopui"
-ATTRIBUTES = "suite:audio_advanced"
+# ATTRIBUTES = "suite:audio_advanced"
 JOB_RETRIES = 1
 DEPENDENCIES = "test_usbaudio, chameleon"
 

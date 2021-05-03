@@ -22,7 +22,9 @@ class Cr50Test(FirmwareTest):
     """Base class that sets up helper objects/functions for cr50 tests."""
     version = 1
 
-    RELEASE_POOLS = ['faft-cr50-experimental']
+    RELEASE_POOLS = [
+            'faft-cr50-experimental', 'faft-cr50-prepvt', 'faft-cr50-pvt'
+    ]
     RESPONSE_TIMEOUT = 180
     GS_PRIVATE = 'gs://chromeos-localmirror-private/distfiles/'
     # Prod signed test images are stored in the private cr50 directory.

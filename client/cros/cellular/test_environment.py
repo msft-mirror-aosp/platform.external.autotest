@@ -10,8 +10,10 @@ import time
 import traceback
 
 import common
+from autotest_lib.client.bin import local_host
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import crash_detector
 from autotest_lib.client.cros import backchannel
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.cellular import mm
@@ -87,6 +89,9 @@ class CellularTestEnvironment(object):
 
         self._nested = None
         self._context_managers = []
+        self.detect_crash = crash_detector.CrashDetector(
+                local_host.LocalHost())
+        self.detect_crash.remove_crash_files()
         if use_backchannel:
             self._backchannel = backchannel.Backchannel()
             self._context_managers.append(self._backchannel)
@@ -149,6 +154,15 @@ class CellularTestEnvironment(object):
     def __exit__(self, exception, value, traceback):
         if upstart.has_service('modemfwd'):
             upstart.restart_job('modemfwd')
+        crash_files = self.detect_crash.get_new_crash_files()
+        if any(cf for cf in crash_files if any(pr in cf for pr in [
+                'ModemManager', 'shill', 'qmi', 'mbim', 'hermes', 'modemfwd'
+        ])):
+            logging.error('A daemon crash was detected: %s', crash_files)
+            # Override the error text.
+            value = 'A daemon crash was detected: {0}\n{1}'.format(
+                    crash_files, value)
+
         if self._nested:
             return self._nested.__exit__(exception, value, traceback)
         self.shill = None

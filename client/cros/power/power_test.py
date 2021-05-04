@@ -26,7 +26,9 @@ class power_Test(test.test):
     histogram_re = 'Histogram: %s recorded (\d+) samples, mean = (\d+\.\d+)'
     hist_percentile_re = '^(\d+).+\{(\d+)\.\d+\%\}'
 
-    def initialize(self, seconds_period=20., pdash_note='',
+    def initialize(self,
+                   seconds_period=20.,
+                   pdash_note='',
                    force_discharge='false',
                    check_network=False):
         """Perform necessary initialization prior to power test run.

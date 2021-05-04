@@ -34,6 +34,7 @@ class firmware_ECChargingState(FirmwareTest):
     # Battery status
     STATUS_FULLY_CHARGED = 0x20
     STATUS_DISCHARGING = 0x40
+    STATUS_ALARM_MASK = 0xFF00
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECChargingState, self).initialize(host, cmdline_args)
@@ -95,11 +96,17 @@ class firmware_ECChargingState(FirmwareTest):
         params = int(match[1][1], 16)
         level = int(match[2][1])
 
-        return {
+        result = {
                 "status": status,
                 "flags": params,
                 "level": level,
         }
+
+        if status & self.STATUS_ALARM_MASK != 0:
+            raise error.TestFail("Battery should not throw alarms: %s" %
+                                 result)
+
+        return result
 
     def _check_kernel_battery_state(
             self,

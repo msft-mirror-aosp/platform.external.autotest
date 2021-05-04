@@ -64,7 +64,8 @@ def stage_config(host):
       try:
         ds.stage_artifacts(build,
                           archive_url = archive_url,
-                          files = [config_file])
+                          files = [config_file],
+                          clean = True)
       except Exception as e:
           logging.error('Staging artifacts failed: %s', str(e))
       else:

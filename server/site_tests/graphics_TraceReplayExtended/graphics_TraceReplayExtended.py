@@ -229,11 +229,9 @@ class graphics_TraceReplayExtended(test.test):
         if not tast_varslist:
             tast_varslist = []
         tast_varslist.extend([
-            'graphics.TraceReplayExtended.resultDir=' + result_dir,
-            'graphics.TraceReplayExtended.signalRunningFile=' +
-            signal_running_file,
-            'graphics.TraceReplayExtended.signalCheckpointFile=' +
-            signal_checkpoint_file,
+            'PowerTest.resultDir=' + result_dir,
+            'PowerTest.signalRunningFile=' + signal_running_file,
+            'PowerTest.signalCheckpointFile=' + signal_checkpoint_file,
         ])
 
         tast_instance = tast.tast(

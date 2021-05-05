@@ -12,16 +12,18 @@ dEQP-GLES31.functional.geometry_shading.layered.render_with_default_layer_cubema
 dEQP-GLES31.functional.geometry_shading.layered.render_with_default_layer_2d_multisample_array
 dEQP-GLES31.functional.geometry_shading.layered.render_with_default_layer_3d
 
-# Seen on asuka GT1 (510), at least
+# Seen on both asuka (Skylake U, GT1 510 and GT2 520) and sentry ().  Not seen yet on cave or caroline (Skylake Y, GT2 515).
+dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_f16vec4
+dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_i16vec4
+dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_i8vec4
 dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_u16vec4
 dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_u8vec4
-
-# Seen on asuka GT2 (520), at least
-dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_i8vec4
-dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_f16vec4
-dEQP-VK.subgroups.ballot_broadcast.compute.subgroupbroadcast_u8vec4
+dEQP-VK.subgroups.*.compute.subgroupclustered.*64vec4_requiredsubgroupsize
+dEQP-VK.subgroups.*.compute.subgroupclustered.*dvec4_requiredsubgroupsize
 
 # Seen on asuka GT1 and sentry, at least.
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.exchange_r32f_return_value
 dEQP-GLES31.functional.image_load_store.3d.atomic.exchange_r32f_return_value
 dEQP-GLES31.functional.image_load_store.cube.atomic.exchange_r32f_return_value
+
+dEQP-VK.binding_model.descriptorset_random.sets8.noarray.ubolimitlow.sbolimitlow.sampledimglow.outimgtexlow.iublimitlow.uab.frag.noia.0

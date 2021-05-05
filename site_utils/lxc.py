@@ -29,9 +29,11 @@ def parse_options():
     parser.add_argument('-s', '--setup', action='store_true',
                         default=False,
                         help='Set up base container.')
-    parser.add_argument('-p', '--path', type=str,
+    parser.add_argument('-p',
+                        '--path',
+                        type=str,
                         help='Directory to store the container.',
-                        default=lxc.DEFAULT_CONTAINER_PATH)
+                        default=lxc.DEFAULT_BASE_CONTAINER_PATH)
     parser.add_argument('-f', '--force_delete', action='store_true',
                         default=False,
                         help=('Force to delete existing containers and rebuild '

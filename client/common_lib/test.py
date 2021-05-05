@@ -898,7 +898,7 @@ def runtest(job,
         if override_test_in_prog_file:
             mytest.test_in_prog_file = override_test_in_prog_file
         mytest.success = False
-        if not job.fast and before_test_hook:
+        if before_test_hook:
             logging.info('Starting before_hook for %s', mytest.tagged_testname)
             with metrics.SecondsTimer(
                     'chromeos/autotest/job/before_hook_duration'):
@@ -915,7 +915,7 @@ def runtest(job,
         mytest.success = True
     finally:
         os.chdir(pwd)
-        if after_test_hook and (not mytest.success or not job.fast):
+        if after_test_hook:
             logging.info('Starting after_hook for %s', mytest.tagged_testname)
             with metrics.SecondsTimer(
                     'chromeos/autotest/job/after_hook_duration'):

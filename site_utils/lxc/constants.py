@@ -29,6 +29,9 @@ CONTAINER_BASE_URL = CONTAINER_BASE_URL_FMT % BASE
 # Default directory used to store LXC containers.
 DEFAULT_CONTAINER_PATH = global_config.get_config_value('AUTOSERV',
                                                         'container_path')
+# Default directory used to store the base LXC container.
+DEFAULT_BASE_CONTAINER_PATH = global_config.get_config_value(
+        'AUTOSERV', 'base_container_path')
 # Default directory for host mounts
 DEFAULT_SHARED_HOST_PATH = global_config.get_config_value(
         'AUTOSERV',

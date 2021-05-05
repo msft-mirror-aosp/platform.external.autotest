@@ -34,8 +34,11 @@ class ContainerBucket(object):
     """A wrapper class to interact with containers in a specific container path.
     """
 
-    def __init__(self, container_path=constants.DEFAULT_CONTAINER_PATH,
-                 base_name=constants.BASE, container_factory=None):
+    def __init__(self,
+                 container_path=constants.DEFAULT_CONTAINER_PATH,
+                 base_name=constants.BASE,
+                 container_factory=None,
+                 base_container_path=constants.DEFAULT_BASE_CONTAINER_PATH):
         """Initialize a ContainerBucket.
 
         @param container_path: Path to the directory used to store containers.
@@ -46,6 +49,9 @@ class ContainerBucket(object):
                           arguments. Defaults to value set via
                           AUTOSERV/container_base_name in global config.
         @param container_factory: A factory for creating Containers.
+        @param base_container_path: Path to the directory used for the base container.
+                                    Default is AUTOSERV/base_container_path in
+                                    global config.
         """
         self.container_path = os.path.realpath(container_path)
         if container_factory is not None:
@@ -56,7 +62,7 @@ class ContainerBucket(object):
             # fall back to using the default container path).
             try:
                 base_image_ok = True
-                container = BaseImage(self.container_path, base_name).get()
+                container = BaseImage(base_container_path, base_name).get()
             except error.ContainerError:
                 base_image_ok = False
                 raise

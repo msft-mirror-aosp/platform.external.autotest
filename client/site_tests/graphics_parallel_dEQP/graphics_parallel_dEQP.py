@@ -265,10 +265,12 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             raise error.TestFail("Failed starting '%s'" % command)
 
         # Update failing tests to the chrome perf dashboard records.
+        fails = []
         try:
             with open(os.path.join(self._log_path,
                                    'failures.csv')) as fails_file:
                 for line in fails_file.readlines():
+                    fails.append(line)
                     self.add_failures(line)
         except IOError:
             # failures.csv not created if there were were no failures
@@ -286,7 +288,14 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # list per board, to avoid causing run failures for known flakes when
         # the automatic flake detection doesn't catch it.
 
-        if run_result.exit_status != 0:
+        if fails:
+            fail_msg = "failed {} dEQP tests:\n".format(len(fails))
+            for f in fails[:5]:
+                fail_msg += "  " + f
+            if len(fails) > 5:
+                fail_msg += "and more (see failures.csv)"
+            raise error.TestFail(fail_msg)
+        elif run_result.exit_status != 0:
             raise error.TestFail('dEQP run failed with status code %d' %
                                  run_result.exit_status)
 

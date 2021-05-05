@@ -1269,6 +1269,10 @@ class GraphicsApiHelper(object):
         )
         return executable
 
+    def get_deqp_dir(self):
+        """Return the base path to deqp."""
+        return self.DEQP_BASEDIR
+
 # Possible paths of the kernel DRI debug text file.
 _DRI_DEBUG_FILE_PATH_0 = "/sys/kernel/debug/dri/0/state"
 _DRI_DEBUG_FILE_PATH_1 = "/sys/kernel/debug/dri/1/state"

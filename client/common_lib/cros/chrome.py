@@ -203,6 +203,10 @@ class Chrome(object):
             finder_options.browser_options.AppendExtraBrowserArgs(
                     ['--disable-features=DefaultWebAppInstallation'])
 
+        if not auto_login:
+            finder_options.browser_options.AppendExtraBrowserArgs(
+                    ['--enable-oobe-test-api'])
+
         if extra_browser_args:
             finder_options.browser_options.AppendExtraBrowserArgs(
                 extra_browser_args)

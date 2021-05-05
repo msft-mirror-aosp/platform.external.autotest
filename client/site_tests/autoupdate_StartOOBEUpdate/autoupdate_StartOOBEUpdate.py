@@ -71,7 +71,6 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         extra_browser_args = []
         if lsbrelease_utils.get_device_type() != 'CHROMEBOOK':
             extra_browser_args.append('--disable-hid-detection-on-oobe')
-        extra_browser_args.append('--enable-oobe-test-api')
         self._chrome = chrome.Chrome(auto_login=False,
                                      extra_browser_args=extra_browser_args)
         self._oobe = self._chrome.browser.oobe

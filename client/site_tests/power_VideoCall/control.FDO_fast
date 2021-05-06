@@ -1,5 +1,5 @@
 AUTHOR = "puthik"
-NAME = "power_VideoCall.force_discharge_optional_fast"
+NAME = "power_VideoCall.FDO_fast"
 PURPOSE = "Make sure power_VideoCall works fine with optional force discharge."
 CRITERIA = "This test is a benchmark."
 TIME = "MEDIUM"
@@ -18,7 +18,8 @@ Workload
 
 The fast version only runs for 3 minutes to make sure the test works as expected.
 
-Test will use EC command to force DUT to discharge. If it fails, then use AC as the power source.
+"FDO" is short for "force discharge optional." Test will use EC command to
+force DUT to discharge. If it fails, then use AC as the power source.
 """
 
 args_dict = utils.args_to_dict(args)

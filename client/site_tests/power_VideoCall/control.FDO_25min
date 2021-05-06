@@ -1,5 +1,5 @@
 AUTHOR = "puthik"
-NAME = "power_VideoCall.force_discharge_optional_25min"
+NAME = "power_VideoCall.FDO_25min"
 PURPOSE = "Simulates video call multitasking."
 CRITERIA = "This test is a benchmark."
 TIME = "LENGTHY"
@@ -19,7 +19,8 @@ Workload
 
 The version runs for 25 minutes as it is common duration of the video call.
 
-Test will use EC command to force DUT to discharge. If it fails, then use AC as the power source.
+"FDO" is short for "force discharge optional." Test will use EC command to
+force DUT to discharge. If it fails, then use AC as the power source.
 """
 
 args_dict = utils.args_to_dict(args)

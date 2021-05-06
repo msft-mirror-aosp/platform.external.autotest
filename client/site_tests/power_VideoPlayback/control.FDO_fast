@@ -1,5 +1,5 @@
 AUTHOR = "Chrome OS Team"
-NAME = "power_VideoPlayback.force_discharge_optional_fast"
+NAME = "power_VideoPlayback.FDO_fast"
 PURPOSE = "Measure video playback power usage."
 CRITERIA = "This test is a benchmark."
 TIME = "FAST"
@@ -10,8 +10,8 @@ TEST_TYPE = "client"
 DOC = """
 This test makes sure that power_VideoPlayback is working fine.
 
-Test will use EC command to force DUT to discharge. If it fails, then use AC
-as the power source.
+"FDO" is short for "force discharge optional." Test will use EC command to
+force DUT to discharge. If it fails, then use AC as the power source.
 """
 
 args_dict = utils.args_to_dict(args)

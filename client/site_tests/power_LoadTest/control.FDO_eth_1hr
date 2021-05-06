@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "power_LoadTest.force_discharge_optional_eth_1hr"
+NAME = "power_LoadTest.FDO_eth_1hr"
 ATTRIBUTES = "suite:power_daily"
 PURPOSE = "Measure power draw when system is under load."
 CRITERIA = "This test is a benchmark."
@@ -19,9 +19,11 @@ determined by loop_time * loop_cnt.
 
 
 This version of test allows:
-  - AC is connected. Test will use EC command to force DUT to discharge. If
-    it fails, then use AC as the power source.
+  - AC is connected.
   - Ethernet is connected.
+
+"FDO" is short for "force discharge optional." Test will use EC command to
+force DUT to discharge. If it fails, then use AC as the power source.
 """
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.

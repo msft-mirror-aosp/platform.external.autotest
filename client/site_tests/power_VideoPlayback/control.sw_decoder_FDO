@@ -1,5 +1,5 @@
 AUTHOR = "Chrome OS Team"
-NAME = "power_VideoPlayback.sw_decoder_force_discharge_optional"
+NAME = "power_VideoPlayback.sw_decoder_FDO"
 PURPOSE = "Measure video playback power usage."
 CRITERIA = "This test is a benchmark."
 TIME = "LENGTHY"
@@ -14,8 +14,8 @@ various format.
 
 This version of the test forces Chrome to use software decoder.
 
-Test will use EC command to force DUT to discharge. If it fails, then use AC
-as the power source.
+"FDO" is short for "force discharge optional." Test will use EC command to
+force DUT to discharge. If it fails, then use AC as the power source.
 """
 
 args_dict = utils.args_to_dict(args)

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "power_LoadTest.force_discharge_optional_eth_fast"
+NAME = "power_LoadTest.FDO_eth_fast"
 PURPOSE = "Test health of power load test functionality."
 CRITERIA = "This test is a benchmark."
 TIME = "MEDIUM"
@@ -18,8 +18,7 @@ determined by loop_time * loop_cnt.
 
 
 This version of test allows:
-  - AC is connected. Test will use EC command to force DUT to discharge. If
-    it fails, then use AC as the power source.
+  - AC is connected.
   - Ethernet is connected.
 
 This control file is simply meant to simulate the various aspects of the test
@@ -31,6 +30,9 @@ connected(ac_ok=True).
 For reasons above and reduced runtime (3min) it will NOT produce valid power
 consumption results for the 60/20/10/10 load and therefore should NOT be used
 for any battery life estimations.
+
+"FDO" is short for "force discharge optional." Test will use EC command to
+force DUT to discharge. If it fails, then use AC as the power source.
 """
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.

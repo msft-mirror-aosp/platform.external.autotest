@@ -29,7 +29,7 @@ def run(machine):
     host.reboot()
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:graphics" && graphics_nightly && graphics_video && !graphics_av_analysis && graphics_video_platformdecoding && codec_vp9)'],
+                 test_exprs=['("group:graphics" && graphics_nightly && graphics_video && !graphics_av_analysis && graphics_video_platformdecoding && graphics_video_vp9)'],
                  ignore_test_failures=True, max_run_sec=21600,
                  command_args=args)
 

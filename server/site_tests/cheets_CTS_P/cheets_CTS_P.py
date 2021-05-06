@@ -215,7 +215,6 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             bundle=bundle,
             extra_artifacts=extra_artifacts,
             extra_artifacts_host=extra_artifacts_host,
-            cts_uri=_CTS_URI,
             login_precondition_commands=login_precondition_commands,
             precondition_commands=precondition_commands,
             prerequisites=prerequisites)

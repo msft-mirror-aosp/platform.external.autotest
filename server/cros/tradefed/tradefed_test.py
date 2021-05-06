@@ -1264,7 +1264,6 @@ class TradefedTest(test.test):
                                    use_helpers=False,
                                    extra_artifacts=[],
                                    extra_artifacts_host=[],
-                                   cts_uri=None,
                                    login_precondition_commands=[],
                                    precondition_commands=[],
                                    prerequisites=[]):

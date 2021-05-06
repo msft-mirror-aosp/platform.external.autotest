@@ -113,6 +113,5 @@ class cheets_VTS_R(tradefed_test.TradefedTest):
                 target_module=target_module,
                 target_plan=target_plan,
                 bundle=bundle,
-                cts_uri=_VTS_URI,
                 login_precondition_commands=login_precondition_commands,
                 precondition_commands=precondition_commands)

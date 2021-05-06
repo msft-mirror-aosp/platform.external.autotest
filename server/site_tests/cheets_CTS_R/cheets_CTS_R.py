@@ -122,6 +122,5 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                 enable_default_apps=enable_default_apps,
                 executable_test_count=executable_test_count,
                 bundle=bundle,
-                cts_uri=_CTS_URI,
                 login_precondition_commands=login_precondition_commands,
                 precondition_commands=precondition_commands)

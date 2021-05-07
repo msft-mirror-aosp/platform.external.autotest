@@ -77,9 +77,10 @@ class ContainerId(collections.namedtuple('ContainerId',
         try:
             with open(src, 'r') as f:
                 job_id, ctime, pid = json.load(f)
-        except IOError:
+        except IOError as err:
             # File not found, or couldn't be opened for some other reason.
             # Treat all these cases as no ID.
+            logging.warn('Load container id file "%s" error: %s', src, err)
             return None
         # TODO(pprabhu, crbug.com/842343) Remove this once all persistent
         # container ids have migrated to str.

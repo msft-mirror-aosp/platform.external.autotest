@@ -66,6 +66,7 @@ class TastManagerThread(threading.Thread):
             max_run_sec=max_duration_minutes * 60,
             command_args=command_args if command_args else [],
             build_bundle=build_bundle,
+            clear_tpm=False,
             varslist=varslist)
 
     def run(self):

@@ -25,6 +25,7 @@ def run(machine):
                         channel=36,
                         mode=hostap_config.HostapConfig.MODE_11AC_PURE,
                         n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT20],
+                        ac_capabilities=[hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7],
                         vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40)]
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,

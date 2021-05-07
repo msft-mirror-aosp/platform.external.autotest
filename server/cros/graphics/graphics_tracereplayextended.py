@@ -212,7 +212,7 @@ class GraphicsTraceReplayExtendedBase(test.test):
 
         logging.info('Waiting for graphics_Power subtest to initialize...')
         try:
-            graphics_power_thread.wait_until_running(timeout=120)
+            graphics_power_thread.wait_until_running(timeout=10 * 60)
         except Exception as err:
             logging.exception(err)
             raise error.TestFail(

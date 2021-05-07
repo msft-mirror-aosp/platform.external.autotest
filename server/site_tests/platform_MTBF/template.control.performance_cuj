@@ -62,10 +62,11 @@ def stage_config(host):
       archive_url = gs_bucket + config_path
       logging.info('Staging configuration from %s.', gs_bucket)
       try:
+        kwargs = {{'clean': True}}
         ds.stage_artifacts(build,
                           archive_url = archive_url,
                           files = [config_file],
-                          clean = True)
+                          **kwargs)
       except Exception as e:
           logging.error('Staging artifacts failed: %s', str(e))
       else:

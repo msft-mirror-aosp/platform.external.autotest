@@ -1485,7 +1485,7 @@ class ImageServer(ImageServerBase):
 
     @remote_devserver_call()
     def stage_artifacts(self, image=None, artifacts=None, files='',
-                        archive_url=None):
+                        archive_url=None, **kwargs):
         """Tell the devserver to download and stage |artifacts| from |image|.
 
          This is the main call point for staging any specific artifacts for a
@@ -1501,13 +1501,15 @@ class ImageServer(ImageServerBase):
         @param archive_url: Optional parameter that has the archive_url to stage
                 this artifact from. Default is specified in autotest config +
                 image.
+        @param kwargs: keyword arguments that specify the build information, to
+                make stage devserver call.
 
         @raise DevServerException upon any return code that's not HTTP OK.
         """
         if not artifacts and not files:
             raise DevServerException('Must specify something to stage.')
         image = self.translate(image)
-        self._stage_artifacts(image, artifacts, files, archive_url)
+        self._stage_artifacts(image, artifacts, files, archive_url, **kwargs)
 
 
     @remote_devserver_call(timeout_min=DEVSERVER_SSH_TIMEOUT_MINS)

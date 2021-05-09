@@ -102,6 +102,8 @@ class ContainerBucket(object):
             # Active containers have an ID.  Zygotes and base containers, don't.
             if container.id is not None:
                 containers[container.id] = container
+        logging.debug('All containers found: %s',
+                      [(type(k), str(k)) for k in containers])
         self.container_cache = containers
         return containers
 
@@ -121,7 +123,8 @@ class ContainerBucket(object):
 
         container = self.get_all().get(container_id, None)
         if None == container:
-            logging.debug("Could not find container %s", container_id)
+            logging.debug("Could not find container %s (type: %s)",
+                          container_id, type(container_id))
         return container
 
 

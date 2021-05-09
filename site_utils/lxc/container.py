@@ -59,6 +59,10 @@ class ContainerId(collections.namedtuple('ContainerId',
         with open(dst, 'w') as f:
             json.dump(self, f)
 
+        with open(dst) as f:
+            logging.debug('Container id saved to %s (content: %s)', dst,
+                          f.read())
+
     @classmethod
     def load(cls, path):
         """Reads the ID from the given path.
@@ -170,6 +174,7 @@ class Container(object):
             try:
                 self._id = ContainerId.load(
                         os.path.join(self.container_path, self.name))
+                logging.debug('Container %s has id: "%s"', self.name, self._id)
             except (ValueError, TypeError):
                 # Ignore load errors.  ContainerBucket currently queries every
                 # container quite frequently, and emitting exceptions here would

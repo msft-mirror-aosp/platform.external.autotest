@@ -4,6 +4,7 @@ suite:AFDO_record
 suite:android_wifi_interop
 suite:another_suite
 suite:appcompat
+suite:appcompat_release
 suite:arc-cts
 suite:arc-cts-camera
 suite:arc-cts-deqp

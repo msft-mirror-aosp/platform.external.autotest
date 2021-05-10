@@ -732,7 +732,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         """
 
-        actual_cycle = len(records) / len(durations.keys())
+        actual_cycle = len(records) // len(list(durations.keys()))
         offset = self.INTERLEAVE_SCAN_CYCLE_NUM_TOLERANCE
         expect_cycle_lowerbound = max(1, expect_cycles - offset)
         expect_cycle_upperbound = expect_cycles + offset

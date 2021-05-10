@@ -4,6 +4,12 @@
 
 """A list of advertisements data for testing purpose."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from six.moves import range
+
 
 ADVERTISEMENT1 = {
         'Path': '/org/bluez/test/advertisement1',
@@ -145,7 +151,7 @@ NEARBY_MEDIUMS_FAST_ADV = {
         'Type': 'peripheral',
         'ServiceUUIDs': ['FEF3'],
         'ScanResponseData': {
-                '0x16': [0xf3, 0xfe] + range(1, 21)
+                '0x16': [0xf3, 0xfe] + list(range(1, 21))
         },
         'MinInterval': 100,
         'MaxInterval': 100

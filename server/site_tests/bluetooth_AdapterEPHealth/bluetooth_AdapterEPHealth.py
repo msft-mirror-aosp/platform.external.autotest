@@ -5,8 +5,12 @@
 """A Batch of of Bluetooth enterprise policy health tests"""
 
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import time
+
+from six.moves import zip
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
@@ -19,6 +23,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
 
 from autotest_lib.server.cros.bluetooth.bluetooth_test_utils import (
         BluetoothPolicy)
+
 
 class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                                 BluetoothAdapterAudioTests,

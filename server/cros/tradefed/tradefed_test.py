@@ -1291,7 +1291,6 @@ class TradefedTest(test.test):
         self.summary = ''
         board = self._get_board_name()
         session_id = None
-        toggle_ndk = board == 'rammus-arc-r' # Toggle to ndk translation for this board
         nativebridge64_experiment = (self._get_release_branch_number() == 0)
 
         self._setup_result_directories()
@@ -1319,7 +1318,6 @@ class TradefedTest(test.test):
                     board=board,
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps,
-                    toggle_ndk=toggle_ndk,
                     nativebridge64=nativebridge64_experiment) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with

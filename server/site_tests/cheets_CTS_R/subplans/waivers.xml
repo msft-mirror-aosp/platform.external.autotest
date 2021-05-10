@@ -102,6 +102,7 @@
   <Entry include="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testSetAllocatorDecodeBitmap[6]" />
   <Entry include="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testSetAllocatorDecodeBitmap[7]" />
   <Entry include="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testSetAllocatorDecodeBitmap[8]" />
+  <Entry include="CtsHardwareTestCases android.hardware.input.cts.tests.MicrosoftSculpttouchTest#testAllMotions" />
   <Entry include="CtsIncidentHostTestCases com.android.server.cts.GraphicsStatsValidationTest#testJankyDrawFrame" />
   <Entry include="CtsIncidentHostTestCases[instant] com.android.server.cts.GraphicsStatsValidationTest#testJankyDrawFrame" />
   <Entry include="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation" />

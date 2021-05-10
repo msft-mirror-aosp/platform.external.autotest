@@ -108,6 +108,10 @@ def run_TS(machine):
         bundle=cts_abi,
         use_jdk9=True,
         uri=uri,
+        load_waivers=('#' not in cts_test),  # No waivers for single-test runs
+        login_precondition_commands=[
+            'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'
+        ],
         timeout=cts_timeout)
 
 parallel_simple(run_TS, machines)

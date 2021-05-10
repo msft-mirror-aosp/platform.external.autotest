@@ -337,7 +337,7 @@ class AdvMonitorApp(dbus.service.Object):
 
         # Emit the InterfacesRemoved signal before removing the Monitor object.
         self.InterfacesRemoved(monitor.get_path(),
-                               monitor.get_properties().keys())
+                               list(monitor.get_properties().keys()))
 
         monitor.remove_monitor()
 

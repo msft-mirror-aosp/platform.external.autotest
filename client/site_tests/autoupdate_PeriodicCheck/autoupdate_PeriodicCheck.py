@@ -68,6 +68,9 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
                     lambda: len(self._get_update_requests()) == 2,
                     desc='2nd periodic update check.',
                     timeout=2 * periodic_interval)
+                logging.info(
+                        'Setting further update responses back to no update.')
+                nebraska.update_config(no_update=True)
             except utils.TimeoutError:
                 raise error.TestFail('2nd periodic check not found.')
             logging.info('Second periodic update was initiated.')

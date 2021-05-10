@@ -553,12 +553,15 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             return result
 
 
-    def _create_hostlog_files(self):
+    def _create_hostlog_files(self, ignore_event_rootfs=False):
         """Create the two hostlog files for the update.
 
         To ensure the update was successful we need to compare the update
         events against expected update events. There is a hostlog for the
         rootfs update and for the post reboot update check.
+
+        @param ignore_event_rootfs: Ignores the last event in the rootfs
+                                    log.
 
         """
         # Check that update logs exist for the update that just happened.
@@ -572,8 +575,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         rootfs_hostlog = os.path.join(self.resultsdir, 'hostlog_rootfs')
         with open(rootfs_hostlog, 'w') as fp:
             # There are four expected hostlog events during update.
-            json.dump(self._extract_request_logs(
-                self._get_update_engine_log(1))[-4:], fp)
+            extract_logs = self._extract_request_logs(
+                    self._get_update_engine_log(1))
+            if ignore_event_rootfs:
+                logs = extract_logs[-5:-1]
+            else:
+                logs = extract_logs[-4:]
+            json.dump(logs, fp)
 
         reboot_hostlog = os.path.join(self.resultsdir, 'hostlog_reboot')
         with open(reboot_hostlog, 'w') as fp:

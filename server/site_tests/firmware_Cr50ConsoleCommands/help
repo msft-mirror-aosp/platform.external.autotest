@@ -25,10 +25,11 @@ idle
 -panicinfo
 pinmux
 -powerbtn
-rddkeepalive
+-rddkeepalive
 -reboot
 recbtnforce
 rma_auth
+-serialno
 shmem
 sleepmask
 sn

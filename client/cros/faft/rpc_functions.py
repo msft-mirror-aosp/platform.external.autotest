@@ -524,13 +524,45 @@ class EcServicer(object):
         """Reload the firmware image that may be changed."""
         self._ec_handler.new_image()
 
-    def get_version(self):
-        """Get EC version via mosys.
+    def get_version(self, target=None):
+        """Get the requested EC version.
 
-        @return: A string of the EC version.
+        @param target: 'ro'/'rw', or None to signify the active fw.
+                       On a Wilco EC, this would be ignored, since Wilco
+                       doesn't use ro/rw/active versions.
+        @return: A string of the requested EC version, or '' if DUT has no EC.
         """
-        return self._os_if.run_shell_command_get_output(
-                'mosys ec info | sed "s/.*| //"')[0]
+        CROS_EC_FILE = '/dev/cros_ec'
+        WILCO_VERSION_FILE = '/sys/bus/platform/devices/GOOG000C:00/version'
+
+        # If DUT has a Chrome EC, parse `ectool version` for the target.
+        if self._os_if.path_exists(CROS_EC_FILE):
+            out = self._os_if.run_shell_command_get_output('ectool version')
+            keyvals = dict([line.split(':', 1) for line in out])
+            ro = keyvals['RO version'].strip()
+            rw = keyvals['RW version'].strip()
+            active = keyvals['Firmware copy'].strip()
+            if target == None:
+                if active == 'RO':
+                    return ro
+                elif active == 'RW':
+                    return rw
+                raise ValueError(
+                        'Unexpected active FW type: want RO/RW; got ' + active)
+            elif target.lower() == 'ro':
+                return ro
+            elif target.lower() == 'rw':
+                return rw
+            raise ValueError(
+                    'Invalid EC version target: want ro/rw/None; got ' +
+                    target)
+        # If DUT has a Wilco EC read sysfs for the EC version.
+        # Wilco doesn't use RO/RW/active, so ignore target.
+        elif self._os_if.path_exists(WILCO_VERSION_FILE):
+            return self._os_if.read_file(WILCO_VERSION_FILE).strip()
+        # If DUT doesn't have an EC, return the empty string.
+        else:
+            return ''
 
     def get_active_hash(self):
         """Get hash of active EC RW firmware."""

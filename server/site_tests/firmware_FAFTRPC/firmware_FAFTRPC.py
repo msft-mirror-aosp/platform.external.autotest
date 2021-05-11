@@ -745,7 +745,6 @@ RPC_CATEGORIES = [
                         {
                                 "method_names": [
                                         "reload",
-                                        "get_version",
                                         "get_active_hash",
                                         "is_efs",
                                 ],
@@ -753,6 +752,16 @@ RPC_CATEGORIES = [
                                 "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
                                 "allow_error_msg":
                                 "list index out of range",
+                        },
+                        {
+                                "method_name":
+                                "get_version",
+                                "passing_args": [
+                                        NO_ARGS,
+                                        ("ro", ),
+                                        ("RW", ),
+                                        (None, ),
+                                ],
                         },
                         {
                                 "method_names":

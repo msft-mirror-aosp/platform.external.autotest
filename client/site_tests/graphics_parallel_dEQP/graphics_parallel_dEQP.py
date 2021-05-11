@@ -41,6 +41,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
     ]
 
     def initialize(self):
+        """Initialize the test."""
         super(graphics_parallel_dEQP, self).initialize()
         self._api_helper = graphics_utils.GraphicsApiHelper()
         self._board = utils.get_board()
@@ -63,6 +64,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         self._services.stop_services()
 
     def cleanup(self):
+        """Clean up the test state from initialize()."""
         if self._services:
             self._services.restore_services()
         super(graphics_parallel_dEQP, self).cleanup()
@@ -76,6 +78,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         return api in self._api_helper.get_supported_apis()
 
     def read_file(self, filename):
+        """Board/GPU expectation file read helper."""
         expects_path = os.path.join(self.autodir, 'tests',
                                     'graphics_parallel_dEQP', 'boards',
                                     filename)
@@ -155,6 +158,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # TODO: Add the other VK shards on trogdor
 
     def add_filter_arg(self, command, list, arg, filename):
+        """Adds an arg for xfail/skip/flake filtering if we made the file for it."""
         if not list:
             return
 
@@ -165,6 +169,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         command.append(arg + '=' + path)
 
     def run_once(self, opts=None):
+        """Invokes deqp-runner to run a deqp test group."""
         options = dict(
                 api=None,
                 caselist=None,

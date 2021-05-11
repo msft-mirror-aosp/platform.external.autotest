@@ -247,6 +247,8 @@ suite:offloads
 suite:partners
 suite:perfalerts
 suite:performance_cuj
+suite:performance_cuj_experimental
+suite:performance_cuj_quick
 suite:platform_internal_display
 suite:platform_test_nightly
 suite:policy

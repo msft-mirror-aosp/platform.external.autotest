@@ -86,7 +86,8 @@ SUPPORT_SNAPSHOT_CLONE = True
 # Number of seconds to wait for network to be up in a container.
 NETWORK_INIT_TIMEOUT = 300
 # Network bring up is slower in Moblab.
-NETWORK_INIT_CHECK_INTERVAL = 1 if IS_MOBLAB else 0.1
+# TODO(184304822) reset back to 0.1 for the main lab.
+NETWORK_INIT_CHECK_INTERVAL = 1 if IS_MOBLAB else 2
 
 # Number of seconds to download files from devserver. We chose a timeout that
 # is on the same order as the permitted CTS runtime for normal jobs (1h). In

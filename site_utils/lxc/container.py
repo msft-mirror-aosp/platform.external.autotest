@@ -342,7 +342,9 @@ class Container(object):
         @return: True if the network is up, otherwise False.
         """
         try:
-            self.attach_run('curl --head %s' % constants.CONTAINER_BASE_URL)
+            self.attach_run(
+                    'ifconfig eth0 ; ping -c 1 8.8.8.8 ; curl --head %s' %
+                    constants.CONTAINER_BASE_URL)
             return True
         except error.CmdError as e:
             logging.debug(e)

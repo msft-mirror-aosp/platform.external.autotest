@@ -95,15 +95,18 @@ class ContainerBucket(object):
             logging.debug("Clearing cached container info")
         containers = {} if force_update else self.container_cache
         for info in info_collection:
-            if info["name"] in containers:
-                continue
+            # The keys of `containers` are container.ContainerId object, not a
+            # string.
+            for k in containers:
+                if str(k) == info['name']:
+                    continue
             container = Container.create_from_existing_dir(self.container_path,
                                                            **info)
             # Active containers have an ID.  Zygotes and base containers, don't.
             if container.id is not None:
                 containers[container.id] = container
         logging.debug('All containers found: %s',
-                      [(type(k), str(k)) for k in containers])
+                      [(repr(k), str(k)) for k in containers])
         self.container_cache = containers
         return containers
 
@@ -122,10 +125,24 @@ class ContainerBucket(object):
             return self.container_cache[container_id]
 
         container = self.get_all().get(container_id, None)
-        if None == container:
-            logging.debug("Could not find container %s (type: %s)",
-                          container_id, type(container_id))
-        return container
+        if container:
+            return container
+
+        logging.debug(
+                "Could not find container by container id object: %s (%s)",
+                container_id, repr(container_id))
+        # When load container Ids from disk, we cast job_id from NoneType to a
+        # string 'None' (crrev/c/1056366). This causes problems if the input id
+        # has not been casted.
+        logging.debug('Try to get container by the id string: %s',
+                      container_id)
+        for k, v in self.get_all().items():
+            if str(k) == str(container_id):
+                return v
+
+        logging.debug('Could not find container by id string: %s',
+                      container_id)
+        return None
 
 
     def exist(self, container_id):

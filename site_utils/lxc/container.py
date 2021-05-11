@@ -46,6 +46,9 @@ class ContainerId(collections.namedtuple('ContainerId',
 
 
     def __str__(self):
+        # NOTE: The `creation_time` is a float, but we format it as an integer.
+        # Internally we still use the float value to do comparing, hashing,
+        # etc.
         return _TEST_CONTAINER_NAME_FMT % self
 
 

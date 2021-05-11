@@ -13,6 +13,13 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
     """Performs a simple AU using Nebraska."""
     version = 1
 
+    def cleanup(self):
+        super(autoupdate_Basic, self).cleanup()
+        if self._m2n:
+            # Ensure rootfs and stateful are on the same version.
+            self._restore_stateful()
+
+
     def run_once(self, full_payload, job_repo_url=None, m2n=False):
         """
         Performs a N-to-N autoupdate with Nebraska.
@@ -24,7 +31,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
               of this board before updating to ToT.
 
         """
-        if m2n:
+        self._m2n = m2n
+        if self._m2n:
             # Provision latest stable build for the current build.
             build_name = self._get_latest_serving_stable_build()
 

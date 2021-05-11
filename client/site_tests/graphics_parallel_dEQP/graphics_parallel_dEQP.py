@@ -153,9 +153,6 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         self._fails += self.read_file(self._gpu_type + '-' + 'fails.txt')
         self._flakes += self.read_file(self._board + '-' + 'flakes.txt')
         self._flakes += self.read_file(self._gpu_type + '-' + 'flakes.txt')
-        # TODO: Add more fails lists for various boards
-        # TODO: Fix the Missing results from the runner on trogdor
-        # TODO: Add the other VK shards on trogdor
 
     def add_filter_arg(self, command, list, arg, filename):
         """Adds an arg for xfail/skip/flake filtering if we made the file for it."""

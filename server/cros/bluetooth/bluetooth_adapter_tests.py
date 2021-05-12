@@ -134,7 +134,13 @@ RECONNECT_PLATFORM_TYPES = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
 #                            for Veyron (which don't power down right now) but
 #                            reconnect tests are still enabled for that platform
 #                            to check for suspend stability.
-SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
+# TODO(b/187832546) RTL-UART: Current behavior is suspend during S3 but is
+#                             planned to support resume. Need to remove when
+#                             feature is complete.
+
+SUSPEND_POWER_DOWN_CHIPSETS = [
+        'Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997', 'Realtek-RTL8822C-UART'
+]
 
 KERNEL_LOG_LEVEL = {
         'EMERG': 0,

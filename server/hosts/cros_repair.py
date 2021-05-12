@@ -747,14 +747,6 @@ class JetstreamServicesVerifier(hosts.Verifier):
     def verify(self, host):
         # pylint: disable=missing-docstring
         try:
-            if not host.upstart_status('ap-controller'):
-                raise hosts.AutoservVerifyError(
-                    'ap-controller service is not running')
-        except error.AutoservRunError:
-            raise hosts.AutoservVerifyError(
-                'ap-controller service not found')
-
-        try:
             host.run('pgrep ap-controller')
         except error.AutoservRunError:
             raise hosts.AutoservVerifyError(

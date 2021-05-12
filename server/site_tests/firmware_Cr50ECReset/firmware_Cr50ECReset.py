@@ -48,9 +48,15 @@ class firmware_Cr50ECReset(Cr50Test):
 
     def cleanup(self):
         """Make sure the EC is on, if there is a Chrome EC."""
-        if self.check_ec_capability():
-            self.guarantee_ec_is_up()
-        super(firmware_Cr50ECReset, self).cleanup()
+        try:
+            if self.check_ec_capability():
+                self.guarantee_ec_is_up()
+        except Exception as e:
+            logging.info('Issue recovering EC: %r', e)
+            logging.info('Trying power state reset')
+            self.host.servo.get_power_state_controller().reset()
+        finally:
+            super(firmware_Cr50ECReset, self).cleanup()
 
 
     def ec_is_up(self):

@@ -90,6 +90,17 @@ class platform_MemCheck(test.test):
                     errors += 1
                     error_list += [k]
 
+        # Log memory type
+        cmd = 'mosys memory spd print type | head -1'
+        # Example
+        # 0 | LPDDR4
+        mem_type = utils.run(cmd).stdout.split(' ')[-1]
+        logging.info('Ran command: `%s`', cmd)
+        logging.info('Output: "%s"', mem_type)
+
+        # key name timing_dimm_0 for backward compatibility with older test.
+        keyval['timing_dimm_0'] = mem_type
+
         # Log memory ids
         cmd = 'mosys memory spd print id'
         # result example (1 module of memory per result line)

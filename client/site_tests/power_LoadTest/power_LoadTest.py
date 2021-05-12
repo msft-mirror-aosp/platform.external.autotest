@@ -870,7 +870,8 @@ class power_LoadTest(arc.ArcTest):
                 self.task_monitor_file.write(",\n")
                 # we don't want to add url information to our keyvals.
                 # httpd adds them automatically so we remove them again
-                del handler.server._form_entries[idx]
+                if idx in handler.server._form_entries:
+                    del handler.server._form_entries[idx]
         handler.send_response(200)
 
 
@@ -907,7 +908,8 @@ def _extension_log_handler(handler, form, loop_number):
             form[field].value)
             # we don't want to add url information to our keyvals.
             # httpd adds them automatically so we remove them again
-            del handler.server._form_entries[field]
+            if field in handler.server._form_entries:
+                del handler.server._form_entries[field]
 
 
 def _extension_page_time_info_handler(handler, form, loop_number,
@@ -947,7 +949,8 @@ def _extension_page_time_info_handler(handler, form, loop_number,
 
         # we don't want to add url information to our keyvals.
         # httpd adds them automatically so we remove them again
-        del handler.server._form_entries[field]
+        if field in handler.server._form_entries:
+            del handler.server._form_entries[field]
 
     page_base = _loop_keyname(loop_number, 'web_page_')
     for page in page_timestamps:
@@ -1009,7 +1012,8 @@ def _extension_key_values_handler(handler, form, loop_number,
 
         # we don't want to add url information to our keyvals.
         # httpd adds them automatically so we remove them again
-        del handler.server._form_entries[field]
+        if field in handler.server._form_entries:
+            del handler.server._form_entries[field]
 
 
 def _loop_prefix(loop):

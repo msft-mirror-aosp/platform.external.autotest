@@ -2856,11 +2856,18 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def get_board_type(self):
         """
-        Get the DUT's device type from /etc/lsb-release.
-        DEVICETYPE can be one of CHROMEBOX, CHROMEBASE, CHROMEBOOK or more.
+        Get the DUT's device type / form factor from cros_config. It can be one
+        of CHROMEBOX, CHROMEBASE, CHROMEBOOK, or CHROMEBIT.
 
-        @return value of DEVICETYPE param from lsb-release.
+        @return form factor value from cros_config.
         """
+
+        device_type = self.run('cros_config /hardware-properties form-factor',
+                ignore_status=True).stdout
+        if device_type:
+            return device_type
+
+        # TODO: remove lsb-release fallback once cros_config works everywhere
         device_type = self.run('grep DEVICETYPE /etc/lsb-release',
                                ignore_status=True).stdout
         if device_type:

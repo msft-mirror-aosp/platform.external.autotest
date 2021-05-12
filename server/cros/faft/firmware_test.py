@@ -1195,7 +1195,8 @@ class FirmwareTest(test.test):
         pattern = r'power state (\w+) = (\w+),'
 
         try:
-            match = self.ec.send_command_get_output("powerinfo", [pattern])
+            match = self.ec.send_command_get_output("powerinfo", [pattern],
+                                                    retries=3)
         except (error.TestFail, expat.ExpatError) as err:
             logging.warn("powerinfo command encountered an error: %s", err)
             return None

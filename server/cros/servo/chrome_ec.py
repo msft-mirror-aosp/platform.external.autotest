@@ -6,6 +6,7 @@ import ast
 import logging
 import re
 import time
+from xml.parsers import expat
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import ec
@@ -175,7 +176,7 @@ class ChromeConsole(object):
             return False
         return result is not None
 
-    def send_command_get_output(self, command, regexp_list):
+    def send_command_get_output(self, command, regexp_list, retries=1):
         """Send command through UART and wait for response.
 
         This function waits for response message matching regular expressions.
@@ -204,12 +205,19 @@ class ChromeConsole(object):
             raise error.TestError('Arugment regexp_list is not a list: %s' %
                                   str(regexp_list))
 
-        self.set_uart_regexp(str(regexp_list))
-        self._servo.set_nocheck(self.uart_cmd, command)
-        rv = ast.literal_eval(self._servo.get(self.uart_cmd))
-        self.clear_uart_regex()
-
-        return rv
+        while retries > 0:
+            retries -= 1
+            try:
+                self.set_uart_regexp(str(regexp_list))
+                self._servo.set_nocheck(self.uart_cmd, command)
+                return ast.literal_eval(self._servo.get(self.uart_cmd))
+            except (servo.UnresponsiveConsoleError,
+                    servo.ResponsiveConsoleError, expat.ExpatError) as e:
+                if retries <= 0:
+                    raise
+                logging.warning('Failed to send EC cmd. %s', e)
+            finally:
+                self.clear_uart_regex()
 
 
     def is_dfp(self, port=0):

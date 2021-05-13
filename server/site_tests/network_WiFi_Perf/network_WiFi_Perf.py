@@ -46,6 +46,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         @param additional_params list of HostapConfig objects.
         """
         self._should_required = 'should' in commandline_args
+        self._power_save_off = 'power_save_off' in commandline_args
         if 'governor' in commandline_args:
             self._governor = commandline_args['governor']
             # validate governor string. Not all machines will support all of
@@ -229,14 +230,12 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
 
             # Flag a test error if we disconnect for any reason.
             with self.context.client.assert_no_disconnects():
-                # Conduct the performance tests while toggling powersave mode.
-                for power_save in (True, False):
-                    for governor in sorted(set([None, self._governor])):
-                        # Run the performance test and record the test types
-                        # which failed due to low throughput.
-                        low_throughput_tests.update(
-                                self.do_run(ap_config, session, power_save,
-                                            governor))
+                for governor in sorted(set([None, self._governor])):
+                    # Run the performance test and record the test types
+                    # which failed due to low throughput.
+                    low_throughput_tests.update(
+                            self.do_run(ap_config, session,
+                                        not (self._power_save_off), governor))
 
             # Clean up router and client state for the next run.
             self.context.client.shill.disconnect(self.context.router.get_ssid())

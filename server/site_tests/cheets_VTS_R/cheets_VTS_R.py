@@ -22,7 +22,7 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 _CTS_TIMEOUT_SECONDS = 3600
 
 # Internal download locations for android vts bundles.
-_INTERNAL_VTS = 'gs://chromeos-arc-images/vts/'
+_INTERNAL_VTS = 'gs://chromeos-arc-images/vts/bundle/R/'
 _VTS_URI = {
         'arm64': _INTERNAL_VTS + 'android-vts-6961477-arm64.zip',
         'x86_64': _INTERNAL_VTS + 'android-vts-6961477-x86_64.zip',

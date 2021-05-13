@@ -6,6 +6,7 @@ import logging
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.server.cros import vboot_constants as vboot
 
 DEBOUNCE_STATE = 'debouncing'
 
@@ -500,49 +501,66 @@ class _BaseModeSwitcher(object):
         """
         return self.FW_BYPASSER_CLASS(self.faft_framework)
 
-    def setup_mode(self, mode):
+    def setup_mode(self, mode, allow_gbb_force=False):
         """Setup for the requested mode.
 
         It makes sure the system in the requested mode. If not, it tries to
         do so.
 
         @param mode: A string of mode, one of 'normal', 'dev', or 'rec'.
+        @param allow_gbb_force: Bool. If True, allow forcing dev mode via GBB
+                                flags. This is more reliable, but it can prevent
+                                testing other mode-switch workflows.
         @raise TestFail: If the system not switched to expected mode after
                          reboot_to_mode.
 
         """
+        if self.checkers.mode_checker(mode):
+            logging.debug('System already in expected %s mode.', mode)
+            return
+        logging.info('System not in expected %s mode. Reboot into it.', mode)
+
+        if self._backup_mode is None:
+            # Only resume to normal/dev mode after test, not recovery.
+            self._backup_mode = 'dev' if mode == 'normal' else 'normal'
+
+        self.reboot_to_mode(mode, allow_gbb_force=allow_gbb_force)
         if not self.checkers.mode_checker(mode):
-            logging.info('System not in expected %s mode. Reboot into it.',
-                         mode)
-            if self._backup_mode is None:
-                # Only resume to normal/dev mode after test, not recovery.
-                self._backup_mode = 'dev' if mode == 'normal' else 'normal'
-            self.reboot_to_mode(mode)
-            if not self.checkers.mode_checker(mode):
-                raise error.TestFail('System not switched to expected %s'
-                        ' mode after setup_mode.' % mode)
+            raise error.TestFail('System not switched to expected %s mode '
+                                 'after setup_mode.' % mode)
 
     def restore_mode(self):
         """Restores original dev mode status if it has changed.
 
         @raise TestFail: If the system not restored to expected mode.
         """
-        if (self._backup_mode is not None and
-            not self.checkers.mode_checker(self._backup_mode)):
-            self.reboot_to_mode(self._backup_mode)
-            if not self.checkers.mode_checker(self._backup_mode):
-                raise error.TestFail('System not restored to expected %s'
-                        ' mode in cleanup.' % self._backup_mode)
+        if self._backup_mode is None:
+            logging.debug('No backup mode to restore.')
+            return
+        if self.checkers.mode_checker(self._backup_mode):
+            logging.debug('System already in backup %s mode.',
+                          self._backup_mode)
+            return
 
+        self.reboot_to_mode(self._backup_mode, allow_gbb_force=True)
+        if not self.checkers.mode_checker(self._backup_mode):
+            raise error.TestFail('System not restored to expected %s mode in '
+                                 'cleanup.' % self._backup_mode)
 
-
-    def reboot_to_mode(self, to_mode, from_mode=None, sync_before_boot=True,
+    def reboot_to_mode(self,
+                       to_mode,
+                       from_mode=None,
+                       allow_gbb_force=False,
+                       sync_before_boot=True,
                        wait_for_dut_up=True):
         """Reboot and execute the mode switching sequence.
 
-        This method simulates what a user would do to switch between different
-        modes of ChromeOS.  Note that the modes are end-states where the OS is
-        booted up to the Welcome screen, so it takes care of navigating through
+        Normally this method simulates what a user would do to switch between
+        different modes of ChromeOS. However, if allow_gbb_force is True, then
+        booting to dev mode will instead be forced by GBB flags.
+
+        Note that the modes are end-states where the OS is booted up
+        to the Welcome screen, so it takes care of navigating through
         intermediate steps such as various boot confirmation screens.
 
         From the user perspective, these are the states (note that there's also
@@ -578,19 +596,25 @@ class _BaseModeSwitcher(object):
         @param to_mode: The target mode, one of 'normal', 'dev', or 'rec'.
         @param from_mode: The original mode, optional, one of 'normal, 'dev',
                           or 'rec'.
+        @param allow_gbb_force: Bool. If True, allow forcing dev mode via GBB
+                                flags. This is more reliable, but it can prevent
+                                testing other mode-switch workflows.
         @param sync_before_boot: True to sync to disk before booting.
         @param wait_for_dut_up: True to wait DUT online again. False to do the
                                 reboot and mode switching sequence only and may
                                 need more operations to pass the firmware
                                 screen.
         """
-        logging.info('-[ModeSwitcher]-[ start reboot_to_mode(%r, %r, %r) ]-',
-                     to_mode, from_mode, wait_for_dut_up)
+        logging.info(
+                '-[ModeSwitcher]-[ start reboot_to_mode(%r, %r, %r, %r, '
+                '%r)]-', to_mode, from_mode, sync_before_boot, allow_gbb_force,
+                wait_for_dut_up)
 
         if from_mode:
             note = 'reboot_to_mode: to=%s, from=%s' % (from_mode, to_mode)
         else:
             note = 'reboot_to_mode: to=%s' % to_mode
+
         if sync_before_boot:
             lines = self.faft_client.system.run_shell_command_get_output(
                 'crossystem')
@@ -602,30 +626,37 @@ class _BaseModeSwitcher(object):
             self.faft_framework.blocking_sync(freeze_for_reset=True)
         note += '.'
 
+        # If booting to anything but dev mode, make sure we're not forcing dev.
+        # This is irrespective of allow_gbb_force: disabling the flag doesn't
+        # force a mode, it just stops forcing dev.
+        if to_mode != 'dev':
+            self.faft_framework.clear_set_gbb_flags(
+                    vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON, 0, reboot=False)
+
         if to_mode == 'rec':
             self.enable_rec_mode_and_reboot(usb_state='dut')
-
         elif to_mode == 'rec_force_mrc':
             self._enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
-
         elif to_mode == 'dev':
-            self._enable_dev_mode_and_reboot()
-            if wait_for_dut_up:
-                self.bypass_dev_mode()
-
+            if allow_gbb_force:
+                self.faft_framework.clear_set_gbb_flags(
+                        0, vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON, reboot=True)
+            else:
+                self._enable_dev_mode_and_reboot()
+                if wait_for_dut_up:
+                    self.bypass_dev_mode()
         elif to_mode == 'normal':
             self._enable_normal_mode_and_reboot()
-
         else:
-            raise NotImplementedError(
-                    'Not supported mode switching from %s to %s' %
-                     (str(from_mode), to_mode))
-
+            raise NotImplementedError('Unexpected boot mode param: %s',
+                                      to_mode)
         if wait_for_dut_up:
             self.wait_for_client(retry_power_on=True, note=note)
 
-        logging.info('-[ModeSwitcher]-[ end reboot_to_mode(%r, %r, %r) ]-',
-                     to_mode, from_mode, wait_for_dut_up)
+        logging.info(
+                '-[ModeSwitcher]-[ end reboot_to_mode(%r, %r, %r, %r, '
+                '%r)]-', to_mode, from_mode, sync_before_boot, allow_gbb_force,
+                wait_for_dut_up)
 
     def simple_reboot(self, reboot_type='warm', sync_before_boot=True):
         """Simple reboot method

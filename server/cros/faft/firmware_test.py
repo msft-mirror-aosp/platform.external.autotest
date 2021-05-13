@@ -835,29 +835,36 @@ class FirmwareTest(test.test):
         logging.info('Removing legacy FAFT lockfile...')
         self.faft_client.system.run_shell_command('rm -rf /var/tmp/faft')
 
-    def clear_set_gbb_flags(self, clear_mask, set_mask):
+    def clear_set_gbb_flags(self, clear_mask, set_mask, reboot=True):
         """Clear and set the GBB flags in the current flashrom.
 
         @param clear_mask: A mask of flags to be cleared.
         @param set_mask: A mask of flags to be set.
+        @param reboot: If true, then this method will reboot the DUT if certain
+                       flags are modified.
         """
         gbb_flags = self.faft_client.bios.get_gbb_flags()
         new_flags = gbb_flags & ctypes.c_uint32(~clear_mask).value | set_mask
-        self.gbb_flags = new_flags
-        if new_flags != gbb_flags:
+        if new_flags == gbb_flags:
+            logging.info(
+                    'Current GBB flags (0x%x) match desired clear mask '
+                    '(0x%x) and desired set mask (0x%x)', gbb_flags,
+                    clear_mask, set_mask)
+            return
+
+        logging.info('Changing GBB flags from 0x%x to 0x%x.', gbb_flags,
+                     new_flags)
+        if self._backup_gbb_flags is None:
             self._backup_gbb_flags = gbb_flags
-            logging.info('Changing GBB flags from 0x%x to 0x%x.',
-                         gbb_flags, new_flags)
-            self.faft_client.bios.set_gbb_flags(new_flags)
-            # If changing FORCE_DEV_SWITCH_ON or DISABLE_EC_SOFTWARE_SYNC flag,
-            # reboot to get a clear state
-            if ((gbb_flags ^ new_flags) &
-                (vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON |
-                 vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)):
-                self.switcher.mode_aware_reboot()
-        else:
-            logging.info('Current GBB flags look good for test: 0x%x.',
-                         gbb_flags)
+        self.faft_client.bios.set_gbb_flags(new_flags)
+        self.gbb_flags = new_flags
+
+        # If changing FORCE_DEV_SWITCH_ON or DISABLE_EC_SOFTWARE_SYNC flag,
+        # reboot to get a clear state
+        if reboot and bool((gbb_flags ^ new_flags)
+                           & (vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON
+                              | vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)):
+            self.switcher.mode_aware_reboot()
 
 
     def _check_capability(self, target, required_cap, suppress_warning):

@@ -50,6 +50,7 @@ suite:bvt-inline
 suite:bvt-installer
 suite:bvt-perbuild
 suite:bvt-tast-android-pfq
+suite:bvt-tast-arc
 suite:bvt-tast-chrome-pfq
 suite:bvt-tast-cq
 suite:bvt-tast-cq-a11y

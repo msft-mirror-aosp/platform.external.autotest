@@ -481,7 +481,7 @@ def matrix_to_string(matrix, header=None):
             lengths.append(len(column))
     for row in matrix:
         for i, column in enumerate(row):
-            column = six.text_type(column)
+            column = six.binary_type(column)
             cl = len(column)
             try:
                 ml = lengths[i]
@@ -921,7 +921,7 @@ def _wait_for_commands(bg_jobs, start_time, timeout):
             read_ready, write_ready, _ = select.select(read_list, write_list,
                                                        [], SELECT_TIMEOUT)
         except select.error as v:
-            if v[0] == errno.EINTR:
+            if v.args[0] == errno.EINTR:
                 logging.warning(v)
                 continue
             else:
@@ -936,7 +936,10 @@ def _wait_for_commands(bg_jobs, start_time, timeout):
             # we can write PIPE_BUF bytes without blocking
             # POSIX requires PIPE_BUF is >= 512
             bg_job = reverse_dict[file_obj]
-            file_obj.write(bg_job.string_stdin[:512])
+            string_stdin = bg_job.string_stdin[:512]
+            if isinstance(string_stdin, six.text_type):
+                string_stdin = string_stdin.encode('utf-8', 'strict')
+            file_obj.write(string_stdin)
             bg_job.string_stdin = bg_job.string_stdin[512:]
             # no more input data, close stdin, remove it from the select set
             if not bg_job.string_stdin:
@@ -1723,6 +1726,18 @@ def make(extra='', make='make', timeout=None, ignore_status=False):
     return system(cmd, timeout=timeout, ignore_status=ignore_status)
 
 
+def _cmp(x, y):
+    """
+    Replacement for built-in function cmp that was removed in Python 3
+
+    Compare the two objects x and y and return an integer according to
+    the outcome. The return value is negative if x < y, zero if x == y
+    and strictly positive if x > y.
+    """
+
+    return (x > y) - (x < y)
+
+
 def compare_versions(ver1, ver2):
     """Version number comparison between ver1 and ver2 strings.
 
@@ -1752,10 +1767,10 @@ def compare_versions(ver1, ver2):
         cx = ax.pop(0)
         cy = ay.pop(0)
         maxlen = max(len(cx), len(cy))
-        c = cmp(cx.zfill(maxlen), cy.zfill(maxlen))
+        c = _cmp(cx.zfill(maxlen), cy.zfill(maxlen))
         if c != 0:
             return c
-    return cmp(len(ax), len(ay))
+    return _cmp(len(ax), len(ay))
 
 
 def args_to_dict(args):

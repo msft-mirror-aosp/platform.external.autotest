@@ -1313,12 +1313,16 @@ class TradefedTest(test.test):
                     self._run_commands(
                         ['inject_powerd_input_event --code=tablet --value=0'],
                         ignore_status=True)
-            with login.login_chrome(
-                    hosts=self._hosts,
-                    board=board,
-                    dont_override_profile=keep_media,
-                    enable_default_apps=enable_default_apps,
-                    nativebridge64=nativebridge64_experiment) as current_logins:
+
+            session_log_dir = os.path.join(self.resultsdir,
+                                           'login_session_log',
+                                           'step%02d' % steps)
+            with login.login_chrome(hosts=self._hosts,
+                                    board=board,
+                                    dont_override_profile=keep_media,
+                                    enable_default_apps=enable_default_apps,
+                                    nativebridge64=nativebridge64_experiment,
+                                    log_dir=session_log_dir) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

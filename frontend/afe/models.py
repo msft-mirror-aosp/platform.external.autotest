@@ -7,6 +7,7 @@ import logging
 import os
 
 import django.core
+import six
 try:
     from django.db import models as dbmodels, connection
 except django.core.exceptions.ImproperlyConfigured:
@@ -1635,7 +1636,7 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
         job.dependency_labels = options['dependencies']
 
         if options.get('keyvals'):
-            for key, value in options['keyvals'].iteritems():
+            for key, value in six.iteritems(options['keyvals']):
                 # None (or NULL) is not acceptable by DB, so change it to an
                 # empty string in case.
                 JobKeyval.objects.create(job=job, key=key,

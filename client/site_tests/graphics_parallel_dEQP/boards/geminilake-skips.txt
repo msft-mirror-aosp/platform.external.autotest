@@ -1,4 +1,4 @@
-# Times out at 60 seconds
+# https://gitlab.freedesktop.org/mesa/mesa/-/issues/4641
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13
 # timeouts on octopus.  buffer_device_address has workarounds in VK-GL-CTS
 # to extend the watchdog during pipeline creation, so we're probably just

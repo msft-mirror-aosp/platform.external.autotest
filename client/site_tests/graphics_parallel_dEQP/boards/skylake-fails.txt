@@ -1,3 +1,4 @@
+# Possibly related to https://gitlab.freedesktop.org/mesa/mesa/-/issues/1478
 dEQP-VK.glsl.builtin.precision.cos.highp.scalar,Fail
 dEQP-VK.glsl.builtin.precision.cos.mediump.scalar,Fail
 dEQP-VK.glsl.builtin.precision.cos.highp.vec2,Fail
@@ -15,6 +16,7 @@ dEQP-VK.glsl.builtin.precision.sin.mediump.vec3,Fail
 dEQP-VK.glsl.builtin.precision.sin.highp.vec4,Fail
 dEQP-VK.glsl.builtin.precision.sin.mediump.vec4,Fail
 
+# https://gitlab.freedesktop.org/mesa/mesa/-/issues/2833
 dEQP-VK.rasterization.interpolation_multisample_2_bit.lines_wide,Fail
 dEQP-VK.rasterization.interpolation_multisample_2_bit.non_strict_lines_wide,Fail
 dEQP-VK.rasterization.interpolation_multisample_4_bit.lines_wide,Fail

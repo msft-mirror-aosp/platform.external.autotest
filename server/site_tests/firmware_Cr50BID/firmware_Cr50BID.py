@@ -37,9 +37,8 @@ class firmware_Cr50BID(Cr50Test):
     # - Complete support for SPI PLT_RST straps was added in 0.3.18
     # - 4us INT_AP_L pulse was added in 0.3.25
     # - EC-EFS2 support was added in 0.5.4
-    # - 100us INT_AP_L pulse was added in 0.5.5 (Planned)
-    # TODO: use 5.5, so boards that require a 100us pulse can boot.
-    BID_SUPPORT = '0.5.4'
+    # - 100us INT_AP_L pulse was added in 0.5.5
+    BID_SUPPORT = '0.5.5'
 
     BID_MISMATCH = ['Board ID mismatched, but can not reboot.']
     BID_ERROR = 5

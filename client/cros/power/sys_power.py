@@ -67,6 +67,8 @@ class FirmwareError(SuspendFailure):
         ('^parrot', r'ME failed to respond'),
         # b/64684441: eve SKU without eMMC
         ('^eve', r'Card did not respond to voltage select!'),
+        # b/187561710#comment6: waive mcache error from volteer
+        ('^volteer', r'mcache overflow, should increase CBFS_MCACHE size!'),
     ]
 
 

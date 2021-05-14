@@ -1,4 +1,3 @@
-dEQP-VK.api.info.android.no_unknown_extensions,Fail
 dEQP-VK.clipping.user_defined.clip_cull_distance_dynamic_index.vert.4_4,Fail
 dEQP-VK.clipping.user_defined.clip_cull_distance.vert_geom.5_3,Fail
 dEQP-VK.clipping.user_defined.clip_distance_dynamic_index.vert_tess.8,Fail

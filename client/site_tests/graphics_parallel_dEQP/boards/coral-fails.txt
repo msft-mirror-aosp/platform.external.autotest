@@ -1,4 +1,3 @@
-dEQP-VK.api.info.android.no_unknown_extensions,Fail
 dEQP-VK.pipeline.dynamic_offset.graphics.arrays.storage_buffer.numcmdbuffers_1.sameorder.numdescriptorsetbindings_1.numdynamicbindings_1.numnondynamicbindings_0,Fail
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.stencil_state_face_both_single_eq_dec_wrap_clear_0_ref_1_fail,Fail
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.stencil_state_face_front_le_inc_wrap_clear_255_ref_254_depthfail,Fail

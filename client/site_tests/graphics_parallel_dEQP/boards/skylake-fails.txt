@@ -24,4 +24,3 @@ dEQP-VK.rasterization.interpolation_multisample_8_bit.non_strict_lines_wide,Fail
 dEQP-VK.rasterization.interpolation_multisample_16_bit.lines_wide,Fail
 dEQP-VK.rasterization.interpolation_multisample_16_bit.non_strict_lines_wide,Fail
 
-dEQP-VK.api.info.android.no_unknown_extensions,Fail

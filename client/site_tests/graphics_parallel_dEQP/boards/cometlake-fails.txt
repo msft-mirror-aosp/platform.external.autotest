@@ -1,4 +1,3 @@
-dEQP-VK.api.info.android.no_unknown_extensions,Fail
 dEQP-VK.query_pool.concurrent_queries.primary_command_buffer,Fail
 dEQP-VK.query_pool.concurrent_queries.secondary_command_buffer,Fail
 dEQP-VK.query_pool.statistics_query.fragment_shader_invocations.primary.32bits_line_list,Fail

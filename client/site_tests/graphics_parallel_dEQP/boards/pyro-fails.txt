@@ -3,7 +3,6 @@ dEQP-VK.api.copy_and_blit.core.resolve_image.partial.2_bit,Fail
 dEQP-VK.api.copy_and_blit.core.resolve_image.with_regions.8_bit,Fail
 dEQP-VK.api.image_clearing.core.clear_color_image.2d.optimal.multiple_layers.b8g8r8a8_unorm_200x180_clamp_input_multiple_subresourcerange,Fail
 dEQP-VK.api.image_clearing.core.clear_color_image.2d.optimal.remaining_array_layers.r16g16b16a16_unorm_clamp_input_multiple_subresourcerange,Fail
-dEQP-VK.api.info.android.no_unknown_extensions,Fail
 dEQP-VK.pipeline.depth.format.d16_unorm.compare_ops.always_not_equal_never_not_equal,Fail
 dEQP-VK.pipeline.depth.format.d16_unorm.compare_ops.less_greater_equal_equal,Fail
 dEQP-VK.pipeline.depth.format.d16_unorm.compare_ops.never_less_greater_or_equal_less_or_equal,Fail

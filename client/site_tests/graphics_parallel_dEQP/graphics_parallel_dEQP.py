@@ -132,6 +132,15 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # conformance and I've never seen anyone pay attention to it.
         self._skips.append('dEQP-GLES.*.accuracy.*')
 
+        # The deqp package ships an Android mustpass list instead of a normal
+        # Linux one, which helps us on host check for some extended behavior
+        # expectations from Android, but also has some expectations that host
+        # dEQP should *not* be trying to enforce (maximum Vulkan version,
+        # extensions exposed, layers exposed).  Skip until upstream dEQP can
+        # get fixed.  Related: https://gerrit.khronos.org/c/vk-gl-cts/+/5715
+        self._skips.append('dEQP-VK.api.info.android.no_layers')
+        self._skips.append('dEQP-VK.api.info.android.no_unknown_extensions')
+
         # The flush_finish tests throw warnings when behavior doesn't match
         # their expectations, except that tiling GPUs don't behave the way they
         # expect in their timing setup so the tests take exceptionally long

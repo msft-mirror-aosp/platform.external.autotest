@@ -28,6 +28,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
     version = 1
     CUTOFF_DELAY = 10
     PD_SETTLE_TIME = 3
+    WAIT_DUT_UP = 5
     HAS_CR50_RESET_ODL = False
 
     def cr50_power_on_reset(self):
@@ -68,6 +69,15 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         rv = self.ec.send_command_get_output('chgstate',
                                              [r'ac\s*=\s*(0|1)\s*'])[0][1]
         return rv == '1'
+
+    def cleanup(self):
+        """Restore dts mode."""
+        try:
+            if hasattr(self, 'HAS_CR50_RESET_ODL'):
+                self.restore_dut(self.HAS_CR50_RESET_ODL)
+                self.servo.set_dts_mode(self.dts_restore)
+        finally:
+            super(firmware_Cr50DeferredECReset, self).cleanup()
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test and check if cr50 exists, DTS is controllable,
@@ -139,13 +149,37 @@ class firmware_Cr50DeferredECReset(Cr50Test):
                 raise error.TestError('RDD leakage does not match capability'
                                       ' configuration.')
         finally:
-            self.servo.set_dts_mode(self.dts_restore)
-            self.servo.set_nocheck('pwr_button', 'release')
-            time.sleep(self.PD_SETTLE_TIME)
-
-            self.servo.power_normal_press()  # Wake up AP
+            self.restore_dut(False)
 
         logging.info('Initialization is done')
+
+    def restore_dut(self, use_cr50_reset):
+        """Restore the dut state."""
+        logging.info('Restore the dut')
+        self.servo.set('pwr_button', 'release')
+
+        if use_cr50_reset:
+            self.servo.set_nocheck('cr50_reset_odl', 'off')
+        else:
+            time.sleep(self.PD_SETTLE_TIME)
+            self.servo.set_nocheck('servo_pd_role', 'snk')
+            time.sleep(self.PD_SETTLE_TIME)
+            self.servo.set_nocheck('servo_pd_role', 'src')
+
+        # Give the EC some time to come up before resetting cr50.
+        time.sleep(self.WAIT_DUT_UP)
+
+        # Reboot cr50 to ensure EC_RST_L is deasserted.
+        self.fast_ccd_open(enable_testlab=True)
+        self.cr50.reboot()
+
+        time.sleep(self.WAIT_DUT_UP)
+
+        # Press power button to wake up AP, and releases it soon
+        # in any cases.
+        if not self.cr50.ap_is_on():
+            self.servo.power_short_press()
+        logging.info('Restoration done')
 
     def check_ecrst_asserted(self, expect_assert):
         """Ask CR50 whether EC_RST_L is asserted or deasserted.
@@ -248,17 +282,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             self.ping_ec(True)
 
         finally:
-            if self.HAS_CR50_RESET_ODL:
-                self.servo.set_nocheck('cr50_reset_odl', 'off')
-            else:
-                self.servo.set_nocheck('servo_pd_role', 'src')
-
-            self.servo.set_dts_mode(self.dts_restore)
-            time.sleep(1)
-
-            # Press power button to wake up AP, and releases it soon
-            # in any cases.
-            self.servo.power_short_press()
+            self.restore_dut(self.HAS_CR50_RESET_ODL)
 
     def run_once(self):
         """Test deferred EC reset feature. """

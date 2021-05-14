@@ -6,9 +6,12 @@ dEQP-VK.api.copy_and_blit.dedicated_allocation.resolve_image.whole_array_image.4
 dEQP-VK.api.copy_and_blit.dedicated_allocation.resolve_image.whole_array_image_one_region.4_bit,Fail
 dEQP-VK.api.copy_and_blit.dedicated_allocation.resolve_image.whole_copy_before_resolving.4_bit,Fail
 dEQP-VK.api.device_init.create_instance_device_intentional_alloc_fail,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/6251
 dEQP-VK.api.driver_properties.driver_id_match,Fail
 dEQP-VK.api.driver_properties.info_zero_terminated,Fail
 dEQP-VK.api.driver_properties.name_zero_terminated,Fail
+
 dEQP-VK.api.info.format_properties.b8g8r8g8_422_unorm,Fail
 dEQP-VK.api.info.format_properties.g8b8g8r8_422_unorm,Fail
 dEQP-VK.api.info.format_properties.g8_b8r8_2plane_420_unorm,Fail
@@ -18,17 +21,23 @@ dEQP-VK.api.info.get_physical_device_properties2.memory_properties,Fail
 dEQP-VK.api.info.get_physical_device_properties2.properties,Fail
 dEQP-VK.api.info.image_format_properties.2d.optimal.g8_b8r8_2plane_420_unorm,Fail
 dEQP-VK.api.info.image_format_properties.2d.optimal.g8_b8_r8_3plane_420_unorm,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/10470
 dEQP-VK.api.info.vulkan1p2_limits_validation.ext_descriptor_indexing,Fail
 dEQP-VK.api.info.vulkan1p2_limits_validation.general,Fail
 dEQP-VK.api.info.vulkan1p2_limits_validation.khr_maintenance_3,Fail
 dEQP-VK.api.info.vulkan1p2_limits_validation.khr_multiview,Fail
 dEQP-VK.api.info.vulkan1p2.properties,Fail
 dEQP-VK.api.info.vulkan1p2.property_extensions_consistency,Fail
+
 dEQP-VK.api.object_management.alloc_callback_fail.device,Fail
 dEQP-VK.api.object_management.alloc_callback_fail.device_group,Fail
 dEQP-VK.api.version_check.entry_points,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/9409
 dEQP-VK.compute.basic.max_local_size_x,Fail
 dEQP-VK.compute.basic.max_local_size_y,Fail
+
 dEQP-VK.image.extend_operands_spirv1p4.r16g16b16a16_sint_force_sign_extend,Fail
 dEQP-VK.image.extend_operands_spirv1p4.r16g16b16a16_sint_relaxed_force_sign_extend,Fail
 dEQP-VK.image.extend_operands_spirv1p4.r16g16_sint_force_sign_extend,Fail
@@ -44,6 +53,8 @@ dEQP-VK.image.extend_operands_spirv1p4.r8g8_sint_force_sign_extend,Fail
 dEQP-VK.image.extend_operands_spirv1p4.r8g8_sint_relaxed_force_sign_extend,Fail
 dEQP-VK.image.extend_operands_spirv1p4.r8_sint_force_sign_extend,Fail
 dEQP-VK.image.extend_operands_spirv1p4.r8_sint_relaxed_force_sign_extend,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/10735
 dEQP-VK.image.subresource_layout.2d.1_level.a8b8g8r8_snorm_pack32,Fail
 dEQP-VK.image.subresource_layout.2d.1_level.b8g8r8a8_snorm,Fail
 dEQP-VK.image.subresource_layout.2d.1_level.r16g16b16a16_snorm,Fail
@@ -137,8 +148,12 @@ dEQP-VK.image.subresource_layout.3d.all_levels.r16_snorm,Fail
 dEQP-VK.image.subresource_layout.3d.all_levels.r8g8b8a8_snorm,Fail
 dEQP-VK.image.subresource_layout.3d.all_levels.r8g8_snorm,Fail
 dEQP-VK.image.subresource_layout.3d.all_levels.r8_snorm,Fail
+
 dEQP-VK.info.device_mandatory_features,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/10470
 dEQP-VK.info.device_properties,Fail
+
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_compare_always_greater,Fail
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_compare_greater_equal_greater,Fail
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_compare_greater_equal_greater_then_equal,Fail
@@ -291,6 +306,8 @@ dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp32.input_args.round
 dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp32.input_args.rounding_rtz_vmuls_vert,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp32.input_args.sign_denorm_preserve_frag,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp32.input_args.sign_denorm_preserve_vert,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/issues/3208
 dEQP-VK.spirv_assembly.instruction.graphics.opquantize.carry_bit_frag,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.opquantize.carry_bit_geom,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.opquantize.carry_bit_tessc,Fail
@@ -351,9 +368,12 @@ dEQP-VK.spirv_assembly.instruction.graphics.opquantize.too_small_geom,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.opquantize.too_small_tessc,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.opquantize.too_small_tesse,Fail
 dEQP-VK.spirv_assembly.instruction.graphics.opquantize.too_small_vert,Fail
+
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.nested_arrays_different_inner_stride,Fail
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.nested_arrays_different_outer_stride,Fail
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.nested_arrays_different_strides,Fail
+
+# https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/6752
 dEQP-VK.subgroups.basic.compute.subgroupbarrier,Crash
 dEQP-VK.subgroups.basic.compute.subgroupelect,Crash
 dEQP-VK.subgroups.basic.compute.subgroupmemorybarrierbuffer,Crash
@@ -382,6 +402,7 @@ dEQP-VK.subgroups.vote.compute.subgroupallequal_vec3,Crash
 dEQP-VK.subgroups.vote.compute.subgroupallequal_vec4,Crash
 dEQP-VK.subgroups.vote.compute.subgroupall_uint,Crash
 dEQP-VK.subgroups.vote.compute.subgroupany_uint,Crash
+
 dEQP-VK.texture.filtering.2d_array.formats.d24_unorm_s8_uint_stencil.d24_unorm_s8_uint_stencil_nearest,Fail
 dEQP-VK.texture.filtering.2d.formats.d24_unorm_s8_uint_stencil.nearest,Fail
 dEQP-VK.texture.filtering.cube.formats.d24_unorm_s8_uint_stencil.nearest,Fail

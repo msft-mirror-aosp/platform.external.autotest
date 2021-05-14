@@ -481,7 +481,7 @@ def matrix_to_string(matrix, header=None):
             lengths.append(len(column))
     for row in matrix:
         for i, column in enumerate(row):
-            column = six.ensure_binary(six.text_type(column), "utf-8")
+            column = six.text_type(column)
             cl = len(column)
             try:
                 ml = lengths[i]

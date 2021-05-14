@@ -111,7 +111,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
         self._corrupt_diagnostics_image()
         self._enter_diagnostics_mode()
         self.switcher.wait_for_client()
-        self.checkers.mode_checker('normal')
+        self.check_state((self.checkers.mode_checker, 'normal'))
 
         # Update the firmware to restore the diagnostics image, reboot into
         # diagnostics mode, and verify that the DUT goes down (indicating

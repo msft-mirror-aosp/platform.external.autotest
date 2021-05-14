@@ -512,7 +512,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def has_command(self, cmd):
         """Returns 1 if cr50 has the command 0 if it doesn't"""
         try:
-            self.send_safe_command_get_output('help', [cmd])
+            self.send_command_retry_get_output('help', [cmd],
+                                               safe=True,
+                                               retries=3)
         except:
             logging.info("Image does not include '%s' command", cmd)
             return 0

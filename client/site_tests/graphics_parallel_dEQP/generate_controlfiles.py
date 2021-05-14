@@ -88,6 +88,7 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'graphics'
 TEST_TYPE = 'client'
 MAX_RESULT_SIZE_KB = 131072
+EXTENDED_TIMEOUT = 86400
 DOC = \"\"\"
 This test runs the drawElements Quality Program test suite.
 \"\"\"

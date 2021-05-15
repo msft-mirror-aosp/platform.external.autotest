@@ -522,7 +522,10 @@ class power_LoadTest(arc.ArcTest):
             # For full runs, we should use charge to scale for battery life,
             # since the voltage swing is accounted for.
             # For short runs, energy will be a better estimate.
-            if self._loop_count > 1:
+            # TODO(b/188082306): some devices do not provide
+            # 'wh_energy_powerlogger' so use charge in this case to scale for
+            # battery life.
+            if self._loop_count > 1 or keyvals['wh_energy_powerlogger'] <= 0:
                 estimated_reps = (keyvals['ah_charge_full_design'] /
                                   keyvals['ah_charge_used'])
             else:

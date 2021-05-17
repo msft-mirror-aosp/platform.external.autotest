@@ -163,11 +163,16 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         logging.info('Checking if ecrst is %s', expected_txt)
 
         try:
-            rv = self.cr50.send_command_get_output('ecrst',
-                                        [r'EC_RST_L is (%s)' % expected_txt])
+            rv = self.cr50.send_command_retry_get_output(
+                    'ecrst', [r'EC_RST_L is ((de)?asserted)'], safe=True)
             logging.info(rv)
         except error.TestError as e:
             raise error.TestFail(str(e))
+        actual_txt = rv[0][1]
+        logging.info('ecrst is %s', actual_txt)
+        if actual_txt != expected_txt:
+            raise error.TestFail('EC_RST_L mismatch: expected %r got %r',
+                                 expected_txt, actual_txt)
 
     def ping_ec(self, expect_response):
         """Check if EC is running and responding.

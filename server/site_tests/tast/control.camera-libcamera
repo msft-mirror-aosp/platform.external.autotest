@@ -13,7 +13,7 @@ MAX_RESULT_SIZE_KB = 50 * 1024
 REQUIRE_SSP = True
 
 DOC = '''
-Run the tast camera-postsubmit test suite.
+Run the tast camera-libcamera test suite.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for

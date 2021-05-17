@@ -205,8 +205,8 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         actual_txt = rv[0][1]
         logging.info('ecrst is %s', actual_txt)
         if actual_txt != expected_txt:
-            raise error.TestFail('EC_RST_L mismatch: expected %r got %r',
-                                 expected_txt, actual_txt)
+            raise error.TestFail('EC_RST_L mismatch: expected %r got %r' %
+                                 (expected_txt, actual_txt))
 
     def ping_ec(self, expect_response):
         """Check if EC is running and responding.

@@ -1442,12 +1442,17 @@ class ImageServer(ImageServerBase):
             self.nton_payload = nton_payload
 
 
-    def wait_for_artifacts_staged(self, archive_url, artifacts='', files=''):
+    def wait_for_artifacts_staged(self,
+                                  archive_url,
+                                  artifacts='',
+                                  files='',
+                                  **kwargs):
         """Polling devserver.is_staged until all artifacts are staged.
 
         @param archive_url: Google Storage URL for the build.
         @param artifacts: Comma separated list of artifacts to download.
         @param files: Comma separated list of files to download.
+        @param kwargs: keyword arguments to make is_staged devserver call.
         @return: True if all artifacts are staged in devserver.
         """
         kwargs = {'archive_url': archive_url,
@@ -1457,8 +1462,14 @@ class ImageServer(ImageServerBase):
 
 
     @remote_devserver_call()
-    def call_and_wait(self, call_name, archive_url, artifacts, files,
-                      error_message, expected_response=SUCCESS):
+    def call_and_wait(self,
+                      call_name,
+                      archive_url,
+                      artifacts,
+                      files,
+                      error_message,
+                      expected_response=SUCCESS,
+                      clean=False):
         """Helper method to make a urlopen call, and wait for artifacts staged.
 
         @param call_name: name of devserver rpc call.
@@ -1471,14 +1482,19 @@ class ImageServer(ImageServerBase):
                                   to be good.
         @param error_message: Error message to be thrown if response does not
                               match expected_response.
+        @param clean: Force re-loading artifacts/files from cloud, ignoring
+                      cached version.
 
         @return: The response from rpc.
         @raise DevServerException upon any return code that's expected_response.
 
         """
-        kwargs = {'archive_url': archive_url,
-                  'artifacts': artifacts,
-                  'files': files}
+        kwargs = {
+                'archive_url': archive_url,
+                'artifacts': artifacts,
+                'files': files,
+                'clean': clean
+        }
         return self._call_and_wait(call_name, error_message,
                                    expected_response, **kwargs)
 

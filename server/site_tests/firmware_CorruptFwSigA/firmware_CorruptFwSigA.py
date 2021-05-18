@@ -17,7 +17,8 @@ class firmware_CorruptFwSigA(FirmwareTest):
     def initialize(self, host, cmdline_args, dev_mode=False):
         super(firmware_CorruptFwSigA, self).initialize(host, cmdline_args)
         self.backup_firmware()
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
         self.setup_usbkey(usbkey=False)
 
     def cleanup(self):

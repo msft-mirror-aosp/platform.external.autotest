@@ -31,7 +31,8 @@ class firmware_ECUpdateId(FirmwareTest):
         # In order to test software sync, it must be enabled.
         self.clear_set_gbb_flags(vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC, 0)
         self.backup_firmware()
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
         # It makes updater-related RPCs to use the active AP/EC firmware,
         # instead of the firmware in the shellball.
         self.setup_firmwareupdate_shellball()
@@ -99,15 +100,6 @@ class firmware_ECUpdateId(FirmwareTest):
         logging.info("Corrupt the EC section: %s", section)
         self.faft_client.ec.corrupt_body(section)
 
-    def wait_software_sync_and_boot(self):
-        """Wait for software sync to update EC."""
-        if self.dev_mode:
-            time.sleep(self.faft_config.software_sync_update +
-                       self.faft_config.firmware_screen)
-            self.servo.ctrl_d()
-        else:
-            time.sleep(self.faft_config.software_sync_update)
-
     def run_once(self):
         """Execute the main body of the test.
         """
@@ -121,7 +113,7 @@ class firmware_ECUpdateId(FirmwareTest):
 
         logging.info("Reboot EC. Verify if EFS works as intended.")
         self.sync_and_ec_reboot('hard')
-        self.wait_software_sync_and_boot()
+        time.sleep(self.faft_config.software_sync_update)
         self.switcher.wait_for_client()
 
         logging.info("Expect EC in another RW slot (the modified hash).")

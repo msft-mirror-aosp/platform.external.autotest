@@ -45,7 +45,8 @@ class firmware_FWtries(FirmwareTest):
 
     def initialize(self, host, cmdline_args, dev_mode=False):
         super(firmware_FWtries, self).initialize(host, cmdline_args)
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
 
     def run_once(self, host):
         """Runs a single iteration of the test."""

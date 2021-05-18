@@ -90,7 +90,7 @@ class firmware_EventLog(FirmwareTest):
             raise error.TestFail('Incorrect event logged on normal boot.')
 
         logging.debug('Transitioning to dev mode for next test')
-        self.switcher.reboot_to_mode(to_mode='dev')
+        self.switcher.reboot_to_mode(to_mode='dev', allow_gbb_force=True)
 
         logging.info('Verifying eventlog behavior on developer mode boot')
         self._cutoff_time = self._now()

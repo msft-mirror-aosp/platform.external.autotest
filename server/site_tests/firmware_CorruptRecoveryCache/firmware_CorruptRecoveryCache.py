@@ -28,7 +28,8 @@ class firmware_CorruptRecoveryCache(FirmwareTest):
         super(firmware_CorruptRecoveryCache, self).initialize(
                 host, cmdline_args)
         self.backup_firmware()
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
         self.setup_usbkey(usbkey=True, host=False)
 
     def cleanup(self):

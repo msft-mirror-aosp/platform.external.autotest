@@ -33,9 +33,10 @@ class firmware_ConsecutiveBoot(FirmwareTest):
         self.faft_waitup_time = int(dict_args.get('faft_waitup_time', 0))
         self.faft_localrun = int(dict_args.get('faft_localrun', 0))
         super(firmware_ConsecutiveBoot, self).initialize(host, cmdline_args)
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
         if dev_mode:
-          self.clear_set_gbb_flags(0, vboot.GBB_FLAG_DEV_SCREEN_SHORT_DELAY)
+            self.clear_set_gbb_flags(0, vboot.GBB_FLAG_DEV_SCREEN_SHORT_DELAY)
         self.setup_usbkey(usbkey=False)
 
     def wait_for_client_aux(self):

@@ -85,7 +85,7 @@ class firmware_TPMExtend(FirmwareTest):
             raise error.TestFail('PCR0 was not extended with bootmode 0|1|0!')
 
         logging.info('Transitioning to dev mode for next test')
-        self.switcher.reboot_to_mode(to_mode='dev')
+        self.switcher.reboot_to_mode(to_mode='dev', allow_gbb_force=True)
 
         logging.info('Verifying bootmode digest in PCR0 in developer mode')
         self.check_state((self.checkers.crossystem_checker, {

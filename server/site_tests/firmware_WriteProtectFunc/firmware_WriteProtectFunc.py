@@ -23,7 +23,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
     def initialize(self, host, cmdline_args, dev_mode=False):
         """Initialize the test"""
         super(firmware_WriteProtectFunc, self).initialize(host, cmdline_args)
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
         if self.faft_config.chrome_ec:
             self._targets = (BIOS, EC)
         else:

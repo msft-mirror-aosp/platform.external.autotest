@@ -26,7 +26,8 @@ class firmware_ConsecutiveBootPowerButton(FirmwareTest):
         self.faft_iterations = int(dict_args.get('faft_iterations', 1))
         super(firmware_ConsecutiveBootPowerButton,
               self).initialize(host, cmdline_args)
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
         self.setup_usbkey(usbkey=False)
 
 

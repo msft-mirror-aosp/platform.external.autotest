@@ -56,7 +56,8 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                         "shellball bios for downgrade")
 
         self.backup_firmware()
-        self.switcher.setup_mode('dev' if dev_mode else 'normal')
+        self.switcher.setup_mode('dev' if dev_mode else 'normal',
+                                 allow_gbb_force=True)
 
         # Save write protect configuration and enable it
         logging.info("Enabling Write protection")
@@ -115,18 +116,18 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         # Dump the current spi bios to file
         self.spi_bios = self.ORIGINAL_BIOS
         logging.info("Copying current bios image to %s for upgrade " \
-                     "test" % self.spi_bios)
+                     "test", self.SPI_BIOS)
         self.faft_client.bios.dump_whole(self.spi_bios)
 
         # Get the downgrade bios image from user or from shellball
         self.downgrade_bios = self.DOWNGRADE_BIOS
         if self.bios_input:
             logging.info("Copying user given bios image to %s for downgrade " \
-                    "test" % self.downgrade_bios)
+                    "test", self.downgrade_bios)
             self._client.send_file(self.bios_input, self.downgrade_bios)
         else:
             logging.info("Copying bios image from update shellball to %s " \
-                    "for downgrade test" % self.downgrade_bios)
+                    "for downgrade test", self.downgrade_bios)
             self.faft_client.updater.extract_shellball()
             cbfs_work_dir = self.faft_client.updater.cbfs_setup_work_dir()
             shellball_bios = os.path.join(cbfs_work_dir,
@@ -144,7 +145,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         """
         # Check if ME_RW_A is present in the image
         logging.info("Checking if seperate CBFS is used for CSE RW in " \
-                     "image : %s" % image_path)
+                     "image : %s", image_path)
         command = "futility dump_fmap -F %s | grep ME_RW_A" % image_path
         output = self.faft_client.system.run_shell_command_get_output(
                     command, True)
@@ -164,7 +165,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         """
         # Check if me_rw.metadata present FW_MAIN region
         logging.info("Checking if me_rw.metadata file " \
-                     "present in image : %s" % image_path )
+                     "present in image : %s", image_path )
         command = "cbfstool %s print -r FW_MAIN_A " \
                             "| grep me_rw.metadata" % image_path
         output = self.faft_client.system.run_shell_command_get_output(
@@ -199,7 +200,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
             version = (int(each_word, 16))
             ver_res = "".join((ver_res, "".join((str(version),"."))))
         ver_res = ver_res[:-1]
-        logging.info("Version : %s" % ver_res)
+        logging.info("Version : %s", ver_res)
         return ver_res
 
     def get_image_fwmain_me_rw_version(self,
@@ -273,9 +274,8 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         logging.info("Expected mainfw_act    : %s\n" \
                      "Current mainfw_act     : %s\n" \
                      "Expected ME RW Version : %s\n" \
-                     "Current ME RW Version  : %s\n" % (
-                          expected_slot, main_fw_act,
-                          expected_version, me_version))
+                     "Current ME RW Version  : %s\n",
+                      expected_slot, main_fw_act, expected_version, me_version)
 
         if (expected_version not in me_version) or \
                  (expected_slot not in main_fw_act):
@@ -416,7 +416,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         @param bios_image: bios image with shellball to be created
         @param append: string to be updated with shellball name
         """
-        logging.info("Preparing shellball with %s" % bios_image)
+        logging.info("Preparing shellball with %s", bios_image)
         self.faft_client.updater.reset_shellball()
         # Copy the given bois to shellball
         extract_dir = self.faft_client.updater.get_work_path()
@@ -444,8 +444,9 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         options = ['--host_only', '--wp=1']
         logging.info("Updating RW firmware using " \
                      "chromeos_firmwareupdate")
-        logging.info("Update command : chromeos_firmwareupdate-%s --mode=%s "
-                     " %s" % (append,self.MODE,' '.join(options)))
+        logging.info(
+                "Update command : chromeos_firmwareupdate-%s --mode=%s "
+                " %s", append, self.MODE, ' '.join(options))
         result = self.run_chromeos_firmwareupdate(
                 self.MODE, append, options, ignore_status = True)
 
@@ -498,9 +499,9 @@ class firmware_CsmeFwUpdate(FirmwareTest):
 
         logging.info("Active CSME RW Version                 : %s\n" \
                      "FW main CSME RW Version SPI Image      : %s\n" \
-                     "FW main CSME RW Version downgrade Image: %s\n" % (
+                     "FW main CSME RW Version downgrade Image: %s\n",
                      active_csme_rw_version, spi_me_version,
-                     downgrade_me_version ))
+                     downgrade_me_version)
 
         # Abort if downgrade me_rw version is same as spi me_rw version
         if (spi_me_version in downgrade_me_version):
@@ -514,12 +515,12 @@ class firmware_CsmeFwUpdate(FirmwareTest):
             self.prepare_shellball(self.downgrade_bios, operation)
 
             logging.info("Downgrading RW section. Downgrade ME " \
-                        "Version: %s" % downgrade_me_version)
+                        "Version: %s", downgrade_me_version)
             # Run firmware updater downgrade the bios RW
             self.run_shellball(operation)
 
             # Set fw_try_next to slot and reboot to trigger csme update
-            logging.info("Setting fw_try_next to %s: " % slot)
+            logging.info("Setting fw_try_next to %s: ", slot)
             self.faft_client.system.set_fw_try_next(slot)
             self.switcher.mode_aware_reboot(reboot_type = 'cold')
 
@@ -528,19 +529,19 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                 raise error.TestError("CSME RW Downgrade using "
                                     "FW_MAIN_%s is Failed!" % slot)
             logging.info("CSME RW Downgrade using FW_MAIN_%s is "
-                        "successful" % slot)
+                         "successful", slot)
 
             operation = "upgrade"
             # Create a shellball with the original spi bios
             self.prepare_shellball(self.spi_bios, operation)
 
             logging.info("Upgrading RW Section. Upgrade ME " \
-                        "Version: %s" % spi_me_version)
+                        "Version: %s", spi_me_version)
             # Run firmware updater and update RW section with shellball
             self.run_shellball(operation)
 
             # Set fw_try_next to slot and reboot to trigger csme update
-            logging.info("Setting fw_try_next to %s: " % slot)
+            logging.info("Setting fw_try_next to %s: ", slot)
             self.faft_client.system.set_fw_try_next(slot)
             self.switcher.mode_aware_reboot(reboot_type = 'cold')
 
@@ -549,4 +550,4 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                 raise error.TestError("CSME RW Upgrade using "
                                     "FW_MAIN_%s is Failed!" % slot)
             logging.info("CSME RW Upgrade using FW_MAIN_%s is "
-                        "successful" % slot)
+                         "successful", slot)

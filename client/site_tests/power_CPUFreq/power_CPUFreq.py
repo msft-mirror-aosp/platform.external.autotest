@@ -27,6 +27,7 @@ class power_CPUFreq(test.test):
         self._cpus = [cpufreq(dirname) for dirname in dirs]
         for cpu in self._cpus:
             cpu.save_state()
+            cpu.disable_constraints()
 
         # Store the setting if the system has CPUQuiet feature
         if os.path.exists(SYSFS_CPUQUIET_ENABLE):
@@ -191,6 +192,11 @@ class cpufreq(object):
             logging.info(fname + ': ' + data)
             self.__write_file(fname, data)
 
+    def disable_constraints(self):
+        logging.info('disabling min/max constraints:')
+        self.__write_file('scaling_min_freq', str(self.get_min_frequency()))
+        self.__write_file('scaling_max_freq', str(self.get_max_frequency()))
+
     def get_available_governors(self):
         governors = self.__read_file('scaling_available_governors')
         logging.info('available governors: %s', governors)
@@ -223,19 +229,19 @@ class cpufreq(object):
         logging.info('current frequency: %s', freq)
         return freq
 
+    def get_min_frequency(self):
+        freq = int(self.__read_file('cpuinfo_min_freq'))
+        logging.info('min frequency: %s', freq)
+        return freq
+
+    def get_max_frequency(self):
+        freq = int(self.__read_file('cpuinfo_max_freq'))
+        logging.info('max frequency: %s', freq)
+        return freq
+
     def set_frequency(self, frequency):
         logging.info('setting frequency to %d', frequency)
-        if frequency >= self.get_current_frequency():
-            file_list = [
-                'scaling_max_freq', 'scaling_min_freq', 'scaling_setspeed'
-            ]
-        else:
-            file_list = [
-                'scaling_min_freq', 'scaling_max_freq', 'scaling_setspeed'
-            ]
-
-        for fname in file_list:
-            self.__write_file(fname, str(frequency))
+        self.__write_file('scaling_setspeed', str(frequency))
 
     def disable_boost(self):
         """Disable boost.

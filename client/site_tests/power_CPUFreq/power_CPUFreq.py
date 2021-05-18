@@ -88,6 +88,12 @@ class power_CPUFreq(test.test):
             raise error.TestFail('Not enough frequencies supported!')
 
         for cpu in cpus:
+            this_frequencies = cpu.get_available_frequencies()
+            if set(available_frequencies) != set(this_frequencies):
+                raise error.TestError(
+                    "Can't fallback to parallel test: %s / %s differ: %r / %r" %
+                    (cpu, cpu0, available_frequencies, this_frequencies))
+
             if 'userspace' not in cpu.get_available_governors():
                 raise error.TestError('userspace governor not supported')
 
@@ -149,6 +155,9 @@ class cpufreq(object):
     def __del__(self):
         if self.get_driver() == 'acpi-cpufreq':
             self.enable_boost()
+
+    def __str__(self):
+        return os.path.basename(os.path.dirname(self.__base_path))
 
     def __write_file(self, file_name, data):
         path = os.path.join(self.__base_path, file_name)

@@ -32,9 +32,9 @@ class power_Dummy(power_test.power_Test):
         start_ts = time.time()
         self.start_measurements()
         for i in range(self.loop):
-          tstart = time.time()
-          time.sleep(self.loop_time)
-          self.checkpoint_measurements('section%s' % i, tstart)
+            tstart = time.time()
+            time.sleep(self.loop_time)
+            self.checkpoint_measurements('section%s' % i, tstart)
 
         logger = power_dashboard.KeyvalLogger(start_ts, time.time())
         logger.add_item('system', self.dummy_result, 'point', 'perf')

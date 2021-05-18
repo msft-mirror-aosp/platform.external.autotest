@@ -143,7 +143,6 @@ class ServoHostInformationValidator(unittest.TestCase):
         self.assertFalse(servo_host.is_servo_host_information_valid(hostname, 'a1234'))
         self.assertFalse(servo_host.is_servo_host_information_valid(hostname, 'o1234'))
         self.assertFalse(servo_host.is_servo_host_information_valid(hostname, '71234'))
-        self.assertFalse(servo_host.is_servo_host_information_valid(hostname, '71_24'))
         self.assertFalse(servo_host.is_servo_host_information_valid(hostname, '71.24'))
         self.assertFalse(servo_host.is_servo_host_information_valid(hostname, '71-24'))
         self.assertFalse(servo_host.is_servo_host_information_valid(hostname, '-234'))

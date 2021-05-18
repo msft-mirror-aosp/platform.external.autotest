@@ -429,8 +429,7 @@ class CrosRepairUnittests(unittest.TestCase):
         tpm_verifier = cros_repair.TPMStatusVerifier('test', [])
         with self.assertRaises(hosts.AutoservVerifyError) as ctx:
             tpm_verifier.verify(mock_host)
-        self.assertEqual('Cannot load the TPM SRK',
-                         ctx.exception.message)
+        self.assertEqual('Cannot load the TPM SRK', str(ctx.exception))
 
     def test_jetstream_tpm_owned(self):
         mock_host = mock.Mock()
@@ -451,7 +450,7 @@ class CrosRepairUnittests(unittest.TestCase):
         tpm_verifier = cros_repair.JetstreamTpmVerifier('test', [])
         with self.assertRaises(hosts.AutoservVerifyError) as ctx:
             tpm_verifier.verify(mock_host)
-        self.assertEqual('TPM is not owned', ctx.exception.message)
+        self.assertEqual('TPM is not owned', str(ctx.exception))
 
     @mock.patch.object(retry.logging, 'warning')
     @mock.patch.object(retry.time, 'time')
@@ -466,7 +465,7 @@ class CrosRepairUnittests(unittest.TestCase):
         tpm_verifier = cros_repair.JetstreamTpmVerifier('test', [])
         with self.assertRaises(hosts.AutoservVerifyError) as ctx:
             tpm_verifier.verify(mock_host)
-        self.assertEqual('TPM is not ready', ctx.exception.message)
+        self.assertEqual('TPM is not ready', str(ctx.exception))
 
     @mock.patch.object(retry.logging, 'warning')
     @mock.patch.object(retry.time, 'time')
@@ -479,8 +478,7 @@ class CrosRepairUnittests(unittest.TestCase):
         tpm_verifier = cros_repair.JetstreamTpmVerifier('test', [])
         with self.assertRaises(hosts.AutoservVerifyError) as ctx:
             tpm_verifier.verify(mock_host)
-        self.assertEqual('Could not determine TPM status',
-                         ctx.exception.message)
+        self.assertEqual('Could not determine TPM status', str(ctx.exception))
 
 
 if __name__ == '__main__':

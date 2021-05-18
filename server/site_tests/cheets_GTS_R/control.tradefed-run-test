@@ -104,7 +104,7 @@ def run_TS(machine):
         target_module=None,
         target_plan=None,
         uri=uri,
-        load_waivers=('#' not in cts_test),  # No waivers for single-test runs
+        load_waivers=('#' not in gts_test),  # No waivers for single-test runs
         login_precondition_commands=[
             'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'
         ],

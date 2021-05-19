@@ -4,6 +4,7 @@
 
 import base64
 import logging
+import os
 from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.server import utils
 
@@ -20,13 +21,13 @@ REQUIRE_SSP = True
 DOC = '''
 Run the lacros test.
 
-This is a wrapper for lacros tast. In POC stage, we download a lacros
-artifact in the autotest run and configure the tast to execute lacros
-tests upon the downloaded binary.
+This is a wrapper for lacros tast tests built by for Chromium builders. We
+mount a lacros artifact provisioned by TLS and configure the tast to execute
+lacros tests upon it.
 
 Tast is an integration-testing framework analogous to the test-running portion
-of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
-more information.
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/
+for more information.
 
 See http://go/tast-failures for information about investigating failures.
 '''
@@ -34,42 +35,58 @@ See http://go/tast-failures for information about investigating failures.
 def run(machine):
     host=hosts.create_host(machine)
     varslist = []
-    # TODO(crbug.com/1139516): Revisit the args dict once the POC is done.
-    # The goal is to control the browser tests from chromium side.
     args_dict = utils.args_to_dict(args)
     expr = args_dict.get('tast_expr')
     if not expr:
-      expr_b64 = args_dict.get('tast_expr_b64')
-      if expr_b64:
-        expr = base64.b64decode(expr_b64)
+        expr_b64 = args_dict.get('tast_expr_b64')
+        if expr_b64:
+            expr = base64.b64decode(expr_b64)
     if not expr:
         raise TestFail(
-            'Attribute expression is unspecified; set tast_expr in --args.\n'
-            '  Example: test_that --args="tast_expr=lacros.Basic"\n'
-            '  If the expression contains spaces, consider transforming it to\n'
-            '  base64 and passing it via tast_expr_b64 flag.\n'
-            '  Example: test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'
-            '  More details at go/lacros-on-skylab.')
-
-    # TODO(crbug.com/1155637): Once CTP could provision lacros versions,
-    # remove below lines which download a lacros artifact before tast runs.
-    lacros_gcs_path = args_dict.get('lacros_gcs_path')
-    if lacros_gcs_path:
-        logging.info('Expect to download lacros from %s', lacros_gcs_path)
-        # Skip the default boto config to apply the service account of
-        # drones. The GCS bucket storing Chrome builds only allows this
-        # service account to access.
-        utils.system_output('BOTO_CONFIG= '
-            'gsutil -o Credentials:gs_service_key_file='
-            '/creds/service_accounts/skylab-drone.json cp %s /tmp/lacros.zip' %
-            lacros_gcs_path)
-        utils.system_output('unzip -o /tmp/lacros.zip -d /tmp/lacros')
-        host.run('mkdir -p /usr/local/lacros/')
-        host.send_file('/tmp/lacros/', '/usr/local/lacros/', delete_dest=True)
-        varslist.append('lacrosDeployedBinary=/usr/local/lacros')
-        # Clean the files downloaded to drone server.
-        utils.system_output('rm -rf /tmp/lacros.zip /tmp/lacros')
+                'Attribute expression is unspecified; set tast_expr in --args.\n'
+                '  Example: test_that --args="tast_expr=lacros.Basic"\n'
+                '  If the expression contains spaces, consider transforming it to\n'
+                '  base64 and passing it via tast_expr_b64 flag.\n'
+                '  Example: test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'
+                '  More details at go/lacros-on-skylab.')
     logging.info('Tast expr: %s', expr)
+
+    assert host.path_exists('/var/lib/imageloader/lacros'), ('lacros artifact'
+            'is not provisioned by CTP. Please check the CTP request.')
+
+    # Because this wrapper servers Chromium/Chrome CI builders, the Chrome version
+    # should be always fresher than the rootfs Chrome bundled in OS.
+    try:
+        host.run('mkdir -p /tmp/lacros /usr/local/lacros && '
+                 'imageloader --mount --mount_component=lacros'
+                 ' --mount_point=/tmp/lacros && '
+                 # The provisioned path of squashfs file will be cleared by
+                 # clear_tpm, so we do hard copy after the mount.
+                 'cp -r /tmp/lacros/* /usr/local/lacros/')
+    except Exception as e:
+        raise TestFail('Exception while mount lacros artifact: %s', e)
+    finally:
+        host.run('imageloader --unmount --mount_point=/tmp/lacros;'
+                 'rm -rf /tmp/lacros')
+
+    path_to_chrome = os.path.join('/usr/local/lacros',
+                                  args_dict.get('exe_rel_path'))
+    assert host.path_exists(path_to_chrome), (
+            'lacros artifact is not provisioned at expected path, %s'
+            % path_to_chrome)
+
+    varslist.append('lacrosDeployedBinary=%s' %
+                    os.path.dirname(path_to_chrome)
+    )
+
+    def cleanup():
+        try:
+            host.run('rm -rf /usr/local/lacros')
+        except Exception as e:
+            logging.exception('Exception while clear lacros: %s', e)
+
+    job.add_post_run_hook(cleanup)
+
     job.run_test('tast',
                  host=host,
                  test_exprs=[expr],

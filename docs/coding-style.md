@@ -95,6 +95,20 @@ import MySQLdb  # After common so that we check our site-packages first.
 from common_lib import error
 ```
 
+### Automatically reorder imports
+
+To sort the imports on a list of files:
+
+`isort -o common -t common -sl FILENAMES`
+
+Or all the files in the current commit:
+
+`isort -o common -t common -sl $(git diff --name-only HEAD^ HEAD)`
+
+Or all the unstaged files:
+
+`isort -o common -t common -sl $(git diff --name-only)`
+
 ## Testing None
 
 Use `is None` rather than `== None` and `is not None` rather than `!= None`.

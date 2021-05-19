@@ -48,7 +48,8 @@ def parallel(tasklist, timeout=None, return_results=False):
                 run_error = True
 
         results.append(six.moves.cPickle.load(task.result_pickle))
-        task.result_pickle.close()
+        if hasattr(task.result_pickle, 'close'):
+            task.result_pickle.close()
 
     if return_results:
         return results

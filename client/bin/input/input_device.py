@@ -411,7 +411,7 @@ class InputDevice:
         elif code == ABS_PRESSURE:
             return ABS_MT_PRESSURE
         elif code == ABS_TOOL_WIDTH:
-            return ABS_TOUCH_MAJOR
+            return ABS_MT_TOUCH_MAJOR
         else:
             return code
 

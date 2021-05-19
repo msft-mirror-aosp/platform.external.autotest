@@ -5,6 +5,8 @@
 import struct
 from collections import namedtuple
 
+import six
+
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors
 
 # All the MBIM_ONLY_* maps are filters for MBIM only function. These maps
@@ -168,14 +170,13 @@ class DescriptorMeta(type):
         return cls
 
 
-class Descriptor(object):
+class Descriptor(six.with_metaclass(DescriptorMeta, object)):
     """
     USB Descriptor base class.
 
     This class should not be instantiated or used directly.
 
     """
-    __metaclass__ = DescriptorMeta
 
 
 class UnknownDescriptor(Descriptor):
@@ -346,7 +347,7 @@ class DescriptorParser(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         """
         Returns the next descriptor found in the descriptor data.
 
@@ -381,6 +382,10 @@ class DescriptorParser(object):
         descriptor.index = self._descriptor_index
         self._descriptor_index += 1
         return descriptor
+
+    def next(self):
+        """Stub for python2, remove once py2 support is not needed."""
+        return self.__next__()
 
 
 def filter_descriptors(descriptor_type, descriptors):
@@ -453,7 +458,7 @@ def filter_interface_descriptors(descriptors, interface_type):
         @returns True if all fields match, False otherwise.
 
         """
-        for key, value in interface_type.iteritems():
+        for key, value in six.iteritems(interface_type):
             if (not hasattr(interface, key) or
                 getattr(interface, key) != value):
                 return False

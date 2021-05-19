@@ -575,7 +575,7 @@ class power_LoadTest(arc.ArcTest):
             key = 'ext_%s_failed_loads' % task
             vals = (int(x) for x in keyvals[key].split('_'))
             for index, val in enumerate(vals):
-                log_name = 'loop%2d_%s_failed_load' % (index, task)
+                log_name = 'loop%02d_%s_failed_load' % (index, task)
                 logger.add_item(log_name, val, 'point', 'perf')
 
         # Add ext_ms_page_load_time_mean to power dashboard
@@ -584,6 +584,12 @@ class power_LoadTest(arc.ArcTest):
         for index, val in enumerate(vals):
             log_name = 'loop%02d_ms_page_load_time' % index
             logger.add_item(log_name, val, 'point', 'perf')
+
+        # Add battery life and power to power dashboard
+        for key in ('minutes_battery_life_tested', 'minutes_battery_life',
+                    'w_energy_rate'):
+            if key in keyvals:
+                logger.add_item(key, keyvals[key], 'point', 'perf')
 
         self._meas_logs.append(logger)
 

@@ -15,7 +15,8 @@ import subprocess
 import threading
 import time
 
-from linux_input import EV_MSC, EV_SYN, MSC_SCAN, SYN_REPORT
+from autotest_lib.client.bin.input.linux_input import\
+    EV_MSC, EV_SYN, MSC_SCAN, SYN_REPORT
 
 
 # Define extra misc events below as they are not defined in linux_input.

@@ -8,7 +8,7 @@ import os
 import re
 import shutil
 import time
-import urlparse
+import six.moves.urllib_parse as urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils

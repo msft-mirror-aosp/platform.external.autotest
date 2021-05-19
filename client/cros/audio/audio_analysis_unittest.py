@@ -116,7 +116,7 @@ class SpectralAnalysisTest(unittest.TestCase):
         """This unittest checks the spectral analysis works on real data."""
         file_path = os.path.join(
                 os.path.dirname(__file__), 'test_data', '1k_2k.raw')
-        binary = open(file_path, 'r').read()
+        binary = open(file_path, 'rb').read()
         data = audio_data.AudioRawData(binary, 2, 'S32_LE')
         saturate_value = audio_data.get_maximum_value_from_sample_format(
                 'S32_LE')

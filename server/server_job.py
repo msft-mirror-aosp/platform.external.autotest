@@ -334,11 +334,16 @@ class server_job(base_job.base_job):
         self._use_client_trampoline = use_client_trampoline
         self._companion_hosts = companion_hosts
 
+        # Parse the release number from the label to setup sysinfo.
+        version = re.findall('release/R(\d+)-', label)
+        if version:
+            version = int(version[0])
+
         self.logging = logging_manager.get_logging_manager(
                 manage_stdout_and_stderr=True, redirect_fds=True)
         subcommand.logging_manager_object = self.logging
 
-        self.sysinfo = sysinfo.sysinfo(self.resultdir)
+        self.sysinfo = sysinfo.sysinfo(self.resultdir, version=version)
         self.profilers = profilers.profilers(self)
         self._sync_offload_dir = sync_offload_dir
 

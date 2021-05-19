@@ -306,7 +306,7 @@ class purged_on_init_logdir(logdir):
 
 class site_sysinfo(base_sysinfo.base_sysinfo):
     """Represents site system info."""
-    def __init__(self, job_resultsdir):
+    def __init__(self, job_resultsdir, version=None):
         super(site_sysinfo, self).__init__(job_resultsdir)
         crash_exclude_string = None
         if not collect_corefiles:
@@ -351,10 +351,13 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
         self.test_loggables.add(
             logfile(os.path.join(constants.USER_DATA_DIR,
                                  ".Google/Google Talk Plugin/gtbplugin.log")))
-        self.test_loggables.add(
-                purged_on_init_logdir(constants.CRASH_DIR,
-                                      excludes=logdir.DEFAULT_EXCLUDES +
-                                      (crash_exclude_string, )))
+
+        # purged_on_init_logdir not compatible with client R86 and prior.
+        if version and int(version) > 86:
+            self.test_loggables.add(
+                    purged_on_init_logdir(constants.CRASH_DIR,
+                                          excludes=logdir.DEFAULT_EXCLUDES +
+                                          (crash_exclude_string, )))
         # Collect files under /tmp/crash_reporter, which contain the procfs
         # copy of those crashed processes whose core file didn't get converted
         # into minidump. We need these additional files for post-mortem analysis

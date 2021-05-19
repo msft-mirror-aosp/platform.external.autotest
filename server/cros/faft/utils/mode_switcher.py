@@ -515,14 +515,15 @@ class _BaseModeSwitcher(object):
                          reboot_to_mode.
 
         """
-        if self.checkers.mode_checker(mode):
+        current_mode = self.faft_client.system.get_boot_mode()
+        if current_mode == mode:
             logging.debug('System already in expected %s mode.', mode)
             return
         logging.info('System not in expected %s mode. Reboot into it.', mode)
 
         if self._backup_mode is None:
             # Only resume to normal/dev mode after test, not recovery.
-            self._backup_mode = 'dev' if mode == 'normal' else 'normal'
+            self._backup_mode = 'dev' if current_mode == 'dev' else 'normal'
 
         self.reboot_to_mode(mode, allow_gbb_force=allow_gbb_force)
         if not self.checkers.mode_checker(mode):
@@ -546,6 +547,7 @@ class _BaseModeSwitcher(object):
         if not self.checkers.mode_checker(self._backup_mode):
             raise error.TestFail('System not restored to expected %s mode in '
                                  'cleanup.' % self._backup_mode)
+        self._backup_mode = None
 
     def reboot_to_mode(self,
                        to_mode,

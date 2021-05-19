@@ -105,27 +105,17 @@ class FAFTCheckers(object):
         return succeed
 
     def mode_checker(self, mode):
-        """Check the current system in the given mode.
+        """Check whether the DUT is in the given firmware boot mode.
 
-        @param mode: A string of mode, one of 'normal', 'dev', or 'rec'.
+        @param mode: A string of the expected boot mode: normal, rec, or dev.
         @return: True if the system in the given mode; otherwise, False.
+        @raise ValueError: If the expected boot mode is not one of normal, rec,
+                           or dev.
         """
-        if mode == 'normal':
-            return self.crossystem_checker(
-                    {'devsw_boot': '0',
-                     'mainfw_type': 'normal'},
-                    suppress_logging=True)
-        elif mode == 'dev':
-            return self.crossystem_checker(
-                    {'devsw_boot': '1',
-                     'mainfw_type': 'developer'},
-                    suppress_logging=True)
-        elif mode == 'rec':
-            return self.crossystem_checker(
-                    {'mainfw_type': 'recovery'},
-                    suppress_logging=True)
-        else:
-            raise NotImplementedError('The given mode %s not supported' % mode)
+        if mode not in ('normal', 'rec', 'dev'):
+            raise ValueError(
+                    'Unexpected boot mode %s: want normal, rec, or dev' % mode)
+        return self.faft_client.system.get_boot_mode() == mode
 
     def fw_tries_checker(self,
                          expected_mainfw_act,

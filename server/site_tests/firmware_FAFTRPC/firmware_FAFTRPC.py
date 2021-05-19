@@ -408,6 +408,7 @@ RPC_CATEGORIES = [
                                         "get_platform_name",
                                         "get_model_name",
                                         "dev_tpm_present",
+                                        "get_boot_mode",
                                         "get_root_dev",
                                         "get_root_part",
                                         "get_fw_vboot2",

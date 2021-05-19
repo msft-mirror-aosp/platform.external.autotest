@@ -896,6 +896,26 @@ class SystemServicer(object):
         return self._os_if.run_shell_command_get_output(
                 'crossystem %s' % key)[0]
 
+    def get_boot_mode(self):
+        """Get the current firmware boot mode.
+
+        @return: Either 'normal', 'dev', or 'rec'.
+        @raise: ValueError if mainfw_type and devsw_boot do not correspond to
+                an expected boot mode combination.
+        """
+        mainfw_type = self._os_if.cs.mainfw_type
+        devsw_boot = self._os_if.cs.devsw_boot
+        if mainfw_type == 'normal' and devsw_boot == '0':
+            return 'normal'
+        elif mainfw_type == 'developer' and devsw_boot == '1':
+            return 'dev'
+        elif mainfw_type == 'recovery':
+            return 'rec'
+        else:
+            raise ValueError('Unexpected mainfw_type/devsw_boot combination: '
+                             'mainfw_type=%s, devsw_boot=%s' %
+                             (mainfw_type, devsw_boot))
+
     def get_root_dev(self):
         """Get the name of root device without partition number.
 

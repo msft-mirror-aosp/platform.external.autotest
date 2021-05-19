@@ -143,11 +143,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         use_btpeer=True,
                         flag='Quick Health',
                         args_dict=None,
-                        start_browser=False):
+                        start_browser=False,
+                        floss=False):
         """Inits the test batch"""
         self.host = host
         self.start_browser = start_browser
         self.use_btpeer = use_btpeer
+        self.floss = floss
+
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
         self.rssi_check = self._get_bool_arg('rssi_check', args_dict, True)
@@ -162,7 +165,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.factory = remote_facade_factory.RemoteFacadeFactory(
                 host, no_chrome=not self.start_browser, disable_arc=True)
         try:
-            self.bluetooth_facade = self.factory.create_bluetooth_facade()
+            self.bluetooth_facade = self.factory.create_bluetooth_facade(
+                    self.floss)
         except Exception as e:
             logging.error('Exception %s while creating bluetooth_facade',
                           str(e))

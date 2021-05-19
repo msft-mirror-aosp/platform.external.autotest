@@ -75,7 +75,6 @@ def dbus_print_error(default_return_value=False):
     @param wrapped_function function to wrap.
 
     """
-
     def decorator(wrapped_function):
         """Call a function and catch DBus errors.
 
@@ -83,7 +82,6 @@ def dbus_print_error(default_return_value=False):
         @return function return value or default_return_value on failure.
 
         """
-
         @functools.wraps(wrapped_function)
         def wrapper(*args, **kwargs):
             """Pass args and kwargs to a dbus safe function.
@@ -109,10 +107,17 @@ def dbus_print_error(default_return_value=False):
     return decorator
 
 
-class PairingAgent(dbus.service.Object):
+class BluetoothBaseFacadeNative(object):
+    """Base facade shared by Bluez and Floss daemons. This takes care of any
+    functionality that is common across the two daemons.
+    """
+    pass
+
+
+class BluezPairingAgent(dbus.service.Object):
     """The agent handling the authentication process of bluetooth pairing.
 
-    PairingAgent overrides RequestPinCode method to return a given pin code.
+    BluezPairingAgent overrides RequestPinCode method to return a given pin code.
     User can use this agent to pair bluetooth device which has a known
     pin code.
 
@@ -120,9 +125,8 @@ class PairingAgent(dbus.service.Object):
     supported later.
 
     """
-
     def __init__(self, pin, *args, **kwargs):
-        super(PairingAgent, self).__init__(*args, **kwargs)
+        super(BluezPairingAgent, self).__init__(*args, **kwargs)
         self._pin = pin
 
     @dbus.service.method('org.bluez.Agent1',
@@ -143,8 +147,9 @@ class PairingAgent(dbus.service.Object):
         return self._pin
 
 
-class BluetoothFacadeNative(object):
-    """Exposes DUT methods called remotely during Bluetooth autotests.
+class BluezFacadeNative(BluetoothBaseFacadeNative):
+    """Exposes DUT methods called remotely during Bluetooth autotests for the
+    Bluez daemon.
 
     All instance methods of this object without a preceding '_' are exposed via
     an XML-RPC server. This is not a stateless handler object, which means that
@@ -482,7 +487,6 @@ class BluetoothFacadeNative(object):
            Precondition:
                  1) enable_wrt_logs has been called
         """
-
         def _collect_logs():
             """Execute command to collect wrt logs."""
             try:
@@ -603,7 +607,6 @@ class BluetoothFacadeNative(object):
                   False otherwise.
 
         """
-
         def bluez_stopped():
             """Checks the bluetooth daemon status.
 
@@ -882,7 +885,6 @@ class BluetoothFacadeNative(object):
         Args:
             device_address: Peripheral address
         """
-
         def match_hid_to_device(hidpath, device_address):
             """Check if given hid syspath is for the given device address """
             # If the syspath has a uniq property that matches the peripheral
@@ -1545,7 +1547,7 @@ class BluetoothFacadeNative(object):
 
     @xmlrpc_server.dbus_safe(False)
     def _setup_pairing_agent(self, pin):
-        """Initializes and resiters a PairingAgent to handle authentication.
+        """Initializes and resiters a BluezPairingAgent to handle authentication.
 
         @param pin: The pin code this agent will answer.
 
@@ -1555,8 +1557,8 @@ class BluetoothFacadeNative(object):
                     'Removing the old agent before initializing a new one')
             self._pairing_agent.remove_from_connection()
             self._pairing_agent = None
-        self._pairing_agent = PairingAgent(pin, self._system_bus,
-                                           self.AGENT_PATH)
+        self._pairing_agent = BluezPairingAgent(pin, self._system_bus,
+                                                self.AGENT_PATH)
         agent_manager = dbus.Interface(
                 self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                             self.BLUEZ_AGENT_MANAGER_PATH),
@@ -1696,7 +1698,6 @@ class BluetoothFacadeNative(object):
         @returns: True on success. False otherwise.
 
         """
-
         def connect_reply():
             """Handler when connect succeeded."""
             logging.info('Device connected: %s', device_path)
@@ -1985,7 +1986,6 @@ class BluetoothFacadeNative(object):
                   an error string if the dbus method fails or exception occurs
 
         """
-
         def successful_cb():
             """Called when the dbus_method completed successfully."""
             reply_handler()
@@ -2011,7 +2011,6 @@ class BluetoothFacadeNative(object):
 
         return self.dbus_cb_msg
 
-
     def advmon_check_manager_interface_exist(self):
         """Check if AdvertisementMonitorManager1 interface is available.
 
@@ -2025,7 +2024,6 @@ class BluetoothFacadeNative(object):
                 return True
 
         return False
-
 
     def advmon_read_supported_types(self):
         """Read the Advertisement Monitor supported monitor types.
@@ -3574,3 +3572,15 @@ class BluetoothFacadeNative(object):
         """Cleanup before exiting the client xmlrpc process."""
 
         self.advmon_appmgr.destroy()
+
+
+class FlossFacadeNative(BluetoothBaseFacadeNative):
+    """Exposes DUT methods called remotely during Bluetooth autotests for the
+    Floss daemon.
+
+    All instance methods of this object without a preceding '_' are exposed via
+    an XML-RPC server. This is not a stateless handler object, which means that
+    if you store state inside the delegate, that state will remain around for
+    future calls.
+    """
+    pass

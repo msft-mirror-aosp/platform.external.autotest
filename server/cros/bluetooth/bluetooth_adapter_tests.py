@@ -1224,7 +1224,8 @@ class BluetoothAdapterTests(test.test):
             del self.input_facade
         self.factory = remote_facade_factory.RemoteFacadeFactory(
                 self.host, disable_arc=True, no_chrome=not self.start_browser)
-        self.bluetooth_facade = self.factory.create_bluetooth_facade()
+        self.bluetooth_facade = self.factory.create_bluetooth_facade(
+                self.floss)
         self.input_facade = self.factory.create_input_facade()
 
         # Re-enable debugging verbose since Chrome will set it to
@@ -4922,7 +4923,7 @@ class BluetoothAdapterTests(test.test):
         Typically, the run_once() method would look like:
 
         factory = remote_facade_factory.RemoteFacadeFactory(host)
-        self.bluetooth_facade = factory.create_bluetooth_facade()
+        self.bluetooth_facade = factory.create_bluetooth_facade(self.floss)
 
         self.test_bluetoothd_running()
         # ...

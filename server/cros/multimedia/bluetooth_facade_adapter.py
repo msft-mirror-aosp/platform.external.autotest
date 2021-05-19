@@ -14,13 +14,14 @@ class BluetoothFacadeRemoteAdapter(BluetoothDevice):
 
     """
 
-    def __init__(self, host, remote_facade_proxy):
+    def __init__(self, host, remote_facade_proxy, floss):
         """Construct an BluetoothFacadeRemoteAdapter.
 
         @param host: Host object representing a remote host.
         @param remote_facade_proxy: RemoteFacadeProxy object.
+        @param floss: Target the Floss daemon?
 
         """
         self._client = host
         super(BluetoothFacadeRemoteAdapter,
-              self).__init__(host, remote_facade_proxy)
+              self).__init__(host, remote_facade_proxy, floss)

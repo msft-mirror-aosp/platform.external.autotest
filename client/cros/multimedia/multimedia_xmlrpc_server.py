@@ -55,7 +55,9 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 audio_facade_native.AudioFacadeNative(resource,
                                                       arc_resource=arc_res),
                 'bluetooth':
-                bluetooth_facade_native.BluetoothFacadeNative(),
+                bluetooth_facade_native.BluezFacadeNative(),
+                'floss':
+                bluetooth_facade_native.FlossFacadeNative(),
                 'video':
                 video_facade_native.VideoFacadeNative(resource,
                                                       arc_resource=arc_res),

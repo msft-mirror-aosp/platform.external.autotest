@@ -44,13 +44,14 @@ class BluetoothDevice(object):
     # between python2 and python3. This is the standard date format we use.
     NATIVE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
-    def __init__(self, device_host, remote_facade_proxy=None):
+    def __init__(self, device_host, remote_facade_proxy=None, floss=False):
         """Construct a BluetoothDevice.
 
         @param device_host: host object representing a remote host.
 
         """
         self.host = device_host
+        self.floss = floss
         self._remote_proxy = remote_facade_proxy
 
         # Make sure the client library is on the device so that the proxy code
@@ -94,14 +95,17 @@ class BluetoothDevice(object):
 
         """
         # When the xmlrpc server is already created (using the
-        # RemoteFacadeFactory), we will use the BluetoothNativeFacade inside the
+        # RemoteFacadeFactory), we will use the BluezFacadeNative inside the
         # remote proxy. Otherwise, we will use the xmlrpc server started from
         # this class. Currently, there are a few users outside of the Bluetooth
         # autotests that use this and this can be removed once those users
         # migrate to using the RemoteFacadeFactory to generate the xmlrpc
         # connection.
         if self._remote_proxy:
-            return self._remote_proxy.bluetooth
+            if self.floss:
+                return self._remote_proxy.floss
+            else:
+                return self._remote_proxy.bluetooth
         else:
             return self._bt_direct_proxy
 

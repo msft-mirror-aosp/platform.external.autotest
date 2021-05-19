@@ -412,10 +412,10 @@ class RemoteFacadeFactory(object):
         return browser_facade_adapter.BrowserFacadeRemoteAdapter(self._proxy)
 
 
-    def create_bluetooth_facade(self):
+    def create_bluetooth_facade(self, floss):
         """"Creates a bluetooth facade object."""
         return bluetooth_facade_adapter.BluetoothFacadeRemoteAdapter(
-                self._client, self._proxy)
+                self._client, self._proxy, floss)
 
 
     def create_input_facade(self):

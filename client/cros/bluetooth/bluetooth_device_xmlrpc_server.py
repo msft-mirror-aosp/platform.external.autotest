@@ -17,12 +17,11 @@ from autotest_lib.client.cros import xmlrpc_server
 from autotest_lib.client.cros.multimedia import bluetooth_facade_native
 
 
-class BluetoothDeviceXmlRpcDelegate(
-        xmlrpc_server.XmlRpcDelegate,
-        bluetooth_facade_native.BluetoothFacadeNative):
+class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate,
+                                    bluetooth_facade_native.BluezFacadeNative):
     """Exposes DUT methods called remotely during Bluetooth autotests.
 
-    The delegate inherits from BluetoothFacadeNative where all native calls
+    The delegate inherits from BluezFacadeNative where all native calls
     should be kept. This XmlRpcDelegate is kept around for when Bluetooth needs
     to be called without using the MultimediaRpcDelegate.
 

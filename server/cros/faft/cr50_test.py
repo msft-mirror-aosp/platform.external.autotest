@@ -7,7 +7,7 @@ from __future__ import print_function
 import logging
 import os
 import pprint
-import StringIO
+from six import StringIO
 import subprocess
 import time
 

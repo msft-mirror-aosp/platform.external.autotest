@@ -4,7 +4,9 @@
 import os
 import unittest
 
-import tradefed_utils
+import common
+
+from autotest_lib.server.cros.tradefed import tradefed_utils
 
 
 def _load_data(filename):

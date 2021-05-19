@@ -28,7 +28,7 @@ import stat
 import subprocess
 import tempfile
 import time
-import urlparse
+import six.moves.urllib_parse as urlparse
 
 from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error

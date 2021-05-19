@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import six
+
 from autotest_lib.client.common_lib.cros.network import iw_runner
 
 
@@ -67,7 +69,7 @@ CHANNEL_TABLE = {2412: 1, 2417: 2, 2422: 3,
 
 # This only works because the frequency table is one to one
 # for channels/frequencies.
-FREQUENCY_TABLE = dict((v,k) for k,v in CHANNEL_TABLE.iteritems())
+FREQUENCY_TABLE = dict((v,k) for k,v in six.iteritems(CHANNEL_TABLE))
 
 # Configurator type
 CONFIGURATOR_STATIC = 1

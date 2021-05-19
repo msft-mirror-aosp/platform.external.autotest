@@ -2,11 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import httplib
 import logging
+from six.moves import http_client as httplib
 import socket
 import time
-import xmlrpclib
+from six.moves import xmlrpc_client as xmlrpclib
 
 from autotest_lib.client.cros.faft.config import Config as ClientConfig
 from autotest_lib.server import autotest

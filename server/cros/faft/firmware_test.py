@@ -14,7 +14,7 @@ import uuid
 from xml.parsers import expat
 
 import six
-import StringIO
+from six import StringIO
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, global_config
 from autotest_lib.client.common_lib.cros import retry, tpm_utils

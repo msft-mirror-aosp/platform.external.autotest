@@ -108,12 +108,24 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         logging.info('=======================================================')
 
     @staticmethod
-    def _get_update_btpeers_arguments(args_dict=None):
-        """Parse the update_btpeers argument"""
-        key = 'update_btpeers'
-        if args_dict is not None and key in args_dict:
-            return args_dict[key].lower() != 'false'
-        return True
+    def _get_bool_arg(arg, args_dict, default_value):
+        """Get the target bool argument from args_dict.
+
+        @param arg: the target argument to query
+        @param args_dict: the argument dictionary
+        @param default_value: the default value of the argument
+                if the arg is not in args_dict or
+                if arg is neither 'true' nor 'false'
+
+        @returns: the bool value of the target argument
+        """
+        if args_dict is not None and arg in args_dict:
+            arg_value = args_dict[arg].lower()
+            if arg_value == 'true':
+                return True
+            elif arg_value == 'false':
+                return False
+        return default_value
 
     @staticmethod
     def _get_clean_kernel_log_arguments(args_dict=None):
@@ -133,7 +145,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.host = host
         self.start_browser = start_browser
         self.use_btpeer = use_btpeer
-        update_btpeers = self._get_update_btpeers_arguments(args_dict)
+        logging.debug('args_dict %s', args_dict)
+        update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
         clean_log = self._get_clean_kernel_log_arguments(args_dict)
         btpeer_args = []
         if args_dict is not None:

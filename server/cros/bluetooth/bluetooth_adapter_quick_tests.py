@@ -101,8 +101,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     addresses.append(device.address)
                     self.start_agent(device)
 
-            # Make sure device RSSI is sufficient
-            self.verify_device_rssi(addresses)
+            if self.rssi_check:
+                # Make sure device RSSI is sufficient
+                self.verify_device_rssi(addresses)
+            else:
+                logging.info('Skip RSSI check.')
 
     def _print_delimiter(self):
         logging.info('=======================================================')
@@ -147,6 +150,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.use_btpeer = use_btpeer
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
+        self.rssi_check = self._get_bool_arg('rssi_check', args_dict, True)
         clean_log = self._get_clean_kernel_log_arguments(args_dict)
         btpeer_args = []
         if args_dict is not None:

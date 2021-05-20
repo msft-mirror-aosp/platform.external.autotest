@@ -658,6 +658,8 @@ class BluetoothFacadeNative(object):
         """
 
         try:
+            if self._bluez is None:
+                return False
             _ = self._bluez.GetManagedObjects(
                     dbus_interface=self.BLUEZ_MANAGER_IFACE)
         except dbus.exceptions.DBusException:

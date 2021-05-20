@@ -25,7 +25,6 @@ class infra_ServerPythonVersion(test.test):
         self.autotest_client = autotest.Autotest(self.host)
         if sys.version_info.major != case:
             raise error.TestFail("Not running in python version %s" % case)
-        return
 
         self.autotest_client.run_test('infra_PythonVersion',
                                       case=case,

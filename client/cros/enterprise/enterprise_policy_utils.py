@@ -14,10 +14,7 @@ Read instructions in the unittest file on how to run.
 import json
 import time
 
-import six
-
 from autotest_lib.client.common_lib import error
-
 # Default settings for managed user policies
 
 
@@ -104,7 +101,7 @@ def _reformat_policies(policy_dict):
             # No data
             continue
         if 'value' in v:
-            if type(v['value']) == six.text_type:
+            if type(v['value']) == unicode:
                 _remove_visual_formatting(v)
         elif isinstance(v, dict):
             _reformat_policies(v)

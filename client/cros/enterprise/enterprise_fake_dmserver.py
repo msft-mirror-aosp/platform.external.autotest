@@ -4,9 +4,8 @@
 
 import os
 import sys
+import urllib2
 from multiprocessing import Process
-
-from six.moves import urllib
 
 from autotest_lib.client.bin import utils
 
@@ -62,8 +61,8 @@ class FakeDMServer(object):
 
     def stop(self):
         """Terminate the fake DM server instance."""
-        if urllib.urlopen('%stest/ping' % self.server_url).getcode() == 200:
-            urllib.urlopen('%sconfiguration/test/exit' % self.server_url)
+        if urllib2.urlopen('%stest/ping' % self.server_url).getcode() == 200:
+            urllib2.urlopen('%sconfiguration/test/exit' % self.server_url)
         if self.process.is_alive():
             self.process.join()
 

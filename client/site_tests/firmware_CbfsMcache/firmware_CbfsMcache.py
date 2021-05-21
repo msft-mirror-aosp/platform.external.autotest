@@ -40,7 +40,7 @@ class firmware_CbfsMcache(test.test):
 
     def run_once(self):
         """Fail if mcaches exists and wasn't terminated with an END token."""
-        if (utils.get_board() == 'volteer'):
+        if utils.get_board() == 'volteer':
             raise error.TestNAError("Skipped on Volteer, see b/187561710.")
         if not self.has_mcache():
             raise error.TestNAError("This platform doesn't use CBFS mcache.")

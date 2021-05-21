@@ -10,6 +10,7 @@ import dbus
 import logging
 import dbus.mainloop.glib
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cellular import cellular_logging
 from autotest_lib.client.cros.cellular import hermes_constants
 from autotest_lib.client.cros.cellular import mm1_constants
@@ -163,13 +164,14 @@ class HermesManagerProxy(object):
 
         """
         if not euicc_path:
-            return None
+            logging.debug('No euicc path given for %s', euicc_path)
+            raise error.TestFail('No euicc path given for' + euicc_path)
 
         try:
             euicc_proxy = EuiccProxy(self._bus, euicc_path)
             props = euicc_proxy.properties()
             if not props:
-                return None
+                raise error.TestFail('No euicc props found for ' + euicc_path)
             return euicc_proxy
         except dbus.exceptions.DBusException as e:
             if _is_unknown_dbus_binding_exception(e):

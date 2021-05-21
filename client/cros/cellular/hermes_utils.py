@@ -149,6 +149,8 @@ def initialize_test(is_prod_ci):
         else test_euicc_path
 
     euicc = hermes_manager.get_euicc(euicc_path)
+    if not euicc:
+        raise error.TestFail("Initialize test failed, euicc not found")
     euicc.use_test_certs(not is_prod_ci)
 
     if not is_prod_ci:
@@ -161,7 +163,7 @@ def validate_profile_state(euicc_path, hermes_manager, iccid, is_enable):
     Validates given profile(iccid) state and all installed profile states
 
     One profile enabled should result other profiles to be disabled and if any
-    profie disabled then should see all the profiles in disabled state
+    profile disabled then should see all the profiles in disabled state
 
     @param euicc_path: esim path based on testci/prodci
     @param hermes_manager: hermes manager object
@@ -171,9 +173,9 @@ def validate_profile_state(euicc_path, hermes_manager, iccid, is_enable):
 
     """
     try:
+        target_state = 'ACTIVE' if is_enable else 'INACTIVE'
         _, installed_profiles = \
         request_installed_profiles(euicc_path, hermes_manager)
-        target_state = 'ACTIVE' if is_enable else 'INACTIVE'
         is_equal = False
         # check profile with given iccid has target_state and rest are opposite
         for profile in installed_profiles.values():
@@ -289,8 +291,18 @@ def get_iccid_of_disabled_profile(euicc_path, hermes_manager, is_prod_ci):
     if not is_prod_ci:
         installed_iccid = install_profile_test(euicc_path, hermes_manager)
     else:
-        # getting a disabled profile on a prod esim, so that we can
-        # test enable next.
+        # get disabled profile on a prod esim, if not exist then do disable one
+        _, installed_profiles = \
+        request_installed_profiles(euicc_path, hermes_manager)
+        for profile in installed_profiles.values():
+            if (hermes_constants.ProfileClassToString(profile.profileclass) ==
+                    'TESTING'):
+                continue
+
+            if (hermes_constants.ProfileStateToString(profile.state) ==
+                    'INACTIVE'):
+                return profile.iccid
+
         installed_iccid = get_profile(euicc_path, hermes_manager, False)
 
     return installed_iccid

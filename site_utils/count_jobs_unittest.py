@@ -17,11 +17,10 @@ from autotest_lib.frontend import setup_django_readonly_environment
 from autotest_lib.frontend import setup_test_environment
 from autotest_lib.frontend.afe import models
 from autotest_lib.site_utils import count_jobs
-from django import test
 from six.moves import range
 
 
-class TestCountJobs(test.TestCase):
+class TestCountJobs(unittest.TestCase):
     """Tests the count_jobs script's functionality.
     """
 

@@ -6,7 +6,7 @@ import collections
 import mock
 import unittest
 
-import mysql_stats
+from autotest_lib.site_utils.stats import mysql_stats
 
 
 class MysqlStatsTest(unittest.TestCase):

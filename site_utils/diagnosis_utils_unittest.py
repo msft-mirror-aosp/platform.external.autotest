@@ -5,6 +5,7 @@
 
 import unittest
 import mock
+import six
 
 import common
 from autotest_lib.site_utils import diagnosis_utils
@@ -104,7 +105,10 @@ class _StubHost(object):
         self.status = status
         self.locked = locked
 
-    is_available = frontend.Host.is_available.__func__
+    if six.PY2:
+        is_available = frontend.Host.is_available.__func__
+    elif six.PY3:
+        is_available = frontend.Host.is_available
 
 
 if __name__ == '__main__':

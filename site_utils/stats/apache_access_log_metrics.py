@@ -11,7 +11,7 @@ from __future__ import print_function
 import argparse
 import re
 import sys
-import urlparse
+import six.moves.urllib.parse as urlparse
 
 import common
 

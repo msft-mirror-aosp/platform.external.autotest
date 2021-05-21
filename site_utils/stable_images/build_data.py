@@ -16,6 +16,7 @@ GoogleStorage.
 """
 
 import json
+import six
 import subprocess
 
 import common
@@ -163,7 +164,7 @@ def _get_model_firmware_versions(metadata_json, board):
     model_versions = _get_by_key_path(metadata_json, key_path)
 
     if model_versions is not None:
-        for model, fw_versions in model_versions.iteritems():
+        for model, fw_versions in six.iteritems(model_versions):
             fw_version = (fw_versions.get('main-readwrite-firmware-version') or
                           fw_versions.get('main-readonly-firmware-version'))
             model_firmware_versions[model] = fw_version

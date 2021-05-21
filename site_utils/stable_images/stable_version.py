@@ -54,6 +54,8 @@ version to the given board or model.  The `--type` option is required in
 this case.
 """
 
+from __future__ import print_function
+
 import argparse
 import os
 import sys
@@ -110,7 +112,7 @@ class _VersionMapHandler(object):
 
     def print_all_mappings(self):
         """Print all mappings in `self._version_map`"""
-        print '%s version mappings:' % self._description
+        print('%s version mappings:' % self._description)
         mappings = self._version_map.get_all_versions()
         if not mappings:
             return
@@ -118,7 +120,7 @@ class _VersionMapHandler(object):
         key_width = max(12, len(max(key_list, key=len)))
         format = '%%-%ds  %%s' % key_width
         for k in sorted(key_list):
-            print format % (k, mappings[k])
+            print(format % (k, mappings[k]))
 
     def print_mapping(self, key):
         """Print the mapping for `key`.
@@ -130,7 +132,7 @@ class _VersionMapHandler(object):
         """
         version = self.get_mapping(key)
         if version is not None:
-            print '%s  %s' % (self._format_key_data(key), version)
+            print('%s  %s' % (self._format_key_data(key), version))
 
     def set_mapping(self, key, new_version):
         """Change the mapping for `key`, and report the action.
@@ -147,15 +149,15 @@ class _VersionMapHandler(object):
         """
         old_version = self.get_mapping(key)
         if old_version is None:
-            print '%s -> %s' % (
-                self._format_operation('Adding', key), new_version)
+            print('%s -> %s' % (
+                self._format_operation('Adding', key), new_version))
         elif old_version != new_version:
-            print '%s -> %s to %s' % (
+            print('%s -> %s to %s' % (
                 self._format_operation('Updating', key),
-                old_version, new_version)
+                old_version, new_version))
         else:
-            print '%s -> %s' % (
-                self._format_operation('Unchanged', key), old_version)
+            print('%s -> %s' % (
+                self._format_operation('Unchanged', key), old_version))
         if not self._dry_run and old_version != new_version:
             self._version_map.set_version(key, new_version)
 
@@ -173,12 +175,12 @@ class _VersionMapHandler(object):
         """
         version = self.get_mapping(key)
         if version is not None:
-            print '%s -> %s' % (
-                self._format_operation('Delete', key), version)
+            print('%s -> %s' % (
+                self._format_operation('Delete', key), version))
             if not self._dry_run:
                 self._version_map.delete_version(key)
         else:
-            print self._format_operation('Unmapped', key)
+            print(self._format_operation('Unmapped', key))
 
 
 class _FirmwareVersionMapHandler(_VersionMapHandler):
@@ -205,8 +207,8 @@ class _CrOSVersionMapHandler(_VersionMapHandler):
         new_version = build_data.get_omaha_upgrade(
             build_data.get_omaha_version_map(), board, version)
         if new_version != version:
-            print 'Force %s version from Omaha:  %-12s -> %s' % (
-                self._description, board, new_version)
+            print('Force %s version from Omaha:  %-12s -> %s' % (
+                self._description, board, new_version))
         super(_CrOSVersionMapHandler, self).set_mapping(board, new_version)
         fw_versions = build_data.get_firmware_versions(board, new_version)
         fw_handler = _FirmwareVersionMapHandler(self._afe, self._dry_run)
@@ -285,7 +287,7 @@ def list_all_mappings(afe, image_type):
     need_newline = False
     for handler in _requested_mapping_handlers(afe, image_type):
         if need_newline:
-            print
+            print()
         handler.print_all_mappings()
         need_newline = True
 
@@ -340,7 +342,7 @@ def set_mapping(afe, image_type, key, version, dry_run):
     @param dry_run      Whether the `-n` option was supplied.
     """
     if dry_run:
-        print 'Dry run; no mappings will be changed.'
+        print('Dry run; no mappings will be changed.')
     handler = _create_version_map_handler(image_type, afe, dry_run)
     handler.set_mapping(key, version)
 
@@ -377,7 +379,7 @@ def delete_mapping(afe, image_type, key, dry_run):
     @param dry_run      Whether the `-n` option was supplied.
     """
     if dry_run:
-        print 'Dry run; no mappings will be deleted.'
+        print('Dry run; no mappings will be deleted.')
     handler = _create_version_map_handler(image_type, afe, dry_run)
     handler.delete_mapping(key)
 
@@ -436,7 +438,7 @@ def main(argv):
     try:
         _dispatch_command(afe, arguments)
     except _CommandError as exc:
-        print >>sys.stderr, 'Error: %s' % str(exc)
+        print('Error: %s' % str(exc), file=sys.stderr)
         sys.exit(1)
 
 

@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 import unittest
 
-import apache_access_log_metrics
+from autotest_lib.site_utils.stats import apache_access_log_metrics
 
 
 SCRIPT_PATH = os.path.abspath(

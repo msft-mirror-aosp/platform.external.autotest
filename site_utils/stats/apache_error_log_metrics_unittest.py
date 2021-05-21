@@ -8,7 +8,7 @@ import unittest
 
 import common
 
-import apache_error_log_metrics
+from autotest_lib.site_utils.stats import apache_error_log_metrics
 
 
 SCRIPT_PATH = os.path.abspath(

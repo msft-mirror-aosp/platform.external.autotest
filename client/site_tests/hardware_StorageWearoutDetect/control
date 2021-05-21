@@ -12,7 +12,7 @@ TEST_TYPE = 'client'
 # needs to be replaced. This test should not run in bvt-cq which will cause
 # flakes due to random machine allocation when a DUT nears end of life (and slow
 # bug filing/DUT replacement in lab).
-ATTRIBUTES = "suite:bvt-perbuild, suite:pvs-uprev-exit"
+ATTRIBUTES = "suite:bvt-perbuild"
 JOB_RETRIES = 2
 
 DOC = """

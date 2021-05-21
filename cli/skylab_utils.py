@@ -124,7 +124,7 @@ class InventoryRepo(object):
 
             logging.info('Inventory repo was already initialized, start '
                          'pulling.')
-            self.git_repo.checkout('master')
+            self.git_repo.checkout('main')
             self.git_repo.pull()
         else:
             logging.info('No inventory repo was found, start cloning.')
@@ -151,7 +151,7 @@ class InventoryRepo(object):
 
         remote = self.git_repo.remote()
         output = self.git_repo.upload_cl(
-                remote, 'master', draft=draft, dryrun=dryrun)
+                remote, 'main', draft=draft, dryrun=dryrun)
 
         if not dryrun:
             change_number = extract_inventory_change(output)

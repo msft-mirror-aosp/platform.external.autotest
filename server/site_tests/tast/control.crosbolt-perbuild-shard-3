@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.crosbolt-perbuild-shard-2'
+NAME = 'tast.crosbolt-perbuild-shard-3'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:crosbolt_perf_perbuild'
@@ -35,7 +35,7 @@ def run(machine):
                  ignore_test_failures=True,
                  max_run_sec=21600,  # 6 hours.
                  totalshards=4,
-                 shardindex=2,
+                 shardindex=3,
                  command_args=args)
 
 parallel_simple(run, machines)

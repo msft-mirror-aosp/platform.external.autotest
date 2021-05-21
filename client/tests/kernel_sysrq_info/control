@@ -20,7 +20,7 @@ test case, or if it crashes the system:
   - show-task-states(T)
   - show-blocked-tasks(W)
 
-These SysRq commands are used to gather postmortem data from systems
+These SysRq commands are used to gather retrospective data from systems
 deployed in the field, so it is critical that they work correctly (and
 don't crash the system).
 """

@@ -448,13 +448,13 @@ def cras_rms_test_setup():
     cras_utils.set_capture_mute(False)
 
 
-def dump_rms_postmortem(result_dir):
-    """Dumps postmortem for rms tests."""
+def dump_rms_retrospective(result_dir):
+    """Dumps retrospective for rms tests."""
     try:
         dump_audio_diagnostics(
                 os.path.join(result_dir, "audio_diagnostics.txt"))
     except Exception:
-        logging.exception('Error while generating postmortem report')
+        logging.exception('Error while generating retrospective report')
 
 
 def dump_audio_diagnostics(file_path=None):

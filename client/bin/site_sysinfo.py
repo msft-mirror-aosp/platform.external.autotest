@@ -360,7 +360,7 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
                                           (crash_exclude_string, )))
         # Collect files under /tmp/crash_reporter, which contain the procfs
         # copy of those crashed processes whose core file didn't get converted
-        # into minidump. We need these additional files for post-mortem analysis
+        # into minidump. We need these additional files for retrospective analysis
         # of the conversion failure.
         self.test_loggables.add(
             purgeable_logdir(constants.CRASH_REPORTER_RESIDUE_DIR))

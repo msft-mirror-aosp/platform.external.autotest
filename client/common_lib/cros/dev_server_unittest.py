@@ -805,7 +805,7 @@ class DevServerTest(mox.MoxTestBase):
                                  'stateful.tgz'])
         self.assertEquals(url, expected_url)
 
-        devserver_label = 'something_crazy/that/you_MIGHT/hate'
+        devserver_label = 'something_complex/that/you_MIGHT/hate'
         url = self.dev_server.get_staged_file_url('chromiumos_image.bin',
                                                   devserver_label)
         expected_url = '/'.join([self._HOST, 'static', devserver_label,

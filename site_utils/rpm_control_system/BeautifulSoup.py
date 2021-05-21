@@ -1723,9 +1723,13 @@ class RobustXMLParser(BeautifulStoneSoup):
     pass
 class RobustHTMLParser(BeautifulSoup):
     pass
-class RobustWackAssHTMLParser(ICantBelieveItsBeautifulSoup):
+
+
+class RobustUnordinaryHTMLParser(ICantBelieveItsBeautifulSoup):
     pass
-class RobustInsanelyWackAssHTMLParser(MinimalSoup):
+
+
+class RobustComplexUnordinaryHTMLParser(MinimalSoup):
     pass
 class SimplifyingSOAPParser(BeautifulSOAP):
     pass

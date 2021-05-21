@@ -801,7 +801,7 @@ def perform_run_from_autotest_root(autotest_path,
 def _write_host_info(results_dir, host_info_subdir, hostname, info):
     """ Write HostInfo to a FileStore to be used by autoserv.
 
-    @param results_dir: Path to he results directory.
+    @param results_dir: Path to the results directory.
     @param host_info_subdir: Subdirectory of results directory for host info.
     @param hostname: Hostname passed into autoserv.
     @param info: hosts.HostInfo to write.

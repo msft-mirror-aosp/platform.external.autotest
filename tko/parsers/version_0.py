@@ -289,7 +289,7 @@ class status_line(object):
         if not match:
             # A more useful error message than:
             #  AttributeError: 'NoneType' object has no attribute 'groups'
-            # to help us debug WTF happens on occasion here.
+            # to help us debug what happens on occasion here.
             raise RuntimeError("line %r could not be parsed." % line)
         indent, line = match.groups()
         indent = len(indent)

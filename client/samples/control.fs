@@ -7,7 +7,7 @@ TEST_CATEGORY = "Functional"
 
 DOC = """
 Runs a series of filesystem tests on a loopback partition using different
-filesystem types. his shows some features of the job.partition method, such as
+filesystem types. This shows some features of the job.partition method, such as
 creating loopback partitions instead of using real disk partitions, looping.
 """
 

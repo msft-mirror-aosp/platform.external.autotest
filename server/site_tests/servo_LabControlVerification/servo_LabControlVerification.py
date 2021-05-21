@@ -84,7 +84,7 @@ class servo_LabControlVerification(test.test):
           error.AutoservRunError if trying to start servod and it fails
         """
         # TODO(coconutruben): board is set to nami for now as that will allow
-        # servod to come up and the nami overlay does not have any crazy changes
+        # servod to come up and the nami overlay does not have any complex changes
         # from normal boards. When the new servod is rolled out and it can infer
         # board names itself, remove the board attribute here.
         self.servo_port = port

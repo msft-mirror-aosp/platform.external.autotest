@@ -64,7 +64,7 @@ class login_MultipleSessions(test.test):
 
 
     def __start_session_for(self, user):
-        """Call StartSession() for user, ensure he has clean on-device state
+        """Call StartSession() for user, ensure the user has clean on-device state
 
         Make a fresh cryptohome for user, and then start a session for him
         with the session manager.

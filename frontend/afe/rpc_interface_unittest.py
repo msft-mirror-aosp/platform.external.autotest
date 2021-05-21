@@ -1199,7 +1199,7 @@ class RpcInterfaceTest(unittest.TestCase,
                              == 'shard1' else mock_afe2)) as mock_afe:
             # The statuses of one host might differ on main and shard.
             # Filters are always applied on the main. So the host on the shard
-            # will be affected no matter what his status is.
+            # will be affected no matter what the host status is.
             filters_to_use = {'status': 'Ready'}
 
             rpc_interface.modify_hosts(host_filter_data={'status': 'Ready'},

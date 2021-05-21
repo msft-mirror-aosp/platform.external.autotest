@@ -399,7 +399,7 @@ class coverage:
             self.start()
             import __main__
             sys.path[0] = os.path.dirname(sys.argv[0])
-            # the line below is needed since otherwise __file__ gets fucked
+            # the line below is needed since otherwise __file__ gets damaged
             __main__.__dict__["__file__"] = sys.argv[0]
             execfile(sys.argv[0], __main__.__dict__)
         if settings.get('collect'):

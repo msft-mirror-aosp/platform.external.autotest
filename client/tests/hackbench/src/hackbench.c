@@ -59,7 +59,7 @@ This new program could be compiled with command line:
 #gcc -g -Wall  -o hackbench hackbench.c -lpthread
 
 
-Thank Ingo for his great comments!
+Thank Ingo for the great comments!
 
 -yanmin
 

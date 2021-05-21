@@ -951,10 +951,10 @@ TEST(seccomp_syscall) {
 		TH_LOG("Kernel does not support PR_SET_NO_NEW_PRIVS!");
 	}
 
-	/* Reject insane operation. */
+    /* Reject complex operation. */
 	ret = seccomp(-1, 0, &prog);
 	EXPECT_EQ(EINVAL, errno) {
-		TH_LOG("Did not reject crazy op value!");
+        TH_LOG("Did not reject complex op value!");
 	}
 
 	/* Reject strict with flags or pointer. */
@@ -967,10 +967,10 @@ TEST(seccomp_syscall) {
 		TH_LOG("Did not reject mode strict with uargs!");
 	}
 
-	/* Reject insane args for filter. */
+    /* Reject complex args for filter. */
 	ret = seccomp(SECCOMP_SET_MODE_FILTER, -1, &prog);
 	EXPECT_EQ(EINVAL, errno) {
-		TH_LOG("Did not reject crazy filter flags!");
+        TH_LOG("Did not reject complex filter flags!");
 	}
 	ret = seccomp(SECCOMP_SET_MODE_FILTER, 0, NULL);
 	EXPECT_EQ(EFAULT, errno) {

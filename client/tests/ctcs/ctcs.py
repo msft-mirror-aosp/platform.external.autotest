@@ -39,7 +39,7 @@ class ctcs(test.test):
         @param tarball: CTCS tarball
         @param length: The amount of time we'll run the test suite
         @param tcf_contents: If the user wants to specify the contents of
-                the CTCS control file, he could do so trough this parameter.
+                the CTCS control file, the user could do so trough this parameter.
                 If this parameter is provided, length is ignored.
         """
         ctcs_tarball = utils.unmap_url(self.bindir, tarball, self.tmpdir)

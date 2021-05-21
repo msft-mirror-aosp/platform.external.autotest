@@ -1036,7 +1036,7 @@ def persist_records_sent_from_shard(shard, jobs, hqes):
 def forward_single_host_rpc_to_shard(func):
     """This decorator forwards rpc calls that modify a host to a shard.
 
-    If a host is assigned to a shard, rpcs that change his attributes should be
+    If a host is assigned to a shard, rpcs that change the host attributes should be
     forwarded to the shard.
 
     This assumes the first argument of the function represents a host id.

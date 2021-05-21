@@ -65,7 +65,7 @@ def _check_result(args):
 
     try:
         # HACK: This urlopen call isn't forwarding HTTP headers correctly. This
-        # leads to uberproxy sitting between master (orignator of this request)
+        # leads to uberproxy sitting between primary (orignator of this request)
         # and shard (target of the request) to redirect to the the login page.
         # We detect this condition and reject the target shard as a viable
         # redirect. The implication is that we will not redirect to the shard
@@ -120,9 +120,9 @@ def find_repository_host(job_path):
     if site_repo_info is not None:
         return site_repo_info
 
-    # This cgi script is run only in master (cautotest) and shards.
+    # This cgi script is run only in primary (cautotest) and shards.
     # Drones do not run this script when receiving '/results/...' request.
-    # Only master should check drones and shards for the requested log.
+    # Only primary should check drones and shards for the requested log.
     # Also restricted users do not have access to drones or shards,
     # always point them to localhost or google storage.
     if (not server_utils.is_shard() and

@@ -13,11 +13,8 @@
 # black.?hat
 # black.?list
 # build.?cop
-crazy
-cripple
 dummy
 # first.?class.?citizen
-# grandfathered
 # gr[ae]y.?hat
 gr[ae]y.?list
 \bhe\b
@@ -28,14 +25,11 @@ gr[ae]y.?list
 \bhers\b
 man.?in.?the.?middle
 # master
-\bmitm(\b|\d)
 \bnative
 \bred.?line
-rtfm
 sanity
 # slave
 # white.?glove
 # white.?hat
 white.?label
 # white.?list
-\bwtf

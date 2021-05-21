@@ -11,7 +11,7 @@ ATTRIBUTES = ('suite:wifi_flaky')
 DEPENDENCIES = 'wificell'
 
 DOC = """
-Verify that we respond sanely to APs that disable certain legacy bitrates.
+Verify that we respond accurately to APs that disable certain legacy bitrates.
 """
 
 from autotest_lib.server.cros.network import hostap_config

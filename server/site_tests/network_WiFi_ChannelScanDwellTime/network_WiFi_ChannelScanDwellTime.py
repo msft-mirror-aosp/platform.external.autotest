@@ -198,7 +198,7 @@ class network_WiFi_ChannelScanDwellTime(wifi_cell_test_base.WiFiCellTestBase):
         try:
             # Get channel dwell time for single-channel scan
             dwell_time = self._channel_dwell_time_test(True)
-            # Ensure that the measured value is sane, so a glitch doesn't
+            # Ensure that the measured value is valid, so a glitch doesn't
             # pollute the perf dataset.
             if (dwell_time < self.MIN_DWELL_TIME_MS or
                     dwell_time > self.MAX_DWELL_TIME_MS):

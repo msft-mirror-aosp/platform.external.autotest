@@ -56,7 +56,7 @@ class kernel_FirmwareRequest(test.test):
         """
         This test will run the firmware request kernel self test (from
         upstream). This tests that the request_firmware() and
-        request_firmware_nowait() kernel APIs are somewhat sane. It tries to
+        request_firmware_nowait() kernel APIs are somewhat valid. It tries to
         load the empty filename ("") as well as a small toy firmware, and
         checks that it matches. It also makes sure a non-existent firmware
         cannot be found.

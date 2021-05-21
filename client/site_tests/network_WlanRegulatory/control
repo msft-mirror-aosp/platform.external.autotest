@@ -12,7 +12,7 @@ TEST_TYPE = 'client'
 DEPENDENCIES = 'wificell'
 
 DOC = """
-Ensure the regulatory database is sane and that we can successfully switch
+Ensure the regulatory database is valid and that we can successfully switch
 domains using the "iw" userspace utility.
 """
 

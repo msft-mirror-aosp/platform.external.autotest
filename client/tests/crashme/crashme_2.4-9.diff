@@ -201,7 +201,7 @@
 +
 +crashme (2.4-2) unstable; urgency=low
 +
-+  * Changed extended package description to format sanely in dselect.
++  * Changed extended package description to format accurately in dselect.
 +    (Fixes bug #23666)
 +
 + -- Jay Kominek <jkominek@debian.org>  Thu, 18 Jun 1998 02:57:30 -0400

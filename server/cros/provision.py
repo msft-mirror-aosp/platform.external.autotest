@@ -257,7 +257,7 @@ class _SpecialTaskAction(object):
 
 class Verify(_SpecialTaskAction):
     """
-    Tests to verify that the DUT is in a sane, known good state that we can run
+    Tests to verify that the DUT is in a known good state that we can run
     tests on.  Failure to verify leads to running Repair.
     """
 
@@ -328,7 +328,7 @@ class Provision(_SpecialTaskAction):
 class Cleanup(_SpecialTaskAction):
     """
     Cleanup runs after a test fails to try and remove artifacts of tests and
-    ensure the DUT will be in a sane state for the next test run.
+    ensure the DUT will be in a good state for the next test run.
     """
 
     _actions = {

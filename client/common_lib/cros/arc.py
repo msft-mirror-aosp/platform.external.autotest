@@ -75,16 +75,16 @@ def restart_adbd(timeout):
     _android_shell('setprop sys.usb.config ' + config)
 
     def property_check():
-      return _android_shell('getprop sys.usb.state') == config
+        return _android_shell('getprop sys.usb.state') == config
 
     try:
-      utils.poll_for_condition(
-          condition=property_check,
-          desc='Wait for sys.usb.state',
-          timeout=timeout,
-          sleep_interval=_PROPERTY_CHECK_INTERVAL_SECONDS)
+        utils.poll_for_condition(
+                condition=property_check,
+                desc='Wait for sys.usb.state',
+                timeout=timeout,
+                sleep_interval=_PROPERTY_CHECK_INTERVAL_SECONDS)
     except utils.TimeoutError:
-      raise error.TestFail('Timed out waiting for sys.usb.state change')
+        raise error.TestFail('Timed out waiting for sys.usb.state change')
 
     _android_shell('setprop ctl.restart adbd')
 
@@ -179,7 +179,7 @@ def wait_for_adb_ready(timeout=_WAIT_FOR_ADB_READY):
 
     for i in range(attempt_count):
         if _restart_adb_and_wait_for_ready(timeout):
-          return
+            return
     raise error.TestFail(
             'Failed to connect to adb in %d seconds.' % initial_timeout)
 
@@ -440,7 +440,7 @@ def get_android_file_stats(filename):
         ignore_status=True)
     stats = output.split(' ')
     if len(stats) != len(mapping):
-      raise error.TestError('Unexpected output from stat: %s' % output)
+        raise error.TestError('Unexpected output from stat: %s' % output)
     _Stats = collections.namedtuple('_Stats', mapping.values())
     return _Stats(*stats)
 
@@ -639,7 +639,7 @@ def set_device_mode(device_mode, use_fake_sensor_with_lifetime_secs=0):
         # mode.
         if device_mode == 'clamshell' and \
                 use_fake_sensor_with_lifetime_secs == 0:
-                    return
+            return
         raise err
 
 
@@ -701,7 +701,7 @@ class ArcTest(test.test):
         self.register_before_iteration_hook(_before_iteration_hook)
         self.register_after_iteration_hook(_after_iteration_hook)
         # Keep track of the number of debug screenshots taken and keep the
-        # total number sane to avoid issues.
+        # total number valid to avoid issues.
         self.num_screenshots = 0
 
     def initialize(self, extension_path=None, username=None, password=None,

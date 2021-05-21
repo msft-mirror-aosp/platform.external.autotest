@@ -340,7 +340,7 @@
   __EXPECT_STR(_expected, _seen, !=, 0)
 
 /* Support an optional handler after and ASSERT_* or EXPECT_*.  The approach is
- * not thread-safe, but it should be fine in most sane test scenarios.
+ * not thread-safe, but it should be fine in most valid test scenarios.
  *
  * Using __bail(), which optionally abort()s, is the easiest way to early
  * return while still providing an optional block to the API consumer.

@@ -93,7 +93,7 @@ class job(models.job):
                                if l.startswith('board%3A')]
                 if board_labels:
                     # Multiple board/model labels aren't supposed to
-                    # happen, but let's report something sane rather
+                    # happen, but let's report something valid rather
                     # than just failing.
                     machine_groups.add(','.join(board_labels))
                 else:

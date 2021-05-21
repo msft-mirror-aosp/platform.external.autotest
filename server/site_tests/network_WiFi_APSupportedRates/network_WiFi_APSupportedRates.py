@@ -77,7 +77,7 @@ class network_WiFi_APSupportedRates(wifi_cell_test_base.WiFiCellTestBase):
         self._ap_config = additional_params
 
     def run_once(self):
-        """Verify that we respond sanely to APs that disable legacy bitrates.
+        """Verify that we respond accurately to APs that disable legacy bitrates.
         """
         # See b/138406224. ath10k only supports this on CrOS kernels >=4.14.
         if self.context.client.host.get_board().split(':')[1] == 'scarlet':

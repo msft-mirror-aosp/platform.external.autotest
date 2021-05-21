@@ -14,7 +14,7 @@ from autotest_lib.client.common_lib.cros.network import iw_runner
 
 class network_WlanRegulatory(test.test):
     """
-    Ensure the regulatory database is sane and that we can successfully switch
+    Ensure the regulatory database is valid and that we can successfully switch
     domains using the "iw" userspace utility. We don't verify that the system
     truly respects the rules, but only that it does not reject them.
     Note that some drivers "self manage" their domain detection and so this

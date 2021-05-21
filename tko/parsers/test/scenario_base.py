@@ -251,7 +251,7 @@ def shelve_open(filename, flag='c', protocol=None, writeback=False):
 
 
 def new_parser_harness(results_dirpath):
-    """Ensure sane environment and create new parser with wrapper.
+    """Ensure valid environment and create new parser with wrapper.
 
     Args:
       results_dirpath: str; Path to job results directory

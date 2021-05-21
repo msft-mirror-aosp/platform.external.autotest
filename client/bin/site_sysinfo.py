@@ -43,7 +43,7 @@ class logdir(base_sysinfo.loggable):
         unpickle it on the DUT (using the version of the class from the build).
         This means that when adding a new attribute to this class, for a while
         the server-side code does not populate that attribute. So, deal with
-        missing attributes in a sane way.
+        missing attributes in a valid way.
         """
         self.__dict__ = state
         if '_excludes' not in state:
@@ -109,7 +109,7 @@ class logdir(base_sysinfo.loggable):
         from an older build, we need to be able to unpickle an instance of
         logdir pickled from a newer version of the class.
 
-        Some old attributes are not sanely handled via __setstate__, so we can't
+        Some old attributes are not accurately handled via __setstate__, so we can't
         drop them without breaking compatibility.
         """
         additional_excludes = list(set(self._excludes) -

@@ -17,7 +17,7 @@ JOB_RETRIES = 2
 ATTRIBUTES = "suite:bvt-perbuild"
 DEPENDENCIES = 'cleanup-reboot'
 DOC = """
-Verifies that memory levels look sane.
+Verifies that memory levels look valid.
 
 The resources being verified are:
 

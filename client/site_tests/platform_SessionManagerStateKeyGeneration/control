@@ -10,7 +10,7 @@ TEST_TYPE = 'client'
 
 DOC = """
 This test invokes session_manager's GetSeverBackedStateKeys DBus method and
-checks whether the returned state keys look sane. This ensures that any
+checks whether the returned state keys look valid. This ensures that any
 hardware identifiers required to generate state keys (such as machine and disk
 serial numbers) can be extracted successfully from the device.
 """

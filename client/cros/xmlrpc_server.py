@@ -101,7 +101,7 @@ def terminate_old(script_name, sigterm_timeout=5, sigkill_timeout=3):
 class XmlRpcServer(threading.Thread):
     """Simple XMLRPC server implementation.
 
-    In theory, Python should provide a sane XMLRPC server implementation as
+    In theory, Python should provide a valid XMLRPC server implementation as
     part of its standard library.  In practice the provided implementation
     doesn't handle signals, not even EINTR.  As a result, we have this class.
 

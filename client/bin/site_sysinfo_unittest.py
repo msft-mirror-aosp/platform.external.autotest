@@ -289,7 +289,7 @@ class LogdirTestCase(unittest.TestCase):
         self.assertEqual(logdir.additional_exclude, None)
 
     def test_unpickle_handle_missing__excludes(self):
-        """Sanely handle missing _excludes attribute from pickles
+        """Accurately handle missing _excludes attribute from pickles
 
         This can happen when running brand new version of this class that
         introduced this attribute from older server side code in prod.
@@ -304,7 +304,7 @@ class LogdirTestCase(unittest.TestCase):
                          site_sysinfo.logdir.DEFAULT_EXCLUDES)
 
     def test_unpickle_handle_missing__excludes_default(self):
-        """Sanely handle missing _excludes attribute from pickles
+        """Accurately handle missing _excludes attribute from pickles
 
         This can happen when running brand new version of this class that
         introduced this attribute from older server side code in prod.

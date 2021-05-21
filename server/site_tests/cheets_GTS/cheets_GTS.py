@@ -30,7 +30,7 @@ _GTS_MEDIA_URI = ('https://storage.googleapis.com/youtube-test-media/gts/' +
 _GTS_MEDIA_LOCALPATH = '/tmp/android-gts-media/GtsYouTubeTestCases'
 
 # Internal uprev for all GTS modules.
-_GTS_LATEST_URI = 'gs://chromeos-arc-images/cts/bundle/android-gts-8-R3-P-7133222.zip'
+_GTS_LATEST_URI = 'gs://chromeos-arc-images/cts/bundle/android-gts-8-R4-P-7380330.zip'
 
 
 class cheets_GTS(tradefed_test.TradefedTest):

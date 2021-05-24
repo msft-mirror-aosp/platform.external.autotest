@@ -43,7 +43,7 @@ def _build_token_stream(headerless_dbus_send_output):
 
 
 def _parse_value(token_stream):
-    """Turn a stream of tokens from dbus-send output into native python types.
+    """Turn a stream of tokens from dbus-send output into builtin python types.
 
     @param token_stream: output from _build_token_stream() above.
 

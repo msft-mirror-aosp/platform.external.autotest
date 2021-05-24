@@ -32,7 +32,7 @@ _SCREENSHOT_DIR_PATH = '/var/log/arc-screenshots'
 _SCREENSHOT_BASENAME = 'arc-screenshot'
 _MAX_SCREENSHOT_NUM = 10
 # This address should match the one present in
-# https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/master/chromeos-base/arc-sslh-init/files/sslh.conf
+# https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/main/chromeos-base/arc-sslh-init/files/sslh.conf
 _ADBD_ADDRESS = ('100.115.92.2', 5555)
 _ADBD_PID_PATH = '/run/arc/adbd.pid'
 _SDCARD_PID_PATH = '/run/arc/sdcard.pid'

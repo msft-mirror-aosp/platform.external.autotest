@@ -12,8 +12,6 @@ class gtest_parser(object):
     """This class knows how to understand GTest test output.
 
     The code was borrowed with minor changes from chrome utility gtest_command.
-        http://src.chromium.org/viewvc/chrome/trunk/tools/build/scripts/master/
-        log_parser/gtest_command.py?view=markup
     """
 
     def __init__(self):

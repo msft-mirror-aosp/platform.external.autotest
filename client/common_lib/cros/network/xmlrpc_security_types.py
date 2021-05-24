@@ -224,7 +224,7 @@ class WPAConfig(SecurityConfig):
         @param wpa_gtk_rekey_period int number of second between GTK rekeys.
         @param wpa_gmk_rekey_period int number of seconds between GMK rekeys.
                 The GMK is a key internal to hostapd used to generate GTK.
-                It is the 'master' key.
+                It is the 'main' key.
         @param use_strict_rekey bool True iff hostapd should refresh the GTK
                 whenever any client leaves the group.
         @param ft_mode int one of the FT_MODE_* in SecurityConfig.

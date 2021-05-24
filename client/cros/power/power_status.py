@@ -402,10 +402,10 @@ class BatteryStat(DevStat):
             raise error.TestError('Unreasonable charge_now value')
 
 
-class LineStatDummy(DevStat):
+class LineStatPlaceholder(DevStat):
     """
-    Dummy line stat for devices which don't provide power_supply related sysfs
-    interface.
+    Placeholder line stat for devices which don't provide power_supply related
+    sysfs interface.
     """
     def __init__(self):
         self.online = True
@@ -497,7 +497,7 @@ class SysStat(object):
         for path in self.linepower_path:
             self.linepower.append(LineStat(path))
         if not self.linepower:
-            self.linepower = [ LineStatDummy() ]
+            self.linepower = [ LineStatPlaceholder() ]
 
         temp_str = self.thermal.get_temps()
         if temp_str:

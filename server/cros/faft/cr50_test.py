@@ -7,7 +7,7 @@ from __future__ import print_function
 import logging
 import os
 import pprint
-from six import StringIO
+import six
 import subprocess
 import time
 
@@ -967,7 +967,8 @@ class Cr50Test(FirmwareTest):
         # Make sure the test waits long enough to avoid ccd rate limiting.
         time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
 
-        stdout = StringIO.StringIO()
+        # StringIO.StringIO() in python2. io.StringIO() in python3
+        stdout = six.StringIO()
         # Start running the gsctool Command in the background.
         gsctool_job = utils.BgJob(
                 full_ssh_command,

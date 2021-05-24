@@ -14,7 +14,6 @@ import uuid
 from xml.parsers import expat
 
 import six
-from six import StringIO
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, global_config
 from autotest_lib.client.common_lib.cros import retry, tpm_utils
@@ -2335,7 +2334,7 @@ class FirmwareTest(test.test):
 
         self._ccd_open_last_len = 0
 
-        self._ccd_open_stdout = StringIO.StringIO()
+        self._ccd_open_stdout = six.StringIO()
 
         ccd_open_cmd = utils.sh_escape('gsctool -a -o')
         full_ssh_cmd = '%s "%s"' % (self.host.ssh_command(options='-tt'),

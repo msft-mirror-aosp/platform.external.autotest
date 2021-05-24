@@ -30,11 +30,11 @@ MBIMControlMessage|         (mbim_message_request.py)
 import array
 import logging
 import struct
+import sys
 from collections import namedtuple
 
-import six
-
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors
+
 
 # Type of message classes. The values of each field in the message is stored
 # as an attribute of the object created.
@@ -186,7 +186,7 @@ class MBIMControlMessageMeta(type):
             if hasattr(base_class, '_CONSOLIDATED_DEFAULTS'):
                 defaults = getattr(base_class, '_CONSOLIDATED_DEFAULTS').copy()
         if '_FIELDS' in attrs:
-            fields = fields + list(map(list, attrs['_FIELDS']))
+            fields = fields + map(list, attrs['_FIELDS'])
         if '_DEFAULTS' in attrs:
             defaults.update(attrs['_DEFAULTS'])
         attrs['_CONSOLIDATED_FIELDS'] = fields
@@ -208,13 +208,15 @@ class MBIMControlMessageMeta(type):
         return cls
 
 
-class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
+class MBIMControlMessage(object):
     """
     MBIMControlMessage base class.
 
     This class should not be instantiated or used directly.
 
     """
+    __metaclass__ = MBIMControlMessageMeta
+
     _NEXT_TRANSACTION_ID = 0X00000000
 
 
@@ -387,7 +389,7 @@ class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
         @returns The tracsaction id for control message delivery.
 
         """
-        if MBIMControlMessage._NEXT_TRANSACTION_ID > (six.MAXSIZE - 2):
+        if MBIMControlMessage._NEXT_TRANSACTION_ID > (sys.maxint - 2):
             MBIMControlMessage._NEXT_TRANSACTION_ID = 0x00000000
         MBIMControlMessage._NEXT_TRANSACTION_ID += 1
         return MBIMControlMessage._NEXT_TRANSACTION_ID
@@ -432,7 +434,7 @@ class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
                     mbim_errors.MBIMComplianceControlMessageError,
                     "Erorr in finding payload len field in message: %s" %
                     self.__class__.__name__)
-        return list(payload_len_fields.values())[0]
+        return payload_len_fields.values()[0]
 
 
     def get_total_len(self):
@@ -450,7 +452,7 @@ class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
                     mbim_errors.MBIMComplianceControlMessageError,
                     "Erorr in finding total len field in message: %s" %
                     self.__class__.__name__)
-        return list(total_len_fields.values())[0]
+        return total_len_fields.values()[0]
 
 
     def get_num_fragments(self):
@@ -467,7 +469,7 @@ class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
                     mbim_errors.MBIMComplianceControlMessageError,
                     "Erorr in finding num fragments field in message: %s" %
                     self.__class__.__name__)
-        return list(num_fragment_fields.values())[0]
+        return num_fragment_fields.values()[0]
 
 
     def find_payload_class(self):

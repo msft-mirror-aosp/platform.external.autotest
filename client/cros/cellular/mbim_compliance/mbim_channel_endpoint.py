@@ -3,17 +3,18 @@
 # found in the LICENSE file.
 
 import logging
+import Queue
 import signal
 import struct
 import time
-from collections import namedtuple
-
-import common
 import numpy
-from six.moves.queue import Queue
+
+from collections import namedtuple
 from usb import core
 
+import common
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors
+
 
 USBNotificationPacket = namedtuple(
         'USBNotificationPacket',

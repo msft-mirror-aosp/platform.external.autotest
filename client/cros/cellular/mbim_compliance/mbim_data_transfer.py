@@ -10,11 +10,11 @@ import array
 import struct
 from collections import namedtuple
 
-import six
-
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_constants
-from autotest_lib.client.cros.cellular.mbim_compliance import mbim_data_channel
+from autotest_lib.client.cros.cellular.mbim_compliance \
+        import mbim_data_channel
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors
+
 
 NTH_SIGNATURE_32 = 0x686D636E  # "ncmh"
 NDP_SIGNATURE_IPS_32 = 0x00737069  # "ips0"
@@ -190,10 +190,9 @@ class MBIMNtb(object):
         @returns offset to place the next payload at.
 
         """
-        next_payload_offset = (((
-                (current_offset +
-                 (ntb_divisor - 1)) // ntb_divisor) * ntb_divisor) +
-                               ntb_payload_remainder)
+        next_payload_offset = (
+                (((current_offset + (ntb_divisor - 1)) / ntb_divisor) *
+                 ntb_divisor) + ntb_payload_remainder)
         return next_payload_offset
 
 
@@ -325,8 +324,8 @@ class MBIMNtb(object):
         # Read the NDP header to find the number of packets in the entry
         self.ndp = self._ndp_class(raw_data=raw_ntb_frame[ndp_offset:])
         num_ndp_entries = (
-                (self.ndp.length - self._ndp_class.get_struct_len()) //
-                self._ndp_entry_class.get_struct_len())
+               (self.ndp.length - self._ndp_class.get_struct_len()) /
+               self._ndp_entry_class.get_struct_len())
         ndp_entries_offset = ndp_offset + self._ndp_class.get_struct_len()
         self.payload = []
         self.ndp_entries = []
@@ -419,7 +418,7 @@ class MBIMNtbHeadersMeta(type):
         return cls
 
 
-class MBIMNtbHeaders(six.with_metaclass(MBIMNtbHeadersMeta, object)):
+class MBIMNtbHeaders(object):
     """
     Base class for all NTB headers.
 
@@ -431,6 +430,7 @@ class MBIMNtbHeaders(six.with_metaclass(MBIMNtbHeadersMeta, object)):
         For ex: reserved fields
 
     """
+    __metaclass__ = MBIMNtbHeadersMeta
 
     @classmethod
     def get_fields(cls):
@@ -548,3 +548,4 @@ class NdpEntry32(MBIMNtbHeaders):
     """ The class for MBIM NTH32 objects. """
     _FIELDS = (('I', 'datagram_index'),
                ('I', 'datagram_length'))
+

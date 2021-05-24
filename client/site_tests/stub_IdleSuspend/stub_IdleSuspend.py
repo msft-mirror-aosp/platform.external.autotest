@@ -10,9 +10,9 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.power import power_suspend, power_utils
 
 
-class dummy_IdleSuspend(test.test):
+class stub_IdleSuspend(test.test):
     """
-    This is not a complete test. It is a dummy test that must be run in parallel
+    This is not a complete test. It is a stub test that must be run in parallel
     with power_SuspendStress(method='idle') to control powerd idle values and
     perform a login.
     """

@@ -9,7 +9,7 @@ cheets_SettingsBridge
 graphics_GLBench
 graphics_GLMark2
 graphics_Idle
-graphics_Sanity
+graphics_Check
 logging_CrashSender
 logging_UdevCrash
 logging_UserCrash

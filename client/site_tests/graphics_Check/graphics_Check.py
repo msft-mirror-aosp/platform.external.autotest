@@ -21,7 +21,7 @@ from autotest_lib.client.cros.graphics import graphics_utils
 # start ui
 
 
-class graphics_Sanity(graphics_utils.GraphicsTest):
+class graphics_Check(graphics_utils.GraphicsTest):
     """
     This test is meant to be used as a quick confidence check for GL/GLES.
     """
@@ -31,7 +31,7 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
     _services = None
 
     def cleanup(self):
-        super(graphics_Sanity, self).cleanup()
+        super(graphics_Check, self).cleanup()
         if self._services:
             self._services.restore_services()
 
@@ -56,10 +56,11 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
                 return False
 
         utils.poll_for_condition(
-            can_take_screenshot,
-            sleep_interval=1,
-            desc='Failed to take a screenshot. There may be an issue with this '
-            'ChromeOS image.')
+                can_take_screenshot,
+                sleep_interval=1,
+                desc=
+                'Failed to take a screenshot. There may be an issue with this '
+                'ChromeOS image.')
 
         w, h = graphics_utils.get_internal_resolution()
         megapixels = (w * h) / 1000000
@@ -73,7 +74,7 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
             tab.WaitForDocumentReadyStateToBeComplete()
 
             screenshot2 = graphics_utils.take_screenshot(
-                self.resultsdir, 'settings page')
+                    self.resultsdir, 'settings page')
 
         for screenshot in [screenshot1, screenshot2]:
             file_size_kb = os.path.getsize(screenshot) / 1000
@@ -83,10 +84,10 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
                 return
 
         raise error.TestFail(
-            'Screenshot filesize is smaller than expected(%s <= %s). This '
-            'indicates that there is nothing on screen. This ChromeOS image '
-            'could be unusable. Check the screenshot in the results folder.' %
-            (file_size_kb, filesize_threshold))
+                'Screenshot filesize is smaller than expected(%s <= %s). This '
+                'indicates that there is nothing on screen. This ChromeOS image '
+                'could be unusable. Check the screenshot in the results folder.'
+                % (file_size_kb, filesize_threshold))
 
     def test_generated_screenshots_match_expectation(self):
         """Draws a texture with a soft ellipse twice and captures each image.
@@ -99,16 +100,17 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
                                              'screenshot1_reference.png')
         screenshot1_generated = os.path.join(self.resultsdir,
                                              'screenshot1_generated.png')
-        screenshot1_resized = os.path.join(self.resultsdir,
-                                           'screenshot1_generated_resized.png')
+        screenshot1_resized = os.path.join(
+                self.resultsdir, 'screenshot1_generated_resized.png')
         screenshot2_reference = os.path.join(self.bindir,
                                              'screenshot2_reference.png')
         screenshot2_generated = os.path.join(self.resultsdir,
                                              'screenshot2_generated.png')
-        screenshot2_resized = os.path.join(self.resultsdir,
-                                           'screenshot2_generated_resized.png')
+        screenshot2_resized = os.path.join(
+                self.resultsdir, 'screenshot2_generated_resized.png')
 
-        exefile = os.path.join('/usr/local/', 'glbench', 'bin', 'windowmanagertest');
+        exefile = os.path.join('/usr/local/', 'glbench', 'bin',
+                               'windowmanagertest')
 
         # Delay before screenshot: 1 second has caused failures.
         options = ' --screenshot1_sec 2'
@@ -120,13 +122,16 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
         options += ' --screenshot2_cmd' + screenshot_cmd % screenshot2_generated
 
         cmd = exefile + ' ' + options
-        utils.run(
-            cmd, stdout_tee=utils.TEE_TO_LOGS, stderr_tee=utils.TEE_TO_LOGS)
+        utils.run(cmd,
+                  stdout_tee=utils.TEE_TO_LOGS,
+                  stderr_tee=utils.TEE_TO_LOGS)
 
         convert_cmd = ('convert -channel RGB -colorspace RGB -depth 8'
                        " -resize '100x100!' %s %s")
-        utils.system(convert_cmd % (screenshot1_generated, screenshot1_resized))
-        utils.system(convert_cmd % (screenshot2_generated, screenshot2_resized))
+        utils.system(convert_cmd %
+                     (screenshot1_generated, screenshot1_resized))
+        utils.system(convert_cmd %
+                     (screenshot2_generated, screenshot2_resized))
         os.remove(screenshot1_generated)
         os.remove(screenshot2_generated)
 
@@ -138,8 +143,8 @@ class graphics_Sanity(graphics_utils.GraphicsTest):
         if graphics_utils.get_display_resolution() is None:
             logging.warning('Skipping test because there is no screen')
             return
-        self.add_failures('graphics_Sanity')
+        self.add_failures('graphics_Check')
         self.wake_screen_with_keyboard()
         self.test_something_on_screen()
         self.test_generated_screenshots_match_expectation()
-        self.remove_failures('graphics_Sanity')
+        self.remove_failures('graphics_Check')

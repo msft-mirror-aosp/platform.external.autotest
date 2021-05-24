@@ -16,6 +16,6 @@ This test reboots the machine and checks whether GL/GLES works on each boot.
 
 def run_reboot_stress(machine):
     job.run_test('stress_ClientTestReboot', client_ip=machine,
-                 testname='graphics_Sanity', loops=100)
+                 testname='graphics_Check', loops=100)
 
 parallel_simple(run_reboot_stress, machines)

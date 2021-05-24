@@ -175,7 +175,7 @@
     "main_name": "ChromeOS_Graphics"
   },
   {
-    "autotest_name": "graphics_Sanity",
+    "autotest_name": "graphics_Check",
     "main_name": "ChromeOS_Graphics"
   },
   {

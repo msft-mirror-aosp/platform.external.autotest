@@ -856,7 +856,6 @@ class FirmwareTest(test.test):
         if self._backup_gbb_flags is None:
             self._backup_gbb_flags = gbb_flags
         self.faft_client.bios.set_gbb_flags(new_flags)
-        self.gbb_flags = new_flags
 
         # If changing FORCE_DEV_SWITCH_ON or DISABLE_EC_SOFTWARE_SYNC flag,
         # reboot to get a clear state

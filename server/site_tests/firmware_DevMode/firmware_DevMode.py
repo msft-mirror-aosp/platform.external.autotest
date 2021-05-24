@@ -46,7 +46,8 @@ class firmware_DevMode(FirmwareTest):
         }))
 
         if self.check_ec_capability():
-            if self.gbb_flags & vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC:
+            gbb = self.faft_client.bios.get_gbb_flags()
+            if gbb & vboot.GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC:
                 # In order to test that entering dev mode does not work when
                 # EC_IN_RW=1, EC software sync must be enabled.  If EC software
                 # sync is disabled, then we must skip this portion of the test.

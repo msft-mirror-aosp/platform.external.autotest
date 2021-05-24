@@ -10,7 +10,7 @@ import os
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.multimedia import display_facade_native
-from autotest_lib.client.cros.video import native_html5_player
+from autotest_lib.client.cros.video import builtin_html5_player
 
 
 class VideoFacadeNativeError(Exception):
@@ -82,7 +82,7 @@ class VideoFacadeNative(object):
 
         tab = self._resource._browser.tabs.New()
         tab.Navigate(html_path)
-        self._player = native_html5_player.NativeHtml5Player(
+        self._player = builtin_html5_player.BuiltinHtml5Player(
                 tab=tab,
                 full_url=html_path,
                 video_id='video',

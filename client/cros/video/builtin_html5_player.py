@@ -9,7 +9,7 @@ import py_utils
 import logging
 
 
-class NativeHtml5Player(video_player.VideoPlayer):
+class BuiltinHtml5Player(video_player.VideoPlayer):
     """
     Provides an interface to interact with native html5 player in chrome.
 

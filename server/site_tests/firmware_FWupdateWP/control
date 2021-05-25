@@ -4,6 +4,7 @@
 
 AUTHOR = "Chrome OS Team"
 NAME = "firmware_FWupdateWP"
+DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"

@@ -16,7 +16,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-DEPENDENCIES = "fingerprint"
+DEPENDENCIES = "fingerprint, servo_state:WORKING"
 JOB_RETRIES = 0
 
 DOC = """

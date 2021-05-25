@@ -14,6 +14,7 @@ This test will fail if after setting the serial number in firmware:
 * Flash write protect is not enabled
 """
 ATTRIBUTES = ""
+DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"

@@ -5,7 +5,8 @@ from autotest_lib.server import utils
 
 NAME = "firmware_CsmeFwUpdate"
 AUTHOR = "Chrome OS Team"
-SUITE = "suite:faft_bios"
+ATTRIBUTES = "suite:faft_bios"
+DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"

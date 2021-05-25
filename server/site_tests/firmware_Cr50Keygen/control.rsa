@@ -8,6 +8,7 @@ AUTHOR = "mruthven"
 NAME = "firmware_Cr50Keygen.rsa"
 PURPOSE = "Verify cr50 rsa key generation."
 ATTRIBUTES = "suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
+DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_TYPE = "server"
 

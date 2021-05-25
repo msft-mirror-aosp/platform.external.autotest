@@ -5,6 +5,7 @@
 AUTHOR = "Chrome OS Team"
 NAME = "firmware_FWupdateThenSleep.batteryonly"
 ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
+DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"

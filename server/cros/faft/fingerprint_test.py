@@ -818,7 +818,7 @@ class FingerprintTest(test.test):
     def flash_rw_ro_firmware(self, fw_path):
         """Flashes *all* firmware (both RO and RW)."""
         self.set_hardware_write_protect(False)
-        flash_cmd = 'flash_fp_mcu' + ' ' + fw_path
+        flash_cmd = 'flash_fp_mcu' + ' --noservices ' + fw_path
         logging.info('Running flash cmd: %s', flash_cmd)
         flash_result = self.run_cmd(flash_cmd)
         self.set_hardware_write_protect(True)

@@ -147,7 +147,8 @@ class firmware_Fingerprint(FingerprintTest):
         # This should fail and the file should be empty
         file_read_from_flash = os.path.join(self._dut_working_dir,
                                             'test_keep_rdp.bin')
-        cmd = 'flash_fp_mcu --read --noremove_flash_read_protect %s' % file_read_from_flash
+        cmd = 'flash_fp_mcu --noservices --read' + \
+            ' --noremove_flash_read_protect %s' % file_read_from_flash
         result = self.run_cmd(cmd)
         if result.exit_status == 0:
             raise error.TestFail('Should not be able to read from flash')
@@ -185,7 +186,7 @@ class firmware_Fingerprint(FingerprintTest):
 
         file_read_from_flash = os.path.join(self._dut_working_dir,
                                             'test_change_rdp.bin')
-        cmd = 'flash_fp_mcu --read %s' % file_read_from_flash
+        cmd = 'flash_fp_mcu --noservices --read %s' % file_read_from_flash
         self.run_cmd(cmd)
 
         logging.info(
@@ -224,7 +225,8 @@ class firmware_Fingerprint(FingerprintTest):
 
         file_read_from_flash = os.path.join(self._dut_working_dir,
                                             'test_keep_rdp.bin')
-        cmd = 'flash_fp_mcu --read --noremove_flash_read_protect %s' % file_read_from_flash
+        cmd = 'flash_fp_mcu --noservices --read' + \
+            ' --noremove_flash_read_protect %s' % file_read_from_flash
         result = self.run_cmd(cmd)
         if result.exit_status != 0:
             raise error.TestFail('Failed to read from flash')
@@ -258,7 +260,7 @@ class firmware_Fingerprint(FingerprintTest):
 
         file_read_from_flash = os.path.join(self._dut_working_dir,
                                             'test_change_rdp.bin')
-        cmd = 'flash_fp_mcu --read %s' % file_read_from_flash
+        cmd = 'flash_fp_mcu --noservices --read %s' % file_read_from_flash
         result = self.run_cmd(cmd)
         if result.exit_status != 0:
             raise error.TestFail('Failed to read from flash')

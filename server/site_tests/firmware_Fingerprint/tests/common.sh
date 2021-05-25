@@ -154,12 +154,13 @@ read_from_flash() {
 
 read_from_flash_in_bootloader_mode_without_modifying_RDP_level() {
   local output_file="${1}"
-  flash_fp_mcu --read --noremove_flash_read_protect "${output_file}"
+  flash_fp_mcu --noservices --read --noremove_flash_read_protect \
+    "${output_file}"
 }
 
 read_from_flash_in_bootloader_mode_while_setting_RDP_to_level_0() {
   local output_file="${1}"
-  flash_fp_mcu --read "${output_file}"
+  flash_fp_mcu --noservices --read "${output_file}"
 }
 
 

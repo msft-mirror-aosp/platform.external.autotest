@@ -269,6 +269,7 @@ suite:power_requirements
 suite:power_check
 suite:powerplay
 suite:push_to_prod
+suite:pvs-staging
 suite:pvs-uprev-exit
 suite:reboot_stress
 suite:regression

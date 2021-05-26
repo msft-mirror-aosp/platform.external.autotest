@@ -111,197 +111,29 @@ class BluetoothBaseFacadeNative(object):
     """Base facade shared by Bluez and Floss daemons. This takes care of any
     functionality that is common across the two daemons.
     """
-    pass
 
-
-class BluezPairingAgent(dbus.service.Object):
-    """The agent handling the authentication process of bluetooth pairing.
-
-    BluezPairingAgent overrides RequestPinCode method to return a given pin code.
-    User can use this agent to pair bluetooth device which has a known
-    pin code.
-
-    TODO (josephsih): more pairing modes other than pin code would be
-    supported later.
-
-    """
-    def __init__(self, pin, *args, **kwargs):
-        super(BluezPairingAgent, self).__init__(*args, **kwargs)
-        self._pin = pin
-
-    @dbus.service.method('org.bluez.Agent1',
-                         in_signature='o',
-                         out_signature='s')
-    def RequestPinCode(self, device_path):
-        """Requests pin code for a device.
-
-        Returns the known pin code for the request.
-
-        @param device_path: The object path of the device.
-
-        @returns: The known pin code.
-
-        """
-        logging.info('RequestPinCode for %s; return %s', device_path,
-                     self._pin)
-        return self._pin
-
-
-class BluezFacadeNative(BluetoothBaseFacadeNative):
-    """Exposes DUT methods called remotely during Bluetooth autotests for the
-    Bluez daemon.
-
-    All instance methods of this object without a preceding '_' are exposed via
-    an XML-RPC server. This is not a stateless handler object, which means that
-    if you store state inside the delegate, that state will remain around for
-    future calls.
-    """
-
-    UPSTART_PATH = 'unix:abstract=/com/ubuntu/upstart'
-    UPSTART_MANAGER_PATH = '/com/ubuntu/Upstart'
-    UPSTART_MANAGER_IFACE = 'com.ubuntu.Upstart0_6'
-    UPSTART_JOB_IFACE = 'com.ubuntu.Upstart0_6.Job'
-
-    UPSTART_ERROR_UNKNOWNINSTANCE = \
-            'com.ubuntu.Upstart0_6.Error.UnknownInstance'
-    UPSTART_ERROR_ALREADYSTARTED = \
-            'com.ubuntu.Upstart0_6.Error.AlreadyStarted'
-
-    BLUETOOTHD_JOB = 'bluetoothd'
-
-    DBUS_ERROR_SERVICEUNKNOWN = 'org.freedesktop.DBus.Error.ServiceUnknown'
-
-    BLUETOOTH_SERVICE_NAME = 'org.chromium.Bluetooth'
-    BLUEZ_SERVICE_NAME = 'org.bluez'
-    BLUEZ_MANAGER_PATH = '/'
-    BLUEZ_DEBUG_LOG_PATH = '/org/chromium/Bluetooth'
-    BLUEZ_DEBUG_LOG_IFACE = 'org.chromium.Bluetooth.Debug'
-    BLUEZ_MANAGER_IFACE = 'org.freedesktop.DBus.ObjectManager'
-    BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
-    BLUEZ_ADMIN_POLICY_IFACE = 'org.bluez.AdminPolicy1'
-    BLUEZ_BATTERY_IFACE = 'org.bluez.Battery1'
-    BLUEZ_DEVICE_IFACE = 'org.bluez.Device1'
-    BLUEZ_GATT_SERV_IFACE = 'org.bluez.GattService1'
-    BLUEZ_GATT_CHAR_IFACE = 'org.bluez.GattCharacteristic1'
-    BLUEZ_GATT_DESC_IFACE = 'org.bluez.GattDescriptor1'
-    BLUEZ_LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
-    BLUEZ_ADV_MONITOR_MANAGER_IFACE = 'org.bluez.AdvertisementMonitorManager1'
-    BLUEZ_AGENT_MANAGER_PATH = '/org/bluez'
-    BLUEZ_AGENT_MANAGER_IFACE = 'org.bluez.AgentManager1'
-    BLUEZ_PROFILE_MANAGER_PATH = '/org/bluez'
-    BLUEZ_PROFILE_MANAGER_IFACE = 'org.bluez.ProfileManager1'
-    BLUEZ_ERROR_ALREADY_EXISTS = 'org.bluez.Error.AlreadyExists'
-    BLUEZ_PLUGIN_DEVICE_IFACE = 'org.chromium.BluetoothDevice'
-    DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
-    AGENT_PATH = '/test/agent'
-
+    # Both bluez and floss share the same lib dir for configuration and cache
     BLUETOOTH_LIBDIR = '/var/lib/bluetooth'
-    BTMON_STOP_DELAY_SECS = 3
 
     SYSLOG_LEVELS = [
             'EMERG', 'ALERT', 'CRIT', 'ERR', 'WARNING', 'NOTICE', 'INFO',
             'DEBUG'
     ]
-    # Due to problems transferring a date object, we convert to stringtime first
-    # This is the standard format that we will use.
-    OUT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
-
-    # Timeout for how long we'll wait for BlueZ and the Adapter to show up
-    # after reset.
-    ADAPTER_TIMEOUT = 30
 
     # How long to wait for hid device
     HID_TIMEOUT = 15
     HID_CHECK_SECS = 2
 
-    # How long we should wait for property update signal before we cancel it
-    PROPERTY_UPDATE_TIMEOUT_MILLI_SECS = 5000
+    # Due to problems transferring a date object, we convert to stringtime first
+    # This is the standard format that we will use.
+    OUT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
     def __init__(self):
-        # Open the Bluetooth Raw socket to the kernel which provides us direct,
-        # raw, access to the HCI controller.
-        self._raw = bluetooth_socket.BluetoothRawSocket()
-
-        # Open the Bluetooth Control socket to the kernel which provides us
-        # raw management access to the Bluetooth Host Subsystem. Read the list
-        # of adapter indexes to determine whether or not this device has a
-        # Bluetooth Adapter or not.
-        self._control = bluetooth_socket.BluetoothControlSocket()
-        self._has_adapter = len(self._control.read_index_list()) > 0
-
-        # Create an Advertisement Monitor App Manager instance.
-        # This needs to be created before making any dbus connections as
-        # AdvMonitorAppMgr internally forks a new helper process and due to
-        # a limitation of python, it is not possible to fork a new process
-        # once any dbus connections are established.
-        self.advmon_appmgr = adv_monitor_helper.AdvMonitorAppMgr()
-
-        # Set up the connection to Upstart so we can start and stop services
-        # and fetch the bluetoothd job.
-        self._upstart_conn = dbus.connection.Connection(self.UPSTART_PATH)
-        self._upstart = self._upstart_conn.get_object(
-                None, self.UPSTART_MANAGER_PATH)
-
-        bluetoothd_path = self._upstart.GetJobByName(
-                self.BLUETOOTHD_JOB, dbus_interface=self.UPSTART_MANAGER_IFACE)
-        self._bluetoothd = self._upstart_conn.get_object(None, bluetoothd_path)
-
-        # Arrange for the GLib main loop to be the default.
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-        # Set up the connection to the D-Bus System Bus, get the object for
-        # the Bluetooth Userspace Daemon (BlueZ) and that daemon's object for
-        # the Bluetooth Adapter, and the advertising manager.
-        self._system_bus = dbus.SystemBus()
-        self._update_bluez()
-        self._update_adapter()
-        self._update_advertising()
-        self._update_adv_monitor_manager()
-
-        # The agent to handle pin code request, which will be
-        # created when user calls pair_legacy_device method.
-        self._pairing_agent = None
-        # The default capability of the agent.
-        self._capability = 'KeyboardDisplay'
-
-        # Initailize a btmon object to record bluetoothd's activity.
-        self.btmon = output_recorder.OutputRecorder(
-                'btmon', stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
-
         # Initialize a messages object to record general logging.
         self.messages = logger_helper.LogManager('/var/log/messages')
 
+        # Set up cras test client for audio tests
         self._cras_test_client = cras_utils.CrasTestClient()
-
-        self.advertisements = []
-        self.advmon_interleave_logger = logger_helper.InterleaveLogger()
-        self._chrc_property = None
-        self._timeout_id = 0
-        self._signal_watch = None
-        self._dbus_mainloop = gobject.MainLoop()
-
-    @xmlrpc_server.dbus_safe(False)
-    def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
-                             kernel_vb):
-        """Enable or disable the debug logs of bluetooth
-
-        @param dispatcher_vb: verbosity of btdispatcher debug log, either 0 or 1
-        @param newblue_vb: verbosity of newblued debug log, either 0 or 1
-        @param bluez_vb: verbosity of bluez debug log, either 0 or 1
-        @param kernel_vb: verbosity of kernel debug log, either 0 or 1
-
-        """
-
-        # TODO(b/145163508, b/145749798): update when debug logs is migrated to
-        #                                 bluez.
-        debug_object = self._system_bus.get_object(self.BLUETOOTH_SERVICE_NAME,
-                                                   self.BLUEZ_DEBUG_LOG_PATH)
-        debug_object.SetLevels(dbus.Byte(dispatcher_vb),
-                               dbus.Byte(newblue_vb),
-                               dbus.Byte(bluez_vb),
-                               dbus.Byte(kernel_vb),
-                               dbus_interface=self.BLUEZ_DEBUG_LOG_IFACE)
-        return
 
     def log_message(self, msg):
         """ log a message to /var/log/messages."""
@@ -310,6 +142,59 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
             subprocess.call(cmd)
         except Exception as e:
             logging.error("log_message %s failed with %s", cmd, str(e))
+
+    def messages_start(self):
+        """Start messages monitoring.
+
+        @returns: True if logging started successfully, else False
+        """
+
+        try:
+            self.messages.StartRecording()
+            return True
+
+        except Exception as e:
+            logging.error('Failed to start log recording with error: %s', e)
+
+        return False
+
+    def messages_stop(self):
+        """Stop messages monitoring.
+
+        @returns: True if logs were successfully gathered since logging started,
+                else False
+        """
+        try:
+            self.messages.StopRecording()
+            return True
+
+        except Exception as e:
+            logging.error('Failed to stop log recording with error: %s', e)
+
+        return False
+
+    def messages_find(self, pattern_str):
+        """Find if a pattern string exists in messages output.
+
+        @param pattern_str: the pattern string to find.
+
+        @returns: True on success. False otherwise.
+
+        """
+        return self.messages.LogContains(pattern_str)
+
+    def clean_bluetooth_kernel_log(self, log_level):
+        """Remove Bluetooth kernel logs in /var/log/messages with loglevel
+           equal to or greater than |log_level|
+
+        @param log_level: int in range [0..7]
+        """
+        reg_exp = '[^ ]+ ({LEVEL}) kernel: \[.*\] Bluetooth: .*'.format(
+                LEVEL='|'.join(self.SYSLOG_LEVELS[log_level:]))
+
+        logging.debug('Set kernel filter to level %d', log_level)
+
+        self.messages.FilterOut(reg_exp)
 
     def is_wrt_supported(self):
         """Check if Bluetooth adapter support WRT logs
@@ -542,6 +427,962 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
             logging.error('Exception %s while collecting WRT logs', str(e))
             return False
 
+    def _get_wake_enabled_path(self):
+        # Walk up the parents from hci0 sysfs path and find the first one with
+        # a power/wakeup property. Return that path (including power/wakeup).
+
+        # Resolve hci path to get full device path (i.e. w/ usb or uart)
+        search_at = os.path.realpath('/sys/class/bluetooth/hci0')
+
+        # Exit early if path doesn't exist
+        if not os.path.exists(search_at):
+            return None
+
+        # Walk up parents and try to find one with 'power/wakeup'
+        for _ in range(search_at.count('/') - 1):
+            search_at = os.path.normpath(os.path.join(search_at, '..'))
+            try:
+                path = os.path.join(search_at, 'power', 'wakeup')
+                with open(path, 'r') as f:
+                    return path
+            except IOError:
+                # No power wakeup at the given location so keep going
+                continue
+
+        return None
+
+    def _is_wake_enabled(self):
+        search_at = self._get_wake_enabled_path()
+
+        if search_at is not None:
+            try:
+                with open(search_at, 'r') as f:
+                    value = f.read()
+                    logging.info('Power/wakeup found at {}: {}'.format(
+                            search_at, value))
+                    return 'enabled' in value
+            except IOError:
+                # Path was not readable
+                return False
+
+        logging.debug('No power/wakeup path found')
+        return False
+
+    def _set_wake_enabled(self, value):
+        path = self._get_wake_enabled_path()
+        if path is not None:
+            try:
+                with open(path, 'w') as f:
+                    f.write('enabled' if value else 'disabled')
+                    return True
+            except IOError:
+                # Path was not writeable
+                return False
+
+        return False
+
+    def is_wake_enabled(self):
+        """Checks whether the bluetooth adapter has wake enabled.
+
+        This will walk through all parents of the hci0 sysfs path and try to
+        find one with a 'power/wakeup' entry and returns whether its value is
+        'enabled'.
+
+        @return True if 'power/wakeup' of an hci0 parent is 'enabled'
+        """
+        enabled = self._is_wake_enabled()
+        return enabled
+
+    def set_wake_enabled(self, value):
+        """Sets wake enabled to the value if path exists.
+
+        This will walk through all parents of the hci0 sysfs path and write the
+        value to the first one it finds.
+
+        Args:
+            value: Sets power/wakeup to "enabled" if value is true, else
+                   "disabled"
+
+        @return True if it wrote value to a power/wakeup, False otherwise
+        """
+        return self._set_wake_enabled(value)
+
+    def wait_for_hid_device(self, device_address):
+        """Waits for hid device with given device address.
+
+        Args:
+            device_address: Peripheral address
+        """
+
+        def match_hid_to_device(hidpath, device_address):
+            """Check if given hid syspath is for the given device address """
+            # If the syspath has a uniq property that matches the peripheral
+            # device's address, then it has matched
+            props = UdevadmInfo.GetProperties(hidpath)
+            if props.get('uniq', '').lower() == device_address.lower():
+                logging.info('Found hid device for address {} at {}'.format(
+                        device_address, hidpath))
+                return True
+            else:
+                logging.info('Path {} is not right device.'.format(hidpath))
+
+            return False
+
+        start = datetime.now()
+
+        # Keep scanning udev for correct hid device
+        while (datetime.now() - start).seconds <= self.HID_TIMEOUT:
+            existing_inputs = UdevadmTrigger(
+                    subsystem_match=['input']).DryRun()
+            for entry in existing_inputs:
+                bt_hid = any([t in entry for t in ['uhid', 'hci']])
+                logging.info('udevadm trigger entry is {}: {}'.format(
+                        bt_hid, entry))
+
+                if bt_hid and match_hid_to_device(entry, device_address):
+                    return True
+
+            time.sleep(self.HID_CHECK_SECS)
+
+        return False
+
+    def _powerd_last_resume_details(self, before=5, after=0):
+        """ Look at powerd logs for last suspend/resume attempt.
+
+        Note that logs are in reverse order (chronologically). Keep that in mind
+        for the 'before' and 'after' parameters.
+
+        @param before: Number of context lines before search item to show.
+        @param after: Number of context lines after search item to show.
+
+        @return Most recent lines containing suspend resume details or ''.
+        """
+        event_file = '/var/log/power_manager/powerd.LATEST'
+
+        # Each powerd_suspend wakeup has a log "powerd_suspend returned 0",
+        # with the return code of the suspend. We search for the last
+        # occurrence in the log, and then find the collocated event_count log,
+        # indicating the wakeup cause. -B option for grep will actually grab the
+        # *next* 5 logs in time, since we are piping the powerd file backwards
+        # with tac command
+        resume_indicator = 'powerd_suspend returned'
+        cmd = 'tac {} | grep -A {} -B {} -m1 "{}"'.format(
+                event_file, after, before, resume_indicator)
+
+        try:
+            return utils.run(cmd).stdout
+        except error.CmdError:
+            logging.error('Could not locate recent suspend')
+
+        return ''
+
+    def bt_caused_last_resume(self):
+        """Checks if last resume from suspend was caused by bluetooth
+
+        @return: True if BT wake path was cause of resume, False otherwise
+        """
+
+        # When the resume cause is printed to powerd log, it omits the
+        # /power/wakeup portion of wake path
+        bt_wake_path = self._get_wake_enabled_path()
+
+        # If bluetooth does not have a valid wake path, it could not have caused
+        # the resume
+        if not bt_wake_path:
+            return False
+
+        bt_wake_path = bt_wake_path.replace('/power/wakeup', '')
+
+        last_resume_details = self._powerd_last_resume_details()
+
+        # If BT caused wake, there will be a line describing the bt wake
+        # path's event_count before and after the resume
+        for line in last_resume_details.split('\n'):
+            if 'event_count' in line:
+                logging.info('Checking wake event: {}'.format(line))
+                if bt_wake_path in line:
+                    return True
+
+        return False
+
+    def find_last_suspend_via_powerd_logs(self):
+        """ Finds the last suspend attempt via powerd logs.
+
+        Finds the last suspend attempt using powerd logs by searching backwards
+        through the logs to find the latest entries with 'powerd_suspend'. If we
+        can't find a suspend attempt, we return None.
+
+        @return: Tuple (suspend start time, suspend end time, suspend result) or
+                None if we can't find a suspend attempt
+        """
+        # Logs look like this (ignore newline):
+        # 2021-02-11T18:53:43.561880Z INFO powerd:
+        #       [daemon.cc(724)] powerd_suspend returned 0
+        # ... stuff in between ...
+        # 2021-02-11T18:53:13.277695Z INFO powerd:
+        #       [suspender.cc(574)] Starting suspend
+
+        # Date format for strptime and strftime
+        date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+        date_group_re = ('(?P<date>[0-9]+-[0-9]+-[0-9]+T'
+                         '[0-9]+:[0-9]+:[0-9]+[.][0-9]+Z)\s')
+
+        finish_suspend_re = re.compile(
+                '^{date_regex}'
+                '.*daemon.*powerd_suspend returned '
+                '(?P<exitcode>[0-9]+)'.format(date_regex=date_group_re))
+        start_suspend_re = re.compile(
+                '^{date_regex}.*suspender.*'
+                'Starting suspend'.format(date_regex=date_group_re))
+
+        now = datetime.now()
+        last_resume_details = self._powerd_last_resume_details(before=0,
+                                                               after=8)
+        if last_resume_details:
+            start_time, end_time, ret = None, None, None
+            try:
+                for line in last_resume_details.split('\n'):
+                    logging.debug('Last suspend search: %s', line)
+                    m = finish_suspend_re.match(line)
+                    if m:
+                        logging.debug('Found suspend end: date(%s) ret(%s)',
+                                      m.group('date'), m.group('exitcode'))
+                        end_time = datetime.strptime(
+                                m.group('date'),
+                                date_format).replace(year=now.year)
+                        ret = int(m.group('exitcode'))
+
+                    m = start_suspend_re.match(line)
+                    if m:
+                        logging.debug('Found suspend start: date(%s)',
+                                      m.group('date'))
+                        start_time = datetime.strptime(
+                                m.group('date'),
+                                date_format).replace(year=now.year)
+                        break
+
+                if all([x is not None for x in [start_time, end_time, ret]]):
+                    # Return dates in string format due to inconsistency between
+                    # python2/3 usage on host and dut
+                    return (start_time.strftime(self.OUT_DATE_FORMAT),
+                            end_time.strftime(self.OUT_DATE_FORMAT), ret)
+                else:
+                    logging.error(
+                            'Failed to parse details from last suspend. %s %s %s',
+                            str(start_time), str(end_time), str(ret))
+            except Exception as e:
+                logging.error('Failed to parse last suspend: %s', str(e))
+        else:
+            logging.error('No powerd_suspend attempt found')
+
+        return None
+
+    def do_suspend(self, seconds, expect_bt_wake):
+        """Suspend DUT using the power manager.
+
+        @param seconds: The number of seconds to suspend the device.
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+
+        @throws: SuspendFailure on resume with unexpected timing or wake source.
+            The raised exception will be handled as a non-zero retcode over the
+            RPC, signalling for the test to fail.
+        """
+        early_wake = False
+        try:
+            sys_power.do_suspend(seconds)
+
+        except sys_power.SpuriousWakeupError:
+            logging.info('Early resume detected...')
+            early_wake = True
+
+        # Handle error conditions based on test expectations, whether resume
+        # was early, and cause of the resume
+        bt_caused_wake = self.bt_caused_last_resume()
+        logging.info('Cause for resume: {}'.format(
+                'BT' if bt_caused_wake else 'Not BT'))
+
+        if not expect_bt_wake and bt_caused_wake:
+            raise sys_power.SuspendFailure('BT woke us unexpectedly')
+
+        # TODO(b/160803597) - Uncomment when BT wake reason is correctly
+        # captured in powerd log.
+        #
+        # if expect_bt_wake and not bt_caused_wake:
+        #   raise sys_power.SuspendFailure('BT should have woken us')
+        #
+        # if bt_caused_wake and not early_wake:
+        #   raise sys_power.SuspendFailure('BT wake did not come early')
+
+        return True
+
+    def get_wlan_vid_pid(self):
+        """ Return vendor id and product id of the wlan chip on BT/WiFi module
+
+        @returns: (vid,pid) on success; (None,None) on failure
+        """
+        vid = None
+        pid = None
+        path_template = '/sys/class/net/%s/device/'
+        for dev_name in ['wlan0', 'mlan0']:
+            if os.path.exists(path_template % dev_name):
+                path_v = path_template % dev_name + 'vendor'
+                path_d = path_template % dev_name + 'device'
+                logging.debug('Paths are %s %s', path_v, path_d)
+                try:
+                    vid = open(path_v).read().strip('\n')
+                    pid = open(path_d).read().strip('\n')
+                    break
+                except Exception as e:
+                    logging.error('Exception %s while reading vid/pid', str(e))
+        logging.debug('returning vid:%s pid:%s', vid, pid)
+        return (vid, pid)
+
+    def get_bt_transport(self):
+        """ Return transport (UART/USB/SDIO) used by BT module
+
+        @returns: USB/UART/SDIO on success; None on failure
+        """
+        try:
+            transport_str = os.path.realpath(
+                    '/sys/class/bluetooth/hci0/device/driver/module')
+            logging.debug('transport is %s', transport_str)
+            transport = transport_str.split('/')[-1]
+            if transport == 'btusb':
+                return 'USB'
+            elif transport == 'hci_uart':
+                return 'UART'
+            elif transport == 'btmrvl_sdio':
+                return 'SDIO'
+            else:
+                return None
+        except Exception as e:
+            logging.error('Exception %s in get_bt_transport', str(e))
+            return None
+
+    def get_bt_module_name(self):
+        """ Return bluetooth module name for non-USB devices
+
+        @returns '' on failure. On success return chipset name, if found in
+                 dict.Otherwise it returns the raw string read.
+        """
+        # map the string read from device to chipset name
+        chipset_string_dict = {'qcom,wcn3991-bt\x00': 'WCN3991'}
+
+        hci_device = '/sys/class/bluetooth/hci0'
+        real_path = os.path.realpath(hci_device)
+
+        logging.debug('real path is %s', real_path)
+        if 'usb' in real_path:
+            return ''
+
+        device_path = os.path.join(real_path, 'device', 'of_node',
+                                   'compatible')
+        try:
+            chipset_string = open(device_path).read()
+            logging.debug('read string %s from %s', chipset_string,
+                          device_path)
+        except Exception as e:
+            logging.error('Exception %s while reading from file', str(e),
+                          device_path)
+            return ''
+
+        if chipset_string in chipset_string_dict:
+            return chipset_string_dict[chipset_string]
+        else:
+            logging.debug("Chipset not known. Returning %s", chipset_string)
+            return chipset_string
+
+    def get_bt_usb_device_strs(self):
+        """ Return the usb endpoints for the bluetooth device, if they exist
+
+        We wish to be able to identify usb disconnect events that affect our
+        bluetooth operation. To do so, we must first identify the usb endpoint
+        that is associated with our bluetooth device.
+
+        @returns: Relevant usb endpoints for the bluetooth device,
+                  i.e. ['1-1','1-1.2'] if they exist,
+                  [] otherwise
+        """
+
+        hci_device = '/sys/class/bluetooth/hci0'
+        real_path = os.path.realpath(hci_device)
+
+        # real_path for a usb bluetooth controller will look something like:
+        # ../../devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4:1.0/bluetooth/hci0
+        if 'usb' not in real_path:
+            return []
+
+        logging.debug('Searching for usb path: {}'.format(real_path))
+
+        # Grab all numbered entries between 'usb' and 'bluetooth' descriptors
+        m = re.search(r'usb(.*)bluetooth', real_path)
+
+        if not m:
+            logging.error(
+                    'Unable to extract usb dev from {}'.format(real_path))
+            return []
+
+        # Return the path as a list of individual usb descriptors
+        return m.group(1).split('/')
+
+    def get_bt_usb_disconnect_str(self):
+        """ Return the expected log error on USB disconnect
+
+        Locate the descriptor that will be used from the list of all usb
+        descriptors associated with our bluetooth chip, and format into the
+        expected string error for USB disconnect
+
+        @returns: string representing expected usb disconnect log entry if usb
+                  device could be identified, None otherwise
+        """
+        disconnect_log_template = 'usb {}: USB disconnect'
+        descriptors = self.get_bt_usb_device_strs()
+
+        # The usb disconnect log message seems to use the most detailed
+        # descriptor that does not use the ':1.0' entry
+        for d in sorted(descriptors, key=len, reverse=True):
+            if ':' not in d:
+                return disconnect_log_template.format(d)
+
+        return None
+
+    def get_device_utc_time(self):
+        """ Get the current device time in UTC. """
+        return datetime.utcnow().strftime(self.OUT_DATE_FORMAT)
+
+    def create_audio_record_directory(self, audio_record_dir):
+        """Create the audio recording directory.
+
+        @param audio_record_dir: the audio recording directory
+
+        @returns: True on success. False otherwise.
+        """
+        try:
+            if not os.path.exists(audio_record_dir):
+                os.makedirs(audio_record_dir)
+            return True
+        except Exception as e:
+            logging.error('Failed to create %s on the DUT: %s',
+                          audio_record_dir, e)
+            return False
+
+    def start_capturing_audio_subprocess(self, audio_data, recording_device):
+        """Start capturing audio in a subprocess.
+
+        @param audio_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+
+        @returns: True on success. False otherwise.
+        """
+        audio_data = json.loads(audio_data)
+        return self._cras_test_client.start_capturing_subprocess(
+                audio_data[recording_device],
+                sample_format=audio_data['format'],
+                channels=audio_data['channels'],
+                rate=audio_data['rate'],
+                duration=audio_data['duration'])
+
+    def stop_capturing_audio_subprocess(self):
+        """Stop capturing audio.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._cras_test_client.stop_capturing_subprocess()
+
+    def _generate_playback_file(self, audio_data):
+        """Generate the playback file if it does not exist yet.
+
+        Some audio test files may be large. Generate them on the fly
+        to save the storage of the source tree.
+
+        @param audio_data: the audio test data
+        """
+        if not os.path.exists(audio_data['file']):
+            data_format = dict(file_type='raw',
+                               sample_format='S16_LE',
+                               channel=audio_data['channels'],
+                               rate=audio_data['rate'])
+
+            # Make the audio file a bit longer to handle any delay
+            # issue in capturing.
+            duration = audio_data['duration'] + 3
+            audio_test_data_module.GenerateAudioTestData(
+                    data_format=data_format,
+                    path=audio_data['file'],
+                    duration_secs=duration,
+                    frequencies=audio_data['frequencies'])
+            logging.debug("Raw file generated: %s", audio_data['file'])
+
+    def start_playing_audio_subprocess(self, audio_data):
+        """Start playing audio in a subprocess.
+
+        @param audio_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        audio_data = json.loads(audio_data)
+        self._generate_playback_file(audio_data)
+        try:
+            return self._cras_test_client.start_playing_subprocess(
+                    audio_data['file'],
+                    channels=audio_data['channels'],
+                    rate=audio_data['rate'],
+                    duration=audio_data['duration'])
+        except Exception as e:
+            logging.error("start_playing_subprocess() failed: %s", str(e))
+            return False
+
+    def stop_playing_audio_subprocess(self):
+        """Stop playing audio in the subprocess.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._cras_test_client.stop_playing_subprocess()
+
+    def play_audio(self, audio_data):
+        """Play audio.
+
+        It blocks until it has completed playing back the audio.
+
+        @param audio_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        audio_data = json.loads(audio_data)
+        self._generate_playback_file(audio_data)
+        return self._cras_test_client.play(audio_data['file'],
+                                           channels=audio_data['channels'],
+                                           rate=audio_data['rate'],
+                                           duration=audio_data['duration'])
+
+    def check_audio_frames_legitimacy(self, audio_test_data, recording_device,
+                                      recorded_file):
+        """Get the number of frames in the recorded audio file.
+
+        @param audio_test_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
+
+        @returns: True if audio frames are legitimate.
+        """
+        if bool(recorded_file):
+            recorded_filename = recorded_file
+        else:
+            audio_test_data = json.loads(audio_test_data)
+            recorded_filename = audio_test_data[recording_device]
+
+        if recorded_filename.endswith('.raw'):
+            # Make sure that the recorded file does not contain all zeros.
+            filesize = os.path.getsize(recorded_filename)
+            cmd_str = 'cmp -s -n %d %s /dev/zero' % (filesize,
+                                                     recorded_filename)
+            try:
+                result = subprocess.call(cmd_str.split())
+                return result != 0
+            except Exception as e:
+                logging.error("Failed: %s (%s)", cmd_str, str(e))
+                return False
+        else:
+            # The recorded wav file should not be empty.
+            wav_file = check_quality.WaveFile(recorded_filename)
+            return wav_file.get_number_frames() > 0
+
+    def convert_audio_sample_rate(self, input_file, out_file, test_data,
+                                  new_rate):
+        """Convert audio file to new sample rate.
+
+        @param input_file: Path to file to upsample.
+        @param out_file: Path to create upsampled file.
+        @param test_data: Dictionary with information about file.
+        @param new_rate: New rate to upsample file to.
+
+        @returns: True if upsampling succeeded, False otherwise.
+        """
+        test_data = json.loads(test_data)
+        logging.debug('Resampling file {} to new rate {}'.format(
+                input_file, new_rate))
+
+        convert_format(input_file,
+                       test_data['channels'],
+                       test_data['bit_width'],
+                       test_data['rate'],
+                       out_file,
+                       test_data['channels'],
+                       test_data['bit_width'],
+                       new_rate,
+                       1.0,
+                       use_src_header=True,
+                       use_dst_header=True)
+
+        return os.path.isfile(out_file)
+
+    def trim_wav_file(self,
+                      in_file,
+                      out_file,
+                      new_duration,
+                      test_data,
+                      tolerance=0.1):
+        """Trim long file to desired length.
+
+        Trims audio file to length by cutting out silence from beginning and
+        end.
+
+        @param in_file: Path to audio file to be trimmed.
+        @param out_file: Path to trimmed audio file to create.
+        @param new_duration: A float representing the desired duration of
+                the resulting trimmed file.
+        @param test_data: Dictionary containing information about the test file.
+        @param tolerance: (optional) A float representing the allowable
+                difference between trimmed file length and desired duration
+
+        @returns: True if file was trimmed successfully, False otherwise.
+        """
+        test_data = json.loads(test_data)
+        trim_silence_from_wav_file(in_file, out_file, new_duration)
+        measured_length = get_file_length(out_file, test_data['channels'],
+                                          test_data['bit_width'],
+                                          test_data['rate'])
+        return abs(measured_length - new_duration) <= tolerance
+
+    def unzip_audio_test_data(self, tar_path, data_dir):
+        """Unzip audio test data files.
+
+        @param tar_path: Path to audio test data tarball on DUT.
+        @oaram data_dir: Path to directory where to extract test data directory.
+
+        @returns: True if audio test data folder exists, False otherwise.
+        """
+        logging.debug('Downloading audio test data on DUT')
+        # creates path to dir to extract test data to by taking name of the
+        # tarball without the extension eg. <dir>/file.ext to data_dir/file/
+        audio_test_dir = os.path.join(
+                data_dir,
+                os.path.split(tar_path)[1].split('.', 1)[0])
+
+        unzip_cmd = 'tar -xf {0} -C {1}'.format(tar_path, data_dir)
+
+        unzip_proc = subprocess.Popen(unzip_cmd.split(),
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+        _, stderr = unzip_proc.communicate()
+
+        if stderr:
+            logging.error('Error occurred in unzipping audio data: {}'.format(
+                    str(stderr)))
+            return False
+
+        return unzip_proc.returncode == 0 and os.path.isdir(audio_test_dir)
+
+    def convert_raw_to_wav(self, input_file, output_file, test_data):
+        """Convert raw audio file to wav file.
+
+        @oaram input_file: the location of the raw file
+        @param output_file: the location to place the resulting wav file
+        @param test_data: the data for the file being converted
+
+        @returns: True if conversion was successful otherwise false
+        """
+        test_data = json.loads(test_data)
+        convert_raw_file(input_file, test_data['channels'],
+                         test_data['bit_width'], test_data['rate'],
+                         output_file)
+
+        return os.path.isfile(output_file)
+
+    def get_primary_frequencies(self, audio_test_data, recording_device,
+                                recorded_file):
+        """Get primary frequencies of the audio test file.
+
+        @param audio_test_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+        @param recorded_file: the recorded file name
+
+        @returns: a list of primary frequencies of channels in the audio file
+        """
+        audio_test_data = json.loads(audio_test_data)
+
+        if bool(recorded_file):
+            recorded_filename = recorded_file
+        else:
+            recorded_filename = audio_test_data[recording_device]
+
+        args = CheckQualityArgsClass(filename=recorded_filename,
+                                     rate=audio_test_data['rate'],
+                                     channel=audio_test_data['channels'],
+                                     bit_width=16)
+        raw_data, rate = check_quality.read_audio_file(args)
+        checker = check_quality.QualityChecker(raw_data, rate)
+        # The highest frequency recorded would be near 24 Khz
+        # as the max sample rate is 48000 in our tests.
+        # So let's set ignore_high_freq to be 48000.
+        checker.do_spectral_analysis(ignore_high_freq=48000,
+                                     check_quality=False,
+                                     quality_params=None)
+        spectra = checker._spectrals
+        primary_freq = [
+                float(spectra[i][0][0]) if spectra[i] else 0
+                for i in range(len(spectra))
+        ]
+        primary_freq.sort()
+        return primary_freq
+
+    def enable_wbs(self, value):
+        """Enable or disable wideband speech (wbs) per the value.
+
+        @param value: True to enable wbs.
+
+        @returns: True if the operation succeeds.
+        """
+        return self._cras_test_client.enable_wbs(value)
+
+    def set_player_playback_status(self, status):
+        """Set playback status for the registered media player.
+
+        @param status: playback status in string.
+
+        """
+        return self._cras_test_client.set_player_playback_status(status)
+
+    def set_player_position(self, position):
+        """Set media position for the registered media player.
+
+        @param position: position in micro seconds.
+
+        """
+        return self._cras_test_client.set_player_position(position)
+
+    def set_player_metadata(self, metadata):
+        """Set metadata for the registered media player.
+
+        @param metadata: dictionary of media metadata.
+
+        """
+        return self._cras_test_client.set_player_metadata(metadata)
+
+    def set_player_length(self, length):
+        """Set media length for the registered media player.
+
+        Media length is a part of metadata information. However, without
+        specify its type to int64. dbus-python will guess the variant type to
+        be int32 by default. Separate it from the metadata function to help
+        prepare the data differently.
+
+        @param length: length in micro seconds.
+
+        """
+        length_variant = dbus.types.Int64(length, variant_level=1)
+        length_dict = dbus.Dictionary({'length': length_variant},
+                                      signature='sv')
+        return self._cras_test_client.set_player_length(length_dict)
+
+    def select_input_device(self, device_name):
+        """Select the audio input device.
+
+        @param device_name: the name of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return self._cras_test_client.select_input_device(device_name)
+
+    @xmlrpc_server.dbus_safe(None)
+    def select_output_node(self, node_type):
+        """Select the audio output node.
+
+        @param node_type: the node type of the Bluetooth peer device
+
+        @returns: True if the operation succeeds.
+        """
+        return cras_utils.set_single_selected_output_node(node_type)
+
+    @xmlrpc_server.dbus_safe(None)
+    def get_selected_output_device_type(self):
+        """Get the selected audio output node type.
+
+        @returns: the node type of the selected output device.
+        """
+        # Note: should convert the dbus.String to the regular string.
+        return str(cras_utils.get_selected_output_device_type())
+
+
+class BluezPairingAgent(dbus.service.Object):
+    """The agent handling the authentication process of bluetooth pairing.
+
+    BluezPairingAgent overrides RequestPinCode method to return a given pin code.
+    User can use this agent to pair bluetooth device which has a known
+    pin code.
+
+    TODO (josephsih): more pairing modes other than pin code would be
+    supported later.
+
+    """
+
+    def __init__(self, pin, *args, **kwargs):
+        super(BluezPairingAgent, self).__init__(*args, **kwargs)
+        self._pin = pin
+
+    @dbus.service.method('org.bluez.Agent1',
+                         in_signature='o',
+                         out_signature='s')
+    def RequestPinCode(self, device_path):
+        """Requests pin code for a device.
+
+        Returns the known pin code for the request.
+
+        @param device_path: The object path of the device.
+
+        @returns: The known pin code.
+
+        """
+        logging.info('RequestPinCode for %s; return %s', device_path,
+                     self._pin)
+        return self._pin
+
+
+class BluezFacadeNative(BluetoothBaseFacadeNative):
+    """Exposes DUT methods called remotely during Bluetooth autotests for the
+    Bluez daemon.
+
+    All instance methods of this object without a preceding '_' are exposed via
+    an XML-RPC server. This is not a stateless handler object, which means that
+    if you store state inside the delegate, that state will remain around for
+    future calls.
+    """
+
+    UPSTART_PATH = 'unix:abstract=/com/ubuntu/upstart'
+    UPSTART_MANAGER_PATH = '/com/ubuntu/Upstart'
+    UPSTART_MANAGER_IFACE = 'com.ubuntu.Upstart0_6'
+    UPSTART_JOB_IFACE = 'com.ubuntu.Upstart0_6.Job'
+
+    UPSTART_ERROR_UNKNOWNINSTANCE = \
+            'com.ubuntu.Upstart0_6.Error.UnknownInstance'
+    UPSTART_ERROR_ALREADYSTARTED = \
+            'com.ubuntu.Upstart0_6.Error.AlreadyStarted'
+
+    BLUETOOTHD_JOB = 'bluetoothd'
+
+    DBUS_ERROR_SERVICEUNKNOWN = 'org.freedesktop.DBus.Error.ServiceUnknown'
+
+    BLUETOOTH_SERVICE_NAME = 'org.chromium.Bluetooth'
+    BLUEZ_SERVICE_NAME = 'org.bluez'
+    BLUEZ_MANAGER_PATH = '/'
+    BLUEZ_DEBUG_LOG_PATH = '/org/chromium/Bluetooth'
+    BLUEZ_DEBUG_LOG_IFACE = 'org.chromium.Bluetooth.Debug'
+    BLUEZ_MANAGER_IFACE = 'org.freedesktop.DBus.ObjectManager'
+    BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
+    BLUEZ_ADMIN_POLICY_IFACE = 'org.bluez.AdminPolicy1'
+    BLUEZ_BATTERY_IFACE = 'org.bluez.Battery1'
+    BLUEZ_DEVICE_IFACE = 'org.bluez.Device1'
+    BLUEZ_GATT_SERV_IFACE = 'org.bluez.GattService1'
+    BLUEZ_GATT_CHAR_IFACE = 'org.bluez.GattCharacteristic1'
+    BLUEZ_GATT_DESC_IFACE = 'org.bluez.GattDescriptor1'
+    BLUEZ_LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
+    BLUEZ_ADV_MONITOR_MANAGER_IFACE = 'org.bluez.AdvertisementMonitorManager1'
+    BLUEZ_AGENT_MANAGER_PATH = '/org/bluez'
+    BLUEZ_AGENT_MANAGER_IFACE = 'org.bluez.AgentManager1'
+    BLUEZ_PROFILE_MANAGER_PATH = '/org/bluez'
+    BLUEZ_PROFILE_MANAGER_IFACE = 'org.bluez.ProfileManager1'
+    BLUEZ_ERROR_ALREADY_EXISTS = 'org.bluez.Error.AlreadyExists'
+    BLUEZ_PLUGIN_DEVICE_IFACE = 'org.chromium.BluetoothDevice'
+    DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
+    AGENT_PATH = '/test/agent'
+
+    BTMON_STOP_DELAY_SECS = 3
+
+    # Timeout for how long we'll wait for BlueZ and the Adapter to show up
+    # after reset.
+    ADAPTER_TIMEOUT = 30
+
+    # How long we should wait for property update signal before we cancel it
+    PROPERTY_UPDATE_TIMEOUT_MILLI_SECS = 5000
+
+    def __init__(self):
+        # Init the BaseFacade first
+        super(BluezFacadeNative, self).__init__()
+
+        # Open the Bluetooth Raw socket to the kernel which provides us direct,
+        # raw, access to the HCI controller.
+        self._raw = bluetooth_socket.BluetoothRawSocket()
+
+        # Open the Bluetooth Control socket to the kernel which provides us
+        # raw management access to the Bluetooth Host Subsystem. Read the list
+        # of adapter indexes to determine whether or not this device has a
+        # Bluetooth Adapter or not.
+        self._control = bluetooth_socket.BluetoothControlSocket()
+        self._has_adapter = len(self._control.read_index_list()) > 0
+
+        # Create an Advertisement Monitor App Manager instance.
+        # This needs to be created before making any dbus connections as
+        # AdvMonitorAppMgr internally forks a new helper process and due to
+        # a limitation of python, it is not possible to fork a new process
+        # once any dbus connections are established.
+        self.advmon_appmgr = adv_monitor_helper.AdvMonitorAppMgr()
+
+        # Set up the connection to Upstart so we can start and stop services
+        # and fetch the bluetoothd job.
+        self._upstart_conn = dbus.connection.Connection(self.UPSTART_PATH)
+        self._upstart = self._upstart_conn.get_object(
+                None, self.UPSTART_MANAGER_PATH)
+
+        bluetoothd_path = self._upstart.GetJobByName(
+                self.BLUETOOTHD_JOB, dbus_interface=self.UPSTART_MANAGER_IFACE)
+        self._bluetoothd = self._upstart_conn.get_object(None, bluetoothd_path)
+
+        # Arrange for the GLib main loop to be the default.
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+        # Set up the connection to the D-Bus System Bus, get the object for
+        # the Bluetooth Userspace Daemon (BlueZ) and that daemon's object for
+        # the Bluetooth Adapter, and the advertising manager.
+        self._system_bus = dbus.SystemBus()
+        self._update_bluez()
+        self._update_adapter()
+        self._update_advertising()
+        self._update_adv_monitor_manager()
+
+        # The agent to handle pin code request, which will be
+        # created when user calls pair_legacy_device method.
+        self._pairing_agent = None
+        # The default capability of the agent.
+        self._capability = 'KeyboardDisplay'
+
+        # Initialize a btmon object to record bluetoothd's activity.
+        self.btmon = output_recorder.OutputRecorder(
+                'btmon', stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
+
+        self.advertisements = []
+        self.advmon_interleave_logger = logger_helper.InterleaveLogger()
+        self._chrc_property = None
+        self._timeout_id = 0
+        self._signal_watch = None
+        self._dbus_mainloop = gobject.MainLoop()
+
+    @xmlrpc_server.dbus_safe(False)
+    def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
+                             kernel_vb):
+        """Enable or disable the debug logs of bluetooth
+
+        @param dispatcher_vb: verbosity of btdispatcher debug log, either 0 or 1
+        @param newblue_vb: verbosity of newblued debug log, either 0 or 1
+        @param bluez_vb: verbosity of bluez debug log, either 0 or 1
+        @param kernel_vb: verbosity of kernel debug log, either 0 or 1
+
+        """
+
+        # TODO(b/145163508, b/145749798): update when debug logs is migrated to
+        #                                 bluez.
+        debug_object = self._system_bus.get_object(self.BLUETOOTH_SERVICE_NAME,
+                                                   self.BLUEZ_DEBUG_LOG_PATH)
+        debug_object.SetLevels(dbus.Byte(dispatcher_vb),
+                               dbus.Byte(newblue_vb),
+                               dbus.Byte(bluez_vb),
+                               dbus.Byte(kernel_vb),
+                               dbus_interface=self.BLUEZ_DEBUG_LOG_IFACE)
+        return
+
     @xmlrpc_server.dbus_safe(False)
     def start_bluetoothd(self):
         """start bluetoothd.
@@ -607,6 +1448,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                   False otherwise.
 
         """
+
         def bluez_stopped():
             """Checks the bluetooth daemon status.
 
@@ -853,70 +1695,6 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         """
         return self._has_adapter and self._adapter is not None
 
-    def is_wake_enabled(self):
-        """Checks whether the bluetooth adapter has wake enabled.
-
-        This will walk through all parents of the hci0 sysfs path and try to
-        find one with a 'power/wakeup' entry and returns whether its value is
-        'enabled'.
-
-        @return True if 'power/wakeup' of an hci0 parent is 'enabled'
-        """
-        enabled = self._is_wake_enabled()
-        return enabled
-
-    def set_wake_enabled(self, value):
-        """Sets wake enabled to the value if path exists.
-
-        This will walk through all parents of the hci0 sysfs path and write the
-        value to the first one it finds.
-
-        Args:
-            value: Sets power/wakeup to "enabled" if value is true, else
-                   "disabled"
-
-        @return True if it wrote value to a power/wakeup, False otherwise
-        """
-        return self._set_wake_enabled(value)
-
-    def wait_for_hid_device(self, device_address):
-        """Waits for hid device with given device address.
-
-        Args:
-            device_address: Peripheral address
-        """
-        def match_hid_to_device(hidpath, device_address):
-            """Check if given hid syspath is for the given device address """
-            # If the syspath has a uniq property that matches the peripheral
-            # device's address, then it has matched
-            props = UdevadmInfo.GetProperties(hidpath)
-            if props.get('uniq', '').lower() == device_address.lower():
-                logging.info('Found hid device for address {} at {}'.format(
-                        device_address, hidpath))
-                return True
-            else:
-                logging.info('Path {} is not right device.'.format(hidpath))
-
-            return False
-
-        start = datetime.now()
-
-        # Keep scanning udev for correct hid device
-        while (datetime.now() - start).seconds <= self.HID_TIMEOUT:
-            existing_inputs = UdevadmTrigger(
-                    subsystem_match=['input']).DryRun()
-            for entry in existing_inputs:
-                bt_hid = any([t in entry for t in ['uhid', 'hci']])
-                logging.info('udevadm trigger entry is {}: {}'.format(
-                        bt_hid, entry))
-
-                if bt_hid and match_hid_to_device(entry, device_address):
-                    return True
-
-            time.sleep(self.HID_CHECK_SECS)
-
-        return False
-
     def _reset(self, set_power=False):
         """Remove remote devices and set adapter to set_power state.
 
@@ -1125,60 +1903,6 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
     def _is_powered_on(self):
         return bool(self._get_adapter_properties().get(u'Powered'))
-
-    def _get_wake_enabled_path(self):
-        # Walk up the parents from hci0 sysfs path and find the first one with
-        # a power/wakeup property. Return that path (including power/wakeup).
-
-        # Resolve hci path to get full device path (i.e. w/ usb or uart)
-        search_at = os.path.realpath('/sys/class/bluetooth/hci0')
-
-        # Exit early if path doesn't exist
-        if not os.path.exists(search_at):
-            return None
-
-        # Walk up parents and try to find one with 'power/wakeup'
-        for _ in range(search_at.count('/') - 1):
-            search_at = os.path.normpath(os.path.join(search_at, '..'))
-            try:
-                path = os.path.join(search_at, 'power', 'wakeup')
-                with open(path, 'r') as f:
-                    return path
-            except IOError:
-                # No power wakeup at the given location so keep going
-                continue
-
-        return None
-
-    def _is_wake_enabled(self):
-        search_at = self._get_wake_enabled_path()
-
-        if search_at is not None:
-            try:
-                with open(search_at, 'r') as f:
-                    value = f.read()
-                    logging.info('Power/wakeup found at {}: {}'.format(
-                            search_at, value))
-                    return 'enabled' in value
-            except IOError:
-                # Path was not readable
-                return False
-
-        logging.debug('No power/wakeup path found')
-        return False
-
-    def _set_wake_enabled(self, value):
-        path = self._get_wake_enabled_path()
-        if path is not None:
-            try:
-                with open(path, 'w') as f:
-                    f.write('enabled' if value else 'disabled')
-                    return True
-            except IOError:
-                # Path was not writeable
-                return False
-
-        return False
 
     def read_version(self):
         """Read the version of the management interface from the Kernel.
@@ -1698,6 +2422,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         @returns: True on success. False otherwise.
 
         """
+
         def connect_reply():
             """Handler when connect succeeded."""
             logging.info('Device connected: %s', device_path)
@@ -1918,59 +2643,6 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         """
         return self.btmon.find(pattern_str)
 
-    def messages_start(self):
-        """Start messages monitoring.
-
-        @returns: True if logging started successfully, else False
-        """
-
-        try:
-            self.messages.StartRecording()
-            return True
-
-        except Exception as e:
-            logging.error('Failed to start log recording with error: %s', e)
-
-        return False
-
-    def messages_stop(self):
-        """Stop messages monitoring.
-
-        @returns: True if logs were successfully gathered since logging started,
-                else False
-        """
-        try:
-            self.messages.StopRecording()
-            return True
-
-        except Exception as e:
-            logging.error('Failed to stop log recording with error: %s', e)
-
-        return False
-
-    def messages_find(self, pattern_str):
-        """Find if a pattern string exists in messages output.
-
-        @param pattern_str: the pattern string to find.
-
-        @returns: True on success. False otherwise.
-
-        """
-        return self.messages.LogContains(pattern_str)
-
-    def clean_bluetooth_kernel_log(self, log_level):
-        """Remove Bluetooth kernel logs in /var/log/messages with loglevel
-           equal to or greater than |log_level|
-
-        @param log_level: int in range [0..7]
-        """
-        reg_exp = '[^ ]+ ({LEVEL}) kernel: \[.*\] Bluetooth: .*'.format(
-                LEVEL='|'.join(self.SYSLOG_LEVELS[log_level:]))
-
-        logging.debug('Set kernel filter to level %d', log_level)
-
-        self.messages.FilterOut(reg_exp)
-
     @xmlrpc_server.dbus_safe(False)
     def dbus_async_method(self, dbus_method, reply_handler, error_handler,
                           *args):
@@ -1986,6 +2658,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                   an error string if the dbus method fails or exception occurs
 
         """
+
         def successful_cb():
             """Called when the dbus_method completed successfully."""
             reply_handler()
@@ -2336,362 +3009,6 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                 # error handler
                 lambda error: logging.error('reset_advertising: failed: %s',
                                             str(error)))
-
-    def create_audio_record_directory(self, audio_record_dir):
-        """Create the audio recording directory.
-
-        @param audio_record_dir: the audio recording directory
-
-        @returns: True on success. False otherwise.
-        """
-        try:
-            if not os.path.exists(audio_record_dir):
-                os.makedirs(audio_record_dir)
-            return True
-        except Exception as e:
-            logging.error('Failed to create %s on the DUT: %s',
-                          audio_record_dir, e)
-            return False
-
-    def start_capturing_audio_subprocess(self, audio_data, recording_device):
-        """Start capturing audio in a subprocess.
-
-        @param audio_data: the audio test data
-        @param recording_device: which device recorded the audio,
-                possible values are 'recorded_by_dut' or 'recorded_by_peer'
-
-        @returns: True on success. False otherwise.
-        """
-        audio_data = json.loads(audio_data)
-        return self._cras_test_client.start_capturing_subprocess(
-                audio_data[recording_device],
-                sample_format=audio_data['format'],
-                channels=audio_data['channels'],
-                rate=audio_data['rate'],
-                duration=audio_data['duration'])
-
-    def stop_capturing_audio_subprocess(self):
-        """Stop capturing audio.
-
-        @returns: True on success. False otherwise.
-        """
-        return self._cras_test_client.stop_capturing_subprocess()
-
-    def _generate_playback_file(self, audio_data):
-        """Generate the playback file if it does not exist yet.
-
-        Some audio test files may be large. Generate them on the fly
-        to save the storage of the source tree.
-
-        @param audio_data: the audio test data
-        """
-        if not os.path.exists(audio_data['file']):
-            data_format = dict(file_type='raw',
-                               sample_format='S16_LE',
-                               channel=audio_data['channels'],
-                               rate=audio_data['rate'])
-
-            # Make the audio file a bit longer to handle any delay
-            # issue in capturing.
-            duration = audio_data['duration'] + 3
-            audio_test_data_module.GenerateAudioTestData(
-                    data_format=data_format,
-                    path=audio_data['file'],
-                    duration_secs=duration,
-                    frequencies=audio_data['frequencies'])
-            logging.debug("Raw file generated: %s", audio_data['file'])
-
-    def start_playing_audio_subprocess(self, audio_data):
-        """Start playing audio in a subprocess.
-
-        @param audio_data: the audio test data
-
-        @returns: True on success. False otherwise.
-        """
-        audio_data = json.loads(audio_data)
-        self._generate_playback_file(audio_data)
-        try:
-            return self._cras_test_client.start_playing_subprocess(
-                    audio_data['file'],
-                    channels=audio_data['channels'],
-                    rate=audio_data['rate'],
-                    duration=audio_data['duration'])
-        except Exception as e:
-            logging.error("start_playing_subprocess() failed: %s", str(e))
-            return False
-
-    def stop_playing_audio_subprocess(self):
-        """Stop playing audio in the subprocess.
-
-        @returns: True on success. False otherwise.
-        """
-        return self._cras_test_client.stop_playing_subprocess()
-
-    def play_audio(self, audio_data):
-        """Play audio.
-
-        It blocks until it has completed playing back the audio.
-
-        @param audio_data: the audio test data
-
-        @returns: True on success. False otherwise.
-        """
-        audio_data = json.loads(audio_data)
-        self._generate_playback_file(audio_data)
-        return self._cras_test_client.play(audio_data['file'],
-                                           channels=audio_data['channels'],
-                                           rate=audio_data['rate'],
-                                           duration=audio_data['duration'])
-
-    def check_audio_frames_legitimacy(self, audio_test_data, recording_device,
-                                      recorded_file):
-        """Get the number of frames in the recorded audio file.
-
-        @param audio_test_data: the audio test data
-        @param recording_device: which device recorded the audio,
-                possible values are 'recorded_by_dut' or 'recorded_by_peer'
-        @param recorded_file: the recorded file name
-
-        @returns: True if audio frames are legitimate.
-        """
-        if bool(recorded_file):
-            recorded_filename = recorded_file
-        else:
-            audio_test_data = json.loads(audio_test_data)
-            recorded_filename = audio_test_data[recording_device]
-
-        if recorded_filename.endswith('.raw'):
-            # Make sure that the recorded file does not contain all zeros.
-            filesize = os.path.getsize(recorded_filename)
-            cmd_str = 'cmp -s -n %d %s /dev/zero' % (filesize,
-                                                     recorded_filename)
-            try:
-                result = subprocess.call(cmd_str.split())
-                return result != 0
-            except Exception as e:
-                logging.error("Failed: %s (%s)", cmd_str, str(e))
-                return False
-        else:
-            # The recorded wav file should not be empty.
-            wav_file = check_quality.WaveFile(recorded_filename)
-            return wav_file.get_number_frames() > 0
-
-    def convert_audio_sample_rate(self, input_file, out_file, test_data,
-                                  new_rate):
-        """Convert audio file to new sample rate.
-
-        @param input_file: Path to file to upsample.
-        @param out_file: Path to create upsampled file.
-        @param test_data: Dictionary with information about file.
-        @param new_rate: New rate to upsample file to.
-
-        @returns: True if upsampling succeeded, False otherwise.
-        """
-        test_data = json.loads(test_data)
-        logging.debug('Resampling file {} to new rate {}'.format(
-                input_file, new_rate))
-
-        convert_format(input_file,
-                       test_data['channels'],
-                       test_data['bit_width'],
-                       test_data['rate'],
-                       out_file,
-                       test_data['channels'],
-                       test_data['bit_width'],
-                       new_rate,
-                       1.0,
-                       use_src_header=True,
-                       use_dst_header=True)
-
-        return os.path.isfile(out_file)
-
-    def trim_wav_file(self,
-                      in_file,
-                      out_file,
-                      new_duration,
-                      test_data,
-                      tolerance=0.1):
-        """Trim long file to desired length.
-
-        Trims audio file to length by cutting out silence from beginning and
-        end.
-
-        @param in_file: Path to audio file to be trimmed.
-        @param out_file: Path to trimmed audio file to create.
-        @param new_duration: A float representing the desired duration of
-                the resulting trimmed file.
-        @param test_data: Dictionary containing information about the test file.
-        @param tolerance: (optional) A float representing the allowable
-                difference between trimmed file length and desired duration
-
-        @returns: True if file was trimmed successfully, False otherwise.
-        """
-        test_data = json.loads(test_data)
-        trim_silence_from_wav_file(in_file, out_file, new_duration)
-        measured_length = get_file_length(out_file, test_data['channels'],
-                                          test_data['bit_width'],
-                                          test_data['rate'])
-        return abs(measured_length - new_duration) <= tolerance
-
-    def unzip_audio_test_data(self, tar_path, data_dir):
-        """Unzip audio test data files.
-
-        @param tar_path: Path to audio test data tarball on DUT.
-        @oaram data_dir: Path to directory where to extract test data directory.
-
-        @returns: True if audio test data folder exists, False otherwise.
-        """
-        logging.debug('Downloading audio test data on DUT')
-        # creates path to dir to extract test data to by taking name of the
-        # tarball without the extension eg. <dir>/file.ext to data_dir/file/
-        audio_test_dir = os.path.join(
-                data_dir,
-                os.path.split(tar_path)[1].split('.', 1)[0])
-
-        unzip_cmd = 'tar -xf {0} -C {1}'.format(tar_path, data_dir)
-
-        unzip_proc = subprocess.Popen(unzip_cmd.split(),
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
-        _, stderr = unzip_proc.communicate()
-
-        if stderr:
-            logging.error('Error occurred in unzipping audio data: {}'.format(
-                    str(stderr)))
-            return False
-
-        return unzip_proc.returncode == 0 and os.path.isdir(audio_test_dir)
-
-    def convert_raw_to_wav(self, input_file, output_file, test_data):
-        """Convert raw audio file to wav file.
-
-        @oaram input_file: the location of the raw file
-        @param output_file: the location to place the resulting wav file
-        @param test_data: the data for the file being converted
-
-        @returns: True if conversion was successful otherwise false
-        """
-        test_data = json.loads(test_data)
-        convert_raw_file(input_file, test_data['channels'],
-                         test_data['bit_width'], test_data['rate'],
-                         output_file)
-
-        return os.path.isfile(output_file)
-
-    def get_primary_frequencies(self, audio_test_data, recording_device,
-                                recorded_file):
-        """Get primary frequencies of the audio test file.
-
-        @param audio_test_data: the audio test data
-        @param recording_device: which device recorded the audio,
-                possible values are 'recorded_by_dut' or 'recorded_by_peer'
-        @param recorded_file: the recorded file name
-
-        @returns: a list of primary frequencies of channels in the audio file
-        """
-        audio_test_data = json.loads(audio_test_data)
-
-        if bool(recorded_file):
-            recorded_filename = recorded_file
-        else:
-            recorded_filename = audio_test_data[recording_device]
-
-        args = CheckQualityArgsClass(filename=recorded_filename,
-                                     rate=audio_test_data['rate'],
-                                     channel=audio_test_data['channels'],
-                                     bit_width=16)
-        raw_data, rate = check_quality.read_audio_file(args)
-        checker = check_quality.QualityChecker(raw_data, rate)
-        # The highest frequency recorded would be near 24 Khz
-        # as the max sample rate is 48000 in our tests.
-        # So let's set ignore_high_freq to be 48000.
-        checker.do_spectral_analysis(ignore_high_freq=48000,
-                                     check_quality=False,
-                                     quality_params=None)
-        spectra = checker._spectrals
-        primary_freq = [
-                float(spectra[i][0][0]) if spectra[i] else 0
-                for i in range(len(spectra))
-        ]
-        primary_freq.sort()
-        return primary_freq
-
-    def enable_wbs(self, value):
-        """Enable or disable wideband speech (wbs) per the value.
-
-        @param value: True to enable wbs.
-
-        @returns: True if the operation succeeds.
-        """
-        return self._cras_test_client.enable_wbs(value)
-
-    def set_player_playback_status(self, status):
-        """Set playback status for the registered media player.
-
-        @param status: playback status in string.
-
-        """
-        return self._cras_test_client.set_player_playback_status(status)
-
-    def set_player_position(self, position):
-        """Set media position for the registered media player.
-
-        @param position: position in micro seconds.
-
-        """
-        return self._cras_test_client.set_player_position(position)
-
-    def set_player_metadata(self, metadata):
-        """Set metadata for the registered media player.
-
-        @param metadata: dictionary of media metadata.
-
-        """
-        return self._cras_test_client.set_player_metadata(metadata)
-
-    def set_player_length(self, length):
-        """Set media length for the registered media player.
-
-        Media length is a part of metadata information. However, without
-        specify its type to int64. dbus-python will guess the variant type to
-        be int32 by default. Separate it from the metadata function to help
-        prepare the data differently.
-
-        @param length: length in micro seconds.
-
-        """
-        length_variant = dbus.types.Int64(length, variant_level=1)
-        length_dict = dbus.Dictionary({'length': length_variant},
-                                      signature='sv')
-        return self._cras_test_client.set_player_length(length_dict)
-
-    def select_input_device(self, device_name):
-        """Select the audio input device.
-
-        @param device_name: the name of the Bluetooth peer device
-
-        @returns: True if the operation succeeds.
-        """
-        return self._cras_test_client.select_input_device(device_name)
-
-    @xmlrpc_server.dbus_safe(None)
-    def select_output_node(self, node_type):
-        """Select the audio output node.
-
-        @param node_type: the node type of the Bluetooth peer device
-
-        @returns: True if the operation succeeds.
-        """
-        return cras_utils.set_single_selected_output_node(node_type)
-
-    @xmlrpc_server.dbus_safe(None)
-    def get_selected_output_device_type(self):
-        """Get the selected audio output node type.
-
-        @returns: the node type of the selected output device.
-        """
-        # Note: should convert the dbus.String to the regular string.
-        return str(cras_utils.get_selected_output_device_type())
 
     def get_gatt_attributes_map(self, address):
         """Return a JSON formatted string of the GATT attributes of a device,
@@ -3233,311 +3550,6 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                 self._system_bus.get_object(self.BLUEZ_SERVICE_NAME, path),
                 self.BLUEZ_PLUGIN_DEVICE_IFACE)
 
-    def _powerd_last_resume_details(self, before=5, after=0):
-        """ Look at powerd logs for last suspend/resume attempt.
-
-        Note that logs are in reverse order (chronologically). Keep that in mind
-        for the 'before' and 'after' parameters.
-
-        @param before: Number of context lines before search item to show.
-        @param after: Number of context lines after search item to show.
-
-        @return Most recent lines containing suspend resume details or ''.
-        """
-        event_file = '/var/log/power_manager/powerd.LATEST'
-
-        # Each powerd_suspend wakeup has a log "powerd_suspend returned 0",
-        # with the return code of the suspend. We search for the last
-        # occurrence in the log, and then find the collocated event_count log,
-        # indicating the wakeup cause. -B option for grep will actually grab the
-        # *next* 5 logs in time, since we are piping the powerd file backwards
-        # with tac command
-        resume_indicator = 'powerd_suspend returned'
-        cmd = 'tac {} | grep -A {} -B {} -m1 "{}"'.format(
-                event_file, after, before, resume_indicator)
-
-        try:
-            return utils.run(cmd).stdout
-        except error.CmdError:
-            logging.error('Could not locate recent suspend')
-
-        return ''
-
-    def bt_caused_last_resume(self):
-        """Checks if last resume from suspend was caused by bluetooth
-
-        @return: True if BT wake path was cause of resume, False otherwise
-        """
-
-        # When the resume cause is printed to powerd log, it omits the
-        # /power/wakeup portion of wake path
-        bt_wake_path = self._get_wake_enabled_path()
-
-        # If bluetooth does not have a valid wake path, it could not have caused
-        # the resume
-        if not bt_wake_path:
-            return False
-
-        bt_wake_path = bt_wake_path.replace('/power/wakeup', '')
-
-        last_resume_details = self._powerd_last_resume_details()
-
-        # If BT caused wake, there will be a line describing the bt wake
-        # path's event_count before and after the resume
-        for line in last_resume_details.split('\n'):
-            if 'event_count' in line:
-                logging.info('Checking wake event: {}'.format(line))
-                if bt_wake_path in line:
-                    return True
-
-        return False
-
-    def find_last_suspend_via_powerd_logs(self):
-        """ Finds the last suspend attempt via powerd logs.
-
-        Finds the last suspend attempt using powerd logs by searching backwards
-        through the logs to find the latest entries with 'powerd_suspend'. If we
-        can't find a suspend attempt, we return None.
-
-        @return: Tuple (suspend start time, suspend end time, suspend result) or
-                None if we can't find a suspend attempt
-        """
-        # Logs look like this (ignore newline):
-        # 2021-02-11T18:53:43.561880Z INFO powerd:
-        #       [daemon.cc(724)] powerd_suspend returned 0
-        # ... stuff in between ...
-        # 2021-02-11T18:53:13.277695Z INFO powerd:
-        #       [suspender.cc(574)] Starting suspend
-
-        # Date format for strptime and strftime
-        date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
-        date_group_re = ('(?P<date>[0-9]+-[0-9]+-[0-9]+T'
-                         '[0-9]+:[0-9]+:[0-9]+[.][0-9]+Z)\s')
-
-        finish_suspend_re = re.compile(
-                '^{date_regex}'
-                '.*daemon.*powerd_suspend returned '
-                '(?P<exitcode>[0-9]+)'.format(date_regex=date_group_re))
-        start_suspend_re = re.compile(
-                '^{date_regex}.*suspender.*'
-                'Starting suspend'.format(date_regex=date_group_re))
-
-        now = datetime.now()
-        last_resume_details = self._powerd_last_resume_details(before=0,
-                                                               after=8)
-        if last_resume_details:
-            start_time, end_time, ret = None, None, None
-            try:
-                for line in last_resume_details.split('\n'):
-                    logging.debug('Last suspend search: %s', line)
-                    m = finish_suspend_re.match(line)
-                    if m:
-                        logging.debug('Found suspend end: date(%s) ret(%s)',
-                                      m.group('date'), m.group('exitcode'))
-                        end_time = datetime.strptime(
-                                m.group('date'),
-                                date_format).replace(year=now.year)
-                        ret = int(m.group('exitcode'))
-
-                    m = start_suspend_re.match(line)
-                    if m:
-                        logging.debug('Found suspend start: date(%s)',
-                                      m.group('date'))
-                        start_time = datetime.strptime(
-                                m.group('date'),
-                                date_format).replace(year=now.year)
-                        break
-
-                if all([x is not None for x in [start_time, end_time, ret]]):
-                    # Return dates in string format due to inconsistency between
-                    # python2/3 usage on host and dut
-                    return (start_time.strftime(self.OUT_DATE_FORMAT),
-                            end_time.strftime(self.OUT_DATE_FORMAT), ret)
-                else:
-                    logging.error(
-                            'Failed to parse details from last suspend. %s %s %s',
-                            str(start_time), str(end_time), str(ret))
-            except Exception as e:
-                logging.error('Failed to parse last suspend: %s', str(e))
-        else:
-            logging.error('No powerd_suspend attempt found')
-
-        return None
-
-    def do_suspend(self, seconds, expect_bt_wake):
-        """Suspend DUT using the power manager.
-
-        @param seconds: The number of seconds to suspend the device.
-        @param expect_bt_wake: Whether we expect bluetooth to wake us from
-            suspend. If true, we expect this resume will occur early
-
-        @throws: SuspendFailure on resume with unexpected timing or wake source.
-            The raised exception will be handled as a non-zero retcode over the
-            RPC, signalling for the test to fail.
-        """
-        early_wake = False
-        try:
-            sys_power.do_suspend(seconds)
-
-        except sys_power.SpuriousWakeupError:
-            logging.info('Early resume detected...')
-            early_wake = True
-
-        # Handle error conditions based on test expectations, whether resume
-        # was early, and cause of the resume
-        bt_caused_wake = self.bt_caused_last_resume()
-        logging.info('Cause for resume: {}'.format(
-                'BT' if bt_caused_wake else 'Not BT'))
-
-        if not expect_bt_wake and bt_caused_wake:
-            raise sys_power.SuspendFailure('BT woke us unexpectedly')
-
-        # TODO(b/160803597) - Uncomment when BT wake reason is correctly
-        # captured in powerd log.
-        #
-        # if expect_bt_wake and not bt_caused_wake:
-        #   raise sys_power.SuspendFailure('BT should have woken us')
-        #
-        # if bt_caused_wake and not early_wake:
-        #   raise sys_power.SuspendFailure('BT wake did not come early')
-
-        return True
-
-    def get_wlan_vid_pid(self):
-        """ Return vendor id and product id of the wlan chip on BT/WiFi module
-
-        @returns: (vid,pid) on success; (None,None) on failure
-        """
-        vid = None
-        pid = None
-        path_template = '/sys/class/net/%s/device/'
-        for dev_name in ['wlan0', 'mlan0']:
-            if os.path.exists(path_template % dev_name):
-                path_v = path_template % dev_name + 'vendor'
-                path_d = path_template % dev_name + 'device'
-                logging.debug('Paths are %s %s', path_v, path_d)
-                try:
-                    vid = open(path_v).read().strip('\n')
-                    pid = open(path_d).read().strip('\n')
-                    break
-                except Exception as e:
-                    logging.error('Exception %s while reading vid/pid', str(e))
-        logging.debug('returning vid:%s pid:%s', vid, pid)
-        return (vid, pid)
-
-    def get_bt_transport(self):
-        """ Return transport (UART/USB/SDIO) used by BT module
-
-        @returns: USB/UART/SDIO on success; None on failure
-        """
-        try:
-            transport_str = os.path.realpath(
-                    '/sys/class/bluetooth/hci0/device/driver/module')
-            logging.debug('transport is %s', transport_str)
-            transport = transport_str.split('/')[-1]
-            if transport == 'btusb':
-                return 'USB'
-            elif transport == 'hci_uart':
-                return 'UART'
-            elif transport == 'btmrvl_sdio':
-                return 'SDIO'
-            else:
-                return None
-        except Exception as e:
-            logging.error('Exception %s in get_bt_transport', str(e))
-            return None
-
-    def get_bt_module_name(self):
-        """ Return bluetooth module name for non-USB devices
-
-        @returns '' on failure. On success return chipset name, if found in
-                 dict.Otherwise it returns the raw string read.
-        """
-        # map the string read from device to chipset name
-        chipset_string_dict = {'qcom,wcn3991-bt\x00': 'WCN3991'}
-
-        hci_device = '/sys/class/bluetooth/hci0'
-        real_path = os.path.realpath(hci_device)
-
-        logging.debug('real path is %s', real_path)
-        if 'usb' in real_path:
-            return ''
-
-        device_path = os.path.join(real_path, 'device', 'of_node',
-                                   'compatible')
-        try:
-            chipset_string = open(device_path).read()
-            logging.debug('read string %s from %s', chipset_string,
-                          device_path)
-        except Exception as e:
-            logging.error('Exception %s while reading from file', str(e),
-                          device_path)
-            return ''
-
-        if chipset_string in chipset_string_dict:
-            return chipset_string_dict[chipset_string]
-        else:
-            logging.debug("Chipset not known. Returning %s", chipset_string)
-            return chipset_string
-
-    def get_bt_usb_device_strs(self):
-        """ Return the usb endpoints for the bluetooth device, if they exist
-
-        We wish to be able to identify usb disconnect events that affect our
-        bluetooth operation. To do so, we must first identify the usb endpoint
-        that is associated with our bluetooth device.
-
-        @returns: Relevant usb endpoints for the bluetooth device,
-                  i.e. ['1-1','1-1.2'] if they exist,
-                  [] otherwise
-        """
-
-        hci_device = '/sys/class/bluetooth/hci0'
-        real_path = os.path.realpath(hci_device)
-
-        # real_path for a usb bluetooth controller will look something like:
-        # ../../devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4:1.0/bluetooth/hci0
-        if 'usb' not in real_path:
-            return []
-
-        logging.debug('Searching for usb path: {}'.format(real_path))
-
-        # Grab all numbered entries between 'usb' and 'bluetooth' descriptors
-        m = re.search(r'usb(.*)bluetooth', real_path)
-
-        if not m:
-            logging.error(
-                    'Unable to extract usb dev from {}'.format(real_path))
-            return []
-
-        # Return the path as a list of individual usb descriptors
-        return m.group(1).split('/')
-
-    def get_bt_usb_disconnect_str(self):
-        """ Return the expected log error on USB disconnect
-
-        Locate the descriptor that will be used from the list of all usb
-        descriptors associated with our bluetooth chip, and format into the
-        expected string error for USB disconnect
-
-        @returns: string representing expected usb disconnect log entry if usb
-                  device could be identified, None otherwise
-        """
-        disconnect_log_template = 'usb {}: USB disconnect'
-        descriptors = self.get_bt_usb_device_strs()
-
-        # The usb disconnect log message seems to use the most detailed
-        # descriptor that does not use the ':1.0' entry
-        for d in sorted(descriptors, key=len, reverse=True):
-            if ':' not in d:
-                return disconnect_log_template.format(d)
-
-        return None
-
-    def get_device_utc_time(self):
-        """ Get the current device time in UTC. """
-        return datetime.utcnow().strftime(self.OUT_DATE_FORMAT)
-
     @xmlrpc_server.dbus_safe(False)
     def policy_get_service_allow_list(self):
         """Get the service allow list for enterprise policy.
@@ -3583,4 +3595,7 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
     if you store state inside the delegate, that state will remain around for
     future calls.
     """
-    pass
+
+    def __init__(self):
+        # Init the BaseFacade first
+        super(FlossFacadeNative, self).__init__()

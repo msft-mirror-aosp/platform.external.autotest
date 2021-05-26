@@ -6,7 +6,6 @@
 import logging, time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import service_stopper
-from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
 from autotest_lib.client.cros.power import power_utils
@@ -154,16 +153,18 @@ class power_BatteryCharge(power_test.power_Test):
 
         self.keyvals.update(keyvals)
 
-        logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
-        logger.add_item('time_to_charge_min', min_time_taken, 'point', 'perf')
-        logger.add_item('initial_charge_ah', self.initial_charge, 'point',
-                        'perf')
-        logger.add_item('final_charge_ah', self.status.battery.charge_now,
-                        'point', 'perf')
-        logger.add_item('charge_full_ah', self.charge_full, 'point', 'perf')
-        logger.add_item('charge_full_design_ah', self.charge_full_design,
-                        'point', 'perf')
-        self._meas_logs.append(logger)
+        self._keyvallogger.add_item('time_to_charge_min', min_time_taken,
+                                    'point', 'perf')
+        self._keyvallogger.add_item('initial_charge_ah', self.initial_charge,
+                                    'point', 'perf')
+        self._keyvallogger.add_item('final_charge_ah',
+                                    self.status.battery.charge_now, 'point',
+                                    'perf')
+        self._keyvallogger.add_item('charge_full_ah', self.charge_full,
+                                    'point', 'perf')
+        self._keyvallogger.add_item('charge_full_design_ah',
+                                    self.charge_full_design, 'point', 'perf')
+        self._keyvallogger.set_end(self._end_time)
 
         super(power_BatteryCharge, self).postprocess_iteration()
 

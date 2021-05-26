@@ -542,10 +542,12 @@ class KeyvalLogger(power_status.MeasurementLogger):
     See power_SpeedoMeter2 for implementation example.
     """
 
-    def __init__(self, start_ts, end_ts):
+    def __init__(self, start_ts, end_ts=None):
         # Do not call parent constructor to avoid making a new thread.
         self.times = [start_ts]
-        self._duration_secs = end_ts - start_ts
+        self._start_ts = start_ts
+        self._fixed_end_ts = end_ts  # prefer this (end time set by tests)
+        self._updating_end_ts = time.time()  # updated when a new item is added
         self.keys = []
         self.values = []
         self.units = []
@@ -573,6 +575,17 @@ class KeyvalLogger(power_status.MeasurementLogger):
         self.values.append(value)
         self.units.append(unit)
         self.types.append(type_)
+        self._updating_end_ts = time.time()
+
+    def set_end(self, end_ts):
+        """Set the end timestamp.
+
+        If the end timestamp is not set explicitly by tests, use the timestamp
+        of the last added item instead.
+
+        @param end_ts: end timestamp for KeyvalLogger.
+        """
+        self._fixed_end_ts = end_ts
 
     def calc(self, mtype=None):
         return {}
@@ -589,7 +602,7 @@ class KeyvalLoggerDashboard(MeasurementLoggerDashboard):
         power_dict =  {
             # 2 samples to show flat value spanning across duration of the test.
             'sample_count': 2,
-            'sample_duration': self._logger._duration_secs,
+            'sample_duration': (self._logger._fixed_end_ts - self._logger._start_ts) if self._logger._fixed_end_ts else (self._logger._updating_end_ts - self._logger._start_ts),
             'average': dict(zip(self._logger.keys, self._logger.values)),
             'data': dict(zip(self._logger.keys,
                              ([v, v] for v in self._logger.values))),

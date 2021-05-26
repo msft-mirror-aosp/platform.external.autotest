@@ -8,7 +8,6 @@ import time
 
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import keyboard
-from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_test
 
 URL = 'https://browserbench.org/Speedometer2.0/'
@@ -76,7 +75,7 @@ class power_Speedometer2(power_test.power_Test):
             self.output_perf_value(description=CONFIDENCE, value=confidence,
                                    higher_is_better=False)
 
-            logger = power_dashboard.KeyvalLogger(self._start_time, end_time)
-            logger.add_item(RESULT, result, 'point', 'perf')
-            logger.add_item(CONFIDENCE, confidence, 'point', 'perf')
-            self._meas_logs.append(logger)
+            self._keyvallogger.add_item(RESULT, result, 'point', 'perf')
+            self._keyvallogger.add_item(CONFIDENCE, confidence, 'point',
+                                        'perf')
+            self._keyvallogger.set_end(end_time)

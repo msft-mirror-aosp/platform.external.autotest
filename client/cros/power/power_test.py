@@ -126,6 +126,7 @@ class power_Test(test.test):
         self._start_time = time.time()
         if self.status.battery:
             self._start_energy = self.status.battery.energy
+        self._keyvallogger = power_dashboard.KeyvalLogger(self._start_time)
         power_telemetry_utils.start_measurement()
 
     def loop_sleep(self, loop, sleep_secs):
@@ -159,7 +160,6 @@ class power_Test(test.test):
 
         keypress_histogram_end = histogram_verifier.get_histogram(
             cr, self.keypress_histogram)
-        logger = power_dashboard.KeyvalLogger(self._start_time, time.time())
         matches = re.search((self.histogram_re % self.keypress_histogram),
                             keypress_histogram_end)
 
@@ -174,9 +174,10 @@ class power_Test(test.test):
             self.output_perf_value(description='keypress_latency_us_avg',
                                    value=mean_latency,
                                    higher_is_better=False)
-            logger.add_item('keypress_cnt', count, 'point', 'keypress')
-            logger.add_item('keypress_latency_us_avg', mean_latency, 'point',
-                            'keypress')
+            self._keyvallogger.add_item('keypress_cnt', count, 'point',
+                                        'keypress')
+            self._keyvallogger.add_item('keypress_latency_us_avg',
+                                        mean_latency, 'point', 'keypress')
 
         # Capture the first bucket >= 90th percentile
         for s in keypress_histogram_end.splitlines():
@@ -193,13 +194,11 @@ class power_Test(test.test):
                     self.output_perf_value(
                         description='keypress_high_percentile', value=perc,
                         higher_is_better=False)
-                    logger.add_item('keypress_latency_us_high', lat, 'point',
-                                    'keypress')
-                    logger.add_item('keypress_high_percentile', perc, 'point',
-                                    'keypress')
+                    self._keyvallogger.add_item('keypress_latency_us_high',
+                                                lat, 'point', 'keypress')
+                    self._keyvallogger.add_item('keypress_high_percentile',
+                                                perc, 'point', 'keypress')
                     break
-
-        self._meas_logs.append(logger)
 
     def publish_keyvals(self):
         """Publish power result keyvals."""
@@ -234,18 +233,30 @@ class power_Test(test.test):
             runtime_minutes = (time.time() - self._start_time) / 60.
             keyvals['wh_energy_used'] = energy_used
             keyvals['minutes_tested'] = runtime_minutes
+            self._keyvallogger.add_item('minutes_tested',
+                                        keyvals['minutes_tested'], 'point',
+                                        'perf')
 
             low_batt = power_utils.get_low_battery_shutdown_percent()
             keyvals['percent_sys_low_battery'] = low_batt
 
             if energy_used > 0 and runtime_minutes > 1:
                 keyvals['w_energy_rate'] = energy_used * 60. / runtime_minutes
+                self._keyvallogger.add_item('w_energy_rate',
+                                            keyvals['w_energy_rate'], 'point',
+                                            'perf')
                 energy_avail = self.status.battery.energy_full_design * \
                     ((100. - low_batt) / 100.)
                 keyvals['minutes_battery_life'] = energy_avail / energy_used * \
                     runtime_minutes
+                self._keyvallogger.add_item('minutes_battery_life',
+                                            keyvals['minutes_battery_life'],
+                                            'point', 'perf')
                 keyvals['hours_battery_life'] = \
                     keyvals['minutes_battery_life'] / 60.
+                self._keyvallogger.add_item('hours_battery_life',
+                                            keyvals['hours_battery_life'],
+                                            'point', 'perf')
 
             keyvals['v_voltage_min_design'] = \
                                 self.status.battery.voltage_min_design
@@ -282,6 +293,9 @@ class power_Test(test.test):
             if key.endswith('fps_avg'):
                 self.output_perf_value(description=key, value=values,
                         units='fps', higher_is_better=True, graph='fps')
+
+        # include KeyvalLogger in dashboard
+        self._meas_logs.append(self._keyvallogger)
 
         # publish to power dashboard
         dashboard_factory = power_dashboard.get_dashboard_factory()

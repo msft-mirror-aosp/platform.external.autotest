@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'ARC++ Team'
-NAME = 'cheets_GTS.GtsJniUncompressTestCases'
+NAME = 'cheets_GTS.GtsMbaPrivilegedPermissionTestCases'
 ATTRIBUTES = 'suite:gts'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 2
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 307200
-DOC = 'Run module GtsJniUncompressTestCases of the Android Google Test Suite (GTS) in the ARC++ container.'
+DOC = 'Run module GtsMbaPrivilegedPermissionTestCases of the Android Google Test Suite (GTS) in the ARC++ container.'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
@@ -21,11 +21,11 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=2,
-        tag='GtsJniUncompressTestCases',
-        test_name='cheets_GTS.GtsJniUncompressTestCases',
-        run_template=['run', 'commandAndExit', 'gts', '--module', 'GtsJniUncompressTestCases', '--ignore-business-logic-failure'],
+        tag='GtsMbaPrivilegedPermissionTestCases',
+        test_name='cheets_GTS.GtsMbaPrivilegedPermissionTestCases',
+        run_template=['run', 'commandAndExit', 'gts', '--module', 'GtsMbaPrivilegedPermissionTestCases', '--ignore-business-logic-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
-        target_module='GtsJniUncompressTestCases',
+        target_module='GtsMbaPrivilegedPermissionTestCases',
         target_plan=None,
         retry_manual_tests=True,
         use_jdk9=True,

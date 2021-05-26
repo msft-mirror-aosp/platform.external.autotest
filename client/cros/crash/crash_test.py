@@ -382,8 +382,10 @@ class CrashTest(test.test):
         if report is None:
             # Use the same file format as crash does normally:
             # <basename>.#.#.#.meta
-            payload = self.write_crash_dir_entry(
-                '%s.dmp' % self._FAKE_TEST_BASENAME, self._get_dmp_contents())
+            payload = os.path.basename(
+                    self.write_crash_dir_entry(
+                            '%s.dmp' % self._FAKE_TEST_BASENAME,
+                            self._get_dmp_contents()))
             report = self.write_fake_meta(
                 '%s.meta' % self._FAKE_TEST_BASENAME, 'fake', payload)
         return report

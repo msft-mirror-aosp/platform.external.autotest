@@ -116,8 +116,14 @@ class ServodConnectionError(seven.SOCKET_ERRORS[0]):
 
     def __str__(self):
         """String representation of the exception"""
-        return '%s -- [Errno %d] %s: %r' % (self.when, self.errno,
-                                            self.strerror, self.filename)
+        msgv = [self.when]
+        if self.errno is not None or self.strerror is not None:
+            msgv.append('--')
+        if self.errno is not None:
+            msgv.append('[Errno %d]' % self.errno)
+        if self.strerror is not None:
+            msgv.append(self.strerror)
+        return '%s: %r' % (' '.join(msgv), self.filename)
 
 
 # TODO: once in python 3, inherit from AbstractContextManager
@@ -185,8 +191,17 @@ class _WrapServoErrors(object):
 
             if isinstance(exc_val, seven.SOCKET_ERRORS):
                 self._log_exception(exc_type, exc_val, exc_tb)
-                err = ServodConnectionError(self.description, exc_val.args[0],
-                                            exc_val.args[1], self.servo_name)
+                if len(exc_val.args) == 0:
+                    errno = None
+                    strerror = None
+                elif len(exc_val.args) == 1:
+                    errno = None
+                    strerror = exc_val.args[0]
+                else:
+                    errno = exc_val.args[0]
+                    strerror = exc_val.args[1]
+                err = ServodConnectionError(self.description, errno, strerror,
+                                            self.servo_name)
                 six.reraise(err.__class__, err, exc_tb)
 
             if isinstance(exc_val, six.moves.xmlrpc_client.Fault):

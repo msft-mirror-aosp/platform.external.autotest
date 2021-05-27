@@ -1471,7 +1471,7 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
         self.shard = Shard.deserialize(data)
 
 
-    def sanity_check_update_from_shard(self, shard, updated_serialized):
+    def _check_update_from_shard(self, shard, updated_serialized):
         # If the job got aborted on the main after the client fetched it
         # no shard_id will be set. The shard might still push updates though,
         # as the job might complete before the abort bit syncs to the shard.
@@ -1925,7 +1925,7 @@ class HostQueueEntry(dbmodels.Model, model_logic.ModelExtensions):
         self.meta_host = Label.deserialize(data)
 
 
-    def sanity_check_update_from_shard(self, shard, updated_serialized,
+    def _check_update_from_shard(self, shard, updated_serialized,
                                        job_ids_sent):
         if self.job_id not in job_ids_sent:
             raise error.IgnorableUnallowedRecordsSentToMain(

@@ -1137,7 +1137,7 @@ class ModelExtensions(rdb_model_extensions.ModelValidators):
         return instance
 
 
-    def sanity_check_update_from_shard(self, shard, updated_serialized,
+    def _check_update_from_shard(self, shard, updated_serialized,
                                        *args, **kwargs):
         """Check if an update sent from a shard is legitimate.
 
@@ -1145,7 +1145,7 @@ class ModelExtensions(rdb_model_extensions.ModelValidators):
                 legitimate.
         """
         raise NotImplementedError(
-            'sanity_check_update_from_shard must be implemented by subclass %s '
+            '_check_update_from_shard must be implemented by subclass %s '
             'for type %s' % type(self))
 
 

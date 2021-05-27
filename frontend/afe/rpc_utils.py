@@ -381,7 +381,7 @@ def check_abort_synchronous_jobs(host_queue_entries):
 
 def check_modify_host(update_data):
     """
-    Sanity check modify_host* requests.
+    Check modify_host* requests.
 
     @param update_data: A dictionary with the changes to make to a host
             or hosts.
@@ -974,12 +974,10 @@ def _persist_records_with_type_sent_from_shard(
     @param shard: The shard the records were sent from.
     @param records: The records sent in their serialized format.
     @param record_type: Type of the objects represented by records.
-    @param args: Additional arguments that will be passed on to the sanity
-                 checks.
-    @param kwargs: Additional arguments that will be passed on to the sanity
-                  checks.
+    @param args: Additional arguments that will be passed on to the checks.
+    @param kwargs: Additional arguments that will be passed on to the checks.
 
-    @raises error.UnallowedRecordsSentToMain if any of the sanity checks fail.
+    @raises error.UnallowedRecordsSentToMain if any of the checks fail.
 
     @returns: List of primary keys of the processed records.
     """
@@ -994,7 +992,7 @@ def _persist_records_with_type_sent_from_shard(
                     pk, record_type))
 
         try:
-            current_record.sanity_check_update_from_shard(
+            current_record._check_update_from_shard(
                 shard, serialized_record, *args, **kwargs)
         except error.IgnorableUnallowedRecordsSentToMain:
             # An illegal record change was attempted, but it was of a non-fatal
@@ -1009,13 +1007,13 @@ def _persist_records_with_type_sent_from_shard(
 
 def persist_records_sent_from_shard(shard, jobs, hqes):
     """
-    Sanity checking then saving serialized records sent to main from shard.
+    Checking then saving serialized records sent to main from shard.
 
     During heartbeats shards upload jobs and hostqueuentries. This performs
-    some sanity checks on these and then updates the existing records for those
+    some checks on these and then updates the existing records for those
     entries with the updated ones from the heartbeat.
 
-    The sanity checks include:
+    The checks include:
     - Checking if the objects sent already exist on the main.
     - Checking if the objects sent were assigned to this shard.
     - hostqueueentries must be sent together with their jobs.
@@ -1024,7 +1022,7 @@ def persist_records_sent_from_shard(shard, jobs, hqes):
     @param jobs: The jobs the shard sent.
     @param hqes: The hostqueuentries the shart sent.
 
-    @raises error.UnallowedRecordsSentToMain if any of the sanity checks fail.
+    @raises error.UnallowedRecordsSentToMain if any of the checks fail.
     """
     job_ids_persisted = _persist_records_with_type_sent_from_shard(
             shard, jobs, models.Job)

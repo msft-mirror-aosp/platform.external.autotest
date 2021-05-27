@@ -151,10 +151,11 @@ def parse_tradefed_testresults_xml(test_result_xml_path, waivers=None):
         return waived
 
     except Exception as e:
-        logging.warning(
-            'Exception raised in '
-            '|tradefed_utils.parse_tradefed_result_xml|: {'
-            '0}'.format(e))
+        logging.warning('Exception raised in '
+                        '|tradefed_utils.parse_tradefed_testresults_xml|: {'
+                        '0}'.format(e))
+        return []
+
 
 def parse_tradefed_result(result, waivers=None):
     """Check the result from the tradefed output.

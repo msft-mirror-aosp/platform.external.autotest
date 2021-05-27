@@ -11,12 +11,13 @@ class ParseKnownCTSFailures(object):
     def __init__(self, failure_files):
         self.waivers_yaml = self._load_failures(failure_files)
 
-    def _validate_waiver_config(self, arch, board, bundle_abi, sdk_ver,
+    def _validate_waiver_config(self, arch, board, model, bundle_abi, sdk_ver,
                                 first_api_level, config):
         """Validate if the test environment matches the test config.
 
         @param arch: DUT's arch type.
         @param board: DUT's board name.
+        @paran model: DUT's model name.
         @param bundle_abi: The test's abi type.
         @param sdk_ver: DUT's Android SDK version
         @param first_api_level: DUT's Android first API level.
@@ -29,7 +30,7 @@ class ParseKnownCTSFailures(object):
         # 'all' applies to all devices.
         # 'x86' or 'arm' applies to the DUT's architecture.
         # board name like 'eve' or 'kevin' applies to the DUT running the board.
-        dut_config = ['all', arch, board]
+        dut_config = ['all', arch, board, model]
         # 'nativebridge' applies to the case running ARM CTS on x86 devices.
         if bundle_abi and bundle_abi[0:3] != arch:
             dut_config.append('nativebridge')
@@ -63,11 +64,13 @@ class ParseKnownCTSFailures(object):
                          failure_file)
         return waivers_yaml
 
-    def find_waivers(self, arch, board, bundle_abi, sdk_ver, first_api_level):
+    def find_waivers(self, arch, board, model, bundle_abi, sdk_ver,
+                     first_api_level):
         """Finds waivers for the test board.
 
         @param arch: DUT's arch type.
         @param board: DUT's board name.
+        @param model: DUT's model name.
         @param bundle_abi: The test's abi type.
         @param sdk_ver: DUT's Android SDK version.
         @param first_api_level: DUT's Android first API level.
@@ -75,8 +78,8 @@ class ParseKnownCTSFailures(object):
         """
         applied_waiver_list = set()
         for test, config in self.waivers_yaml.iteritems():
-            if self._validate_waiver_config(arch, board, bundle_abi, sdk_ver,
-                                            first_api_level, config):
+            if self._validate_waiver_config(arch, board, model, bundle_abi,
+                                            sdk_ver, first_api_level, config):
                 applied_waiver_list.add(test)
         logging.info('Excluding tests/packages from rerun: %s.',
                      applied_waiver_list)

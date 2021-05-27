@@ -64,6 +64,7 @@ class TradefedTest(test.test):
     _SHARD_CMD = None
     _board_arch = None
     _board_name = None
+    _model_name = None
     _release_branch_number = None  # The 'y' of OS version Rxx-xxxxx.y.z
     _android_version = None
     _first_api_level = None
@@ -890,6 +891,7 @@ class TradefedTest(test.test):
         # Load waivers and manual tests so TF doesn't re-run them.
         expected_fail_files = []
         test_board = self._get_board_name()
+        test_model = self._get_model_name()
         test_arch = self._get_board_arch()
         sdk_ver = self._get_android_version()
         first_api_level = self._get_first_api_level()
@@ -899,8 +901,8 @@ class TradefedTest(test.test):
 
         waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
             expected_fail_files)
-        return waivers.find_waivers(test_arch, test_board, bundle_abi, sdk_ver,
-                                    first_api_level)
+        return waivers.find_waivers(test_arch, test_board, test_model,
+                                    bundle_abi, sdk_ver, first_api_level)
 
     def _get_abilist(self):
         """Return the abilist supported by calling adb command.
@@ -941,6 +943,12 @@ class TradefedTest(test.test):
         if not self._board_name:
             self._board_name = self._hosts[0].get_board().split(':')[1]
         return self._board_name
+
+    def _get_model_name(self):
+        """Return target DUT model name."""
+        if not self._model_name:
+            self._model_name = self._hosts[0].get_model_from_cros_config()
+        return self._model_name
 
     def _get_android_version(self):
         """Return target DUT Android SDK version"""

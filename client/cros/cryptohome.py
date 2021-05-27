@@ -164,13 +164,11 @@ def get_login_status():
 
     Returns:
         A login status dictionary containing:
-        { 'owner_user_exists': True|False,
-          'boot_lockbox_finalized': True|False
-        }
+        { 'owner_user_exists': True|False }
     """
     out = run_cmd(CRYPTOHOME_CMD + ' --action=get_login_status')
     status = {}
-    for field in ['owner_user_exists', 'boot_lockbox_finalized']:
+    for field in ['owner_user_exists']:
         match = re.search('%s: (true|false)' % field, out)
         if not match:
             raise ChromiumOSError('Invalid login status: "%s".' % out)

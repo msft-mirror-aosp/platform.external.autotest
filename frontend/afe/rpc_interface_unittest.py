@@ -85,7 +85,7 @@ class ShardHeartbeatTest(unittest.TestCase):
 
 
     def _createJobForLabel(self, label):
-        job_id = rpc_interface.create_job(name='dummy', priority=self._PRIORITY,
+        job_id = rpc_interface.create_job(name='stub', priority=self._PRIORITY,
                                           control_file='foo',
                                           control_type=CLIENT,
                                           meta_hosts=[label.name],
@@ -1588,7 +1588,7 @@ class ExtraRpcInterfaceTest(frontend_test_utils.FrontendTestMixin,
                  'email_list': '',
                  'max_runtime_hrs': 72,
                  'max_runtime_mins': 1440,
-                 'name': 'dummy',
+                 'name': 'stub',
                  'owner': 'autotest_system',
                  'parse_failed_repair': True,
                  'priority': 40,
@@ -1618,7 +1618,7 @@ class ExtraRpcInterfaceTest(frontend_test_utils.FrontendTestMixin,
         self, jobs, hqes, shard_hostname='host1',
         exception_to_throw=error.UnallowedRecordsSentToMain, aborted=False):
         job_id = rpc_interface.create_job(
-                name='dummy',
+                name='stub',
                 priority=self._PRIORITY,
                 control_file='foo',
                 control_type=SERVER,

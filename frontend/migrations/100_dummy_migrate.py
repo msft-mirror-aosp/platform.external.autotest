@@ -3,7 +3,7 @@
 # For routine database migration revert, a new CL should be added to add
 # DOWN_SQL of the reverted migration as UP_SQL. However, in that CL's case,
 # DOWN_SQL is not available.
-# The dummy migration avoid the requirement to manually downgrade migrate_info
+# The stub migration avoid the requirement to manually downgrade migrate_info
 # in each database.
 
 UP_SQL = """

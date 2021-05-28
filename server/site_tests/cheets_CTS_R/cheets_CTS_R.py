@@ -28,8 +28,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _CTS_URI = {
-        'arm': _PUBLIC_CTS + 'android-cts-11_r3-linux_x86-arm.zip',
-        'x86': _PUBLIC_CTS + 'android-cts-11_r3-linux_x86-x86.zip',
+        'arm': _PUBLIC_CTS + 'android-cts-11_r4-linux_x86-arm.zip',
+        'x86': _PUBLIC_CTS + 'android-cts-11_r4-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'

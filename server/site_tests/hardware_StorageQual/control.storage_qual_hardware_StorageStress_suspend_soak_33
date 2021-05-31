@@ -26,8 +26,12 @@ DOC = "hardware_StorageStress_suspend_soak_33"
 
 keyval = dict()
 keyval['storage_qual_version'] = 1
-keyval['bug_id'] = bug_id
-keyval['part_id'] = part_id
+try:
+    keyval['bug_id'] = bug_id
+    keyval['part_id'] = part_id
+except NameError:
+    # bug_id and/or part_id variables not defined
+    pass
 utils.write_keyval(job.resultdir, keyval)
 
 def run(machine):

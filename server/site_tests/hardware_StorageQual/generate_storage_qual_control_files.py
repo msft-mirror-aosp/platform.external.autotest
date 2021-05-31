@@ -315,8 +315,12 @@ DOC = "{name}"
 
 keyval = dict()
 keyval['storage_qual_version'] = {version}
-keyval['bug_id'] = bug_id
-keyval['part_id'] = part_id
+try:
+    keyval['bug_id'] = bug_id
+    keyval['part_id'] = part_id
+except NameError:
+    # bug_id and/or part_id variables not defined
+    pass
 utils.write_keyval(job.resultdir, keyval)
 
 def run(machine):

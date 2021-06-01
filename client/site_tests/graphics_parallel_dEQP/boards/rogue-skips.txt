@@ -11,12 +11,15 @@ dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_image_atomic.cub
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_image_atomic.texture_2d
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.shader_image_atomic.texture_3d
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.bitfield_insert_invalid_offset_type
+dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.imul_extended_invalid_x
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.texel_fetch_invalid_p
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.texture_gather_sampler_cube_array
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.texture_invalid_bias_or_compare
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.texture_invalid_p
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.texture_size_invalid_lod
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.texture_size_invalid_sampler
+dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.umul_extended_invalid_msb
+dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_function.usub_borrow_invalid_x
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_image_atomic.2d_array
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_image_atomic.buffer
 dEQP-GLES31.functional.debug.negative_coverage.get_error.shader_image_atomic.cube

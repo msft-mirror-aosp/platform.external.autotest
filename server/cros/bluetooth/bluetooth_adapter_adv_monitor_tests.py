@@ -290,6 +290,21 @@ class BluetoothAdapterAdvMonitorTests(
                                                               monitor_id,
                                                               event)
 
+    def set_target_devices(self, app_id, monitor_id, devices):
+        """Set the target devices to the given monitor.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param devices: a list of devices in MAC address
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self.bluetooth_facade.advmon_set_target_devices(
+                app_id, monitor_id, devices)
 
     def interleave_logger_start(self):
         """ Start interleave logger recording
@@ -601,6 +616,17 @@ class BluetoothAdapterAdvMonitorTests(
         if self.get_event_count(app_id, monitor_id, 'Release') != 0:
             self.remove_monitor(app_id, monitor_id)
             monitor.update_monitor_id(None)
+
+        # Set the target devices so that AdvMon ignores Adv from other devices
+        target_devices = []
+
+        if hasattr(self, 'peer_mouse'):
+            target_devices.append(self.peer_mouse.address)
+
+        if hasattr(self, 'peer_keybd'):
+            target_devices.append(self.peer_keybd.address)
+
+        self.set_target_devices(app_id, monitor_id, target_devices)
 
         self.results = {
                 'activated': checked_activate,

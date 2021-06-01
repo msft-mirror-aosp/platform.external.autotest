@@ -1006,6 +1006,23 @@ class BluetoothDevice(object):
         return self._proxy.advmon_reset_event_count(app_id, monitor_id, event)
 
     @proxy_thread_safe
+    def advmon_set_target_devices(self, app_id, monitor_id, devices):
+        """Set the target devices to the given monitor.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param devices: a list of devices in MAC address
+
+        @returns: True on success, False otherwise.
+
+        """
+        return self._proxy.advmon_set_target_devices(app_id, monitor_id,
+                                                     devices)
+
+    @proxy_thread_safe
     def advmon_interleave_scan_logger_start(self):
         """ Start interleave logger recording
         """

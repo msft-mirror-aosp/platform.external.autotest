@@ -58,9 +58,15 @@ def CheckInterfaceForDestination(host, expected_interface,
         return True
 
     # addrinfo records: (family, type, proto, canonname, (addr, port))
-    server_addresses = [record[4][0]
-                        for family in families
-                        for record in socket.getaddrinfo(host, 80, family)]
+    server_addresses = []
+    for family in families:
+        try:
+            records = socket.getaddrinfo(host, 80, family)
+        except:
+            # Just ignore this family.
+            continue
+        server_addresses.extend(record[4][0] for record in records)
+
     found_route = False
     failing_addresses = []
     for address in server_addresses:

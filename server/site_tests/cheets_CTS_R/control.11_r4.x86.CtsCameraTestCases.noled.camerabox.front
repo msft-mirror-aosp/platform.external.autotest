@@ -32,6 +32,6 @@ def run_TS(machine):
         uri='LATEST',
         use_jdk9=True,
         load_waivers=False,
-        timeout=3600)
+        timeout=5400)
 
 parallel_simple(run_TS, machines)

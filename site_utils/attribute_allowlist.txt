@@ -304,7 +304,7 @@ suite:thermal_qual_fast
 suite:thermal_qual_full
 suite:toolchain-tests
 suite:touch
-suite:typec_smoke
+suite:typec_lab
 suite:usb-camera
 suite:usb_detect
 suite:usb_detect_stress

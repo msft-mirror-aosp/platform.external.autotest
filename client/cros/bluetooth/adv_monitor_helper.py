@@ -71,6 +71,8 @@ class AdvMonitor(dbus.service.Object):
         self.events['DeviceFound'] = 0
         self.events['DeviceLost'] = 0
 
+        self.target_devices = []
+
         self._set_type(monitor_data[self.MONITOR_TYPE])
         self._set_rssi(monitor_data[self.RSSI_FILTER])
         self._set_patterns(monitor_data[self.PATTERNS])
@@ -199,6 +201,17 @@ class AdvMonitor(dbus.service.Object):
         return False
 
 
+    def set_target_devices(self, devices):
+        """Set the target devices to the given monitor.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param devices: a list of devices in dbus object path
+
+        """
+        self.target_devices = devices
+
     @dbus.service.method(DBUS_PROP_IFACE,
                          in_signature='s',
                          out_signature='a{sv}')
@@ -247,7 +260,10 @@ class AdvMonitor(dbus.service.Object):
 
         """
         logging.info('%s: %s Device Found!', self.path, device)
-        self._update_event_count('DeviceFound')
+        if device in self.target_devices:
+            self._update_event_count('DeviceFound')
+        else:
+            logging.debug('Found an uninteresting device: %s', device)
 
 
     @dbus.service.method(ADV_MONITOR_IFACE,
@@ -260,7 +276,10 @@ class AdvMonitor(dbus.service.Object):
 
         """
         logging.info('%s: %s Device Lost!', self.path, device)
-        self._update_event_count('DeviceLost')
+        if device in self.target_devices:
+            self._update_event_count('DeviceLost')
+        else:
+            logging.debug('Lost an uninteresting device: %s', device)
 
 
 class AdvMonitorApp(dbus.service.Object):
@@ -375,6 +394,23 @@ class AdvMonitorApp(dbus.service.Object):
 
         return self.monitors[monitor_id].reset_event_count(event)
 
+
+    def set_target_devices(self, monitor_id, devices):
+        """Set the target devices to the given monitor.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param monitor_id: the monitor id.
+        @param devices: a list of devices in dbus object path
+
+        @returns: True on success, False otherwise.
+        """
+        if monitor_id not in self.monitors:
+            return False
+
+        self.monitors[monitor_id].set_target_devices(devices)
+        return True
 
     def _mainloop_thread(self):
         """Run the dbus mainloop thread.
@@ -524,6 +560,7 @@ class AdvMonitorAppMgr():
     CMD_REMOVE_MONITOR = 7
     CMD_GET_EVENT_COUNT = 8
     CMD_RESET_EVENT_COUNT = 9
+    CMD_SET_TARGET_DEVICES = 10
 
     def __init__(self):
         """Construction of applications manager object."""
@@ -670,6 +707,9 @@ class AdvMonitorAppMgr():
 
             elif cmd == self.CMD_RESET_EVENT_COUNT:
                 ret = app.reset_event_count(*data)
+
+            elif cmd == self.CMD_SET_TARGET_DEVICES:
+                ret = app.set_target_devices(*data)
 
             helper_conn.send(ret)
 
@@ -830,6 +870,25 @@ class AdvMonitorAppMgr():
         return self._send_to_helper(self.CMD_RESET_EVENT_COUNT, app_id,
                                     (monitor_id, event))
 
+
+    def set_target_devices(self, app_id, monitor_id, devices):
+        """Set the target devices to the given monitor.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param devices: a list of devices in dbus object path
+
+        @returns: True on success, False otherwise.
+        """
+        if app_id not in self.apps:
+            return False
+
+        self._send_to_helper(self.CMD_SET_TARGET_DEVICES, app_id,
+                             (monitor_id, devices))
+        return True
 
     def destroy(self):
         """Clean up the helper process and test app processes."""

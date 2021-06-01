@@ -2821,6 +2821,26 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         """
         return self.advmon_appmgr.reset_event_count(app_id, monitor_id, event)
 
+    def advmon_set_target_devices(self, app_id, monitor_id, devices):
+        """Set the target devices to the given monitor.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param app_id: the app id.
+        @param monitor_id: the monitor id.
+        @param devices: a list of devices in MAC address
+
+        @returns: True on success, False otherwise.
+
+        """
+        paths = []
+        for addr in devices:
+            paths.append('{}/dev_{}'.format(self._adapter.object_path,
+                                            addr.replace(':', '_')))
+
+        return self.advmon_appmgr.set_target_devices(app_id, monitor_id, paths)
+
     def advmon_interleave_scan_logger_start(self):
         """ Start interleave logger recording
         """

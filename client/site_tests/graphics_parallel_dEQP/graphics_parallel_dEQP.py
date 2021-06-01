@@ -306,6 +306,9 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # the automatic flake detection doesn't catch it.
 
         if fails:
+            if len(fails) == 1:
+                raise error.TestFail("Failed dEQP test: {}".format(fails[0]))
+
             fail_msg = "failed {} dEQP tests:\n".format(len(fails))
             for f in fails[:5]:
                 fail_msg += "  " + f

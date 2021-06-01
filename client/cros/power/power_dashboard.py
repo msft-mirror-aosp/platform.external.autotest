@@ -599,16 +599,25 @@ class KeyvalLoggerDashboard(MeasurementLoggerDashboard):
 
     def _convert(self):
         """Convert KeyvalLogger data to power dict."""
-        power_dict =  {
-            # 2 samples to show flat value spanning across duration of the test.
-            'sample_count': 2,
-            'sample_duration': (self._logger._fixed_end_ts - self._logger._start_ts) if self._logger._fixed_end_ts else (self._logger._updating_end_ts - self._logger._start_ts),
-            'average': dict(zip(self._logger.keys, self._logger.values)),
-            'data': dict(zip(self._logger.keys,
-                             ([v, v] for v in self._logger.values))),
-            'unit': dict(zip(self._logger.keys, self._logger.units)),
-            'type': dict(zip(self._logger.keys, self._logger.types)),
-            'checkpoint': [[self._testname], [self._testname]],
+        power_dict = {
+                # 2 samples to show flat value spanning across duration of the test.
+                'sample_count':
+                2,
+                'sample_duration':
+                (self._logger._fixed_end_ts -
+                 self._logger._start_ts) if self._logger._fixed_end_ts else
+                (self._logger._updating_end_ts - self._logger._start_ts),
+                'average':
+                dict(zip(self._logger.keys, self._logger.values)),
+                'data':
+                dict(
+                        zip(self._logger.keys,
+                            ([v, v] for v in self._logger.values))),
+                'unit':
+                dict(zip(self._logger.keys, self._logger.units)),
+                'type':
+                dict(zip(self._logger.keys, self._logger.types)),
+                'checkpoint': [[self._testname], [self._testname]],
         }
         return power_dict
 

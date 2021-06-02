@@ -32,6 +32,11 @@ class _BaseMenuModeSwitcher:
         raise NotImplementedError
 
     @abc.abstractmethod
+    def dev_boot_from_external(self):
+        """Boot from external disk in developer mode."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def trigger_dev_to_normal(self):
         """Trigger dev-to-norm transition."""
         raise NotImplementedError
@@ -66,6 +71,14 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
            *3. Power Off
             4. Language
 
+        Menu items in developer boot options screen:
+            0. Boot From Network
+            1. Boot Legacy BIOS
+            2. Boot From USB or SD Card
+           *3. Boot From Internal Disk
+            4. Cancel
+            5. Power Off
+
         (*) is the default selection.
         """
         self.test.wait_for('firmware_screen')
@@ -73,6 +86,32 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecting "Developer Options"...')
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecting "Boot From Internal Disk"...')
+
+    def dev_boot_from_external(self):
+        """Boot from external disk in developer mode.
+
+        Menu items in developer warning screen:
+            0. Developer Options
+            1. Show Debug Info
+            2. Enable OS Verification
+           *3. Power Off
+            4. Language
+
+        Menu items in developer boot options screen:
+            0. Boot From Network
+            1. Boot Legacy BIOS
+            2. Boot From USB or SD Card
+           *3. Boot From Internal Disk
+            4. Cancel
+            5. Power Off
+            6. Language
+        """
+        self.test.wait_for('firmware_screen')
+        self.menu.move_to(3, 0)
+        self.menu.select('Selecting "Developer Options"...')
+        self.test.wait_for('keypress_delay')
+        self.menu.move_to(3, 2)
+        self.menu.select('Selecting "Boot From USB or SD Card"...')
 
     def trigger_dev_to_normal(self):
         """Trigger dev-to-norm transition.
@@ -181,6 +220,24 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         # Navigate to "Boot from internal disk"
         self.menu.move_to(0, 2)
         self.menu.select('Selecting "Boot from internal disk"...')
+
+    def dev_boot_from_external(self):
+        """Boot from external disk in developer mode.
+
+        Menu items in developer mode screen:
+            0. Language
+            1. Return to secure mode
+            2. Boot from internal disk
+            3. Boot from external disk
+            4. Advanced options
+            5. Power off
+        """
+        self.test.wait_for('firmware_screen')
+        # Since the default selection is unknown, navigate to item 0 first
+        self.menu.move_to(5, 0)
+        # Navigate to "Boot from external disk"
+        self.menu.move_to(0, 3)
+        self.menu.select('Selecting "Boot from external disk"...')
 
     def trigger_dev_to_normal(self):
         """Trigger dev-to-norm transition.

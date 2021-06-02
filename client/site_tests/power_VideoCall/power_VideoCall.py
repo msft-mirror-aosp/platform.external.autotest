@@ -16,7 +16,7 @@ class power_VideoCall(power_test.power_Test):
     """class for power_VideoCall test."""
     version = 1
 
-    video_url = 'https://storage.googleapis.com/chrome-power/autotest/power_VideoCall/power_VideoCall.html'
+    video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.html'
     doc_url = 'http://doc.new'
 
     def initialize(self, seconds_period=20., pdash_note='',

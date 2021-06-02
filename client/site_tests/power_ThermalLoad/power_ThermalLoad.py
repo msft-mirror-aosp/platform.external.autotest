@@ -16,7 +16,7 @@ class power_ThermalLoad(power_test.power_Test):
     """
     version = 2
 
-    FISHTANK_URL = 'http://storage.googleapis.com/chrome-power/aquarium/aquarium/aquarium.html'
+    FISHTANK_URL = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_ThermalLoad/aquarium/aquarium.html'
     HOUR = 60 * 60
 
     def run_once(self, test_url=FISHTANK_URL, duration=2.5*HOUR, numFish=3000):

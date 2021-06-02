@@ -8,6 +8,8 @@ import logging
 import os
 import time
 
+import six.moves.configparser
+
 from autotest_lib.client.common_lib import seven
 from autotest_lib.client.common_lib.cros.network import ap_constants
 from autotest_lib.server.cros.ap_configurators import ap_spec

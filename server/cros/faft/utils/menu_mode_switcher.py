@@ -36,6 +36,14 @@ class _BaseMenuModeSwitcher:
         """Trigger dev-to-norm transition."""
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def power_off(self):
+        """Power off the device.
+
+        This method should work in both developer and recovery screens.
+        """
+        raise NotImplementedError
+
 
 class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
     """Mode switcher with menu navigator for legacy menu UI.
@@ -89,6 +97,16 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecting "Enable OS Verification"...')
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecing "Confirm Enabling OS Verification"...')
+
+    def power_off(self):
+        """Power off the device.
+
+        This method should work in both developer and recovery screens.
+        """
+        self.test.wait_for('firmware_screen')
+        # Either in developer or recovery screen, the "Power Off" option is the
+        # default one.
+        self.menu.select('Selecting "Power Off"...')
 
 
 class _MenuModeSwitcher(_BaseMenuModeSwitcher):
@@ -192,6 +210,17 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecting "Return to secure mode"...')
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecing "Confirm"...')
+
+    def power_off(self):
+        """Power off the device.
+
+        This method should work in both developer and recovery screens.
+        """
+        self.test.wait_for('firmware_screen')
+        # Since there are at most 6 menu items in dev/rec screen, move the
+        # cursor down 6 times to ensure we reach the last menu item.
+        self.menu.move_to(0, 6)
+        self.menu.select('Selecting "Power off"...')
 
     def trigger_rec_to_minidiag(self):
         """

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 from autotest_lib.server import utils
 
-NAME = "firmware_CsmeFwUpdate"
+NAME = "firmware_CsmeFwUpdate.dev"
 AUTHOR = "Chrome OS Team"
 ATTRIBUTES = "suite:faft_bios"
 DEPENDENCIES = "servo_state:WORKING"

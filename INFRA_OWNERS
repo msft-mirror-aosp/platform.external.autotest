@@ -20,5 +20,6 @@ xixuan@google.com
 
 include chromiumos/chromite:/OWNERS.testplatform
 
-# Core Infra Team
+# ChromeOS Automation Framework
 dbeckett@chromium.org
+kathrelkeld@chromium.org

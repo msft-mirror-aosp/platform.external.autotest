@@ -226,7 +226,7 @@ class files_CopyFileToGoogleDriveUI(graphics_utils.GraphicsTest):
                           "location")
             graphics_utils.press_keys(PASTE_KEY_COMBINATION)
             time.sleep(self.TIME_DELAY)
-            # Take dummy values initially
+            # Take placeholder values initially
             required_file_size = "0"
             required_file_size_units = "KB"
             required_file = None

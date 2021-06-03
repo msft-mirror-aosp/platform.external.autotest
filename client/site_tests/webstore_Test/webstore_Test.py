@@ -4,7 +4,7 @@
 
 from autotest_lib.client.cros.webstore_test import webstore_test
 
-class webstore_SanityTest(webstore_test):
+class webstore_Test(webstore_test):
     """
     Verifies that the CWS landing page works properly.
     """

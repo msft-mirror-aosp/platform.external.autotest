@@ -26,7 +26,7 @@ CR50_VERSION = '/var/cache/cr50-version'
 GET_CR50_VERSION = 'cat %s' % CR50_VERSION
 GET_CR50_MESSAGES ='grep "cr50-.*\[" /var/log/messages'
 UPDATE_FAILURE = 'unexpected cr50-update exit code'
-DUMMY_VER = '-1.-1.-1'
+STUB_VER = '-1.-1.-1'
 # This dictionary is used to search the gsctool output for the version strings.
 # There are two gsctool commands that will return versions: 'fwver' and
 # 'binvers'.
@@ -158,7 +158,7 @@ def GetVersion(versions, name):
     key = None
     for k, v in six.iteritems(versions):
         if name in k:
-            if v == DUMMY_VER:
+            if v == STUB_VER:
                 logging.info('Detected invalid %s %s', name, v)
                 return v
             elif ver:
@@ -378,7 +378,7 @@ def VerifyUpdate(client, ver='', last_message=''):
 
     new_ver = GetRunningVersion(client)
     if ver != '':
-        if DUMMY_VER != ver[0]:
+        if STUB_VER != ver[0]:
             AssertVersionsAreEqual('Old RO', ver[0], 'Updated RO', new_ver[0])
         AssertVersionsAreEqual('Old RW', ver[1], 'Updated RW', new_ver[1])
     return new_ver, last_message

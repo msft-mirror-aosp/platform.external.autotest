@@ -1,11 +1,11 @@
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterAdvMonitor.advmon_single_client_tests'
+NAME = 'bluetooth_AdapterAdvMonitor.advmon_single_client_tests_rssi_filter_2'
 PURPOSE = ('batch of Bluetooth Advertisement Monitor tests')
 CRITERIA = 'All tests should pass'
 TIME = 'MEDIUM'

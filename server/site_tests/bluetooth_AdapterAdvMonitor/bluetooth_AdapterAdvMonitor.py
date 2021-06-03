@@ -46,13 +46,31 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_pattern_filter_only()
 
 
-    @test_wrapper('Single Client Tests',
+    @test_wrapper('Single Client Tests - Pattern Filter 1',
                   devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
-    def advmon_single_client_tests(self):
+    def advmon_single_client_tests_pattern_filter_1(self):
         """Tests monitor functionality for single client."""
         self.advmon_test_pattern_filter_1()
+
+
+    @test_wrapper('Single Client Tests - RSSI Filter 1',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_single_client_tests_rssi_filter_1(self):
+        """Tests monitor functionality for single client."""
         self.advmon_test_rssi_filter_1()
+
+
+    @test_wrapper('Single Client Tests - RSSI Filter 2',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_single_client_tests_rssi_filter_2(self):
+        """Tests monitor functionality for single client."""
         self.advmon_test_rssi_filter_2()
+
+
+    @test_wrapper('Single Client Tests - RSSI Filter 3',
+                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+    def advmon_single_client_tests_rssi_filter_3(self):
+        """Tests monitor functionality for single client."""
         self.advmon_test_rssi_filter_3()
 
 
@@ -110,7 +128,10 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """
         self.advmon_monitor_health_tests()
         self.advmon_pattern_filter_tests()
-        self.advmon_single_client_tests()
+        self.advmon_single_client_tests_pattern_filter_1()
+        self.advmon_single_client_tests_rssi_filter_1()
+        self.advmon_single_client_tests_rssi_filter_2()
+        self.advmon_single_client_tests_rssi_filter_3()
         self.advmon_multi_client_tests()
         self.advmon_fg_bg_combination_tests()
         self.advmon_suspend_resume_tests()

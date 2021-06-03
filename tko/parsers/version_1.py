@@ -260,7 +260,7 @@ class parser(base.parser):
 
 
     @staticmethod
-    def make_dummy_abort(indent, subdir, testname, timestamp, reason):
+    def make_stub_abort(indent, subdir, testname, timestamp, reason):
         """
         Creates an abort string.
 
@@ -305,7 +305,7 @@ class parser(base.parser):
         """
         tko_utils.dprint('Unexpected indent: aborting log parse')
         line_buffer.put_back(line)
-        abort = parser.make_dummy_abort(
+        abort = parser.make_stub_abort(
             indent, subdir, testname, timestamp, reason)
         line_buffer.put_back(abort)
 
@@ -384,7 +384,7 @@ class parser(base.parser):
                         subdir = abort_subdir_stack.pop()
                     else:
                         subdir = None
-                    abort = self.make_dummy_abort(
+                    abort = self.make_stub_abort(
                         i, subdir, subdir, timestamp, reason)
                     buffer.put(abort)
 
@@ -408,7 +408,7 @@ class parser(base.parser):
                 print_ignored_lines()
                 ignored_lines = []
 
-            # Do an initial sanity check of the indentation.
+            # Do an initial check of the indentation.
             expected_indent = stack.size()
             if line.type == 'END':
                 expected_indent -= 1

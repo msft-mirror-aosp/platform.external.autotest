@@ -187,7 +187,7 @@ class FileStoreTestCase(unittest.TestCase):
 
 
     def test_str(self):
-        """Sanity tests the __str__ implementaiton"""
+        """Tests the __str__ implementaiton"""
         store = file_store.FileStore('/foo/path')
         self.assertEqual(str(store), 'FileStore[/foo/path]')
 

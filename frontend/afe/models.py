@@ -506,7 +506,7 @@ class Host(model_logic.ModelWithInvalid, rdb_model_extensions.AbstractHostModel,
         self.shard = Shard.deserialize(data)
 
 
-    # Note: Only specify foreign keys here, specify all native host columns in
+    # Note: Only specify foreign keys here, specify host columns in
     # rdb_model_extensions instead.
     Protection = host_protections.Protection
     labels = dbmodels.ManyToManyField(Label, blank=True,

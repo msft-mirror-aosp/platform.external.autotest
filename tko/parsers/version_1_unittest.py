@@ -322,7 +322,7 @@ class perf_value_iteration_parse_line_into_dict(unittest.TestCase):
 
 
 class DummyAbortTestCase(unittest.TestCase):
-    """Tests for the make_dummy_abort function."""
+    """Tests for the make_stub_abort function."""
 
     def setUp(self):
         self.indent = 3
@@ -332,9 +332,9 @@ class DummyAbortTestCase(unittest.TestCase):
         self.reason = 'Job aborted unexpectedly'
 
 
-    def test_make_dummy_abort_with_timestamp(self):
-        """Tests make_dummy_abort with a timestamp specified."""
-        abort = version_1.parser.make_dummy_abort(
+    def test_make_stub_abort_with_timestamp(self):
+        """Tests make_stub_abort with a timestamp specified."""
+        abort = version_1.parser.make_stub_abort(
             self.indent, self.subdir, self.testname, self.timestamp,
             self.reason)
         self.assertEquals(
@@ -342,25 +342,25 @@ class DummyAbortTestCase(unittest.TestCase):
             '\t' * self.indent, self.subdir, self.testname, self.timestamp,
             self.reason))
 
-    def test_make_dummy_abort_with_no_subdir(self):
-        """Tests make_dummy_abort with no subdir specified."""
-        abort= version_1.parser.make_dummy_abort(
+    def test_make_stub_abort_with_no_subdir(self):
+        """Tests make_stub_abort with no subdir specified."""
+        abort= version_1.parser.make_stub_abort(
             self.indent, None, self.testname, self.timestamp, self.reason)
         self.assertEquals(
             abort, '%sEND ABORT\t----\t%s\ttimestamp=%d\t%s' % (
             '\t' * self.indent, self.testname, self.timestamp, self.reason))
 
-    def test_make_dummy_abort_with_no_testname(self):
-        """Tests make_dummy_abort with no testname specified."""
-        abort= version_1.parser.make_dummy_abort(
+    def test_make_stub_abort_with_no_testname(self):
+        """Tests make_stub_abort with no testname specified."""
+        abort= version_1.parser.make_stub_abort(
         self.indent, self.subdir, None, self.timestamp, self.reason)
         self.assertEquals(
             abort, '%sEND ABORT\t%s\t----\ttimestamp=%d\t%s' % (
             '\t' * self.indent, self.subdir, self.timestamp, self.reason))
 
-    def test_make_dummy_abort_no_timestamp(self):
-        """Tests make_dummy_abort with no timestamp specified."""
-        abort = version_1.parser.make_dummy_abort(
+    def test_make_stub_abort_no_timestamp(self):
+        """Tests make_stub_abort with no timestamp specified."""
+        abort = version_1.parser.make_stub_abort(
             self.indent, self.subdir, self.testname, None, self.reason)
         self.assertEquals(
             abort, '%sEND ABORT\t%s\t%s\t%s' % (

@@ -30,9 +30,9 @@ def main_without_exception_handling():
                '-o', database_settings['NAME'],
                '-u', database_settings['USER'],
                '-p%s' % database_settings['PASSWORD'],
-               # we want to do db optimation on each master/slave
+               # we want to do db optimation on each main/node
                # in rotation. Do not write otimize table to bin log
-               # so that it won't be picked up by slaves automatically
+               # so that it won't be picked up by nodes automatically
                '--skip-write-binlog',
                ]
     subprocess.check_call(command)

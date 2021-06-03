@@ -49,7 +49,7 @@ class OmahaDataTests(unittest.TestCase):
     def test_make_omaha_versions(self, mock_read_gs):
         """Test `get_omaha_version_map()` against one simple input.
 
-        This is a trivial sanity test that asserts that a single
+        This is a trivial test that asserts that a single
         hard-coded input returns a correct hard-coded output.
 
         @param mock_read_gs  Mock created for `_read_gs_json_data()`.

@@ -87,8 +87,8 @@ class test_aggregate_iterations(unittest.TestCase):
 
 
 
-class test_json_config_file_sanity(unittest.TestCase):
-    """Sanity tests for the JSON-formatted presentation config file."""
+class test_json_config_file(unittest.TestCase):
+    """Tests for the JSON-formatted presentation config file."""
 
     def test_parse_json(self):
         """Verifies _parse_config_file function."""
@@ -133,7 +133,7 @@ class test_json_config_file_sanity(unittest.TestCase):
                           entry['autotest_name'])
 
 class test_get_image_board_name(unittest.TestCase):
-    """Sanity tests for retrieving the image board name."""
+    """Tests for retrieving the image board name."""
     def test_normal_platform(self):
         """Verify image board name is equal to the platform in normal image."""
         platform = 'veyron_jerry'
@@ -142,7 +142,7 @@ class test_get_image_board_name(unittest.TestCase):
                          'veyron_jerry')
 
     def test_empty_platform(self):
-        """Sanity Verify image board name is equal to the platform."""
+        """Verify image board name is equal to the platform."""
         platform = ''
         image = '-release/R78-12428.0.0'
         self.assertEqual(perf_uploader._get_image_board_name(platform, image),

@@ -237,7 +237,7 @@ class BaseScenarioTestCase(unittest_hotfix.TestCase):
 
 
     def test_status_version(self):
-        """Ensure basic sanity."""
+        """Ensure basic functionality."""
         self.skipIf(not self.harness)
         self.assertEquals(
             self.harness.status_version, self.expected_status_version)

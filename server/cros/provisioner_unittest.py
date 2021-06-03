@@ -60,20 +60,20 @@ class TestErrorClassifications(unittest.TestCase):
         self.assertIn(_StubUpdateError._SUMMARY, stub.failure_summary)
 
     def test_host_update_error(self):
-        """Sanity test the `HostUpdateError` classifier."""
+        """Test the `HostUpdateError` classifier."""
         exception = provisioner.HostUpdateError('chromeos6-row3-rack3-host19',
                                                 'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
     def test_image_install_error(self):
-        """Sanity test the `ImageInstallError` classifier."""
+        """Test the `ImageInstallError` classifier."""
         exception = provisioner.ImageInstallError(
                 'chromeos6-row3-rack3-host19', 'chromeos4-devserver7.cros',
                 'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))
 
     def test_new_build_update_error(self):
-        """Sanity test the `NewBuildUpdateError` classifier."""
+        """Test the `NewBuildUpdateError` classifier."""
         exception = provisioner.NewBuildUpdateError('R68-10621.0.0',
                                                     'Fake message')
         self.assertTrue(isinstance(exception.failure_summary, str))

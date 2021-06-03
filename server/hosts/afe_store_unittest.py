@@ -126,7 +126,7 @@ class AfeStoreTest(unittest.TestCase):
 
 
     def test_str(self):
-        """Sanity tests the __str__ implementaiton"""
+        """Tests the __str__ implementaiton"""
         self.assertEqual(str(self.store), 'AfeStore[some-host]')
 
 

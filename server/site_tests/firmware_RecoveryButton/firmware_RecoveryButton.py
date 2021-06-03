@@ -63,8 +63,7 @@ class firmware_RecoveryButton(FirmwareTest):
         self.check_state((self.checkers.crossystem_checker, {
                 'mainfw_type': 'developer' if dev_mode else 'normal',
         }))
-        self.switcher.reboot_to_mode(
-                to_mode='rec', from_mode='dev' if dev_mode else 'normal')
+        self.switcher.reboot_to_mode(to_mode="rec")
 
         logging.info("Expect a recovery boot from the USB stick.")
         self.check_recovery_state()

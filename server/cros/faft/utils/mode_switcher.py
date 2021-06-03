@@ -492,7 +492,9 @@ class _BaseModeSwitcher(object):
         self.faft_config = faft_framework.faft_config
         self.checkers = faft_framework.checkers
         self.bypasser = self._create_fw_bypasser()
-        self._backup_mode = None
+        original_boot_mode = self.faft_client.system.get_boot_mode()
+        # Only resume to normal/dev mode after test, not recovery.
+        self._backup_mode = 'dev' if original_boot_mode == 'dev' else 'normal'
 
     def _create_fw_bypasser(self):
         """Creates a proper firmware bypasser.
@@ -522,10 +524,6 @@ class _BaseModeSwitcher(object):
         logging.info('System not in expected %s mode. Reboot into it.',
                      to_mode)
 
-        if self._backup_mode is None:
-            # Only resume to normal/dev mode after test, not recovery.
-            self._backup_mode = 'dev' if current_mode == 'dev' else 'normal'
-
         self.reboot_to_mode(to_mode, allow_gbb_force=allow_gbb_force)
         current_mode = self.faft_client.system.get_boot_mode()
         if current_mode != to_mode:
@@ -541,9 +539,9 @@ class _BaseModeSwitcher(object):
         if self._backup_mode is None:
             logging.debug('No backup mode to restore.')
             return
-        if self.checkers.mode_checker(self._backup_mode):
-            logging.debug('System already in backup %s mode.',
-                          self._backup_mode)
+        current_mode = self.faft_client.system.get_boot_mode()
+        if current_mode == self._backup_mode:
+            logging.debug('System already in backup %s mode.', current_mode)
             return
 
         self.reboot_to_mode(self._backup_mode, allow_gbb_force=True)
@@ -556,7 +554,6 @@ class _BaseModeSwitcher(object):
 
     def reboot_to_mode(self,
                        to_mode,
-                       from_mode=None,
                        allow_gbb_force=False,
                        sync_before_boot=True,
                        wait_for_dut_up=True):
@@ -578,9 +575,6 @@ class _BaseModeSwitcher(object):
           |                         |
           +-------------------------+
 
-        This is the implementation, note that "from_mode" is only used for
-        logging purposes.
-
         Normal <-----> Dev:
           _enable_dev_mode_and_reboot()
 
@@ -601,8 +595,6 @@ class _BaseModeSwitcher(object):
         already off is not supported by reboot_to_mode.
 
         @param to_mode: The target mode, one of 'normal', 'dev', or 'rec'.
-        @param from_mode: The original mode, optional, one of 'normal, 'dev',
-                          or 'rec'.
         @param allow_gbb_force: Bool. If True, allow forcing dev mode via GBB
                                 flags. This is more reliable, but it can prevent
                                 testing other mode-switch workflows.
@@ -613,14 +605,11 @@ class _BaseModeSwitcher(object):
                                 screen.
         """
         logging.info(
-                '-[ModeSwitcher]-[ start reboot_to_mode(%r, %r, %r, %r, '
-                '%r)]-', to_mode, from_mode, sync_before_boot, allow_gbb_force,
-                wait_for_dut_up)
+                '-[ModeSwitcher]-[ start reboot_to_mode(%r, %r, %r, %r)]-',
+                to_mode, sync_before_boot, allow_gbb_force, wait_for_dut_up)
 
-        if from_mode:
-            note = 'reboot_to_mode: to=%s, from=%s' % (from_mode, to_mode)
-        else:
-            note = 'reboot_to_mode: to=%s' % to_mode
+        from_mode = self.faft_client.system.get_boot_mode()
+        note = 'reboot_to_mode: from=%s, to=%s' % (from_mode, to_mode)
 
         if sync_before_boot:
             lines = self.faft_client.system.run_shell_command_get_output(
@@ -660,10 +649,9 @@ class _BaseModeSwitcher(object):
         if wait_for_dut_up:
             self.wait_for_client(retry_power_on=True, note=note)
 
-        logging.info(
-                '-[ModeSwitcher]-[ end reboot_to_mode(%r, %r, %r, %r, '
-                '%r)]-', to_mode, from_mode, sync_before_boot, allow_gbb_force,
-                wait_for_dut_up)
+        logging.info('-[ModeSwitcher]-[ end reboot_to_mode(%r, %r, %r, %r)]-',
+                     to_mode, sync_before_boot, allow_gbb_force,
+                     wait_for_dut_up)
 
     def simple_reboot(self, reboot_type='warm', sync_before_boot=True):
         """Simple reboot method

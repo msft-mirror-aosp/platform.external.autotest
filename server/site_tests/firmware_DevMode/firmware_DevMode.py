@@ -29,8 +29,7 @@ class firmware_DevMode(FirmwareTest):
         }))
 
         logging.info("Enable dev mode.")
-        self.switcher.reboot_to_mode(
-                'dev', from_mode='normal', sync_before_boot=False)
+        self.switcher.reboot_to_mode("dev", sync_before_boot=False)
 
         logging.info("Expected developer mode boot and enable normal mode.")
         self.check_state((self.checkers.crossystem_checker, {

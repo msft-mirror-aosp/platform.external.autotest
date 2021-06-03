@@ -501,13 +501,13 @@ class _BaseModeSwitcher(object):
         """
         return self.FW_BYPASSER_CLASS(self.faft_framework)
 
-    def setup_mode(self, mode, allow_gbb_force=False):
-        """Setup for the requested mode.
+    def setup_mode(self, to_mode, allow_gbb_force=False):
+        """Setup for the requested boot mode.
 
         It makes sure the system in the requested mode. If not, it tries to
         do so.
 
-        @param mode: A string of mode, one of 'normal', 'dev', or 'rec'.
+        @param to_mode: A string of boot mode, one of 'normal', 'dev', or 'rec'.
         @param allow_gbb_force: Bool. If True, allow forcing dev mode via GBB
                                 flags. This is more reliable, but it can prevent
                                 testing other mode-switch workflows.
@@ -516,19 +516,22 @@ class _BaseModeSwitcher(object):
 
         """
         current_mode = self.faft_client.system.get_boot_mode()
-        if current_mode == mode:
-            logging.debug('System already in expected %s mode.', mode)
+        if current_mode == to_mode:
+            logging.debug('System already in expected %s mode.', to_mode)
             return
-        logging.info('System not in expected %s mode. Reboot into it.', mode)
+        logging.info('System not in expected %s mode. Reboot into it.',
+                     to_mode)
 
         if self._backup_mode is None:
             # Only resume to normal/dev mode after test, not recovery.
             self._backup_mode = 'dev' if current_mode == 'dev' else 'normal'
 
-        self.reboot_to_mode(mode, allow_gbb_force=allow_gbb_force)
-        if not self.checkers.mode_checker(mode):
-            raise error.TestFail('System not switched to expected %s mode '
-                                 'after setup_mode.' % mode)
+        self.reboot_to_mode(to_mode, allow_gbb_force=allow_gbb_force)
+        current_mode = self.faft_client.system.get_boot_mode()
+        if current_mode != to_mode:
+            raise error.TestFail(
+                    'After setup_mode, wanted mode=%s but got %s' %
+                    (to_mode, current_mode))
 
     def restore_mode(self):
         """Restores original dev mode status if it has changed.
@@ -544,9 +547,11 @@ class _BaseModeSwitcher(object):
             return
 
         self.reboot_to_mode(self._backup_mode, allow_gbb_force=True)
-        if not self.checkers.mode_checker(self._backup_mode):
-            raise error.TestFail('System not restored to expected %s mode in '
-                                 'cleanup.' % self._backup_mode)
+        current_mode = self.faft_client.system.get_boot_mode()
+        if current_mode != self._backup_mode:
+            raise error.TestFail(
+                    'After restore_mode, wanted mode=%s but got %s' %
+                    (self._backup_mode, current_mode))
         self._backup_mode = None
 
     def reboot_to_mode(self,

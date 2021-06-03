@@ -538,7 +538,17 @@ class BluetoothAdapterAdvMonitorTests(
         checked_count = self.get_event_count(app_id, monitor_id, 'DeviceFound')
 
         if count == self.MULTIPLE_EVENTS:
+            self.results = {
+                    'Found events': checked_count,
+                    'Expected events': 'multiple'
+            }
+
             return checked_count > 0
+
+        self.results = {
+                'Found events': checked_count,
+                'Expected events': count
+        }
 
         return checked_count == count
 
@@ -565,7 +575,17 @@ class BluetoothAdapterAdvMonitorTests(
         checked_count = self.get_event_count(app_id, monitor_id, 'DeviceLost')
 
         if count == self.MULTIPLE_EVENTS:
+            self.results = {
+                    'Found events': checked_count,
+                    'Expected events': 'multiple'
+            }
+
             return checked_count > 1
+
+        self.results = {
+                'Found events': checked_count,
+                'Expected events': count
+        }
 
         return checked_count == count
 

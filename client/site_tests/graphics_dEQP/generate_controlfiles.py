@@ -20,7 +20,6 @@ Test = namedtuple('Test', 'filter, suite, shards, time, hasty, tag, test_file, p
 
 ATTRIBUTES_INFRA = (
     'suite:deqp, suite:graphics_per-day, suite:graphics_system, '
-    'suite:infra_qual'
 )
 ATTRIBUTES_DAILY = 'suite:deqp, suite:graphics_per-day, suite:graphics_system'
 

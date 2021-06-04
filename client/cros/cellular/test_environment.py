@@ -14,7 +14,6 @@ from autotest_lib.client.bin import local_host
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import crash_detector
-from autotest_lib.client.cros import backchannel
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.cellular import mm
 from autotest_lib.client.cros.cellular.pseudomodem import pseudomodem_context
@@ -27,7 +26,6 @@ class CellularTestEnvironment(object):
     """Setup and verify cellular test environment.
 
     This context manager configures the following:
-        - Sets up backchannel.
         - Shuts down other devices except cellular.
         - Shill and MM logging is enabled appropriately for cellular.
         - Initializes members that tests should use to access test environment
@@ -36,7 +34,6 @@ class CellularTestEnvironment(object):
           us.
 
     Then it verifies the following is valid:
-        - The backchannel is using an Ethernet device.
         - The SIM is inserted and valid.
         - There is one and only one modem in the device.
         - The modem is registered to the network.
@@ -56,15 +53,12 @@ class CellularTestEnvironment(object):
     """
 
     def __init__(self,
-                 use_backchannel=True,
                  shutdown_other_devices=True,
                  modem_pattern='',
                  skip_modem_reset=False,
                  is_esim_test=False,
                  enable_temp_containments=True):
         """
-        @param use_backchannel: Set up the backchannel that can be used to
-                communicate with the DUT.
         @param shutdown_other_devices: If True, shutdown all devices except
                 cellular.
         @param modem_pattern: Search string used when looking for the modem.
@@ -80,7 +74,6 @@ class CellularTestEnvironment(object):
         self.modem_manager = None
         self.modem = None
         self.modem_path = None
-        self._backchannel = None
 
         self._modem_pattern = modem_pattern
         self._skip_modem_reset = skip_modem_reset
@@ -92,13 +85,12 @@ class CellularTestEnvironment(object):
         self.detect_crash = crash_detector.CrashDetector(
                 local_host.LocalHost())
         self.detect_crash.remove_crash_files()
-        if use_backchannel:
-            self._backchannel = backchannel.Backchannel()
-            self._context_managers.append(self._backchannel)
         if shutdown_other_devices:
             self._context_managers.append(
-                shill_context.AllowedTechnologiesContext(
-                    [shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR]))
+                    shill_context.AllowedTechnologiesContext([
+                            shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR,
+                            shill_proxy.ShillProxy.TECHNOLOGY_ETHERNET
+                    ]))
 
     @contextlib.contextmanager
     def _disable_shill_autoconnect(self):
@@ -132,7 +124,6 @@ class CellularTestEnvironment(object):
 
                 self._setup_logging()
 
-                self._verify_backchannel()
                 if not self._is_esim_test:
                     self._wait_for_modem_registration()
                 self._verify_cellular_service()
@@ -281,19 +272,6 @@ class CellularTestEnvironment(object):
         elif locked:
             raise error.TestError(
                 'SIM is locked, test requires an unlocked SIM.')
-
-    def _verify_backchannel(self):
-        """Verify backchannel is on an ethernet device.
-
-        @raise error.TestError if backchannel is not on an ethernet device.
-
-        """
-        if self._backchannel is None:
-            return
-
-        if not self._backchannel.is_using_ethernet():
-            raise error.TestError('An ethernet connection is required between '
-                                  'the test server and the device under test.')
 
     def _wait_for_modem_registration(self):
         """Wait for the modem to register with the network.

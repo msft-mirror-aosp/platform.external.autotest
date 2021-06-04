@@ -69,9 +69,9 @@ class cellular_Smoke(test.test):
                     device, shill_proxy.ShillProxy.DEVICE_PROPERTY_INTERFACE)
             logging.info('Expected interface for %s: %s',
                          service.object_path, interface)
-            network.CheckInterfaceForDestination(
-                urlparse.urlparse(url_pattern).hostname,
-                interface, [socket.AF_INET, socket.AF_INET6])
+            network.CheckThatInterfaceCanAccessDestination(
+                    urlparse.urlparse(url_pattern).hostname, interface,
+                    [socket.AF_INET, socket.AF_INET6])
 
             try:
                 fetch_time = network.FetchUrl(url_pattern, bytes_to_fetch,

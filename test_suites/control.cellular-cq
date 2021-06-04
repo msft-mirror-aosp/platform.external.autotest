@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Cellular Team"
-NAME = "cellular_cq"
+NAME = "cellular-cq"
 PURPOSE = "Cellular tests to be included in cellular CQ"
 
 TIME = "Medium"

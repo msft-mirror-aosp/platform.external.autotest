@@ -1346,6 +1346,19 @@ class TradefedTest(test.test):
                         current_login.need_reboot(hard_reboot=hard_reboot)
                 self._ready_arc()
                 self._calculate_test_count_factor(bundle)
+
+                # Check the ABI list and skip (pass) the tests if not applicable.
+                # This needs to be done after _ready_arc() for reading the device's
+                # ABI list from the booted ARC instance.
+                if '--abi' in run_template:
+                    abi = run_template[run_template.index('--abi') + 1]
+                    abilist = self._get_abilist()
+                    if abilist and abi not in abilist:
+                        logging.info(
+                                'Specified ABI %s is not in the device ABI list %s. Skipping.',
+                                abi, abilist)
+                        return
+
                 self._run_commands(precondition_commands, ignore_status=True)
                 if use_helpers:
                     self._fetch_helpers_from_dut()

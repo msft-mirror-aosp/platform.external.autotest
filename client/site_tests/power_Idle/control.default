@@ -21,4 +21,4 @@ This version tests only the default state of the DUT for 2 minutes.
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_Idle', pdash_note=pdash_note, tag=NAME.split('.')[1],
-             default_only=True, force_discharge=True)
+             default_only=True, force_discharge='optional')

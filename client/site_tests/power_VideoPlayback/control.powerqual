@@ -17,4 +17,5 @@ args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_VideoPlayback', tag=NAME.split('.')[1],
              videos=[('h264_1080_30fps', ''), ('vp9_1080_30fps', '')],
-             secs_per_video=3600, force_discharge=True, pdash_note=pdash_note)
+             secs_per_video=3600, force_discharge='optional',
+             pdash_note=pdash_note)

@@ -18,4 +18,4 @@ power / thermal releated log.
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_WaitForCoolDown', pdash_note=pdash_note,
-             force_discharge=True)
+             force_discharge='optional')

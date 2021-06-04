@@ -27,7 +27,8 @@ job.default_profile_only = True
 job.profilers.add('cros_perf', interval=20)
 
 job.run_test('power_VideoCall', pdash_note=pdash_note, duration=180,
-             tag=NAME.split('.')[1], seconds_period=5, force_discharge=True)
+             tag=NAME.split('.')[1], seconds_period=5,
+             force_discharge='optional')
 
 job.profilers.delete('cros_perf')
 

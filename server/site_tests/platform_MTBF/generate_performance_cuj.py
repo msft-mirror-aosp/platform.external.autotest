@@ -62,6 +62,14 @@ TESTS = [{
         'test': 'Google Meet Premium Large',
         'tast_name': 'GoogleMeetCUJ.premium_large',
         'repeats': 3
+}, {
+        'test': 'Quick Check Basic Unlock',
+        'tast_name': 'QuickCheckCUJ2.basic_unlock',
+        'repeats': 3
+}, {
+        'test': 'Quick Check Basic Wakeup',
+        'tast_name': 'QuickCheckCUJ2.basic_wakeup',
+        'repeats': 3
 }]
 
 

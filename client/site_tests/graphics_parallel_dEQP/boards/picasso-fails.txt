@@ -4,3 +4,23 @@ dEQP-VK.spirv_assembly.instruction.compute.float32.comparison_1.modfstruct,Crash
 dEQP-VK.spirv_assembly.instruction.compute.float32.comparison_2.modfstruct,Crash
 dEQP-VK.spirv_assembly.instruction.compute.float32.comparison_3.modfstruct,Crash
 dEQP-VK.spirv_assembly.instruction.compute.float32.comparison_4.modfstruct,Crash
+
+# Fixed by https://gerrit.khronos.org/c/vk-gl-cts/+/6919
+dEQP-VK.drm_format_modifiers.export_import.a1r5g5b5_unorm_pack16,Fail
+dEQP-VK.drm_format_modifiers.export_import.a8b8g8r8_sint_pack32,Fail
+dEQP-VK.drm_format_modifiers.export_import.a8b8g8r8_snorm_pack32,Fail
+dEQP-VK.drm_format_modifiers.export_import.a8b8g8r8_srgb_pack32,Fail
+dEQP-VK.drm_format_modifiers.export_import.a8b8g8r8_uint_pack32,Fail
+dEQP-VK.drm_format_modifiers.export_import.a8b8g8r8_unorm_pack32,Fail
+dEQP-VK.drm_format_modifiers.export_import.b4g4r4a4_unorm_pack16,Fail
+dEQP-VK.drm_format_modifiers.export_import.b5g5r5a1_unorm_pack16,Fail
+dEQP-VK.drm_format_modifiers.export_import.b5g6r5_unorm_pack16,Fail
+dEQP-VK.drm_format_modifiers.export_import.b8g8r8a8_sint,Fail
+dEQP-VK.drm_format_modifiers.export_import.b8g8r8a8_snorm,Fail
+dEQP-VK.drm_format_modifiers.export_import.b8g8r8a8_srgb,Fail
+dEQP-VK.drm_format_modifiers.export_import.b8g8r8a8_uint,Fail
+dEQP-VK.drm_format_modifiers.export_import.b8g8r8a8_unorm,Fail
+dEQP-VK.drm_format_modifiers.export_import.r16g16_sint,Fail
+dEQP-VK.drm_format_modifiers.export_import.r16g16_uint,Fail
+dEQP-VK.drm_format_modifiers.export_import.r16_uint,Fail
+dEQP-VK.drm_format_modifiers.export_import.r16_unorm,Fail

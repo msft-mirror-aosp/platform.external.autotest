@@ -425,17 +425,32 @@ class tast(test.test):
                     stdout_level=logging.INFO,
                     stderr_level=logging.ERROR)
         except error.CmdError as e:
-            # Run the ping command to debug possible network problems.
+            # Run the ssh command to debug possible SSH issues.
             # TODO(b/189332919): Remove this logic once we finish debugging.
-            logging.info('Tast exited abnormally. Running ping to diagnose '
-                         'possible network issues...')
-            utils.run('ping -c 5 -n -v -w 30 %s' % self._host.hostname,
-                      ignore_status=True,
-                      stdout_tee=utils.TEE_TO_LOGS,
-                      stderr_tee=utils.TEE_TO_LOGS,
-                      stderr_is_expected=True,
-                      stdout_level=logging.INFO,
-                      stderr_level=logging.ERROR)
+            logging.info('Tast exited abnormally. Running ssh to diagnose '
+                         'possible SSH issues...')
+            utils.run(
+                    'ssh '
+                    # Enable maximum debug logging.
+                    '-vvv '
+                    # Disable connection sharing to debug connection issues.
+                    '-o ControlPath=none '
+                    # Following arguments were copied from Autotest logs.
+                    '-a -x '
+                    '-o StrictHostKeyChecking=no '
+                    '-o UserKnownHostsFile=/dev/null '
+                    '-o BatchMode=yes '
+                    '-o ConnectTimeout=10 '
+                    '-o ConnectionAttempts=3 '
+                    '-l root -p %d %s true' %
+                    (self._host.port, self._host.hostname),
+                    timeout=60,
+                    ignore_status=True,
+                    stdout_tee=utils.TEE_TO_LOGS,
+                    stderr_tee=utils.TEE_TO_LOGS,
+                    stderr_is_expected=True,
+                    stdout_level=logging.INFO,
+                    stderr_level=logging.ERROR)
             # The tast command's output generally ends with a line describing
             # the error that was encountered; include it in the first line of
             # the TestFail exception. Fall back to stderr if stdout is empty (as

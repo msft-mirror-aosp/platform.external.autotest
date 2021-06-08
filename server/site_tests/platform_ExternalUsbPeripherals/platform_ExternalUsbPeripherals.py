@@ -224,10 +224,6 @@ class platform_ExternalUsbPeripherals(test.test):
             board = self.host.get_board().split(':')[1].lower()
             # Run the usb check command
             for out_match in out_match_list:
-                # Skip running media_v4l2_test on hana boards
-                # crbug.com/820500
-                if 'media_v4l2_test' in cmd and board in ["hana"]:
-                    continue
                 match_result = self.wait_for_cmd_output(
                     cmd, out_match, _WAIT_DELAY * 4,
                     'USB CHECKS DETAILS failed at %s %s:' % (cmd, out_match))
@@ -292,25 +288,17 @@ class platform_ExternalUsbPeripherals(test.test):
         logging.debug('Connected devices list: %s', self.diff_list)
 
 
-    def prep_servo_for_test(self, stress_rack):
+    def prep_servo_for_test(self):
         """Connects servo to DUT  and sets servo ports
-
-        @param stress_rack: either to prep servo for stress tests, where
-        usb_mux_1 port should be on. For usb peripherals on usb_mux_3,
-        the port is on, and the oe2,oe4 poers are off.
 
         @returns port as string to plug/unplug the specific port
         """
         port = _LOWER_USB_PORT
         self.host.servo.switch_usbkey('dut')
         self.host.servo.set('dut_hub1_rst1','off')
-        if stress_rack:
-            port = _UPPER_USB_PORT
-            self.host.servo.set(port, 'dut_sees_usbkey')
-        else:
-            self.host.servo.set(_UPPER_USB_PORT, 'servo_sees_usbkey')
-            self.host.servo.set('usb_mux_oe2', 'off')
-            self.host.servo.set('usb_mux_oe4', 'off')
+        self.host.servo.set(_UPPER_USB_PORT, 'servo_sees_usbkey')
+        self.host.servo.set('usb_mux_oe2', 'off')
+        self.host.servo.set('usb_mux_oe4', 'off')
         time.sleep(_WAIT_DELAY)
         return port
 
@@ -326,7 +314,7 @@ class platform_ExternalUsbPeripherals(test.test):
 
     def run_once(self, host, client_autotest, action_sequence, repeat,
                  usb_list=None, usb_checks=None,
-                 crash_check=False, stress_rack=False):
+                 crash_check=False):
         self.client_autotest = client_autotest
         self.host = host
         self.autotest_client = autotest.Autotest(self.host)
@@ -339,7 +327,7 @@ class platform_ExternalUsbPeripherals(test.test):
         self.fail_reasons = list()
         self.action_step = None
 
-        self.plug_port = self.prep_servo_for_test(stress_rack)
+        self.plug_port = self.prep_servo_for_test()
 
         # Unplug, plug, compare usb peripherals, and leave plugged.
         self.check_connected_peripherals()
@@ -353,10 +341,6 @@ class platform_ExternalUsbPeripherals(test.test):
         boot_id = 0
         self.detect_crash = crash_detector.CrashDetector(self.host)
         self.detect_crash.remove_crash_files()
-
-        # Run camera client test to gather media_V4L2_test binary.
-        if 'media_v4l2_test' in str(self.usb_checks):
-            self.autotest_client.run_test("camera_V4L2")
 
         for iteration in xrange(1, repeat + 1):
             step = 0

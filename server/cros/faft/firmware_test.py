@@ -635,13 +635,16 @@ class FirmwareTest(test.test):
         @raise TestError: If Servo v4 not setup properly.
         """
 
-        # PD FAFT is only tested with a least a servo V4 with servo micro
-        # or C2D2.
-        if pd_faft and (
-                'servo_v4_with_servo_micro' not in self.pdtester.servo_type
-        ) and ('servo_v4_with_c2d2' not in self.pdtester.servo_type):
-            raise error.TestError('servo_v4_with_servo_micro or '
-                                  'servo_v4_with_c2d2 is a mandatory setup '
+        # PD FAFT is only tested with a combination of servo_v4 or servo_v4p1
+        # with servo micro or C2D2.
+        pd_setup = []
+        for first in self.pdtester.FIRST_PD_SETUP_ELEMENT:
+            for second in self.pdtester.SECOND_PD_SETUP_ELEMENT:
+                pd_setup.append(first + '_with_' + second)
+
+        if pd_faft and self.pdtester.servo_type not in pd_setup:
+            raise error.TestError(', '.join(pd_setup) +
+                                  ' is a mandatory setup '
                                   'for PD FAFT. Got %s.' %
                                   self.pdtester.servo_type)
 
@@ -654,10 +657,12 @@ class FirmwareTest(test.test):
 
         # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
         # the behaviors of what PD FAFT tests. So we want it disabled.
-        if 'servo_v4' in self.pdtester.servo_type:
+        pd_tester_device = self.pdtester.servo_type.split('_with_')[0]
+        if pd_tester_device in self.pdtester.FIRST_PD_SETUP_ELEMENT:
             self.servo.set_dts_mode('on' if dts_mode else 'off')
         else:
-            logging.warn('Configuring DTS mode only supported on Servo v4')
+            logging.warn('Configuring DTS mode only supported on %s',
+                         pd_tester_device)
 
         self.pdtester.set('usbc_polarity', 'cc2' if flip_cc else 'cc1')
         # Make it sourcing max voltage.
@@ -667,13 +672,13 @@ class FirmwareTest(test.test):
 
         # Servo v4 requires an external charger to source power. Make sure
         # this setup is correct.
-        if 'servo_v4' in self.pdtester.servo_type:
+        if pd_tester_device in self.pdtester.FIRST_PD_SETUP_ELEMENT:
             role = self.pdtester.get('servo_pd_role')
             if role != 'src':
                 raise error.TestError(
-                        'Servo v4 is not sourcing power! Make sure the servo '
+                        '%s is not sourcing power! Make sure the servo '
                         '"DUT POWER" port is connected to a working charger. '
-                        'servo_pd_role:%s' % role)
+                        'servo_pd_role:%s' % (pd_tester_device, role))
 
     def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.

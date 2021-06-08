@@ -63,6 +63,8 @@ class PDTester(chrome_ec.ChromeEC):
         'sink': 'SNK_READY',
         'source': 'SRC_READY'}
     POLL_STATE_SECS = 2
+    FIRST_PD_SETUP_ELEMENT = ['servo_v4', 'servo_v4p1']
+    SECOND_PD_SETUP_ELEMENT = ['servo_micro', 'c2d2']
 
     def __init__(self, servo, servod_proxy):
         """Initialize and keep the servo object.
@@ -71,8 +73,9 @@ class PDTester(chrome_ec.ChromeEC):
         @param servod_proxy: Servod proxy for pdtester host
         """
         self.servo_type = servo.get_servo_version()
-        if 'servo_v4' in self.servo_type:
-            uart_prefix = 'servo_v4_uart'
+        pd_tester_device = self.servo_type.split('_with_')[0]
+        if pd_tester_device in self.FIRST_PD_SETUP_ELEMENT:
+            uart_prefix = pd_tester_device + "_uart"
         else:
             uart_prefix = 'ec_uart'
 

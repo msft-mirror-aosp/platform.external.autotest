@@ -207,6 +207,68 @@ class BluetoothAdapterPairingTests(
                          total_duration_by_adapter/loop_cnt)
 
 
+    def connect_disconnect_by_device_loop(
+            self,
+            device,
+            loops,
+            device_type,
+            check_connected_method=lambda device: True):
+        """Perform a connect disconnect loop test"""
+
+        # Reset the adapter to forget previously paired devices if any.
+        self.test_reset_on_adapter()
+        self.test_pairable()
+        # First pair and disconnect, to emulate real life scenario
+        self.test_discover_device(device.address)
+        time.sleep(self.PAIR_TEST_SLEEP_SECS)
+        self.test_pairing(device.address, device.pin, trusted=True)
+
+        # Verify device is now connected
+        self.test_device_is_connected(device.address)
+        self.test_hid_device_created(device.address)
+
+        # Make device not discoverable and disconnect
+        self.test_device_set_discoverable(device, False)
+        self.test_disconnection_by_device(device)
+
+        total_reconnection_duration = 0
+        loop_cnt = 0
+        for i in range(0, loops):
+
+            # Verify device didn't connect automatically
+            time.sleep(2)
+            self.test_device_is_not_connected(device.address)
+
+            start_time = time.time()
+            if 'BLE' in device_type:
+                self.test_device_set_discoverable(device, True)
+                self.test_device_is_connected(device.address)
+            else:
+                self.test_connection_by_device(device)
+
+            check_connected_method(device)
+            end_time = time.time()
+            time_diff = end_time - start_time
+
+            if 'BLE' in device_type:
+                self.test_device_set_discoverable(device, False)
+
+            self.test_disconnection_by_device(device)
+
+            if not bool(self.fails):
+                loop_cnt += 1
+                total_reconnection_duration += time_diff
+                logging.info('%d: Connection establishment duration %f sec', i,
+                             time_diff)
+            else:
+                break
+
+        self.test_remove_pairing(device.address)
+        if not bool(self.fails):
+            logging.info('Average duration (by adapter) %f sec',
+                         total_reconnection_duration / loop_cnt)
+
+
     def auto_reconnect_loop(self,
                             device,
                             loops,

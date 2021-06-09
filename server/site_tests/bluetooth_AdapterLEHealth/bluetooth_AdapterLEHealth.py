@@ -49,6 +49,22 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         # self.test_device_name(device.address, device.name)
 
 
+    @test_wrapper('Connect Disconnect by Device Loop',
+                  devices={'BLE_MOUSE': 1})
+    def le_connect_disconnect_by_device_loop(self):
+        """Run connect/disconnect loop initiated by device.
+           The test also checks that there are no undesired
+           reconnections.
+        """
+
+        device = self.devices['BLE_MOUSE'][0]
+        self.connect_disconnect_by_device_loop(
+                device=device,
+                loops=3,
+                device_type='BLE_MOUSE',
+                check_connected_method=self.test_mouse_move_in_xy)
+
+
     @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE':1})
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
@@ -368,6 +384,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
            @param test_name: specifc test to run otherwise None to run the
                              whole batch
         """
+        self.le_connect_disconnect_by_device_loop()
         self.le_connect_disconnect_loop()
         self.le_power_toggle_connect_loop()
         self.le_mouse_reports()

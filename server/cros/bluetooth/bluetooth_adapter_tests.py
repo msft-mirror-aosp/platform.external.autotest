@@ -3894,7 +3894,7 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log
-    def test_mouse_move_in_xy(self, device, delta_x, delta_y):
+    def test_mouse_move_in_xy(self, device, delta_x=-60, delta_y=100):
         """Test that the mouse move events could be received correctly.
 
         @param device: the meta device containing a bluetooth HID device

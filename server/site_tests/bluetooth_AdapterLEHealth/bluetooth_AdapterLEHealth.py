@@ -77,6 +77,18 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.connect_disconnect_loop(device=device, loops=3)
 
+
+    @test_wrapper('HID Report Reboot', devices={'BLE_MOUSE': 1})
+    def le_hid_reports_reboot(self):
+        """Performs HID report test over reboot with BLE mouse peripheral"""
+
+        device = self.devices['BLE_MOUSE'][0]
+        self.run_hid_reports_test(
+                device,
+                check_connected_method=self.test_mouse_move_in_xy,
+                reboot=True)
+
+
     @test_wrapper('Mouse Reports', devices={'BLE_MOUSE':1})
     def le_mouse_reports(self):
         """Run all bluetooth mouse reports tests"""
@@ -386,6 +398,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         """
         self.le_connect_disconnect_by_device_loop()
         self.le_connect_disconnect_loop()
+        self.le_hid_reports_reboot()
         self.le_power_toggle_connect_loop()
         self.le_mouse_reports()
         self.le_keyboard_reports()

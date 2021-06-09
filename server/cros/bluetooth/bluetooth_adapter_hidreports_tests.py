@@ -60,9 +60,12 @@ class BluetoothAdapterHIDReportTests(
 
         self.test_battery_reporting(device)
 
-    def run_hid_reports_test(self, device,
+    def run_hid_reports_test(self,
+                             device,
                              check_connected_method=lambda device: True,
-                             suspend_resume=False, reboot=False):
+                             suspend_resume=False,
+                             reboot=False,
+                             restart=False):
         """Running Bluetooth HID reports tests."""
         logging.info("run hid reports test")
         # Reset the adapter and set it pairable.
@@ -127,8 +130,16 @@ class BluetoothAdapterHIDReportTests(
             time.sleep(self.HID_TEST_SLEEP_SECS)
             self.test_device_name(device.address, device.name)
 
-        # Run HID test after suspend/reboot as well.
-        if suspend_resume or reboot:
+        if restart:
+            self.test_stop_bluetoothd()
+            self.test_start_bluetoothd()
+
+            if not self.ignore_failure(self.test_device_is_connected,
+                                       device.address):
+                self.test_connection_by_device(device)
+
+        # Run HID test after suspend/reboot/restart as well.
+        if suspend_resume or reboot or restart:
             check_connected_method(device)
 
         # Disconnect the device, and remove the pairing.

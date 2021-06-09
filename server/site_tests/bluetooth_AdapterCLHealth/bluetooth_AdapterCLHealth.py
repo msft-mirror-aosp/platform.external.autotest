@@ -128,6 +128,18 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           self.test_mouse_right_click, reboot=True)
 
 
+    @test_wrapper('HID Reports Restart Test', devices={"MOUSE": 1})
+    def cl_HID_reports_restart_test(self):
+        """Performs HID report test over bluetoothd restart with mouse
+           peripheral
+        """
+        device = self.devices['MOUSE'][0]
+        self.run_hid_reports_test(
+                device,
+                check_connected_method=self.test_mouse_move_in_xy,
+                restart=True)
+
+
     @test_wrapper('Connect Disconnect by Device Loop Test',
                   devices={"MOUSE": 1})
     def cl_connect_disconnect_by_device_loop_test(self):
@@ -216,6 +228,7 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         """
         self.cl_HID_keyboard_reports_test()
         self.cl_HID_reports_reboot_test()
+        self.cl_HID_reports_restart_test()
         self.cl_HID_reports_suspend_resume_test()
         self.cl_HID_reports_test()
         self.cl_adapter_discoverable_test()

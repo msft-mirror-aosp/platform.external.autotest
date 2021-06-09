@@ -460,19 +460,20 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                                       "failed (rc=%s)" % result.exit_status)
 
     def run_once(self):
-        if not self.faft_config.intel_cse_lite:
-            raise error.TestNAError("CSELite feature not supported " \
-                                    "on this device. Test Skipped")
+        if not ('x86' in self.faft_config.ec_capability):
+            raise error.TestNAError("The firmware_CsmeFwUpdate test is only " \
+                                    "applicable to Intel platforms. Skipping " \
+                                    "test.")
 
         # Read current bios from SPI and create a backup copy
         self.read_current_bios_and_save()
 
+        if not self.check_if_me_blob_exist_in_image(self.spi_bios):
+            raise error.TestNAError("The me_rw blob is not present in the " \
+                                    "current bios.  Skipping test.")
+
         # Check fmap scheme of the bios read from SPI
         spi_bios_fmap_ver = self.check_fmap_format(self.spi_bios)
-
-        if not self.check_if_me_blob_exist_in_image(self.spi_bios):
-            raise error.TestError("Test setup issue : me_rw blob is not " \
-                                "present in the current bios!")
 
         # Check fmap scheme of the default bios in shellball
         downgrade_bios_fmap = self.check_fmap_format(self.downgrade_bios)

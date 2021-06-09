@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import logging
 import time
 
@@ -9,14 +10,14 @@ from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.audio import alsa_utils
+from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import audio_spec
 from autotest_lib.client.cros.audio import cras_utils
 
-APLAY_FILE = '/dev/zero' # raw data
+APLAY_FILE = '/dev/zero'  # raw data
 
 # Expected results of 'aplay -v' commands.
-APLAY_EXPECTED = set([
-      ('stream', 'PLAYBACK')])
+APLAY_EXPECTED = set([('stream', 'PLAYBACK')])
 
 
 def _play_audio(device_name, duration=1):
@@ -55,13 +56,15 @@ def _play_audio(device_name, duration=1):
     @return String output from the command (may be empty).
     @raises CmdError when cmd returns <> 0.
     """
-    cmd = ['aplay',
-           '-v', # show verbose details
-           '-D %s' % device_name,
-           '-d %d' % duration,
-           '-f cd', # format
-           APLAY_FILE,
-           '2>&1'] # verbose details
+    cmd = [
+            'aplay',
+            '-v',  # show verbose details
+            '-D %s' % device_name,
+            '-d %d' % duration,
+            '-f cd',  # format
+            APLAY_FILE,
+            '2>&1'
+    ]  # verbose details
     return utils.system_output(' '.join(cmd)).strip()
 
 
@@ -132,11 +135,15 @@ class audio_Aplay(test.test):
         cras_device_type = cras_utils.get_selected_output_device_type()
         logging.debug("Selected output device type=%s", cras_device_type)
         if cras_device_type != output_node:
+            audio_helper.dump_audio_diagnostics(
+                    os.path.join(self.resultsdir, "audio_diagnostics.txt"))
             raise error.TestFail("Fail to select output device.")
 
         cras_device_name = cras_utils.get_selected_output_device_name()
         logging.debug("Selected output device name=%s", cras_device_name)
         if cras_device_name is None:
+            audio_helper.dump_audio_diagnostics(
+                    os.path.join(self.resultsdir, "audio_diagnostics.txt"))
             raise error.TestFail("Fail to get selected output device.")
 
         alsa_device_name = alsa_utils.convert_device_name(cras_device_name)

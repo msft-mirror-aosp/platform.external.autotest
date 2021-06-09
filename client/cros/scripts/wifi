@@ -40,7 +40,7 @@ def usage():
     print cmd, 'disconnect <ssid> [timeout seconds]'
     print
     print cmd, 'connect_with_props <ssid> <timeout seconds>'
-    print '    <Security=[none|psk|802_1x]> [Property=Value ...]'
+    print '    <SecurityClass=[none|psk|802_1x]> [Property=Value ...]'
     print '    for Property in:'
     print '\n'.join(['\t\t' + x for x in sorted(SERVICE_PROP_PARSERS.keys())])
     print
@@ -120,17 +120,17 @@ def disconnect(ssid, timeout=None):
     return successful
 
 
-def parse_security_from_credentials(credentials):
-    """Parses SERVICE_PROPERTY_SECURITY from credentials.
+def parse_security_class_from_credentials(credentials):
+    """Parses SERVICE_PROPERTY_SECURITY_CLASS from credentials.
 
     @param credentials dict of service properties that includes credentials
             like the passphrase for psk security.
-    @return SERVICE_PROPERTY_SECURITY value from credentials,
+    @return SERVICE_PROPERTY_SECURITY_CLASS value from credentials,
             or exit if no such key/value in credentials.
 
     """
     security = credentials.pop(
-            wifi_proxy.WifiProxy.SERVICE_PROPERTY_SECURITY, None)
+            wifi_proxy.WifiProxy.SERVICE_PROPERTY_SECURITY_CLASS, None)
     if security is None:
         print "Error: security type not provided"
         usage()
@@ -207,7 +207,7 @@ def main(args):
         if len(args) > 3:
             for i in xrange(3, len(args)):
                 credentials.update((parse_service_property(args[i]),))
-        security = parse_security_from_credentials(credentials)
+        security = parse_security_class_from_credentials(credentials)
         return connect(ssid, security, credentials, save_credentials, timeout)
 
     if command == 'disconnect':

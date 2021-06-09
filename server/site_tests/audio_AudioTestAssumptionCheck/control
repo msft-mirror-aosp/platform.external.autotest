@@ -5,8 +5,8 @@
 from autotest_lib.server import utils
 
 AUTHOR = "chromeos-chameleon"
-NAME = "audio_AudioSanityCheck"
-PURPOSE = "Sanity check for behavior after a suspension."
+NAME = "audio_AudioTestAssumptionCheck"
+PURPOSE = "Basic functionality check for behavior after a suspension."
 CRITERIA = """
 This test will fail if functions that audio tests rely on are broken
 after a suspension.
@@ -26,6 +26,6 @@ after a suspension.
 
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test("audio_AudioSanityCheck", host=host)
+    job.run_test("audio_AudioTestAssumptionCheck", host=host)
 
 parallel_simple(run, machines)

@@ -47,7 +47,7 @@ class Suspender(object):
         _identify_driver: Return the driver name of a device (or "unknown").
     """
 
-    _DEFAULT_SUSPEND_DELAY = 5
+    _DEFAULT_SUSPEND_DELAY = 15
     # Dictionary of board-specific "time to suspend" values determined
     # empirically where 'key' is <board> and 'value' is suspend delay in
     # seconds.

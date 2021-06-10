@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.audio import alsa_utils
 from autotest_lib.client.cros.audio import audio_spec
 from autotest_lib.client.cros.audio import cras_utils
@@ -88,6 +89,14 @@ def _check_play(device_name, duration, expected):
 class audio_Aplay(test.test):
     """Checks that simple aplay functions correctly."""
     version = 1
+
+    def initialize(self):
+        """Stop ui while running the test."""
+        upstart.stop_job('ui')
+
+    def cleanup(self):
+        """Start ui back after the test."""
+        upstart.restart_job('ui')
 
     def run_once(self, duration=1, test_headphone=False):
         """Run aplay and verify its output is as expected.

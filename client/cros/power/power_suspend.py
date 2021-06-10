@@ -47,31 +47,11 @@ class Suspender(object):
         _identify_driver: Return the driver name of a device (or "unknown").
     """
 
-    # board-specific "time to suspend" values determined empirically
-    # TODO: migrate to separate file with http://crosbug.com/38148
     _DEFAULT_SUSPEND_DELAY = 5
-    _SUSPEND_DELAY = {
-        # TODO: Reevaluate this when http://crosbug.com/38460 is fixed
-        'daisy': 6,
-        'daisy_spring': 6,
-        'peach_pit': 6,
-
-        # TODO: Reevaluate these when http://crosbug.com/38225 is fixed
-        'x86-mario': 6,
-        'x86-alex': 5,
-
-        # Lumpy and Stumpy need high values, because it seems to mitigate their
-        # RTC interrupt problem. See http://crosbug.com/36004
-        'lumpy': 5,
-        'stumpy': 5,
-
-        # RTS5209 card reader has a really bad staging driver, can take ~1 sec
-        'butterfly': 4,
-
-        # Hard disk sync and overall just slow
-        'parrot': 8,
-        'kiev': 9,
-    }
+    # Dictionary of board-specific "time to suspend" values determined
+    # empirically where 'key' is <board> and 'value' is suspend delay in
+    # seconds.
+    _SUSPEND_DELAY = {}
 
     # alarm/not_before value guaranteed to raise SpuriousWakeup in _hwclock_ts
     _ALARM_FORCE_EARLY_WAKEUP = 2147483647

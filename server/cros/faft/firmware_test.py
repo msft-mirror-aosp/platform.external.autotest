@@ -469,7 +469,7 @@ class FirmwareTest(test.test):
             self.switcher.wait_for_client()
             return
         except ConnectionError:
-            logging.warn('Cold reboot doesn\'t help, still connection error.')
+            logging.warn("Cold reboot didn't help, still connection error.")
 
         # DUT may be broken by a corrupted firmware. Restore firmware.
         # We assume the recovery boot still works fine. Since the recovery
@@ -477,48 +477,48 @@ class FirmwareTest(test.test):
         # except GBB.
         if self.is_firmware_saved():
             self._ensure_client_in_recovery()
-            logging.info('Try restore the original firmware...')
+            logging.info('Try restoring the original firmware...')
             if self.is_firmware_changed():
                 try:
                     self.restore_firmware()
                     return
                 except ConnectionError:
-                    logging.warn('Restoring firmware doesn\'t help, still '
-                                 'connection error.')
+                    logging.warn("Restoring firmware didn't help, still "
+                                 "connection error.")
 
         # Perhaps it's kernel that's broken. Let's try restoring it.
         if self.is_kernel_saved():
             self._ensure_client_in_recovery()
-            logging.info('Try restore the original kernel...')
+            logging.info('Try restoring the original kernel...')
             if self.is_kernel_changed():
                 try:
                     self.restore_kernel()
                     return
                 except ConnectionError:
-                    logging.warn('Restoring kernel doesn\'t help, still '
-                                 'connection error.')
+                    logging.warn("Restoring kernel didn't help, still "
+                                 "connection error.")
 
         # DUT may be broken by a corrupted OS image. Restore OS image.
         self._ensure_client_in_recovery()
-        logging.info('Try restore the OS image...')
+        logging.info('Try restoring the OS image...')
         self.faft_client.system.run_shell_command('chromeos-install --yes')
         self.switcher.mode_aware_reboot(wait_for_dut_up=False)
         self.switcher.wait_for_client_offline()
         self.switcher.bypass_dev_mode()
         try:
             self.switcher.wait_for_client()
-            logging.info('Successfully restore OS image.')
+            logging.info('Successfully restored OS image.')
             return
         except ConnectionError:
-            logging.warn('Restoring OS image doesn\'t help, still connection '
-                         'error.')
+            logging.warn("Restoring OS image didn't help, still connection "
+                         "error.")
 
     def _ensure_client_in_recovery(self):
         """Ensure client in recovery boot; reboot into it if necessary.
 
         @raise TestError: if failed to boot the USB image.
         """
-        logging.info('Try boot into USB image...')
+        logging.info('Try booting into USB image...')
         self.switcher.reboot_to_mode(to_mode='rec', sync_before_boot=False,
                                      wait_for_dut_up=False)
         self.servo.switch_usbkey('host')
@@ -966,7 +966,6 @@ class FirmwareTest(test.test):
 
         @param original_dev_boot_usb: Original dev_boot_usb value.
         """
-        logging.info('Checking internal device boot.')
         self.faft_client.system.set_dev_default_boot()
         if self.faft_client.system.is_removable_device_boot():
             logging.info('Reboot into internal disk...')
@@ -1273,7 +1272,7 @@ class FirmwareTest(test.test):
         if self.check_setup_done('gbb_flags'):
             return
 
-        logging.info('Set proper GBB flags for test.')
+        logging.info('Setting proper GBB flags for test.')
         # Ensure that GBB flags are set to 0x140.
         flags_to_set = (vboot.GBB_FLAG_RUNNING_FAFT |
                         vboot.GBB_FLAG_ENTER_TRIGGERS_TONORM)
@@ -1387,7 +1386,7 @@ class FirmwareTest(test.test):
 
     def do_blocking_sync(self, device):
         """Run a blocking sync command."""
-        logging.info("Blocking sync for %s", device)
+        logging.debug("Blocking sync for %s", device)
 
         if 'mmcblk' in device:
             # For mmc devices, use `mmc status get` command to send an
@@ -1720,10 +1719,10 @@ class FirmwareTest(test.test):
             except error.AutoservRunError:
                 retry -= 1
                 if retry:
-                    logging.info('Retry to get boot_id...')
+                    logging.debug('Retry to get boot_id...')
                 else:
                     logging.warning('Failed to get boot_id.')
-        logging.info('boot_id: %s', boot_id)
+        logging.debug('boot_id: %s', boot_id)
         return boot_id
 
     def check_state(self, func):
@@ -1745,9 +1744,7 @@ class FirmwareTest(test.test):
         @return: The result value of the action function.
         @raise TestFail: If the function does notsucceed.
         """
-        logging.info("-[FAFT]-[ start stepstate_checker ]----------")
         self._call_action(func, check_status=True)
-        logging.info("-[FAFT]-[ end state_checker ]----------------")
 
     def get_current_firmware_identity(self):
         """Get current firmware sha and fwids of body and vblock.
@@ -2209,8 +2206,6 @@ class FirmwareTest(test.test):
         if not hasattr(self, 'cr50'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
-
-        logging.info('checking dut state')
 
         self.servo.set_nocheck('cold_reset', 'off')
         try:

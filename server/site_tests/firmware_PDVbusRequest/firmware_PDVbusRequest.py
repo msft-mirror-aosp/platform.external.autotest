@@ -167,9 +167,10 @@ class firmware_PDVbusRequest(FirmwareTest):
             for (mv, ma) in srccaps:
                 voltage = mv / 1000.0
                 current = ma / 1000.0
-                power = min(voltage * current, dut_max_charging_power)
+                power = voltage * current
 
-                if (voltage > dut_voltage_limit or power <= selected_power):
+                if (voltage > dut_voltage_limit or power <= selected_power
+                            or power > dut_max_charging_power):
                     continue
                 selected_voltage = voltage
                 selected_power = power

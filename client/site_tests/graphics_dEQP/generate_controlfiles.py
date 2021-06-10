@@ -29,12 +29,12 @@ class Suite(Enum):
     infra = 3
     bvtpb = 4
 
-test_file_folder = '/usr/local/deqp/master/'
+test_file_folder = '/usr/local/deqp/caselists/'
 BVT_MASTER_FILE = '/usr/local/autotest/tests/graphics_dEQP/master/bvt.txt'
-GLES2_MASTER_FILE = os.path.join(test_file_folder, 'gles2-master.txt')
-GLES3_MASTER_FILE = os.path.join(test_file_folder, 'gles3-master.txt')
-GLES31_MASTER_FILE = os.path.join(test_file_folder, 'gles31-master.txt')
-VK_MASTER_FILE = os.path.join(test_file_folder, 'vk-master.txt')
+GLES2_MASTER_FILE = os.path.join(test_file_folder, 'gles2.txt')
+GLES3_MASTER_FILE = os.path.join(test_file_folder, 'gles3.txt')
+GLES31_MASTER_FILE = os.path.join(test_file_folder, 'gles31.txt')
+VK_MASTER_FILE = os.path.join(test_file_folder, 'vk.txt')
 
 # List of tests' filter that should not append 'hasty' to its name.
 hasty_exclude_list = ['dEQP-VK-master']

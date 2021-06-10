@@ -21,7 +21,7 @@ This test runs the drawElements Quality Program test suite.
 job.run_test('graphics_dEQP',
              tag = 'vk-master',
              opts = args + [
-                 'test_names_file=/usr/local/deqp/master/vk-master.txt',
+                 'test_names_file=/usr/local/deqp/caselists/vk.txt',
                  'hasty=True',
                  'perf_failure_description=Failures_VK',
                  'shard_number=0',

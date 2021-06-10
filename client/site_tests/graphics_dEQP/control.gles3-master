@@ -21,7 +21,7 @@ This test runs the drawElements Quality Program test suite.
 job.run_test('graphics_dEQP',
              tag = 'gles3-master',
              opts = args + [
-                 'test_names_file=/usr/local/deqp/master/gles3-master.txt',
+                 'test_names_file=/usr/local/deqp/caselists/gles3.txt',
                  'hasty=False',
                  'perf_failure_description=Failures_GLES3',
                  'shard_number=0',

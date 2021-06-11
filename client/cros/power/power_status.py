@@ -1256,7 +1256,8 @@ class GPUFreqStats(AbstractStats):
                         max_mhz = result[0]
                         continue
                 if min_mhz and max_mhz:
-                    for i in xrange(int(min_mhz), int(max_mhz) + 1):
+                    real_min_mhz = min(int(min_mhz), int(cur_mhz))
+                    for i in xrange(real_min_mhz, int(max_mhz) + 1):
                         if i % 100 in self._I915_FREQ_STEPS:
                             self._freqs.append(str(i))
 

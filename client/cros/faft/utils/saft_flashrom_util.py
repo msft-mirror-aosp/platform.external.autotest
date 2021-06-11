@@ -20,6 +20,7 @@ In the saft_flashrom_util, we provide read and partial write abilities.
 For more information, see help(saft_flashrom_util.flashrom_util).
 """
 import re
+import logging
 
 
 class TestError(Exception):
@@ -361,6 +362,8 @@ class flashrom_util(object):
 
         output = self.os_if.run_shell_command_get_output(
                 'flashrom %s --wp-status' % self._target_command)
+        logging.debug('`flashrom %s --wp-status` returned %s',
+                      self._target_command, output)
 
         wp_status = {}
         for line in output:

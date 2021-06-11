@@ -617,7 +617,10 @@ class EcServicer(object):
         @return: {'enabled': True/False, 'start': '0x0', 'length': '0x0', ...}
         @rtype: dict
         """
-        return self._ec_handler.get_write_protect_status()
+        logging.debug("Calling self._ec_handler.get_write_protect_status")
+        rec = self._ec_handler.get_write_protect_status()
+        logging.debug("Returning %s", rec)
+        return rec
 
     def is_efs(self):
         """Return True if the EC supports EFS."""

@@ -35,6 +35,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
         self._original_sw_wps = {}
         for target in self._targets:
             sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            logging.debug("self._rpcs[%s].get_write_protect_status() = %s",
+                          target, sw_wp_dict)
             self._original_sw_wps[target] = sw_wp_dict['enabled']
         self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
         self.backup_firmware()
@@ -149,6 +151,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
         # Check WP is properly enabled at the start
         for target in self._targets:
             sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            logging.debug("self._rpcs[%s].get_write_protect_status() = %s",
+                          target, sw_wp_dict)
             if not sw_wp_dict['enabled']:
                 raise error.TestFail('Failed to enable %s SW WP at '
                                      'test start' % target.upper())

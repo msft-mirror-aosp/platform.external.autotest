@@ -16,6 +16,32 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import constants, cros_logging
 
 
+_CRASH_RUN_STATE_DIR = '/run/crash_reporter'
+
+
+class FilterOut:
+    """contextmanager-compatible class to block certain crashes during tests."""
+
+    def __init__(self, name):
+        self._FILTER_OUT = _CRASH_RUN_STATE_DIR + '/filter-out'
+        self.name = name
+
+    def __enter__(self):
+        """Writes the given parameter to the filter-out file.
+
+        This is used to ignore crashes in which we have no interest.
+        """
+        utils.open_write_close(self._FILTER_OUT, self.name)
+
+    def __exit__(self, ex_type, value, traceback):
+        """Remove the filter-out file.
+
+        Next time the crash reporter is invoked, it will not filter crashes."""
+        os.remove(self._FILTER_OUT)
+        # Do *not* handle any exception
+        return False
+
+
 class CrashTest(test.test):
     """
     This class deals with running crash tests, which are tests which crash a
@@ -78,7 +104,6 @@ class CrashTest(test.test):
     _CRASH_SENDER_PATH = '/sbin/crash_sender'
     _CRASH_SENDER_RATE_DIR = '/var/lib/crash_sender'
     _CRASH_SENDER_LOCK_PATH = '/run/lock/crash_sender'
-    _CRASH_RUN_STATE_DIR = '/run/crash_reporter'
     _CRASH_TEST_IN_PROGRESS = _CRASH_RUN_STATE_DIR + '/crash-test-in-progress'
     _MOCK_CRASH_SENDING = _CRASH_RUN_STATE_DIR + '/mock-crash-sending'
     _FILTER_IN = _CRASH_RUN_STATE_DIR + '/filter-in'
@@ -594,7 +619,7 @@ class CrashTest(test.test):
     def enable_crash_filtering(self, name):
         """Writes the given parameter to the filter-in file.
 
-        This is used to ignore crashes in which we have no interest.
+        This is used to collect only crashes in which we have an interest.
 
         @param new_parameter: The filter to write to the file, if any.
         """

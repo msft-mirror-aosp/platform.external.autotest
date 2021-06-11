@@ -198,14 +198,18 @@ prepare and install a test Chromium OS image:
 
 ## Running Tests {#faft-running-tests}
 
+FAFT tests are written in two different frameworks: Autotest and Tast.
+
+Autotest tests are run using the `test_that` command, described below. Tast tests are run using the `tast run` command, which is documented at [go/tast-running](http://chromium.googlesource.com/chromiumos/platform/tast/+/HEAD/docs/running_tests.md).
+
 ### Setup Confirmation {#setup-confirmation}
 
-To run FAFT you use the `test_that` tool, which does not automatically start a
-`servod` process for communicating with the servo board. Running FAFT is easiest
-with `servod` and `test_that` running in separate terminals inside the SDK,
-using either multiple SDK instances (`cros_sdk --enter --no-ns-pid`) or a tool
-such as `screen` inside an SDK instance. Before running any tests, go into
-chroot:
+To run Autotest tests, use the `test_that` tool, which does not automatically
+start a `servod` process for communicating with the servo board. Running FAFT
+is easiest with `servod` and `test_that` running in separate terminals inside
+the SDK, using either multiple SDK instances (`cros_sdk --enter --no-ns-pid`)
+or a tool such as `screen` inside an SDK instance. Before running any tests, go
+into the chroot:
 
 1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
 1.  Go into a second chroot
@@ -225,7 +229,7 @@ autotest directory is included in the command as follows:
 
 ### Sample Commands {#sample-commands}
 
-A few sample invocations of launching tests against a DUT:
+A few sample invocations of launching Autotest tests against a DUT:
 
 Running FAFT test with test case name
 

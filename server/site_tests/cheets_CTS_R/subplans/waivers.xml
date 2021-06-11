@@ -147,6 +147,8 @@
   <Entry include="CtsThemeHostTestCases android.theme.cts.ThemeHostTest#testThemes" />
   <Entry include="CtsWidgetTestCases android.widget.cts.ToastTest#testCustomToastBlocked_whenBehindTranslucentActivity" />
   <Entry include="CtsWidgetTestCases[instant] android.widget.cts.ToastTest#testCustomToastBlocked_whenBehindTranslucentActivity" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackFinishToPreviousApp" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackLaunchNewTask" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_andLoseControl[ime]" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_immediately_hide[ime]" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationControllerTests#testControl_transition_hide_interpolator[ime]" />

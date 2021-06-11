@@ -507,14 +507,18 @@ class BluetoothBaseFacadeNative(object):
         """
         return self._set_wake_enabled(value)
 
-    def wait_for_hid_device(self, device_address):
+    def wait_for_hid_device(self, device_address, timeout, sleep_interval):
         """Waits for hid device with given device address.
 
         Args:
             device_address: Peripheral address
+            timeout: maximum number of seconds to wait
+            sleep_interval: time to sleep between polls
+
+        @return True if hid device found, False otherwise
         """
 
-        def match_hid_to_device(hidpath, device_address):
+        def _match_hid_to_device(hidpath, device_address):
             """Check if given hid syspath is for the given device address """
             # If the syspath has a uniq property that matches the peripheral
             # device's address, then it has matched
@@ -528,10 +532,7 @@ class BluetoothBaseFacadeNative(object):
 
             return False
 
-        start = datetime.now()
-
-        # Keep scanning udev for correct hid device
-        while (datetime.now() - start).seconds <= self.HID_TIMEOUT:
+        def _hid_is_created(device_address):
             existing_inputs = UdevadmTrigger(
                     subsystem_match=['input']).DryRun()
             for entry in existing_inputs:
@@ -539,10 +540,29 @@ class BluetoothBaseFacadeNative(object):
                 logging.info('udevadm trigger entry is {}: {}'.format(
                         bt_hid, entry))
 
-                if bt_hid and match_hid_to_device(entry, device_address):
+                if bt_hid and _match_hid_to_device(entry, device_address):
                     return True
 
-            time.sleep(self.HID_CHECK_SECS)
+            return False
+
+        if timeout is None:
+            timeout = self.HID_TIMEOUT
+        if sleep_interval is None:
+            sleep_interval = self.HID_CHECK_SECS
+
+        method_name = 'wait_for_hid_device'
+        try:
+            utils.poll_for_condition(
+                    condition=(lambda: _hid_is_created(device_address)),
+                    timeout=timeout,
+                    sleep_interval=sleep_interval,
+                    desc=('Waiting for HID device to be created from %s' %
+                          device_address))
+            return True
+        except utils.TimeoutError as e:
+            logging.error('%s: %s', method_name, e)
+        except:
+            logging.error('%s: unexpected error', method_name)
 
         return False
 

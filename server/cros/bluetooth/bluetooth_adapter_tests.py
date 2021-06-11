@@ -2442,13 +2442,16 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log
-    def test_connection_by_device(self, device):
+    def test_connection_by_device(
+            self, device, post_connection_delay=ADAPTER_HID_INPUT_DELAY):
         """Test that the device could connect to the adapter successfully.
 
         This emulates the behavior that a device may initiate a
         connection request after waking up from power saving mode.
 
         @param device: the bluetooth HID device
+        @param post_connection_delay: the delay introduced post connection to
+                                      allow profile functionality to be ready
 
         @returns: True if connection is performed correctly by device and
                   the adapter also enters connection state.
@@ -2481,7 +2484,7 @@ class BluetoothAdapterTests(test.test):
 
             # Although the connect may be complete, it can take a few
             # seconds for the input device to be ready for use
-            time.sleep(self.ADAPTER_HID_INPUT_DELAY)
+            time.sleep(post_connection_delay)
         except utils.TimeoutError as e:
             logging.error('%s (adapter): %s', method_name, e)
         except:
@@ -2572,10 +2575,16 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_device_is_connected(self, device_address):
+    def test_device_is_connected(
+            self,
+            device_address,
+            timeout=ADAPTER_CONNECTION_TIMEOUT_SECS,
+            sleep_interval=ADAPTER_PAIRING_POLLING_SLEEP_SECS):
         """Test that device address given is currently connected.
 
         @param device_address: Address of the device.
+        @param timeout: maximum number of seconds to wait
+        @param sleep_interval: time to sleep between polls
 
         @returns: True if the device is connected.
                   False otherwise.
@@ -2589,7 +2598,6 @@ class BluetoothAdapterTests(test.test):
             """
             return self.bluetooth_facade.device_is_connected(device_address)
 
-
         method_name = 'test_device_is_connected'
         has_device = False
         connected = False
@@ -2598,10 +2606,10 @@ class BluetoothAdapterTests(test.test):
             try:
                 utils.poll_for_condition(
                         condition=_is_connected,
-                        timeout=self.ADAPTER_CONNECTION_TIMEOUT_SECS,
-                        sleep_interval=self.ADAPTER_PAIRING_POLLING_SLEEP_SECS,
+                        timeout=timeout,
+                        sleep_interval=sleep_interval,
                         desc='Waiting to check connection to %s' %
-                              device_address)
+                        device_address)
                 connected = True
             except utils.TimeoutError as e:
                 logging.error('%s: %s', method_name, e)

@@ -1690,16 +1690,22 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def wait_for_hid_device(self, device_address):
+    def wait_for_hid_device(self,
+                            device_address,
+                            timeout=None,
+                            sleep_interval=None):
         """Wait for hid device with given device address.
 
         Args:
             device_address: Peripheral Address
+            timeout: maximum number of seconds to wait
+            sleep_interval: time to sleep between polls
 
         Returns:
             True if hid device is found.
         """
-        return self._proxy.wait_for_hid_device(device_address)
+        return self._proxy.wait_for_hid_device(device_address, timeout,
+                                               sleep_interval)
 
 
     @proxy_thread_safe

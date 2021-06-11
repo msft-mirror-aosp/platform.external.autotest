@@ -97,7 +97,7 @@ class JobSerializer(object):
         protocol buffer.
 
         The method takes a tko job object and constructs a protocol
-        buffer job object. Then invokes the native serializing
+        buffer job object. Then invokes the built-in serializing
         function on the object to get a binary string. The string is
         then written to outfile.
 

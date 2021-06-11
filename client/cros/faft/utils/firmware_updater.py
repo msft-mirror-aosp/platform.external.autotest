@@ -557,7 +557,7 @@ class FirmwareUpdater(object):
 
         Finds bios.bin on the DUT and sets up a temp dir to operate on
         bios.bin.  If a bios.bin was specified, it is copied to the DUT
-        and used instead of the native bios.bin.
+        and used instead of the built-in bios.bin.
 
         @return: The cbfs work directory path.
         """

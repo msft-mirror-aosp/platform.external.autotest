@@ -13,7 +13,7 @@ ATTRIBUTES = 'suite:wifi_lucidsleep'
 
 DOC = """
 This test verifies that the NIC wakes the DUT up in dark resume on the
-appearance of a whitelisted SSID if it previously suspended disconnected.
+appearance of a allowlisted SSID if it previously suspended disconnected.
 """
 
 args_dict = utils.args_to_dict(args)

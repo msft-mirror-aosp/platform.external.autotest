@@ -142,11 +142,11 @@ static void fdpair(int fds[2])
 /* Block until we're ready to go */
 static void ready(int ready_out, int wakefd)
 {
-	char dummy;
+	char stub;
 	struct pollfd pollfd = { .fd = wakefd, .events = POLLIN };
 
 	/* Tell them we're ready. */
-	if (write(ready_out, &dummy, 1) != 1)
+	if (write(ready_out, &stub, 1) != 1)
 		barf("CLIENT: ready write");
 
 	/* Wait for "GO" signal */
@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 	struct timeval start, stop, diff;
 	unsigned int num_fds = 20;
 	int readyfds[2], wakefds[2];
-	char dummy;
+	char stub;
 	pthread_t *pth_tab;
 
 	if (argv[1] && strcmp(argv[1], "-pipe") == 0) {
@@ -360,13 +360,13 @@ int main(int argc, char *argv[])
 
 	/* Wait for everyone to be ready */
 	for (i = 0; i < total_children; i++)
-		if (read(readyfds[0], &dummy, 1) != 1)
+		if (read(readyfds[0], &stub, 1) != 1)
 			barf("Reading for readyfds");
 
 	gettimeofday(&start, NULL);
 
 	/* Kick them off */
-	if (write(wakefds[1], &dummy, 1) != 1)
+	if (write(wakefds[1], &stub, 1) != 1)
 		barf("Writing to start them");
 
 	/* Reap them all */

@@ -164,7 +164,7 @@ class Reindenter:
         # Raw file lines.
         self.raw = f.readlines()
 
-        # File lines, rstripped & tab-expanded.  Dummy at start is so
+        # File lines, rstripped & tab-expanded.  Stub at start is so
         # that we can use tokenize's 1-based line numbering easily.
         # Note that a line is all-blank iff it's "\n".
         self.lines = [_rstrip(line).expandtabs() + "\n"

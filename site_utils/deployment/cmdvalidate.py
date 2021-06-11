@@ -217,7 +217,7 @@ def _validate_build(board, build):
 def _validate_hostname(hostname):
     """Return whether a given hostname is valid for the test lab.
 
-    This is a sanity check meant to guarantee that host names follow
+    This is a validity check meant to guarantee that host names follow
     naming requirements for the test lab.
 
     N.B. For convenience, this function prints an error message

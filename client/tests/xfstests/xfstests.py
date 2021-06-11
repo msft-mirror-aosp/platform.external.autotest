@@ -123,7 +123,7 @@ class xfstests(test.test):
                 os.remove(self.XFS_EXCLUDE_FILENAME)
         else:
             if test_number == '000':
-                logging.debug('Dummy test to setup xfstests')
+                logging.debug('Stub test to setup xfstests')
                 return
 
             if test_number not in self._get_available_tests(test_dir):

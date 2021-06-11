@@ -6,8 +6,8 @@ import common
 from autotest_lib.client.cros.cellular.mbim_compliance.tests import test
 
 
-class DummyTest(test.Test):
-    """ A dummy test that always passes. """
+class StubTest(test.Test):
+    """ A stub test that always passes. """
 
     def run(self):
         """ Always passes. """

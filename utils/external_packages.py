@@ -570,7 +570,7 @@ class ExternalPackage(object):
                                                   _MAX_PACKAGE_SIZE))
             if data_length <= 0 or data_length > _MAX_PACKAGE_SIZE:
                 raise FetchError('%s from %s fails Content-Length %d '
-                                 'sanity check.' % (self.name, url,
+                                 'validity check.' % (self.name, url,
                                                     data_length))
             checksum = utils.hash('sha1')
             total_read = 0

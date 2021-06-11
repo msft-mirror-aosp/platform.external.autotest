@@ -322,7 +322,7 @@ class ShillXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """Get a dict of properties for a service.
 
         @param ssid string service to get properties for.
-        @return dict of Python friendly native types or None on failures.
+        @return dict of Python friendly built-in types or None on failures.
 
         """
         discovery_params = {self._wifi_proxy.SERVICE_PROPERTY_TYPE: 'wifi',

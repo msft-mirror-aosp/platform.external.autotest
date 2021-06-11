@@ -46,7 +46,7 @@ class network_WiFi_GTK(wifi_cell_test_base.WiFiCellTestBase):
         self.context.configure(ap_config)
         client_conf.ssid = self.context.router.get_ssid()
         self.context.assert_connect_wifi(client_conf)
-        # Sanity check ourselves with some unicast pings.
+        # Check ourselves with some unicast pings.
         self.context.assert_ping_from_dut()
         # Now check that network traffic goes through.
         if (not self.check_client_can_recv_broadcast_traffic() or

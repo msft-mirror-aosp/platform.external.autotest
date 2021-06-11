@@ -1516,7 +1516,7 @@ class BluetoothAdapterTests(test.test):
                        False to disable all of the debug log.
         """
         level = int(enable)
-        self.bluetooth_facade.set_debug_log_levels(level, level, level, level)
+        self.bluetooth_facade.set_debug_log_levels(level, level)
 
 
     def start_new_btmon(self):

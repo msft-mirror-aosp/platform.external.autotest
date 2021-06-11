@@ -1266,7 +1266,6 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
     DBUS_ERROR_SERVICEUNKNOWN = 'org.freedesktop.DBus.Error.ServiceUnknown'
 
-    BLUETOOTH_SERVICE_NAME = 'org.chromium.Bluetooth'
     BLUEZ_SERVICE_NAME = 'org.bluez'
     BLUEZ_MANAGER_PATH = '/'
     BLUEZ_DEBUG_LOG_PATH = '/org/chromium/Bluetooth'
@@ -1361,12 +1360,9 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         self._dbus_mainloop = gobject.MainLoop()
 
     @xmlrpc_server.dbus_safe(False)
-    def set_debug_log_levels(self, dispatcher_vb, newblue_vb, bluez_vb,
-                             kernel_vb):
+    def set_debug_log_levels(self, bluez_vb, kernel_vb):
         """Enable or disable the debug logs of bluetooth
 
-        @param dispatcher_vb: verbosity of btdispatcher debug log, either 0 or 1
-        @param newblue_vb: verbosity of newblued debug log, either 0 or 1
         @param bluez_vb: verbosity of bluez debug log, either 0 or 1
         @param kernel_vb: verbosity of kernel debug log, either 0 or 1
 
@@ -1374,11 +1370,9 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
         # TODO(b/145163508, b/145749798): update when debug logs is migrated to
         #                                 bluez.
-        debug_object = self._system_bus.get_object(self.BLUETOOTH_SERVICE_NAME,
+        debug_object = self._system_bus.get_object(self.BLUEZ_SERVICE_NAME,
                                                    self.BLUEZ_DEBUG_LOG_PATH)
-        debug_object.SetLevels(dbus.Byte(dispatcher_vb),
-                               dbus.Byte(newblue_vb),
-                               dbus.Byte(bluez_vb),
+        debug_object.SetLevels(dbus.Byte(bluez_vb),
                                dbus.Byte(kernel_vb),
                                dbus_interface=self.BLUEZ_DEBUG_LOG_IFACE)
         return

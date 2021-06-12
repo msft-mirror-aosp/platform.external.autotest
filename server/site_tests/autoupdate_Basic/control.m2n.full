@@ -9,7 +9,8 @@ PURPOSE = "Tests an M-to-N update with Nebraska."
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-m2n"
+ATTRIBUTES = "suite:bvt-inline"
+JOB_RETRIES = 2
 DOC = """
 This tests an M-to-N update. That means it will update from the current stable
 version for this board to ToT. This test will be used in the CQ to ensure

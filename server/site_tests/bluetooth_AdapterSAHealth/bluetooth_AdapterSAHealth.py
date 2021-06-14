@@ -86,7 +86,8 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_pairable()
 
 
-    @test_wrapper('Adapter suspend resume test')
+    # TODO(b/182172118) - Winky has suspend test issues
+    @test_wrapper('Adapter suspend resume test', skip_models=['winky'])
     def sa_adapter_suspend_resume_test(self):
         """Test dapter power states is perserved through suspend resume."""
         def adapter_on_SR_test():

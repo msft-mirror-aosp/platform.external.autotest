@@ -29,8 +29,9 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    # TODO(b/182172118) - Winky has suspend test issues
     @test_wrapper('Multiple LE advertising test',
-                  skip_models=['dru', 'druwl'],
+                  skip_models=['dru', 'druwl', 'winky'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
@@ -48,8 +49,9 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    # TODO(b/182172118) - Winky has suspend test issues
     @test_wrapper('Suspend resume LE advertising test',
-                  skip_models=['dru', 'druwl'],
+                  skip_models=['dru', 'druwl', 'winky'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for multiple advertisements."""

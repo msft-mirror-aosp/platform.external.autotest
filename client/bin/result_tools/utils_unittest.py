@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -293,7 +293,31 @@ class MergeSummaryTest(unittest.TestCase):
         collected_bytes, merged_summary, files = result_utils.merge_summaries(
                 self.test_dir)
 
-        self.assertEqual(EXPECTED_MERGED_SUMMARY, merged_summary)
+        # In python3, the dict --> list conversion isn't guaranteed to be in.
+        # this basically drills down to the lowest level values and verifies
+        # each.
+        def _checker(real, expected):
+            if not isinstance(real, list) and not isinstance(real, dict):
+                self.assertEqual(real, expected)
+                return
+
+            if isinstance(real, list):
+                self.assertEqual(type(expected), list)
+                for item in real:
+                    _search_for_item(item, expected)
+                return
+
+            for k, v in real.items():
+                assert(k in expected)
+                _checker(real[k], expected[k])
+
+        def _search_for_item(item, other):
+            for oth in other:
+                if item.keys() == oth.keys():
+                    self.assertEqual(item, oth)
+                    _checker(item, oth)
+
+        _checker(merged_summary, EXPECTED_MERGED_SUMMARY)
         self.assertEqual(collected_bytes, 12 * SIZE)
         self.assertEqual(len(files), 3)
 

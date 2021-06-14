@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -365,6 +365,8 @@ def execute(path, max_size_KB):
     @param max_size_KB: Maximum result size in KB.
     """
     utils_lib.LOG('Running result_tools/utils on path: %s' % path)
+    utils_lib.LOG('Running result_tools/utils in pyversion %s ' % sys.version)
+
     if max_size_KB > 0:
         utils_lib.LOG('Throttle result size to : %s' %
                       utils_lib.get_size_string(max_size_KB * 1024))

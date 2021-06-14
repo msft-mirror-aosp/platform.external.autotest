@@ -862,11 +862,21 @@ class AbstractSSHHost(remote.RemoteHost):
         current_time = int(time.time())
         end_time = current_time + timeout
 
+        ssh_success_logged = False
         autoserv_error_logged = False
         while current_time < end_time:
             ping_timeout = min(_DEFAULT_MAX_PING_TIMEOUT,
                                end_time - current_time)
             if self.is_up(timeout=ping_timeout, connect_timeout=ping_timeout):
+                if not ssh_success_logged:
+                    logging.debug('Successfully pinged host %s',
+                                  self.host_port)
+                    wait_procs = self.get_wait_up_processes()
+                    if wait_procs:
+                        logging.debug('Waiting for processes: %s', wait_procs)
+                    else:
+                        logging.debug('No wait_up processes to wait for')
+                    ssh_success_logged = True
                 try:
                     if self.are_wait_up_processes_up():
                         logging.debug('Host %s is now up', self.host_port)

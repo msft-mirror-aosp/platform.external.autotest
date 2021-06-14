@@ -242,9 +242,10 @@ class BluetoothAdapterPairingTests(
             start_time = time.time()
             if 'BLE' in device_type:
                 self.test_device_set_discoverable(device, True)
-                self.test_device_is_connected(device.address)
+                self.test_device_is_connected(device.address,
+                                              sleep_interval=0.1)
             else:
-                self.test_connection_by_device(device)
+                self.test_connection_by_device(device, post_connection_delay=0)
 
             check_connected_method(device)
             end_time = time.time()
@@ -265,8 +266,10 @@ class BluetoothAdapterPairingTests(
 
         self.test_remove_pairing(device.address)
         if not bool(self.fails):
-            logging.info('Average duration (by adapter) %f sec',
-                         total_reconnection_duration / loop_cnt)
+            average_reconnection_duration = total_reconnection_duration / loop_cnt
+            logging.info('Average duration (by device) %f sec',
+                         average_reconnection_duration)
+            return average_reconnection_duration
 
 
     def auto_reconnect_loop(self,
@@ -316,3 +319,19 @@ class BluetoothAdapterPairingTests(
         if not bool(self.fails):
             logging.info('Average Reconnection duration %f sec',
                          total_reconnection_duration/loop_cnt)
+
+
+    def hid_reconnect_speed(self, device, device_type):
+        """Test the HID device reconnect speed
+
+        @param device: the meta data with the peer device
+        @param device_type: The device type (used to check if it's LE)
+        """
+
+        duration = self.connect_disconnect_by_device_loop(
+                device=device,
+                loops=3,
+                device_type=device_type,
+                check_connected_method=self.test_hid_device_created_speed)
+        if duration is not None:
+            self.test_hid_device_reconnect_time(duration, device_type)

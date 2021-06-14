@@ -110,6 +110,13 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           self.run_keyboard_tests)
 
 
+    @test_wrapper('HID Reconnect Speed Test', devices={"MOUSE": 1})
+    def cl_HID_reconnect_speed_test(self):
+        """Performs HID reconnect speed test with mouse peripheral"""
+        device = self.devices['MOUSE'][0]
+        self.hid_reconnect_speed(device=device, device_type='MOUSE')
+
+
     @test_wrapper('HID Reports Suspend Resume Test', devices={"MOUSE": 1})
     def cl_HID_reports_suspend_resume_test(self):
         """Performs HID report test over resume with mouse peripheral"""

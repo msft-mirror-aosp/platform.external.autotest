@@ -147,6 +147,10 @@ KERNEL_LOG_LEVEL = {
         'DEBUG': 7
 }
 
+# The benchmark criterion to determine whether HID device reconnection is fast
+HID_RECONNECT_TIME_MAX_SEC = 3
+LE_HID_RECONNECT_TIME_MAX_SEC = 3
+
 
 def method_name():
     """Get the method name of a class.
@@ -4641,6 +4645,38 @@ class BluetoothAdapterTests(test.test):
                 'device_found': device_found
         }
         return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_hid_device_created_speed(self, device):
+        """ Tests that the hid device is created with faster polling.
+
+        @param device: Peripheral device
+        """
+        device_found = self.bluetooth_facade.wait_for_hid_device(
+                device_address=device.address, sleep_interval=0.1)
+        self.results = {'device_found': device_found}
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_hid_device_reconnect_time(self, duration, device_type):
+        """ Tests that the hid device reconnection is fast enough.
+
+        @param duration: The averaged duration of HID reconnection
+        @param device_type: Specified the type of the device
+        """
+
+        if 'BLE' in device_type:
+            max_duration = LE_HID_RECONNECT_TIME_MAX_SEC
+        else:
+            max_duration = HID_RECONNECT_TIME_MAX_SEC
+
+        self.results = {
+                'hid_reconnect_time': duration,
+                'max_passing_time': max_duration
+        }
+        return duration < max_duration
 
 
     @test_retry_and_log

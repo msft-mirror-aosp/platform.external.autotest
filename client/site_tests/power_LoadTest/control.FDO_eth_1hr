@@ -11,7 +11,7 @@ TIME = "LENGTHY"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 4200
+EXTENDED_TIMEOUT = 4500
 
 DOC = """
 This test runs a load test consisting of cycling though web pages, playing

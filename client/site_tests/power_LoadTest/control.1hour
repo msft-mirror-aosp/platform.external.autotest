@@ -10,6 +10,7 @@ TIME = "LENGTHY"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+EXTENDED_TIMEOUT = 4500
 ATTRIBUTES = "suite:power_loadtest_1hour, suite:power_check, suite:power_monitoring"
 
 DOC = """

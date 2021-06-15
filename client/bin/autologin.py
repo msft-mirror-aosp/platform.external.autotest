@@ -53,7 +53,7 @@ def main(args):
                         '--feature',
                         action='append',
                         help='Enables the specified Chrome feature flag')
-    parser.add_argument('--url', help='Navigate to URL.', action='append')
+    parser.add_argument('--url', help='Navigate to URL.')
     args = parser.parse_args(args)
 
     if args.password:
@@ -79,8 +79,9 @@ def main(args):
         gaia_login=(args.username is not None),
         disable_default_apps=(not args.enable_default_apps),
         dont_override_profile=args.dont_override_profile)
-    for url in args.url:
-        tab = cr.browser.tabs.New().Navigate(url)
+    if args.url:
+        tab = cr.browser.tabs[0]
+        tab.Navigate(args.url)
 
 
 if __name__ == '__main__':

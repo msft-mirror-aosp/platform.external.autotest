@@ -298,6 +298,7 @@ suite:storage_qual_v2_xs
 suite:storagequal
 suite:stress
 suite:suite:cellular_ota_sprint
+suite:syzcorpus
 suite:syzkaller
 suite:tablet_mode
 suite:telemetry_unit

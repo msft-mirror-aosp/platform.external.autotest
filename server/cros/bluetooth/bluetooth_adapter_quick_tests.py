@@ -90,20 +90,20 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting peer devices...')
             self.get_device_rasp(devices)
 
-            # Grab all the addresses to verify RSSI
-            addresses = []
+            # Grab all the devices to verify RSSI
+            devices = []
             for device_type, device_list in self.devices.items():
                 # Skip bluetooth_tester since it won't be discoverable
                 if 'TESTER' in device_type:
                     continue
 
                 for device in device_list:
-                    addresses.append(device.address)
+                    devices.append(device)
                     self.start_agent(device)
 
             if self.rssi_check:
                 # Make sure device RSSI is sufficient
-                self.verify_device_rssi(addresses)
+                self.verify_device_rssi(devices)
             else:
                 logging.info('Skip RSSI check.')
 

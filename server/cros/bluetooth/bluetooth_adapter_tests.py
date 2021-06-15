@@ -4841,45 +4841,102 @@ class BluetoothAdapterTests(test.test):
         return ''
 
 
-    def verify_device_rssi(self, address_list):
+    def get_device_sample_rssi(self, device):
+        """ Get one RSSI value of the given device.
+
+        @param device: the peer device to be examined RSSI
+
+        @returns: rssi value if the device is found,
+                  None otherwise
+        """
+
+        # Maximum retry attempts of RSSI query
+        MAX_RETRY = 3
+        # Time between each RSSI query
+        WAIT_TIME = 2
+        rssi = None
+
+        # device could have tested RSSI if we enable check_rssi, if so, reuse it
+        if hasattr(device, 'rssi'):
+            return device.rssi
+
+        try:
+            self.test_start_discovery()
+
+            # The RSSI property is only maintained while discovery is
+            # enabled.  Stopping discovery removes the property. Thus, look
+            # up the RSSI without modifying discovery state.
+            found = self.test_discover_device(device.address,
+                                              start_discovery=False,
+                                              stop_discovery=False)
+
+            if not found:
+                logging.info('Device %s not found', device.address)
+                raise
+
+            for i in range(MAX_RETRY):
+                rssi = self.bluetooth_facade.get_device_property(
+                        device.address, 'RSSI')
+                if rssi:
+                    break
+                time.sleep(WAIT_TIME)
+
+            if not rssi:
+                logging.info('RSSI of device %s not found', device.address)
+                raise
+
+            device.rssi = rssi
+            logging.info('Peer {} RSSI {}'.format(device.address, rssi))
+
+        finally:
+            self.test_stop_discovery()
+            logging.info('Clearing device for test: {}'.format(device.address))
+            self.bluetooth_facade.remove_device_object(device.address)
+
+        return rssi
+
+    def verify_device_rssi(self, device_list):
         """ Test device rssi is over required threshold.
 
-        @param address_list: List of peer devices to verify address for
+        @param device_list: List of peer devices to verify rssi
 
         @raises error.TestNA if any device isn't found or RSSI is too low
         """
         try:
             self.test_start_discovery()
-            for device_address in address_list:
+            for device in device_list:
                 # The RSSI property is only maintained while discovery is
                 # enabled.  Stopping discovery removes the property. Thus, look
                 # up the RSSI without modifying discovery state.
-                found = self.test_discover_device(device_address,
+                found = self.test_discover_device(device.address,
                                                   start_discovery=False,
                                                   stop_discovery=False)
                 rssi = self.bluetooth_facade.get_device_property(
-                        device_address, 'RSSI')
+                        device.address, 'RSSI')
 
                 if not found:
-                    logging.info('Failing with TEST_NA as peer %s was not'
-                                  ' discovered', device_address)
-                    raise error.TestNAError(
-                            'Peer {} not discovered'.format(device_address))
+                    logging.info(
+                            'Failing with TEST_NA as peer %s was not'
+                            ' discovered', device.address)
+                    raise error.TestNAError('Peer {} not discovered'.format(
+                            device.address))
 
                 if not rssi or rssi < self.MIN_RSSI:
                     logging.info('Failing with TEST_NA since RSSI (%s) is low ',
                                   rssi)
                     raise error.TestNAError(
                             'Peer {} RSSI is too low: {}'.format(
-                                    device_address, rssi))
+                                    device.address, rssi))
+                device.rssi = rssi
 
-                logging.info('Peer {} RSSI {}'.format(device_address, rssi))
+                logging.info('Peer {} RSSI {}'.format(device.address, rssi))
         finally:
             self.test_stop_discovery()
 
-            for address in address_list:
-                logging.info('Clearing device for test: {}'.format(address))
-                self.bluetooth_facade.remove_device_object(address)
+            for device in device_list:
+                logging.info('Clearing device for test: {}'.format(
+                        device.address))
+                self.bluetooth_facade.remove_device_object(device.address)
 
     def verify_controller_capability(self, required_roles=[],
                                      test_type=''):

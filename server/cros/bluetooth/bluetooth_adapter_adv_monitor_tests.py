@@ -152,6 +152,12 @@ class BluetoothAdapterAdvMonitorTests(
     # Duration of kernel perform 'start discovery', in sec
     DISCOVERY_DURATION = 10.24
 
+    # Acceptable difference between the first RSSI sample and following one.
+    # LOW_RSSI_THRESHOLD_TOLERANCE must be larger than
+    # HIGH_RSSI_THRESHOLD_TOLERANCE
+    HIGH_RSSI_THRESHOLD_TOLERANCE = 20
+    LOW_RSSI_THRESHOLD_TOLERANCE = 40
+
     test_case_log = bluetooth_adapter_tests.test_case_log
     test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
 
@@ -688,6 +694,9 @@ class BluetoothAdapterAdvMonitorTests(
         self.peer_keybd = None
         self.peer_mouse = None
 
+        self.LOW_RSSI = None
+        self.HIGH_RSSI = None
+
         for device_type, device_list in self.devices.items():
             for device in device_list:
                 if device_type is 'BLE_KEYBOARD':
@@ -695,15 +704,27 @@ class BluetoothAdapterAdvMonitorTests(
                 elif device_type is 'BLE_MOUSE':
                     self.peer_mouse = device
 
-        if self.peer_keybd is not None and self.peer_mouse is not None:
-            self.test_stop_peer_device_adv(self.peer_keybd)
-            self.test_stop_peer_device_adv(self.peer_mouse)
+        if self.peer_keybd is None or self.peer_mouse is None:
+            raise error.TestNAError('some peer device is not found')
 
-        self.results = {
-                'keybd': self.peer_keybd is not None,
-                'mouse': self.peer_mouse is not None
-        }
-        return all(self.results.values())
+        # Setup default RSSI threshold based on real RSSI range
+        keybd_rssi = self.get_device_sample_rssi(self.peer_keybd)
+        mouse_rssi = self.get_device_sample_rssi(self.peer_mouse)
+
+        if mouse_rssi is None or keybd_rssi is None:
+            raise error.TestNAError('failed to examine peer RSSI')
+
+        min_rssi = min(mouse_rssi, keybd_rssi)
+
+        # Make RSSI threshold tolerable.
+        self.HIGH_RSSI = max(min_rssi - self.HIGH_RSSI_THRESHOLD_TOLERANCE,
+                             -126)
+        self.LOW_RSSI = max(min_rssi - self.LOW_RSSI_THRESHOLD_TOLERANCE, -127)
+
+        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+
+        return True
 
 
     @test_retry_and_log(False)
@@ -1310,7 +1331,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         monitor1 = TestMonitor(app1)
         monitor1.update_type('or_patterns')
-        monitor1.update_rssi([-60, 3, -80, 3])
+        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
         # Register the app, should not fail.
         self.test_register_app(app1)
@@ -1472,7 +1493,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Register the app, should not fail.
         self.test_register_app(app1)
 
-        monitor1.update_rssi([-60, 3, -80, 3])
+        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
         self.test_add_monitor(monitor1, expected_activate=True)
 
         # DeviceFound should get triggered only once per device.
@@ -1493,7 +1514,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         self.test_remove_monitor(monitor1)
 
-        monitor1.update_rssi([-60, 10, -80, 10])
+        monitor1.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
         self.test_add_monitor(monitor1, expected_activate=True)
 
         # Device was online for short period of time, so DeviceFound should
@@ -1537,7 +1558,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Register the app, should not fail.
         self.test_register_app(app1)
 
-        monitor1.update_rssi([-60, 10, -80, 10])
+        monitor1.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
         self.test_add_monitor(monitor1, expected_activate=True)
 
         # DeviceFound should not get triggered before timeout.
@@ -1608,7 +1629,7 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
                 [0, 0x19, [0xc1, 0x03]],
         ])
-        monitor1.update_rssi([-60, 3, -80, 3])
+        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
         monitor2 = TestMonitor(app2)
         monitor2.update_type('or_patterns')
@@ -1616,7 +1637,7 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
                 [0, 0x19, [0xc1, 0x03]],
         ])
-        monitor2.update_rssi([-60, 3, -80, 3])
+        monitor2.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
         # Activate should get invoked.
         self.test_add_monitor(monitor1, expected_activate=True)
@@ -1637,14 +1658,14 @@ class BluetoothAdapterAdvMonitorTests(
         monitor3.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
         ])
-        monitor3.update_rssi([-60, 3, -80, 3])
+        monitor3.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
         monitor4 = TestMonitor(app2)
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
         ])
-        monitor4.update_rssi([-60, 10, -80, 10])
+        monitor4.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
 
         # Activate should get invoked.
         self.test_add_monitor(monitor3, expected_activate=True)
@@ -1784,22 +1805,22 @@ class BluetoothAdapterAdvMonitorTests(
         monitor1 = TestMonitor(app1)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
-        monitor1.update_rssi([-60, 3, -80, 3])
+        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
         monitor2 = TestMonitor(app1)
         monitor2.update_type('or_patterns')
         monitor2.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
-        monitor2.update_rssi([-60, 10, -80, 10])
+        monitor2.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
 
         monitor3 = TestMonitor(app2)
         monitor3.update_type('or_patterns')
         monitor3.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
-        monitor3.update_rssi([-60, 3, -80, 3])
+        monitor3.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
         monitor4 = TestMonitor(app2)
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
-        monitor4.update_rssi([-60, 15, -80, 15])
+        monitor4.update_rssi([self.HIGH_RSSI, 15, self.LOW_RSSI, 15])
 
         # Activate should get invoked.
         self.test_add_monitor(monitor1, expected_activate=True)

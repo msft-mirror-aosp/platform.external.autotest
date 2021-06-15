@@ -52,8 +52,16 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
                     timeout=timeout)
             self._oobe.ExecuteJavaScript(
                     "OobeAPI.screens.EulaScreen.clickNext()")
-        self._oobe.WaitForJavaScriptCondition(
-                "OobeAPI.screens.UpdateScreen.isVisible()", timeout=timeout)
+
+        # TODO(yunkez): remove this check after M92 is in stable
+        if self._oobe.EvaluateJavaScript(
+                "typeof OobeAPI.screens.UpdateScreen == 'object'"):
+            self._oobe.WaitForJavaScriptCondition(
+                    "OobeAPI.screens.UpdateScreen.isVisible()",
+                    timeout=timeout)
+        else:
+            self._oobe.WaitForJavaScriptCondition("!$('oobe-update').hidden",
+                                                  timeout=timeout)
 
     def _start_oobe_update(self, update_url, critical_update, full_payload):
         """

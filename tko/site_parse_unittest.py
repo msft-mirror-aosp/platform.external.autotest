@@ -1,5 +1,3 @@
-#!/usr/bin/python2 -u
-#
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,9 +5,15 @@
 
 #pylint: disable-msg=C0111
 
-import mox, os, shutil, tempfile, unittest
+import os
+import shutil
+import tempfile
+import unittest
+from mock import patch
+from six.moves import reload_module as reload
 
 import common
+
 from django.conf import settings
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.frontend import database_settings_helper
@@ -115,7 +119,7 @@ class stack_trace_test(unittest.TestCase):
         self.assertEqual(version, '1166.0.0')
 
 
-class database_selection_test(mox.MoxTestBase,
+class database_selection_test(unittest.TestCase,
                               frontend_test_utils.FrontendTestMixin):
 
     def setUp(self):
@@ -212,14 +216,15 @@ class database_selection_test(mox.MoxTestBase,
             raise ConnectCalledException
 
         tko_db.db_sql.connect = None
-        self.mox.StubOutWithMock(tko_db.db_sql, 'connect')
-        tko_db.db_sql.connect(
-                global_host, global_db, global_user, global_pw,
-                global_port).WithSideEffects(fake_connect)
+        patcher = patch.object(tko_db.db_sql, 'connect')
+        mock = patcher.start()
+        self.addCleanup(patcher.stop)
 
-        self.mox.ReplayAll()
-
+        mock.side_effect = fake_connect
         self.assertRaises(ConnectCalledException, tko_db.db_sql)
+
+        mock.assert_called_with(global_host, global_db, global_user, global_pw,
+                                global_port)
 
 
 if __name__ == "__main__":

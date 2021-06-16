@@ -1,9 +1,14 @@
-#!/usr/bin/python2
-import logging, mox, os, shutil, tempfile, unittest, utils
+import logging
+import os
+import shutil
+import tempfile
+import unittest
 
 # This makes autotest_lib imports available.
 import common
+
 from autotest_lib.client.common_lib import revision_control
+from autotest_lib.client.common_lib import utils
 
 
 class GitRepoManager(object):
@@ -119,7 +124,7 @@ class GitRepoManager(object):
         self.commit_hash = self.git_repo_manager.get_latest_commit_hash()
 
 
-class RevisionControlUnittest(mox.MoxTestBase):
+class RevisionControlUnittest(unittest.TestCase):
     """
     A unittest to exercise build_externals.py's usage
     of revision_control.py's Git wrappers.
@@ -199,4 +204,4 @@ class RevisionControlUnittest(mox.MoxTestBase):
 
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

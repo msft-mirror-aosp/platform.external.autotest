@@ -2308,7 +2308,7 @@ class VideoFpsLogger(MeasurementLogger):
             float, number of seconds elasped until condition met.
 
         Raises:
-            py_utils.TimeoutException if condition are not met by timeout.
+            error.TestFail if condition are not met by timeout.
         """
         start_time = time.time()
 
@@ -2320,7 +2320,21 @@ class VideoFpsLogger(MeasurementLogger):
         c = ('Math.min(...Array.from(document.getElementsByTagName("video"))'
              '.map(v => v.currentTime)) >= 0.001')
         timeout_left = timeout - (time.time() - start_time)
-        tab.WaitForJavaScriptCondition(c, timeout=timeout_left)
+        try:
+            tab.WaitForJavaScriptCondition(c, timeout=timeout_left)
+        # Broad exception because py_utils.TimeoutException require libchrome
+        except Exception:
+            times = tab.EvaluateJavaScript(
+                    'Array.from(document.getElementsByTagName("video"))'
+                    '.map(v => v.currentTime)')
+            # Not timeout exception, re-raise original exception
+            if min(times) > 0.001:
+                raise
+            videos = tab.EvaluateJavaScript(
+                    'Array.from(document.getElementsByTagName("video"))'
+                    '.map(v => v.id)')
+            failed_videos = [v for v, t in zip(videos, times) if t < 0.001]
+            raise error.TestFail('Media playback failed: %s' % failed_videos)
         return time.time() - start_time
 
     def __init__(self, tab, seconds_period=1.0, checkpoint_logger=None):

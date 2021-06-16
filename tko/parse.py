@@ -208,12 +208,12 @@ def _invalidate_original_tests(orig_job_idx, retry_job_idx):
     For example, assume Job(job_idx=105) are retried by Job(job_idx=108), after
     this method is run, their tko_tests rows will look like:
     __________________________________________________________________________
-    test_idx| job_idx | test            | ... | invalid | invalidates_test_idx
-    10      | 105     | dummy_Fail.Error| ... | 1       | NULL
-    11      | 105     | dummy_Fail.Fail | ... | 1       | NULL
+    test_idx| job_idx | test              | ... | invalid | invalidates_test_idx
+    10      | 105     | example_Fail.Error| ... | 1       | NULL
+    11      | 105     | example_Fail.Fail | ... | 1       | NULL
     ...
-    20      | 108     | dummy_Fail.Error| ... | 0       | 10
-    21      | 108     | dummy_Fail.Fail | ... | 0       | 11
+    20      | 108     | example_Fail.Error| ... | 0       | 10
+    21      | 108     | example_Fail.Fail | ... | 0       | 11
     __________________________________________________________________________
     Note the invalid bits of the rows for Job(job_idx=105) are set to '1'.
     And the 'invalidates_test_idx' fields of the rows for Job(job_idx=108)
@@ -245,11 +245,11 @@ def _invalidate_original_tests(orig_job_idx, retry_job_idx):
     # identifies a test run, but 'test' does not.
     # In a control file, one could run the same test with different
     # 'subdir_tag', for example,
-    #     job.run_test('dummy_Fail', tag='Error', subdir_tag='subdir_1')
-    #     job.run_test('dummy_Fail', tag='Error', subdir_tag='subdir_2')
+    #     job.run_test('example_Fail', tag='Error', subdir_tag='subdir_1')
+    #     job.run_test('example_Fail', tag='Error', subdir_tag='subdir_2')
     # In tko, we will get
-    #    (test='dummy_Fail.Error', subdir='dummy_Fail.Error.subdir_1')
-    #    (test='dummy_Fail.Error', subdir='dummy_Fail.Error.subdir_2')
+    #    (test='example_Fail.Error', subdir='example_Fail.Error.subdir_1')
+    #    (test='example_Fail.Error', subdir='example_Fail.Error.subdir_2')
     invalidated_tests = {(orig_test.test, orig_test.subdir): orig_test
                          for orig_test in orig_tests}
     for retry in retry_tests:

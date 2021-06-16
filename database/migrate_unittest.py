@@ -12,11 +12,8 @@ CONFIG_DB = 'AUTOTEST_WEB'
 
 NUM_MIGRATIONS = 3
 
-class DummyMigration(object):
-    """\
-    Dummy migration class that records all migrations done in a class
-    varaible.
-    """
+class StubMigration(object):
+    """Stub migration class that records migrations as a class variable."""
 
     migrations_done = []
 
@@ -50,7 +47,7 @@ class DummyMigration(object):
         self.do_migration(self.version, 'down')
 
 
-MIGRATIONS = [DummyMigration(n) for n in xrange(1, NUM_MIGRATIONS + 1)]
+MIGRATIONS = [StubMigration(n) for n in xrange(1, NUM_MIGRATIONS + 1)]
 
 
 class TestableMigrationManager(migrate.MigrationManager):
@@ -70,7 +67,7 @@ class MigrateManagerTest(unittest.TestCase):
             database_connection.DatabaseConnection.get_test_database())
         self._database.connect()
         self.manager = TestableMigrationManager(self._database)
-        DummyMigration.clear_migrations_done()
+        StubMigration.clear_migrations_done()
 
 
     def tearDown(self):
@@ -80,13 +77,13 @@ class MigrateManagerTest(unittest.TestCase):
     def test_sync(self):
         self.manager.do_sync_db()
         self.assertEquals(self.manager.get_db_version(), NUM_MIGRATIONS)
-        self.assertEquals(DummyMigration.get_migrations_done(),
+        self.assertEquals(StubMigration.get_migrations_done(),
                           [(1, 'up'), (2, 'up'), (3, 'up')])
 
-        DummyMigration.clear_migrations_done()
+        StubMigration.clear_migrations_done()
         self.manager.do_sync_db(0)
         self.assertEquals(self.manager.get_db_version(), 0)
-        self.assertEquals(DummyMigration.get_migrations_done(),
+        self.assertEquals(StubMigration.get_migrations_done(),
                           [(3, 'down'), (2, 'down'), (1, 'down')])
 
 
@@ -96,7 +93,7 @@ class MigrateManagerTest(unittest.TestCase):
             self.assertEquals(self.manager.get_db_version(),
                               version)
             self.assertEquals(
-                DummyMigration.get_migrations_done()[-1],
+                StubMigration.get_migrations_done()[-1],
                 (version, 'up'))
 
         for version in xrange(NUM_MIGRATIONS - 1, -1, -1):
@@ -104,18 +101,18 @@ class MigrateManagerTest(unittest.TestCase):
             self.assertEquals(self.manager.get_db_version(),
                               version)
             self.assertEquals(
-                DummyMigration.get_migrations_done()[-1],
+                StubMigration.get_migrations_done()[-1],
                 (version + 1, 'down'))
 
 
     def test_null_sync(self):
         self.manager.do_sync_db()
-        DummyMigration.clear_migrations_done()
+        StubMigration.clear_migrations_done()
         self.manager.do_sync_db()
-        self.assertEquals(DummyMigration.get_migrations_done(), [])
+        self.assertEquals(StubMigration.get_migrations_done(), [])
 
 
-class DummyMigrationManager(object):
+class StubMigrationManager(object):
     def __init__(self):
         self.calls = []
 
@@ -126,7 +123,7 @@ class DummyMigrationManager(object):
 
 class MigrationTest(unittest.TestCase):
     def setUp(self):
-        self.manager = DummyMigrationManager()
+        self.manager = StubMigrationManager()
 
 
     def _do_migration(self, migration_module):
@@ -138,7 +135,7 @@ class MigrationTest(unittest.TestCase):
 
 
     def test_migration_with_methods(self):
-        class DummyMigration(object):
+        class StubMigration(object):
             @staticmethod
             def migrate_up(manager):
                 manager.execute_script('foo')
@@ -148,15 +145,15 @@ class MigrationTest(unittest.TestCase):
             def migrate_down(manager):
                 manager.execute_script('bar')
 
-        self._do_migration(DummyMigration)
+        self._do_migration(StubMigration)
 
 
     def test_migration_with_strings(self):
-        class DummyMigration(object):
+        class StubMigration(object):
             UP_SQL = 'foo'
             DOWN_SQL = 'bar'
 
-        self._do_migration(DummyMigration)
+        self._do_migration(StubMigration)
 
 
 if __name__ == '__main__':

@@ -1505,8 +1505,8 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
         'AUTOTEST_WEB', 'parse_failed_repair_default', type=bool, default=False)
     FETCH_READONLY_JOBS = global_config.global_config.get_config_value(
         'AUTOTEST_WEB','readonly_heartbeat', type=bool, default=False)
-    SKIP_JOBS_CREATED_BEFORE = global_config.global_config.get_config_value(
-        'SHARD', 'skip_jobs_created_before', type=int, default=0)
+    # TODO(ayatane): Deprecated, not removed due to difficulty untangling imports
+    SKIP_JOBS_CREATED_BEFORE = 0
 
 
 

@@ -26,14 +26,11 @@ from autotest_lib.cli import action_common
 from autotest_lib.cli import skylab_utils
 from autotest_lib.cli import topic_common
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import revision_control
 # The django setup is moved here as test_that uses sqlite setup. If this line
 # is in server_manager, test_that unittest will fail.
 from autotest_lib.frontend import setup_django_environment
-from autotest_lib.site_utils import server_manager
 from autotest_lib.site_utils import server_manager_utils
-from autotest_lib.utils.frozen_chromite.lib import gob_util
 
 try:
     from skylab_inventory import text_manager
@@ -43,8 +40,6 @@ except ImportError:
     pass
 
 
-RESPECT_SKYLAB_SERVERDB = global_config.global_config.get_config_value(
-        'SKYLAB', 'respect_skylab_serverdb', type=bool, default=False)
 ATEST_DISABLE_MSG = ('Updating server_db via atest server command has been '
                      'disabled. Please use use go/cros-infra-inventory-tool '
                      'to update it in skylab inventory service.')
@@ -308,30 +303,10 @@ class server_create(server):
 
         @return: A Server object if it is created successfully.
         """
-        if RESPECT_SKYLAB_SERVERDB:
-            self.failure(ATEST_DISABLE_MSG,
-                         what_failed='Failed to create server',
-                         item=self.hostname, fatal=True)
-
-        if self.skylab:
-            try:
-                return self.execute_skylab()
-            except (skylab_server.SkylabServerActionError,
-                    revision_control.GitError,
-                    gob_util.GOBError,
-                    skylab_utils.InventoryRepoDirNotClean) as e:
-                self.failure(e, what_failed='Failed to create server in skylab '
-                             'inventory.', item=self.hostname, fatal=True)
-        else:
-            try:
-                return server_manager.create(
-                        hostname=self.hostname,
-                        role=self.role,
-                        note=self.note)
-            except (server_manager_utils.ServerActionError,
-                    error.InvalidDataError) as e:
-                self.failure(e, what_failed='Failed to create server',
-                             item=self.hostname, fatal=True)
+        self.failure(ATEST_DISABLE_MSG,
+                     what_failed='Failed to create server',
+                     item=self.hostname,
+                     fatal=True)
 
 
     def output(self, results):
@@ -375,30 +350,10 @@ class server_delete(server):
 
         @return: True if server is deleted successfully.
         """
-        if RESPECT_SKYLAB_SERVERDB:
-            self.failure(ATEST_DISABLE_MSG,
-                         what_failed='Failed to delete server',
-                         item=self.hostname, fatal=True)
-
-        if self.skylab:
-            try:
-                self.execute_skylab()
-                return True
-            except (skylab_server.SkylabServerActionError,
-                    revision_control.GitError,
-                    gob_util.GOBError,
-                    skylab_utils.InventoryRepoDirNotClean) as e:
-                self.failure(e, what_failed='Failed to delete server from '
-                             'skylab inventory.', item=self.hostname,
-                             fatal=True)
-        else:
-            try:
-                server_manager.delete(hostname=self.hostname)
-                return True
-            except (server_manager_utils.ServerActionError,
-                    error.InvalidDataError) as e:
-                self.failure(e, what_failed='Failed to delete server',
-                             item=self.hostname, fatal=True)
+        self.failure(ATEST_DISABLE_MSG,
+                     what_failed='Failed to delete server',
+                     item=self.hostname,
+                     fatal=True)
 
 
     def output(self, results):
@@ -539,31 +494,10 @@ class server_modify(server):
 
         @return: The updated server object if it is modified successfully.
         """
-        if RESPECT_SKYLAB_SERVERDB:
-            self.failure(ATEST_DISABLE_MSG,
-                         what_failed='Failed to modify server',
-                         item=self.hostname, fatal=True)
-
-        if self.skylab:
-            try:
-                return self.execute_skylab()
-            except (skylab_server.SkylabServerActionError,
-                    revision_control.GitError,
-                    gob_util.GOBError,
-                    skylab_utils.InventoryRepoDirNotClean) as e:
-                self.failure(e, what_failed='Failed to modify server in skylab'
-                             ' inventory.', item=self.hostname, fatal=True)
-        else:
-            try:
-                return server_manager.modify(
-                        hostname=self.hostname, role=self.role,
-                        status=self.status, delete=self.delete,
-                        note=self.note, attribute=self.attribute,
-                        value=self.value, action=self.action)
-            except (server_manager_utils.ServerActionError,
-                    error.InvalidDataError) as e:
-                self.failure(e, what_failed='Failed to modify server',
-                             item=self.hostname, fatal=True)
+        self.failure(ATEST_DISABLE_MSG,
+                     what_failed='Failed to modify server',
+                     item=self.hostname,
+                     fatal=True)
 
 
     def output(self, results):

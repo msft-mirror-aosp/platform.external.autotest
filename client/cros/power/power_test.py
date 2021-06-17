@@ -100,6 +100,8 @@ class power_Test(test.test):
                 '--force-tablet-mode=clamshell',
                 # Prefer using constant frame rate for camera streaming.
                 '--enable-features=PreferConstantFrameRate',
+                # Bypass HID detection for Chromebox / Chromebase.
+                '--disable-hid-detection-on-oobe'
         ]
 
         # Use fake camera for DUT without camera, e.g. chromebox.

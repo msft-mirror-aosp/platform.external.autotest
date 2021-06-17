@@ -79,6 +79,8 @@ class CellularTestEnvironment(object):
         self._skip_modem_reset = skip_modem_reset
         self._is_esim_test = is_esim_test
         self._enable_temp_containments = enable_temp_containments
+        self._system_service_order = ''
+        self._test_service_order = 'cellular,ethernet'
 
         self._nested = None
         self._context_managers = []
@@ -153,6 +155,8 @@ class CellularTestEnvironment(object):
             # Override the error text.
             value = 'A daemon crash was detected: {0}\n{1}'.format(
                     crash_files, value)
+        if self.shill:
+            self._set_service_order(self._system_service_order)
 
         if self._nested:
             return self._nested.__exit__(exception, value, traceback)
@@ -167,6 +171,25 @@ class CellularTestEnvironment(object):
             exception=error.TestError('Cannot find cellular device in shill. '
                                       'Is the modem plugged in?'),
             timeout=shill_proxy.ShillProxy.DEVICE_ENUMERATION_TIMEOUT)
+
+    def _get_service_order(self):
+        """Get the shill service order.
+
+        @return string service order on success, None otherwise.
+
+        """
+        return str(self.shill.manager.GetServiceOrder())
+
+    def _set_service_order(self, order):
+        """Set the shill service order.
+
+        @param order string comma-delimited service order
+        (eg. 'cellular,ethernet')
+        @return bool True on success, False otherwise.
+
+        """
+        self.shill.manager.SetServiceOrder(dbus.String(order))
+        return True
 
     def _enable_modem(self):
         modem_device = self._get_shill_cellular_device_object()
@@ -213,6 +236,9 @@ class CellularTestEnvironment(object):
         self.shill = cellular_proxy.CellularProxy.get_proxy(self.bus)
         if self.shill is None:
             raise error.TestError('Cannot connect to shill, is shill running?')
+
+        self._system_service_order = self._get_service_order()
+        self._set_service_order(self._test_service_order)
 
     def _initialize_modem_components(self):
         """Reset the modem and get access to modem components."""

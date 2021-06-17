@@ -53,8 +53,8 @@ def CheckThatInterfaceCanAccessDestination(host,
             found_route = True
 
     if not found_route:
-        raise error.TestFail('Interface %s cannot connect to %s', interface,
-                             failing_addresses)
+        raise error.TestFail('Interface %s cannot connect to %s' % (interface,
+                             failing_addresses))
 
 
 FETCH_URL_PATTERN_FOR_TEST = \

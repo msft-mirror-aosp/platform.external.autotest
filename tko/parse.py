@@ -28,7 +28,6 @@ from autotest_lib.frontend import setup_django_environment
 from autotest_lib.frontend.tko import models as tko_models
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.dynamic_suite import constants
-from autotest_lib.site_utils.sponge_lib import sponge_utils
 from autotest_lib.tko import db as tko_db, utils as tko_utils
 from autotest_lib.tko import models, parser_lib
 from autotest_lib.tko.perf_upload import perf_uploader
@@ -434,11 +433,6 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
         else:
             for test in job.tests:
                 perf_uploader.upload_test(job, test, jobname)
-
-        # Upload job details to Sponge.
-        sponge_url = sponge_utils.upload_results(job, log=tko_utils.dprint)
-        if sponge_url:
-            job.keyval_dict['sponge_url'] = sponge_url
 
         _write_job_to_db(db, jobname, job)
 

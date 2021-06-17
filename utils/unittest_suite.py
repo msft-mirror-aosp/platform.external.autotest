@@ -6,7 +6,6 @@ from __future__ import print_function
 import os, sys, unittest, optparse
 import common
 from autotest_lib.utils import parallel
-import six
 
 parser = optparse.OptionParser()
 parser.add_option("-r", action="store", type="string", dest="start",
@@ -107,8 +106,6 @@ SKIP = set((
     'lxc_functional_test.py',
     'service_unittest.py',
     'zygote_unittest.py',
-    # Require sponge utils installed in site-packages
-    'sponge_utils_functional_test.py',
     ))
 
 LONG_TESTS = (REQUIRES_MYSQLDB |

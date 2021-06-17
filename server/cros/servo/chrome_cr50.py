@@ -99,11 +99,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CAP_STATES = '(Always|Default|IfOpened|UnlessLocked)'
     # List of all cr50 ccd capabilities. Same order of 'ccd' output
     CAP_NAMES = [
-        'UartGscRxAPTx', 'UartGscTxAPRx', 'UartGscRxECTx', 'UartGscTxECRx',
-        'FlashAP', 'FlashEC', 'OverrideWP', 'RebootECAP', 'GscFullConsole',
-        'UnlockNoReboot', 'UnlockNoShortPP', 'OpenNoTPMWipe', 'OpenNoLongPP',
-        'BatteryBypassPP', 'UpdateNoTPMWipe', 'I2C', 'FlashRead',
-        'OpenNoDevMode', 'OpenFromUSB', 'OverrideBatt'
+            'UartGscRxAPTx', 'UartGscTxAPRx', 'UartGscRxECTx', 'UartGscTxECRx',
+            'FlashAP', 'FlashEC', 'OverrideWP', 'RebootECAP', 'GscFullConsole',
+            'UnlockNoReboot', 'UnlockNoShortPP', 'OpenNoTPMWipe',
+            'OpenNoLongPP', 'BatteryBypassPP', '(UpdateNoTPMWipe|Unused)',
+            'I2C', 'FlashRead', 'OpenNoDevMode', 'OpenFromUSB', 'OverrideBatt'
     ]
     # There are two capability formats. Match both.
     #  UartGscRxECTx   Y 3=IfOpened

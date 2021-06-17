@@ -12,6 +12,7 @@ dump_nvmem
 ec_comm
 ecrst
 (?P<guc>eraseflashinfo)?
+(?P<tot>fips)?
 gettime
 gpiocfg
 gpioget

@@ -7,7 +7,7 @@ NAME = "enterprise_CFM_ApolloPeripheralPowerCycle.viking"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "enterprise"
-ATTRIBUTES = "suite:hotrod-remora"
+ATTRIBUTES = ""
 TEST_TYPE = "client"
 # TODO: Apollo peripherals should be added as Skylab inventory labels, e.g.:
 # DEPENDENCIES = "viking"

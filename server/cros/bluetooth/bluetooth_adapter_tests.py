@@ -427,14 +427,21 @@ def _flag_common_failures(instance):
     Scans system logs for known signs of failure. If a failure is discovered,
     it is added to the test results, to make it easier to identify common root
     causes from Stainless
+
+    @returns: True if any failures were flagged.
     """
+
+    has_failures = False
 
     for fail_tag, fail_log in COMMON_FAILURES.items():
         if instance.bluetooth_facade.messages_find(fail_tag):
             logging.error('Detected failure tag: %s', fail_tag)
+            has_failures = True
             # We mark this instance's results with the discovered failure
             if type(instance.results) is dict:
                 instance.results[fail_log] = True
+
+    return has_failures
 
 
 def fix_serial_device(btpeer, device, operation='reset'):
@@ -1184,10 +1191,17 @@ class BluetoothAdapterTests(test.test):
         return devices_available
 
 
-    def suspend_resume(self, suspend_time=SUSPEND_TIME_SECS):
+    def suspend_resume(self,
+                       suspend_time=SUSPEND_TIME_SECS,
+                       check_nonsuspend_error=False):
         """Suspend the DUT for a while and then resume.
 
         @param suspend_time: the suspend time in secs
+        @param check_nonsuspend_error: Used by resume to flag any unexpected
+                                       errors not expected by suspend. Should
+                                       be set to True on tests that want state
+                                       retained during suspend/resume (i.e.
+                                       advertising tests).
         @raises errors.TestFail if the device reboots during suspend
 
         """
@@ -1201,10 +1215,12 @@ class BluetoothAdapterTests(test.test):
 
         # Wait for resume - since we're not testing suspend itself, we are
         # lenient with the resume time here
-        self.test_wait_for_resume(boot_id,
-                                  suspend,
-                                  resume_timeout=suspend_time,
-                                  test_start_time=start_time)
+        self.test_wait_for_resume(
+                boot_id,
+                suspend,
+                resume_timeout=suspend_time,
+                test_start_time=start_time,
+                check_nonsuspend_error=check_nonsuspend_error)
 
 
     def reboot(self):
@@ -4424,7 +4440,8 @@ class BluetoothAdapterTests(test.test):
                              resume_slack=RESUME_DELTA,
                              fail_on_timeout=False,
                              fail_early_wake=True,
-                             collect_resume_time=False):
+                             collect_resume_time=False,
+                             check_nonsuspend_error=False):
         """ Wait for device to resume from suspend.
 
         @param boot_id: Current boot id
@@ -4435,6 +4452,10 @@ class BluetoothAdapterTests(test.test):
         @param fail_on_timeout: Fails if timeout is reached
         @param fail_early_wake: Fails if timeout isn't reached
         @param collect_resume_time: Collect time to resume as perf keyval.
+        @param check_nonsuspend_error: Check for non-suspend errors even when
+                                       resume was successful. Set to True for
+                                       tests that require saved context between
+                                       suspend/resume (i.e. advertising).
 
         @return True if suspend sub-process completed without error.
         """
@@ -4495,6 +4516,19 @@ class BluetoothAdapterTests(test.test):
 
             return True
 
+        def _check_nonsuspend_failure():
+            """Flags common failure reasons.
+
+          This flags any common failure signature that is not directly related
+          to suspend/resume. This catches errors due to usb reset for example.
+          """
+            has_failures = _flag_common_failures(self)
+            if has_failures:
+                # TODO(b/189813813) - Should we raise TESTNA when this occurs?
+                logging.error(
+                        'Non-suspend related failure may cause subsequent '
+                        'test expressions to fail.')
+
         # Sometimes it takes longer to resume from suspend; give some leeway
         resume_timeout = resume_timeout + resume_slack
         results['resume timeout'] = resume_timeout
@@ -4546,6 +4580,12 @@ class BluetoothAdapterTests(test.test):
                 raise
         finally:
             suspend.join()
+
+        # Flag any non-suspend related failures
+        # This only runs when the resume is successful and we expect state to be
+        # retained during the test.
+        if check_nonsuspend_error:
+            _check_nonsuspend_failure()
 
         # Log wake performance
         if collect_resume_time:

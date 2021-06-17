@@ -509,7 +509,8 @@ class bluetooth_AdapterLEAdvertising(
         self.test_wait_for_resume(boot_id,
                                   suspend,
                                   resume_timeout=suspend_time,
-                                  test_start_time=start_time)
+                                  test_start_time=start_time,
+                                  check_nonsuspend_error=True)
 
         # Verify reception of advertisements again
         for i in range(0, num_adv):
@@ -767,7 +768,7 @@ class bluetooth_AdapterLEAdvertising(
                                                len(advertisements))
 
         # Suspend for a while and resume.
-        self.suspend_resume()
+        self.suspend_resume(check_nonsuspend_error=True)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1093,7 +1094,7 @@ class bluetooth_AdapterLEAdvertising(
                                                number_advs)
 
         # Suspend for a while and resume.
-        self.suspend_resume()
+        self.suspend_resume(check_nonsuspend_error=True)
 
         # Check if the advertising durations remain the same after resume.
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
@@ -1162,7 +1163,7 @@ class bluetooth_AdapterLEAdvertising(
         # causing the test to fail. Disabling suspend/resume till
         # the issue is resolved.
         # TODO(crbug/949802)
-        # self.suspend_resume()
+        # self.suspend_resume(check_nonsuspend_error=True)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1392,7 +1393,7 @@ class bluetooth_AdapterLEAdvertising(
         # causing the test to fail. Disabling suspend/resume till
         # the issue is resolved.
         # TODO(crbug/949802)
-        # self.suspend_resume()
+        # self.suspend_resume(check_nonsuspend_error=True)
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,

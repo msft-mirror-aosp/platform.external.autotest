@@ -739,8 +739,8 @@ class BluetoothAdapterTests(test.test):
     CLASS_OF_DEVICE_MASK = 0x001FFF
 
     # Constants about advertising.
-    DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 200
-    DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 200
+    DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS = 200
+    DEFAULT_MAX_ADVERTISEMENT_INTERVAL_MS = 200
     ADVERTISING_INTERVAL_UNIT = 0.625
 
     # Error messages about advertising dbus methods.
@@ -3145,8 +3145,8 @@ class BluetoothAdapterTests(test.test):
             max_adv_interval_ms = advertisement_data['MaxInterval']
 
         else:
-            min_adv_interval_ms = self.DAFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
-            max_adv_interval_ms = self.DAFAULT_MAX_ADVERTISEMENT_INTERVAL_MS
+            min_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+            max_adv_interval_ms = self.DEFAULT_MAX_ADVERTISEMENT_INTERVAL_MS
 
         # When registering a new advertisement, it is possible that another
         # instance is advertising. It may need to wait for all other

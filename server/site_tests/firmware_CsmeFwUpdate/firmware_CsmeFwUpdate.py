@@ -116,7 +116,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         # Dump the current spi bios to file
         self.spi_bios = self.ORIGINAL_BIOS
         logging.info("Copying current bios image to %s for upgrade " \
-                     "test", self.SPI_BIOS)
+                     "test", self.spi_bios)
         self.faft_client.bios.dump_whole(self.spi_bios)
 
         # Get the downgrade bios image from user or from shellball

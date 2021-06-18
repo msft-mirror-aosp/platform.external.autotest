@@ -21,7 +21,6 @@ import common
 
 import django.core.exceptions
 from autotest_lib.client.common_lib import utils
-from autotest_lib.client.common_lib.global_config import global_config
 from autotest_lib.frontend.server import models as server_models
 from autotest_lib.site_utils.lib import infra
 
@@ -31,13 +30,13 @@ class ServerActionError(Exception):
     """
 
 
+# TODO(ayatane): Deprecated, should be cleaned up later
 def use_server_db():
     """Check if use_server_db is enabled in configuration.
 
     @return: True if use_server_db is set to True in global config.
     """
-    return global_config.get_config_value(
-            'SERVER', 'use_server_db', default=False, type=bool)
+    return False
 
 
 def warn_missing_role(role, exclude_server):

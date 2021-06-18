@@ -72,6 +72,30 @@
       "tool": "tast",
       "test_expr": "ui.QuickCheckCUJ2.basic_wakeup",
       "attributes": ["basic"]
+    },
+    {
+      "name": "video-basic-youtube-web",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.basic_youtube_web",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "video-plus-youtube-web",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.plus_youtube_web",
+      "attributes": ["plus"]
+    },
+    {
+      "name": "video-basic-youtube-app",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.basic_youtube_app",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "video-plus-youtube-app",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.plus_youtube_app",
+      "attributes": ["plus"]
     }
   ],
   "suites": [
@@ -90,7 +114,11 @@
         {"test": "tabswitch-plus-noproxy", "repeats": 1},
         {"test": "tabswitch-premium-noproxy", "repeats": 1},
         {"test": "quick-check-unlock", "repeats": 1},
-        {"test": "quick-check-wakeup", "repeats": 1}
+        {"test": "quick-check-wakeup", "repeats": 1},
+        {"test": "video-basic-youtube-web", "repeats": 1},
+        {"test": "video-plus-youtube-web", "repeats": 1},
+        {"test": "video-basic-youtube-app", "repeats": 1},
+        {"test": "video-plus-youtube-app", "repeats": 1}
       ]
     },
     {

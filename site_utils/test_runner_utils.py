@@ -440,6 +440,20 @@ def get_all_control_files(test, autotest_path):
     return get_control_files(autotest_path=autotest_path, pred=predicate)
 
 
+def get_possible_tests(test, autotest_path):
+    fs_getter = suite.create_fs_getter(autotest_path)
+
+    (similarity_predicate,
+     similarity_description) = (get_predicate_for_possible_test_arg(test))
+
+    logging.error('No test found, searching for possible tests with %s',
+                  similarity_description)
+    possible_tests = suite.find_possible_tests(fs_getter, similarity_predicate)
+    raise SystemExit('Found no tests. Check your suite name, test name, '
+                     'or test matching wildcard.\nDid you mean any of '
+                     'following tests?\n  %s' % '\n  '.join(possible_tests))
+
+
 def perform_local_run(autotest_path,
                       tests,
                       remote,
@@ -516,6 +530,8 @@ def perform_local_run(autotest_path,
     for _ in range(iterations):
         for test in tests:
             ctrl_files = get_all_control_files(test, autotest_path)
+            if len(ctrl_files) == 0:
+                get_possible_tests(test, autotest_path)
             for control in ctrl_files:
                 test_num += 1
                 job = SimpleJob(name="adhoc/{}".format(control.name),
@@ -651,11 +667,12 @@ def create_results_directory(results_directory=None, board_name=None):
                 raise
     return results_directory
 
+
 def generate_report(directory,
                     allow_chrome_crashes=False,
                     just_status_code=False,
                     html_report=False):
-    """Parse the test result files in the given directory into a report
+    """Parse the test result files in the given directory into a report.
 
     @param directory: string, the absolute path of the directory to look in
     @param allow_chrome_crashes: boolean, ignore Chrome crashes in the

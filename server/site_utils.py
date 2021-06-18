@@ -11,7 +11,6 @@ from __future__ import print_function
 import collections
 import contextlib
 import grp
-import six.moves.http_client
 import json
 import logging
 import os
@@ -45,12 +44,6 @@ except ImportError:
 
 
 CONFIG = global_config.global_config
-
-_SHERIFF_JS = CONFIG.get_config_value('NOTIFICATIONS', 'sheriffs', default='')
-_LAB_SHERIFF_JS = CONFIG.get_config_value(
-        'NOTIFICATIONS', 'lab_sheriffs', default='')
-_CHROMIUM_BUILD_URL = CONFIG.get_config_value(
-        'NOTIFICATIONS', 'chromium_build_url', default='')
 
 LAB_GOOD_STATES = ('open', 'throttled')
 
@@ -207,7 +200,7 @@ def get_build_from_afe(hostname, afe):
     return None
 
 
-# TODO(fdeng): fix get_sheriffs crbug.com/483254
+# TODO(ayatane): Can be deleted
 def get_sheriffs(lab_only=False):
     """
     Polls the javascript file that holds the identity of the sheriff and
@@ -219,30 +212,7 @@ def get_sheriffs(lab_only=False):
     @return: A list of chroium.org sheriff email addresses to cc on the bug.
              An empty list if failed to parse the javascript.
     """
-    sheriff_ids = []
-    sheriff_js_list = _LAB_SHERIFF_JS.split(',')
-    if not lab_only:
-        sheriff_js_list.extend(_SHERIFF_JS.split(','))
-
-    for sheriff_js in sheriff_js_list:
-        try:
-            url_content = utils.urlopen('%s%s'% (
-                _CHROMIUM_BUILD_URL, sheriff_js)).read()
-        except (ValueError, IOError) as e:
-            logging.warning('could not parse sheriff from url %s%s: %s',
-                             _CHROMIUM_BUILD_URL, sheriff_js, str(e))
-        except (urllib.error.URLError, six.moves.http_client.HTTPException) as e:
-            logging.warning('unexpected error reading from url "%s%s": %s',
-                             _CHROMIUM_BUILD_URL, sheriff_js, str(e))
-        else:
-            ldaps = re.search(r"document.write\('(.*)'\)", url_content)
-            if not ldaps:
-                logging.warning('Could not retrieve sheriff ldaps for: %s',
-                                 url_content)
-                continue
-            sheriff_ids += ['%s@chromium.org' % alias.replace(' ', '')
-                            for alias in ldaps.group(1).split(',')]
-    return sheriff_ids
+    return []
 
 
 def remote_wget(source_url, dest_path, ssh_cmd):

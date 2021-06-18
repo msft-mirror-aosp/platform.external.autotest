@@ -106,8 +106,8 @@ class TestActions(unittest.TestCase):
         action.execute(self.context_with_mocks)
 
     def test_select_scenario_at_random(self):
-        placeholder_action1 = DummyAction()
-        placeholder_action2 = DummyAction()
+        placeholder_action1 = StubAction()
+        placeholder_action2 = StubAction()
         scenarios = [
                 scenario.Scenario(placeholder_action1),
                 scenario.Scenario(placeholder_action2)
@@ -124,12 +124,12 @@ class TestActions(unittest.TestCase):
         self.assertTrue('seed=123' in str(action))
 
     def test_select_scenario_at_random_same_seed_same_actions(self):
-        scenario1_action1 = DummyAction()
-        scenario1_action2 = DummyAction()
+        scenario1_action1 = StubAction()
+        scenario1_action2 = StubAction()
         scenarios1 = [scenario.Scenario(scenario1_action1),
                      scenario.Scenario(scenario1_action2)]
-        scenario2_action1 = DummyAction()
-        scenario2_action2 = DummyAction()
+        scenario2_action1 = StubAction()
+        scenario2_action2 = StubAction()
         scenarios2 = [scenario.Scenario(scenario2_action1),
                      scenario.Scenario(scenario2_action2)]
         action1 = actions.SelectScenarioAtRandom(scenarios1, 100, 0)
@@ -216,7 +216,8 @@ class FakeCollector(object):
     def collect_file_contents(self, path):
         return self.contents
 
-class DummyAction(actions.Action):
+
+class StubAction(actions.Action):
     def __init__(self):
         self.executed_times = 0
 

@@ -42,7 +42,7 @@ class BluetoothDevice(object):
 
     # We currently get dates back in string format due to some inconsistencies
     # between python2 and python3. This is the standard date format we use.
-    NATIVE_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+    STANDARD_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
     def __init__(self, device_host, remote_facade_proxy=None, floss=False):
         """Construct a BluetoothDevice.
@@ -1731,8 +1731,8 @@ class BluetoothDevice(object):
         # python3 (hopefully)
         # TODO - Revisit converting date to string and back in this method
         if info:
-            start_date = datetime.strptime(info[0], self.NATIVE_DATE_FORMAT)
-            end_date = datetime.strptime(info[1], self.NATIVE_DATE_FORMAT)
+            start_date = datetime.strptime(info[0], self.STANDARD_DATE_FORMAT)
+            end_date = datetime.strptime(info[1], self.STANDARD_DATE_FORMAT)
             ret = info[2]
 
             return (start_date, end_date, ret)
@@ -1781,7 +1781,7 @@ class BluetoothDevice(object):
     def get_device_utc_time(self):
         """ Get the current device time in UTC. """
         return datetime.strptime(self._proxy.get_device_utc_time(),
-                                 self.NATIVE_DATE_FORMAT)
+                                 self.STANDARD_DATE_FORMAT)
 
     @proxy_thread_safe
     def get_bt_usb_disconnect_str(self):

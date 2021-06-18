@@ -28,7 +28,10 @@ class power_UiResume(arc.ArcTest):
         in Chrome browser.
 
         """
-        self._enable_arc = utils.is_arc_available() and not no_arc
+        # TODO(b/191251229): Only enable ARC if ARC is available and it is not
+        # running ARCVM.
+        self._enable_arc = (utils.is_arc_available() and not utils.is_arcvm()
+                            and not no_arc)
         if self._enable_arc:
             super(power_UiResume, self).initialize()
         else:

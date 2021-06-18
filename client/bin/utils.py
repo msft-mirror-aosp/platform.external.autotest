@@ -1765,6 +1765,22 @@ def get_chromeos_version():
     return get_board_property('CHROMEOS_RELEASE_VERSION')
 
 
+def get_android_version():
+    """
+    Get the Android SDK version from /etc/lsb-release.
+
+    @return android sdk version.
+    """
+    return get_board_property('CHROMEOS_ARC_ANDROID_SDK_VERSION')
+
+
+def is_arcvm():
+    try:
+        return int(get_android_version()) >= 30
+    except:
+        return False
+
+
 def get_platform():
     """
     Get the ChromeOS platform name.

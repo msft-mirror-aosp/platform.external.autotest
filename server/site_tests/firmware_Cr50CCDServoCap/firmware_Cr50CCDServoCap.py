@@ -41,17 +41,23 @@ class firmware_Cr50CCDServoCap(Cr50Test):
     ON_MAP = [ 'on', 'off', '' ]
     ENABLED_MAP = [ 'enabled', 'disabled', '' ]
     CONNECTED_MAP = [ 'connected', 'disconnected', 'undetectable' ]
+    ASSERTED_MAP = ['asserted', 'deasserted', '']
     VALID_STATES = {
-        'AP' : ON_MAP,
-        'EC' : ON_MAP,
-        'AP UART' : ON_MAP,
-        'Rdd' : CONNECTED_MAP,
-        'Servo' : CONNECTED_MAP,
-        'CCD EXT' : ENABLED_MAP,
+            'AP': ON_MAP,
+            'EC': ON_MAP,
+            'AP UART': ON_MAP,
+            'Rdd': CONNECTED_MAP,
+            'Servo': CONNECTED_MAP,
+            'CCD EXT': ENABLED_MAP,
+            'CCD_MODE': ASSERTED_MAP,
     }
+    # TODO(mruthven): remove CCD_ENABLED_KEYS and mentions of 'CCD EXT' once
+    # prepvt and mp images use CCD_MODE.
+    # Old ccdstate uses CCD EXT. The new ccdstate output uses CCD_MODE.
+    CCD_ENABLED_KEYS = ['CCD EXT', 'CCD_MODE']
     # RESULT_ORDER is a list of the CCD state strings. The order corresponds
     # with the order of the key states in EXPECTED_RESULTS.
-    RESULT_ORDER = ['Rdd', 'CCD EXT', 'Servo']
+    RESULT_ORDER = ['Rdd', 'CCD_MODE', 'Servo']
     # A dictionary containing an order of steps to verify and the expected ccd
     # states as the value.
     #
@@ -142,6 +148,12 @@ class firmware_Cr50CCDServoCap(Cr50Test):
 
     def state_matches(self, state_dict, state_name, expected_value):
         """Check the current state. Make sure it matches expected value"""
+        if state_name in self.CCD_ENABLED_KEYS:
+            for state_name in self.CCD_ENABLED_KEYS:
+                if state_name in state_dict:
+                    logging.info('Using %r for ccd enabled key', state_name)
+                    break
+
         valid_state = self.VALID_STATES[state_name][expected_value]
         # I2C isn't a reliable flag, because the hardware often doesn't support
         # it. Remove any I2C flags from the ccdstate output.
@@ -187,12 +199,12 @@ class firmware_Cr50CCDServoCap(Cr50Test):
             output_enabled |= ec_uart_tx_enabled
             ccd_enabled |= ec_uart_enabled
 
-        ccd_ext_is_enabled = ccdstate['CCD EXT'] == 'enabled'
+        ccd_mode_is_asserted = self.state_is_on(ccdstate, 'CCD_MODE')
         mismatch = []
         logging.info('checking state flags')
-        if ccd_enabled and not ccd_ext_is_enabled:
-            mismatch.append('CCD functionality enabled without CCD EXT')
-        if ccd_ext_is_enabled:
+        if ccd_enabled and not ccd_mode_is_asserted:
+            mismatch.append('CCD functionality enabled CCD_MODE asserted')
+        if ccd_mode_is_asserted:
             if output_enabled and self.state_is_on(ccdstate, 'Servo'):
                 mismatch.append('CCD output is enabled with servo attached')
             if ap_uart_enabled != self.state_is_on(ccdstate, 'AP UART'):

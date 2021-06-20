@@ -9,11 +9,8 @@ assign to both ends of the pair, however, if you wish to leave the interface
 unconfigured, simply pass None.  You may also specify the subnet of your ip
 addresses.  Failing to do so leaves them with default in ifconfig.
 
-# TODO b:169251326 terms below are set outside of this codebase
-# and should be updated when possible. ("master" -> "main", "slave" -> "node")
-
 Example usage:
-vif = virtual_ethernet_pair.VirtualEthernetPair(interface_name="master",
+vif = virtual_ethernet_pair.VirtualEthernetPair(interface_name="main",
                                                 peer_interface_name="peer",
                                                 interface_ip="10.9.8.1/24",
                                                 peer_interface_ip=None)
@@ -51,8 +48,8 @@ class VirtualEthernetPair(object):
     """ Class for configuring virtual ethernet device pair. """
 
     def __init__(self,
-                 interface_name='veth_master',
-                 peer_interface_name='veth_slave',
+                 interface_name='veth_main',
+                 peer_interface_name='veth_secondary',
                  interface_ip='10.9.8.1/24',
                  peer_interface_ip='10.9.8.2/24',
                  interface_ipv6=None,

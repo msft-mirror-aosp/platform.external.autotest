@@ -98,6 +98,12 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
                 break
 
             for config in self.NETPERF_CONFIGS:
+                pcap_file_name = atten_tag + '_' + config.human_readable_tag + '.pcap'
+                logging.info('+++++++++++++++++++++++++++++++')
+                logging.info(pcap_file_name)
+                logging.info('+++++++++++++++++++++++++++++++')
+                self.context.capture_host.start_capture(
+                        self._ap_config.frequency, filename=pcap_file_name)
                 results = session.run(config)
                 if not results:
                     logging.warning('Unable to take measurement for %s; '
@@ -129,6 +135,7 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
                 self.write_perf_keyval(result.get_keyval(prefix=keyval_prefix))
                 # Reported at least one successful result at this attenuation.
                 max_atten = (atten, signal_level)
+                self.context.capture_host.stop_capture()
 
             signal_level = self.context.client.wifi_signal_level
             self.write_perf_keyval(

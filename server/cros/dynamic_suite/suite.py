@@ -1547,7 +1547,7 @@ class ProvisionSuite(_BaseSuite):
     """
     A suite for provisioning DUTs.
 
-    This is done by creating dummy_Pass tests.
+    This is done by creating stub_Pass tests.
     """
 
 
@@ -1651,7 +1651,7 @@ def _load_dummy_test(
     retriever = _ControlFileRetriever(cf_getter,
                                       run_prod_code=run_prod_code,
                                       test_args=test_args)
-    return retriever.retrieve_for_test('dummy_Pass')
+    return retriever.retrieve_for_test('stub_Pass')
 
 
 class _ComposedPredicate(object):

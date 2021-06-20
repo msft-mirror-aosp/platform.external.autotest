@@ -8,7 +8,7 @@ from autotest_lib.server import test
 
 class stub_ServerToClientPass(test.test):
     """
-    stub_ServerToClientPass test used to kick off dummy_Pass client test.
+    stub_ServerToClientPass test used to kick off stub_Pass client test.
 
     """
     version = 1
@@ -23,4 +23,4 @@ class stub_ServerToClientPass(test.test):
         self.host = host
 
         self.autotest_client = autotest.Autotest(self.host)
-        self.autotest_client.run_test('dummy_Pass', check_client_result=True)
+        self.autotest_client.run_test('stub_Pass', check_client_result=True)

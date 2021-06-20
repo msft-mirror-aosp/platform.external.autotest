@@ -50,7 +50,7 @@ To get a command shell on the device:
 
 1.  From inside your Chrome OS chroot run:
 
-    `test_that $IP_ADDR -b $BOARD dummy_Pass`
+    `test_that $IP_ADDR -b $BOARD stub_Pass`
 
     This will install the autotestPrivate extension manifest to your device.
 

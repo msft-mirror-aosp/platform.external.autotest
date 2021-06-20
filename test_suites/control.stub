@@ -3,16 +3,16 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "dummy"
+NAME = "stub"
 PURPOSE = "To be run while testing the infrastructure and test harness."
 
 TIME = "SHORT"
-TEST_CATEGORY = "Dummy"
+TEST_CATEGORY = "Stub"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This is a dummy test suite.  It runs dummy tests that always pass or always fail
+This is a stub  test suite. It runs stub tests that always pass or always fail
 so that we can test result gathering and reporting mechanisms.
 """
 
@@ -20,7 +20,7 @@ import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
 args_dict['add_experimental'] = True
-args_dict['name'] = 'dummy'
+args_dict['name'] = 'stub'
 args_dict['job'] = job
 
 dynamic_suite.reimage_and_run(**args_dict)

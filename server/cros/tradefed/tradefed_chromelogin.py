@@ -101,7 +101,7 @@ class ChromeLogin(object):
         if install_autotest:
             # Installs the autotest client to the DUT by running a no-op test.
             autotest.Autotest(self._host).run_timed_test(
-                'dummy_Pass', timeout=2 * timeout, check_client_result=True)
+                    'stub_Pass', timeout=2 * timeout, check_client_result=True)
             # The (re)run the login script.
             self._login_by_script(timeout=timeout, verbose=verbose)
 

@@ -5,7 +5,8 @@
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 
-class dummy_Pass(test.test):
+
+class stub_Pass(test.test):
     version = 1
 
     def run_once(self):

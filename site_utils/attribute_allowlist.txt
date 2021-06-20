@@ -165,10 +165,8 @@ suite:deqp
 suite:dev_drone_image_test
 suite:display
 suite:drivefs-cq
-suite:dummy
 suite:dummy_server
 suite:dummy_server_nossp
-suite:dummyclientretries
 suite:enroll_retainment
 suite:enrollment_per-build
 suite:ent-nightly
@@ -301,6 +299,8 @@ suite:storage_qual_v2_xl
 suite:storage_qual_v2_xs
 suite:storagequal
 suite:stress
+suite:stub
+suite:stubclientretries
 suite:suite:cellular_ota_sprint
 suite:syzcorpus
 suite:syzkaller

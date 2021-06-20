@@ -11,7 +11,7 @@ chaos_dut machines.
 
 TESTS = [
     test_common.define_client_test(
-        test_name = "dummy_Pass.wifichaos",
+        test_name = "stub_Pass.wifichaos",
         purpose = "To re-image chaos_dut machines nightly.",
         doc = DOC,
         # TODO: find real owners for this test.

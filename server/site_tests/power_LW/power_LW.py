@@ -29,9 +29,9 @@ class power_LW(test.test):
 
         if not host.connect_to_wifi(self.WIFI_SSID, self.WIFI_PASSWORD):
             logging.info('Script to connect to wifi is probably missing.'
-                         'Run dummy_Pass as a workaround to install it.')
+                         'Run stub_Pass as a workaround to install it.')
             autotest_client = autotest.Autotest(host)
-            autotest_client.run_test('dummy_Pass')
+            autotest_client.run_test('stub_Pass')
             if not host.connect_to_wifi(self.WIFI_SSID, self.WIFI_PASSWORD):
                 raise error.TestError('Can not connect to wifi.')
 

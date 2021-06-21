@@ -304,16 +304,17 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # Flakes out of results.csv so we can preemptively manage the flakes
         # list per board, to avoid causing run failures for known flakes when
         # the automatic flake detection doesn't catch it.
-
         if fails:
             if len(fails) == 1:
-                raise error.TestFail("Failed dEQP test: {}".format(fails[0]))
-
-            fail_msg = "failed {} dEQP tests:\n".format(len(fails))
-            for f in fails[:5]:
-                fail_msg += "  " + f
-            if len(fails) > 5:
-                fail_msg += "and more (see failures.csv)"
+                raise error.TestFail("Failed test: {}".format(fails[0]))
+            # We format the failure message so it is not too long and reasonably
+            # stable even if there are a few flaky tests to simplify triaging
+            # on stainless and testmon. We sort the failing tests and report
+            # first and last failure.
+            fails.sort()
+            fail_msg = "Failed {} tests: ".format(len(fails))
+            fail_msg += fails[0].rstrip() + ", ..., " + fails[-1].rstrip()
+            fail_msg += " (see failures.csv)"
             raise error.TestFail(fail_msg)
         elif run_result.exit_status != 0:
             raise error.TestFail('dEQP run failed with status code %d' %

@@ -270,7 +270,7 @@ suite:power_check
 suite:powerplay
 suite:push_to_prod
 suite:pvs-staging
-suite:pvs-uprev-exit
+suite:pvs-uprev-general
 suite:reboot_stress
 suite:regression
 suite:rlz

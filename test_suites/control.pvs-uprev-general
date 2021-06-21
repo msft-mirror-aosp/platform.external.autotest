@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "pvs-uprev-exit"
+NAME = "pvs-uprev-general"
 PURPOSE = "Verify that we meet the requirements to complete a kernel uprev"
 
 TIME = "SHORT"
@@ -14,7 +14,8 @@ TEST_TYPE = "Server"
 DOC = """
 This test suite is part of the Platform Validation Suite, and verifies that a
 given kernel uprev has achieved the quality necessary to be rolled out to
-users.  For more info on PVS, please check out go/cros-pvs-prd.
+users.  It can run on Moblab and has no special test bed requirements.
+For more info on PVS, please check out go/cros-pvs-prd.
 
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29
@@ -28,7 +29,7 @@ users.  For more info on PVS, please check out go/cros-pvs-prd.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['max_runtime_mins'] = 30
+args_dict['max_runtime_mins'] = 60
 args_dict['add_experimental'] = True
 args_dict['name'] = NAME
 args_dict['job'] = job

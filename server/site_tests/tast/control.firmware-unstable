@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS Firmware EngProd team'
 NAME = 'tast.firmware-unstable'
@@ -23,7 +24,8 @@ sub-attribute limits it to unstable tests. Once the test is stable change
 the attribute to one of the others.
 '''
 
-args_dict = utils.args_to_dict(args)
+command_args, varslist = tast.split_arguments(args)
+args_dict = utils.args_to_dict(command_args)
 assert 'servo_state:WORKING' in DEPENDENCIES
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
@@ -32,7 +34,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:firmware" && firmware_unstable)'],
                  ignore_test_failures=True, max_run_sec=10800,
-                 command_args=args,
-                 varslist=args)
+                 command_args=command_args,
+                 varslist=varslist)
 
 parallel_simple(run, machines)

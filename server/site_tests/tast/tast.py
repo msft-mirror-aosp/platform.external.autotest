@@ -27,6 +27,25 @@ from autotest_lib.utils import labellib
 _UNIX_EPOCH = dateutil.parser.parse('1970-01-01T00:00:00Z')
 
 
+def split_arguments(args):
+    """Splits arguments into the autotest and tast variable assignments.
+    Use the results as command_args and varslist respectively.
+
+    @param args: List of strings passed to test_that --args
+
+    @returns Array of Tauto args, Array of TAST variable assignments.
+    """
+
+    auto_args = []
+    tast_vars = []
+    for a in args:
+        if a.startswith("tast."):
+            tast_vars.append(a[5:])
+        else:
+            auto_args.append(a)
+    return auto_args, tast_vars
+
+
 def _encode_utf8_json(j):
     """Takes JSON object parsed by json.load() family, and encode each unicode
     strings into utf-8.

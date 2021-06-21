@@ -31,10 +31,11 @@ class Suite(Enum):
 
 
 deqp_dir = '/usr/local/deqp'
-GLES2_FILE = os.path.join(deqp_dir, 'master', 'gles2-master.txt')
-GLES3_FILE = os.path.join(deqp_dir, 'master', 'gles3-master.txt')
-GLES31_FILE = os.path.join(deqp_dir, 'master', 'gles31-master.txt')
-VK_FILE = os.path.join(deqp_dir, 'master', 'vk-master.txt')
+caselists = 'caselists'
+GLES2_FILE = os.path.join(deqp_dir, caselists, 'gles2.txt')
+GLES3_FILE = os.path.join(deqp_dir, caselists, 'gles3.txt')
+GLES31_FILE = os.path.join(deqp_dir, caselists, 'gles31.txt')
+VK_FILE = os.path.join(deqp_dir, caselists, 'vk.txt')
 
 tests = [
         Test('dEQP-GLES2',
@@ -97,9 +98,7 @@ job.run_test('graphics_parallel_dEQP',{% if tag != None %}
              opts = args + [
                  'api={{api}}',
                  'caselist={{caselist}}',
-                 {% if perf_failure_description %}
-                 'perf_failure_description={{perf_failure_description}}',
-                 {% endif %}
+                 {% if perf_failure_description %}'perf_failure_description={{perf_failure_description}}',{% endif %}
                  'shard_number={{shard}}',
                  'shard_count={{shards}}'
              ])""")

@@ -22,10 +22,8 @@ job.run_test('graphics_parallel_dEQP',
              tag = 'vk',
              opts = args + [
                  'api=vk',
-                 'caselist=/usr/local/deqp/master/vk-master.txt',
-                 
+                 'caselist=/usr/local/deqp/caselists/vk.txt',
                  'perf_failure_description=Failures_VK',
-                 
                  'shard_number=1',
                  'shard_count=4'
              ])

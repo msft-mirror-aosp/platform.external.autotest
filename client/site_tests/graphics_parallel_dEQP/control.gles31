@@ -22,10 +22,8 @@ job.run_test('graphics_parallel_dEQP',
              tag = 'gles31',
              opts = args + [
                  'api=gles31',
-                 'caselist=/usr/local/deqp/master/gles31-master.txt',
-                 
+                 'caselist=/usr/local/deqp/caselists/gles31.txt',
                  'perf_failure_description=Failures_GLES31',
-                 
                  'shard_number=0',
                  'shard_count=1'
              ])

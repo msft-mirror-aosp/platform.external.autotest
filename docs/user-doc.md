@@ -264,9 +264,7 @@ If you want to run your tests in a VM (see
 
 -   The emulator command line redirects localhost port 9222 to the emulated
     machine's port 22 to allow you to ssh into the emulator. For Chromium OS to
-    actually listen on this port you must append the `--test_image` parameter
-    when you run the `./image_to_vm.sh` script, or perhaps run the
-    `mod_image_for_test.sh` script instead.
+    actually listen on this port you must create & boot a test image.
 -   You can then run tests on the correct ssh port with something like
 
         $ test_that --board=x86-generic localhost:9222 'f:.*platform_BootPerf/control'

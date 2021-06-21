@@ -11,7 +11,6 @@ import json
 import optparse
 import os
 import socket
-import subprocess
 import sys
 import time
 import traceback
@@ -100,17 +99,22 @@ def parse_args():
                       dest="suite_report", action="store_true",
                       default=False)
     parser.add_option("--datastore-creds",
-                      help=("The path to gcloud datastore credentials file, "
+                      help=("[DEPRECATED] "
+                            "The path to gcloud datastore credentials file, "
                             "which will be used to upload suite timeline "
-                            "report to gcloud. If not specified, the one "
-                            "defined in shadow_config will be used."),
-                      dest="datastore_creds", action="store", default=None)
-    parser.add_option("--export-to-gcloud-path",
-                      help=("The path to export_to_gcloud script. Please find "
-                            "chromite path on your server. The script is under "
-                            "chromite/bin/."),
-                      dest="export_to_gcloud_path", action="store",
+                            "report to gcloud."),
+                      dest="datastore_creds",
+                      action="store",
                       default=None)
+    parser.add_option(
+            "--export-to-gcloud-path",
+            help=("[DEPRECATED] "
+                  "The path to export_to_gcloud script. Please find "
+                  "chromite path on your server. The script is under "
+                  "chromite/bin/."),
+            dest="export_to_gcloud_path",
+            action="store",
+            default=None)
     parser.add_option("--disable-perf-upload",
                       help=("Do not upload perf results to chrome perf."),
                       dest="disable_perf_upload", action="store_true",
@@ -123,26 +127,6 @@ def parse_args():
                          "be provided")
         parser.print_help()
         sys.exit(1)
-
-    if not options.datastore_creds:
-        gcloud_creds = global_config.global_config.get_config_value(
-            'GCLOUD', 'cidb_datastore_writer_creds', default=None)
-        options.datastore_creds = (site_utils.get_creds_abspath(gcloud_creds)
-                                   if gcloud_creds else None)
-
-    if not options.export_to_gcloud_path:
-        export_script = 'chromiumos/chromite/bin/export_to_gcloud'
-        # If it is a lab server, the script is under ~chromeos-test/
-        if os.path.exists(os.path.expanduser('~chromeos-test/%s' %
-                                             export_script)):
-            path = os.path.expanduser('~chromeos-test/%s' % export_script)
-        # If it is a local workstation, it is probably under ~/
-        elif os.path.exists(os.path.expanduser('~/%s' % export_script)):
-            path = os.path.expanduser('~/%s' % export_script)
-        # If it is not found anywhere, the default will be set to None.
-        else:
-            path = None
-        options.export_to_gcloud_path = path
 
     # pass the options back
     return options, args
@@ -341,8 +325,6 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
     mail_on_failure = parse_options.mail_on_failure
     dry_run = parse_options.dry_run
     suite_report = parse_options.suite_report
-    datastore_creds = parse_options.datastore_creds
-    export_to_gcloud_path = parse_options.export_to_gcloud_path
 
     tko_utils.dprint("\nScanning %s (%s)" % (jobname, path))
     old_job_idx = db.find_job(jobname)
@@ -386,7 +368,7 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
             job.suite = label_info.get('suite', None)
 
     if 'suite' in job.keyval_dict:
-      job.suite = job.keyval_dict['suite']
+        job.suite = job.keyval_dict['suite']
 
     result_utils_lib.LOG =  tko_utils.dprint
     _throttle_result_size(path)
@@ -474,41 +456,6 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
 
     if not dry_run:
         db.commit()
-
-    # Generate a suite report.
-    # Check whether this is a suite job, a suite job will be a hostless job, its
-    # jobname will be <JOB_ID>-<USERNAME>/hostless, the suite field will not be
-    # NULL. Only generate timeline report when datastore_parent_key is given.
-    datastore_parent_key = job_keyval.get('datastore_parent_key', None)
-    provision_job_id = job_keyval.get('provision_job_id', None)
-    if (suite_report and jobname.endswith('/hostless')
-        and job.suite and datastore_parent_key):
-        tko_utils.dprint('Start dumping suite timing report...')
-        timing_log = os.path.join(path, 'suite_timing.log')
-        dump_cmd = ("%s/site_utils/dump_suite_report.py %s "
-                    "--output='%s' --debug" %
-                    (common.autotest_dir, job.afe_job_id,
-                        timing_log))
-
-        if provision_job_id is not None:
-            dump_cmd += " --provision_job_id=%d" % int(provision_job_id)
-
-        subprocess.check_output(dump_cmd, shell=True)
-        tko_utils.dprint('Successfully finish dumping suite timing report')
-
-        if (datastore_creds and export_to_gcloud_path
-            and os.path.exists(export_to_gcloud_path)):
-            upload_cmd = [export_to_gcloud_path, datastore_creds,
-                            timing_log, '--parent_key',
-                            datastore_parent_key]
-            tko_utils.dprint('Start exporting timeline report to gcloud')
-            subprocess.check_output(upload_cmd)
-            tko_utils.dprint('Successfully export timeline report to '
-                                'gcloud')
-        else:
-            tko_utils.dprint('DEBUG: skip exporting suite timeline to '
-                                'gcloud, because either gcloud creds or '
-                                'export_to_gcloud script is not found.')
 
     # Mark GS_OFFLOADER_NO_OFFLOAD in gs_offloader_instructions at the end of
     # the function, so any failure, e.g., db connection error, will stop

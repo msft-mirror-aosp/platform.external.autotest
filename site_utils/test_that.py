@@ -260,10 +260,6 @@ def _main_for_local_run(argv, arguments):
     @param argv: Script command line arguments.
     @param arguments: Parsed command line arguments.
     """
-    if not os.path.exists('/etc/cros_chroot_version'):
-        print('For local runs, script must be run inside chroot.', file=sys.stderr)
-        return 1
-
     results_directory = test_runner_utils.create_results_directory(
             arguments.results_dir, arguments.board)
     test_runner_utils.add_ssh_identity(results_directory,

@@ -238,6 +238,7 @@ suite:link_perf
 suite:longevity
 suite:manual_platform_suite
 suite:memory_qual
+suite:memory_qual2
 suite:memory_qual_quick
 suite:mmc_qual
 suite:moblab

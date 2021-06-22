@@ -425,10 +425,18 @@ class tast(test.test):
                     stdout_level=logging.INFO,
                     stderr_level=logging.ERROR)
         except error.CmdError as e:
-            # Run the ssh command to debug possible SSH issues.
+            # Run several commands to debug possible network issues.
             # TODO(b/189332919): Remove this logic once we finish debugging.
-            logging.info('Tast exited abnormally. Running ssh to diagnose '
-                         'possible SSH issues...')
+            logging.info('Tast exited abnormally. Running several commands to '
+                         'diagnose possible network issues...')
+            utils.run('time getent ahosts %s' % self._host.hostname,
+                      timeout=60,
+                      ignore_status=True,
+                      stdout_tee=utils.TEE_TO_LOGS,
+                      stderr_tee=utils.TEE_TO_LOGS,
+                      stderr_is_expected=True,
+                      stdout_level=logging.INFO,
+                      stderr_level=logging.ERROR)
             utils.run(
                     'ssh '
                     # Enable maximum debug logging.

@@ -10,7 +10,6 @@ from __future__ import print_function
 
 import collections
 import contextlib
-import grp
 import json
 import logging
 import os
@@ -443,29 +442,6 @@ def is_shard():
 def get_global_afe_hostname():
     """Read the hostname of the global AFE from the global configuration."""
     return CONFIG.get_config_value('SERVER', 'global_afe_hostname')
-
-
-def is_restricted_user(username):
-    """Determines if a user is in a restricted group.
-
-    User in restricted group only have access to main.
-
-    @param username: A string, representing a username.
-
-    @returns: True if the user is in a restricted group.
-    """
-    if not username:
-        return False
-
-    restricted_groups = CONFIG.get_config_value(
-            'AUTOTEST_WEB', 'restricted_groups', default='').split(',')
-    for group in restricted_groups:
-        try:
-            if group and username in grp.getgrnam(group).gr_mem:
-                return True
-        except KeyError as e:
-            logging.debug("%s is not a valid group.", group)
-    return False
 
 
 def get_special_task_status(is_complete, success, is_active):

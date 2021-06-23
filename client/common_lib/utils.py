@@ -2103,7 +2103,7 @@ def host_is_in_power_lab(hostname):
     @param hostname: The hostname to check.
     @returns True if hostname match power lab hostname, otherwise False.
     """
-    pattern = r'chromeos\d+-power-host\d+(\.cros(\.corp(\.google\.com)?)?)?$'
+    pattern = r'chromeos\d+-power.*host\d+(\.cros(\.corp(\.google\.com)?)?)?$'
     return re.match(pattern, hostname) is not None
 
 

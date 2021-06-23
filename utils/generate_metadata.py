@@ -63,7 +63,7 @@ def all_control_files(args):
         f = control_file_getter.FileSystemGetter(directories)
     except Exception as e:
         raise Exception("Failed to find control files at path %s",
-                        autotest_path)
+                        args.autotest_path)
 
     finally:
         os.chdir(start_cwd)

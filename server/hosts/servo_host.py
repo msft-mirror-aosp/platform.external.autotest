@@ -29,6 +29,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import retry
+from autotest_lib.server import crashcollect
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import base_servohost
@@ -1038,6 +1039,33 @@ class ServoHost(base_servohost.BaseServoHost):
             return None
         return ts_match.group(self.TS_GROUP)
 
+    def get_servohost_logs(self, outdir):
+        """Get logs that can help debugging servo/servod problem from
+        the servohost
+        """
+        log_dir = os.path.join(outdir, 'servohost_%s' % self.hostname)
+        if os.path.isdir(log_dir):
+            # In multi-DUTs testing, each DUTs will may their own servohost
+            # instance, where could cause duplicate efforts if they share a
+            # same servohost, so we can just skip the collect if the log
+            # dir already exists.
+            logging.info(
+                    'Skip dmesg and messages logs collecting as %s'
+                    ' already exists.', log_dir)
+            return
+        logging.info('Collecting dmesg and messages from servohost %s',
+                     self.hostname)
+        os.mkdir(log_dir)
+        logging.info('Saving servohost logs to %s.', log_dir)
+        # First collect dmesg from the servohost.
+        crashcollect.collect_command(self, 'dmesg -H',
+                                     os.path.join(log_dir, 'dmesg'))
+        # Collect messages log from the servohost.
+        try:
+            self.get_file('/var/log/messages', log_dir, try_rsync=False)
+        except error.AutoservRunError as e:
+            logging.warning('Failed to collect messages log from servohost.')
+
     def get_instance_logs(self, instance_ts, outdir, old=False):
         """Collect all logs with |instance_ts| and dump into a dir in |outdir|
 
@@ -1195,6 +1223,7 @@ class ServoHost(base_servohost.BaseServoHost):
             # Grab current (not old like above) logs after the servo instance
             # was closed out.
             try:
+                self.get_servohost_logs(self.job.resultdir)
                 self.get_instance_logs(instance_ts, self.job.resultdir)
             except error.AutoservRunError as e:
                 logging.info('Failed to grab servo logs due to: %s. '

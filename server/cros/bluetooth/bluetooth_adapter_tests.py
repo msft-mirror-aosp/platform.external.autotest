@@ -72,7 +72,8 @@ CHIPSET_TO_VIDPID = {
                 (('0x8086', '0x095b'), 'USB')
         ],
         'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],
-        'Realtek-RTL8822C-UART': [(('0x10ec', '0xc822'), 'UART')]
+        'Realtek-RTL8822C-UART': [(('0x10ec', '0xc822'), 'UART')],
+        'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')]
 
         # The following doesn't expose vid:pid
         # 'WCN3991-UART'

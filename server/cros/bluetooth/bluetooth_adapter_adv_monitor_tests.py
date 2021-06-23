@@ -13,6 +13,15 @@ from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.client.common_lib import error
 
 
+# List of the controllers that does not support Adv Monitor HW offloading.
+ADVMON_UNSUPPORTED_CHIPSETS = [
+        'BCM-43540', 'BCM-43560',
+        'Intel-AC7260', 'Intel-AC7265',
+        'MVL-8797', 'MVL-8887', 'MVL-8897', 'MVL-8997',
+        'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
+]
+
+
 class TestMonitor():
     """Local object hosting the test values for Advertisement Monitor object.
 
@@ -385,6 +394,23 @@ class BluetoothAdapterAdvMonitorTests(
         return True
 
 
+    def test_is_controller_offloading_supported(self):
+        """Check if the controller supports HW offloading.
+
+        @raises: TestFail if the controller is expected to support Monitor
+                 Offloading but the support is missing.
+
+        """
+        chipset = self.get_chipset_name()
+        if chipset in ADVMON_UNSUPPORTED_CHIPSETS:
+            logging.warning('Controller support check skipped for %s', chipset)
+        else:
+            supported_features = self.read_supported_features()
+            if not supported_features:
+                logging.error('Controller support missing on %s', chipset)
+                raise error.TestFail('Controller offloading not supported')
+
+
     def test_is_adv_monitoring_supported(self):
         """Check if Adv Monitor API is supported.
 
@@ -398,6 +424,8 @@ class BluetoothAdapterAdvMonitorTests(
         if not self.advmon_check_manager_interface_exist():
             logging.info('Advertisement Monitor API not supported')
             raise error.TestNAError('Advertisement Monitor API not supported')
+
+        self.test_is_controller_offloading_supported()
 
 
     @test_retry_and_log(False)

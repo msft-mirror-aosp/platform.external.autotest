@@ -50,7 +50,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # Timeout periods, given in seconds.
     _INITIAL_CHECK_TIMEOUT = 12 * 60
     _DOWNLOAD_STARTED_TIMEOUT = 4 * 60
-    _DOWNLOAD_FINISHED_TIMEOUT = 20 * 60
+    _DOWNLOAD_FINISHED_TIMEOUT = 60 * 60
     _UPDATE_COMPLETED_TIMEOUT = 4 * 60
     _POST_REBOOT_TIMEOUT = 15 * 60
 

@@ -18,6 +18,8 @@ class power_BatteryDrain(test.test):
     backlight = None
     keyboard_backlight = None
 
+    tick_count = 0
+
     url = 'https://crospower.page.link/power_BatteryDrain'
 
     def cleanup(self):
@@ -81,6 +83,10 @@ class power_BatteryDrain(test.test):
                 status.refresh()
                 if not force_discharge and status.on_ac():
                     raise ac_error
+                self.tick_count += 1
+                if self.tick_count % 60 == 0:
+                    logging.info('Battery charge percent: {}'.format(
+                            status.percent_display_charge()))
                 return status.percent_display_charge() <= drain_to_percent
 
             err = error.TestFail(

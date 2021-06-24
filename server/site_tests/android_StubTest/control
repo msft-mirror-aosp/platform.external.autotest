@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'dshi'
-NAME = 'android_DummyTest'
+NAME = 'android_StubTest'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 SUITE = ''
@@ -11,10 +11,10 @@ SUITE = ''
 REQUIRE_SSP = False
 
 DOC = """
-A dummy test to verify Android device can be accessible with adb.
+A stub test to verify Android device can be accessible with adb.
 """
 
 def run(machine):
-    job.run_test('android_DummyTest', host=hosts.create_host(machine))
+    job.run_test('android_StubTest', host=hosts.create_host(machine))
 
 parallel_simple(run, machines)

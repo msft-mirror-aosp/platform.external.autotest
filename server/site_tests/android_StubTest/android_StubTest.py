@@ -6,12 +6,12 @@ import common
 from autotest_lib.server import test
 
 
-class android_DummyTest(test.test):
-    """A dummy test to verify Android device can be accessible with adb."""
+class android_StubTest(test.test):
+    """A stub test to verify Android device can be accessible with adb."""
     version = 1
 
     def run_once(self, host=None):
-        """A dummy test to verify Android device can be accessible with adb.
+        """A stub test to verify Android device can be accessible with adb.
 
         Prerequisite: The DUT is in ADB mode.
 

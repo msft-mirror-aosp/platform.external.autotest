@@ -6,7 +6,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import test
 
-class dummy_PassServer(test.test):
+
+class stub_PassServer(test.test):
     """Tests that server tests can pass."""
     version = 1
 
@@ -19,6 +20,7 @@ class dummy_PassServer(test.test):
         """
         if expect_ssp is not None:
             if expect_ssp and not utils.is_in_container():
-                raise error.TestFail('The test is not running inside container')
+                raise error.TestFail(
+                        'The test is not running inside container')
             if not expect_ssp and utils.is_in_container():
                 raise error.TestFail('Test test is running inside container')

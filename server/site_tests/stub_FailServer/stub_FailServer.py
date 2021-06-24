@@ -5,7 +5,8 @@
 from autotest_lib.server import test
 from autotest_lib.client.common_lib import error
 
-class dummy_FailServer(test.test):
+
+class stub_FailServer(test.test):
     """A test that always fails."""
     version = 1
 

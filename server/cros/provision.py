@@ -272,7 +272,7 @@ class Verify(_SpecialTaskAction):
         # Another way to do this is to remove rpm dependency from tests' control
         # file. That will involve changes on multiple control files. This one
         # line change here is a simple temporary fix.
-        'rpm': actionables.TestActionable('dummy_PassServer'),
+        'rpm': actionables.TestActionable('stub_PassServer'),
     }
 
     name = 'verify'

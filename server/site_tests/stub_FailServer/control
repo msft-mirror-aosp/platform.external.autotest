@@ -1,4 +1,4 @@
-NAME = 'dummy_FailServer'
+NAME = 'stub_FailServer'
 AUTHOR = 'scottz'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
@@ -12,6 +12,6 @@ Test that always fails.
 
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test('dummy_FailServer', disable_sysinfo=False)
+    job.run_test('stub_FailServer', disable_sysinfo=False)
 
 job.parallel_simple(run, machines)

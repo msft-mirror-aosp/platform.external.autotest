@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 AUTHOR = "fdeng, chromeos-lab-infrastructure"
-NAME = "dummy_PassServer.calibration"
+NAME = "stub_PassServer.calibration"
 PURPOSE = "An empty control file that does nothing."
 CRITERIA = "This test will always succeed."
 ATTRIBUTES = "suite:calibration, suite:sanity"
 TIME = "SHORT"
 TEST_CATEGORY = "General"
-TEST_CLASS = "dummy"
+TEST_CLASS = "stub"
 TEST_TYPE = "server"
 
 DOC = """

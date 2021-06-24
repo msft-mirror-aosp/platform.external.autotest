@@ -174,7 +174,7 @@ AUTOSERV_COMMAND = (('/usr/bin/python -u /usr/local/autotest/server/autoserv '
 # Content of the test control file.
 TEST_CONTROL_CONTENT = """
 def run(machine):
-    job.run_test('dummy_PassServer',
+    job.run_test('stub_PassServer',
                  host=hosts.create_host(machine))
 
 parallel_simple(run, machines)

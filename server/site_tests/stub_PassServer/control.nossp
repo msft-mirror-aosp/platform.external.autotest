@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "dummy_PassServer_nossp"
+NAME = "stub_PassServer_nossp"
 PURPOSE = "Demonstrate success methods of autotests."
 CRITERIA = "This test will always succeed."
 ATTRIBUTES = (
@@ -14,7 +14,7 @@ ATTRIBUTES = (
 )
 TIME = "SHORT"
 TEST_CATEGORY = "General"
-TEST_CLASS = "dummy"
+TEST_CLASS = "stub"
 TEST_TYPE = "server"
 # Force not to use server side package for this test.
 REQUIRE_SSP = False
@@ -25,7 +25,7 @@ packaging.
 """
 
 def run(machine):
-    job.run_test('dummy_PassServer', host=hosts.create_host(machine),
+    job.run_test('stub_PassServer', host=hosts.create_host(machine),
                  expect_ssp=False)
 
 parallel_simple(run, machines)

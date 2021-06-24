@@ -345,7 +345,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
 
     self._safe_power_short_press()
 
-    # Sanity check.
+    # Check.
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '00', VENDOR_CMD_RESPONSE_SUCCESS)
 
@@ -357,7 +357,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
 
     self._safe_power_short_press()
 
-    # Sanity check.
+    # Check.
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '00', VENDOR_CMD_RESPONSE_SUCCESS)
 
@@ -556,7 +556,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
 
     self._safe_power_short_press()
 
-    # Sanity check
+    # Check
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '00', VENDOR_CMD_RESPONSE_SUCCESS)
 

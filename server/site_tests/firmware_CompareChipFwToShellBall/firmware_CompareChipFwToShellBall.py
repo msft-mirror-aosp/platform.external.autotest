@@ -125,7 +125,7 @@ class firmware_CompareChipFwToShellBall(FirmwareTest):
 
         Finds bios.bin on the DUT and sets up a temp dir to operate on
         bios.bin.  If a bios.bin was specified, it is copied to the DUT
-        and used instead of the native bios.bin.
+        and used instead of the builtin bios.bin.
         """
 
         cbfs_path = self.faft_client.updater.cbfs_setup_work_dir()

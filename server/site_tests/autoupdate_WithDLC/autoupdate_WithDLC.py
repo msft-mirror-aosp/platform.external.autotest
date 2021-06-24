@@ -95,4 +95,4 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
         self._dlc_util.install(self._dlc_util._SAMPLE_DLC_ID,
                                omaha_url='fake_url')
         if not self._dlc_util.is_installed(self._dlc_util._SAMPLE_DLC_ID):
-            raise error.TestFail('Dummy DLC was not installed.')
+            raise error.TestFail('Test DLC was not installed.')

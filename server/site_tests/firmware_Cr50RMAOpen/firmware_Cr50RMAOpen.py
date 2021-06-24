@@ -40,8 +40,6 @@ class firmware_Cr50RMAOpen(Cr50Test):
     LIMIT_CLI = '(RMA Auth error 0x504|rma_auth\s+>)'
     LIMIT_AP = 'error 4'
     ERR_DISABLE_AP = 'error 7'
-    DISABLE_WARNING = ('mux_client_request_session: read from master failed: '
-            'Broken pipe')
     # GSCTool exit statuses
     UPDATE_ERROR = 3
     SUCCESS = 0

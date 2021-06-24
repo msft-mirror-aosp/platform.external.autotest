@@ -59,9 +59,9 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
             hashlib.sha256('test_application').hexdigest(),
             U2F_AUTH_ENFORCE)
 
-        # Sanity check that we managed to register.
+        # Check that we managed to register.
         if not g2f_reg.exit_status == 0:
-          raise error.TestError('Register failed.')
+            raise error.TestError('Register failed.')
 
         # Extract newly created key handle.
         key_handle = self.parse_g2ftool_output(g2f_reg.stdout)['key_handle']
@@ -69,7 +69,7 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
         # Auth requires physical presence.
         self._safe_power_short_press()
 
-        # Sanity check that we can authenticate with the new key handle.
+        # Check that we can authenticate with the new key handle.
         g2f_auth = g2f_utils.G2fAuth(
             self.client,
             cr50_dev,
@@ -79,7 +79,7 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
             U2F_AUTH_ENFORCE)
 
         if not g2f_auth.exit_status == 0:
-          raise error.TestError('Authenticate failed.')
+            raise error.TestError('Authenticate failed.')
 
         # Clear TPM. We should no longer be able to authenticate with the
         # key handle after this.
@@ -103,7 +103,7 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
             U2F_AUTH_ENFORCE)
 
         if g2f_auth_clear.exit_status == 0:
-          raise error.TestError('Authenticate succeeded; should have failed')
+            raise error.TestError('Authenticate succeeded; should have failed')
 
 
     def cleanup(self):

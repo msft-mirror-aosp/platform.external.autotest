@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterAdvMonitor.advmon_single_client_tests_rssi_filter_1'
+NAME = 'bluetooth_AdapterAdvMonitor.advmon_rssi_filter_reset_tests'
 PURPOSE = ('batch of Bluetooth Advertisement Monitor tests')
 CRITERIA = 'All tests should pass'
 TIME = 'MEDIUM'
@@ -15,7 +15,7 @@ TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 
-DOC = """ Tests monitor functionality for single client. """
+DOC = """ Tests RSSI filter reset for single client. """
 
 args_dict = utils.args_to_dict(args)
 

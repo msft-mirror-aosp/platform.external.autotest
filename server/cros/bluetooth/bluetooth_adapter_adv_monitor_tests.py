@@ -1220,8 +1220,8 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
-    def advmon_test_pattern_filter_1(self):
-        """Test case: PATTERN_FILTER_1
+    def advmon_test_pattern_filter(self):
+        """Test case: PATTERN_FILTER
 
         Verify matching of advertisements w.r.t. various pattern values and
         different AD Data Types - Local Name Service UUID and Device Type.
@@ -1317,8 +1317,8 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
-    def advmon_test_rssi_filter_1(self):
-        """Test case: RSSI_FILTER_1
+    def advmon_test_rssi_filter_range(self):
+        """Test case: RSSI_FILTER_RANGE
 
         Verify unset RSSI filter and filter with no matching RSSI values.
 
@@ -1376,8 +1376,8 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
-    def advmon_test_rssi_filter_2(self):
-        """Test case: RSSI_FILTER_2
+    def advmon_test_rssi_filter_multi_peers(self):
+        """Test case: RSSI_FILTER_MULTI_PEERS
 
         Verify RSSI filter matching with multiple peer devices.
 
@@ -1441,8 +1441,8 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
-    def advmon_test_rssi_filter_3(self):
-        """Test case: RSSI_FILTER_3
+    def advmon_test_rssi_filter_reset(self):
+        """Test case: RSSI_FILTER_RESET
 
         Verify reset of RSSI timers based on advertisements.
 

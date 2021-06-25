@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import datetime
 import glob
+import json
 import logging
 import operator
 import optparse
@@ -274,6 +275,48 @@ class ResultCollector(object):
             else:
                 return False
 
+    def _get_failure_msg_from_status(self, status_raw):
+        reason_tags = 'ABORT|ERROR|FAIL|WARN|TEST_NA'
+        match = re.search(r'^\t+(%s)\t(.+)' % (reason_tags),
+                          status_raw, re.MULTILINE)
+
+        error_msg = 'Reason Unknown'
+        if match:
+            failure_type = match.group(1)
+            reason = match.group(2).split('\t')[4]
+            if self._escape_error:
+                reason = re.escape(reason)
+            error_msg = ': '.join([failure_type, reason])
+
+        return error_msg
+
+    def _get_full_status(self, status_raw):
+        """Collect the full status of a test, and err msg if any.
+
+        This will grab the full status, rather than just pass/fail.
+        Additionally, if there is an err msg, it will be scraped as well.
+
+        @param status_raw: the status log, as a string.
+
+        @return The full status, and the err msg, if any.
+
+        """
+        status = 'Error'
+        if re.search(r'%s' % 'FAIL', status_raw):
+            status = 'Fail'
+        elif re.search(r'%s' % 'ERROR', status_raw):
+            status = 'Error'
+        elif re.search(r'%s' % 'ABORT', status_raw):
+            status = 'Abort'
+        elif re.search(r'%s' % 'WARN', status_raw):
+            status = 'Warn'
+        elif re.search(r'%s' % 'TEST_NA', status_raw):
+            status = 'Not Run'
+        elif re.search(r'GOOD.+completed successfully', status_raw):
+            status = 'Pass'
+            return status, None
+
+        return status, self._get_failure_msg_from_status(status_raw)
 
     def _CollectResult(self, testdir, results, is_experimental=False):
         """Collects results stored under testdir into a dictionary.
@@ -313,8 +356,11 @@ class ResultCollector(object):
 
         """
         status_file = os.path.join(testdir, 'status.log')
+        top_level = True
+
         if not os.path.isfile(status_file):
             status_file = os.path.join(testdir, 'status')
+            top_level = False
             if not os.path.isfile(status_file):
                 return
 
@@ -334,15 +380,7 @@ class ResultCollector(object):
             status = True
 
         if not good:
-            match = re.search(r'^\t+(%s|%s)\t(.+)' % (failure_tags,
-                                                      warning_tag),
-                              status_raw, re.MULTILINE)
-            if match:
-                failure_type = match.group(1)
-                reason = match.group(2).split('\t')[4]
-                if self._escape_error:
-                    reason = re.escape(reason)
-                error_msg = ': '.join([failure_type, reason])
+            error_msg = self._get_failure_msg_from_status(status_raw)
 
         # Grab the timestamp - can be used for sorting the test runs.
         # Grab the localtime - may be printed to enable line filtering by date.
@@ -355,6 +393,10 @@ class ResultCollector(object):
         if not timestamp:
             timestamp, localtime = self._CollectEndTimes(status_raw,
                                                          is_end=False)
+        if not top_level:
+            full_status, err = self._get_full_status(status_raw)
+        else:
+            full_status, err = None, None
 
         results.append({
                 'testdir': testdir,
@@ -367,7 +409,10 @@ class ResultCollector(object):
                 'attr': self._CollectAttr(testdir),
                 'info': self._CollectInfo(testdir, {'localtime': localtime,
                                                     'timestamp': timestamp}),
-                'experimental': is_experimental})
+                'experimental': is_experimental,
+                'full_status': full_status,
+                'full_err': err
+                })
 
     def RecursivelyCollectResults(self, resdir, parent_experimental_tag=False):
         """Recursively collect results into a list of dictionaries.
@@ -860,9 +905,31 @@ class ReportGenerator(object):
             sys.stderr.flush()
             sys.stdout.flush()
 
+    def _translate_to_dict(self):
+        """Retrun the full_status, testname, and err to a json dict."""
+        res = {'tests': []}
+        for test_info in self._results:
+            if test_info['full_status'] is None:
+                continue
+            res['tests'].append(
+                {'verdict': test_info['full_status'],
+                 'testname': test_info['testdir'].split('/')[-1],
+                 'errmsg': test_info['full_err']})
+        return res
+
+    def _write_simple_json(self):
+        """Write the translated json results to results.json."""
+        if not self._options.html_report_dir:
+            return
+        json_results = self._translate_to_dict()
+        with open(os.path.join(self._options.html_report_dir,
+                               "results.json"), 'w') as wf:
+                json.dump(json_results, wf)
+
     def Run(self):
         """Runs report generation."""
         self._CollectAllResults()
+        self._write_simple_json()
         if not self._options.just_status_code:
             self._GenerateReportText()
             if self._options.html:

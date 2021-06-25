@@ -12,11 +12,11 @@ from autotest_lib.client.common_lib.cros import power_cycle_usb_util
 from autotest_lib.client.common_lib.cros.cfm.usb import cfm_usb_devices
 from autotest_lib.client.common_lib.cros.cfm.usb import usb_device_collector
 
-
 LONG_TIMEOUT = 20
 SHORT_TIMEOUT = 5
 
-class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
+
+class enterprise_CFM_MimoCheck(cfm_base_test.CfmBaseTest):
     """Tests the following fuctionality works on CFM enrolled devices:
            1. Verify CfM has Camera, Speaker and Mimo connected.
            2. Verify all peripherals have expected usb interfaces.
@@ -25,27 +25,24 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
     """
     version = 1
 
-
     def _power_cycle_mimo_device(self):
         """Power Cycle Mimo device"""
         logging.info('Plan to power cycle Mimo')
         try:
             power_cycle_usb_util.power_cycle_usb_vidpid(
-                self._host, self._board,
-                self._mimo.vendor_id, self._mimo.product_id)
+                    self._host, self._board, self._mimo.vendor_id,
+                    self._mimo.product_id)
         except KeyError:
-           raise error.TestFail('Could not find target device: %s',
-                                self._mimo.product)
-
+            raise error.TestFail('Could not find target device: %s',
+                                 self._mimo.product)
 
     def _test_power_cycle_mimo(self):
         """Power Cycle Mimo device for multiple times"""
         self._power_cycle_mimo_device()
-        logging.info('Powercycle done for %s (%s)',
-                     self._mimo.product, self._mimo.vid_pid)
+        logging.info('Powercycle done for %s (%s)', self._mimo.product,
+                     self._mimo.vid_pid)
         time.sleep(LONG_TIMEOUT)
-        self._kernel_usb_sanity_test()
-
+        self._kernel_usb_functional_test()
 
     def _check_peripherals(self):
         """
@@ -64,7 +61,6 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
             raise error.TestFail('Expected to find a connected camera.')
         self._huddly = huddlys[0]
 
-
         displays = self.device_collector.get_devices_by_spec(
                 *cfm_usb_devices.ALL_MIMO_DISPLAYS)
         if not displays:
@@ -74,9 +70,8 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
                                  'connected. Found %d' % len(displays))
         self._mimo = displays[0]
 
-
         controllers = self.device_collector.get_devices_by_spec(
-            cfm_usb_devices.MIMO_VUE_HID_TOUCH_CONTROLLER)
+                cfm_usb_devices.MIMO_VUE_HID_TOUCH_CONTROLLER)
         if not controllers:
             raise error.TestFail('Expected a MiMO controller to be connected.')
         if len(controllers) != 1:
@@ -88,11 +83,11 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         for device in self.device_collector.get_devices_by_spec(spec):
             if not device.interfaces_match_spec(spec):
                 raise error.TestFail(
-                    'Device %s has unexpected interfaces.'
-                    'Expected: %s. Actual: %s' % (device, spec.interfaces,
-                                                  spec.interfaces))
+                        'Device %s has unexpected interfaces.'
+                        'Expected: %s. Actual: %s' %
+                        (device, spec.interfaces, spec.interfaces))
 
-    def _kernel_usb_sanity_test(self):
+    def _kernel_usb_functional_test(self):
         """
         Check connected camera, speaker and Mimo have expected usb interfaces.
         """
@@ -110,10 +105,9 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         self.cfm_facade.restart_chrome_for_cfm()
         time.sleep(SHORT_TIMEOUT)
         self.cfm_facade.wait_for_telemetry_commands()
-        self._kernel_usb_sanity_test()
+        self._kernel_usb_functional_test()
 
-
-    def _test_mimo_in_call(self) :
+    def _test_mimo_in_call(self):
         """
         Start a hangout session and end the session after random time.
 
@@ -123,11 +117,11 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         if self._is_meeting:
             self.cfm_facade.start_meeting_session()
         else:
-            self.cfm_facade.start_new_hangout_session('mimo-sanity-test')
+            self.cfm_facade.start_new_hangout_session('mimo-functional-test')
         time.sleep(random.randrange(SHORT_TIMEOUT, LONG_TIMEOUT))
 
         # Verify USB data in-call.
-        self._kernel_usb_sanity_test()
+        self._kernel_usb_functional_test()
 
         if self._is_meeting:
             self.cfm_facade.end_meeting_session()
@@ -136,9 +130,8 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         logging.info('Session has ended.')
 
         # Verify USB devices after leaving the call.
-        self._kernel_usb_sanity_test()
+        self._kernel_usb_functional_test()
         time.sleep(SHORT_TIMEOUT)
-
 
     def run_once(self, repetitions, is_meeting):
         """
@@ -151,13 +144,13 @@ class enterprise_CFM_MimoSanity(cfm_base_test.CfmBaseTest):
         self._is_meeting = is_meeting
 
         self.device_collector = usb_device_collector.UsbDeviceCollector(
-            self._host)
+                self._host)
         self._check_peripherals()
-        self._kernel_usb_sanity_test()
+        self._kernel_usb_functional_test()
 
         self.cfm_facade.wait_for_telemetry_commands()
 
-        for i in xrange(1, repetitions + 1):
+        for i in range(1, repetitions + 1):
             logging.info('Running test cycle %d/%d', i, repetitions)
             self._test_reboot()
             self._test_mimo_in_call()

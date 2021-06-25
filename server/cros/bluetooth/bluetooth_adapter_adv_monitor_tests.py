@@ -1567,7 +1567,7 @@ class BluetoothAdapterAdvMonitorTests(
 
         # DeviceFound should not get triggered as device went offline.
         # No device was found earlier, so DeviceLost should not get triggered.
-        self.test_stop_peer_device_adv(self.peer_keybd, duration=10)
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=11)
         self.test_device_found(monitor1, count=0)
         self.test_device_lost(monitor1, count=0)
 

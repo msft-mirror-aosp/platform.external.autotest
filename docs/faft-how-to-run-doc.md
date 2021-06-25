@@ -2,18 +2,7 @@
 
 _Self-link: [go/faft-running](https://goto.google.com/faft-running)_
 
-- [How to run FAFT (Fully Automated Firmware Test)](#faft-how-to-run)
-  - [FAFT Overview](#faft-overview)
-  - [Hardware Setup](#hardware-setup)
-    - [ServoV4 Type-A with servo micro](#servov4-typea-micro)
-    - [ServoV4 Type-C](#servov4-typec)
-    - [ServoV4 Type-C with servo micro](#servov4-typec-micro)
-    - [(Deprecated) ServoV2](#servov2-deprecated)
-    - [Installing Test Image onto USB Stick](#image-onto-usb)
-  - [Running Tests](#faft-running-tests)
-    - [Setup Confirmation](#setup-confirmation)
-    - [Sample Commands](#sample-commands)
-  - [Frequently Asked Questions (FAQ)](#faq)
+[TOC]
 
 ## FAFT Overview {#faft-overview}
 
@@ -211,21 +200,19 @@ the SDK, using either multiple SDK instances (`cros_sdk --enter --no-ns-pid`)
 or a tool such as `screen` inside an SDK instance. Before running any tests, go
 into the chroot:
 
-1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
-1.  Go into a second chroot
-1.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
-1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --board=$BOARD $DUT_IP firmware_FAFTSetup`
+1.  Make sure your tools are up to date.
+    1.  Run `repo sync -j8`
+    2.  Run `./update_chroot`
+2.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
+3.  Go into a second chroot
+4.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
+5.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`
+6.  Run the `firmware.Pre.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Pre.normal`
 
-It is important to note that this syntax will work only if the correct packages
-for the DUT have been built. To build the packages, which usually takes
-a few hours, run the following from chroot:
+You can omit the --autotest_dir if you have built packages for the board and want to use the build version of the tests, i.e.:
 
 (chroot) `$ ./build_packages --board=$BOARD` where `$BOARD` is the code name of the board under test
-
-If packages have not been built, the command won't work unless a path to the
-autotest directory is included in the command as follows:
-
-(chroot) `$ test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --args="servo_host=localhost servo_port=9999" -b $BOARD $IP $TEST_NAME`
+(chroot) `$ /usr/bin/test_that --board=$BOARD $DUT_IP firmware_FAFTSetup`
 
 ### Sample Commands {#sample-commands}
 
@@ -233,40 +220,40 @@ A few sample invocations of launching Autotest tests against a DUT:
 
 Running FAFT test with test case name
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP f:.*DevMode/control`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP f:.*DevMode/control`
 
 Some tests can be run in either normal mode or dev mode, specify the control file
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP f:.*TryFwB/control.dev`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP f:.*TryFwB/control.dev`
 
 FAFT can install Chrome OS image from the USB when image filename is specified
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE" f:.*RecoveryButton/control.normal`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE" f:.*RecoveryButton/control.normal`
 
 To update the firmware using the shellball in the image, specify the argument firmware_update=1
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE firmware_update=1" f:.*RecoveryButton/control.normal`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE firmware_update=1" f:.*RecoveryButton/control.normal`
 
 Run the entire faft_bios suite
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP suite:faft_bios`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_bios`
 
 Run the entire faft_ec suite
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP suite:faft_ec`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_ec`
 
 Run the entire faft_pd suite
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP suite:faft_pd`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_pd`
 
 To run servod in a different host, specify the servo_host and servo_port arguments.
 
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP --args "servo_host=$SERVO_HOST servo_port=$SERVO_PORT" suite:faft_lv1`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=$SERVO_HOST servo_port=$SERVO_PORT" suite:faft_lv1`
 
 To run multiple servo boards on the same servo host (labstation), use serial and port number.
 
 - `$ sudo servod --board=$BOARD --port $port_number --serial $servo_serial_number`
-- `$ /usr/bin/test_that --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number faft_iterations=5000" f:.*firmware_ConsecutiveBoot/control`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number faft_iterations=5000" f:.*firmware_ConsecutiveBoot/control`
 
 ## Frequently Asked Questions (FAQ) {#faq}
 

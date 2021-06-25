@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.11_r4.arm.CtsMediaTestCases.video'
-ATTRIBUTES = 'suite:arc-cts-r'
+ATTRIBUTES = 'suite:arc-cts-r, suite:arc-cts'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

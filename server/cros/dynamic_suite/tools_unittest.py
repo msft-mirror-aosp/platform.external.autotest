@@ -10,7 +10,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import mox
+from mock import patch, MagicMock
 import six
 import unittest
 
@@ -23,7 +23,7 @@ from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server import frontend
 
 
-class DynamicSuiteToolsTest(mox.MoxTestBase):
+class DynamicSuiteToolsTest(unittest.TestCase):
     """Unit tests for dynamic_suite tools module methods.
 
     @var _BOARD: fake board to reimage
@@ -35,8 +35,8 @@ class DynamicSuiteToolsTest(mox.MoxTestBase):
 
     def setUp(self):
         super(DynamicSuiteToolsTest, self).setUp()
-        self.afe = self.mox.CreateMock(frontend.AFE)
-        self.tko = self.mox.CreateMock(frontend.TKO)
+        self.afe = MagicMock()
+        self.tko = MagicMock()
         # Having these ordered by complexity is important!
         host_spec_list = [HostSpec([self._BOARD, self._POOL])]
         for dep_list in six.itervalues(self._DEPENDENCIES):
@@ -112,9 +112,11 @@ def init():
     def testNotIncorrectlyLocked(self):
         """Should accept hosts locked by the infrastructure."""
         infra_user = 'an infra user'
-        self.mox.StubOutWithMock(tools, 'infrastructure_user')
-        tools.infrastructure_user().AndReturn(infra_user)
-        self.mox.ReplayAll()
+        patcher = patch.object(tools, 'infrastructure_user')
+        tools_mock = patcher.start()
+        self.addCleanup(patcher.stop)
+        tools_mock.return_value = infra_user
+
         host = FakeHost(locked=True, locked_by=infra_user)
         self.assertFalse(tools.incorrectly_locked(host))
 

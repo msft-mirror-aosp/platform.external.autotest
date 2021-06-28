@@ -75,6 +75,17 @@ class camera_CameraRecordVideoStress(power_test.power_Test):
         self.ui.wait_for_ui_obj(self._START_RECORDING, isRegex=True,
                            role=self._BUTTON)
 
+    def check_video_size(self):
+        """ This function checks the size of latest recoded video """
+        video_size = 0
+        files_after_capture = [os.path.join(self._VIDEO_LOCATION, file)
+                for file in os.listdir(self._VIDEO_LOCATION)]
+        latest_file = max(files_after_capture, key=os.path.getctime)
+        logging.info("Latest file: %s" % latest_file)
+        video_size = os.path.getsize(latest_file)
+        if video_size == 0:
+            raise error.TestFail("recorded video size is zero")
+
     def take_video(self, video):
         """
         This function helps in recording the videos using camera app
@@ -115,6 +126,8 @@ class camera_CameraRecordVideoStress(power_test.power_Test):
         if current_video_count <= self.previous_video_count:
             self.videos_not_saved += 1
             logging.info("video %d is not saved" % video)
+        else:
+            self.check_video_size()
 
     def run_once(self, videos=1):
         self.initialize_test()

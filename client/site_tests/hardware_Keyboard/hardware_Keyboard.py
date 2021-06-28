@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import glob, logging, os, sys, commands
+import glob, logging, os, commands
 
-from autotest_lib.client.bin import test, utils
+from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 
 class hardware_Keyboard(test.test):
@@ -26,18 +26,14 @@ class hardware_Keyboard(test.test):
     live_test_key = 'LeftMeta'
     preserve_srcdir = True
 
-    def setup(self):
-        os.chdir(self.srcdir)
-        utils.make()
-
     def _supported(self, event, key_name):
         cmd = os.path.join(self.srcdir, 'evtest') + ' ' + event
         cmd += ' -s ' + key_name
         (status, output) = commands.getstatusoutput(cmd)
         if status:
-            logging.error('Unsupported Key : %s' % key_name)
+            logging.error('Unsupported Key : %s', key_name)
             return False
-        logging.info('%s : %s' % (key_name, output))
+        logging.info('%s : %s', key_name, output)
         return True
 
     def run_once(self):
@@ -49,15 +45,15 @@ class hardware_Keyboard(test.test):
             cmd += ' -n'
             (status, output) = commands.getstatusoutput(cmd)
             if status:  ## bad event, log the command's output as a warning
-                logging.warning("Bad event. cmd : %s" % cmd)
+                logging.warning("Bad event. cmd : %s", cmd)
                 logging.warning(output)
                 continue
             num_keys = int(output)
             if (num_keys > high_key_count):
                 high_key_count = num_keys
                 high_key_event = event
-        logging.info('Event with most is %s with %d keys' % (high_key_event,
-                                                             high_key_count))
+        logging.info('Event with most is %s with %d keys', high_key_event,
+                     high_key_count)
         if (high_key_count < len(hardware_Keyboard.supported_keys)):
             raise error.TestError('No suitable keyboard found.')
         # Check that all necessary keyboard keys exist.

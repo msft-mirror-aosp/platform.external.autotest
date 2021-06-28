@@ -20,8 +20,14 @@ import os.path
 import re
 import time
 
-from input_device import InputDevice, InputEvent
 from optparse import OptionParser
+# Try to import from the autotest_lib structure. If it fails try the default.
+# If this script was run outside of autotest the "except" would be the flow.
+# If run within, the "try" is the flow.
+try:
+    from autotest_lib.client.bin.input.input_device import InputDevice, InputEvent
+except ImportError:
+    from input_device import InputDevice, InputEvent
 
 
 class InputEventPlayer:

@@ -96,6 +96,18 @@
       "tool": "tast",
       "test_expr": "ui.VideoCUJ2.plus_youtube_app",
       "attributes": ["plus"]
+    },
+    {
+      "name": "everyday-basic-ytmusic",
+      "tool": "tast",
+      "test_expr": "ui.EverydayMultiTaskingCUJ.basic_ytmusic",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "everyday-plus-ytmusic",
+      "tool": "tast",
+      "test_expr": "ui.EverydayMultiTaskingCUJ.plus_ytmusic",
+      "attributes": ["plus"]
     }
   ],
   "suites": [
@@ -118,7 +130,9 @@
         {"test": "video-basic-youtube-web", "repeats": 1},
         {"test": "video-plus-youtube-web", "repeats": 1},
         {"test": "video-basic-youtube-app", "repeats": 1},
-        {"test": "video-plus-youtube-app", "repeats": 1}
+        {"test": "video-plus-youtube-app", "repeats": 1},
+        {"test": "everyday-basic-ytmusic", "repeats": 1},
+        {"test": "everyday-plus-ytmusic", "repeats": 1}
       ]
     },
     {
@@ -130,7 +144,8 @@
         {"test": "meet-premium-large", "repeats": 1},
         {"test": "tabswitch-basic-noproxy", "repeats": 1},
         {"test": "quick-check-unlock", "repeats": 1},
-        {"test": "quick-check-wakeup", "repeats": 1}
+        {"test": "quick-check-wakeup", "repeats": 1},
+        {"test": "video-basic-youtube-web", "repeats": 1}
       ]
     }
   ]

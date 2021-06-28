@@ -7,7 +7,11 @@ from datetime import datetime
 import logging
 import os
 import re
+import subprocess
 import time
+
+
+SYSLOG_PATH = '/var/log/messages'
 
 
 class LogManager(object):
@@ -17,21 +21,29 @@ class LogManager(object):
         """A stub exception class for LogManager class."""
         pass
 
-    def __init__(self, log_path):
+    def __init__(self, log_path=SYSLOG_PATH, raise_missing=False):
         """Initialize log manager object
 
         @param log_path: string path to log file to manage
+        @param raise_missing: raise an exception if the log file is missing
 
         @raises: LogManager.LoggingException on non-existent log file
         """
         if not os.path.isfile(log_path):
             msg = 'Requested log file {} does not exist'.format(log_path)
-            raise LogManager.LoggingException(msg)
+            if raise_missing:
+                raise LogManager.LoggingException(msg)
+            else:
+                self._LogErrorToSyslog(msg)
 
         self.log_path = log_path
 
         self.initial_log_size = -1
         self.log_contents = []
+
+    def _LogErrorToSyslog(self, message):
+        """Log a message to syslog."""
+        subprocess.call(['logger', message])
 
     def _GetSize(self):
         """Get the size of the log"""
@@ -115,8 +127,6 @@ class LogManager(object):
 class InterleaveLogger(LogManager):
     """LogManager class that focus on interleave scan"""
 
-    SYSLOG_PATH = '/var/log/messages'
-
     # Example bluetooth kernel log:
     # "2020-11-23T07:52:31.395941Z DEBUG kernel: [ 6469.811135] Bluetooth: "
     # "cancel_interleave_scan() hci0: cancelling interleave scan"
@@ -136,7 +146,7 @@ class InterleaveLogger(LogManager):
         self.reset()
         self.state_pattern = re.compile(self.STATE_PATTERN)
         self.cancel_pattern = re.compile(self.CANCEL_PATTERN)
-        super(InterleaveLogger, self).__init__(self.SYSLOG_PATH)
+        super(InterleaveLogger, self).__init__()
 
     def reset(self):
         """ Clear data between each log collection attempt

@@ -130,7 +130,7 @@ class BluetoothBaseFacadeNative(object):
 
     def __init__(self):
         # Initialize a messages object to record general logging.
-        self.messages = logger_helper.LogManager('/var/log/messages')
+        self.messages = logger_helper.LogManager()
 
         # Set up cras test client for audio tests
         self._cras_test_client = cras_utils.CrasTestClient()

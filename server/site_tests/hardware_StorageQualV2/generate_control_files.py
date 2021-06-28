@@ -22,6 +22,7 @@ HOUR_IN_SECS = 60 * 60
 SUITE = 'storage_qual_v2'
 TEST_PREFIX = 'storage.FullQualificationStress.'
 TEMPLATE_FILE = 'template.control.storage_qual'
+MAX_DUTS = 4
 
 TESTS = [{
         'test': 'setup',
@@ -79,15 +80,17 @@ template = _read_template_file(
 
 for test in TESTS:
     for i in range(int(test['iterations'])):
-        test_name = test['test'].format(index=i + 1)
-        control_file = template.format(
-                name='_'.join([SUITE, test_name]),
-                priority=int(test['priority'] - i),
-                duration=int(test['duration']),
-                test_exprs=TEST_PREFIX + test['tast_name'],
-                length=test['length'],
-                version=STORAGE_QUAL_VERSION,
-                attributes=", ".join(_get_suite_attributes(i)),
-        )
-        control_file_name = 'control.' + '_'.join([SUITE, test_name])
-        _write_control_file(control_file_name, control_file)
+        for d in range(1, MAX_DUTS + 1):
+          test_name = test['test'].format(index=i + 1)
+          control_file = template.format(
+                  name='_'.join([SUITE, test_name]),
+                  priority=int(test['priority'] - i),
+                  duration=int(test['duration']),
+                  test_exprs=TEST_PREFIX + test['tast_name'],
+                  length=test['length'],
+                  version=STORAGE_QUAL_VERSION,
+                  attributes=", ".join(_get_suite_attributes(i)),
+                  dependency="dut:%d" % d,
+          )
+          control_file_name = 'control.' + '_'.join([SUITE, test_name, str(d)])
+          _write_control_file(control_file_name, control_file)

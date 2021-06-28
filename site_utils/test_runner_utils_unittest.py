@@ -7,9 +7,12 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import os, unittest
-import mox
+import os
+import unittest
+
 import common
+
+from mock import patch
 import shutil
 import tempfile
 import types
@@ -18,48 +21,42 @@ from autotest_lib.server.cros.dynamic_suite import control_file_getter
 from autotest_lib.server.cros.dynamic_suite import suite as suite_module
 from autotest_lib.server.hosts import host_info
 from autotest_lib.site_utils import test_runner_utils
-from six.moves import range
-from six.moves import zip
 
 
-class StartsWithList(mox.Comparator):
-    def __init__(self, start_of_list):
-        """Mox comparator which returns True if the argument
-        to the mocked function is a list that begins with the elements
-        in start_of_list.
-        """
-        self._lhs = start_of_list
+class TypeMatcher(object):
+    """Matcher for object is of type."""
 
-    def equals(self, rhs):
-        if len(rhs)<len(self._lhs):
+    def __init__(self, expected_type):
+        self.expected_type = expected_type
+
+    def __eq__(self, other):
+        return isinstance(other, self.expected_type)
+
+
+class ContainsMatcher:
+    """Matcher for object contains attr."""
+
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+    def __eq__(self, rhs):
+        try:
+            return getattr(rhs, self._key) == self._value
+        except Exception:
             return False
-        for (x, y) in zip(self._lhs, rhs):
-            if x != y:
-                return False
-        return True
 
 
-class ContainsSublist(mox.Comparator):
-    def __init__(self, sublist):
-        """Mox comparator which returns True if the argument
-        to the mocked function is a list that contains sublist
-        as a sub-list.
-        """
-        self._sublist = sublist
+class SampleJob(object):
+    """Sample to be used for mocks."""
 
-    def equals(self, rhs):
-        n = len(self._sublist)
-        if len(rhs)<n:
-            return False
-        return any((self._sublist == rhs[i:i+n])
-                   for i in range(len(rhs) - n + 1))
-
-class DummyJob(object):
     def __init__(self, id=1):
         self.id = id
 
 
-class fake_tests(object):
+class FakeTests(object):
+    """A fake test to be used for mocks."""
+
     def __init__(self, text, deps=[]):
         self.text = text
         self.test_type = 'client'
@@ -67,7 +64,9 @@ class fake_tests(object):
         self.name = None
 
 
-class TestRunnerUnittests(mox.MoxTestBase):
+class TestRunnerUnittests(unittest.TestCase):
+    """Test test_runner_utils."""
+
     autotest_path = 'ottotest_path'
     suite_name = 'sweet_name'
     test_arg = 'suite:' + suite_name
@@ -82,10 +81,6 @@ class TestRunnerUnittests(mox.MoxTestBase):
     ssh_options = '-F /dev/null -i /dev/null'
     args = 'matey'
     retry = True
-
-    def setUp(self):
-        mox.MoxTestBase.setUp(self)
-
 
     def _results_directory_from_results_list(self, results_list):
         """Generate a temp directory filled with provided test results.
@@ -107,16 +102,18 @@ class TestRunnerUnittests(mox.MoxTestBase):
                 status.flush()
         return global_dir
 
-
     def test_handle_local_result_for_good_test(self):
-        getter = self.mox.CreateMock(control_file_getter.DevServerGetter)
-        getter.get_control_file_list(suite_name=mox.IgnoreArg()).AndReturn([])
-        job = DummyJob()
-        test = self.mox.CreateMock(control_data.ControlData)
+        patcher = patch.object(control_file_getter, 'DevServerGetter')
+        getter = patcher.start()
+        self.addCleanup(patcher.stop)
+        getter.get_control_file_list.return_value = []
+        job = SampleJob()
+
+        test_patcher = patch.object(control_data, 'ControlData')
+        test = test_patcher.start()
+        self.addCleanup(test_patcher.stop)
         test.job_retries = 5
-        self.mox.StubOutWithMock(test_runner_utils.LocalSuite,
-                                 '_retry_local_result')
-        self.mox.ReplayAll()
+
         suite = test_runner_utils.LocalSuite([], "tag", [], None, getter,
                                              job_retry=True)
         suite._retry_handler = suite_module.RetryHandler({job.id: test})
@@ -130,18 +127,25 @@ class TestRunnerUnittests(mox.MoxTestBase):
         self.assertIsNone(new_id)
         shutil.rmtree(directory)
 
-
     def test_handle_local_result_for_bad_test(self):
-        getter = self.mox.CreateMock(control_file_getter.DevServerGetter)
-        getter.get_control_file_list(suite_name=mox.IgnoreArg()).AndReturn([])
-        job = DummyJob()
-        test = self.mox.CreateMock(control_data.ControlData)
+        patcher = patch.object(control_file_getter, 'DevServerGetter')
+        getter = patcher.start()
+        self.addCleanup(patcher.stop)
+        getter.get_control_file_list.return_value = []
+
+        job = SampleJob()
+
+        test_patcher = patch.object(control_data, 'ControlData')
+        test = test_patcher.start()
+        self.addCleanup(test_patcher.stop)
         test.job_retries = 5
-        self.mox.StubOutWithMock(test_runner_utils.LocalSuite,
-                                 '_retry_local_result')
-        test_runner_utils.LocalSuite._retry_local_result(
-            job.id, mox.IgnoreArg()).AndReturn(42)
-        self.mox.ReplayAll()
+
+        utils_mock = patch.object(test_runner_utils.LocalSuite,
+                                  '_retry_local_result')
+        test_runner_utils_mock = utils_mock.start()
+        self.addCleanup(utils_mock.stop)
+        test_runner_utils_mock._retry_local_result.return_value = 42
+
         suite = test_runner_utils.LocalSuite([], "tag", [], None, getter,
                                              job_retry=True)
         suite._retry_handler = suite_module.RetryHandler({job.id: test})
@@ -190,37 +194,29 @@ class TestRunnerUnittests(mox.MoxTestBase):
 
     def test_perform_local_run(self):
         """Test a local run that should pass."""
-        self.mox.StubOutWithMock(test_runner_utils, '_auto_detect_labels')
-        self.mox.StubOutWithMock(test_runner_utils, 'get_all_control_files')
+        patcher = patch.object(test_runner_utils, '_auto_detect_labels')
+        _auto_detect_labels_mock = patcher.start()
+        self.addCleanup(patcher.stop)
 
-        test_runner_utils._auto_detect_labels(self.remote).AndReturn(
-                ['os:cros', 'has_chameleon:True'])
+        patcher2 = patch.object(test_runner_utils, 'get_all_control_files')
+        get_all_control_files_mock = patcher2.start()
+        self.addCleanup(patcher2.stop)
 
-        test_runner_utils.get_all_control_files(
-                self.test_arg, self.autotest_path).AndReturn([
-                        fake_tests(test, deps=['has_chameleon:True'])
-                        for test in self.suite_control_files
-                ])
+        _auto_detect_labels_mock.return_value = [
+                'os:cros', 'has_chameleon:True'
+        ]
 
-        self.mox.StubOutWithMock(test_runner_utils, 'run_job')
+        get_all_control_files_mock.return_value = [
+                FakeTests(test, deps=['has_chameleon:True'])
+                for test in self.suite_control_files
+        ]
+
+        patcher3 = patch.object(test_runner_utils, 'run_job')
+        run_job_mock = patcher3.start()
+        self.addCleanup(patcher3.stop)
+
         for control_file in self.suite_control_files:
-            test_runner_utils.run_job(
-                    mox.ContainsAttributeValue('control_file', control_file),
-                    self.remote,
-                    mox.IsA(host_info.HostInfo),
-                    self.autotest_path,
-                    self.results_dir,
-                    self.fast_mode,
-                    self.id_digits,
-                    self.ssh_verbosity,
-                    self.ssh_options,
-                    mox.StrContains(self.args),
-                    False,
-                    False,
-                    None,
-            ).AndReturn((0, '/fake/dir'))
-
-        self.mox.ReplayAll()
+            run_job_mock.return_value = (0, '/fake/dir')
         test_runner_utils.perform_local_run(self.autotest_path,
                                             ['suite:' + self.suite_name],
                                             self.remote,
@@ -233,22 +229,37 @@ class TestRunnerUnittests(mox.MoxTestBase):
                                             results_directory=self.results_dir,
                                             job_retry=self.retry,
                                             ignore_deps=False)
+        run_job_mock.assert_called_with(
+                TypeMatcher(test_runner_utils.SimpleJob),
+                self.remote,
+                TypeMatcher(host_info.HostInfo),
+                self.autotest_path,
+                self.results_dir,
+                self.fast_mode,
+                self.id_digits,
+                self.ssh_verbosity,
+                self.ssh_options,
+                TypeMatcher(str),
+                False,
+                False,
+                None,
+        )
 
     def test_perform_local_run_missing_deps(self):
         """Test a local run with missing dependencies. No tests should run."""
-        self.mox.StubOutWithMock(test_runner_utils, '_auto_detect_labels')
-        self.mox.StubOutWithMock(test_runner_utils, 'get_all_control_files')
+        patcher = patch.object(test_runner_utils, '_auto_detect_labels')
+        getter = patcher.start()
+        self.addCleanup(patcher.stop)
 
-        test_runner_utils._auto_detect_labels(self.remote).AndReturn(
-                ['os:cros', 'has_chameleon:True'])
+        getter.return_value = ['os:cros', 'has_chameleon:True']
 
-        test_runner_utils.get_all_control_files(
-                self.test_arg, self.autotest_path).AndReturn([
-                        fake_tests(test, deps=['has_chameleon:False'])
-                        for test in self.suite_control_files
-                ])
-
-        self.mox.ReplayAll()
+        patcher2 = patch.object(test_runner_utils, 'get_all_control_files')
+        test_runner_utils_mock = patcher2.start()
+        self.addCleanup(patcher2.stop)
+        test_runner_utils_mock.return_value = [
+                FakeTests(test, deps=['has_chameleon:False'])
+                for test in self.suite_control_files
+        ]
 
         res = test_runner_utils.perform_local_run(
                 self.autotest_path, ['suite:' + self.suite_name],

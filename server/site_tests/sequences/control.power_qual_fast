@@ -4,6 +4,8 @@
 
 AUTHOR = "puthik"
 NAME = "PowerQual.fast"
+ATTRIBUTES = "suite:power_qual_fast"
+DEPENDENCIES = 'wifi_connected_dut'
 TIME = "LENGTHY"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "suite"

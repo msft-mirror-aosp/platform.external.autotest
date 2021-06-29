@@ -257,6 +257,7 @@ suite:platform_internal_display
 suite:platform_test_nightly
 suite:policy
 suite:power_build
+suite:power_check
 suite:power_daily
 suite:power_dashboard
 suite:power_idle
@@ -265,8 +266,9 @@ suite:power_loadtest_1hour
 suite:power_loadtest_fast
 suite:power_measurement_wrapper
 suite:power_monitoring
+suite:power_qual_fast
+suite:power_qual_full
 suite:power_requirements
-suite:power_check
 suite:powerplay
 suite:push_to_prod
 suite:pvs-staging

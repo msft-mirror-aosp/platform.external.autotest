@@ -30,8 +30,9 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     # TODO(b/182172118) - Winky has suspend test issues
+    # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Multiple LE advertising test',
-                  skip_models=['dru', 'druwl', 'winky'],
+                  skip_models=['dru', 'druwl', 'dumo', 'winky'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
@@ -50,8 +51,9 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     # TODO(b/182172118) - Winky has suspend test issues
+    # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Suspend resume LE advertising test',
-                  skip_models=['dru', 'druwl', 'winky'],
+                  skip_models=['dru', 'druwl', 'dumo', 'winky'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for multiple advertisements."""
@@ -95,9 +97,10 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                                      num_iterations=1)
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
+    # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Advertising suspend peer test',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=['dru', 'druwl'],
+                  skip_models=['dru', 'druwl', 'dumo'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def adv_suspend_peer_test(self):
         """Verify advertising around suspend from a peer"""

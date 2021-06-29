@@ -251,11 +251,14 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     @staticmethod
-    def quick_test_test_decorator(test_name, devices={}, flags=['All'],
+    def quick_test_test_decorator(test_name,
+                                  devices={},
+                                  flags=['All'],
                                   model_testNA=[],
                                   model_testWarn=[],
                                   skip_models=[],
                                   skip_chipsets=[],
+                                  skip_common_errors=False,
                                   shared_devices_count=0):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
@@ -276,7 +279,15 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                to run the tests.
            @param skip_chipsets: Raises TestNA on these chipset and doesn't
                                  attempt to run the tests.
-
+           @param skip_common_errors: If the test encounters a common error
+                                      (such as USB disconnect or daemon crash),
+                                      mark the test as TESTNA instead.
+                                      USE THIS SPARINGLY, it may mask bugs. This
+                                      is available for tests that require state
+                                      to be properly retained throughout the
+                                      whole test (i.e. advertising) and any
+                                      outside failure will cause the test to
+                                      fail.
         """
 
         def decorator(test_method):
@@ -380,7 +391,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                             test_method.__name__, str(e)))
 
                 self.quick_test_test_end(model_testNA=model_testNA,
-                                         model_testWarn=model_testWarn)
+                                         model_testWarn=model_testWarn,
+                                         skip_common_errors=skip_common_errors)
+
             return wrapper
 
         return decorator
@@ -415,7 +428,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             logging.info('Starting test: %s', test_name)
             self.log_message('Starting test: %s'% test_name)
 
-    def quick_test_test_end(self, model_testNA=[], model_testWarn=[]):
+    def quick_test_test_end(self,
+                            model_testNA=[],
+                            model_testWarn=[],
+                            skip_common_errors=False):
         """Log and track the test results"""
         result_msgs = []
         model = self.get_base_platform_name()
@@ -453,6 +469,15 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             result_msg = 'WARN   | ' + result_msg
             self.bat_warn_count += 1
             self.pkg_warn_count += 1
+        # Some tests may fail due to known common failure reasons (like usb
+        # disconnect during suspend, bluetoothd crashes, etc). Skip those tests
+        # with TESTNA when that happens.
+        #
+        # This should be used sparingly because it may hide legitimate errors.
+        elif bool(self.had_known_common_failure) and skip_common_errors:
+            result_msg = 'TESTNA | ' + result_msg
+            self.bat_testna_count += 1
+            self.pkg_testna_count += 1
         else:
             result_msg = 'FAIL   | ' + result_msg
             self.bat_fail_count += 1

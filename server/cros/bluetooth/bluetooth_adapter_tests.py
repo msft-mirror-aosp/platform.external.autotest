@@ -429,13 +429,17 @@ def _flag_common_failures(instance):
     it is added to the test results, to make it easier to identify common root
     causes from Stainless
     """
+    had_failure = False
 
     for fail_tag, fail_log in COMMON_FAILURES.items():
         if instance.bluetooth_facade.messages_find(fail_tag):
+            had_failure = True
             logging.error('Detected failure tag: %s', fail_tag)
             # We mark this instance's results with the discovered failure
             if type(instance.results) is dict:
                 instance.results[fail_log] = True
+
+    return had_failure
 
 
 def fix_serial_device(btpeer, device, operation='reset'):
@@ -597,6 +601,11 @@ def test_retry_and_log(test_method_or_retry_flag,
                 if messages_stop:
                     syslog_captured = instance.bluetooth_facade.messages_stop()
 
+                if syslog_captured:
+                    had_failure = _flag_common_failures(instance)
+                    instance.had_known_common_failure = any(
+                            [instance.had_known_common_failure, had_failure])
+
                 logging.debug('instance._expected_result : %s',
                               instance._expected_result)
                 if instance._expected_result:
@@ -604,8 +613,6 @@ def test_retry_and_log(test_method_or_retry_flag,
                         logging.info('[*** passed: {}]'.format(
                                 test_method.__name__))
                     else:
-                        if syslog_captured:
-                            _flag_common_failures(instance)
                         fail_msg = '[--- failed: {} ({})]'.format(
                                 test_method.__name__, str(instance.results))
                         logging.error(fail_msg)
@@ -4746,6 +4753,11 @@ class BluetoothAdapterTests(test.test):
         # the conditions in self.results so that it is easy to know
         # what conditions failed by looking at the log.
         self.results = None
+
+        # If any known failures were seen in the logs at any time during this
+        # test execution, we capture that here. This includes daemon crashes,
+        # usb disconnects or any of the other known common failure reasons
+        self.had_known_common_failure = False
 
         # Some tests may instantiate a peripheral device for testing.
         self.devices = dict()

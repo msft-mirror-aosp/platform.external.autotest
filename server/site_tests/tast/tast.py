@@ -130,7 +130,8 @@ class tast(test.test):
                    totalshards=1,
                    shardindex=0,
                    companion_duts={},
-                   varslist=[]):
+                   varslist=[],
+                   maybemissingvars=''):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -167,6 +168,8 @@ class tast(test.test):
             as "role:dut" for each -companiondut argument.
         @param varslist: list of strings to pass to tast run command as |-vars|
             arguments. Each string should be formatted as "name=value".
+        @param maybemissingvars: a regex to pass to tast run command as
+            |-maybemissingvars| arguments.
 
         @raises error.TestFail if the Tast installation couldn't be found.
         """
@@ -193,6 +196,7 @@ class tast(test.test):
         self._totalshards = totalshards
         self._shardindex = shardindex
         self._companion_duts = companion_duts
+        self._maybemissingvars = maybemissingvars
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -545,6 +549,9 @@ class tast(test.test):
 
         for var in self._varslist:
             args.append('-var=%s' % var)
+
+        if self._maybemissingvars:
+            args.append('-maybemissingvars=%s' % self._maybemissingvars)
 
         for role, dut in sorted(self._companion_duts.items()):
             args.append('-companiondut=%s:%s:%d' % (role, dut.hostname, dut.port))

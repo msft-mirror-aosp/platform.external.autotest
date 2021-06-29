@@ -129,12 +129,19 @@ class TastTest(unittest.TestCase):
                 tast.tast._SSP_REMOTE_TEST_RUNNER_PATH if ssp
                 else self._PORTAGE_REMOTE_TEST_RUNNER_PATH)
 
-    def _init_tast_commands(self, tests, ssp=False, build=False,
-                            build_bundle='fakebundle', run_private_tests=False,
-                            run_vars=[], run_varsfiles=[],
+    def _init_tast_commands(self,
+                            tests,
+                            ssp=False,
+                            build=False,
+                            build_bundle='fakebundle',
+                            run_private_tests=False,
+                            run_vars=[],
+                            run_varsfiles=[],
                             download_data_lazily=False,
-                            totalshards=1, shardindex=0,
-                            companion_duts={}):
+                            totalshards=1,
+                            shardindex=0,
+                            companion_duts={},
+                            maybemissingvars=''):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
         @param tests: List of TestInfo objects.
@@ -220,7 +227,8 @@ class TastTest(unittest.TestCase):
                   totalshards=1,
                   shardindex=0,
                   companion_duts={},
-                  varslist=[]):
+                  varslist=[],
+                  maybemissingvars=''):
         """Writes fake_tast.py's configuration and runs the test.
 
         @param ignore_test_failures: Passed as the identically-named arg to
@@ -239,6 +247,8 @@ class TastTest(unittest.TestCase):
             lazily.
         @param varslist: list of strings to pass to tast run command as |-vars|
             arguments. Each string should be formatted as "name=value".
+        @param maybemissingvars: a regex to pass to tast run command as
+            |-maybemissingvars| arguments.
         """
         self._test.initialize(self._host,
                               self.TEST_PATTERNS,
@@ -255,7 +265,8 @@ class TastTest(unittest.TestCase):
                               totalshards=totalshards,
                               shardindex=shardindex,
                               companion_duts=companion_duts,
-                              varslist=varslist)
+                              varslist=varslist,
+                              maybemissingvars=maybemissingvars)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
 
@@ -650,6 +661,12 @@ class TastTest(unittest.TestCase):
         self._init_tast_commands([TestInfo('pkg.Test', 0, 0)],
                                  run_vars=varslist)
         self._run_test(varslist=varslist)
+
+    def testMaybeMissingVarsOption(self):
+        arg = '.*\.Test'
+        self._init_tast_commands([TestInfo('pkg.Test', 0, 0)],
+                                 maybemissingvars=arg)
+        self._run_test(maybemissingvars=arg)
 
 
 class TestInfo:

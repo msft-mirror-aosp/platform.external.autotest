@@ -25,6 +25,7 @@ from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.utils import poll_for_condition_ex
 from autotest_lib.client.cros import kernel_trace
 from autotest_lib.client.cros.power import power_utils
+from collections import namedtuple
 
 BatteryDataReportType = autotest_enum.AutotestEnum('CHARGE', 'ENERGY')
 
@@ -2623,6 +2624,25 @@ class DiskStateLogger(threading.Thread):
         """Returns the _error exception... please only call after result()."""
         return self._error
 
+S0ixAmdStats = namedtuple('S0ixAmdStats',['entry','exit','residency'])
+
+def parse_amd_pmc_s0ix_residency_info():
+    """
+    Parses S0ix residency for AMD systems
+
+    @returns S0ixAmdStats
+    @raises error.TestNAError if the debugfs file not found.
+    """
+    s = []
+    with open('/sys/kernel/debug/amd_pmc/s0ix_stats',"r") as f:
+        for line in f:
+            if ':' in line:
+                val = line.split(": ")
+                s.append(int(val[1]))
+        stat = S0ixAmdStats(entry=s[0], exit=s[1], residency=s[2])
+        return stat
+    raise error.TestNAError('AMD S0ix residency not supported')
+
 def parse_pmc_s0ix_residency_info():
     """
     Parses S0ix residency for PMC based Intel systems
@@ -2649,13 +2669,23 @@ class S0ixResidencyStats(object):
     Measures the S0ix residency of a given board over time.
     """
     def __init__(self):
-        self._initial_residency = parse_pmc_s0ix_residency_info()
+        if "amd" in utils.get_cpu_soc_family():
+            self._initial_residency = parse_amd_pmc_s0ix_residency_info()
+        else:
+            self._initial_residency = parse_pmc_s0ix_residency_info()
 
     def get_accumulated_residency_secs(self):
         """
         @returns S0ix Residency since the class has been initialized.
         """
-        return parse_pmc_s0ix_residency_info() - self._initial_residency
+        if "amd" in utils.get_cpu_soc_family():
+            s0ix = parse_amd_pmc_s0ix_residency_info()
+            if s0ix != self._initial_residency:
+                return s0ix.residency
+            else:
+                return 0
+        else:
+            return parse_pmc_s0ix_residency_info() - self._initial_residency
 
 
 class S2IdleStateStats(object):

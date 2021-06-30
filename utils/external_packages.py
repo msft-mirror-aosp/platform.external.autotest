@@ -718,24 +718,6 @@ class NumpyPackage(ExternalPackage):
             ExternalPackage._build_and_install_current_dir_setupegg_py)
 
 
-
-class JsonRPCLib(ExternalPackage):
-    """jsonrpclib package"""
-    version = '0.1.3'
-    module_name = 'jsonrpclib'
-    local_filename = '%s-%s.tar.gz' % (module_name, version)
-    urls = (_CHROMEOS_MIRROR + local_filename,)
-    hex_sum = '431714ed19ab677f641ce5d678a6a95016f5c452'
-
-    def _get_installed_version_from_module(self, module):
-        # jsonrpclib doesn't contain a proper version
-        return self.version
-
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-                        ExternalPackage._build_and_install_current_dir_noegg)
-
-
 class GwtPackage(ExternalPackage):
     """Fetch and extract a local copy of GWT used to build the frontend."""
 

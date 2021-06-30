@@ -15,17 +15,12 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import retry
 
-try:
-    import jsonrpclib
-except ImportError:
-    jsonrpclib = None
-
 
 class RpcServerTracker(object):
     """
-    This class keeps track of all the RPC server connections started on a remote
-    host. The caller can use either |xmlrpc_connect| or |jsonrpc_connect| to
-    start the required type of rpc server on the remote host.
+    This class keeps track of all the RPC server connections started on a
+    remote host. The caller can use either |xmlrpc_connect| to start the
+    required type of rpc server on the remote host.
     The host will cleanup all the open RPC server connections on disconnect.
     """
 
@@ -256,38 +251,6 @@ class RpcServerTracker(object):
                 self.disconnect(port)
                 raise
         logging.info('XMLRPC server started successfully.')
-        return proxy
-
-
-    def jsonrpc_connect(self, port):
-        """Creates a jsonrpc proxy connection through an ssh tunnel.
-
-        This method exists to facilitate communication with goofy (which is
-        the default system manager on all factory images) and as such, leaves
-        most of the rpc server confidence checking to the caller. Unlike
-        xmlrpc_connect, this method does not facilitate the creation of a remote
-        jsonrpc server, as the only clients of this code are factory tests,
-        for which the goofy system manager is built in to the image and starts
-        when the target boots.
-
-        One can theoretically create multiple jsonrpc proxies all forwarded
-        to the same remote port, provided the remote port has an rpc server
-        listening. However, in doing so we stand the risk of leaking an
-        existing tunnel process, so we always disconnect any older tunnels
-        we might have through disconnect.
-
-        @param port: port on the remote host that is serving this proxy.
-
-        @return: The client proxy.
-        """
-        if not jsonrpclib:
-            logging.warning('Jsonrpclib could not be imported. Check that '
-                            'site-packages contains jsonrpclib.')
-            return None
-
-        proxy = jsonrpclib.jsonrpc.ServerProxy(self._setup_rpc(port, None))
-
-        logging.info('Established a jsonrpc connection through port %s.', port)
         return proxy
 
     def disconnect(self, port, pkill=True):

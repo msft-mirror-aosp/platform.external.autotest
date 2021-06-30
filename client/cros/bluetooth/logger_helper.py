@@ -38,7 +38,7 @@ class LogManager(object):
 
         self.log_path = log_path
 
-        self.initial_log_size = -1
+        self.initial_log_size = self._GetSize()
         self.log_contents = []
 
     def _LogErrorToSyslog(self, message):
@@ -52,7 +52,6 @@ class LogManager(object):
     def StartRecording(self):
         """Mark initial log size for later comparison"""
 
-        self.initial_log_size = self._GetSize()
         self.log_contents = []
 
     def StopRecording(self):
@@ -63,18 +62,15 @@ class LogManager(object):
                 - Log file is smaller than when logging began
                 - StartRecording was never called
         """
+        initial_size = self.initial_log_size
         now_size = self._GetSize()
 
         if not os.path.isfile(self.log_path):
             msg = 'File {} disappeared unexpectedly'.format(self.log_path)
             raise LogManager.LoggingException(msg)
 
-        if now_size < self.initial_log_size:
+        if now_size < initial_size:
             msg = 'Log became smaller unexpectedly'
-            raise LogManager.LoggingException(msg)
-
-        if self.initial_log_size < 0:
-            msg = 'Recording stopped before it started'
             raise LogManager.LoggingException(msg)
 
         with open(self.log_path, 'r') as mf:
@@ -83,6 +79,9 @@ class LogManager(object):
 
             readsize = now_size - self.initial_log_size
             self.log_contents = mf.read(readsize).split('\n')
+
+        # Re-set start of log marker
+        self.initial_log_size = now_size
 
     def LogContains(self, search_str):
         """Performs simple string checking on each line from the collected log

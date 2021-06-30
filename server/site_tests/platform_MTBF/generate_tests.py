@@ -3,14 +3,15 @@
 # found in the LICENSE file.
 """Script to generate Tauto test wrappers based on JSON configuration.
 
-USAGE: python generate_tests.py <config_file.json>
+USAGE: python generate_tests.py <config_file.json> [suite]
 
 This script generates control files for wrapping all Tast test files provided
 in the configuration JSON file with a Tauto test cases. No Tauto suite files are
 generated, these assumed to be added manually.
 
 Configuration file may contain multiple suites, in which case, all tests of all
-suites will be generated.
+suites will be generated, unless [suite] argument is present, in which case
+only that suite will be re/generated.
 
 Configuration file is validated against the schema in config_schema.yaml file.
 Schema file must be located in the same folder with the current script.
@@ -142,10 +143,12 @@ def _calculate_suffix(current_index, repeats):
     return format_string.format(index=current_index)
 
 
-def _generate_test_files(version, suites, tests):
+def _generate_test_files(version, suites, tests, suite_name=None):
     template = _read_file(_get_absolute_path(TEST_TEMPLATE_FILE))
-    priority = INITIAL_PRIORITY
     for suite in suites:
+        priority = INITIAL_PRIORITY
+        if suite_name and suite['name'] != suite_name:
+            continue
         for test in suite['tests']:
             test_data = _find_test(test['test'], tests)
             repeats = test['repeats']
@@ -170,10 +173,14 @@ def _generate_test_files(version, suites, tests):
 
 def main(argv):
     """Main program that parses JSON configuration and generates test wrappers."""
-    if not argv or len(argv) != 2:
+    if not argv or len(argv) < 2 or len(argv) > 3:
         raise Exception(
-                'Missing command-line arguments. Usage: python generate_tests.py <config_file.json>'
+                'Invalid command-line arguments. Usage: python generate_tests.py <config_file.json> [suite]'
         )
+
+    suite_name = None
+    if (len(argv) == 3):
+        suite_name = argv[2]
 
     # Load and validate the config JSON file.
     json_config = _load_json_config(argv[1])
@@ -183,7 +190,7 @@ def main(argv):
     constants = _parse_constants(json_config)
     tests = _parse_tests(json_config, constants)
     suites = _parse_suites(json_config, tests, constants)
-    _generate_test_files(version, suites, tests)
+    _generate_test_files(version, suites, tests, suite_name)
 
 
 if __name__ == '__main__':

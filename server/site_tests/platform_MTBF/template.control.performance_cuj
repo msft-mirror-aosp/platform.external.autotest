@@ -31,11 +31,16 @@ import tempfile
 from six.moves import urllib
 import yaml
 
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.utils import labellib
 
 test_args = dict()
 test_args['test_version'] = {version}
+
+def report_host_info(host):
+  labels = labellib.LabelsMapping(host.host_info_store.get().labels)
+  utils.write_keyval(job.resultdir, labels)
 
 def parse_config(config_url):
   response = urllib.request.urlopen(config_url)
@@ -74,6 +79,7 @@ def stage_config(host):
 def run(machine):
   with tempfile.NamedTemporaryFile(suffix='.yaml') as temp_file:
       host=hosts.create_host(machine)
+      report_host_info(host)
       stage_config(host)
 
       # Writing all test arguments to yaml file.

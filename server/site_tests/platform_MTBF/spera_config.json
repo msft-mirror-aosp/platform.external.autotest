@@ -145,7 +145,8 @@
         {"test": "tabswitch-basic-noproxy", "repeats": 1},
         {"test": "quick-check-unlock", "repeats": 1},
         {"test": "quick-check-wakeup", "repeats": 1},
-        {"test": "video-basic-youtube-web", "repeats": 1}
+        {"test": "video-basic-youtube-web", "repeats": 1},
+        {"test": "everyday-basic-ytmusic", "repeats": 1}
       ]
     }
   ]

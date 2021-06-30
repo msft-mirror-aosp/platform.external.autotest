@@ -41,6 +41,7 @@ class TestMonitor():
         """
         self.type = None
         self.rssi = []
+        self.sampling_period = 0
         self.patterns = []
         self.monitor_id = None
         self.app_id = app_id
@@ -75,6 +76,15 @@ class TestMonitor():
         self.rssi = monitor_rssi
 
 
+    def update_sampling_period(self, monitor_sampling_period):
+        """Update the sampling period value.
+
+        @param monitor_sampling_period: sampling period value.
+
+        """
+        self.sampling_period = monitor_sampling_period
+
+
     def update_patterns(self, monitor_patterns):
         """Update the content filter patterns.
 
@@ -105,7 +115,7 @@ class TestMonitor():
         @returns: List containing the monitor data.
 
         """
-        return [self.type, self.rssi, self.patterns]
+        return [self.type, self.rssi + [self.sampling_period], self.patterns]
 
 
     def get_monitor_id(self):
@@ -144,6 +154,7 @@ class BluetoothAdapterAdvMonitorTests(
     # Refer doc/advertisement-monitor-api.txt for more info about unset values.
     UNSET_RSSI = 127
     UNSET_TIMEOUT = 0
+    UNSET_SAMPLING_PERIOD = 0
 
     # Non-zero count value is used to indicate the case where multiple
     # DeviceFound/DeviceLost events are expected to occur.
@@ -1157,13 +1168,36 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        # Unset the rssi filter parameters.
+        # Partial RSSI filter and sampling period, activate should get called.
+        monitor2.update_rssi([-40, 10, self.UNSET_RSSI, self.UNSET_TIMEOUT])
+        monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
+
+        monitor2.update_rssi([-40, 10, self.UNSET_RSSI, self.UNSET_TIMEOUT])
+        monitor2.update_sampling_period(5)
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
+
+        monitor2.update_rssi([self.UNSET_RSSI, self.UNSET_TIMEOUT, -60, 10])
+        monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
+
+        monitor2.update_rssi([self.UNSET_RSSI, self.UNSET_TIMEOUT, -60, 10])
+        monitor2.update_sampling_period(10)
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
+
         monitor2.update_rssi([
                 self.UNSET_RSSI,
                 self.UNSET_TIMEOUT,
                 self.UNSET_RSSI,
                 self.UNSET_TIMEOUT
         ])
+        monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)
+        self.test_add_monitor(monitor2, expected_activate=True)
+        self.test_remove_monitor(monitor2)
 
         # Incorrect pattern parameters, release should get called.
         monitor2.update_patterns([

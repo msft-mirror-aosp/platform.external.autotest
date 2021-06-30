@@ -37,6 +37,7 @@ class AdvMonitor(dbus.service.Object):
     # Refer doc/advertisement-monitor-api.txt for more info about unset values.
     UNSET_RSSI = 127
     UNSET_TIMEOUT = 0
+    UNSET_SAMPLING_PERIOD = 0
 
     # Indexes of the Monitor object parameters in a monitor data list.
     MONITOR_TYPE = 0
@@ -48,6 +49,7 @@ class AdvMonitor(dbus.service.Object):
     RSSI_H_TIMEOUT = 1
     RSSI_L_THRESH = 2
     RSSI_L_TIMEOUT = 3
+    SAMPLING_PERIOD = 4
 
     # Indexes of the Patterns filter parameters in a monitor data list.
     PATTERN_START_POS = 0
@@ -105,6 +107,8 @@ class AdvMonitor(dbus.service.Object):
             properties['RSSILowThreshold'] = dbus.Int16(self.rssi_l_thresh)
         if self.rssi_l_timeout != self.UNSET_TIMEOUT:
             properties['RSSILowTimeout'] = dbus.UInt16(self.rssi_l_timeout)
+        if self.sampling_period != self.UNSET_SAMPLING_PERIOD:
+            properties['RSSISamplingPeriod'] = dbus.UInt16(self.sampling_period)
         properties['Patterns'] = dbus.Array(self.patterns, signature='(yyay)')
         return {ADV_MONITOR_IFACE: properties}
 
@@ -128,6 +132,7 @@ class AdvMonitor(dbus.service.Object):
         self.rssi_h_timeout = rssi[self.RSSI_H_TIMEOUT]
         self.rssi_l_thresh = rssi[self.RSSI_L_THRESH]
         self.rssi_l_timeout = rssi[self.RSSI_L_TIMEOUT]
+        self.sampling_period = rssi[self.SAMPLING_PERIOD]
 
 
     def _set_patterns(self, patterns):

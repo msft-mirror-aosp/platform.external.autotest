@@ -10,7 +10,7 @@ NAME = 'tast.firmware-cr50'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:faft_cr50_prepvt_tast, suite:faft_cr50_pvt_tast'
+ATTRIBUTES = 'suite:faft_cr50_prepvt, suite:faft_cr50_pvt'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

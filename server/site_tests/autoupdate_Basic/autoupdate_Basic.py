@@ -20,7 +20,11 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             self._restore_stateful()
 
 
-    def run_once(self, full_payload, job_repo_url=None, m2n=False):
+    def run_once(self,
+                 full_payload,
+                 job_repo_url=None,
+                 m2n=False,
+                 running_at_desk=False):
         """
         Performs a N-to-N autoupdate with Nebraska.
 
@@ -29,6 +33,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             package for this build should be staged.
         @m2n: M -> N update. This means we install the current stable version
               of this board before updating to ToT.
+        @param running_at_desk: Indicates test is run locally from workstation.
+                                Flag does not work with M2N tests.
 
         """
         self._m2n = m2n
@@ -47,8 +53,10 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                     is_release_bucket=True).run_provision()
 
         # Get a payload to use for the test.
-        payload_url = self.get_payload_for_nebraska(job_repo_url,
-                                                    full_payload=full_payload)
+        payload_url = self.get_payload_for_nebraska(
+                job_repo_url,
+                full_payload=full_payload,
+                public_bucket=running_at_desk)
 
         # Record DUT state before the update.
         active, inactive = kernel_utils.get_kernel_state(self._host)

@@ -30,7 +30,10 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
         super(autoupdate_WithDLC, self).cleanup()
 
 
-    def run_once(self, full_payload=True, job_repo_url=None):
+    def run_once(self,
+                 full_payload=True,
+                 job_repo_url=None,
+                 running_at_desk=False):
         """
         Tests that we can successfully install a DLC, and then update it along
         with the OS.
@@ -40,26 +43,33 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
                              out the current build and the devserver to use.
                              The test will read this from a host argument
                              when run in the lab.
+        @param running_at_desk: Indicates test is run locally from a
+                                workstation.
 
         """
         payload_urls = []
 
         # Payload URL for the platform (OS) update
         payload_urls.append(
-            self.get_payload_for_nebraska(job_repo_url=job_repo_url,
-                                          full_payload=full_payload))
+                self.get_payload_for_nebraska(job_repo_url=job_repo_url,
+                                              full_payload=full_payload,
+                                              public_bucket=running_at_desk))
 
         # Payload URLs for sample-dlc, a test DLC package.
         # We'll always need a full payload for DLC installation,
         # and optionally a delta payload if required by the test.
         payload_urls.append(
-            self.get_payload_for_nebraska(job_repo_url=job_repo_url,
-                                          full_payload=True, is_dlc=True))
+                self.get_payload_for_nebraska(job_repo_url=job_repo_url,
+                                              full_payload=True,
+                                              is_dlc=True,
+                                              public_bucket=running_at_desk))
         if not full_payload:
             payload_urls.append(
-                self.get_payload_for_nebraska(
-                    job_repo_url=job_repo_url, full_payload=False,
-                    is_dlc=True))
+                    self.get_payload_for_nebraska(
+                            job_repo_url=job_repo_url,
+                            full_payload=False,
+                            is_dlc=True,
+                            public_bucket=running_at_desk))
 
         active, inactive = kernel_utils.get_kernel_state(self._host)
 

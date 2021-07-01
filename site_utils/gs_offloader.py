@@ -33,7 +33,6 @@ import sys
 import tarfile
 import tempfile
 import time
-from six.moves import urllib
 
 from optparse import OptionParser
 
@@ -108,8 +107,7 @@ FAILED_OFFLOADS_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 USE_RSYNC_ENABLED = global_config.global_config.get_config_value(
         'CROS', 'gs_offloader_use_rsync', type=bool, default=False)
 
-LIMIT_FILE_COUNT = global_config.global_config.get_config_value(
-        'CROS', 'gs_offloader_limit_file_count', type=bool, default=False)
+LIMIT_FILE_COUNT = True
 
 # Use multiprocessing for gsutil uploading.
 GS_OFFLOADER_MULTIPROCESSING = global_config.global_config.get_config_value(
@@ -422,101 +420,6 @@ def _parse_cts_job_results_file_path(path):
     return job_id, cts_package, timestamp
 
 
-def _upload_files(host, path, result_pattern, multiprocessing,
-                  result_gs_bucket, apfe_gs_bucket):
-    keyval = models.test.parse_job_keyval(host)
-    build = keyval.get('build')
-    suite = keyval.get('suite')
-
-    host_keyval = models.test.parse_host_keyval(host, keyval.get('hostname'))
-    labels =  urllib.parse.unquote(host_keyval.get('labels'))
-    try:
-        host_model_name = re.search(r'model:(\w+)', labels).group(1)
-    except AttributeError:
-        logging.error('Model: name attribute is missing in %s/host_keyval/%s.',
-                      host, keyval.get('hostname'))
-        return
-
-    if not _is_valid_result(build, result_pattern, suite):
-        # No need to upload current folder, return.
-        return
-
-    parent_job_id = str(keyval['parent_job_id'])
-
-    job_id, package, timestamp = _parse_cts_job_results_file_path(path)
-
-    # Results produced by CTS test list collector are dummy results.
-    # They don't need to be copied to APFE bucket which is mainly being used for
-    # CTS APFE submission.
-    if not _is_test_collector(package):
-        # Path: bucket/build/parent_job_id/cheets_CTS.*/job_id_timestamp/
-        # or bucket/build/parent_job_id/cheets_GTS.*/job_id_timestamp/
-        index = build.find('-release')
-        build_with_model_name = ''
-        if index == -1:
-            logging.info('Not a release build.'
-                         'Non release build results can be skipped from offloading')
-            return
-
-        # CTS v2 pipeline requires device info in 'board.model' format.
-        # e.g. coral.robo360-release, eve.eve-release
-        build_with_model_name = (build[:index] + '.' + host_model_name +
-                                     build[index:])
-
-        cts_apfe_gs_path = os.path.join(
-                apfe_gs_bucket, build_with_model_name, parent_job_id,
-                package, job_id + '_' + timestamp) + '/'
-
-        for zip_file in glob.glob(os.path.join('%s.zip' % path)):
-            utils.run(' '.join(_get_cmd_list(
-                    multiprocessing, zip_file, cts_apfe_gs_path)))
-            logging.debug('Upload %s to %s ', zip_file, cts_apfe_gs_path)
-    else:
-        logging.debug('%s is a CTS Test collector Autotest test run.', package)
-        logging.debug('Skipping CTS results upload to APFE gs:// bucket.')
-
-    if result_gs_bucket:
-        # Path: bucket/cheets_CTS.*/job_id_timestamp/
-        # or bucket/cheets_GTS.*/job_id_timestamp/
-        test_result_gs_path = os.path.join(
-                result_gs_bucket, package, job_id + '_' + timestamp) + '/'
-
-        for test_result_file in glob.glob(os.path.join(path, result_pattern)):
-            # gzip test_result_file(testResult.xml/test_result.xml)
-
-            test_result_tgz_file = ''
-            if test_result_file.endswith('tgz'):
-                # Extract .xml file from tgz file for better handling in the
-                # CTS dashboard pipeline.
-                # TODO(rohitbm): work with infra team to produce .gz file so
-                # tgz to gz middle conversion is not needed.
-                try:
-                    with tarfile.open(test_result_file, 'r:gz') as tar_file:
-                        tar_file.extract(
-                                CTS_COMPRESSED_RESULT_TYPES[result_pattern])
-                        test_result_tgz_file = test_result_file
-                        test_result_file = os.path.join(path,
-                                CTS_COMPRESSED_RESULT_TYPES[result_pattern])
-                except tarfile.ReadError as error:
-                    logging.debug(error)
-                except KeyError as error:
-                    logging.debug(error)
-
-            test_result_file_gz =  '%s.gz' % test_result_file
-            with open(test_result_file, 'r') as f_in, (
-                    gzip.open(test_result_file_gz, 'w')) as f_out:
-                shutil.copyfileobj(f_in, f_out)
-            utils.run(' '.join(_get_cmd_list(
-                    multiprocessing, test_result_file_gz, test_result_gs_path)))
-            logging.debug('Zip and upload %s to %s',
-                          test_result_file_gz, test_result_gs_path)
-            # Remove test_result_file_gz(testResult.xml.gz/test_result.xml.gz)
-            os.remove(test_result_file_gz)
-            # Remove extracted test_result.xml file.
-            if test_result_tgz_file:
-                os.remove(test_result_file)
-
-
 def _emit_gs_returncode_metric(returncode):
     """Increment the gs_returncode counter based on |returncode|."""
     m_gs_returncode = 'chromeos/autotest/gs_offloader/gs_returncode'
@@ -685,7 +588,8 @@ class GSOffloader(BaseGSOffloader):
             # TODO(linxinan): use credential file assigned by the side_effect
             # config.
             if config.google_storage.bucket:
-                gs_prefix = ('' if config.google_storage.bucket.startswith('gs://')
+                gs_prefix = ('' if
+                             config.google_storage.bucket.startswith('gs://')
                              else 'gs://')
                 self._gs_uri = gs_prefix + config.google_storage.bucket
         else:

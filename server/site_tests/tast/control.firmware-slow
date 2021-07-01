@@ -10,7 +10,7 @@ NAME = 'tast.firmware-slow'
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:faft_ec'
+ATTRIBUTES = 'suite:faft_ec, suite:faft_ec_fw_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

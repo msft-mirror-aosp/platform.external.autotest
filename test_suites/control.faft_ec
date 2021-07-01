@@ -20,6 +20,10 @@ may imply that the system is unbootable and further tests will only become
 hung or blocked. Other tests verify all of the features (some of them security
 related) are functioning.
 
+Tests in the faft_ec suite are suitable for bring-up scenarios. Tests which
+are for production machines only should go in suite:faft_ec_fw_qual instead.
+However, all tests in this suite should also be in suite:faft_ec_fw_qual
+
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29
 @param board: The board to test on.  Ex: x86-mario

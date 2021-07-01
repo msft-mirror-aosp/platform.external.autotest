@@ -34,7 +34,10 @@ class firmware_ECChargingState(FirmwareTest):
     # Battery status
     STATUS_FULLY_CHARGED = 0x20
     STATUS_DISCHARGING = 0x40
-    STATUS_ALARM_MASK = 0xFF00
+    STATUS_TERMINATE_CHARGE_ALARM = 0x4000
+    # TERMINATE_CHARGE_ALARM is an alarm that shows up during normal use.
+    # Other alarms should not appear during testing.
+    STATUS_ALARM_MASK = (0xFF00 & ~STATUS_TERMINATE_CHARGE_ALARM)
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECChargingState, self).initialize(host, cmdline_args)
@@ -106,6 +109,16 @@ class firmware_ECChargingState(FirmwareTest):
             raise error.TestFail("Battery should not throw alarms: %s" %
                                  result)
 
+        # The battery may raise a TERMINATE_CHARGE alarm transiently as
+        # it becomes fully charged. Exempt that case, but catch cases where
+        # it's yelling to stop for something like invalid charge parameters.
+        if (status & \
+            (self.STATUS_TERMINATE_CHARGE_ALARM | \
+             self.STATUS_FULLY_CHARGED)) == \
+            self.STATUS_TERMINATE_CHARGE_ALARM:
+            raise error.TestFail(
+                    "Battery raising TERMINATE_CHARGE alarm non-full: %s" %
+                    result)
         return result
 
     def _check_kernel_battery_state(

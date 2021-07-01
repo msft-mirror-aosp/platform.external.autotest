@@ -105,6 +105,10 @@ class LogManager(object):
 
         @param rm_reg_exp: regular expression of the lines to be removed
         """
+        # If log_path doesn't exist, there's nothing to do
+        if not os.path.isfile(self.log_path):
+            return
+
         rm_line_cnt = 0
         initial_size = self._GetSize()
         rm_pattern = re.compile(rm_reg_exp)

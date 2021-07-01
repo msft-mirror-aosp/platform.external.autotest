@@ -15,14 +15,15 @@ FISHES_COUNT = {
         100: 'setSetting1',
         500: 'setSetting2',
         1000: 'setSetting3',
-        5000: 'setSetting4',
-        10000: 'setSetting5',
-        15000: 'setSetting6',
-        20000: 'setSetting7',
-        25000: 'setSetting8',
-        30000: 'setSetting9',
+        3000: 'setSetting4',
+        5000: 'setSetting5',
+        10000: 'setSetting6',
+        15000: 'setSetting7',
+        20000: 'setSetting8',
+        25000: 'setSetting9',
+        30000: 'setSetting10',
+}
 
-    }
 
 class power_ThermalLoad(power_test.power_Test):
     """class for power_ThermalLoad test.
@@ -40,7 +41,10 @@ class power_ThermalLoad(power_test.power_Test):
         """
         tab.ExecuteJavaScript('%s.click();' % fish_settings)
 
-    def run_once(self, test_url=FISHTANK_URL, duration=2.5*HOUR, numFish=5000):
+    def run_once(self,
+                 test_url=FISHTANK_URL,
+                 duration=2.5 * HOUR,
+                 numFish=3000):
         """run_once method.
 
         @param test_url: url of webgl heavy page.

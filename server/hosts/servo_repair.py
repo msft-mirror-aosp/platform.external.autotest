@@ -423,6 +423,12 @@ class _ServodEchoVerifier(hosts.Verifier):
     def description(self):
         return 'Servod is running and responsive to dut-control run.'
 
+    def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            logging.info('Servod is running within a container.')
+            return False
+        return True
+
 
 class _DiskSpaceVerifier(hosts.Verifier):
     """
@@ -437,6 +443,12 @@ class _DiskSpaceVerifier(hosts.Verifier):
     @property
     def description(self):
         return 'servohost has enough disk space.'
+
+    def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            logging.info('Servod is running within a container.')
+            return False
+        return True
 
 
 class _ServodConnectionVerifier(hosts.Verifier):
@@ -1021,6 +1033,12 @@ class _RestartServod(hosts.RepairAction):
     @property
     def description(self):
         return 'Start servod with the proper config settings.'
+
+    def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            logging.info('Servod is running within a container.')
+            return False
+        return True
 
 
 class _ServoRebootRepair(repair_utils.RebootRepair):

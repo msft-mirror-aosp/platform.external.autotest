@@ -71,9 +71,12 @@ class BaseServoHost(ssh_host.SSHHost):
 
         super(BaseServoHost, self)._initialize(hostname=hostname,
                                                *args, **dargs)
+
+        self._is_containerized_servod = self.hostname.endswith('docker_servod')
+
         self._is_localhost = (self.hostname == 'localhost'
                               and servo_host_ssh_port is None)
-        if self._is_localhost:
+        if self._is_localhost or self._is_containerized_servod:
             self._is_in_lab = False
         elif is_in_lab is None:
             self._is_in_lab = utils.host_is_in_lab_zone(self.hostname)
@@ -221,6 +224,14 @@ class BaseServoHost(ssh_host.SSHHost):
         """
         return self._is_localhost
 
+
+    def is_containerized_servod(self):
+        """Checks whether the servo host is a containerized servod.
+
+        @returns: True if using containerized servod, otherwise False.
+
+        """
+        return self._is_containerized_servod
 
     def is_cros_host(self):
         """Check if a servo host is running chromeos.

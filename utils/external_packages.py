@@ -853,27 +853,6 @@ class PsutilPackage(ExternalPackage):
                         ExternalPackage._build_and_install_current_dir_setup_py)
 
 
-class ElasticSearchPackage(ExternalPackage):
-    """elasticsearch-py package."""
-    version = '1.6.0'
-    url_filename = 'elasticsearch-%s.tar.gz' % version
-    local_filename = url_filename
-    urls = ('https://pypi.python.org/packages/source/e/elasticsearch/%s' %
-            (url_filename),)
-    hex_sum = '3e676c96f47935b1f52df82df3969564bd356b1c'
-    _build_and_install = ExternalPackage._build_and_install_from_package
-    _build_and_install_current_dir = (
-            ExternalPackage._build_and_install_current_dir_setup_py)
-
-    def _get_installed_version_from_module(self, module):
-        # Elastic's version format is like tuple (1, 6, 0), which needs to be
-        # transferred to 1.6.0.
-        try:
-            return '.'.join(str(i) for i in module.__version__)
-        except:
-            return self.version
-
-
 class Urllib3Package(ExternalPackage):
     """elasticsearch-py package."""
     version = '1.23'

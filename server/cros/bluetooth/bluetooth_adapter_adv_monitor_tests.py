@@ -1168,6 +1168,10 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
+        # Incorrect sampling period, release should get called.
+        monitor2.update_sampling_period(257)
+        self.test_add_monitor(monitor2, expected_release=True)
+
         # Partial RSSI filter and sampling period, activate should get called.
         monitor2.update_rssi([-40, 10, self.UNSET_RSSI, self.UNSET_TIMEOUT])
         monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)

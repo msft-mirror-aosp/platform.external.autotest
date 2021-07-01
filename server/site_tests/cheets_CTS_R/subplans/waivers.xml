@@ -7,6 +7,7 @@
     of test cases is confused. See b/151779432.
   -->
   <Entry include="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSlowSwipe_initiatesTouchExploration" />
+  <Entry include="CtsAppSecurityHostTestCases android.appsecurity.cts.DocumentsTest#testRestrictStorageAccessFrameworkDisabled_notBlockFromTree" />
   <Entry include="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCantSaveStateLaunchAndSwitch" />
   <Entry include="CtsAppTestCases[instant] android.app.cts.ActivityManagerProcessStateTest#testCantSaveStateLaunchAndSwitch" />
   <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />

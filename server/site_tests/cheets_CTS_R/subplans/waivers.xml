@@ -13,6 +13,13 @@
   <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testSingleCapture" />
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.PerformanceTest#testSingleCapture" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.all#1024_vertex_buffer_stride_2" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.all#1024_vertex_buffer_stride_4" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.all_device#1024_vertex_buffer_stride_2" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.all_device#1024_vertex_buffer_stride_4" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_image_sampled#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_image#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_src_transfer_dst#1024" />
   <Entry include="CtsDropBoxManagerTestCases android.dropboxmanager.cts.DropBoxTests#testLowPriorityRateLimitingWithEnabledEntries" />
   <Entry include="CtsDropBoxManagerTestCases android.dropboxmanager.cts.DropBoxTests#testLowPrioritySustainedRapidEntryLimiting" />
   <Entry include="CtsGraphicsTestCases android.graphics.cts.AImageDecoderTest#testCropResource[0]" />

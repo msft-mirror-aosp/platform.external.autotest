@@ -1,0 +1,26 @@
+# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'Chrome browser infra team'
+NAME = 'chromium'
+TIME = 'MEDIUM'
+TEST_TYPE = "Server"
+
+MAX_RESULT_SIZE_KB = 256 * 1024
+
+REQUIRE_SSP = True
+
+DOC = '''
+Invoke the test executable built by chromium builders.
+
+This is a generic wrapper for chromium tests. The test executable and runtime
+deps are provisioned by TLS. The wrapper mounts it, kicks off the script and
+copies the result to autotest/results.
+'''
+
+def run(machine):
+    host=hosts.create_host(machine)
+    job.run_test('chromium', host=host, args=args)
+
+parallel_simple(run, machines)

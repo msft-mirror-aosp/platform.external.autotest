@@ -762,6 +762,23 @@ class GwtPackage(ExternalPackage):
         return True
 
 
+class PyudevPackage(ExternalPackage):
+    """
+    pyudev module
+
+    Used in unittests.
+    """
+    version = '0.16.1'
+    url_filename = 'pyudev-%s.tar.gz' % version
+    local_filename = url_filename
+    urls = (_CHROMEOS_MIRROR + local_filename,)
+    hex_sum = 'b36bc5c553ce9b56d32a5e45063a2c88156771c0'
+
+    _build_and_install = ExternalPackage._build_and_install_from_package
+    _build_and_install_current_dir = (
+                        ExternalPackage._build_and_install_current_dir_setup_py)
+
+
 class PyMoxPackage(ExternalPackage):
     """
     mox module

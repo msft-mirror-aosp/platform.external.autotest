@@ -78,7 +78,7 @@ class platform_InitLoginPerfServer(test.test):
         for bmname, bm in BENCHMARKS.iteritems():
             try:
                 self.perf_results[bmname].append(
-                        self.client_results[bm['stage']][bm['name']])
+                        float(self.client_results[bm['stage']][bm['name']]))
             except:
                 logging.warning('Failed to extract %s from client results',
                                 bmname)

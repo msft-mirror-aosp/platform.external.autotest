@@ -9,8 +9,10 @@ from __future__ import print_function
 
 import logging
 import logging.handlers
+import mox
 import multiprocessing
 import tempfile
+import time
 import os
 import unittest
 
@@ -18,8 +20,10 @@ from autotest_lib.site_utils import log_socket_server
 from six.moves import range
 
 
-class TestLogSocketServer(unittest.TestCase):
-    """Test LogSocketServer can start and save logs to a local file."""
+class TestLogSocketServer(mox.MoxTestBase):
+    """Test LogSocketServer can start and save logs to a local file.
+    """
+
 
     def log_call(self, value, port):
         """Method to be called in a new process to log to a socket server.
@@ -32,6 +36,7 @@ class TestLogSocketServer(unittest.TestCase):
         logging.getLogger().addHandler(socketHandler)
         logging.getLogger().level = logging.INFO
         logging.info(value)
+
 
     def testMultiProcessLoggingSuccess(self):
         """Test log can be saved from multiple processes."""
@@ -50,9 +55,11 @@ class TestLogSocketServer(unittest.TestCase):
             processes.append(process)
 
         for process in processes:
-            # This waits for all processes to finish.
             process.join()
 
+        # Wait for TCP server to finish processing data. If process_number is
+        # increased, the wait time should be increased to avoid test flaky.
+        time.sleep(1)
         log_socket_server.LogSocketServer.stop()
 
         # Read log to confirm all logs are written to file.

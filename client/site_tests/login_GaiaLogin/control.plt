@@ -15,9 +15,8 @@ TEST_TYPE = "client"
 DOC = """
 This test verifies that logging into production Gaia works correctly.
 
-It logs in using the telemetry gaia_login flag, and navigates to
-accounts.google.com to verify that we're logged in to gaia, as opposed
-to fake telemetry login.
+It logs in using the telemetry gaia_login flag, and navigates to google.com to
+verify that we're logged in to gaia, as opposed to fake telemetry login.
 """
 
 username = power_load_util.get_username()

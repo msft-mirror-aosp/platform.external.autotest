@@ -652,13 +652,26 @@ class Autotest(installable_object.InstallableObject):
             self._check_client_test_result(host, test_name)
 
 
-    def run_test(self, test_name, results_dir='.', host=None,
-                 parallel_flag=False, background=False,
-                 client_disconnect_timeout=None, *args, **dargs):
-        self.run_timed_test(test_name, results_dir, host, timeout=None,
-                            parallel_flag=parallel_flag, background=background,
-                            client_disconnect_timeout=client_disconnect_timeout,
-                            *args, **dargs)
+    def run_test(self,
+                 test_name,
+                 results_dir='.',
+                 host=None,
+                 parallel_flag=False,
+                 background=False,
+                 client_disconnect_timeout=None,
+                 timeout=None,
+                 *args,
+                 **dargs):
+        self.run_timed_test(
+                test_name,
+                results_dir,
+                host,
+                timeout=timeout,
+                parallel_flag=parallel_flag,
+                background=background,
+                client_disconnect_timeout=client_disconnect_timeout,
+                *args,
+                **dargs)
 
 
     def run_static_method(self, module, method, results_dir='.', host=None,

@@ -7,7 +7,6 @@ import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import chrome
-from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
@@ -17,7 +16,7 @@ class power_VideoCall(power_test.power_Test):
     version = 1
 
     video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.html'
-    doc_url = 'http://doc.new'
+    doc_url = 'http://crospower.page.link/power_VideoCall_doc'
 
     def initialize(self, seconds_period=20., pdash_note='',
                    force_discharge=False):
@@ -25,8 +24,7 @@ class power_VideoCall(power_test.power_Test):
         super(power_VideoCall, self).initialize(seconds_period=seconds_period,
                                                 pdash_note=pdash_note,
                                                 force_discharge=force_discharge)
-        self._username = power_load_util.get_username()
-        self._password = power_load_util.get_password()
+
 
     def run_once(self,
                  duration=7200,
@@ -60,9 +58,7 @@ class power_VideoCall(power_test.power_Test):
         extra_browser_args = self.get_extra_browser_args_for_camera_test()
         with keyboard.Keyboard() as keys,\
              chrome.Chrome(init_network_controller=True,
-                           gaia_login=True,
-                           username=self._username,
-                           password=self._password,
+                           gaia_login=False,
                            extra_browser_args=extra_browser_args,
                            autotest_ext=True) as cr:
 

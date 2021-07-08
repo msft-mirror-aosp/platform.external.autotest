@@ -201,13 +201,10 @@ hfp_nbs_test_data = {
             'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
-            # Passing scored are determined mostly experimentally, the DUT as
-            # sink direction has issues and so for now the score set low.
-            # Ideally both scores should be set to >= 4.0 in fully functioning
-            # scenario.
+            # Passing scored are determined mostly experimentally.
             # TODO(b/179501232) - NBS is currently not uniformly >= 4.0 on all
             # devices so reduce the passing score.
-            'sink_passing_score': 0.0,
+            'sink_passing_score': 3.5,
             'source_passing_score': 3.5,
             'reporting_type': 'voice-8k',
         },
@@ -272,11 +269,8 @@ hfp_wbs_test_data = {
             'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
-            # Passing scored are determined mostly experimentally, the DUT as
-            # sink direction has issues and so for now the score set low.
-            # Ideally both scores should be set to >= 4.0 in fully functioning
-            # scenario.
-            'sink_passing_score': 0.0,
+            # Passing scored are determined mostly experimentally.
+            'sink_passing_score': 4.0,
             'source_passing_score': 4.0,
             'reporting_type': 'voice-16k',
         },
@@ -296,11 +290,8 @@ hfp_wbs_test_data = {
             'visqol_test': True,
             'encoding': 'signed-integer',
             'speech_mode': True,
-            # Passing scored are determined mostly experimentally, the DUT as
-            # sink direction has issues and so for now the score set low.
-            # Ideally both scores should be set to >= 4.0 in fully functioning
-            # scenario.
-            'sink_passing_score': 0.0,
+            # Passing scored are determined mostly experimentally.
+            'sink_passing_score': 4.0,
             'source_passing_score': 4.0,
             'reporting_type': 'sine-7k',
         }

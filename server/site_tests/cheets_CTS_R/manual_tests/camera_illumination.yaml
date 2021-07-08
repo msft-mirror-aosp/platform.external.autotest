@@ -1,4 +1,5 @@
 android.hardware.camera2.cts.BurstCaptureTest#testJpegBurst[1]: [drawcia]
+android.hardware.camera2.cts.BurstCaptureTest#testYuvBurst[1]: [drawcia]
 android.hardware.camera2.cts.CaptureRequestTest#testAntiBandingModes[1]: [drawcia, maglia, magolor]
 android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuv[1]: [drawcia, maglia, magolor]
 android.hardware.camera2.cts.ImageReaderTest#testRepeatingJpeg[1]: [drawcia, maglia, magolor]

@@ -11,7 +11,7 @@ TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 PRIORITY = 4999
 MAX_RESULT_SIZE_KB = 1024 * 1024
-JOB_RETRIES = 0
+JOB_RETRIES = 2
 REQUIRE_SSP = True
 
 DOC = '''
@@ -41,6 +41,7 @@ test_args['test_version'] = 1
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
   labels['test'] = 'ui.GoogleMeetCUJ.plus_large'
+  labels['test_iteration'] = '1'
   utils.write_keyval(job.resultdir, labels)
 
 def parse_config(config_url):

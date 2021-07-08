@@ -164,6 +164,7 @@ def _generate_test_files(version, suites, tests, suite_name=None):
                         length='long',
                         version=version,
                         attributes='suite:' + suite['name'],
+                        iteration=i + 1,
                 )
                 control_file_name = 'control.' + '_'.join(
                         [suite['name'], test_name])

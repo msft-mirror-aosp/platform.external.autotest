@@ -1158,11 +1158,7 @@ class bluetooth_AdapterLEAdvertising(
                                                new_max_adv_interval_ms,
                                                len(advertisements))
 
-        # On some devices suspend/resume unregisters the advertisement
-        # causing the test to fail. Disabling suspend/resume till
-        # the issue is resolved.
-        # TODO(crbug/949802)
-        # self.suspend_resume()
+        self.suspend_resume()
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,
@@ -1386,13 +1382,7 @@ class bluetooth_AdapterLEAdvertising(
                                                new_max_adv_interval_ms,
                                                len(advertisements))
 
-        logging.info("Suspend resume is disabled due to crbug/949802")
-
-        # On some devices suspend/resume unregisters the advertisement
-        # causing the test to fail. Disabling suspend/resume till
-        # the issue is resolved.
-        # TODO(crbug/949802)
-        # self.suspend_resume()
+        self.suspend_resume()
 
         self.test_check_duration_and_intervals(new_min_adv_interval_ms,
                                                new_max_adv_interval_ms,

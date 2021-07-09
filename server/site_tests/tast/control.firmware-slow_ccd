@@ -6,10 +6,10 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS Firmware EngProd team'
-NAME = 'tast.firmware-ec'
-TIME = 'MEDIUM'
+NAME = 'tast.firmware-slow_ccd'
+TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING'
+DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_cr50'
 ATTRIBUTES = 'suite:faft_ec, suite:faft_ec_fw_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 
@@ -17,10 +17,11 @@ MAX_RESULT_SIZE_KB = 1024 * 1024
 REQUIRE_SSP = True
 
 DOC = '''
-Run Tast tests for EC firmware.
+Run Tast tests that are very slow.
 
-The tests are part of 'group:firmware'. The 'firmware_ec' sub-attribute
-limits it to ec tests.
+The tests are part of 'group:firmware'. The 'firmware_slow' sub-attribute
+limits it to slow tests. The 'firmware_ccd' further limits this
+to machines attached to a servo with CCD.
 '''
 
 command_args, varslist = tast.split_arguments(args)
@@ -31,8 +32,9 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
-                 test_exprs=['("group:firmware" && firmware_ec && !firmware_ccd)'],
-                 ignore_test_failures=True, max_run_sec=10800,
+                 test_exprs=['("group:firmware" && firmware_slow && firmware_ccd)'],
+                 ignore_test_failures=True,
+                 max_run_sec=16200, # 4h30m
                  command_args=command_args,
                  varslist=varslist)
 

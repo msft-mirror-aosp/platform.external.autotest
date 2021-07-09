@@ -633,8 +633,9 @@ class TastTest(unittest.TestCase):
         ROUTER_IP = '192.168.1.2:1234'
         PCAP_IP = '192.168.1.3:2345'
         wificell_var = [
-            'router=%s' % ROUTER_IP,
-            'pcap=%s' % PCAP_IP,
+                'router=%s' % ROUTER_IP,
+                'pcap=%s' % PCAP_IP,
+                'routers=%s,%s' % (ROUTER_IP, PCAP_IP),
         ]
         self._init_tast_commands([TestInfo('pkg.Test', 0, 0)],
                                  run_vars=wificell_var)

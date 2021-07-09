@@ -342,6 +342,17 @@ class tast(test.test):
         for key, var_arg in forward_args:
             if key in args_dict:
                 args += ['-var=' + var_arg % args_dict[key]]
+        # Append "routers" var for supporting multi-router tests with current
+        # two-AP fixture setup (with specified router_addr and pcap_addr args).
+        # TODO(b/171949862): remove this when a new multi-router fixture is
+        # defined and rolled out to the lab.
+        if (WiFiManager.CMDLINE_ROUTER_ADDR in args_dict
+                    and WiFiManager.CMDLINE_PCAP_ADDR in args_dict):
+            args += [
+                    '-var=routers=%s,%s' %
+                    (args_dict[WiFiManager.CMDLINE_ROUTER_ADDR],
+                     args_dict[WiFiManager.CMDLINE_PCAP_ADDR])
+            ]
         logging.info('Autotest wificell-related args: %s', args)
         return args
 

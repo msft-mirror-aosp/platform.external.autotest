@@ -22,6 +22,8 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              '!informational && '
+                             '!"name:printer.AddBrotherPrinter" && '     # b/192458034
+                             '!"name:printer.ResolutionBrother.*" && '   # b/192458034
                              '!"name:typec.Basic"' # typec.Basic requires a servo, which may not be available for PVS testing.
                              ')'],
                  ignore_test_failures=False, max_run_sec=3600,

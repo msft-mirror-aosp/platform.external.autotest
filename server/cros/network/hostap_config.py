@@ -566,6 +566,11 @@ class HostapConfig(object):
         are checked for validity (i.e. you can't specify an invalid channel
         or a frequency that will not be accepted).
 
+        According to IEEE80211ac, both HT and VHT channel width fields must
+        be used to select the desired VHT channel width. Refer to IEEE 80211ac
+        Tables (VHT Operation Information subfields) and VHT BSS operating
+        channel width.
+
         @param mode string MODE_11x defined above.
         @param channel int channel number.
         @param frequency int frequency of channel.

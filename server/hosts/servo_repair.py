@@ -32,6 +32,11 @@ except ImportError:
 
 from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
+try:
+    import docker
+except ImportError:
+    logging.info("Docker API is not installed in this environment")
+
 
 def ignore_exception_for_non_cros_host(func):
     """
@@ -1008,6 +1013,27 @@ class _EcBoardVerifier(hosts.Verifier):
         return 'Check EC by get `ec_board` control'
 
 
+class _ConnectionVerifier(repair_utils.SshVerifier):
+    """
+    Ensure the servo host container is up.
+    """
+
+    def verify(self, host):
+        if not host.is_containerized_servod():
+            return super(_ConnectionVerifier, self).verify(host)
+
+        client = docker.from_env(timeout=300)
+        try:
+            client.containers.get(host.hostname)
+        except docker.errors.NotFound:
+            raise hosts.AutoservVerifyError(
+                    'servo container %s is not running' % host.hostname)
+
+    @property
+    def description(self):
+        return 'Check the connection to the machine or container running servod.'
+
+
 class _RestartServod(hosts.RepairAction):
     """Restart `servod` with the proper BOARD setting."""
 
@@ -1364,17 +1390,17 @@ def _servo_verifier_actions():
     Return a verifiers for a `ServoHost`.
     """
     return (
-            (repair_utils.SshVerifier, 'servo_ssh', []),
-            (_RootServoPresentVerifier, 'servo_root_present', ['servo_ssh']),
+            (_ConnectionVerifier, 'connection', []),
+            (_RootServoPresentVerifier, 'servo_root_present', ['connection']),
             (_RootServoV3PresentVerifier, 'servo_v3_root_present',
-             ['servo_ssh']),
+             ['connection']),
             (_ServoFwVerifier, 'servo_fw', ['servo_root_present']),
             (_StartServodVerifier, 'start_servod',
              ['servo_fw', 'servo_v3_root_present']),
-            (_DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
+            (_DiskSpaceVerifier, 'servo_disk_space', ['connection']),
             (_UpdateVerifier, 'servo_update', ['servo_v3_root_present']),
-            (_BoardConfigVerifier, 'servo_config_board', ['servo_ssh']),
-            (_SerialConfigVerifier, 'servo_config_serial', ['servo_ssh']),
+            (_BoardConfigVerifier, 'servo_config_board', ['connection']),
+            (_SerialConfigVerifier, 'servo_config_serial', ['connection']),
             (_ServodJobVerifier, 'servod_started', [
                     'start_servod', 'servo_config_board',
                     'servo_config_serial', 'servo_disk_space'
@@ -1424,15 +1450,15 @@ def _servo_repair_actions():
             'servo_power_delivery'
     ]
     return (
-            (_ServoFwUpdateRepair, 'servo_fw_update', ['servo_ssh'],
+            (_ServoFwUpdateRepair, 'servo_fw_update', ['connection'],
              ['servo_fw']),
-            (_DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
+            (_DiskCleanupRepair, 'servo_disk_cleanup', ['connection'],
              ['servo_disk_space']),
             (_ServoMicroFlashRepair, 'servo_micro_flash',
-             ['servo_ssh', 'servo_topology'], ['servo_dut_connected']),
-            (_RestartServod, 'servod_restart', ['servo_ssh', 'servo_fw'],
+             ['connection', 'servo_topology'], ['servo_dut_connected']),
+            (_RestartServod, 'servod_restart', ['connection', 'servo_fw'],
              config + base_triggers),
-            (_ServoRebootRepair, 'servo_reboot', ['servo_ssh'],
+            (_ServoRebootRepair, 'servo_reboot', ['connection'],
              reboot_triggers),
             (_PowerDeliveryRepair, 'servo_pd_recover', ['servod_connection'],
              base_triggers),

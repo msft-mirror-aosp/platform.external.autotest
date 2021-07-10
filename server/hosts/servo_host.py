@@ -20,9 +20,15 @@ import re
 import tarfile
 import threading
 import json
+import tempfile
 import time
 import six
 import six.moves.xmlrpc_client
+
+try:
+    import docker
+except ImportError:
+    logging.info("Docker API is not installed in this environment")
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -307,7 +313,8 @@ class ServoHost(base_servohost.BaseServoHost):
                   server on the host.
         """
         if (servo_constants.ENABLE_SSH_TUNNEL_FOR_SERVO
-                and not self.is_localhost()):
+                    and not self.is_localhost()
+                    and not self.is_containerized_servod()):
             # Check for existing ssh tunnel proxy.
             if self._tunnel_proxy is None:
                 self._maybe_create_servod_ssh_tunnel_proxy()
@@ -628,6 +635,58 @@ class ServoHost(base_servohost.BaseServoHost):
             logging.debug("Servohost is a localhost, skipping start servod.")
             return
 
+        if self.is_containerized_servod():
+            client = docker.from_env(timeout=300)
+            try:
+                client.containers.get(self.hostname)
+            except docker.errors.NotFound:
+                pass
+            else:
+                logging.warning("Container already exists - not starting")
+                return
+
+            label = os.environ.get("LABEL", "release")
+            registry = os.environ.get("REGISTRY_URI",
+                                      "gcr.io/chromeos-partner-moblab")
+            image = "%s/servod:%s" % (registry, label)
+            logging.info("Servo container image: %s", image)
+
+            try:
+                client.images.pull(image)
+            except docker.errors.APIError:
+                logging.exception("Failed to pull image")
+
+            environment = [
+                    "BOARD=%s" % self.servo_board,
+                    "MODEL=%s" % self.servo_model,
+                    "SERIAL=%s" % self.servo_serial,
+                    "PORT=%s" % self.servo_port,
+            ]
+            logging.info('Servo container environment: %s', environment)
+            try:
+                client.containers.run(
+                        image,
+                        remove=False,
+                        privileged=True,
+                        name=self.hostname,
+                        hostname=self.hostname,
+                        network="default_moblab",
+                        cap_add=["NET_ADMIN"],
+                        detach=True,
+                        volumes=["/dev:/dev"],
+                        environment=environment,
+                        command=["bash", "/start_servod.sh"],
+                )
+                time.sleep(servo_constants.SERVOD_STARTUP_TIMEOUT)
+            except docker.errors.ContainerError as e:
+                logging.exception("Failed to start servod")
+                for line in str(e).split(b'\n'):
+                    print(line)
+                raise
+            except docker.errors.ImageNotFound:
+                logging.exception("Image not found")
+            return
+
         cmd = 'start servod'
         if self.servo_board:
             cmd += ' BOARD=%s' % self.servo_board
@@ -684,6 +743,17 @@ class ServoHost(base_servohost.BaseServoHost):
     def stop_servod(self):
         """Stop the servod process on servohost.
         """
+        if self.is_containerized_servod():
+            client = docker.from_env(timeout=300)
+            try:
+                cont = client.containers.get(self.hostname)
+            except docker.errors.NotFound:
+                logging.info("Container does not exist no need to stop it.")
+            else:
+                cont.stop()
+                cont.remove()
+            return
+
         # Skip if running on the localhost.(crbug.com/1038168)
         if self.is_localhost():
             logging.debug("Servohost is a localhost, skipping stop servod.")
@@ -1061,10 +1131,12 @@ class ServoHost(base_servohost.BaseServoHost):
         crashcollect.collect_command(self, 'dmesg -H',
                                      os.path.join(log_dir, 'dmesg'))
         # Collect messages log from the servohost.
-        try:
-            self.get_file('/var/log/messages', log_dir, try_rsync=False)
-        except error.AutoservRunError as e:
-            logging.warning('Failed to collect messages log from servohost.')
+        if not self.is_containerized_servod():
+            try:
+                self.get_file('/var/log/messages', log_dir, try_rsync=False)
+            except error.AutoservRunError as e:
+                logging.warning(
+                        'Failed to collect messages log from servohost.')
 
     def get_instance_logs(self, instance_ts, outdir, old=False):
         """Collect all logs with |instance_ts| and dump into a dir in |outdir|
@@ -1097,7 +1169,20 @@ class ServoHost(base_servohost.BaseServoHost):
         res = self.run(cmd, stderr_tee=None, ignore_status=True)
         files = res.stdout.strip().split()
         try:
-            self.get_file(files, log_dir, try_rsync=False)
+            if self.is_containerized_servod():
+                client = docker.from_env(timeout=300)
+                container = client.containers.get(self.hostname)
+                file_stream, stat = container.get_archive(files)
+                tf = tempfile.NamedTemporaryFile(delete=False)
+                for block in file_stream:
+                    tf.write(block)
+                tf.close()
+                pw_tar = tarfile.TarFile(tf.name)
+                pw_tar.extractall(log_dir)
+                os.remove(tf.name)
+            else:
+                self.get_file(files, log_dir, try_rsync=False)
+
             if not os.listdir(log_dir):
                 logging.info('No servod logs retrieved. Ignoring, and removing '
                              '%r again.', log_dir)

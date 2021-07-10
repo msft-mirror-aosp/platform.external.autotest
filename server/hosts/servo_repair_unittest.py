@@ -13,21 +13,21 @@ from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import repair_utils
 
 SERVO_VERIFY_DAG = (
-        (repair_utils.SshVerifier, 'servo_ssh', []),
+        (servo_repair._ConnectionVerifier, 'connection', []),
         (servo_repair._RootServoPresentVerifier, 'servo_root_present',
-         ['servo_ssh']),
+         ['connection']),
         (servo_repair._RootServoV3PresentVerifier, 'servo_v3_root_present',
-         ['servo_ssh']),
+         ['connection']),
         (servo_repair._ServoFwVerifier, 'servo_fw', ['servo_root_present']),
         (servo_repair._StartServodVerifier, 'start_servod',
          ['servo_fw', 'servo_v3_root_present']),
-        (servo_repair._DiskSpaceVerifier, 'servo_disk_space', ['servo_ssh']),
+        (servo_repair._DiskSpaceVerifier, 'servo_disk_space', ['connection']),
         (servo_repair._UpdateVerifier, 'servo_update',
          ['servo_v3_root_present']),
         (servo_repair._BoardConfigVerifier, 'servo_config_board',
-         ['servo_ssh']),
+         ['connection']),
         (servo_repair._SerialConfigVerifier, 'servo_config_serial',
-         ['servo_ssh']),
+         ['connection']),
         (servo_repair._ServodJobVerifier, 'servod_started', [
                 'start_servod', 'servo_config_board', 'servo_config_serial',
                 'servo_disk_space'
@@ -62,14 +62,14 @@ SERVO_VERIFY_DAG = (
 )
 
 SERVO_REPAIR_ACTIONS = (
-        (servo_repair._ServoFwUpdateRepair, 'servo_fw_update', ['servo_ssh'],
+        (servo_repair._ServoFwUpdateRepair, 'servo_fw_update', ['connection'],
          ['servo_fw']),
-        (servo_repair._DiskCleanupRepair, 'servo_disk_cleanup', ['servo_ssh'],
+        (servo_repair._DiskCleanupRepair, 'servo_disk_cleanup', ['connection'],
          ['servo_disk_space']),
         (servo_repair._ServoMicroFlashRepair, 'servo_micro_flash',
-         ['servo_ssh', 'servo_topology'], ['servo_dut_connected']),
+         ['connection', 'servo_topology'], ['servo_dut_connected']),
         (servo_repair._RestartServod, 'servod_restart',
-         ['servo_ssh', 'servo_fw'], [
+         ['connection', 'servo_fw'], [
                  'servo_config_board', 'servo_config_serial', 'start_servod',
                  'servod_started', 'servo_topology', 'servod_connection',
                  'servod_echo', 'servod_control', 'servo_dut_connected',
@@ -77,7 +77,7 @@ SERVO_REPAIR_ACTIONS = (
                  'servo_cr50_console', 'servo_cr50_low_sbu', 'servo_cr50_off',
                  'servo_power_delivery'
          ]),
-        (servo_repair._ServoRebootRepair, 'servo_reboot', ['servo_ssh'], [
+        (servo_repair._ServoRebootRepair, 'servo_reboot', ['connection'], [
                 'servo_topology', 'servo_root_present', 'servo_disk_space',
                 'servo_power_delivery'
         ]),

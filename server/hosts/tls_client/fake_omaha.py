@@ -32,6 +32,7 @@ class TLSFakeOmaha():
                     " FakeOmaha client.")
 
         self.tlsconnection = tlsconnection
+        self.fo_name = None
 
     def _make_payloads(self, payloads):
         """Serialize and return the list of payloads."""
@@ -86,9 +87,22 @@ class TLSFakeOmaha():
 
         try:
             result = self.stub.CreateFakeOmaha(req)
+            self.fo_name = result.name
             return result.omaha_url
         except Exception as e:
             logging.error("TLS FakeOmaha Debug String: %s",
                           e.debug_error_string())
             raise error.TestError(
                     "Could not start FakeOmaha Server because %s", e.details())
+
+    def stop_omaha(self):
+        """Delete the running Omaha Service."""
+        if not self.fo_name:
+            raise error.TestWarn(
+                    "No FakeOmaha name specified, has it been started?")
+        req = autotest_common_pb2.DeleteFakeOmahaRequest(name=self.fo_name)
+        try:
+            self.stub.DeleteFakeOmaha(req)
+        except Exception as e:
+            raise error.TestWarn("Could not stop FakeOmaha Server because %s",
+                                 e.details())

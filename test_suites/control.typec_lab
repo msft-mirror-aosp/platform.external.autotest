@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "typec-lab"
+NAME = "typec_lab"
 PURPOSE = 'Tests the end to end Tast tests in the "typec-lab" category.'
 
 TIME = "SHORT"

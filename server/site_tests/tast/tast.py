@@ -21,6 +21,7 @@ from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.utils import labellib
+from autotest_lib.site_utils.rpm_control_system import utils as rpm_utils
 
 
 # A datetime.DateTime representing the Unix epoch in UTC.
@@ -302,6 +303,25 @@ class tast(test.test):
             return []
         return ['-var=servo=%s:%s' % (host_arg, port_arg)]
 
+    def _get_rpm_args(self):
+        """Gets rpm-related arguments to pass to "tast run".
+
+        @returns List of command-line flag strings that should be inserted in
+            the command line after "tast run".
+        """
+        info = self._host.host_info_store.get()
+        args = []
+        forward_args = [
+                (rpm_utils.POWERUNIT_HOSTNAME_KEY, 'powerunitHostname=%s'),
+                (rpm_utils.POWERUNIT_OUTLET_KEY, 'powerunitOutlet=%s'),
+                (rpm_utils.HYDRA_HOSTNAME_KEY, 'hydraHostname=%s'),
+        ]
+        for key, var_arg in forward_args:
+            if key in info.attributes:
+                args += ['-var=' + var_arg % info.attributes[key]]
+        logging.info('RPM args: %s', args)
+        return args
+
     def _get_wificell_args(self):
         """Gets wificell-related (router, pcap) arguments to pass to "tast run".
 
@@ -557,11 +577,15 @@ class tast(test.test):
             if individual tests fail).
         """
         args = [
-            '-resultsdir=' + self.resultsdir,
-            '-waituntilready=true',
-            '-timeout=' + str(self._max_run_sec),
-            '-continueafterfailure=true',
-        ] + self._get_servo_args() + self._get_wificell_args() + self._get_cloud_storage_info()
+                '-resultsdir=' + self.resultsdir,
+                '-waituntilready=true',
+                '-timeout=' + str(self._max_run_sec),
+                '-continueafterfailure=true',
+        ]
+        args.extend(self._get_servo_args())
+        args.extend(self._get_rpm_args())
+        args.extend(self._get_wificell_args())
+        args.extend(self._get_cloud_storage_info())
 
         for varsfile in self._varsfiles:
             args.append('-varsfile=%s' % varsfile)

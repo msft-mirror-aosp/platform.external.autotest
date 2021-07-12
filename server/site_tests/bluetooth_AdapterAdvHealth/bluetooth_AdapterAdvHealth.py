@@ -31,9 +31,11 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     # TODO(b/182172118) - Winky has suspend test issues
     # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
+    # TODO(b/192419579) - RTL8822 can't advertise 4 connectable advertisements
     @test_wrapper('Multiple LE advertising test',
                   skip_models=['dru', 'druwl', 'dumo', 'winky'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  ['Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART'],
                   skip_common_errors=True)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""

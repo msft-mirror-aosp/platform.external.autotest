@@ -6,9 +6,21 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
-  <Entry include="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFlashControl" />
-  <Entry include="CtsGraphicsTestCases android.graphics.cts.BitmapTest#testHardwareBitmapNotLeaking" />
-  <Entry include="CtsGraphicsTestCases android.graphics.cts.BitmapTest#testDrawingHardwareBitmapNotLeaking" />
-  <Entry include="CtsNetTestCases android.net.cts.TrafficStatsTest#testTrafficStatsForLocalhost" />
-  <Entry include="CtsNetTestCases android.net.wifi.cts.WifiManagerTest#testWifiScanTimestamp" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.1d.optimal#r64_sint" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.1d.optimal#r64_uint" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.2d.optimal#r64_sint" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.2d.optimal#r64_uint" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.3d.optimal#r64_sint" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.3d.optimal#r64_uint" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.all_device#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.host_read_transfer_dst#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_image_sampled#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_index_buffer#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_buffer#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_image#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_texel_buffer#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_uniform_buffer#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_uniform_texel_buffer#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_vertex_buffer#1024" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_src_transfer_dst#1024" />
 </SubPlan>

@@ -4,7 +4,7 @@
 
 import glob, logging, os, commands
 
-from autotest_lib.client.bin import test
+from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 
 class hardware_Keyboard(test.test):
@@ -25,6 +25,10 @@ class hardware_Keyboard(test.test):
                       'Z', 'X', 'C', 'V', 'B', 'N', 'M']
     live_test_key = 'LeftMeta'
     preserve_srcdir = True
+
+    def setup(self):
+        os.chdir(self.srcdir)
+        utils.make()
 
     def _supported(self, event, key_name):
         cmd = os.path.join(self.srcdir, 'evtest') + ' ' + event

@@ -26,9 +26,14 @@ class power_Standby(test.test):
         self._pdash_note = pdash_note
         self._checkpoint_logger = power_status.CheckpointLogger()
 
-    def run_once(self, test_hours=None, sample_hours=None,
-                 max_milliwatts_standby=500, ac_ok=False,
-                 force_discharge='false', suspend_state='', bypass_check=False):
+    def run_once(self,
+                 test_hours=None,
+                 sample_hours=None,
+                 max_milliwatts_standby=500,
+                 ac_ok=False,
+                 force_discharge='false',
+                 suspend_state='',
+                 bypass_check=False):
         """Put DUT to suspend state for |sample_hours| and measure power."""
         if not power_utils.has_battery():
             raise error.TestNAError('Skipping test because DUT has no battery.')

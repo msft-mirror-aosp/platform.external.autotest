@@ -86,7 +86,8 @@ class tast(test.test):
     _RUN_EXIT_SEC = 5
 
     # Number of times to retry SSH connection attempts to the DUT.
-    _SSH_CONNECT_RETRIES = 2
+    # Should be enough to handle a slow booting DUT with _DOWNLOAD_TIMEOUT_SEC
+    _SSH_CONNECT_RETRIES = 12
 
     # File written by the tast command containing test results, as
     # newline-terminated JSON TestResult objects.

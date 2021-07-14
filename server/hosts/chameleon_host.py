@@ -126,16 +126,13 @@ class ChameleonHost(ssh_host.SSHHost):
         """
         # TODO(waihong): Add verify and repair logic which are required while
         # deploying to Cros Lab.
-        chameleon_board = None
         try:
             chameleon_board = chameleon.ChameleonBoard(
                     self._chameleon_connection, self)
             return chameleon_board
-        except:
-            self.reboot()
-            chameleon_board = chameleon.ChameleonBoard(
-                self._chameleon_connection, self)
-            return chameleon_board
+        except Exception as e:
+            raise ChameleonHostError('Can not create chameleon board: %s(%s)',
+                                     e.__class__, e)
 
 
 def create_chameleon_host(dut, chameleon_args):
@@ -175,10 +172,10 @@ def create_chameleon_host(dut, chameleon_args):
                 # Be more tolerant on chameleon in the lab because
                 # we don't want dead chameleon blocks non-chameleon tests.
                 if utils.ping(chameleon_hostname, deadline=3):
-                   logging.warning(
-                           'Chameleon %s is not accessible. Please file a bug'
-                           ' to test lab', chameleon_hostname)
-                   return None
+                    logging.warning(
+                            'Chameleon %s is not accessible. Please file a bug'
+                            ' to test lab', chameleon_hostname)
+                    return None
                 return ChameleonHost(chameleon_host=chameleon_hostname)
         if chameleon_args:
             return ChameleonHost(**chameleon_args)

@@ -258,8 +258,8 @@ class power_WakeSources(test.test):
         """
         is_success = True
         logging.info(
-            'Testing wake by %s triggers a '
-            'full wake when dark resume is enabled.', wake_source)
+                'Testing wake by %s triggers a %s wake when dark resume is '
+                'enabled.', wake_source, 'full' if full_wake else 'dark')
         if not self._before_suspend(wake_source):
             logging.error('Before suspend action failed for %s', wake_source)
             # Still run the _after_resume callback since we can do things like

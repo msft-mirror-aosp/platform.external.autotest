@@ -147,14 +147,18 @@ class CellularTestEnvironment(object):
     def __exit__(self, exception, value, traceback):
         if upstart.has_service('modemfwd'):
             upstart.restart_job('modemfwd')
+        # If a test fails and a crash is detected, the crash error takes
+        # priority over the previous failure.
         crash_files = self.detect_crash.get_new_crash_files()
         if any(cf for cf in crash_files if any(pr in cf for pr in [
                 'ModemManager', 'shill', 'qmi', 'mbim', 'hermes', 'modemfwd'
         ])):
-            logging.error('A daemon crash was detected: %s', crash_files)
-            # Override the error text.
-            value = 'A daemon crash was detected: {0}\n{1}'.format(
-                    crash_files, value)
+            logging.info(
+                    'A crash was encountered. '
+                    'Overriding the previous error: %s', value)
+            raise error.TestError(
+                    'One or more daemon crashes were detected. '
+                    'See crash dumps: ', crash_files)
         if self.shill:
             self._set_service_order(self._system_service_order)
 

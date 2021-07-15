@@ -145,8 +145,17 @@ class CellularTestEnvironment(object):
             raise
 
     def __exit__(self, exception, value, traceback):
-        if upstart.has_service('modemfwd'):
-            upstart.restart_job('modemfwd')
+        exception_on_restore_state = None
+        try:
+            self._restore_state()
+        except Exception as ex:
+            # Exceptions thrown by _restore_state() should be ignored if a
+            # previous exception exist, otherwise the root cause of the test
+            # failure will be overwritten by the clean up error in
+            # _restore_state, and that is not useful.
+            if exception is None:
+                exception_on_restore_state = ex
+
         # If a test fails and a crash is detected, the crash error takes
         # priority over the previous failure.
         crash_files = self.detect_crash.get_new_crash_files()
@@ -159,8 +168,9 @@ class CellularTestEnvironment(object):
             raise error.TestError(
                     'One or more daemon crashes were detected. '
                     'See crash dumps: ', crash_files)
-        if self.shill:
-            self._set_service_order(self._system_service_order)
+
+        if exception_on_restore_state is not None:
+            raise exception_on_restore_state
 
         if self._nested:
             return self._nested.__exit__(exception, value, traceback)
@@ -168,6 +178,14 @@ class CellularTestEnvironment(object):
         self.modem_manager = None
         self.modem = None
         self.modem_path = None
+
+    def _restore_state(self):
+        """Try to restore the test environment to a good state.
+        """
+        if upstart.has_service('modemfwd'):
+            upstart.restart_job('modemfwd')
+        if self.shill:
+            self._set_service_order(self._system_service_order)
 
     def _get_shill_cellular_device_object(self):
         return utils.poll_for_condition(

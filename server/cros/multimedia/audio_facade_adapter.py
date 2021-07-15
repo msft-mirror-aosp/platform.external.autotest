@@ -319,6 +319,24 @@ class AudioFacadeRemoteAdapter(object):
                 output_node_type, input_node_type)
 
 
+    def get_noise_cancellation_supported(self):
+        """Gets whether the device supports Noise Cancellation.
+
+        @returns: True is supported; False otherwise.
+
+        """
+        return self._audio_proxy.get_noise_cancellation_supported()
+
+
+    def set_bypass_block_noise_cancellation(self, bypass):
+        """Sets CRAS to bypass the blocking logic of Noise Cancellation.
+
+        @param bypass: True for bypass; False for un-bypass.
+
+        """
+        self._audio_proxy.set_bypass_block_noise_cancellation(bypass)
+
+
     def start_arc_recording(self):
         """Starts recording using microphone app in container."""
         self._audio_proxy.start_arc_recording()

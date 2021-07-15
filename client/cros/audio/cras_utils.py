@@ -677,6 +677,22 @@ def get_active_output_node_max_supported_channels():
     raise CrasUtilsError('Cannot find active output node.')
 
 
+def get_noise_cancellation_supported():
+    """Gets whether the device supports Noise Cancellation.
+
+    @returns: True is supported; False otherwise.
+    """
+    return bool(get_cras_control_interface().IsNoiseCancellationSupported())
+
+
+def set_bypass_block_noise_cancellation(bypass):
+    """Sets CRAS to bypass the blocking logic of Noise Cancellation.
+
+    @param bypass: True for bypass; False for un-bypass.
+    """
+    get_cras_control_interface().SetBypassBlockNoiseCancellation(bypass)
+
+
 class CrasTestClient(object):
     """An object to perform cras_test_client functions."""
 

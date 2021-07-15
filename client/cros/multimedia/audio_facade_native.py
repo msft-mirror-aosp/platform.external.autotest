@@ -479,6 +479,24 @@ class AudioFacadeNative(object):
         cras_dbus_utils.wait_for_unexpected_nodes_changed(timeout_secs)
 
 
+    def get_noise_cancellation_supported(self):
+        """Gets whether the device supports Noise Cancellation.
+
+        @returns: True is supported; False otherwise.
+
+        """
+        return cras_utils.get_noise_cancellation_supported()
+
+
+    def set_bypass_block_noise_cancellation(self, bypass):
+        """Sets CRAS to bypass the blocking logic of Noise Cancellation.
+
+        @param bypass: True for bypass; False for un-bypass.
+
+        """
+        cras_utils.set_bypass_block_noise_cancellation(bypass)
+
+
     @check_arc_resource
     def start_arc_recording(self):
         """Starts recording using microphone app in container."""

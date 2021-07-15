@@ -3345,3 +3345,21 @@ def crc8(buf):
     for i in buf:
         rv = _table_crc8[ (rv ^ i) & 0xff ]
     return rv
+
+
+def send_msg_to_terminal(job, msg):
+    """Send from the client side to the terminal.
+
+    ONLY to be used on non-scheduled tests (aka local runs).
+    Do not send anything which could be confused for a status.
+    See server/autotest.py client_logger for examples of status's NOT to use
+
+    @param job: The client job obj. Can be accessed from anything built off
+        test.test via self.job
+    @param msg: the msg to send.
+    """
+    status = os.fdopen(3, 'w', 2)
+    try:
+        status.write(msg + '\n')
+    finally:
+        status.flush()

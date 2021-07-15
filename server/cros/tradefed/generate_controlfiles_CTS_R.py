@@ -77,6 +77,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsLibcoreOjTestCases': 2.0,
         'CtsMediaStressTestCases': 5.0,
         'CtsMediaTestCases': 10.0,
+        'CtsMediaTestCases.exclude-GLView': 10.0,
         'CtsMediaTestCases.video': 10.0,
         'CtsNNAPIBenchmarkTestCases': 2.0,
         'CtsPrintTestCases': 1.5,

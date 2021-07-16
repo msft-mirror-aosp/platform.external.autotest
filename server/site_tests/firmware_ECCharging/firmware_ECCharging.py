@@ -158,7 +158,7 @@ class firmware_ECCharging(FirmwareTest):
         """Check if AC is attached and if charge control is normal."""
         output = self._retry_send_cmd(
                 "chgstate",
-                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=\s*(\d)\s*"])
+                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=.*\((\d)\)\s*"])
         ac_state = int(output[0][1])
         chg_ctl_mode = int(output[1][1])
         if ac_state == 0:

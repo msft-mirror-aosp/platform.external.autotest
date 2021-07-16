@@ -9,5 +9,19 @@ set up.
 
 callboxes = {
         'chromeos1-donutlab-callbox1-host1.cros':
-        'chromeos1-donutlab-callbox1.cros'
+        'chromeos1-donutlab-callbox1.cros',
+        'chromeos1-donutlab-callbox1-host1':
+        'chromeos1-donutlab-callbox1.cros',
+        'chromeos1-donutlab-callbox2-host1.cros':
+        'chromeos1-donutlab-callbox2.cros',
+        'chromeos1-donutlab-callbox2-host1':
+        'chromeos1-donutlab-callbox2.cros',
+        'chromeos1-donutlab-callbox3-host1.cros':
+        'chromeos1-donutlab-callbox3.cros',
+        'chromeos1-donutlab-callbox3-host1':
+        'chromeos1-donutlab-callbox3.cros',
+        'chromeos1-donutlab-callbox4-host1.cros':
+        'chromeos1-donutlab-callbox4.cros',
+        'chromeos1-donutlab-callbox4-host1':
+        'chromeos1-donutlab-callbox4.cros',
 }

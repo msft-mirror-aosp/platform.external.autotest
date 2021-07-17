@@ -40,20 +40,21 @@ class cellular_Hermes_MultiProfile(test.test):
 
         self.mm_proxy, self.hermes_manager, euicc_path = \
                     hermes_utils.initialize_test(is_prod_ci)
+        # separate testci and prodici procedure to get 2 iccids
+        if not is_prod_ci:
+            first_iccid = hermes_utils.install_profile_test(euicc_path, self.hermes_manager)
+            second_iccid = hermes_utils.install_profile_test(euicc_path, self.hermes_manager)
+        else:
+            _, installed_profiles = \
+            hermes_utils.request_installed_profiles(euicc_path, self.hermes_manager)
 
-        first_iccid = hermes_utils.get_iccid_of_disabled_profile(
-            euicc_path, self.hermes_manager, self.is_prod_ci)
+            profiles_count = len(installed_profiles)
+            if profiles_count < 2:
+                raise error.TestError('Two distinct profiles need to be '
+                'installed before test begins but count is '+ profiles_count)
 
-        logging.info('Enabling first profile')
-        hermes_utils.enable_or_disable_profile_test(
-            euicc_path, self.hermes_manager, first_iccid, True)
-
-        # We need to get a second profile to test operations over multiple
-        # profiles. It is important to enable the first_iccid before fetching
-        # second_iccid, since get_iccid_of_disabled_profile returns the first
-        # disabled profile it finds.
-        second_iccid = hermes_utils.get_iccid_of_disabled_profile(
-            euicc_path, self.hermes_manager, self.is_prod_ci)
+            first_iccid = installed_profiles.values()[0].iccid
+            second_iccid = installed_profiles.values()[1].iccid
 
         if not first_iccid or not second_iccid :
             fail_iccid = 'first' if not first_iccid else 'second'
@@ -63,30 +64,41 @@ class cellular_Hermes_MultiProfile(test.test):
             raise error.TestError('Two distinct profiles need to be installed '
                 'before test begins. Got only ' + first_iccid)
 
-        logging.info('Enabling second profile, expecting Hermes to disable '
-                    'the first profile behind the scenes.')
-        hermes_utils.enable_or_disable_profile_test(
-            euicc_path, self.hermes_manager, second_iccid, True)
-
-        logging.info('Enabling first profile again')
-        hermes_utils.enable_or_disable_profile_test(
-            euicc_path, self.hermes_manager, first_iccid, True)
-
+        # first get two profiles, check first_iccid and disable if not disabled,
+        # also check second profile is enabled or not. if not enable 2nd one
         logging.info('Disabling first profile to prevent enabling already '
-                    'enabled profile in next stress loop')
-        hermes_utils.enable_or_disable_profile_test(
-            euicc_path, self.hermes_manager, first_iccid, False)
+                    'enabled profile in next stress loop. first_iccid:%s, '
+                    'second_iccid:%s', first_iccid, second_iccid)
+        # get profile state to make sure to keep in expected state
+        first_state = hermes_utils.get_profile_state(
+        euicc_path, self.hermes_manager, first_iccid)
+
+        if first_state:
+            hermes_utils.set_profile_state(
+            False, euicc_path, self.hermes_manager, first_iccid, None)
+
+        second_state = hermes_utils.get_profile_state(
+        euicc_path, self.hermes_manager, second_iccid)
+
+        if not second_state:
+            hermes_utils.set_profile_state(
+            True, euicc_path, self.hermes_manager, second_iccid, None)
 
         logging.info('Stress enable/disable profiles')
-        for i in range(1,10):
+        for i in range(1,5):
+            logging.info('Iteration :: %d', i)
             for iccid in [first_iccid, second_iccid]:
-                logging.info('Enabling profile:%s', iccid)
-                hermes_utils.enable_or_disable_profile_test(
-                    euicc_path, self.hermes_manager, iccid, True)
+                if not hermes_utils.get_profile_state(
+                    euicc_path, self.hermes_manager, iccid):
+                    logging.info('Enabling profile:%s', iccid)
+                    hermes_utils.enable_or_disable_profile_test(
+                        euicc_path, self.hermes_manager, iccid, True)
                 explicitly_disable_profile = random.choice([True,False])
                 if (explicitly_disable_profile):
-                    logging.info('Disabling profile:%s', iccid)
-                    hermes_utils.enable_or_disable_profile_test(
-                        euicc_path, self.hermes_manager, iccid, False)
+                    if hermes_utils.get_profile_state(
+                        euicc_path, self.hermes_manager, iccid):
+                        logging.info('Disabling profile:%s', iccid)
+                        hermes_utils.enable_or_disable_profile_test(
+                            euicc_path, self.hermes_manager, iccid, False)
 
         logging.info('HermesMultiProfileTest Completed')

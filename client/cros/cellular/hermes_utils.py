@@ -160,10 +160,9 @@ def initialize_test(is_prod_ci):
 
 def validate_profile_state(euicc_path, hermes_manager, iccid, is_enable):
     """
-    Validates given profile(iccid) state and all installed profile states
+    Validates given profile(iccid) state
 
-    One profile enabled should result other profiles to be disabled and if any
-    profile disabled then should see all the profiles in disabled state
+    Check state of changed profile
 
     @param euicc_path: esim path based on testci/prodci
     @param hermes_manager: hermes manager object
@@ -179,29 +178,14 @@ def validate_profile_state(euicc_path, hermes_manager, iccid, is_enable):
         is_equal = False
         # check profile with given iccid has target_state and rest are opposite
         for profile in installed_profiles.values():
-            if (hermes_constants.ProfileStateToString(profile.state) ==
-                    target_state):
-                is_equal = True
-            else:
-                is_equal = False
-            # check for active profiles when disabled
-            if not is_enable and not is_equal:
-                    logging.error('profile:%s not in %s state',
-                                profile.iccid, target_state)
-                    raise error.TestFail('validate_profile_state failed')
-            else:
-                continue
             # check for inactive profiles when enabled except enabled one
             if iccid == profile.iccid:
-                if not is_equal:
+                if not (hermes_constants.ProfileStateToString(profile.state) ==
+                    target_state):
                     logging.error('profile:%s not in %s state',
                     profile.iccid, target_state)
                     raise error.TestFail('validate_profile_state failed')
-            else:
-                if is_equal and is_enable:
-                    logging.error('profile:%s in %s state not valid',
-                    profile.iccid, target_state)
-                    raise error.TestFail('validate_profile_state failed')
+
         logging.info('validate_profile_state succeeded')
     except dbus.DBusException as e:
         logging.error('Profile %s error:%s', target_state, e)
@@ -230,6 +214,22 @@ def set_profile_state(
     else:
         profile.disable()
     logging.info('set_profile_state done')
+
+def get_profile_state(euicc_path, hermes_manager, iccid):
+    """
+    get profile state
+
+    @param euicc_path: esim path based on testci/prodci
+    @param hermes_manager: hermes manager object
+    @param iccid: profile iccid to find state
+    @return True if profile state is Active and False if state is Inactive
+
+    """
+    if euicc_path and iccid:
+        euicc = hermes_manager.get_euicc(euicc_path)
+        profile = euicc.get_profile_from_iccid(iccid)
+
+    return True if profile.state == 'ACTIVE' else False
 
 def get_profile(euicc_path, hermes_manager, is_active):
     """
@@ -347,7 +347,7 @@ def enable_or_disable_profile_test(
         if not profile_found:
             raise error.TestFail('enable_or_disable_profile_test failed -'
                     'No profile to ' + profile_action)
-        # Check all profiles state
+        # Check profile state
         validate_profile_state(euicc_path, hermes_manager, iccid, is_enable)
     except dbus.DBusException as e:
         logging.error('Profile %s error:%s', profile_action, e)

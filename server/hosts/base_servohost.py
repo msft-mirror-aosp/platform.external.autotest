@@ -79,7 +79,8 @@ class BaseServoHost(ssh_host.SSHHost):
         if self._is_localhost or self._is_containerized_servod:
             self._is_in_lab = False
         elif is_in_lab is None:
-            self._is_in_lab = utils.host_is_in_lab_zone(self.hostname)
+            self._is_in_lab = (utils.host_is_in_lab_zone(self.hostname)
+                               or self.is_satlab())
         else:
             self._is_in_lab = is_in_lab
 

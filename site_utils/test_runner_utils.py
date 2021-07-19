@@ -61,6 +61,10 @@ class TestThatProvisioningError(Exception):
     """Raised when it fails to provision the DUT to the requested build."""
 
 
+class TestThatControlError(Exception):
+    """Raise when there is an issue the specified test's control file."""
+
+
 def add_common_args(parser):
     """
     Add common arguments for both test_that and test_droid to their parser.
@@ -846,16 +850,31 @@ class SimpleJob(object):
         self.id = test_num
         self.keyvals = {'experimental': False}
         self.dependencies = []
+        self.py_version = None
 
     def set_control_file(self, control):
         self.control_file = control.text
         self.control_type = control.test_type.capitalize()
         if hasattr(control, 'dependencies'):
             self.dependencies = set(control.dependencies)
+        if control.py_version and control.py_version not in (2, 3):
+            raise TestThatControlError(
+                    "Test py_version not compatible. Expected 2 or 3 got %s" %
+                    control.py_version)
+        self.py_version = control.py_version
+        self._set_pyversion()
 
     def deps_satisfied(self, labels):
         """Verify the deps for this job are satisfied on the given labels"""
         return self.dependencies.issubset(labels)
+
+    def _set_pyversion(self):
+        """If there is a py_version specified, set it in the env."""
+        if not self.py_version:
+            return
+        if int(os.getenv('PY_VERSION')) == self.py_version:
+            return
+        os.environ['PY_VERSION'] = str(self.py_version)
 
 
 def get_control_files(autotest_path, pred):

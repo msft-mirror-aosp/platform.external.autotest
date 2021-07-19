@@ -62,6 +62,7 @@ class FakeTests(object):
         self.test_type = 'client'
         self.dependencies = deps
         self.name = None
+        self.py_version = None
 
 
 class TestRunnerUnittests(unittest.TestCase):

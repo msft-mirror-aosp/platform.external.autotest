@@ -4,7 +4,7 @@
 
 AUTHOR = "abergman, chromeos-engprod-platform-syd"
 NAME = "platform_PerfCujFetchCloudConfig"
-ATTRIBUTES = 'suite:performance_cuj_quick'
+ATTRIBUTES = "suite:performance_cuj, suite:performance_cuj_quick, suite:performance_cuj_experimental"
 TIME = "SHORT"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "platform"

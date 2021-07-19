@@ -35,7 +35,7 @@ TESTS = [{
         'test': 'stress_{index:02n}',
         'tast_name': 'stress',
         'iterations': 40,
-        'duration': 5 * HOUR_IN_SECS,
+        'duration': 8 * HOUR_IN_SECS,
         'priority': 100,
         'length': 'long'
 }, {
@@ -81,16 +81,17 @@ template = _read_template_file(
 for test in TESTS:
     for i in range(int(test['iterations'])):
         for d in range(1, MAX_DUTS + 1):
-          test_name = test['test'].format(index=i + 1)
-          control_file = template.format(
-                  name='_'.join([SUITE, test_name]),
-                  priority=int(test['priority'] - i),
-                  duration=int(test['duration']),
-                  test_exprs=TEST_PREFIX + test['tast_name'],
-                  length=test['length'],
-                  version=STORAGE_QUAL_VERSION,
-                  attributes=", ".join(_get_suite_attributes(i)),
-                  dependency="dut:%d" % d,
-          )
-          control_file_name = 'control.' + '_'.join([SUITE, test_name, str(d)])
-          _write_control_file(control_file_name, control_file)
+            test_name = test['test'].format(index=i + 1)
+            control_file = template.format(
+                    name='_'.join([SUITE, test_name]),
+                    priority=int(test['priority'] - i),
+                    duration=int(test['duration']),
+                    test_exprs=TEST_PREFIX + test['tast_name'],
+                    length=test['length'],
+                    version=STORAGE_QUAL_VERSION,
+                    attributes=", ".join(_get_suite_attributes(i)),
+                    dependency="dut:%d" % d,
+            )
+            control_file_name = 'control.' + '_'.join(
+                    [SUITE, test_name, str(d)])
+            _write_control_file(control_file_name, control_file)

@@ -224,6 +224,7 @@ suite:hwqual
 suite:infra_qual
 suite:infra_qual_cellular
 suite:infra_qual_wifi
+suite:input-tools-upstream
 suite:jailed_build
 suite:kernel_daily_benchmarks
 suite:kernel_daily_regression

@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.cros.update_engine import dlc_util
@@ -825,7 +826,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @returns a valid devserver update URL.
 
         """
-        if not moblab:
+        if not moblab and not lsbrelease_utils.is_moblab():
             return self.get_update_url_from_fake_omaha(
                     job_repo_url,
                     full_payload=full_payload,

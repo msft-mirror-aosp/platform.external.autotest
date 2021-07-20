@@ -36,5 +36,5 @@ class harness_unittest(unittest.TestCase):
         self.god.check_playback()
 
 
-if  __name__ == "__main__":
+if __name__ == "__main__":
     unittest.main()

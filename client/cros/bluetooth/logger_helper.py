@@ -47,7 +47,11 @@ class LogManager(object):
 
     def _GetSize(self):
         """Get the size of the log"""
-        return os.path.getsize(self.log_path)
+        try:
+            return os.path.getsize(self.log_path)
+        except Exception as e:
+            logging.error('Failed to get log size: {}'.format(e))
+            return 0
 
     def StartRecording(self):
         """Mark initial log size for later comparison"""

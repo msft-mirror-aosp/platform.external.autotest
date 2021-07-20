@@ -20,7 +20,7 @@ class security_ProcessManagementPolicy(test.test):
     _ALLOWLIST_DICT = {
         "cros-disks": set(("chronos", "fuse-exfat", "fuse-sshfs", "nobody",
                            "ntfs-3g", "fuse-rar2fs", "fuse-smbfs", "fuse-zip")),
-        "shill": set(("dhcp", "ipsec", "openvpn", "syslog", "nobody")),
+        "shill": set(("dhcp", "vpn", "openvpn", "syslog", "nobody")),
     }
 
     def __init__(self, *args, **kwargs):
@@ -95,8 +95,8 @@ class security_ProcessManagementPolicy(test.test):
         self._test_setuid("shill", "chronos", True, False)
         # Make sure 'openvpn' can't setuid() to 'root'
         self._test_setuid("openvpn", "root", True, False)
-        # Make sure 'ipsec' can't setuid() to 'root'
-        self._test_setuid("ipsec", "root", True, False)
+        # Make sure 'vpn' can't setuid() to 'root'
+        self._test_setuid("vpn", "root", True, False)
 
         # Make the test fail if any unexpected behaviour got detected. Note
         # that the error log output that will be included in the failure

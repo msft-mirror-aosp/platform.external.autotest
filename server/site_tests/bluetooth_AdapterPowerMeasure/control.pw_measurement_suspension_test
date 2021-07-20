@@ -17,6 +17,7 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1, servo'
+PY_VERSION = 3
 
 DOC = """
 This test case verifies that the Bluetooth chip of the DUT does

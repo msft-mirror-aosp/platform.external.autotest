@@ -24,7 +24,7 @@
 400600a0: DIOB0   (?P<open_source_set>0 IN)?(?P<closed_source_set1>13 IN GPIO0_GPIO12)?
 400600a8: DIOB1   (?P<open_source_set>0 IN)?(?P<closed_source_set1>14 IN GPIO0_GPIO13)?
 400600b0: DIOB2    2  IN  GPIO0_GPIO1
-400600b8: DIOB3    (?P<no_ec_comm>3 IN GPIO0_GPIO2)?(?P<ec_comm>0 IN)?
+400600b8: DIOB3    (?P<no_ec_comm>3 IN GPIO0_GPIO2)?(?P<ec_comm>0 IN WAKE_HIGH)?
 400600c0: DIOB4    (?P<no_ec_comm>0 IN PD)?(?P<ec_comm>3 IN PD GPIO0_GPIO2)?
 400600c8: DIOB5    0  IN PD
 400600d0: DIOB6   16  IN  GPIO0_GPIO15

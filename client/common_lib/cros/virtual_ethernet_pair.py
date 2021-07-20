@@ -54,6 +54,7 @@ class VirtualEthernetPair(object):
                  peer_interface_ip='10.9.8.2/24',
                  interface_ipv6=None,
                  peer_interface_ipv6=None,
+                 interface_ns=None,
                  ignore_shutdown_errors=False,
                  host=None):
         """
@@ -73,6 +74,10 @@ class VirtualEthernetPair(object):
         self._peer_interface_ip = peer_interface_ip
         self._interface_ipv6 = interface_ipv6
         self._peer_interface_ipv6 = peer_interface_ipv6
+        self._interface_ns = interface_ns
+        self._ns_exec = ''
+        if interface_ns:
+            self._ns_exec = 'ip netns exec %s ' % self._interface_ns
         self._ignore_shutdown_errors = ignore_shutdown_errors
         self._run = utils.run
         self._host = host
@@ -97,7 +102,8 @@ class VirtualEthernetPair(object):
                 return
 
         self._create_test_interface()
-        if not self._interface_exists(self._interface_name):
+        if not self._interface_exists(self._interface_name,
+                                      self._interface_ns):
             logging.error('Failed to create main test interface.')
             return
 
@@ -108,8 +114,11 @@ class VirtualEthernetPair(object):
         # get any IP traffic through.  Since this is basically a loopback
         # device, just allow all traffic.
         for name in (self._interface_name, self._peer_interface_name):
-            status = self._run('iptables -w -I INPUT -i %s -j ACCEPT' % name,
-                               ignore_status=True)
+            command = 'iptables -w -I INPUT -i %s -j ACCEPT' % name
+            if name == self._interface_name and self._interface_ns:
+                status = self._run(self._ns_exec + command, ignore_status=True)
+            else:
+                status = self._run(command, ignore_status=True)
             if status.exit_status != 0:
                 logging.error('iptables rule addition failed for interface %s: '
                               '%s', name, status.stderr)
@@ -123,8 +132,11 @@ class VirtualEthernetPair(object):
         interface isn't there or fails to be removed.
         """
         for name in (self._interface_name, self._peer_interface_name):
-            self._run('iptables -w -D INPUT -i %s -j ACCEPT' % name,
-                      ignore_status=True)
+            command = 'iptables -w -D INPUT -i %s -j ACCEPT' % name
+            if name == self._interface_name and self._interface_ns:
+                status = self._run(self._ns_exec + command, ignore_status=True)
+            else:
+                status = self._run(command, ignore_status=True)
         if not self._either_interface_exists():
             logging.warning('VirtualEthernetPair.teardown() called, '
                             'but no interface was found.')
@@ -156,7 +168,8 @@ class VirtualEthernetPair(object):
     @property
     def interface_ip(self):
         """@return string IPv4 address of the interface."""
-        return interface.Interface(self.interface_name).ipv4_address
+        return interface.Interface(self.interface_name,
+                                   netns=self._interface_ns).ipv4_address
 
 
     @property
@@ -168,13 +181,15 @@ class VirtualEthernetPair(object):
     @property
     def interface_subnet_mask(self):
         """@return string IPv4 subnet mask of the interface."""
-        return interface.Interface(self.interface_name).ipv4_subnet_mask
+        return interface.Interface(self.interface_name,
+                                   netns=self._interface_ns).ipv4_subnet_mask
 
 
     @property
     def interface_prefix(self):
         """@return int IPv4 prefix length."""
-        return interface.Interface(self.interface_name).ipv4_prefix
+        return interface.Interface(self.interface_name,
+                                   netns=self._interface_ns).ipv4_prefix
 
 
     @property
@@ -186,7 +201,8 @@ class VirtualEthernetPair(object):
     @property
     def interface_mac(self):
         """@return string MAC address of the interface."""
-        return interface.Interface(self.interface_name).mac_address
+        return interface.Interface(self.interface_name,
+                                   netns=self._interface_ns).mac_address
 
 
     @property
@@ -204,16 +220,19 @@ class VirtualEthernetPair(object):
         self.teardown()
 
 
-    def _interface_exists(self, interface_name):
+    def _interface_exists(self, interface_name, netns=None):
         """
         Returns True iff we found an interface with name |interface_name|.
         """
-        return interface.Interface(interface_name, host=self._host).exists
+        return interface.Interface(interface_name,
+                                   host=self._host,
+                                   netns=netns).exists
 
 
     def _either_interface_exists(self):
-        return (self._interface_exists(self._interface_name) or
-                self._interface_exists(self._peer_interface_name))
+        return (self._interface_exists(self._interface_name,
+                                       self._interface_ns)
+                or self._interface_exists(self._peer_interface_name))
 
 
     def _remove_test_interface(self):
@@ -221,11 +240,12 @@ class VirtualEthernetPair(object):
         Remove the virtual ethernet device installed by
         _create_test_interface().
         """
-        self._run('ip link set %s down' % self._interface_name,
+        self._run(self._ns_exec + 'ip link set %s down' % self._interface_name,
                   ignore_status=self._ignore_shutdown_errors)
         self._run('ip link set %s down' % self._peer_interface_name,
                   ignore_status=self._ignore_shutdown_errors)
-        self._run('ip link delete %s >/dev/null 2>&1' % self._interface_name,
+        self._run(self._ns_exec +
+                  'ip link delete %s >/dev/null 2>&1' % self._interface_name,
                   ignore_status=self._ignore_shutdown_errors)
 
         # Under most normal circumstances a successful deletion of
@@ -235,6 +255,9 @@ class VirtualEthernetPair(object):
         self._run('ip link delete %s >/dev/null 2>&1' %
                   self._peer_interface_name, ignore_status=True)
 
+        if self._interface_ns:
+            self._run('ip netns del %s' % self._interface_ns,
+                      ignore_status=True)
 
     def _create_test_interface(self):
         """
@@ -244,17 +267,22 @@ class VirtualEthernetPair(object):
         self._run('ip link add name %s '
                   'type veth peer name %s >/dev/null 2>&1' %
                   (self._interface_name, self._peer_interface_name))
-        self._run('ip link set %s up' % self._interface_name)
+        if self._interface_ns:
+            self._run('ip netns add %s' % self._interface_ns,
+                      ignore_status=True)
+            self._run('ip link set dev %s netns %s' %
+                      (self._interface_name, self._interface_ns))
+        self._run(self._ns_exec + 'ip link set %s up' % self._interface_name)
         self._run('ip link set %s up' % self._peer_interface_name)
         if self._interface_ip is not None:
-            self._run('ip addr add %s dev %s' % (self._interface_ip,
-                                                 self._interface_name))
+            self._run(self._ns_exec + 'ip addr add %s dev %s' %
+                      (self._interface_ip, self._interface_name))
         if self._peer_interface_ip is not None:
             self._run('ip addr add %s dev %s' % (self._peer_interface_ip,
                                                  self._peer_interface_name))
         if self._interface_ipv6 is not None:
-            self._run('ip -6 addr add %s dev %s' % (self._interface_ipv6,
-                                                    self._interface_name))
+            self._run(self._ns_exec + 'ip -6 addr add %s dev %s' %
+                      (self._interface_ipv6, self._interface_name))
         if self._peer_interface_ipv6 is not None:
             self._run('ip -6 addr add %s dev %s' % (self._peer_interface_ipv6,
                                                     self._peer_interface_name))

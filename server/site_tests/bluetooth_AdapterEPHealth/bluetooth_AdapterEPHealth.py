@@ -238,8 +238,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     def ep_outgoing_audio_services_not_in_allowlist(self):
         """The test with service not in allowlist for outgoing connection."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.run_test_method(self.ep_outgoing_connection, device,
-                             uuids=BluetoothPolicy.ALLOWLIST_AUDIO_INCOMPLETE,
+        self.run_test_method(self.ep_outgoing_connection,
+                             device,
+                             uuids=BluetoothPolicy.ALLOWLIST_BLE_HID,
                              expected_passes=False)
 
 
@@ -294,8 +295,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     def ep_incoming_audio_service_not_in_allowlist(self):
         """Service not in allowlist for incoming reconnection from device."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.run_test_method(self.ep_incoming_connection, device,
-                             uuids=BluetoothPolicy.ALLOWLIST_AUDIO_INCOMPLETE,
+        self.run_test_method(self.ep_incoming_connection,
+                             device,
+                             uuids=BluetoothPolicy.ALLOWLIST_BLE_HID,
                              expected_passes=False)
 
 
@@ -334,8 +336,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     def ep_outgoing_ble_hid_services_not_in_allowlist(self):
         """The test for BLE gatt services not in allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
-        self.run_test_method(self.ep_outgoing_connection, device,
-                             uuids=BluetoothPolicy.ALLOWLIST_BLE_HID_INCOMPLETE,
+        self.run_test_method(self.ep_outgoing_connection,
+                             device,
+                             uuids=BluetoothPolicy.ALLOWLIST_AUDIO,
                              expected_passes=False)
 
 
@@ -363,8 +366,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     def ep_reconnection_ble_hid_service_not_in_allowlist(self):
         """Service in allowlist for auto reconnection from device."""
         device = self.devices['BLE_KEYBOARD'][0]
-        self.run_test_method(self.ep_auto_reconnection, device,
-                             uuids=BluetoothPolicy.ALLOWLIST_BLE_HID_INCOMPLETE,
+        self.run_test_method(self.ep_auto_reconnection,
+                             device,
+                             uuids=BluetoothPolicy.ALLOWLIST_AUDIO,
                              expected_passes=False)
 
 

@@ -67,6 +67,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # Paygen.json file provides information about all builds on all channels.
     _PAYGEN_JSON_URI = 'gs://chromeos-build-release-console/paygen.json'
 
+    # Subtest to use for logging into DUTs in a test.
+    _LOGIN_TEST = 'login_LoginSuccess'
+
     def initialize(self, host=None, hosts=None):
         """
         Sets default variables for the test.

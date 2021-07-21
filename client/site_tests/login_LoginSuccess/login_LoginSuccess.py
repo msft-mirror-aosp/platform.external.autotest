@@ -19,7 +19,7 @@ class login_LoginSuccess(test.test):
     # TODO(afakhry): Remove this timeout increase for asan bots once we figure
     # out why logging out is taking so long. See crbug.com/488291
     if asan.running_on_asan():
-      _SESSION_STOP_TIMEOUT *= 2
+        _SESSION_STOP_TIMEOUT *= 2
 
 
     def initialize(self):
@@ -31,7 +31,10 @@ class login_LoginSuccess(test.test):
                 gobject.MainLoop())
 
 
-    def run_once(self, stress_run=False, arc_mode=None):
+    def run_once(self,
+                 stress_run=False,
+                 arc_mode=None,
+                 dont_override_profile=False):
         """
         Runs the test.
 
@@ -40,12 +43,14 @@ class login_LoginSuccess(test.test):
         @param arc_mode: This value is passed to Chrome and determines how
                          the ARC/Android instance should start. Possible values
                          are defined in common_lib/cros/arc_common.py.
+        @dont_override_profile: Don't delete cryptohome before login.
 
         """
         if stress_run:
             self._SESSION_STOP_TIMEOUT *= 2
         self._listener.listen_for_session_state_change('started')
-        with chrome.Chrome(arc_mode=arc_mode):
+        with chrome.Chrome(arc_mode=arc_mode,
+                           dont_override_profile=dont_override_profile):
             self._listener.wait_for_signals(desc='Session started.',
                                             timeout=self._SESSION_START_TIMEOUT)
             # To enable use as a 'helper test'.

@@ -45,6 +45,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
 
             # Provision latest stable build for the current build.
             build_name = self._get_latest_serving_stable_build()
+            logging.debug('build name is %s', build_name)
 
             # Install the matching build with quick provision.
             autotest_devserver = dev_server.ImageServer.resolve(
@@ -55,6 +56,9 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             provisioner.ChromiumOSProvisioner(
                     update_url, host=self._host,
                     is_release_bucket=True).run_provision()
+
+        # Login to device before update
+        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='before')
 
         # Get a payload to use for the test.
         payload_url = self.get_payload_for_nebraska(
@@ -74,3 +78,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         kernel_utils.verify_boot_expectations(inactive, host=self._host)
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
+
+        # Check we can login with the same user after update.
+        self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                               tag='after',
+                                               dont_override_profile=True)

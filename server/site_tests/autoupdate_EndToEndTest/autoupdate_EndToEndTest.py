@@ -35,8 +35,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     """
     version = 1
 
-    _LOGIN_TEST = 'login_LoginSuccess'
-
 
     def cleanup(self):
         """Save the logs from stateful_partition's preserved/log dir."""

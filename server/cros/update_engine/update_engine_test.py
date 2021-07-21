@@ -1011,8 +1011,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                            filename=paygen_file,
                                            destination=tmpdir)
         return json.loads(
-                self._host.run('cat %s' %
-                               os.path.join(tmpdir, paygen_file)).stdout)
+                self._host.run('cat %s' % os.path.join(tmpdir, paygen_file),
+                               verbose=False).stdout)
 
     def _paygen_json_lookup(self, board, channel, delta_type):
         """

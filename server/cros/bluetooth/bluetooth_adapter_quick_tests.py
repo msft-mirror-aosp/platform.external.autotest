@@ -416,6 +416,9 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Reset the policy allowlist so that all UUIDs are allowed.
         self.test_reset_allowlist()
 
+        # Reset power/wakeup to disabled.
+        self.test_adapter_set_wake_disabled()
+
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
         self.initialize()
         # Start and peer HID devices

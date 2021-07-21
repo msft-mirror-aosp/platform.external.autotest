@@ -127,12 +127,12 @@ class DhcpTestServer(threading.Thread):
         self._logger.info("DhcpTestServer started; opening sockets.")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self._logger.info("Opening socket on '%s' port %d." %
+            self._logger.info("Opening socket on '%s' port %d.",
                               (self._ingress_address, self._ingress_port))
             self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             if self._interface is not None:
-                self._logger.info("Binding to %s" % self._interface)
+                self._logger.info("Binding to %s", self._interface)
                 self._socket.setsockopt(socket.SOL_SOCKET,
                                         SO_BINDTODEVICE,
                                         self._interface)
@@ -141,7 +141,7 @@ class DhcpTestServer(threading.Thread):
             # active but mostly idle.
             self._socket.settimeout(0.1)
         except socket.error as socket_error:
-            self._logger.error("Socket error: %s." % str(socket_error))
+            self._logger.error("Socket error: %s.", str(socket_error))
             self._logger.error(traceback.format_exc())
             if not self._socket is None:
                 self._socket.close()
@@ -213,7 +213,7 @@ class DhcpTestServer(threading.Thread):
         if packet is None:
             self._logger.error("Handling rule failed to return a packet.")
             return False
-        self._logger.debug("Sending response: %s" % packet)
+        self._logger.debug("Sending response: %s", packet)
         binary_string = packet.to_binary_string()
         if binary_string is None or len(binary_string) < 1:
             self._logger.error("Packet failed to serialize to binary string.")
@@ -232,8 +232,8 @@ class DhcpTestServer(threading.Thread):
                 self._end_test_unsafe(False)
             try:
                 data, _ = self._socket.recvfrom(1024)
-                self._logger.info("Server received packet of length %d." %
-                                   len(data))
+                self._logger.info("Server received packet of length %d.",
+                                  len(data))
             except socket.timeout:
                 # No packets available, lets return and see if the server has
                 # been shut down in the meantime.
@@ -250,16 +250,16 @@ class DhcpTestServer(threading.Thread):
                                      "DHCP port?")
                 return
 
-            logging.debug("Server received a DHCP packet: %s." % packet)
+            logging.debug("Server received a DHCP packet: %s.", packet)
             if len(self._handling_rules) < 1:
-                self._logger.info("No handling rule for packet: %s." %
+                self._logger.info("No handling rule for packet: %s.",
                                   str(packet))
                 self._end_test_unsafe(False)
                 return
 
             handling_rule = self._handling_rules[0]
             response_code = handling_rule.handle(packet)
-            logging.info("Handler gave response: %d" % response_code)
+            logging.info("Handler gave response: %d", response_code)
             if response_code & dhcp_handling_rule.RESPONSE_POP_HANDLER:
                 self._handling_rules.pop(0)
 
@@ -274,7 +274,7 @@ class DhcpTestServer(threading.Thread):
                         return
 
             if response_code & dhcp_handling_rule.RESPONSE_TEST_FAILED:
-                self._logger.info("Handling rule %s rejected packet %s." %
+                self._logger.info("Handling rule %s rejected packet %s.",
                                   (handling_rule, packet))
                 self._end_test_unsafe(False)
                 return

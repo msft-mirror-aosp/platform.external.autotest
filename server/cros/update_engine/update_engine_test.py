@@ -88,11 +88,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Utilities for DLC management
         self._dlc_util = dlc_util.DLCUtil(self._run)
 
+        self._fake_omaha = None
 
     def cleanup(self):
         """Clean up update_engine autotests."""
         if self._host:
             self._host.get_file(self._UPDATE_ENGINE_LOG, self.resultsdir)
+        if self._fake_omaha:
+            self._fake_omaha.stop_omaha()
 
 
     def _get_expected_events_for_rootfs_update(self, source_release):
@@ -885,8 +888,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         target_build = gs + build
         payload_type = 'FULL' if full_payload else 'DELTA'
         tlsconn = connection.TLSConnection()
-        self.fake_omaha = fake_omaha.TLSFakeOmaha(tlsconn)
-        fake_omaha_url = self.fake_omaha.start_omaha(
+        self._fake_omaha = fake_omaha.TLSFakeOmaha(tlsconn)
+        fake_omaha_url = self._fake_omaha.start_omaha(
                 self._host.hostname,
                 target_build=target_build,
                 payloads=[{

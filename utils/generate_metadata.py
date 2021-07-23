@@ -92,7 +92,7 @@ def serialize_tags(data):
 
 def serialize_test_case(data):
     """Return a serialized api.TestCase obj."""
-    serialized_testcase_id = tc_pb.TestCase.Id(value=data.name)
+    serialized_testcase_id = tc_pb.TestCase.Id(value="tauto." + data.name)
     tags = serialize_tags(data)
     return tc_pb.TestCase(id=serialized_testcase_id, name=data.name, tags=tags)
 

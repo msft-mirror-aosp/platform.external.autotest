@@ -22,12 +22,13 @@ class _BaseFwBypasser(object):
     # warning screen in tablets/detachables.
     HOLD_VOL_DOWN_BUTTON_BYPASS = 3
 
-    def __init__(self, faft_framework):
+    def __init__(self, faft_framework, menu_navigator):
         self.faft_framework = faft_framework
         self.servo = faft_framework.servo
         self.faft_config = faft_framework.faft_config
         self.client_host = faft_framework._client
         self.ec = getattr(faft_framework, 'ec', None)
+        self.menu = menu_navigator
 
 
     def bypass_dev_mode(self):
@@ -135,7 +136,7 @@ class _KeyboardBypasser(_BaseFwBypasser):
     def bypass_dev_default_boot(self):
         """Bypass the dev mode firmware logic to boot from default target."""
         self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
-        self.servo.enter_key()
+        self.menu.select()
 
 
     def bypass_rec_mode(self):
@@ -174,7 +175,7 @@ class _KeyboardBypasser(_BaseFwBypasser):
             self.servo.power_normal_press()
         else:
             logging.info('ENTER pressed to switch to dev mode')
-            self.servo.enter_key()
+            self.menu.select()
 
 
     def trigger_dev_to_normal(self):
@@ -184,7 +185,7 @@ class _KeyboardBypasser(_BaseFwBypasser):
         self.servo.ctrl_s()
         # Select "Confirm"
         self.faft_framework.wait_for('keypress_delay', 'Pressing enter')
-        self.servo.enter_key()
+        self.menu.select()
 
 
 class _LegacyKeyboardBypasser(_KeyboardBypasser):
@@ -193,14 +194,14 @@ class _LegacyKeyboardBypasser(_KeyboardBypasser):
     def trigger_dev_to_rec(self):
         """Trigger to the to-norm screen from the dev screen."""
         self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
-        self.servo.enter_key()
+        self.menu.select()
 
     def trigger_dev_to_normal(self):
         """Trigger to the normal mode from the dev screen."""
         self.faft_framework.wait_for('firmware_screen', 'Pressing enter')
-        self.servo.enter_key()
+        self.menu.select()
         self.faft_framework.wait_for('keypress_delay', 'Pressing enter')
-        self.servo.enter_key()
+        self.menu.select()
 
 
 class _JetstreamBypasser(_BaseFwBypasser):
@@ -291,7 +292,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         self.faft_framework.wait_for('firmware_screen', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power as'
                         ' enter key to select Boot USB Image'))
-        self.servo.power_short_press()
+        self.menu.select()
 
     def bypass_dev_default_boot(self):
         """Open the Developer Options menu, and accept the default boot device
@@ -317,7 +318,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         self.faft_framework.wait_for('firmware_screen', 'Pressing power button')
         logging.info('Selecting power as enter key to accept the default'
                      ' boot option.')
-        self.servo.power_short_press()
+        self.menu.select()
 
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
@@ -387,7 +388,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         self.faft_framework.wait_for('keypress_delay', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power '
                         'as enter key to select Developer Options'))
-        self.servo.power_short_press()
+        self.menu.select()
 
 
     def trigger_rec_to_dev(self):
@@ -409,7 +410,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         self.faft_framework.wait_for('keypress_delay', 'Pressing volume up')
         self.set_button('volume_up_hold', 100, ('Selecting power as '
                         'enter key to select Confirm Enabling Developer Mode'))
-        self.servo.power_short_press()
+        self.menu.select()
         self.faft_framework.wait_for('firmware_screen')
 
 
@@ -434,13 +435,13 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         self.set_button('volume_up_hold', 100, ('Selecting '
                         'Enable Root Verification using pwr '
                         'button to enter TO_NORM screen'))
-        self.servo.power_short_press()
+        self.menu.select()
         logging.info('Transitioning from DEV to TO_NORM screen.')
         self.faft_framework.wait_for('firmware_screen', 'Pressing power button')
         logging.info('Selecting Confirm Enabling Verified '
                         'Boot using pwr button in '
                         'TO_NORM screen')
-        self.servo.power_short_press()
+        self.menu.select()
 
     def trigger_dev_to_rec(self):
         """Trigger to the TO_NORM screen from the dev screen.
@@ -462,7 +463,7 @@ class _TabletDetachableBypasser(_BaseFwBypasser):
         self.set_button('volume_up_hold', 100, ('Selecting '
                         'Enable Root Verification using pwr '
                         'button to enter TO_NORM screen'))
-        self.servo.power_short_press()
+        self.menu.select()
         logging.info('Transitioning from DEV to TO_NORM screen.')
         self.faft_framework.wait_for('firmware_screen', 'Pressing volume down')
 
@@ -484,13 +485,14 @@ class _BaseModeSwitcher(object):
 
     FW_BYPASSER_CLASS = _BaseFwBypasser
 
-    def __init__(self, faft_framework):
+    def __init__(self, faft_framework, menu_navigator):
         self.faft_framework = faft_framework
         self.client_host = faft_framework._client
         self.faft_client = faft_framework.faft_client
         self.servo = faft_framework.servo
         self.faft_config = faft_framework.faft_config
         self.checkers = faft_framework.checkers
+        self.menu = menu_navigator
         self.bypasser = self._create_fw_bypasser()
         original_boot_mode = self.faft_client.system.get_boot_mode()
         # Only resume to normal/dev mode after test, not recovery.
@@ -501,7 +503,7 @@ class _BaseModeSwitcher(object):
 
         @rtype: _BaseFwBypasser
         """
-        return self.FW_BYPASSER_CLASS(self.faft_framework)
+        return self.FW_BYPASSER_CLASS(self.faft_framework, self.menu)
 
     def setup_mode(self, to_mode, allow_gbb_force=False):
         """Setup for the requested boot mode.
@@ -1045,10 +1047,11 @@ _SWITCHER_CLASSES = {
 }
 
 
-def create_mode_switcher(faft_framework):
+def create_mode_switcher(faft_framework, menu_navigator):
     """Creates a proper mode switcher.
 
     @param faft_framework: The main FAFT framework object.
+    @param menu_navigator: The menu navigator for base logic of navigation.
     """
     switcher_type = faft_framework.faft_config.mode_switcher_type
     switcher_class = _SWITCHER_CLASSES.get(switcher_type, None)
@@ -1056,4 +1059,4 @@ def create_mode_switcher(faft_framework):
         raise NotImplementedError('Not supported mode_switcher_type: %s',
                                   switcher_type)
     else:
-        return switcher_class(faft_framework)
+        return switcher_class(faft_framework, menu_navigator)

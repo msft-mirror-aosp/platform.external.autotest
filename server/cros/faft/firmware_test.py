@@ -21,7 +21,8 @@ from autotest_lib.server import test
 from autotest_lib.server.cros import vboot_constants as vboot
 from autotest_lib.server.cros.faft import telemetry
 from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
-from autotest_lib.server.cros.faft.utils import mode_switcher
+from autotest_lib.server.cros.faft.utils import (menu_mode_switcher,
+                                                 menu_navigator, mode_switcher)
 from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.faft.utils.faft_checkers import FAFTCheckers
 from autotest_lib.server.cros.power import utils as PowerUtils
@@ -193,7 +194,12 @@ class FirmwareTest(test.test):
 
         if self.faft_config.chrome_ec:
             self.ec = chrome_ec.ChromeEC(self.servo)
-        self.switcher = mode_switcher.create_mode_switcher(self)
+        self.menu_navigator = menu_navigator.create_menu_navigator(self)
+        self.switcher = mode_switcher.create_mode_switcher(
+                self, self.menu_navigator)
+        # This will be None for menuless UI
+        self.menu_switcher = menu_mode_switcher.create_menu_mode_switcher(
+                self, self.menu_navigator)
         # Check for presence of a USBPD console
         if self.faft_config.chrome_usbpd:
             self.usbpd = chrome_ec.ChromeUSBPD(self.servo)

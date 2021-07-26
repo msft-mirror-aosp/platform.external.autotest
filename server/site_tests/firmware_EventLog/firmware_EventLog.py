@@ -72,6 +72,12 @@ class firmware_EventLog(FirmwareTest):
 
     def run_once(self):
         """Runs a single iteration of the test."""
+        model_name = self.faft_client.system.get_model_name()
+
+        def _leona_bug(event):
+            """Return whether this event should be allowed per b/184778308."""
+            return model_name == "leona" and event == "ACPI Wake | Deep S5"
+
         if not self.faft_config.has_eventlog:
             raise error.TestNAError('This board has no eventlog support.')
 
@@ -86,8 +92,12 @@ class firmware_EventLog(FirmwareTest):
         if not self._has_event(r'System boot'):
             raise error.TestFail('No "System boot" event on normal boot.')
         # ' Wake' to match 'FW Wake' and 'ACPI Wake' but not 'Wake Source'
-        if self._has_event(r'Developer Mode|Recovery Mode|Sleep| Wake'):
-            raise error.TestFail('Incorrect event logged on normal boot.')
+        disallowedEvents = re.compile(
+                r'Developer Mode|Recovery Mode|Sleep| Wake')
+        for event in self._events:
+            if disallowedEvents.search(event) and not _leona_bug(event):
+                raise error.TestFail(
+                        'Incorrect event logged on normal boot: ' + event)
 
         logging.debug('Transitioning to dev mode for next test')
         self.switcher.reboot_to_mode(to_mode='dev', allow_gbb_force=True)
@@ -103,8 +113,11 @@ class firmware_EventLog(FirmwareTest):
         if (not self._has_event(r'System boot') or
             not self._has_event(r'Chrome OS Developer Mode')):
             raise error.TestFail('Missing required event on dev mode boot.')
-        if self._has_event(r'Recovery Mode|Sleep| Wake'):
-            raise error.TestFail('Incorrect event logged on dev mode boot.')
+        disallowedEvents = re.compile(r'Recovery Mode|Sleep| Wake')
+        for event in self._events:
+            if disallowedEvents.search(event) and not _leona_bug(event):
+                raise error.TestFail(
+                        'Incorrect event logged on dev mode boot: ' + event)
 
         logging.debug('Transitioning back to normal mode for final tests')
         self.switcher.reboot_to_mode(to_mode='normal')

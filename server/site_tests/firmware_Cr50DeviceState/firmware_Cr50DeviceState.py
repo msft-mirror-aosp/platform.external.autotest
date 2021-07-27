@@ -109,6 +109,14 @@ class firmware_Cr50DeviceState(Cr50Test):
     POWER_STATE_PATH = '/sys/power/state'
     POWER_STATE_S0IX = 'echo %s > %s' % ('freeze', POWER_STATE_PATH)
     POWER_STATE_S3 = 'echo %s > %s' % ('mem', POWER_STATE_PATH)
+    # TODO(mruthven): remove ec chan restriction once soraka stops spamming host
+    # command output. The extra activity makes it look like a interrupt storm on
+    # the EC uart.
+    CHAN_ALL = 0xffffffff
+    CHAN_EVENTS = 0x20
+    CHAN_ACPI = 0x400
+    CHAN_HOSTCMD = 0x80
+    CHAN_RESTRICTED = CHAN_ALL ^ (CHAN_EVENTS | CHAN_ACPI | CHAN_HOSTCMD)
 
 
     def initialize(self, host, cmdline_args, full_args):
@@ -396,6 +404,12 @@ class firmware_Cr50DeviceState(Cr50Test):
         block = True
         if state == 'S0':
             self.trigger_s0()
+            # Suppress host command output, so it doesn't look like an interrupt
+            # storm. Set it whenever the system enters S0 to ensure the setting
+            # is restored if the EC enters hibernate.
+            time.sleep(2)
+            logging.info('Setting EC chan %x', self.CHAN_RESTRICTED)
+            self.ec.send_command('chan 0x%x' % self.CHAN_RESTRICTED)
         else:
             if state == 'S0ix':
                 full_command = self._s0ix_cmds
@@ -467,6 +481,10 @@ class firmware_Cr50DeviceState(Cr50Test):
         finally:
             # reset the system to S0 no matter what happens
             self.trigger_s0()
+            # Reenable EC chan output.
+            time.sleep(2)
+            logging.info('Setting EC chan %x', self.CHAN_ALL)
+            self.ec.send_command('chan 0x%x' % self.CHAN_ALL)
 
         # Check that the progress of the irq counts seems reasonable
         self.check_for_errors(state)

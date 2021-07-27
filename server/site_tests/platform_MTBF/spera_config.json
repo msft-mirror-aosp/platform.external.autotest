@@ -113,7 +113,8 @@
       "name": "extended-display-meet",
       "tool": "tast",
       "test_expr": "ui.ExtendedDisplayCUJ.premium_meet_large",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["external_display"]
     }
   ],
   "suites": [
@@ -153,7 +154,8 @@
         {"test": "quick-check-unlock", "repeats": 1},
         {"test": "quick-check-wakeup", "repeats": 1},
         {"test": "video-basic-youtube-web", "repeats": 1},
-        {"test": "everyday-basic-ytmusic", "repeats": 1}
+        {"test": "everyday-basic-ytmusic", "repeats": 1},
+        {"test": "extended-display-meet", "repeats": 1}
       ]
     },
     {
@@ -177,7 +179,8 @@
         {"test": "video-basic-youtube-app", "repeats": 10},
         {"test": "video-plus-youtube-app", "repeats": 10},
         {"test": "everyday-basic-ytmusic", "repeats": 10},
-        {"test": "everyday-plus-ytmusic", "repeats": 10}
+        {"test": "everyday-plus-ytmusic", "repeats": 10},
+        {"test": "extended-display-meet", "repeats": 10}
       ]
     }
   ]

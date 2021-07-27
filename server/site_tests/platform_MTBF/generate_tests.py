@@ -85,6 +85,11 @@ def _parse_tests(json_config, constants):
             for attr in new_test['attributes']:
                 new_attrs.append(_substitute_constants(attr, constants))
             new_test['attributes'] = new_attrs
+        if 'deps' in new_test:
+            new_deps = []
+            for dep in new_test['deps']:
+                new_deps.append(_substitute_constants(dep, constants))
+            new_test['deps'] = new_deps
         tests.append(new_test)
     return tests
 
@@ -152,6 +157,9 @@ def _generate_test_files(version, suites, tests, suite_name=None):
         for test in suite['tests']:
             test_data = _find_test(test['test'], tests)
             repeats = test['repeats']
+            deps = []
+            if 'deps' in test_data:
+                deps = test_data['deps']
             for i in range(repeats):
                 test_name = _normalize_test_name(
                         test_data['test_expr'] +
@@ -164,6 +172,7 @@ def _generate_test_files(version, suites, tests, suite_name=None):
                         length='long',
                         version=version,
                         attributes='suite:' + suite['name'],
+                        dependencies=', '.join(deps),
                         iteration=i + 1,
                 )
                 control_file_name = 'control.' + '_'.join(

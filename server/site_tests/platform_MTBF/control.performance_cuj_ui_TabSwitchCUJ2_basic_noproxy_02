@@ -13,6 +13,7 @@ PRIORITY = 4929
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 2
 REQUIRE_SSP = True
+DEPENDENCIES = ''
 
 DOC = '''
 Run the Tast-based MTBF performance CUJ test.

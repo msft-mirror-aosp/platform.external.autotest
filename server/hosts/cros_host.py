@@ -821,10 +821,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise error.TestFail('Failed to read version from %s.' % image)
 
 
-    def firmware_install(self, build, rw_only=False, dest=None,
-                         local_tarball=None, verify_version=False,
-                         try_scp=False, install_ec=True, install_bios=True,
-                         board_as=None):
+    def firmware_install(self,
+                         build,
+                         rw_only=False,
+                         dest=None,
+                         local_tarball=None,
+                         verify_version=False,
+                         try_scp=False,
+                         install_ec=True,
+                         install_bios=True):
         """Install firmware to the DUT.
 
         Use stateful update if the DUT is already running the same build.
@@ -851,7 +856,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         the firmware and programming from the DUT.
         @param install_ec: True to install EC FW, and False to skip it.
         @param install_bios: True to install BIOS, and False to skip it.
-        @param board_as: A board name to force to use.
 
         TODO(dshi): After bug 381718 is fixed, update here with corresponding
                     exceptions that could be raised.
@@ -868,11 +872,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         if board is None or board == '':
             board = self.servo.get_board()
-
-        # if board_as argument is passed, then use it instead of the original
-        # board name.
-        if board_as:
-            board = board_as
 
         if model is None or model == '':
             try:

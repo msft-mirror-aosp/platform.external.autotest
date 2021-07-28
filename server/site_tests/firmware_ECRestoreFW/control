@@ -17,9 +17,6 @@ DEPENDENCIES = "ec:cros, servo_state:WORKING"
 
 DOC = """
 This test flashes a wrong EC RW firmware and checks FW gets restored.
-
-If you want to have any specific fake board name (e.g. coral) to test against,
-add --args="board_as=coral" to test_that command line.
 """
 
 if 'args_dict' not in locals():

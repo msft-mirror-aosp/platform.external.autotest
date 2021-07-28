@@ -5,7 +5,6 @@
 
 """The autotest performing FW update, both EC and AP in CCD mode."""
 import logging
-import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
@@ -16,11 +15,6 @@ class firmware_ECRestoreFW(FirmwareTest):
 
     version = 1
 
-    # A set of fake board candidates per ec type.
-    FAKE_BOARD_DICT = {'npcx':['coral', 'reef'],
-                       'stm32':['samus', 'nami'],
-                       'it83':['dragonegg', 'waddledee']}
-
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test and pick a fake board to use for corruption. """
         super(firmware_ECRestoreFW, self).initialize(host, cmdline_args,
@@ -29,33 +23,6 @@ class firmware_ECRestoreFW(FirmwareTest):
         # Don't bother if there is no Chrome EC.
         if not self.check_ec_capability():
             raise error.TestNAError('Nothing needs to be tested on this device')
-
-        self.board_as = None
-        # find if "board_as" was given in the command line arguments.
-        for arg in cmdline_args:
-            match = re.search(r'^board_as=(.+)', arg)
-            if match:
-                self.board_as = match.group(1)
-                break
-        else:
-            # if "board_as" was not given, then pick one from FAKE_BOARD_DICT.
-            ec_chip = self.servo.get('ec_chip')
-            if 'stm32' in ec_chip:
-                ec_type = 'stm32'
-            elif 'it83' in ec_chip:
-                ec_type = 'it83'
-            else:
-                ec_type = 'npcx'
-
-            for board in self.FAKE_BOARD_DICT[ec_type]:
-                if board not in self.faft_config.platform:
-                    self.board_as = board
-                    break
-
-        if not self.board_as:
-            raise error.TestError('fake board is not selected.')
-
-        logging.info('A fake board to use for corruption: %s', self.board_as)
 
         self.backup_firmware()
 
@@ -80,16 +47,11 @@ class firmware_ECRestoreFW(FirmwareTest):
           host:  a CrosHost object of the machine to update.
         """
 
-        logging.info('Downloading a firmware of %s', self.board_as)
-        value = host.get_latest_release_version(self.board_as)
-        if not value:
-            raise error.TestError('Cannot locate the latest release for %s' %
-                                  self.board_as)
-
         try:
-            host.firmware_install(build=value, dest=self.resultsdir,
-                                  install_ec=True, install_bios=False,
-                                  board_as=self.board_as)
+            host.firmware_install(build="",
+                                  dest=self.resultsdir,
+                                  install_ec=True,
+                                  install_bios=False)
         except error.TestError as e:
             # It failed before the test attempts to install firmware.
             # It could be either devserver timeout or servo device error.

@@ -17,6 +17,9 @@ DEPENDENCIES = "ec:cros, servo_state:WORKING"
 
 DOC = """
 This test flashes a wrong EC RW firmware and checks FW gets restored.
+
+If you want to use a local tarball file to test,
+add --args="local_tarball=<path>" to test_that command line.
 """
 
 if 'args_dict' not in locals():

@@ -829,7 +829,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                          verify_version=False,
                          try_scp=False,
                          install_ec=True,
-                         install_bios=True):
+                         install_bios=True,
+                         corrupt_ec=False):
         """Install firmware to the DUT.
 
         Use stateful update if the DUT is already running the same build.
@@ -856,6 +857,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         the firmware and programming from the DUT.
         @param install_ec: True to install EC FW, and False to skip it.
         @param install_bios: True to install BIOS, and False to skip it.
+        @param corrupt_ec: True to flash EC with a false image (for test purpose).
 
         TODO(dshi): After bug 381718 is fixed, update here with corresponding
                     exceptions that could be raised.
@@ -904,7 +906,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if install_ec:
             # Extract EC image from tarball
             logging.info('Extracting EC image.')
-            ec_image = self.servo.extract_ec_image(board, model, local_tarball)
+            ec_image = self.servo.extract_ec_image(board, model, local_tarball,
+                                                   corrupt_ec)
             logging.info('Extracted: %s', ec_image)
 
         bios_image = None

@@ -1469,12 +1469,13 @@ class Servo(object):
             self._programmer.program_ec(image)
 
 
-    def extract_ec_image(self, board, model, tarball_path):
+    def extract_ec_image(self, board, model, tarball_path, fake_image=False):
         """Helper function to extract EC image from downloaded tarball.
 
         @param board: The DUT board name.
         @param model: The DUT model name.
         @param tarball_path: The path of the downloaded build tarball.
+        @param fake_image: True to return a fake zero-filled image instead.
 
         @return: Path to extracted EC image.
         """
@@ -1517,6 +1518,17 @@ class Servo(object):
                               for candidate in ec_image_candidates]
             _extract_image_from_tarball(tarball_path, dest_dir, mon_candidates,
                                         self.EXTRACT_TIMEOUT_SECS)
+
+            if fake_image:
+                # Create a small (25% of original size) zero-filled binary to
+                # replace the real ec_image
+                file_size = os.path.getsize(ec_image) / 4
+                ec_image = os.path.join(os.path.dirname(ec_image),
+                                        "zero_ec.bin")
+                dump_cmd = 'dd if=/dev/zero of=%s bs=4096 count=%d' % (
+                        os.path.join(dest_dir, ec_image), file_size / 4096)
+                if server_utils.system(dump_cmd, ignore_status=True) != 0:
+                    return None
 
             return os.path.join(dest_dir, ec_image)
         else:

@@ -592,3 +592,10 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
     def stop_data_traffic(self):
         """ Stops transmitting data from the instrument to the DUT. """
         raise NotImplementedError()
+
+    def send_sms(self, sms_message):
+        """ Sends SMS message from the instrument to the DUT. """
+        self.cmw.wait_for_attached_state()
+        self.cmw.set_sms(sms_message)
+        self.cmw.send_sms()
+

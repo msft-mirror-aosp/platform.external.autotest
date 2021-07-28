@@ -437,6 +437,19 @@ class Cmw500(abstract_inst.SocketInstrument):
         """
         return LteMeasurement(self)
 
+    def set_sms(self, sms_message):
+        """Sets the SMS message to be sent by the callbox."""
+        self.send_and_recv('CONFigure:LTE:SIGN:SMS:OUTGoing:INTernal "%s"' % sms_message)
+
+    def send_sms(self):
+        """Sends the SMS message."""
+        self.send_and_recv('CALL:LTE:SIGN:PSWitched:ACTion SMS; *OPC?')
+        timeout = time.time() + STATE_CHANGE_TIMEOUT
+        while "SUCC" != self.send_and_recv('SENSe:LTE:SIGN:SMS:OUTGoing:INFO:LMSent?'):
+            if time.time() > timeout:
+                raise CmwError("SENSe:LTE:SIGN:SMS:OUTGoing:INFO:LMSent? never returns status 'SUCC' instead got (%s)" % self.send_and_recv('SENSe:LTE:SIGN:SMS:OUTGoing:INFO:LMSent?'))
+            time.sleep(2)
+
 
 class BaseStation(object):
     """Class to interact with different base stations"""

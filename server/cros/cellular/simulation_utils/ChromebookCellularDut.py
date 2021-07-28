@@ -19,10 +19,18 @@ class ChromebookCellularDut(BaseCellularDut.BaseCellularDut):
         self.log = logger
 
     def toggle_airplane_mode(self, new_state=True):
-        """ Not relevant to Chromebooks,
-        but required interface for compatibility.
+        """ Turns on and off mobile data.
         """
-        pass
+        if new_state:
+            self.ad.run(
+                "dbus-send --system --fixed --print-reply --dest=org.chromium."
+                "flimflam / org.chromium.flimflam.Manager.DisableTechnology st"
+                "ring:cellular")
+        else:
+            self.ad.run(
+                "dbus-send --system --fixed --print-reply --dest=org.chromium."
+                "flimflam / org.chromium.flimflam.Manager.EnableTechnology str"
+                "ing:cellular")
 
     def toggle_data_roaming(self, new_state=True):
         """ Enables or disables cellular data roaming.

@@ -1293,3 +1293,7 @@ class LteSimulation(BaseSimulation):
                              'uncalibrated values as measured by the '
                              'callbox.')
             return ul_power_sum / samples
+
+    def send_sms(self, sms_message):
+        """ Sets the SMS message for the simulation. """
+        self.simulator.send_sms(sms_message)

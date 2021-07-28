@@ -782,3 +782,7 @@ class BaseSimulation(object):
             Maximum throughput in mbps
         """
         raise NotImplementedError()
+
+    def send_sms(self, sms_message):
+        """ Sends the set SMS message. """
+        raise NotImplementedError()

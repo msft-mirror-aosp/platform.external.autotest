@@ -450,6 +450,11 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
+    def send_sms(self, sms_message):
+        """ Sends SMS message from the instrument to the DUT. """
+        raise NotImplementedError()
+
+
 
 class CellularSimulatorError(Exception):
     """ Exceptions thrown when the cellular equipment is unreachable or it

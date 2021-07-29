@@ -512,23 +512,53 @@ class NetperfRunner(object):
     NETPERF_COMMAND_TIMEOUT_MARGIN = 60
 
 
-    def __init__(self, client_proxy, server_proxy, config):
-        """Construct a NetperfRunner.
+    def __init__(self,
+                 client_proxy,
+                 server_proxy,
+                 config,
+                 client_interface=None,
+                 server_interface=None):
+        """Construct a NetperfRunner. Use the IP addresses of the passed interfaces
+        if they are provided. Otherwise, attempt to use the WiFi interface on the devices.
 
         @param client WiFiClient object.
         @param server LinuxSystem object.
+        @param client_interface Interface object.
+        @param server_interface Interface object.
 
         """
         self._client_proxy = client_proxy
         self._server_proxy = server_proxy
+        if server_interface:
+            self._server_ip = server_interface.ipv4_address
+        # If a server interface was not explicitly provided, attempt to use
+        # the WiFi IP of the device.
+        else:
+            try:
+                self._server_ip = server_proxy.wifi_ip
+            except:
+                raise error.TestFail(
+                        'Server device has no WiFi IP address, '
+                        'and no alternate interface was specified.')
+
+        if client_interface:
+            self._client_ip = client_interface.ipv4_address
+        # If a client interface was not explicitly provided, use the WiFi IP
+        # address of the WiFiClient device.
+        else:
+            self._client_ip = client_proxy.wifi_ip
+
         if config.server_serves:
             self._server_host = server_proxy.host
             self._client_host = client_proxy.host
-            self._target_ip = server_proxy.wifi_ip
+            self._target_ip = self._server_ip
+            self._source_ip = self._client_ip
+
         else:
             self._server_host = client_proxy.host
             self._client_host = server_proxy.host
-            self._target_ip = client_proxy.wifi_ip
+            self._target_ip = self._client_ip
+            self._source_ip = self._server_ip
 
         # Assume minijail0 is on ${PATH}, but raise exception if it's not
         # available on both server and client.
@@ -572,8 +602,8 @@ class NetperfRunner(object):
                               (self._minijail, self._command_netserv,
                                self.NETPERF_PORT))
         startup_time = time.time()
-        self._client_proxy.firewall_open('tcp', self._server_proxy.wifi_ip)
-        self._client_proxy.firewall_open('udp', self._server_proxy.wifi_ip)
+        self._client_proxy.firewall_open('tcp', self._server_ip)
+        self._client_proxy.firewall_open('udp', self._server_ip)
         # Wait for the netserv to come up.
         while time.time() - startup_time < self.NETSERV_STARTUP_WAIT_TIME:
             time.sleep(0.1)
@@ -591,16 +621,17 @@ class NetperfRunner(object):
 
         """
         if self._config.netperf_test_type in NetperfConfig.BIDIRECTIONAL_TESTS:
-            netperf = 'for i in 1; do %s -H %s -t omni -T %s -l %d -P 0 -- -d stream -s 256K -S 256K -o throughput & %s -H %s -t omni -T %s -l %d -P 0 -- -d maerts -s 256K -S 256K -o throughput; done' % (
+            netperf = 'for i in 1; do %s -H %s -t omni -T %s -l %d -L %s -P 0 -- -R 1 -d stream -s 256K -S 256K -o throughput & %s -H %s -t omni -T %s -l %d -P 0 -L %s -- -R 1 -d maerts -s 256K -S 256K -o throughput; done' % (
                     self._command_netperf, self._target_ip,
                     self._config.netperf_test_type, self._config.test_time,
-                    self._command_netperf, self._target_ip,
-                    self._config.netperf_test_type, self._config.test_time)
+                    self._source_ip, self._command_netperf, self._target_ip,
+                    self._config.netperf_test_type, self._config.test_time,
+                    self._source_ip)
         else:
-            netperf = '%s -H %s -p %s -t %s -l %d -- -P 0,%d' % (
+            netperf = '%s -H %s -p %s -t %s -l %d -L %s -- -P 0,%d -R 1' % (
                     self._command_netperf, self._target_ip, self.NETPERF_PORT,
                     self._config.netperf_test_type, self._config.test_time,
-                    self.NETPERF_DATA_PORT)
+                    self._source_ip, self.NETPERF_DATA_PORT)
         logging.debug('Running netperf client.')
         logging.info('Running netperf for %d seconds.', self._config.test_time)
         timeout = self._config.test_time + self.NETPERF_COMMAND_TIMEOUT_MARGIN

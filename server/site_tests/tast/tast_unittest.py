@@ -654,6 +654,14 @@ class TastTest(unittest.TestCase):
         args = [("%s=%s" % x) for x in arg_list]
         self._run_test(command_args=args)
 
+    def testFirmwareArgs(self):
+        """Tests passing firmware specific args into Tast runner."""
+        vars = ['firmware.no_ec_sync=true']
+        self._init_tast_commands([TestInfo('pkg.Test', 0, 0)], run_vars=vars)
+
+        args = ['no_ec_sync=true']
+        self._run_test(command_args=args)
+
     def testVarsfileOption(self):
         with tempfile.NamedTemporaryFile(
                 suffix='.yaml', dir=self._temp_dir) as temp_file:

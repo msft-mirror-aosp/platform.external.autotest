@@ -387,6 +387,22 @@ class tast(test.test):
             return []
         return ['-var=servo=%s:%s' % (host_arg, port_arg)]
 
+    def _get_firmware_args(self):
+        """Gets firmware-related arguments to pass to "tast run".
+
+        @returns List of command-line flag strings that should be inserted in
+            the command line after "tast run".
+        """
+        # Incorporate information that was passed manually.
+        args_dict = utils.args_to_dict(self._command_args)
+
+        args = []
+        no_ec_sync = args_dict.get("no_ec_sync")
+        if no_ec_sync:
+            args += ['-var=firmware.no_ec_sync=' + no_ec_sync]
+        logging.info('Firmware args: %s', args)
+        return args
+
     def _get_rpm_args(self):
         """Gets rpm-related arguments to pass to "tast run".
 
@@ -681,6 +697,7 @@ class tast(test.test):
         args.extend(self._get_rpm_args())
         args.extend(self._get_wificell_args())
         args.extend(self._get_cloud_storage_info())
+        args.extend(self._get_firmware_args())
 
         for varsfile in self._varsfiles:
             args.append('-varsfile=%s' % varsfile)

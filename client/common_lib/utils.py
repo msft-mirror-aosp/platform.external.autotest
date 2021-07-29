@@ -431,12 +431,13 @@ def write_one_line(filename, line):
     open_write_close(filename, str(line).rstrip('\n') + '\n')
 
 
-def open_write_close(filename, data):
-    f = open(filename, 'w')
-    try:
+def open_write_close(filename, data, is_binary=False):
+    open_mode = 'w'
+    if is_binary:
+        open_mode = 'wb'
+
+    with open(filename, open_mode) as f:
         f.write(data)
-    finally:
-        f.close()
 
 
 def locate_file(path, base_dir=None):
@@ -656,7 +657,7 @@ def update_version(srcdir, preserve_srcdir, new_version, install,
     install_needed = True
 
     if os.path.exists(versionfile):
-        old_version = pickle.load(open(versionfile))
+        old_version = pickle.load(open(versionfile, 'rb'))
         if old_version == new_version:
             install_needed = False
 

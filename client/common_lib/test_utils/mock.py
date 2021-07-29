@@ -31,12 +31,45 @@ class SaveDataAfterCloseStringIO(six.StringIO):
       final_data: Set to the StringIO's getvalue() data when close() is
           called.  None if close() has not been called.
     """
+
     final_data = None
+
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
 
     def close(self):
         self.final_data = self.getvalue()
         six.StringIO.close(self)
 
+
+class SaveDataAfterCloseBytesIO(six.BytesIO):
+    """Saves the contents in a final_data property when close() is called.
+
+    Useful as a mock output file object to test both that the file was
+    closed and what was written.
+
+    Properties:
+      final_data: Set to the BytesIO's getvalue() data when close() is
+          called.  None if close() has not been called.
+    """
+    final_data = None
+
+
+    def __enter__(self):
+        return self
+
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+
+    def close(self):
+        self.final_data = self.getvalue()
+        six.BytesIO.close(self)
 
 
 class argument_comparator(object):

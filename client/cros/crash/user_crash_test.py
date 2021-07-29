@@ -12,7 +12,7 @@ import signal
 import stat
 import subprocess
 
-import crash_test
+from autotest_lib.client.cros.crash import crash_test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 
@@ -248,7 +248,7 @@ class UserCrashTest(crash_test.CrashTest):
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
 
-            output = crasher.communicate()[1]
+            output = crasher.communicate()[1].decode()
             exit_code = crasher.returncode
             pid = None
 

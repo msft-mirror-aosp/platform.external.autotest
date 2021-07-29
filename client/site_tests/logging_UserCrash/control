@@ -23,6 +23,7 @@ TEST_TYPE = "client"
 # at the end of the test, we should reboot to restore the state of the
 # device.
 DEPENDENCIES='cleanup-reboot'
+PY_VERSION = 3
 
 DOC = """
 Test that user space crashes are detected and handled appropriately.

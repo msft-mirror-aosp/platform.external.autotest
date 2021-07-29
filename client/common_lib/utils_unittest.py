@@ -169,6 +169,14 @@ class test_open_write_close(unittest.TestCase):
         self.god.check_playback()
         self.assertEqual(data, test_file.final_data)
 
+    def test_binary_functionality(self):
+        data = bytearray([0, 1, 3, 23, 0, 71, 254, 255, 127, 128])
+        test_file = mock.SaveDataAfterCloseBytesIO()
+        utils.open.expect_call("filename", "wb").and_return(test_file)
+        utils.open_write_close("filename", data, is_binary=True)
+        self.god.check_playback()
+        self.assertEqual(data, test_file.final_data)
+
 
 class test_read_keyval(unittest.TestCase):
     def setUp(self):

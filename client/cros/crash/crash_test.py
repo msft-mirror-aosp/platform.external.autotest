@@ -350,13 +350,18 @@ class CrashTest(test.test):
         This writes a file to _SYSTEM_CRASH_DIR with the given name. This is
         used to insert new crash dump files for testing purposes.
 
+        If contents is not a string, binary data is assumed.
+
         @param name: Name of file to write.
-        @param contents: String to write to the file.
+        @param contents: String/binary data to write to the file.
         """
         entry = self.get_crash_dir_name(name)
         if not os.path.exists(self._SYSTEM_CRASH_DIR):
             os.makedirs(self._SYSTEM_CRASH_DIR)
-        utils.open_write_close(entry, contents)
+
+        is_binary = not isinstance(contents, str)
+        utils.open_write_close(entry, contents, is_binary)
+
         return entry
 
 

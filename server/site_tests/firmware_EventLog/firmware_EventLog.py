@@ -12,6 +12,8 @@ from autotest_lib.server.cros.watchdog_tester import WatchdogTester
 POWER_DIR = '/var/lib/power_manager'
 TMP_POWER_DIR = '/tmp/power_manager'
 
+
+# CAUTION: This test is being migrated to TAST: b/174800291
 class firmware_EventLog(FirmwareTest):
     """
     Test to ensure eventlog is written on boot and suspend/resume.

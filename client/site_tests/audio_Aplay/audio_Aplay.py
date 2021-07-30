@@ -20,7 +20,7 @@ APLAY_FILE = '/dev/zero'  # raw data
 APLAY_EXPECTED = set([('stream', 'PLAYBACK')])
 
 
-def _play_audio(device_name, duration=1):
+def _play_audio(device_name, duration=1, channel_count=2):
     """Play a tone and try to ensure it played properly.
 
     Sample output from aplay -v:
@@ -61,25 +61,28 @@ def _play_audio(device_name, duration=1):
             '-v',  # show verbose details
             '-D %s' % device_name,
             '-d %d' % duration,
-            '-f cd',  # format
+            '-c %d' % channel_count,
+            '-r 44100',
+            '-f S16_LE',
             APLAY_FILE,
             '2>&1'
     ]  # verbose details
     return utils.system_output(' '.join(cmd)).strip()
 
 
-def _check_play(device_name, duration, expected):
+def _check_play(device_name, duration, channel_count, expected):
     """Runs aplay command and checks the output against an expected result.
 
     The expected results are compared as sets of tuples.
 
     @param device_name: The output device for aplay.
     @param duration: Duration supplied to aplay.
+    @param channel_count: Channel count supplied to aplay
     @param expected: The set of expected tuples.
     @raises error.TestError for invalid output or invalidly matching expected.
     """
     error_msg = 'invalid response from aplay'
-    results = _play_audio(device_name, duration)
+    results = _play_audio(device_name, duration, channel_count)
     if not results.startswith("Playing raw data '%s' :" % APLAY_FILE):
         raise error.TestError('%s: %s' % (error_msg, results))
     result_set = utils.set_from_keyval_output(results, '[\s]*:[\s]*')
@@ -126,8 +129,12 @@ class audio_Aplay(test.test):
 
         if test_headphone:
             output_node = audio_spec.get_headphone_node(utils.get_board())
+            channel_count = 2
         else:
             output_node = "INTERNAL_SPEAKER"
+            channel_count = audio_spec.get_internal_speaker_channel_count(
+                    utils.get_board_type(), utils.get_board(),
+                    utils.get_platform(), utils.get_sku())
         logging.debug("Test output device %s", output_node)
 
         cras_utils.set_single_selected_output_node(output_node)
@@ -151,7 +158,8 @@ class audio_Aplay(test.test):
         # Stop CRAS to make sure the audio device won't be occupied.
         utils.stop_service('cras', ignore_status=True)
         try:
-            _check_play(alsa_device_name, duration, APLAY_EXPECTED)
+            _check_play(alsa_device_name, duration, channel_count,
+                        APLAY_EXPECTED)
         finally:
             #Restart CRAS
             utils.start_service('cras', ignore_status=True)

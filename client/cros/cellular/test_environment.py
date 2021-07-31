@@ -16,8 +16,10 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import crash_detector
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.cellular import mm
+from autotest_lib.client.cros.cellular import mm1_constants
 from autotest_lib.client.cros.cellular.pseudomodem import pseudomodem_context
 from autotest_lib.client.cros.networking import cellular_proxy
+from autotest_lib.client.cros.networking import mm1_proxy
 from autotest_lib.client.cros.networking import shill_context
 from autotest_lib.client.cros.networking import shill_proxy
 
@@ -291,6 +293,11 @@ class CellularTestEnvironment(object):
         @raise error.TestError if SIM does not exist or is locked.
 
         """
+        # check modem SIM slot and properties and switch slot as needed
+        modem_proxy = self._check_for_modem_with_sim()
+        if modem_proxy is None:
+            raise error.TestError('There is no Modem with non empty SIM path.')
+
         modem_device = self._get_shill_cellular_device_object()
         props = modem_device.GetProperties()
 
@@ -320,6 +327,52 @@ class CellularTestEnvironment(object):
         elif locked:
             raise error.TestError(
                 'SIM is locked, test requires an unlocked SIM.')
+
+    def _check_for_modem_with_sim(self):
+        """
+        Make sure modem got active SIM and path is not empty
+
+        switch slot to get non empty sim path and active sim slot for modem
+
+        @return active modem object or None
+
+        """
+        mm_proxy = mm1_proxy.ModemManager1Proxy.get_proxy()
+        if mm_proxy is None:
+            raise error.TestError('Modem manager is not initialized')
+
+        modem_proxy = mm_proxy.get_modem()
+        if modem_proxy is None:
+            raise error.TestError('Modem not initialized')
+
+        primary_slot = modem_proxy.get_primary_sim_slot()
+        # Get SIM path from modem SIM properties
+        modem_props = modem_proxy.properties(mm1_constants.I_MODEM)
+        sim_path = modem_props['Sim']
+
+        logging.info('Device SIM values=> path:%s '
+                'primary slot:%d', sim_path, primary_slot)
+        # Check current SIM path value and status
+        if sim_path != mm1_constants.MM_EMPTY_SLOT_PATH:
+            return modem_proxy
+
+        slots = modem_props['SimSlots']
+        logging.info('Dut not in expected state, '
+                    'current sim path:%s slots:%s', sim_path, slots)
+
+        for idx, path in enumerate(slots):
+            if path == mm1_constants.MM_EMPTY_SLOT_PATH:
+                continue
+            logging.info('Primary slot does not have a SIM, '
+                        'switching slot to %d', idx+1)
+
+            if (primary_slot != idx + 1):
+                logging.info('setting slot:%d path:%s', idx+1, path)
+                modem_proxy.set_primary_slot(idx+1)
+                modem_proxy = \
+                    mm_proxy.wait_for_modem(mm1_constants.MM_MODEM_POLL_TIME)
+                return modem_proxy
+        return None
 
     def _wait_for_modem_registration(self):
         """Wait for the modem to register with the network.

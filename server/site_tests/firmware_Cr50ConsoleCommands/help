@@ -20,9 +20,7 @@ gpioget
 help
 history
 -i2cscan
-(?P<mp>i2cstpm)?
-(?P<prepvt>i2cptpm)?
-(?P<tot>i2cptpm)?
+i2cptpm
 -i2cxfer
 idle
 -panicinfo

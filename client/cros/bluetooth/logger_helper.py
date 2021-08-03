@@ -38,7 +38,7 @@ class LogManager(object):
 
         self.log_path = log_path
 
-        self.initial_log_size = self._GetSize()
+        self.ResetLogMarker()
         self.log_contents = []
 
     def _LogErrorToSyslog(self, message):
@@ -52,6 +52,12 @@ class LogManager(object):
         except Exception as e:
             logging.error('Failed to get log size: {}'.format(e))
             return 0
+
+    def ResetLogMarker(self, now_size=None):
+        """Reset the start-of-log marker for later comparison"""
+        if now_size is None:
+            now_size = self._GetSize()
+        self.initial_log_size = now_size
 
     def StartRecording(self):
         """Mark initial log size for later comparison"""
@@ -85,7 +91,7 @@ class LogManager(object):
             self.log_contents = mf.read(readsize).split('\n')
 
         # Re-set start of log marker
-        self.initial_log_size = now_size
+        self.ResetLogMarker(now_size)
 
     def LogContains(self, search_str):
         """Performs simple string checking on each line from the collected log
@@ -165,6 +171,7 @@ class InterleaveLogger(LogManager):
         """ Reset the previous data and start recording.
         """
         self.reset()
+        super(InterleaveLogger, self).ResetLogMarker()
         super(InterleaveLogger, self).StartRecording()
 
     def StopRecording(self):

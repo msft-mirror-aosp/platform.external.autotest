@@ -9,7 +9,7 @@ TIME = "LONG"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 50000 # 12 hours + guard
+EXTENDED_TIMEOUT = 80000 # 20 hours + guard
 
 DOC = """
 Runs iterations of bare suspend/resume cycles without additional workload.

@@ -29,19 +29,22 @@
       "name": "meet-plus-large",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.plus_large",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "meet-plus-class",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.plus_class",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "meet-premium-large",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.premium_large",
-      "attributes": ["premium"]
+      "attributes": ["premium"],
+      "deps": ["premium"]
     },
     {
       "name": "tabswitch-basic-noproxy",
@@ -53,13 +56,15 @@
       "name": "tabswitch-plus-noproxy",
       "tool": "tast",
       "test_expr": "ui.TabSwitchCUJ2.plus_noproxy",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "tabswitch-premium-noproxy",
       "tool": "tast",
       "test_expr": "ui.TabSwitchCUJ2.premium_noproxy",
-      "attributes": ["premium"]
+      "attributes": ["premium"],
+      "deps": ["premium"]
     },
     {
       "name": "quick-check-unlock",
@@ -83,7 +88,8 @@
       "name": "video-plus-youtube-web",
       "tool": "tast",
       "test_expr": "ui.VideoCUJ2.plus_youtube_web",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "video-basic-youtube-app",
@@ -95,7 +101,8 @@
       "name": "video-plus-youtube-app",
       "tool": "tast",
       "test_expr": "ui.VideoCUJ2.plus_youtube_app",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "everyday-basic-ytmusic",
@@ -107,14 +114,15 @@
       "name": "everyday-plus-ytmusic",
       "tool": "tast",
       "test_expr": "ui.EverydayMultiTaskingCUJ.plus_ytmusic",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "extended-display-meet",
       "tool": "tast",
       "test_expr": "ui.ExtendedDisplayCUJ.premium_meet_large",
       "attributes": ["plus"],
-      "deps": ["external_display"]
+      "deps": ["external_display", "plus"]
     }
   ],
   "suites": [

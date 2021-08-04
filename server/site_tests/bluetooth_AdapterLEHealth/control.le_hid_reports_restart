@@ -9,6 +9,7 @@ NAME = 'bluetooth_AdapterLEHealth.le_hid_reports_restart'
 PURPOSE = ('Test bluetooth adapter receiving reports from '
            'bluetooth LE HID devices after a bluetoothd restart.')
 CRITERIA = 'Adapter should receive LE HID events correctly.'
+# TODO: Remove ['Quick Health'] flag from AdapterLEHealth when moving to stable.
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'

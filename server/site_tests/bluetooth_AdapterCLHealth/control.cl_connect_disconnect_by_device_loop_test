@@ -8,13 +8,13 @@ AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterCLHealth.cl_connect_disconnect_by_device_loop_test'
 PURPOSE = ('Batch of Bluetooth CL health tests')
 CRITERIA = 'Pass all health test'
+# TODO: Remove ['Quick Health'] flag from AdapterCLHealth when moving to stable.
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
 DOC = """ Tests connection and disconnection by the device in a loop.
 

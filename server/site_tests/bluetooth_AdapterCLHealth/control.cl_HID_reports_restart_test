@@ -9,13 +9,13 @@ NAME = 'bluetooth_AdapterCLHealth.cl_HID_reports_restart_test'
 PURPOSE = ('Test bluetooth adapter receiving reports from '
            'bluetooth HID devices after bluetoothd restart.')
 CRITERIA = 'Adapter should receive HID events correctly.'
+# TODO: Remove ['Quick Health'] flag from AdapterCLHealth when moving to stable.
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
 DOC = """
 Verify that the bluetooth adapter of the DUT could receive HID reports

@@ -10,6 +10,7 @@ PURPOSE = ('batch of Bluetooth Advertisement Monitor tests')
 CRITERIA = 'All tests should pass'
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
+# TODO: Remove ['Quick Health'] from AdapterAdvMonitor when moving to stable.
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'

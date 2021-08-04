@@ -8,13 +8,13 @@ AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterCLHealth.cl_HID_reconnect_speed_test'
 PURPOSE = 'Test the speed of a HID device reconnect to DUT.'
 CRITERIA = 'HID device should reconnect fast.'
+# TODO: Remove ['Quick Health'] flag from AdapterCLHealth when moving to stable.
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
 DOC = """
 Test the speed of a HID device reconnect to DUT

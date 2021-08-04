@@ -607,7 +607,11 @@ class BluetoothDevice(object):
             return prop_val
 
         # Decode and return property value
-        return self._decode_json_base64(prop_val)
+        val = self._decode_json_base64(prop_val)
+        if isinstance(val, bytes) or isinstance(val, bytearray):
+            return val.decode('utf-8')
+        else:
+            return val
 
 
     @proxy_thread_safe

@@ -1001,8 +1001,10 @@ class BluetoothAdapterTests(test.test):
 
         except chameleon.ChameleonConnectionError as e:
             # Ignore chameleon conn reset, expected during stack reset
-            if str(errno.ECONNRESET) not in str(e):
+            if (str(errno.ECONNRESET) not in str(e) and
+                    'ResetStack' not in str(e)):
                 raise
+            logging.info('Ignored exception due to ResetStack: %s', str(e))
 
         except six.moves.http_client.BadStatusLine as e:
             # BadStatusLine occurs occasionally when chameleon

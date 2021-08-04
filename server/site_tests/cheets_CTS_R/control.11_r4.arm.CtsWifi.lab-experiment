@@ -18,8 +18,6 @@ def run_TS(machine):
     ssid = utils.get_wireless_ssid(machine['hostname'])
     wifipass = global_config.global_config.get_config_value('CLIENT',
             'wireless_password', default=None)
-    wifi_sec = global_config.global_config.get_config_value('CLIENT',
-            'wireless_security', default=None)
 
     host_list = [hosts.create_host(machine)]
     job.run_test(
@@ -34,7 +32,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        precondition_commands=['/usr/local/autotest/cros/scripts/wifi connect %s %s %s' % (ssid, wifipass, wifi_sec), 'android-sh -c \'dumpsys wifi transports -eth\''],
+        precondition_commands=['/usr/local/autotest/cros/scripts/wifi connect %s %s' % (ssid, wifipass), 'android-sh -c \'dumpsys wifi transports -eth\''],
         retry_manual_tests=True,
         use_jdk9=True,
         timeout=12600)

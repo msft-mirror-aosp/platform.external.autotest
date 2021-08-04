@@ -31,6 +31,7 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_sparse_sample_explicit_lod.r32ui#128_128_1" />
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_sparse_sample_explicit_lod.r32ui#512_256_1" />
   <Entry include="CtsHardwareTestCases android.hardware.input.cts.tests.MicrosoftSculpttouchTest#testAllMotions" />
+  <Entry include="CtsLibcoreTestCases org.apache.harmony.tests.java.io.FileTest#test_createNewFile" />
   <Entry include="CtsOsTestCases android.os.cts.EnvironmentTest#testHidePid2" />
   <Entry include="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiScanTimestamp" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackFinishToPreviousApp" />

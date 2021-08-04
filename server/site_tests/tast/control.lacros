@@ -68,9 +68,10 @@ def run(machine):
     finally:
         host.run('imageloader --unmount --mount_point=/tmp/lacros;'
                  'rm -rf /tmp/lacros')
-
+    # lacrosDeployedBinary expects to set the directory containing chrome executable.
+    # If chrome is not under squashfs root, specify the relative path by exe_rel_path.
     path_to_chrome = os.path.join('/usr/local/lacros',
-                                  args_dict.get('exe_rel_path'))
+                                  args_dict.get('exe_rel_path', 'chrome'))
     assert host.path_exists(path_to_chrome), (
             'lacros artifact is not provisioned at expected path, %s'
             % path_to_chrome)

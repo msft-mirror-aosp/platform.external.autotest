@@ -9,14 +9,12 @@ from __future__ import unicode_literals
 from __future__ import division
 
 import os
-import copy
 import json
 import string
 import base64
 import logging
 
 import common
-from autotest_lib.client.common_lib import hosts
 from autotest_lib.server.cros.servo.topology import topology_constants as stc
 
 
@@ -549,7 +547,7 @@ def _convert_topology_to_string(topology):
         # recommended to convert to the bytes for python 3
         b64_string = base64.b64encode(json_string.encode("utf-8"))
         logging.debug('Servo topology (b64): %s', b64_string)
-        return b64_string
+        return b64_string.decode()
     except Exception as e:
         logging.debug('(Not critical) %s', e)
         logging.info('Failed to convert topology to base64')

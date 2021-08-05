@@ -374,9 +374,11 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
         """
         super(site_sysinfo, self).log_before_each_test(test)
 
-        for log in self.diffable_loggables:
-            log.run(log_dir=None, collect_init_status=True)
-
+        try:
+            for log in self.diffable_loggables:
+                log.run(log_dir=None, collect_init_status=True)
+        except Exception as e:
+            logging.warning("Exception hit during log_before_each_test %s", e)
 
     @log.log_and_ignore_errors("post-test sysinfo error:")
     def log_after_each_test(self, test):

@@ -545,8 +545,8 @@ class FirmwareTest(test.test):
         # DUT is disconnected. Capture the UART output for debug.
         self._record_uart_capture()
 
-        # TODO(waihong@chromium.org): Implement replugging the Ethernet to
-        # identify if it is a network flaky.
+        # Replug the Ethernet to identify if it is a network flaky.
+        self.servo.eth_power_reset()
 
         recovery_reason = self._retrieve_recovery_reason_from_trap()
 

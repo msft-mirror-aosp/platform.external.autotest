@@ -1885,3 +1885,40 @@ class Servo(object):
             return None
 
         return self.get('vbus_voltage')
+
+    def supports_eth_power_control(self):
+        """True if servo supports power management for ethernet dongle."""
+        return self.has_control('dut_eth_pwr_en')
+
+    def set_eth_power(self, state):
+        """Set ethernet dongle power state, either 'on' or 'off'.
+
+        Note: this functionality is supported only on servo v4p1.
+
+        @param state: a string of 'on' or 'off'.
+        """
+        if state != 'off' and state != 'on':
+            raise error.TestError('Unknown ethernet power state request: %s' %
+                                  state)
+
+        if not self.supports_eth_power_control():
+            logging.info('Not a supported servo setup. Unable to set ethernet'
+                         'dongle power state %s.', state)
+            return
+
+        self.set_nocheck('dut_eth_pwr_en', state)
+
+    def eth_power_reset(self):
+        """Reset ethernet dongle power state if supported'.
+
+        It does nothing if servo setup does not support power management for
+        the etherent dongle, only log information about this.
+        """
+        if self.supports_eth_power_control():
+            logging.info("Resetting servo's Ethernet controller...")
+            self.set_eth_power('off')
+            time.sleep(1)
+            self.set_eth_power('on')
+        else:
+            logging.info("Trying to reset servo's Ethernet controller, but"
+                         "this feature is not supported on used servo setup.")

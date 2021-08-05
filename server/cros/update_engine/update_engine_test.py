@@ -71,8 +71,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # Subtest to use for logging into DUTs in a test.
     _LOGIN_TEST = 'login_LoginSuccess'
 
-    _CORRUPT_STATEFUL_PATH = '/mnt/stateful_partition/.corrupt_stateful'
-
     def initialize(self, host=None, hosts=None):
         """
         Sets default variables for the test.
@@ -728,11 +726,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def _restore_stateful(self):
         """Restore the stateful partition after a destructive test."""
-        # Touch a file that lab provisioning understands in order to restore the
-        # stateful back properly. So subsequent test runs don't run with a
-        # stateful mismatch.
-        self._run(['touch', self._CORRUPT_STATEFUL_PATH])
-
         # Stage stateful payload.
         ds_url, build = tools.get_devserver_build_from_package_url(
                 self._job_repo_url)
@@ -771,10 +764,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             raise error.TestFail(err_str)
 
         logging.info('Stateful restored successfully.')
-        # Only remove the file if stateful is successfully restored.
-        # This will allow provisioning in the lab to restore stateful.
-        self._run(['rm', self._CORRUPT_STATEFUL_PATH])
-
 
 
     def verify_update_events(self, source_release, hostlog_filename,

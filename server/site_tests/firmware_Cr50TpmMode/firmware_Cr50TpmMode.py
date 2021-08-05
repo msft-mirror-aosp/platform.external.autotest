@@ -21,8 +21,15 @@ class firmware_Cr50TpmMode(Cr50Test):
         super(firmware_Cr50TpmMode, self).initialize(host, cmdline_args,
                 full_args)
 
-        self.can_set_tpm = self.cr50.uses_board_property(
-                                                  'BOARD_ALLOW_CHANGE_TPM_MODE')
+        # TODO(mruthven): remove can_set_tpm logic when tpm mode propagates to
+        # mp.
+        always_enabled = '0.6.50' in self.cr50.get_active_version_info()
+        logging.info('Running version %s tpm mode based on brdprop',
+                     'does not enable' if always_enabled else 'enables')
+        self.can_set_tpm = always_enabled or self.cr50.uses_board_property(
+                'BOARD_ALLOW_CHANGE_TPM_MODE')
+        logging.info('Board can%s set tpm mode',
+                     '' if self.can_set_tpm else 'not')
 
     def init_tpm_mode(self):
         """Reset the device."""

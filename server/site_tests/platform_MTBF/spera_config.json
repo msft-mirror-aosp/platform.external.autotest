@@ -123,6 +123,24 @@
       "test_expr": "ui.ExtendedDisplayCUJ.premium_meet_large",
       "attributes": ["plus"],
       "deps": ["external_display", "plus"]
+    },
+    {
+      "name": "geekbench-public-android",
+      "tool": "tast",
+      "test_expr": "ui.GeekbenchPublicAndroidApp",
+      "attributes": ["benchmark", "basic"]
+    },
+    {
+      "name": "lmbench",
+      "tool": "tast",
+      "test_expr": "ui.LMbench",
+      "attributes": ["benchmark", "basic"]
+    },
+    {
+      "name": "crxprt2",
+      "tool": "tast",
+      "test_expr": "ui.CRXPRT2",
+      "attributes": ["benchmark", "basic"]
     }
   ],
   "suites": [
@@ -189,6 +207,15 @@
         {"test": "everyday-basic-ytmusic", "repeats": 10},
         {"test": "everyday-plus-ytmusic", "repeats": 10},
         {"test": "extended-display-meet", "repeats": 10}
+      ]
+    },
+    {
+      "name": "performance_cuj_benchmarks",
+      "args_file": "perf_cuj.config",
+      "tests": [
+        {"test": "geekbench-public-android", "repeats": 2},
+        {"test": "lmbench", "repeats": 2},
+        {"test": "crxprt2", "repeats": 2}
       ]
     }
   ]

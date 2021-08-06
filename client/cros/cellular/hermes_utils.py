@@ -175,7 +175,7 @@ def validate_profile_state(euicc_path, hermes_manager, iccid, is_enable):
         target_state = 'ACTIVE' if is_enable else 'INACTIVE'
         _, installed_profiles = \
         request_installed_profiles(euicc_path, hermes_manager)
-        is_equal = False
+
         # check profile with given iccid has target_state and rest are opposite
         for profile in installed_profiles.values():
             # check for inactive profiles when enabled except enabled one
@@ -229,7 +229,8 @@ def get_profile_state(euicc_path, hermes_manager, iccid):
         euicc = hermes_manager.get_euicc(euicc_path)
         profile = euicc.get_profile_from_iccid(iccid)
 
-    return True if profile.state == 'ACTIVE' else False
+    return True if (hermes_constants.ProfileStateToString(profile.state) ==
+                    'ACTIVE') else False
 
 def get_profile(euicc_path, hermes_manager, is_active):
     """

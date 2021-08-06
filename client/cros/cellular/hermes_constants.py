@@ -59,6 +59,8 @@ PROFILE_REFRESH_TIMEOUT = 10
 # Amount of time to wait between attempts to connect to HermesManager.
 CONNECT_WAIT_INTERVAL_SECONDS = 20
 HERMES_RESTART_WAIT_SECONDS   = 30
+# DBus method reply timeout in milliseconds
+HERMES_DBUS_METHOD_CALL_TIMEOUT = 120 * 1000
 
 def ProfileStateToString(state):
     """

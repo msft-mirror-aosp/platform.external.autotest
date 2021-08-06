@@ -345,7 +345,8 @@ class EuiccProxy(object):
     def request_installed_profiles(self):
         """Refreshes/Loads current euicc object profiles.
         """
-        self.iface_euicc.RequestInstalledProfiles()
+        self.iface_euicc.RequestInstalledProfiles(
+            timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
     def request_pending_profiles(self, root_smds):
         """Refreshes/Loads current euicc object pending profiles.

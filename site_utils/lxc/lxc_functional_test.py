@@ -95,7 +95,6 @@ FAKE_TS_MON_CONFIG_CONTENT = '''
     {
         "credentials":"/tmp/service_account_prodx_mon.json",
         "endpoint":"https://xxx.googleapis.com/v1:insert",
-        "use_new_proto": true
     }'''
 
 FAKE_SERVICE_ACCOUNT_CRED_JSON = '''

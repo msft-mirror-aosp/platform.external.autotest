@@ -55,7 +55,7 @@ class TestMonitor():
         @returns: the byte array.
 
         """
-        return [b for b in array.array('B', str_data)]
+        return [b for b in array.array('B', str_data.encode())]
 
 
     def update_type(self, monitor_type):

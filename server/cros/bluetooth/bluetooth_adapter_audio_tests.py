@@ -477,13 +477,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @returns: A tuple of a float score and string representation of the
                 srderr or None if there was no error.
         """
-        string_out = stdout or ''
+        string_out = stdout.decode('utf-8') or ''
+        stderr = stderr.decode('utf-8')
 
         # Log verbose VISQOL output:
         log_file = os.path.join(VISQOL_TEST_DIR, 'VISQOL_LOG.txt')
         with open(log_file, 'w+') as f:
             f.write('String Error:\n{}\n'.format(stderr))
-            f.write('String Out:\n{}\n'.format(stdout))
+            f.write('String Out:\n{}\n'.format(string_out))
 
         # pattern matches first float or int after 'MOS-LQO:' in stdout,
         # e.g. it would match the line 'MOS-LQO       2.3' in the stdout

@@ -2828,7 +2828,7 @@ class BluetoothAdapterTests(test.test):
         @returns: the equivalent jiffies
 
         """
-        return adv_interval_ms / self.ADVERTISING_INTERVAL_UNIT
+        return int(round(adv_interval_ms / self.ADVERTISING_INTERVAL_UNIT))
 
 
     def compute_duration(self, max_adv_interval_ms):
@@ -2972,12 +2972,12 @@ class BluetoothAdapterTests(test.test):
         """
         min_str = ('Min advertising interval: %.3f msec (0x%04x)' %
                    (min_adv_interval_ms,
-                    min_adv_interval_ms / self.ADVERTISING_INTERVAL_UNIT))
+                    self.convert_to_adv_jiffies(min_adv_interval_ms)))
         logging.debug('min_adv_interval_ms: %s', min_str)
 
         max_str = ('Max advertising interval: %.3f msec (0x%04x)' %
                    (max_adv_interval_ms,
-                    max_adv_interval_ms / self.ADVERTISING_INTERVAL_UNIT))
+                    self.convert_to_adv_jiffies(max_adv_interval_ms)))
         logging.debug('max_adv_interval_ms: %s', max_str)
 
         return (min_str, max_str)

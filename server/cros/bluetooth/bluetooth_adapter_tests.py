@@ -4870,7 +4870,14 @@ class BluetoothAdapterTests(test.test):
         rssi = None
 
         # device could have tested RSSI if we enable check_rssi, if so, reuse it
-        if hasattr(device, 'rssi'):
+        #
+        # Note:
+        # device is special in that hasattr(device, xxx) will evaluate to
+        # the _Method class if xxx does not physically exist. Hence,
+        # isinstance(device.rssi, int) instead of hasattr(device, 'rssi')
+        # is used as the condition below.
+        # Refer to class _Method in client/cros/chameleon/chameleon.py
+        if isinstance(device.rssi, int):
             return device.rssi
 
         try:

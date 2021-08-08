@@ -4,19 +4,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import datetime
 import json
 import os
 import shutil
 import tempfile
 import unittest
+import six
 import yaml
 
 import dateutil.parser
 
 import common
-import tast
-
+from autotest_lib.server.site_tests.tast import tast
 from autotest_lib.client.common_lib import base_job
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -273,7 +277,7 @@ class TastTest(unittest.TestCase):
                 (NOW - tast._UNIX_EPOCH).total_seconds())
 
         cfg = {}
-        for name, cmd in self._tast_commands.iteritems():
+        for name, cmd in six.iteritems(self._tast_commands):
             cfg[name] = vars(cmd)
         path = os.path.join(os.path.dirname(self._tast_path), 'config.json')
         with open(path, 'a') as f:
@@ -647,13 +651,18 @@ class TastTest(unittest.TestCase):
             (WiFiManager.CMDLINE_ROUTER_ADDR, ROUTER_IP),
             (WiFiManager.CMDLINE_PCAP_ADDR, PCAP_IP),
         ]
-        args = map(lambda x: ("%s=%s" % x), arg_list)
+        args = [("%s=%s" % x) for x in arg_list]
         self._run_test(command_args=args)
 
     def testVarsfileOption(self):
         with tempfile.NamedTemporaryFile(
                 suffix='.yaml', dir=self._temp_dir) as temp_file:
-            yaml.dump({"var1": "val1", "var2": "val2"}, stream=temp_file)
+            yaml.dump({
+                    "var1": "val1",
+                    "var2": "val2"
+            },
+                      stream=temp_file,
+                      encoding='utf-8')
             varsfiles = [temp_file.name]
             self._init_tast_commands([TestInfo('pkg.Test', 0, 0)],
                                      run_varsfiles=varsfiles)
@@ -892,9 +901,12 @@ def status_string(entries):
     """
     strings = []
     for entry in entries:
+        message = entry.message
+        if isinstance(message, six.binary_type):
+            message = message.decode('utf-8')
         timestamp = entry.fields[base_job.status_log_entry.TIMESTAMP_FIELD]
         s = '[%s %s %s %s]' % (timestamp, entry.operation, entry.status_code,
-                               repr(str(entry.message)))
+                               repr(message))
         strings.append(s)
 
     return ' '.join(strings)

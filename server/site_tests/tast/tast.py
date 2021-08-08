@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import json
 import logging
 import os
@@ -9,6 +13,7 @@ import shutil
 import tempfile
 
 import dateutil.parser
+import six
 
 from autotest_lib.client.common_lib import base_job
 from autotest_lib.client.common_lib import error
@@ -27,6 +32,15 @@ import yaml
 
 # A datetime.DateTime representing the Unix epoch in UTC.
 _UNIX_EPOCH = dateutil.parser.parse('1970-01-01T00:00:00Z')
+
+# Keywords that are used in result json file.
+_KEY_NAME = 'name'
+_KEY_START = 'start'
+_KEY_END = 'end'
+_KEY_ERRORS = 'errors'
+_KEY_SKIP_REASON = 'skipReason'
+_KEY_REASON = 'reason'
+_KEY_TIME = 'time'
 
 
 def split_arguments(args):
@@ -48,19 +62,27 @@ def split_arguments(args):
     return auto_args, tast_vars
 
 
-def _encode_utf8_json(j):
-    """Takes JSON object parsed by json.load() family, and encode each unicode
-    strings into utf-8.
+def _encode_text(text):
+    """Takes an unicode string into native string
+    (bytes for python 2 and text for python 3).
     """
-    if isinstance(j, unicode):
-        return j.encode('utf-8')
-    if isinstance(j, list):
-        return [_encode_utf8_json(x) for x in j]
-    if isinstance(j, dict):
-        return dict((_encode_utf8_json(k), _encode_utf8_json(v))
-                    for k, v in j.iteritems())
-    return j
+    if six.PY2:
+        return text.encode('utf-8')
+    return text
 
+
+def _encode_json(j):
+    """Takes JSON object parsed by json.load() family, and encode each unicode
+    strings into str.
+    """
+    if isinstance(j, six.text_type):
+        return _encode_text(j)
+    if isinstance(j, list):
+        return [_encode_json(x) for x in j]
+    if isinstance(j, dict):
+        return dict((_encode_json(k), _encode_json(v))
+                    for k, v in six.iteritems(j))
+    return j
 
 class tast(test.test):
     """Autotest server test that runs a Tast test suite.
@@ -631,8 +653,8 @@ class tast(test.test):
         result = self._run_tast('list', args, self._test_exprs,
                                 self._LIST_TIMEOUT_SEC)
         try:
-            self._tests_to_run = _encode_utf8_json(
-                json.loads(result.stdout.strip()))
+            self._tests_to_run = _encode_json(json.loads(
+                    result.stdout.strip()))
         except ValueError as e:
             raise error.TestFail('Failed to parse tests: %s' % str(e))
         if len(self._tests_to_run) == 0:
@@ -716,27 +738,29 @@ class tast(test.test):
                 if not line:
                     continue
                 try:
-                    test = _encode_utf8_json(json.loads(line))
+                    test = _encode_json(json.loads(line))
                 except ValueError as e:
                     raise error.TestFail('Failed to parse %s: %s' % (path, e))
                 self._test_results.append(test)
 
-                name = test['name']
+                name = test[_KEY_NAME]
                 seen_test_names.add(name)
 
-                if test.get('errors'):
-                    for err in test['errors']:
-                        logging.warning('%s: %s', name, err['reason'])
+                if test.get(_KEY_ERRORS):
+                    for err in test[_KEY_ERRORS]:
+                        logging.warning('%s: %s', name, err[_KEY_REASON])
                     failed.append(name)
                 else:
                     # The test will have a zero (i.e. 0001-01-01 00:00:00 UTC)
                     # end time (preceding the Unix epoch) if it didn't report
                     # completion.
-                    if _rfc3339_time_to_timestamp(test['end']) <= 0:
+                    if _rfc3339_time_to_timestamp(test[_KEY_END]) <= 0:
                         failed.append(name)
 
-        missing = [t['name'] for t in self._tests_to_run
-                   if t['name'] not in seen_test_names]
+        missing = [
+                t[_KEY_NAME] for t in self._tests_to_run
+                if t[_KEY_NAME] not in seen_test_names
+        ]
 
         if missing:
             self._record_missing_tests(missing)
@@ -781,7 +805,7 @@ class tast(test.test):
         seen_test_names = set()
         for test in self._test_results:
             self._log_test(test)
-            seen_test_names.add(test['name'])
+            seen_test_names.add(test[_KEY_NAME])
 
     def _log_test(self, test):
         """Writes events to the TKO status.log file describing the results from
@@ -792,12 +816,12 @@ class tast(test.test):
             src/platform/tast/src/chromiumos/cmd/tast/run/results.go for
             details.
         """
-        name = test['name']
-        start_time = _rfc3339_time_to_timestamp(test['start'])
-        end_time = _rfc3339_time_to_timestamp(test['end'])
+        name = test[_KEY_NAME]
+        start_time = _rfc3339_time_to_timestamp(test[_KEY_START])
+        end_time = _rfc3339_time_to_timestamp(test[_KEY_END])
 
-        test_reported_errors = bool(test.get('errors'))
-        test_skipped = bool(test.get('skipReason'))
+        test_reported_errors = bool(test.get(_KEY_ERRORS))
+        test_skipped = bool(test.get(_KEY_SKIP_REASON))
         # The test will have a zero (i.e. 0001-01-01 00:00:00 UTC) end time
         # (preceding the Unix epoch) if it didn't report completion.
         test_finished = end_time > 0
@@ -815,10 +839,10 @@ class tast(test.test):
             # The previous START event automatically increases the log
             # indentation level until the following END event.
             if test_reported_errors:
-                for err in test['errors']:
-                    error_time = _rfc3339_time_to_timestamp(err['time'])
+                for err in test[_KEY_ERRORS]:
+                    error_time = _rfc3339_time_to_timestamp(err[_KEY_TIME])
                     self._log_test_event(self._JOB_STATUS_FAIL, name,
-                                         error_time, err['reason'])
+                                         error_time, err[_KEY_REASON])
             if not test_finished:
                 # If a run-level error was encountered (e.g. the SSH connection
                 # to the DUT was lost), report it here to make it easier to see
@@ -845,8 +869,12 @@ class tast(test.test):
         """
         full_name = self._TEST_NAME_PREFIX + test_name
         # The TKO parser code chokes on floating-point timestamps.
-        entry = base_job.status_log_entry(status_code, None, full_name, message,
-                                          None, timestamp=int(timestamp))
+        entry = base_job.status_log_entry(status_code,
+                                          None,
+                                          full_name,
+                                          message,
+                                          None,
+                                          timestamp=int(timestamp))
         self.job.record_entry(entry, False)
 
     def _record_missing_tests(self, missing):

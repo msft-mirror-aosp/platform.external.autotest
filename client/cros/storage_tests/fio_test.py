@@ -26,6 +26,7 @@ class FioTest(test.test):
     DEFAULT_FILE_SIZE = 1024 * 1024 * 1024
     VERIFY_OPTION = 'v'
     CONTINUE_ERRORS = 'verify'
+    DEVICE_REGEX = r'.*(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+n[0-9]+|loop[0-9]|dm\-[0-9]+)p?[0-9]*'
     REMOVABLE = False
 
     # Initialize fail counter used to determine test pass/fail.
@@ -55,10 +56,11 @@ class FioTest(test.test):
         # Then read the vendor and model name in its grand-parent directory.
 
         # Obtain the device name by stripping the partition number.
-        # For example, sda3 => sda; mmcblk1p3 => mmcblk1, nvme0n1p3 => nvme0n1.
-        device = re.match(r'.*(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+n[0-9]+)p?[0-9]*',
-                          self.__filename).group(1)
-        findsys = utils.run('find /sys/devices -name %s | grep -v virtual'
+        # For example, sda3 => sda; mmcblk1p3 => mmcblk1, nvme0n1p3 => nvme0n1,
+        # loop1p1 => loop1; dm-1 => dm-1 (no partitions/multipath device
+        # support for device mapper).
+        device = re.match(self.DEVICE_REGEX, self.__filename).group(1)
+        findsys = utils.run('find /sys/devices -name %s'
                             % device)
         device_path = findsys.stdout.rstrip()
 

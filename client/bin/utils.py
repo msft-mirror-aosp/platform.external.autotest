@@ -806,6 +806,8 @@ def get_disk_from_filename(filename):
                 maj_min = dmsetup_output[4]
             elif dmsetup_output[2] == 'crypt':
                 maj_min = dmsetup_output[6]
+            elif dmsetup_output[2] in ['thin', 'thin-pool', 'linear']:
+                maj_min = dmsetup_output[3]
             cmd = 'realpath "/dev/block/%s"' % maj_min
         elif filename.startswith('/dev/loop'):
             cmd = 'losetup -O BACK-FILE "%s" | tail -1' % filename

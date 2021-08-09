@@ -40,25 +40,6 @@ class firmware_ECWakeSource(FirmwareTest):
             self.servo.set('lid_open', 'yes')
         super(firmware_ECWakeSource, self).cleanup()
 
-    def hibernate_and_wake_by_power_button(self, host):
-        """Shutdown to G3/S5, hibernate EC, and then wake by power button."""
-        is_ac = host.is_ac_connected()
-        self.run_shutdown_cmd()
-        if not self.wait_power_state(self.POWER_STATE_G3,
-                                     self.POWER_STATE_RETRY_COUNT):
-            raise error.TestFail('Platform failed to reach G3 state.')
-
-        self.ec.send_command('hibernate')
-        time.sleep(self.WAKE_DELAY)
-
-        # If AC is plugged during the test, the DUT would wake up right after
-        # entering hibernate mode. So skip the verification for EC console
-        # responsiveness.
-        if is_ac != True and self.is_ec_console_responsive():
-            raise error.TestFail('The DUT is not in hibernate mode.')
-        self.servo.power_short_press()
-        self.switcher.wait_for_client()
-
     def is_ec_console_responsive(self):
         """Test if EC console is responsive."""
         try:
@@ -223,20 +204,3 @@ class firmware_ECWakeSource(FirmwareTest):
             self.suspend_and_wake(lambda:self.servo.set('lid_open', 'no'),
                                   self.wake_by_lid_switch)
             self.check_boot_id(host, original_boot_id, wake_src)
-
-        if self.servo.main_device_is_ccd():
-            logging.info('With CCD, we can\'t wake up the DUT from hibernate '
-                         'by power button. Skip hibernate test.')
-        elif not self.faft_config.hibernate:
-            logging.info(
-                    'The device does not support hibernate. Skip hibernate test.'
-            )
-        elif not self._client.has_battery():
-            logging.warning(
-                    'The device claims to have hibernate support, but does not '
-                    'have a battery. It probably does not actually have hibernate '
-                    'support, edit the device.json file in fw-testing-configs. '
-                    'Skip hibernate test.')
-        else:
-            logging.info('EC hibernate and wake by power button.')
-            self.hibernate_and_wake_by_power_button(host)

@@ -11,8 +11,7 @@ from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.network import expected_performance_results
 from autotest_lib.server.cros.network import ip_config_context_manager
-from autotest_lib.server.cros.network import netperf_runner
-from autotest_lib.server.cros.network import netperf_session
+from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_test_base
 
 
@@ -26,19 +25,13 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
 
     version = 1
 
-    NETPERF_CONFIGS = [
-            netperf_runner.NetperfConfig(
-                    netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM),
-            netperf_runner.NetperfConfig(
-                    netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS),
-            netperf_runner.NetperfConfig(
-                    netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM),
-            netperf_runner.NetperfConfig(
-                    netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS),
-            netperf_runner.NetperfConfig(
-                    netperf_runner.NetperfConfig.TEST_TYPE_TCP_BIDIRECTIONAL),
-            netperf_runner.NetperfConfig(
-                    netperf_runner.NetperfConfig.TEST_TYPE_UDP_BIDIRECTIONAL),
+    PERF_TEST_TYPES = [
+            perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX,
+            perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX,
+            perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL,
+            perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX,
+            perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX,
+            perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL,
     ]
 
     DEFAULT_ROUTER_LAN_IP_ADDRESS = "192.168.1.50"
@@ -82,61 +75,60 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         self._ap_configs = additional_params
 
     def verify_result(self, result, must_expected_throughput,
-                      should_expected_throughput, config, failed_configs,
+                      should_expected_throughput, test_type, failed_test_types,
                       power_save, ap_config):
-        """Verfiy that netperf result pass the must and should throughputs.
+        """Verfiy that performance test result passes the must and should
+        throughput requirements.
 
-        @param result: the netperf thoughput result
+        @param result: the throughput result object
         @param must_expected_throughput: the min must expected throughput
         @param should_expected_throughput: the min should expected throughput
-        @param config: the netperf test type/configuration
-        @param failed_configs: a set of failed configuration
+        @param test_type: the performance_test_types test type
+        @param failed_test_types: a set of failed test_types
         @param power_save: powersaving configuration
         @param ap_config: the AP configuration
         """
         must_tput_failed = False
         should_tput_failed = False
-        mustAssertion = netperf_runner.NetperfAssertion(
-                throughput_min=must_expected_throughput)
-        if not mustAssertion.passes(result):
+        if result.throughput < must_expected_throughput:
             logging.error(
                     'Throughput is too low for %s. Expected (must) %0.2f Mbps, got %0.2f.',
-                    config.tag, must_expected_throughput, result.throughput)
+                    test_type, must_expected_throughput, result.throughput)
             must_tput_failed = True
-        shouldAssertion = netperf_runner.NetperfAssertion(
-                throughput_min=should_expected_throughput)
-        if not shouldAssertion.passes(result):
+        if result.throughput < should_expected_throughput:
             if self._should_required:
                 logging.error(
                         'Throughput is too low for %s. Expected (should) %0.2f Mbps, got %0.2f.',
-                        config.tag, should_expected_throughput,
+                        test_type, should_expected_throughput,
                         result.throughput)
                 should_tput_failed = True
             else:
                 logging.info(
                         'Throughput is below (should) expectation for %s. Expected (should) %0.2f Mbps, got %0.2f.',
-                        config.tag, should_expected_throughput,
+                        test_type, should_expected_throughput,
                         result.throughput)
         if must_tput_failed or should_tput_failed:
-            failed_config_list = [
-                    '[test_type=%s' % config.tag,
+            failed_test_type_list = [
+                    '[test_type=%s' % test_type,
                     'channel=%d' % ap_config.channel,
                     'power_save_on=%r' % power_save,
                     'measured_Tput=%0.2f' % result.throughput
             ]
             if must_tput_failed:
-                failed_config_list.append('must_expected_Tput_failed=%0.2f' %
-                                          must_expected_throughput)
+                failed_test_type_list.append(
+                        'must_expected_Tput_failed=%0.2f' %
+                        must_expected_throughput)
             elif should_tput_failed:
-                failed_config_list.append('should_expected_Tput_failed=%0.2f' %
-                                          should_expected_throughput)
-            failed_configs.add(', '.join(failed_config_list) + ']')
+                failed_test_type_list.append(
+                        'should_expected_Tput_failed=%0.2f' %
+                        should_expected_throughput)
+            failed_test_types.add(', '.join(failed_test_type_list) + ']')
 
-    def do_run(self, ap_config, session, power_save, governor):
+    def do_run(self, ap_config, manager, power_save, governor):
         """Run a single set of perf tests, for a given AP and DUT config.
 
         @param ap_config: the AP configuration that is being used
-        @param session: a netperf session instance
+        @param manager: a PerfTestManager instance
         @param power_save: whether or not to use power-save mode on the DUT
                            (boolean)
         @ return set of failed configs
@@ -173,9 +165,8 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                 # perform the run twice
                 return
 
-        failed_configs = set()
+        failed_test_types = set()
         self.context.client.powersave_switch(power_save)
-        session.warmup_stations()
         ps_tag = 'PS%s' % ('on' if power_save else 'off')
         governor_tag = 'governor-%s' % governor_name
         ap_config_tag = '_'.join([ap_config.perf_loggable_description,
@@ -183,36 +174,44 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         signal_level = self.context.client.wifi_signal_level
         signal_description = '_'.join([ap_config_tag, 'signal'])
         self.write_perf_keyval({signal_description: signal_level})
-        for config in self.NETPERF_CONFIGS:
+        for test_type in self.PERF_TEST_TYPES:
+            config = manager.get_config(test_type)
+            pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
+                                                 self.context.pcap_host.host)
+            session = manager.get_session(self.context.client,
+                                          self.context.pcap_host,
+                                          peer_device_interface=pcap_lan_iface)
             ch_width = ap_config.channel_width
             if ch_width is None:
                 raise error.TestFail(
                         'Failed to get the channel width used by the AP and client'
                 )
             expected_throughput = expected_performance_results.get_expected_throughput_wifi(
-                    config.test_type_name, ap_config.mode, ch_width)
+                    test_type, ap_config.mode, ch_width)
             results = session.run(config)
             if not results:
-                logging.error('Failed to take measurement for %s',
-                              config.tag)
+                logging.error('Failed to take measurement for %s', test_type)
                 continue
             values = [result.throughput for result in results]
-            self.output_perf_value(config.tag, values, units='Mbps',
+            self.output_perf_value(test_type,
+                                   values,
+                                   units='Mbps',
                                    higher_is_better=True,
                                    graph=ap_config_tag)
-            result = netperf_runner.NetperfResult.from_samples(results)
+            result = manager.get_result(results)
 
             self.verify_result(result, expected_throughput[0],
-                               expected_throughput[1], config, failed_configs,
-                               power_save, ap_config)
-            self.write_perf_keyval(result.get_keyval(
-                prefix='_'.join([ap_config_tag, config.tag])))
+                               expected_throughput[1], test_type,
+                               failed_test_types, power_save, ap_config)
+            self.write_perf_keyval(
+                    result.get_keyval(
+                            prefix='_'.join([ap_config_tag, test_type])))
         if governor:
             utils.restore_scaling_governor_states(client_governor,
                     self.context.client.host)
             utils.restore_scaling_governor_states(router_governor,
                     self.context.router.host)
-        return failed_configs
+        return failed_test_types
 
 
     def run_once(self):
@@ -258,20 +257,14 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                                         self._router_lan_ip_addr,
                                         self._router_lan_iface_name)
 
-                pcap_lan_iface = interface.Interface(
-                        self._pcap_lan_iface_name, self.context.pcap_host.host)
-                session = netperf_session.NetperfSession(
-                        self.context.client,
-                        self.context.pcap_host,
-                        server_interface=pcap_lan_iface)
-
+                manager = perf_manager.PerfTestManager()
                 # Flag a test error if we disconnect for any reason.
                 with self.context.client.assert_no_disconnects():
                     for governor in sorted(set([None, self._governor])):
                         # Run the performance test and record the test types
                         # which failed due to low throughput.
                         low_throughput_tests.update(
-                                self.do_run(ap_config, session,
+                                self.do_run(ap_config, manager,
                                             not (self._power_save_off),
                                             governor))
 

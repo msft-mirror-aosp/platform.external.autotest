@@ -4,20 +4,23 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.network import hostap_config
-from autotest_lib.server.cros.network import netperf_runner
+from autotest_lib.server.cros.network import performance_test_types as test_types
 """
 This file defines the expected throughput values that should be used with the network_WiFi_Perf.*
 tests.
 
-In the meantime, the expected throughput values depend on the following parameters:
+The expected throughput values depend on the following parameters:
 1- The test type:
-    a) TCP_MAERTS
-    b) TCP_STREAM
-    c) UDP_MAERTS
-    d) UDP_STREAM
+    a) TCP_BIDIRECTIONAL
+    b) TCP_RX
+    c) TCP_TX
+    a) UDP_BIDIRECTIONAL
+    b) UDP_RX
+    c) UDP_TX
     Note: The thoughput is viewed from the DUT perspective:
-        MAERTS = streaming to DUT = Rx
-        STREAM = streaming from DUT = Tx
+        streaming to DUT = RX
+        streaming from DUT = TX
+        simultaneous TX + RX = BIDIERECTIONAL
 2- The Connection mode:
     a) 80211n
     b) 80211ac
@@ -28,7 +31,7 @@ In the meantime, the expected throughput values depend on the following paramete
 """
 
 Expected_Throughput_WiFi = {
-        netperf_runner.NetperfConfig.TEST_TYPE_TCP_BIDIRECTIONAL: {
+        test_types.TEST_TYPE_TCP_BIDIRECTIONAL: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
@@ -45,7 +48,7 @@ Expected_Throughput_WiFi = {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: (0, 0)
                 }
         },
-        netperf_runner.NetperfConfig.TEST_TYPE_UDP_BIDIRECTIONAL: {
+        test_types.TEST_TYPE_UDP_BIDIRECTIONAL: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
@@ -62,7 +65,7 @@ Expected_Throughput_WiFi = {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: (0, 0)
                 }
         },
-        netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS: {
+        test_types.TEST_TYPE_TCP_RX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (61, 86),
@@ -82,7 +85,7 @@ Expected_Throughput_WiFi = {
                         (153, 221)
                 }
         },
-        netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM: {
+        test_types.TEST_TYPE_TCP_TX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (61, 86),
@@ -102,7 +105,7 @@ Expected_Throughput_WiFi = {
                         (153, 221)
                 }
         },
-        netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS: {
+        test_types.TEST_TYPE_UDP_RX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (72, 101),
@@ -122,7 +125,7 @@ Expected_Throughput_WiFi = {
                         (180, 260)
                 }
         },
-        netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM: {
+        test_types.TEST_TYPE_UDP_TX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (72, 101),
@@ -144,10 +147,11 @@ Expected_Throughput_WiFi = {
         }
 }
 
-def get_expected_throughput_wifi(tag, mode, channel_width):
+
+def get_expected_throughput_wifi(test_type, mode, channel_width):
     """returns the expected throughput for WiFi only performance tests.
 
-    @param tag: the netperf test type.
+    @param test_type: the performance_test_types test type.
 
     @param mode: the WiFi mode such as 80211n.
 
@@ -156,13 +160,13 @@ def get_expected_throughput_wifi(tag, mode, channel_width):
     @return a tuple of two integers (must,should) of the expected throughputs in Mbps.
 
     """
-    if tag in Expected_Throughput_WiFi:
-        if mode in Expected_Throughput_WiFi[tag]:
-            if channel_width in Expected_Throughput_WiFi[tag][mode]:
-                return Expected_Throughput_WiFi[tag][mode][channel_width]
+    if test_type in Expected_Throughput_WiFi:
+        if mode in Expected_Throughput_WiFi[test_type]:
+            if channel_width in Expected_Throughput_WiFi[test_type][mode]:
+                return Expected_Throughput_WiFi[test_type][mode][channel_width]
     ret_mode = hostap_config.HostapConfig.VHT_NAMES[channel_width]
     if ret_mode is None:
         ret_mode = hostap_config.HostapConfig.HT_NAMES[channel_width]
     raise error.TestFail(
             'Failed to find the expected throughput from the key values, test type = %s, mode = %s, channel width = %s'
-            % (tag, mode, ret_mode))
+            % (test_type, mode, ret_mode))

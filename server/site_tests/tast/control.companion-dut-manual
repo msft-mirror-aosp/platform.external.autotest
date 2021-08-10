@@ -19,6 +19,7 @@ TEST_TYPE = 'Server'
 # This test should not be run in any CQ.
 # ATTRIBUTES = 'suite:bvt-tast-cq'
 MAX_RESULT_SIZE_KB = 256 * 1024
+PY_VERSION = 3
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True

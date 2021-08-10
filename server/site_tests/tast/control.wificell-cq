@@ -8,6 +8,7 @@ TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:wificell-cq'
 MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
 
 DOC = '''
 Run the Tast tests which run in suite:wificell-cq.

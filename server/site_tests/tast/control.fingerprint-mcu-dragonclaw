@@ -8,6 +8,7 @@ TIME = 'SHORT'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:fingerprint-mcu-dragonclaw'
 MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
 
 DOC = '''
 Run the Tast tests which run in suite:fingerprint-mcu-dragonclaw.

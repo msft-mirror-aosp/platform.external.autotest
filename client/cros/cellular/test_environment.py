@@ -169,7 +169,7 @@ class CellularTestEnvironment(object):
                     'Overriding the previous error: %s', value)
             raise error.TestError(
                     'One or more daemon crashes were detected. '
-                    'See crash dumps: ', crash_files)
+                    'See crash dumps: {}'.format(crash_files))
 
         if exception_on_restore_state is not None:
             raise exception_on_restore_state

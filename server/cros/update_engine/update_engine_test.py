@@ -95,6 +95,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._dlc_util = dlc_util.DLCUtil(self._run)
 
         self._fake_omaha = None
+        self._job_repo_url = None
 
     def cleanup(self):
         """Clean up update_engine autotests."""
@@ -728,6 +729,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def _restore_stateful(self):
         """Restore the stateful partition after a destructive test."""
+        # Test failed before job_repo_url was set. No need to fix stateful.
+        if not self._job_repo_url:
+            return
+
         # Fallback to lab provisioning if this function fails to restore.
         self._run(['touch', self._CORRUPT_STATEFUL_PATH])
 

@@ -201,19 +201,10 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                                    higher_is_better=True,
                                    graph=ap_config_tag)
             result = netperf_runner.NetperfResult.from_samples(results)
-            # TODO(b:172211699): The Gale AP is bad at being an endpoint while simultaneously being a netperf server.
-            # The Gale CPU performance becomes a bottleneck at high throughputs. Because of that,
-            # the "tcp_rx" tests can't meet expected throughputs that are greater than 100Mbps.
-            if (config.test_type_name == netperf_runner.NetperfConfig.
-                        TEST_TYPE_TCP_MAERTS) and (expected_throughput[0] >
-                                                   100):
-                logging.info(
-                        "Can't verify any expected throughput greater than 100Mbps on the test configuration tcp_rx"
-                )
-            else:
-                self.verify_result(result, expected_throughput[0],
-                                   expected_throughput[1], config,
-                                   failed_configs, power_save, ap_config)
+
+            self.verify_result(result, expected_throughput[0],
+                               expected_throughput[1], config, failed_configs,
+                               power_save, ap_config)
             self.write_perf_keyval(result.get_keyval(
                 prefix='_'.join([ap_config_tag, config.tag])))
         if governor:

@@ -22,7 +22,8 @@ from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.utils import labellib
 from autotest_lib.site_utils.rpm_control_system import utils as rpm_utils
-
+from six.moves import urllib
+import yaml
 
 # A datetime.DateTime representing the Unix epoch in UTC.
 _UNIX_EPOCH = dateutil.parser.parse('1970-01-01T00:00:00Z')
@@ -151,7 +152,8 @@ class tast(test.test):
                    shardindex=0,
                    companion_duts={},
                    varslist=[],
-                   maybemissingvars=''):
+                   maybemissingvars='',
+                   vars_gs_path=''):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -190,6 +192,9 @@ class tast(test.test):
             arguments. Each string should be formatted as "name=value".
         @param maybemissingvars: a regex to pass to tast run command as
             |-maybemissingvars| arguments.
+        @param vars_gs_path: gs path to load vars from. The vars are loaded
+            from gs in json format (key = value), then stored in a local
+            yaml file. The local file name is then appended to |-varsfiles|.
 
         @raises error.TestFail if the Tast installation couldn't be found.
         """
@@ -217,6 +222,7 @@ class tast(test.test):
         self._shardindex = shardindex
         self._companion_duts = companion_duts
         self._maybemissingvars = maybemissingvars
+        self._pull_varsfiles_from_gs(vars_gs_path)
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -269,6 +275,62 @@ class tast(test.test):
         @param now Numeric timestamp as would be returned by time.time().
         """
         self._fake_now = now
+
+    def _pull_varsfiles_from_gs(self, vars_gs_path):
+        """Pulls varsfiles from GS, stores it as a local file and appends the
+        file name to varsfiles.
+
+        @param varsgspath Path to varsfiles in GS e.g.
+            'config/perf_cuj/perf_cuj.config'.
+        """
+        if not vars_gs_path:
+            return
+
+        devservers = dev_server.ImageServer.get_available_devservers()
+        devserver_url = devservers[0][0]
+        if not devserver_url:
+            logging.warning("No devserver_url")
+            return
+
+        logging.info('Using devserver: %s', devserver_url)
+        labels = self._host.host_info_store.get().labels
+        build = labellib.LabelsMapping(labels).get(labellib.Key.CROS_VERSION)
+        if not build:
+            logging.warning(
+                    "Not able to detect build, means not running on Moblab.")
+            return
+
+        ds = dev_server.ImageServer(devserver_url)
+        gs_bucket = dev_server._get_image_storage_server()
+        if not gs_bucket:
+            logging.warning("No gs_bucket")
+            return
+
+        config_path, config_file = os.path.split(vars_gs_path)
+        archive_url = os.path.join(gs_bucket, config_path.strip('/'))
+        logging.info('Staging configuration from %s.', gs_bucket)
+        try:
+            ds.stage_artifacts(build,
+                               archive_url=archive_url,
+                               files=[config_file])
+        except Exception as e:
+            logging.error('Staging artifacts failed: %s', str(e))
+            return
+
+        logging.info('Parsing configuration from %s.', archive_url)
+        config_url = os.path.join(devserver_url, 'static',
+                                  vars_gs_path.strip('/'))
+        response = urllib.request.urlopen(config_url)
+        vars = json.loads(response.read())
+        test_args = dict()
+        for key in vars:
+            test_args[key] = vars[key]
+        logging.info('Read %d values from remote configuration.', len(vars))
+
+        with tempfile.NamedTemporaryFile(suffix='.yaml',
+                                         delete=False) as temp_file:
+            yaml.dump(test_args, stream=temp_file, default_flow_style=False)
+            self._varsfiles.append(temp_file.name)
 
     def _get_path(self, path):
         """Returns the path to an installed Tast-related file or directory.

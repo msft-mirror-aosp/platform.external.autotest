@@ -228,7 +228,8 @@ class TastTest(unittest.TestCase):
                   shardindex=0,
                   companion_duts={},
                   varslist=[],
-                  maybemissingvars=''):
+                  maybemissingvars='',
+                  vars_gs_path=''):
         """Writes fake_tast.py's configuration and runs the test.
 
         @param ignore_test_failures: Passed as the identically-named arg to
@@ -266,7 +267,8 @@ class TastTest(unittest.TestCase):
                               shardindex=shardindex,
                               companion_duts=companion_duts,
                               varslist=varslist,
-                              maybemissingvars=maybemissingvars)
+                              maybemissingvars=maybemissingvars,
+                              vars_gs_path=vars_gs_path)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
 

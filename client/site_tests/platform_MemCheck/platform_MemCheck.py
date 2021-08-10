@@ -92,10 +92,10 @@ class platform_MemCheck(test.test):
                     error_list += [k]
 
         # Log memory type
-        cmd = 'mosys memory spd print type | head -1'
+        cmd = 'mosys memory spd print type -s dram | head -1'
         # Example
         # 0 | LPDDR4
-        mem_type = utils.run(cmd).stdout.split(' ')[-1]
+        mem_type = utils.run(cmd).stdout.strip()
         logging.info('Ran command: `%s`', cmd)
         logging.info('Output: "%s"', mem_type)
 

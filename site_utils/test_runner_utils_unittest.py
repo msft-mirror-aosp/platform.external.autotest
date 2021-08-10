@@ -57,12 +57,12 @@ class SampleJob(object):
 class FakeTests(object):
     """A fake test to be used for mocks."""
 
-    def __init__(self, text, deps=[]):
+    def __init__(self, text, deps=[], py_version=None):
         self.text = text
         self.test_type = 'client'
         self.dependencies = deps
         self.name = None
-        self.py_version = None
+        self.py_version = py_version
 
 
 class TestRunnerUnittests(unittest.TestCase):
@@ -277,6 +277,61 @@ class TestRunnerUnittests(unittest.TestCase):
 
         # Verify when the deps are not met, the tests are not run.
         self.assertEquals(res, [])
+
+    def test_set_pyversion(self):
+        """Test the tests can properly set the python version."""
+
+        # When a test is missing a version, use the current setting.
+        starting_version = os.getenv('PY_VERSION')
+
+        try:
+            fake_test1 = FakeTests('foo')
+            fake_test2 = FakeTests('foo', py_version=2)
+            fake_test3 = FakeTests('foo', py_version=3)
+
+            test_runner_utils._set_pyversion(
+                    [fake_test1, fake_test2, fake_test3])
+            self.assertEqual(os.getenv('PY_VERSION'), starting_version)
+
+            # When there is a mix, use the current setting.
+            starting_version = os.getenv('PY_VERSION')
+            fake_test1 = FakeTests('foo', py_version=2)
+            fake_test2 = FakeTests('foo', py_version=2)
+            fake_test3 = FakeTests('foo', py_version=3)
+
+            test_runner_utils._set_pyversion(
+                    [fake_test1, fake_test2, fake_test3])
+            self.assertEqual(os.getenv('PY_VERSION'), starting_version)
+
+            # When all agree, but still 1 missing, use the current setting.
+            fake_test1 = FakeTests('foo')
+            fake_test2 = FakeTests('foo', py_version=3)
+            fake_test3 = FakeTests('foo', py_version=3)
+
+            test_runner_utils._set_pyversion(
+                    [fake_test1, fake_test2, fake_test3])
+            self.assertEqual(os.getenv('PY_VERSION'), starting_version)
+
+            # When all are set to 3, use 3.
+            fake_test1 = FakeTests('foo', py_version=3)
+            fake_test2 = FakeTests('foo', py_version=3)
+            fake_test3 = FakeTests('foo', py_version=3)
+
+            test_runner_utils._set_pyversion(
+                    [fake_test1, fake_test2, fake_test3])
+            self.assertEqual(os.getenv('PY_VERSION'), '3')
+
+            # When all are set to 2, use 2.
+            fake_test1 = FakeTests('foo', py_version=2)
+            fake_test2 = FakeTests('foo', py_version=2)
+            fake_test3 = FakeTests('foo', py_version=2)
+
+            test_runner_utils._set_pyversion(
+                    [fake_test1, fake_test2, fake_test3])
+            self.assertEqual(os.getenv('PY_VERSION'), '2')
+        finally:
+            # In the event something breaks, reset the pre-test version.
+            os.environ['PY_VERSION'] = starting_version
 
 
 if __name__ == '__main__':

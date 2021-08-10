@@ -546,7 +546,7 @@ def perform_local_run(autotest_path,
                     job_queue.append(job)
                 elif job.deps_satisfied(labels):
                     job_queue.append(job)
-
+    _set_pyversion(job_queue)
     codes = []
     job_id_digits = 0
     for job in job_queue:
@@ -862,19 +862,26 @@ class SimpleJob(object):
                     "Test py_version not compatible. Expected 2 or 3 got %s" %
                     control.py_version)
         self.py_version = control.py_version
-        self._set_pyversion()
 
     def deps_satisfied(self, labels):
         """Verify the deps for this job are satisfied on the given labels"""
         return self.dependencies.issubset(labels)
 
-    def _set_pyversion(self):
-        """If there is a py_version specified, set it in the env."""
-        if not self.py_version:
-            return
-        if int(os.getenv('PY_VERSION')) == self.py_version:
-            return
-        os.environ['PY_VERSION'] = str(self.py_version)
+
+def _set_pyversion(tests):
+    """If there is a py_version specified, set it in the env.
+
+    If not, set it to 2. If 2 is set, lock the entire suite into 2.
+    Different versions in the same suite is *not* supported.
+    """
+    set2 = all(v.py_version == 2 for v in tests)
+    set3 = all(v.py_version == 3 for v in tests)
+    if not set2 and not set3:
+        return
+    if set2:
+        os.environ['PY_VERSION'] = "2"
+    elif set3:
+        os.environ['PY_VERSION'] = "3"
 
 
 def get_control_files(autotest_path, pred):

@@ -1510,8 +1510,6 @@ class bluetooth_AdapterLEAdvertising(
             # until test can be refactored.
             # self.test_case_RA5_CD_SI200_CD_FRA1_CD_UA5()
             self.test_case_RA3_CD_SI200_CD_FSI10_CD_FSI20000_CD_UA3()
-            self.test_case_SI200_RA3_CD_SR_CD_UA3()
-            self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()
             self.test_case_SI200_RA3_CD_PC_CD_UA3()
             self.test_case_RA3_CD_SI200_CD_PC_CD_UA3()
 
@@ -1527,8 +1525,6 @@ class bluetooth_AdapterLEAdvertising(
             self.test_case_RA1_CD_SI200_CD_RS()
             self.test_case_RA1_CD_SI200_CD_FSI10_UA1_RA1_CD_UA1()
             self.test_case_RA1_CD_SI200_CD_FSI20000_UA1_RA1_CD_UA1()
-            self.test_case_SI200_RA1_CD_SR_CD_UA1()
-            self.test_case_RA1_CD_SI200_CD_SR_CD_UA1()
             self.test_case_RA1_CD_SI200_CD_PC_CD_UA1()
 
         elif test_type == 'suspend_resume':

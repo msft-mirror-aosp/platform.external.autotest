@@ -1,13 +1,19 @@
+# Lint as: python2, python3
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import json
 import logging
 import os
 import requests
 import subprocess
-import urlparse
+import six
+import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp
@@ -168,12 +174,13 @@ class NebraskaWrapper(object):
         """
 
         query = '&'.join('%s=%s' % (k, v) for k, v in kwargs.items())
-        url = urlparse.SplitResult(scheme='http',
-                                   netloc='127.0.0.1:%d' % self._port,
-                                   path='/update',
-                                   query=query,
-                                   fragment='')
-        return urlparse.urlunsplit(url)
+        url = six.moves.urllib.parse.SplitResult(scheme='http',
+                                                 netloc='127.0.0.1:%d' %
+                                                 self._port,
+                                                 path='/update',
+                                                 query=query,
+                                                 fragment='')
+        return six.moves.urllib.parse.urlunsplit(url)
 
     def get_payload_properties_file(self, payload_url, target_dir, **kwargs):
         """
@@ -190,7 +197,7 @@ class NebraskaWrapper(object):
         try:
             response = json.loads(requests.get(payload_props_url).text)
             # Override existing keys if any.
-            for k, v in kwargs.iteritems():
+            for k, v in six.iteritems(kwargs):
                 # Don't set default None values. We don't want to override good
                 # values to None.
                 if v is not None:

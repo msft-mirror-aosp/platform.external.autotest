@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import datetime
 import logging
@@ -8,6 +13,7 @@ import os
 import re
 import shutil
 import time
+from six.moves import range
 import six.moves.urllib_parse as urlparse
 
 from autotest_lib.client.common_lib import error
@@ -715,7 +721,7 @@ class UpdateEngineUtil(object):
             return None
 
         MATCH_STR = r'eventtype="(.*?)"'
-        for i in xrange(len(requests) - 1, -1, -1):
+        for i in range(len(requests) - 1, -1, -1):
             search = re.search(MATCH_STR, requests[i])
             if (not search or
                 (search.group(1) ==

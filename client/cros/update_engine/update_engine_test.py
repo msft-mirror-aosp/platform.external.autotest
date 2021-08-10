@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -5,7 +6,7 @@
 import logging
 import shutil
 import time
-import urlparse
+import six.moves.urllib.parse
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -122,7 +123,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if self._is_update_finished_downloading():
             raise error.TestFail('The update has already finished before we '
                                  'can disconnect network.')
-        self._update_server = urlparse.urlparse(update_url).hostname
+        self._update_server = six.moves.urllib.parse.urlparse(
+                update_url).hostname
         self._disable_internet()
 
         # Check that we are offline.

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,6 +7,7 @@
 import optparse
 import pickle
 import re
+import six
 import subprocess
 
 import common
@@ -33,10 +35,13 @@ def get_interface_ip(interface='eth0'):
     stdout = subprocess.Popen(['ip', '-4', 'addr', 'show', 'dev', interface],
                               stdout=subprocess.PIPE).communicate()[0]
 
-    match = re.search(r'inet ([0-9.]+)[/ ]', stdout)
+    if six.PY2:
+        # stdout is a string in py2, but we need it to match a byte pattern.
+        stdout = stdout.encode('ascii')
+    match = re.search(b'inet ([0-9.]+)[/ ]', stdout)
     if not match:
         return None
-    return match.group(1)
+    return match.group(1).decode()
 
 
 class Configuration(object):
@@ -152,7 +157,7 @@ class Configuration(object):
         @param machine: machine to get rf switch port for
         """
         dut = self._get_dut(machine)
-        print dut
+        print(dut)
         return dut['rf_switch_port']
 
     def get_pickle(self):

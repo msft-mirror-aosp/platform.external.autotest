@@ -2,11 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(crbug.com/1237594): remove import of gobject.
+from autotest_lib.client.common_lib import error
+try:
+    import gobject  # pylint: disable=unused-import
+except ImportError:
+    raise error.TestWarn('Unable to import gobject. crbug.com/1237594')
+
 import dbus, grp, os, pwd, stat
 from dbus.mainloop.glib import DBusGMainLoop
 
 from autotest_lib.client.bin import test
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import policy, session_manager
 from autotest_lib.client.cros import cros_ui, cryptohome, ownership
 

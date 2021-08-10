@@ -2,7 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import gobject
+# TODO(crbug.com/1237594): revert to a normal import of gobject.
+from autotest_lib.client.common_lib import error
+try:
+    import gobject
+except ImportError:
+    raise error.TestWarn('Unable to import gobject. crbug.com/1237594')
+
 from dbus.mainloop.glib import DBusGMainLoop
 
 from autotest_lib.client.bin import test

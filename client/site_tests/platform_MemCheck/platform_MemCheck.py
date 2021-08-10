@@ -10,6 +10,7 @@
 __author__ = 'kdlucas@chromium.org (Kelly Lucas)'
 
 import logging
+import re
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin import test
@@ -125,5 +126,20 @@ class platform_MemCheck(test.test):
             raise error.TestFail('Found incorrect values: %s' % error_list_str)
 
         keyval['cpu_name'] = utils.get_cpu_name()
+
+        # Log memory type
+        cmd = 'dmidecode -t memory'
+        mem_dmi = utils.run(cmd)
+        logging.info('Ran command: `%s`', cmd)
+        logging.info('Output: "%s"', mem_dmi.stdout)
+
+        pattern = r'\s*Speed: (?P<speed>\d+) MT/s'
+        for line in mem_dmi.stdout.split('\n'):
+            match = re.match(pattern, line)
+            if match:
+                keyval['speed'] = match.group('speed')
+                break
+        else:
+            keyval['speed'] = 'N/A'
 
         self.write_perf_keyval(keyval)

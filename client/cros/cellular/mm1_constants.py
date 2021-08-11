@@ -402,3 +402,6 @@ MM_UNINHIBIT_PROCESSING_TIME = MM_INHIBIT_PROCESSING_TIME
 
 # D-Bus path for empty sim slots
 MM_EMPTY_SLOT_PATH = '/'
+
+# Wait times for modem at Modemmanager operations
+MM_MODEM_POLL_TIME = 60

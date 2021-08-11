@@ -48,7 +48,7 @@ from six.moves import range
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
 batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-STRESS_ITERATIONS = 25
+STRESS_ITERATIONS = 50
 
 
 class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,

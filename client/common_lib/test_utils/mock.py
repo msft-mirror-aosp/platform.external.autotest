@@ -335,6 +335,21 @@ class mock_god(object):
         playback = self.__method_playback
         errors = self.errors
 
+
+        class RecordingMockMeta(type):
+            """Metaclass to override default class invocation behavior.
+
+            Normally, calling a class like a function creates and initializes an
+            instance of that class. This metaclass causes class invocation to
+            have no side effects and to return nothing, instead recording the
+            call in the mock_god object to be inspected or asserted against as a
+            part of a test.
+            """
+            def __call__(self, *args, **kwargs):
+                return playback(name, *args, **kwargs)
+
+
+        @six.add_metaclass(RecordingMockMeta)
         class cls_sub(cls):
             cls_count = 0
 
@@ -351,15 +366,9 @@ class mock_god(object):
                 return obj
 
 
-            def __new__(typ, *args, **dargs):
-                return playback(name, *args, **dargs)
-
-
             @classmethod
             def make_new(typ, *args, **dargs):
-                # object.__new__ ignores extra arguments, and raises an err
-                # in py >= 3.3.
-                obj = super(cls_sub, typ).__new__(typ)
+                obj = super(cls_sub, typ).__new__(typ, *args, **dargs)
 
                 typ.cls_count += 1
                 obj_name = "%s_%s" % (name, typ.cls_count)

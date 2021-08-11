@@ -184,7 +184,7 @@ class InputPlayback(object):
         @return: string of properties.
 
         """
-        with tempfile.NamedTemporaryFile() as temp_file:
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
             filename = temp_file.name
             evtest_process = subprocess.Popen(['evtest', device],
                                               stdout=temp_file)

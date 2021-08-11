@@ -10,8 +10,7 @@ import operator
 import os
 import re
 import time
-import urllib
-import urllib2
+from six.moves import urllib
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -138,8 +137,8 @@ class BaseDashboard(object):
                 'format_version': 6,
                 'timestamp': self._start_ts,
                 'test': self._testname,
-                'dut':
-                self._create_dut_info_dict(raw_measurement['data'].keys()),
+                'dut': self._create_dut_info_dict(
+                        list(raw_measurement['data'].keys())),
                 'power': raw_measurement,
         }
 
@@ -173,7 +172,7 @@ class BaseDashboard(object):
         json_str = json.dumps(powerlog_dict, indent=4, separators=(',', ': '),
                               ensure_ascii=False)
         json_str = utils.strip_non_printable(json_str)
-        with file(filename, 'a') as f:
+        with open(filename, 'a') as f:
             f.write(json_str)
 
     def _generate_dashboard_link(self, powerlog_dict):
@@ -220,7 +219,7 @@ class BaseDashboard(object):
 
         # Create dict from type to sorted list of rail names.
         rail_type = collections.defaultdict(list)
-        for r, t in powerlog_dict['power']['type'].iteritems():
+        for r, t in powerlog_dict['power']['type'].items():
             rail_type[t].append(r)
         for t in rail_type:
             rail_type[t] = sorted(rail_type[t])
@@ -249,7 +248,7 @@ class BaseDashboard(object):
         if not os.path.exists(resultsdir):
             raise error.TestError('resultsdir %s does not exist.' % resultsdir)
         filename = os.path.join(resultsdir, filename)
-        with file(filename, 'a') as f:
+        with open(filename, 'a') as f:
             f.write(html_str)
 
     def _upload(self, powerlog_dict, uploadurl):
@@ -261,13 +260,16 @@ class BaseDashboard(object):
         """
         json_str = json.dumps(powerlog_dict, ensure_ascii=False)
         data_obj = {'data': utils.strip_non_printable(json_str)}
-        encoded = urllib.urlencode(data_obj)
-        req = urllib2.Request(uploadurl, encoded)
+        encoded = urllib.parse.urlencode(data_obj).encode('utf-8')
+        req = urllib.request.Request(uploadurl, encoded)
 
-        @retry.retry(urllib2.URLError, raiselist=[urllib2.HTTPError],
-                     timeout_min=5.0, delay_sec=1, backoff=2)
+        @retry.retry(urllib.error.URLError,
+                     raiselist=[urllib.error.HTTPError],
+                     timeout_min=5.0,
+                     delay_sec=1,
+                     backoff=2)
         def _do_upload():
-            urllib2.urlopen(req)
+            urllib.request.urlopen(req)
 
         _do_upload()
 
@@ -298,7 +300,7 @@ class BaseDashboard(object):
         # Create list of check point event tuple.
         # Tuple format: (checkpoint_name:str, event_time:float, is_start:bool)
         checkpoint_event_list = []
-        for name, intervals in checkpoint_dict.iteritems():
+        for name, intervals in checkpoint_dict.items():
             for start, finish in intervals:
                 checkpoint_event_list.append((name, start, True))
                 checkpoint_event_list.append((name, finish, False))

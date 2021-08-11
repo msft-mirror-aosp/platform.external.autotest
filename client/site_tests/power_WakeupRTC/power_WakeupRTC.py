@@ -16,7 +16,7 @@ def read_rtc_wakeup(rtc_device):
     """
     sysfs_path = '/sys/class/rtc/%s/device/power/wakeup' % rtc_device
     if os.path.isfile(sysfs_path):
-        return file(sysfs_path).read().strip()
+        return open(sysfs_path).read().strip()
 
 
 def read_rtc_wakeup_active_count(rtc_device):
@@ -24,7 +24,7 @@ def read_rtc_wakeup_active_count(rtc_device):
     Read the current wakeup active count for the RTC device.
     """
     path = '/sys/class/rtc/%s/device/power/wakeup_active_count' % rtc_device
-    return int(file(path).read())
+    return int(open(path).read())
 
 
 def fire_wakealarm(rtc_device):
@@ -55,9 +55,9 @@ class power_WakeupRTC(test.test):
             raise error.TestFail('RTC wakeup is not enabled: %s' % default_rtc_device)
         for rtc_device in rtc.get_rtc_devices():
             if read_rtc_wakeup(rtc_device) != 'enabled':
-                logging.info('RTC wakeup is not enabled: %s' % rtc_device)
+                logging.info('RTC wakeup is not enabled: %s', rtc_device)
             else:
-                logging.info('RTC wakeup is enabled for: %s' % rtc_device)
+                logging.info('RTC wakeup is enabled for: %s', rtc_device)
                 self.run_once_rtc(rtc_device)
 
     def run_once_rtc(self, rtc_device):

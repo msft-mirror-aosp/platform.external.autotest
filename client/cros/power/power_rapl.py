@@ -248,7 +248,7 @@ def create_powercap():
             with open(root + '/name', 'r') as fn:
                 name = fn.read().rstrip()
                 rapl_map[name] = root
-    powercaps = [Powercap(name, root) for name, root in rapl_map.iteritems()]
+    powercaps = [Powercap(name, root) for name, root in rapl_map.items()]
 
     pl1_path = os.path.join(powercap, 'intel-rapl:0',
                             'constraint_0_power_limit_uw')

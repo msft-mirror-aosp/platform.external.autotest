@@ -11,6 +11,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input.input_device import InputDevice
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import upstart
+from six.moves import range
 
 
 # Possible display power settings. Copied from chromeos::DisplayPowerState
@@ -248,7 +249,7 @@ def charge_control_by_ectool(is_charge, ignore_status=True):
     Raises:
       error.CmdError: if ectool returns non-zero exit status.
     """
-    for i in xrange(ECTOOL_CHARGECONTROL_RETRY_TIMES):
+    for i in range(ECTOOL_CHARGECONTROL_RETRY_TIMES):
         if _charge_control_by_ectool(is_charge, ignore_status):
             return True
 
@@ -276,7 +277,7 @@ def get_core_keyvals(keyvals):
                          .*_[cg]pu(freq(_\d+)+)?_\d{3,}_.*|
                          .*cpu(idle|pkg)[ABD-Za-z0-9_\-]+C[^0].*
                          """, re.X)
-    return {k: v for k, v in keyvals.iteritems() if not matcher.match(k)}
+    return {k: v for k, v in keyvals.items() if not matcher.match(k)}
 
 
 class BacklightException(Exception):
@@ -636,7 +637,7 @@ class PowerPrefChanger(object):
 
     def __init__(self, prefs):
         shutil.copytree(self._PREFDIR, self._TEMPDIR)
-        for name, value in prefs.iteritems():
+        for name, value in prefs.items():
             utils.write_one_line('%s/%s' % (self._TEMPDIR, name), value)
         utils.system('mount --bind %s %s' % (self._TEMPDIR, self._PREFDIR))
         upstart.restart_job('powerd')
@@ -723,7 +724,7 @@ class Registers(object):
 
     def _verify_registers(self, reg_name, read_fn, match_list):
         errors = 0
-        for k, v in match_list.iteritems():
+        for k, v in match_list.items():
             r = read_fn(k)
             for item in v:
                 good = self._shift_mask_match(reg_name, r, item)
@@ -743,7 +744,7 @@ class Registers(object):
         @param match_list: match list
         """
         errors = 0
-        for cpu_id in xrange(0, max(utils.count_cpus(), 1)):
+        for cpu_id in range(0, max(utils.count_cpus(), 1)):
             self._cpu_id = cpu_id
             errors += self._verify_registers('msr', self._read_msr, match_list)
         return errors

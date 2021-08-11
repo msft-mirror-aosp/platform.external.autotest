@@ -279,19 +279,19 @@ class power_Test(test.test):
         self.publish_keyvals()
 
         # publish power values
-        for key, values in self.keyvals.iteritems():
+        for key, values in self.keyvals.items():
             if key.endswith('pwr_avg'):
                 self.output_perf_value(description=key, value=values, units='W',
                         higher_is_better=False, graph='power')
 
         # publish temperature values
-        for key, values in self.keyvals.iteritems():
+        for key, values in self.keyvals.items():
             if key.endswith('temp_avg'):
                 self.output_perf_value(description=key, value=values, units='C',
                         higher_is_better=False, graph='temperature')
 
         # publish fps values
-        for key, values in self.keyvals.iteritems():
+        for key, values in self.keyvals.items():
             if key.endswith('fps_avg'):
                 self.output_perf_value(description=key, value=values,
                         units='fps', higher_is_better=True, graph='fps')

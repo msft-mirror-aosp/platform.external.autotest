@@ -1803,7 +1803,7 @@ def rdmsr(address, cpu=0):
     """
     Reads an x86 MSR from the specified CPU, returns as long integer.
     """
-    with open('/dev/cpu/%s/msr' % cpu, 'r', 0) as fd:
+    with open('/dev/cpu/%s/msr' % cpu, 'rb', 0) as fd:
         fd.seek(address)
         return struct.unpack('=Q', fd.read(8))[0]
 

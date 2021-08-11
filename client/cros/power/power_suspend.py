@@ -13,6 +13,8 @@ from autotest_lib.client.cros.power import sys_power
 #pylint: disable=W0611
 from autotest_lib.client.cros import flimflam_test_path
 import flimflam
+from six.moves import range
+
 
 class Suspender(object):
     """Class for suspend/resume measurements.
@@ -237,7 +239,7 @@ class Suspender(object):
         false if took too long
         """
         finished_regex = re.compile(r'powerd_suspend\[\d+\]: Resume finished')
-        for retry in xrange(retries + 1):
+        for retry in range(retries + 1):
             lines = self._log_file.readlines()
             if lines:
                 if self._logs and self._logs[-1][-1] != '\n':
@@ -255,7 +257,7 @@ class Suspender(object):
     def _ts(self, name, retries=11):
         """Searches logs for last timestamp with a given suspend message."""
         # Occasionally need to retry due to races from process wakeup order
-        for retry in xrange(retries + 1):
+        for retry in range(retries + 1):
             try:
                 f = open(self._TIMINGS_FILE)
                 for line in f:
@@ -442,7 +444,7 @@ class Suspender(object):
 
         # TODO(scottz): warning_monitor crosbug.com/38092
         log_len = len(self._logs)
-        for i in xrange(log_len):
+        for i in range(log_len):
             line = self._logs[i]
             if warning_regex.search(line):
                 # match the source file from the WARNING line, and the
@@ -503,7 +505,7 @@ class Suspender(object):
                   ' ArcPowerManagerService:D"'
         regex_resume = re.compile(r'^\s*(\d+\.\d+).*ArcPowerManagerService: '
                                   'Device finished resuming$')
-        for retry in xrange(retries + 1):
+        for retry in range(retries + 1):
             arc_logcat = utils.system_output(command, ignore_status=False)
             arc_logcat = arc_logcat.splitlines()
             for line in arc_logcat:
@@ -550,7 +552,7 @@ class Suspender(object):
         try:
             iteration = len(self.failures) + len(self.successes) + 1
             # Retry suspend in case we hit a known (allowlisted) bug
-            for _ in xrange(10):
+            for _ in range(10):
                 # Clear powerd_suspend RTC timestamp, to avoid stale results.
                 utils.open_write_close(self.HWCLOCK_FILE, '')
                 self._reset_logs()

@@ -32,7 +32,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             logging.debug('Canceling the in-progress update.')
             self._restart_update_engine()
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
-
+        if self._m2n:
+            self._restore_stateful()
 
     def _wait_for_reboot_after_update(self, timeout_minutes=15):
         """
@@ -136,7 +137,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             raise error.TestFail('Unknown interrupt type: %s' % interrupt)
         tpm_utils.ClearTPMOwnerRequest(self._host)
 
-        if m2n:
+        self._m2n = m2n
+        if self._m2n:
             # Provision latest stable build for the current build.
             build_name = self._get_latest_serving_stable_build()
 

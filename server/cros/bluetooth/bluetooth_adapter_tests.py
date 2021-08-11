@@ -777,6 +777,10 @@ class BluetoothAdapterTests(test.test):
     # Path for usbmon logs
     USBMON_DIR_LOG_PATH = '/var/log/usbmon'
 
+    # Parameters for usbmon log rotation
+    USBMON_SINGLE_FILE_MAX_SIZE = '10M'  # 10M bytes
+    USBMON_NUM_OF_ROTATE_FILE = 2
+
     # The agent capability of various device types.
     # Currently all is set to NoInputNoOutput since currently we don't have
     # a way to report the displayed passkey to the device in case of
@@ -1569,8 +1573,10 @@ class BluetoothAdapterTests(test.test):
         # Time format. Ex, 2020_02_20_17_52_45
         now = time.strftime("%Y_%m_%d_%H_%M_%S")
         file_name = 'usbmon_%s' % now
-        self.host.run_background('tcpdump -i usbmon0 -w %s/%s' %
-                                 (self.USBMON_DIR_LOG_PATH, file_name))
+        self.host.run_background('tcpdump -i usbmon0 -w %s/%s -C %s -W %d' %
+                                 (self.USBMON_DIR_LOG_PATH, file_name,
+                                  self.USBMON_SINGLE_FILE_MAX_SIZE,
+                                  self.USBMON_NUM_OF_ROTATE_FILE))
 
 
     def log_message(self, msg):

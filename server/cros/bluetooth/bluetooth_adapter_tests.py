@@ -1247,7 +1247,7 @@ class BluetoothAdapterTests(test.test):
         self.enable_disable_ui(enable=False)
 
         self.start_new_btmon()
-        self.start_new_usbmon()
+        self.start_new_usbmon(reboot=True)
 
 
     def _wait_till_condition_holds(self, func, method_name,
@@ -1548,11 +1548,20 @@ class BluetoothAdapterTests(test.test):
         self.host.run_background('btmon -SAw %s/%s' % (self.BTMON_DIR_LOG_PATH,
                                                        file_name))
 
-    def start_new_usbmon(self):
-        """ Start a new USBMON process and save the log """
+    def start_new_usbmon(self, reboot=False):
+        """ Start a new USBMON process and save the log
+
+        @param reboot: True to indicate we are starting new usbmon on reboot
+                       False otherwise
+        """
 
         # Kill all usbmon process before creating a new one
         self.host.run('pkill tcpdump || true')
+
+        # Delete usbmon logs from previous tests unless we are starting another
+        # usbmon because of reboot.
+        if not reboot:
+            self.host.run('rm -f %s/*' % (self.USBMON_DIR_LOG_PATH))
 
         # Make sure the directory exists
         self.host.run('mkdir -p %s' % self.USBMON_DIR_LOG_PATH)

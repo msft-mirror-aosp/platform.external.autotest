@@ -27,13 +27,13 @@ class power_BatteryCharge(power_test.power_Test):
             raise error.TestNAError(
                   'This test needs to be run with the AC power online')
 
-        self._services = service_stopper.ServiceStopper(
-            service_stopper.ServiceStopper.POWER_DRAW_SERVICES + ['ui'])
-        self._services.stop_services()
-
         super(power_BatteryCharge, self).initialize(seconds_period=20,
                                                     pdash_note=pdash_note,
                                                     force_discharge=False)
+
+        self._services = service_stopper.ServiceStopper(
+            service_stopper.ServiceStopper.POWER_DRAW_SERVICES + ['ui'])
+        self._services.stop_services()
 
     def run_once(self, max_run_time=180, percent_charge_to_add=1,
                  percent_initial_charge_max=None,

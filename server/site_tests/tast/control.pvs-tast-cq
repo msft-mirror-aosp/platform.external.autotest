@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chrome OS Team'
-NAME = 'tast.pvs-uprev-general'
+NAME = 'tast.pvs-tast-cq'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:pvs-uprev-general'
+ATTRIBUTES = 'suite:pvs-tast-cq'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
@@ -14,10 +14,12 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-This test suite is part of the Platform Validation Suite, and verifies that a
-given kernel uprev has achieved the quality necessary to be rolled out to
-users.  It can run on Moblab and has no special test bed requirements.
-For more info on PVS, please check out go/cros-pvs-prd.
+This test suite is part of the Platform Validation Suite and contains all
+critical (CQ-blocking) tast tests that can run on Moblab with no special
+test bed requirements. It is intended to mirror the bvt-tast-cq test suite as
+closely as possible.
+For more info on PVS, please check out go/cros-pvs
+For partner-facing docs, see https://chromeos.google.com/partner/dlm/docs/PVS/pvs_partner_documentation.html
 '''
 def run(machine):
     job.run_test('tast',

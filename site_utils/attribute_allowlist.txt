@@ -272,7 +272,7 @@ suite:power_requirements
 suite:powerplay
 suite:push_to_prod
 suite:pvs-staging
-suite:pvs-uprev-general
+suite:pvs-tast-cq
 suite:reboot_stress
 suite:regression
 suite:rlz

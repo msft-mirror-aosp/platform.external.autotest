@@ -10,7 +10,6 @@ graphics_GLBench
 graphics_GLMark2
 graphics_Idle
 graphics_Check
-logging_CrashSender
 logging_UdevCrash
 logging_UserCrash
 login_LoginSuccess

@@ -236,7 +236,7 @@ class FioTest(test.test):
                 if self._error_code != 0 and self._fail_count == 0:
                     self._fail_count = 1
             elif k.endswith('_total_err'):
-                self._fail_count = int(v)
+                self._fail_count += int(v)
         if self._fail_count > 0:
             if self.REMOVABLE and not self.__verify_only:
                 raise error.TestWarn('%s failed verifications, '

@@ -284,12 +284,6 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
 
             # After each test, clear out all the changes that were made to the
             # device IP settings, routes, interfaces, etc.
-            self.context.router.host.run(
-                    'sudo ip addr del %s/24 dev %s' %
-                    (self._router_lan_ip_addr, self._router_lan_iface_name))
-            self.context.pcap_host.host.run(
-                    'sudo ip addr del %s/24 dev %s' %
-                    (self._pcap_lan_ip_addr, self._pcap_lan_iface_name))
             self.context.client.host.run(
                     'sudo ip route del table 255 %s via %s dev %s' %
                     (self._pcap_lan_ip_addr, self.context.router.wifi_ip,
@@ -298,6 +292,12 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                     'sudo ip route del table 255 %s via %s dev %s' %
                     (self.context.client.wifi_ip, self._router_lan_ip_addr,
                      self._router_lan_iface_name))
+            self.context.router.host.run(
+                    'sudo ip addr del %s/24 dev %s' %
+                    (self._router_lan_ip_addr, self._router_lan_iface_name))
+            self.context.pcap_host.host.run(
+                    'sudo ip addr del %s/24 dev %s' %
+                    (self._pcap_lan_ip_addr, self._pcap_lan_iface_name))
             self.context.router.host.run('sudo ip link set %s down' %
                                          self._router_lan_iface_name)
             self.context.pcap_host.host.run('sudo ip link set %s down' %

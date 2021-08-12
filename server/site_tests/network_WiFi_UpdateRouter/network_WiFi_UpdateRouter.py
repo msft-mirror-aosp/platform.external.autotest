@@ -38,13 +38,15 @@ class network_WiFi_UpdateRouter(test.test):
     version = 1
 
     STABLE_VERSIONS = {
-        ## crbug.com/1098024: these are left here as documentation of what the
-        # last stable version is, but the current updater code does not support
-        # them.
-        'whirlwind': StableVersion('whirlwind-test-ap-tryjob/R85-13310.60.0-b4641849',
-                                   '13310.60.2020_08_25_0212'),
-        'gale': StableVersion('gale-test-ap-tryjob/R88-13597.100.0-b4802789',
-                              '13597.100.2021_02_22_0025'),
+            ## crbug.com/1098024: these are left here as documentation of what the
+            # last stable version is, but the current updater code does not support
+            # them.
+            'whirlwind':
+            StableVersion('whirlwind-test-ap-tryjob/R85-13310.60.0-b4641849',
+                          '13310.60.2020_08_25_0212'),
+            'gale':
+            StableVersion('gale-test-ap-tryjob/R92-13982.81.0-b4959409',
+                          '13982.81.2021_08_11_1044'),
     }
 
     # List of files to remove.

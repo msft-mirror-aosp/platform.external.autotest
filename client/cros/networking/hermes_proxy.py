@@ -222,14 +222,16 @@ class ProfileProxy(object):
         profile_interface = dbus.Interface(
             self.profile, hermes_constants.HERMES_PROFILE_IFACE)
         logging.debug('ProfileProxy Manager enable_profile')
-        return profile_interface.Enable()  # dbus method call
+        return profile_interface.Enable(
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
     def disable(self):
         """ Disables a profile """
         profile_interface = dbus.Interface(
             self.profile, hermes_constants.HERMES_PROFILE_IFACE)
         logging.debug('ProfileProxy Manager disable_profile')
-        return profile_interface.Disable()  # dbus method call
+        return profile_interface.Disable(
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
     @property
     def profile(self):
@@ -346,7 +348,7 @@ class EuiccProxy(object):
         """Refreshes/Loads current euicc object profiles.
         """
         self.iface_euicc.RequestInstalledProfiles(
-            timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
     def request_pending_profiles(self, root_smds):
         """Refreshes/Loads current euicc object pending profiles.
@@ -355,7 +357,9 @@ class EuiccProxy(object):
         logging.debug(
             'Request pending profile call here for %s bus %s',
                 self._euicc, self._bus)
-        return self.iface_euicc.RequestPendingProfiles(dbus.String(root_smds))
+        return self.iface_euicc.RequestPendingProfiles(
+                    dbus.String(root_smds),
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
     def use_test_certs(self, is_test_certs):
         """
@@ -377,18 +381,24 @@ class EuiccProxy(object):
     def install_profile_from_activation_code(self, act_code, conf_code):
         """ Install the profile from given act code, confirmation code """
         profile = self.iface_euicc.InstallProfileFromActivationCode(
-            act_code, conf_code)
+                    act_code,
+                    conf_code,
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
         return profile
 
     def install_pending_profile(self, profile_path, conf_code):
         """ Install the profile from given confirmation code"""
         profile = self.iface_euicc.InstallPendingProfile(
-            profile_path, conf_code)
+                    profile_path,
+                    conf_code,
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
         return profile
 
     def uninstall_profile(self, profile_path):
         """ uninstall the given profile"""
-        self.iface_euicc.UninstallProfile(profile_path)
+        self.iface_euicc.UninstallProfile(
+                    profile_path,
+                    timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
     def get_installed_profiles(self):
         """

@@ -62,12 +62,12 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
             logging.info('Setting the next update response to be an update.')
             nebraska.update_config(no_update=False)
 
-            # Wait for the second update check.
+            # Wait for the subsequent update checks.
             try:
-                utils.poll_for_condition(
-                    lambda: len(self._get_update_requests()) == 2,
-                    desc='2nd periodic update check.',
-                    timeout=2 * periodic_interval)
+                utils.poll_for_condition(lambda: len(self._get_update_requests(
+                )) > 1,
+                                         desc='2nd periodic update check.',
+                                         timeout=2 * periodic_interval)
                 logging.info(
                         'Setting further update responses back to no update.')
                 nebraska.update_config(no_update=True)

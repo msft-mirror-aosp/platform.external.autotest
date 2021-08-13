@@ -108,8 +108,13 @@ class autoupdate_StatefulCompatibility(update_engine_test.UpdateEngineTest):
         payload_uri = 'gs://chromeos-image-archive/%s-release/%s/' % (
             target_board, version_regex)
 
-        candidate_uris = utils.system_output('gsutil ls -d %s' %
-                                             payload_uri).splitlines()
+        try:
+            candidate_uris = utils.system_output('gsutil ls -d %s' %
+                                                 payload_uri).splitlines()
+        except error.CmdError:
+            raise error.TestFail('Could not find a candidate url for %s with '
+                                 'version %s at %s.' %
+                                 (target_board, version_regex, payload_uri))
         candidate_uris.sort(cutils.compare_gs_uri_build_versions, reverse=True)
         return candidate_uris
 

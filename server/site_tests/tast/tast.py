@@ -26,7 +26,7 @@ from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.utils import labellib
-from autotest_lib.site_utils.rpm_control_system import utils as rpm_utils
+from autotest_lib.site_utils.rpm_control_system import rpm_constants
 from six.moves import urllib
 import yaml
 
@@ -412,9 +412,9 @@ class tast(test.test):
         info = self._host.host_info_store.get()
         args = []
         forward_args = [
-                (rpm_utils.POWERUNIT_HOSTNAME_KEY, 'powerunitHostname=%s'),
-                (rpm_utils.POWERUNIT_OUTLET_KEY, 'powerunitOutlet=%s'),
-                (rpm_utils.HYDRA_HOSTNAME_KEY, 'hydraHostname=%s'),
+                (rpm_constants.POWERUNIT_HOSTNAME_KEY, 'powerunitHostname=%s'),
+                (rpm_constants.POWERUNIT_OUTLET_KEY, 'powerunitOutlet=%s'),
+                (rpm_constants.HYDRA_HOSTNAME_KEY, 'hydraHostname=%s'),
         ]
         for key, var_arg in forward_args:
             if key in info.attributes:

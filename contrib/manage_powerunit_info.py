@@ -41,13 +41,14 @@ import common
 
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
-from autotest_lib.site_utils.rpm_control_system import utils as rpm_utils
+from autotest_lib.site_utils.rpm_control_system import rpm_constants
 
 
 # The host attribute key name for get rpm hostname.
-POWERUNIT_KEYS = [rpm_utils.POWERUNIT_HOSTNAME_KEY,
-                  rpm_utils.POWERUNIT_OUTLET_KEY,
-                  rpm_utils.HYDRA_HOSTNAME_KEY]
+POWERUNIT_KEYS = [
+        rpm_constants.POWERUNIT_HOSTNAME_KEY,
+        rpm_constants.POWERUNIT_OUTLET_KEY, rpm_constants.HYDRA_HOSTNAME_KEY
+]
 DEFAULT_SERVER = global_config.global_config.get_config_value(
         'SERVER', 'hostname', default=None)
 
@@ -162,8 +163,8 @@ def parse_options():
             logging.error('%s already exists.', options.csv_file)
             sys.exit(1)
     if options.action == 'list' and not options.hostnames:
-       logging.error('Please specify hostnames with -m')
-       sys.exit(1)
+        logging.error('Please specify hostnames with -m')
+        sys.exit(1)
     return options
 
 

@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """Unit tests for flashrom_handler.py."""
 
 import mock

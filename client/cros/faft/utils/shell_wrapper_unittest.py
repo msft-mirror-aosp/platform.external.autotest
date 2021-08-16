@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """Unit tests for shell_wrapper.py."""
 
 import mock

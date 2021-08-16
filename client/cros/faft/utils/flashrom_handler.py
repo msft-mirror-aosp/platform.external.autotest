@@ -366,7 +366,7 @@ class FlashromHandler(object):
         try:
             sig, _, rootk_offs, rootk_size = struct.unpack_from(
                     gbb_header_format, gbb_section)
-        except struct.error, e:
+        except struct.error as e:
             raise FlashromHandlerError(e)
 
         if sig != '$GBB' or (rootk_offs + rootk_size) > len(gbb_section):
@@ -578,7 +578,7 @@ class FlashromHandler(object):
         gbb_section = self.fum.get_section(self.image, 'FV_GBB')
         try:
             _, gbb_flags = struct.unpack_from(gbb_header_format, gbb_section)
-        except struct.error, e:
+        except struct.error as e:
             raise FlashromHandlerError(e)
         return gbb_flags
 
@@ -589,7 +589,7 @@ class FlashromHandler(object):
         gbb_section = self.fum.get_section(self.image, section_name)
         try:
             formatted_flags = struct.pack(gbb_header_format, flags)
-        except struct.error, e:
+        except struct.error as e:
             raise FlashromHandlerError(e)
         gbb_section = gbb_section[:12] + formatted_flags + gbb_section[16:]
         self.write_partial(section_name, gbb_section, write_through)

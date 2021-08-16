@@ -9,7 +9,7 @@ import os
 import re
 import struct
 
-import shell_wrapper
+from autotest_lib.client.cros.faft.utils import shell_wrapper
 
 
 class OSInterfaceError(Exception):

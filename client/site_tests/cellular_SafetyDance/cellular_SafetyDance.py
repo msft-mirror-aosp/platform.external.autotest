@@ -9,9 +9,11 @@ import time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.cellular import mm1_constants
 from autotest_lib.client.cros.networking import cellular_proxy
 from autotest_lib.client.cros.networking import shill_context
 from autotest_lib.client.cros.networking import shill_proxy
+from autotest_lib.client.cros.networking import mm1_proxy
 
 SERVICE_DISABLE_TIMEOUT = 60
 SERVICE_ENABLE_TIMEOUT = 60
@@ -86,6 +88,12 @@ class cellular_SafetyDance(test.test):
                     timeout_seconds=5)
         except shill_proxy.ShillProxyError:
             return
+
+        mm_proxy = mm1_proxy.ModemManager1Proxy.get_proxy()
+        if not mm_proxy:
+            raise error.TestFail('Could not get mm_proxy')
+        modem_proxy = mm_proxy.get_modem()
+        modem_proxy.wait_for_states([mm1_constants.MM_MODEM_STATE_REGISTERED])
 
         success, reason = self._filterexns(lambda:
                 self.test_env.shill.connect_service_synchronous(

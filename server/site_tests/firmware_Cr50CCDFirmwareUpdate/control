@@ -31,7 +31,8 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
+    fw_path = args_dict.get("fw_path", None)
     job.run_test('firmware_Cr50CCDFirmwareUpdate', host=host, cmdline_args=args,
-                 full_args=args_dict, rw_only=False)
+                 full_args=args_dict, rw_only=False, fw_path=fw_path)
 
 parallel_simple(run, machines)

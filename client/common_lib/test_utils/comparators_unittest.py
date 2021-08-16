@@ -25,6 +25,22 @@ class TestComparators(unittest.TestCase):
         self.assertTrue(foo == MockedClass)
         self.assertFalse(foo == FooClass)
 
+    def testAnyStringWith(self):
+        """Test AnyStringWith evaluates properly."""
+        f = comparators.Substring("foobar")
+        self.assertTrue(f == "foobarfizz")
+        self.assertTrue("foobarfizz" == f)
+        self.assertTrue(f == "fizzfoobar")
+        self.assertTrue(f == "foobar")
+        self.assertFalse(f == "fizzfoobuzzbar")
+        self.assertFalse(f == "foo")
+
+    def testAndComparitor(self):
+        """Test AndComparator evaluates properly."""
+        foo = comparators.Substrings(["host", "name", "cros"])
+        self.assertTrue(foo == "a.host.name.cros")
+        self.assertFalse(foo == "a.host.cros")
+
 
 if __name__ == "__main__":
     unittest.TestCase()

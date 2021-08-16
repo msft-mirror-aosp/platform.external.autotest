@@ -15,6 +15,8 @@ from autotest_lib.client.common_lib import seven
 
 
 class TestExecCompileFile(unittest.TestCase):
+    """Unittests for Seven helpers."""
+
     def _remove_tempfile(self):
         if hasattr(self, "tempfile"):
             try:

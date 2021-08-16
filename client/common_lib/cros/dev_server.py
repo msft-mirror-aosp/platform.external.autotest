@@ -28,7 +28,6 @@ from autotest_lib.client.common_lib import seven
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import retry
 
-# TODO(cmasone): redo this class using requests module; http://crosbug.com/30107
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
@@ -155,6 +154,7 @@ class MarkupStripper(six.moves.html_parser.HTMLParser):
     def __init__(self):
         self.reset()
         self.fed = []
+        self.convert_charrefs = True
 
 
     def handle_data(self, d):

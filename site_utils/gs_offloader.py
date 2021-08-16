@@ -16,9 +16,9 @@ from __future__ import print_function
 
 import abc
 try:
-  import cachetools
+    import cachetools
 except ImportError:
-  cachetools = None
+    cachetools = None
 import datetime
 import errno
 import glob
@@ -514,7 +514,7 @@ def _upload_files(host, path, result_pattern, multiprocessing,
             os.remove(test_result_file_gz)
             # Remove extracted test_result.xml file.
             if test_result_tgz_file:
-               os.remove(test_result_file)
+                os.remove(test_result_file)
 
 
 def _emit_gs_returncode_metric(returncode):
@@ -682,17 +682,17 @@ class GSOffloader(BaseGSOffloader):
         error_obj = _OffloadError(start_time)
         config = config_loader.load(dir_entry)
         if config:
-          # TODO(linxinan): use credential file assigned by the side_effect
-          # config.
-          if config.google_storage.bucket:
-            gs_prefix = ('' if config.google_storage.bucket.startswith('gs://')
-                         else 'gs://')
-            self._gs_uri = gs_prefix + config.google_storage.bucket
+            # TODO(linxinan): use credential file assigned by the side_effect
+            # config.
+            if config.google_storage.bucket:
+                gs_prefix = ('' if config.google_storage.bucket.startswith('gs://')
+                             else 'gs://')
+                self._gs_uri = gs_prefix + config.google_storage.bucket
         else:
-          # For now, the absence of config does not block gs_offloader
-          # from uploading files via default credential.
-          logging.debug('Failed to load the side effects config in %s.',
-                        dir_entry)
+            # For now, the absence of config does not block gs_offloader
+            # from uploading files via default credential.
+            logging.debug('Failed to load the side effects config in %s.',
+                          dir_entry)
         try:
             sanitize_dir(dir_entry)
             if LIMIT_FILE_COUNT:
@@ -805,16 +805,16 @@ class FakeGSOffloader(BaseGSOffloader):
 
 
 class OptionalMemoryCache(object):
-   """Implements memory cache if cachetools module can be loaded.
+    """Implements memory cache if cachetools module can be loaded.
 
    If the platform has cachetools available then the cache will
    be created, otherwise the get calls will always act as if there
    was a cache miss and the set/delete will be no-ops.
    """
-   cache = None
+    cache = None
 
-   def setup(self, age_to_delete):
-       """Set up a TTL cache size based on how long the job will be handled.
+    def setup(self, age_to_delete):
+        """Set up a TTL cache size based on how long the job will be handled.
 
        Autotest jobs are handled by gs_offloader until they are deleted from
        local storage, base the cache size on how long that is.
@@ -822,34 +822,34 @@ class OptionalMemoryCache(object):
        @param age_to_delete: Number of days after which items in the cache
                              should expire.
        """
-       if cachetools:
-           # Min cache is 1000 items for 10 mins. If the age to delete is 0
-           # days you still want a short / small cache.
-           # 2000 items is a good approximation for the max number of jobs a
-           # moblab # can produce in a day, lab offloads immediatly so
-           # the number of carried jobs should be very small in the normal
-           # case.
-           ttl = max(age_to_delete * 24 * 60 * 60, 600)
-           maxsize = max(age_to_delete * 2000, 1000)
-           job_timestamp_cache.cache = cachetools.TTLCache(maxsize=maxsize,
-                                                           ttl=ttl)
+        if cachetools:
+            # Min cache is 1000 items for 10 mins. If the age to delete is 0
+            # days you still want a short / small cache.
+            # 2000 items is a good approximation for the max number of jobs a
+            # moblab # can produce in a day, lab offloads immediatly so
+            # the number of carried jobs should be very small in the normal
+            # case.
+            ttl = max(age_to_delete * 24 * 60 * 60, 600)
+            maxsize = max(age_to_delete * 2000, 1000)
+            job_timestamp_cache.cache = cachetools.TTLCache(maxsize=maxsize,
+                                                            ttl=ttl)
 
-   def get(self, key):
-       """If we have a cache try to retrieve from it."""
-       if self.cache is not None:
-           result = self.cache.get(key)
-           return result
-       return None
+    def get(self, key):
+        """If we have a cache try to retrieve from it."""
+        if self.cache is not None:
+            result = self.cache.get(key)
+            return result
+        return None
 
-   def add(self, key, value):
-       """If we have a cache try to store key/value."""
-       if self.cache is not None:
-           self.cache[key] = value
+    def add(self, key, value):
+        """If we have a cache try to store key/value."""
+        if self.cache is not None:
+            self.cache[key] = value
 
-   def delete(self, key):
-       """If we have a cache try to remove a key."""
-       if self.cache is not None:
-           return self.cache.delete(key)
+    def delete(self, key):
+        """If we have a cache try to remove a key."""
+        if self.cache is not None:
+            return self.cache.delete(key)
 
 
 job_timestamp_cache = OptionalMemoryCache()
@@ -1051,7 +1051,9 @@ class Offloader(object):
     def _remove_offloaded_jobs(self):
         """Removed offloaded jobs from `self._open_jobs`."""
         removed_job_count = 0
-        for jobkey, job in self._open_jobs.items():
+        # must be list to make a copy of the dictionary to allow deletion
+        # during iterations.
+        for jobkey, job in list(six.iteritems(self._open_jobs)):
             if (
                     not os.path.exists(job.dirname)
                     or _is_uploaded(job.dirname)):

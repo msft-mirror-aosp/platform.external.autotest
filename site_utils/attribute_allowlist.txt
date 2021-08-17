@@ -273,6 +273,7 @@ suite:power_qual_full
 suite:power_requirements
 suite:powerplay
 suite:push_to_prod
+suite:pvs-audio
 suite:pvs-staging
 suite:pvs-tast-cq
 suite:reboot_stress

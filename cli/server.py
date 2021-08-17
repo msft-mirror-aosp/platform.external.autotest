@@ -30,7 +30,6 @@ from autotest_lib.client.common_lib import revision_control
 # The django setup is moved here as test_that uses sqlite setup. If this line
 # is in server_manager, test_that unittest will fail.
 from autotest_lib.frontend import setup_django_environment
-from autotest_lib.site_utils import server_manager_utils
 
 try:
     from skylab_inventory import text_manager
@@ -210,15 +209,7 @@ class server_list(action_common.atest_list, server):
                 self.failure(e, what_failed='Failed to list servers from skylab'
                              ' inventory.', item=self.hostname, fatal=True)
         else:
-            try:
-                return server_manager_utils.get_servers(
-                        hostname=self.hostname,
-                        role=self.role,
-                        status=self.status)
-            except (server_manager_utils.ServerActionError,
-                    error.InvalidDataError) as e:
-                self.failure(e, what_failed='Failed to find servers',
-                             item=self.hostname, fatal=True)
+            return None
 
 
     def output(self, results):
@@ -232,11 +223,11 @@ class server_list(action_common.atest_list, server):
                 if self.skylab:
                     formatter = skylab_server.format_servers_json
                 else:
-                    formatter = server_manager_utils.format_servers_json
+                    return None
             elif self.namesonly:
-                formatter = server_manager_utils.format_servers_nameonly
+                return None
             else:
-                formatter = server_manager_utils.format_servers
+                return None
             print(formatter(results))
         else:
             self.failure('No server is found.',

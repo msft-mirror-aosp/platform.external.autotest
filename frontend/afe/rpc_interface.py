@@ -56,8 +56,7 @@ from autotest_lib.server.cros.dynamic_suite import (constants,
                                                     suite_common, tools)
 from autotest_lib.server.cros.dynamic_suite.suite import Suite
 from autotest_lib.server.lib import status_history
-from autotest_lib.site_utils import (job_history, server_manager_utils,
-                                     stable_version_utils)
+from autotest_lib.site_utils import job_history, stable_version_utils
 from django.db import connection as db_connection
 from django.db import transaction
 from django.db.models import Count
@@ -2258,12 +2257,7 @@ def get_servers(hostname=None, role=None, status=None):
     @raises error.RPCException: If server database is not used.
     @return: A list of server names for servers with matching role and status.
     """
-    if not server_manager_utils.use_server_db():
-        raise error.RPCException('Server database is not enabled. Please try '
-                                 'retrieve servers from global config.')
-    servers = server_manager_utils.get_servers(hostname=hostname, role=role,
-                                               status=status)
-    return [s.get_details() for s in servers]
+    raise DeprecationWarning("server_manager_utils has been removed.")
 
 
 @rpc_utils.route_rpc_to_main

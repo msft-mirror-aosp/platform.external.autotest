@@ -23,9 +23,7 @@ def run_TS(machine):
         enable_default_apps=True,
         tag='arm.CtsAppSecurityHostTestCases',
         test_name='cheets_CTS_R.arm.CtsAppSecurityHostTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsAppSecurityHostTestCases',
-                # Workaround for b/191653140: must be removed on the CTS 11r5 uprev.
-                '--exclude-filter', 'CtsAppSecurityHostTestCases android.appsecurity.cts.DocumentsTest#testRestrictStorageAccessFrameworkDisabled_notBlockFromTree'],
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsAppSecurityHostTestCases'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsAppSecurityHostTestCases',
         target_plan=None,

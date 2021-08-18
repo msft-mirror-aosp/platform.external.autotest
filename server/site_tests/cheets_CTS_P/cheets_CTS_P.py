@@ -30,8 +30,8 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _PARTNER_CTS = 'gs://chromeos-partner-cts/'
 _CTS_URI = {
-        'arm': _PUBLIC_CTS + 'android-cts-9.0_r16-linux_x86-arm.zip',
-        'x86': _PUBLIC_CTS + 'android-cts-9.0_r16-linux_x86-x86.zip',
+        'arm': _PUBLIC_CTS + 'android-cts-9.0_r17-linux_x86-arm.zip',
+        'x86': _PUBLIC_CTS + 'android-cts-9.0_r17-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
@@ -39,8 +39,8 @@ _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
 # Internal uprev for all CTS modules.
 _INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/P/'
 _CTS_LATEST_URI = {
-        'arm': _INTERNAL_CTS + 'android-cts-9.0_r16-linux_x86-arm.zip',
-        'x86': _INTERNAL_CTS + 'android-cts-9.0_r16-linux_x86-x86.zip',
+        'arm': _INTERNAL_CTS + 'android-cts-9.0_r17-linux_x86-arm.zip',
+        'x86': _INTERNAL_CTS + 'android-cts-9.0_r17-linux_x86-x86.zip',
 }
 
 

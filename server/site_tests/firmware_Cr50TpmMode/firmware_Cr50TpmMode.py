@@ -67,8 +67,10 @@ class firmware_Cr50TpmMode(Cr50Test):
         """
         mode_param = 'disable' if disable_tpm else 'enable'
         opt_text = '--tpm_mode' if long_opt else '-m'
-        return cr50_utils.GSCTool(self.host,
-                 ['-a', opt_text, mode_param]).stdout.strip()
+        result = cr50_utils.GSCTool(
+                self.host, ['-a', opt_text, mode_param]).stdout.strip()
+        logging.info('TPM Mode: %r', result)
+        return result
 
     def run_test_tpm_mode(self, disable_tpm, long_opt):
         """Run a test for the case of either disabling TPM or enabling.

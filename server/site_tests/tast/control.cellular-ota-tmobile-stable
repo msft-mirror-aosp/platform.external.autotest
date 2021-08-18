@@ -15,7 +15,8 @@ DOC = '''
 Run the unstable Tast tests which verify basic Cellular functionality.
 
 "group:cellular" indicates that the test runs on DUTs with a Cellular modem.
-  * "cellular_unstable": Unstable tests that will be discluded from this suite.
+"cellular_sim_active": Used to select tests that require a sim card .
+"cellular_unstable": Unstable tests that will be excluded from this suite.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
@@ -27,7 +28,7 @@ See http://go/tast-failures for information about investigating failures.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:cellular" && !"cellular_unstable")'],
+                 test_exprs=['("group:cellular" && "cellular_sim_active" && !"cellular_unstable")'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args)
 

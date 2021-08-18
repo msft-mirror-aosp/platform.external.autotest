@@ -23,4 +23,5 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_uniform_texel_buffer#1024" />
   <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_vertex_buffer#1024" />
   <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_src_transfer_dst#1024" />
+  <Entry include="CtsNetTestCases android.net.wifi.cts.WifiManagerTest#testWifiScanTimestamp" />
 </SubPlan>

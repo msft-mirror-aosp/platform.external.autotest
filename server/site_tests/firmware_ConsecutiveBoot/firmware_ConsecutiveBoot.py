@@ -68,7 +68,7 @@ class firmware_ConsecutiveBoot(FirmwareTest):
                     self.POWER_STATE_G3, pwr_retries=13, orig_boot_id=boot_id)
 
         # Retry in case power_short_press was not registered.
-        for i in xrange(self.POWER_ON_RETRY):
+        for i in range(self.POWER_ON_RETRY):
             logging.info("sleep %d, tap power key to boot.",
                          self.faft_config.powerup_ready)
             time.sleep(self.faft_config.powerup_ready)
@@ -92,7 +92,7 @@ class firmware_ConsecutiveBoot(FirmwareTest):
 
     def run_once(self, host, dev_mode=False):
         """Runs a single iteration of the test."""
-        for i in xrange(self.faft_iterations):
+        for i in range(self.faft_iterations):
             logging.info('======== Running FAFT ITERATION %d/%s ========',
                          i+1, self.faft_iterations)
             logging.info("Expected boot fine, full power off DUT and on.")

@@ -94,7 +94,7 @@ class firmware_CompareChipFwToShellBall(FirmwareTest):
 
         chip_types = set()
         port2chip = []
-        for port in xrange(self.MAXPORTS):
+        for port in range(self.MAXPORTS):
             chip = self.dut_get_chip(port)
             if not chip:
                 return (chip_types, port2chip)

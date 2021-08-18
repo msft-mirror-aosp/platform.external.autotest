@@ -127,7 +127,7 @@ class firmware_PDProtocol(FirmwareTest):
 
         # Check servo_v4 is negotiated
         if self.pdtester_pd_utils.is_disconnected(self.pdtester_port):
-            raise error.TestFail('PD not connected')
+            raise error.TestNAError('PD not connected')
 
         # TODO(b:152148025): Directly set role as pdsnkdts might fail the
         # PD communication. In short term, we could use PR SWAP instead, and

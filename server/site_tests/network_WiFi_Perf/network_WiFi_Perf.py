@@ -7,7 +7,6 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
-from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.network import expected_performance_results
 from autotest_lib.server.cros.network import netperf_runner
@@ -40,11 +39,6 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                     netperf_runner.NetperfConfig.TEST_TYPE_UDP_BIDIRECTIONAL),
     ]
 
-    DEFAULT_ROUTER_LAN_IP_ADDRESS = "192.168.1.50"
-    DEFAULT_PCAP_LAN_IP_ADDRESS = "192.168.1.51"
-    DEFAULT_ROUTER_LAN_IFACE_NAME = "eth1"
-    DEFAULT_PCAP_LAN_IFACE_NAME = "eth1"
-
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hook into super class to take control files parameters.
 
@@ -53,18 +47,6 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
         """
         self._should_required = 'should' in commandline_args
         self._power_save_off = 'power_save_off' in commandline_args
-
-        get_arg_value_or_default = lambda attr, default: commandline_args[
-                attr] if attr in commandline_args else default
-        self._router_lan_ip_addr = get_arg_value_or_default(
-                'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)
-        self._router_lan_iface_name = get_arg_value_or_default(
-                'router_lan_iface_name', self.DEFAULT_ROUTER_LAN_IFACE_NAME)
-        self._pcap_lan_ip_addr = get_arg_value_or_default(
-                'pcap_lan_ip_addr', self.DEFAULT_PCAP_LAN_IP_ADDRESS)
-        self._pcap_lan_iface_name = get_arg_value_or_default(
-                'pcap_lan_iface_name', self.DEFAULT_PCAP_LAN_IFACE_NAME)
-
         if 'governor' in commandline_args:
             self._governor = commandline_args['governor']
             # validate governor string. Not all machines will support all of
@@ -243,35 +225,8 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                     ssid=self.context.router.get_ssid(),
                     security_config=ap_config.security_config)
             self.context.assert_connect_wifi(assoc_params)
-
-            # The router device is not configured to automatically assign ethernet
-            # IP addresses or set up ethernet traffic routes, so we have to set
-            # these up manually.
-            self.context.router.host.run('sudo ip link set %s up' %
-                                         self._router_lan_iface_name)
-            self.context.pcap_host.host.run('sudo ip link set %s up' %
-                                            self._pcap_lan_iface_name)
-            self.context.router.host.run(
-                    'sudo ip addr replace %s/24 dev %s' %
-                    (self._router_lan_ip_addr, self._router_lan_iface_name))
-            self.context.pcap_host.host.run(
-                    'sudo ip addr replace %s/24 dev %s' %
-                    (self._pcap_lan_ip_addr, self._pcap_lan_iface_name))
-            self.context.client.host.run(
-                    'sudo ip route replace table 255 %s via %s dev %s' %
-                    (self._pcap_lan_ip_addr, self.context.router.wifi_ip,
-                     self.context.client.wifi_if))
-            self.context.pcap_host.host.run(
-                    'sudo ip route replace table 255 %s via %s dev %s' %
-                    (self.context.client.wifi_ip, self._router_lan_ip_addr,
-                     self._router_lan_iface_name))
-
-            pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
-                                                 self.context.pcap_host.host)
-            session = netperf_session.NetperfSession(
-                    self.context.client,
-                    self.context.pcap_host,
-                    server_interface=pcap_lan_iface)
+            session = netperf_session.NetperfSession(self.context.client,
+                                                     self.context.router)
 
             # Flag a test error if we disconnect for any reason.
             with self.context.client.assert_no_disconnects():
@@ -282,26 +237,6 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                             self.do_run(ap_config, session,
                                         not (self._power_save_off), governor))
 
-            # After each test, clear out all the changes that were made to the
-            # device IP settings, routes, interfaces, etc.
-            self.context.client.host.run(
-                    'sudo ip route del table 255 %s via %s dev %s' %
-                    (self._pcap_lan_ip_addr, self.context.router.wifi_ip,
-                     self.context.client.wifi_if))
-            self.context.pcap_host.host.run(
-                    'sudo ip route del table 255 %s via %s dev %s' %
-                    (self.context.client.wifi_ip, self._router_lan_ip_addr,
-                     self._router_lan_iface_name))
-            self.context.router.host.run(
-                    'sudo ip addr del %s/24 dev %s' %
-                    (self._router_lan_ip_addr, self._router_lan_iface_name))
-            self.context.pcap_host.host.run(
-                    'sudo ip addr del %s/24 dev %s' %
-                    (self._pcap_lan_ip_addr, self._pcap_lan_iface_name))
-            self.context.router.host.run('sudo ip link set %s down' %
-                                         self._router_lan_iface_name)
-            self.context.pcap_host.host.run('sudo ip link set %s down' %
-                                            self._pcap_lan_iface_name)
             # Clean up router and client state for the next run.
             self.context.client.shill.disconnect(self.context.router.get_ssid())
             self.context.router.deconfig()

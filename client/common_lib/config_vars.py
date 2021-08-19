@@ -11,12 +11,14 @@ Functions to load config variables from JSON with transformation.
 * A condition is a key-value dictionary where the key is an external variable
   name and the value is a case-insensitive regexp to match. If multiple
   variables used, they all must match for the condition to succeed.
-* A special key "value" is the value to assign to the variable.
+* A special key "value" is the value to assign if condition succeeds.
 * The first matching condition wins.
 * Condition with zero external vars always succeeds - it should be the last in
-  the list as the last resort case.
-* If no condition matches, it's an error.
+  the list as a last resort case.
+* If none of conditions match, it's an error.
 * The value, in turn, can be a nested list of conditions.
+* If the value is a boolean, the condition checks for the presence or absence
+  of an external variable.
 
 Example:
     Python source:
@@ -30,7 +32,7 @@ Example:
         #               "cuj_username": "user",
         #               "private_key": "SECRET",
         #               "some_var": "val for board1",
-        #               "some_var2": "val2",
+        #               "some_var2": "default val2",
         #           }
 
         config = TransformJsonFile(
@@ -60,7 +62,7 @@ Example:
                     "value": "val for board2",
                 },
                 {
-                    "value": "val for board2",
+                    "value": "default val",
                 }
             ],
             "some_var2": [
@@ -70,10 +72,12 @@ Example:
                     "value": "val2 for board2 model2",
                 },
                 {
-                    "value": "val2",
+                    "value": "default val2",
                 }
             ],
         }
+
+See more examples in config_vars_unittest.py
 
 """
 
@@ -117,7 +121,7 @@ def TransformConfig(data, extvars):
         _Error('Top level configuration object must be a dictionary but got ' +
                data.__class__.__name__)
 
-    return {key: _GetVal(val, extvars) for key, val in data.items()}
+    return {key: _GetVal(key, val, extvars) for key, val in data.items()}
 
 
 def TransformJsonText(text, extvars):
@@ -160,10 +164,11 @@ def TransformJsonFile(file_name, extvars):
     return TransformConfig(data, extvars)
 
 
-def _GetVal(val, extvars):
+def _GetVal(key, val, extvars):
     """Calculates and returns the config variable value.
 
     Args:
+        key (str): key for error reporting
         val (str | list): variable value or conditions list
         extvars (dict): external variables dictionary
 
@@ -179,43 +184,54 @@ def _GetVal(val, extvars):
 
     if not isinstance(val, list):
         _Error('Conditions must be an array but got ' + val.__class__.__name__,
-               json.dumps(val))
+               json.dumps(val), key)
 
     for cond in val:
         if not isinstance(cond, dict):
             _Error(
                     'Condition must be a dictionary but got ' +
-                    cond.__class__.__name__, json.dumps(cond))
+                    cond.__class__.__name__, json.dumps(cond), key)
         if 'value' not in cond:
             _Error('Missing mandatory "value" key from condition',
-                   json.dumps(cond))
+                   json.dumps(cond), key)
 
         for cond_key, cond_val in cond.items():
             if cond_key == 'value':
                 continue
+
+            if isinstance(cond_val, bool):
+                # Boolean value -> check if variable exists
+                if (cond_key in extvars) == cond_val:
+                    continue
+                else:
+                    break
+
             if cond_key not in extvars:
-                logging.warning('Ignored unknown external var: %s', cond_key)
+                logging.warning('Unknown external var: %s', cond_key)
                 break
             if re.search(cond_val, extvars[cond_key], re.I) is None:
                 break
         else:
-            return _GetVal(cond['value'], extvars)
+            return _GetVal(key, cond['value'], extvars)
 
     _Error('Condition did not match any external vars',
-           json.dumps(val, indent=4) + '\nvars: ' + extvars.__str__())
+           json.dumps(val, indent=4) + '\nvars: ' + extvars.__str__(), key)
 
 
-def _Error(text, extra=''):
-    """Reports and raise an error.
+def _Error(text, extra='', key=''):
+    """Reports and raises an error.
 
     Args:
         text (str): Error text
         extra (str, optional): potentially sensitive error text for verbose output
+        key (str): key for error reporting or empty string if none
 
     Raises:
         ConfigTransformError: error
     """
-    if VERBOSE:
+    if key:
+        text = key + ': ' + text
+    if VERBOSE and extra:
         text += ':\n' + extra
     logging.error('%s', text)
     raise ConfigTransformError(text)

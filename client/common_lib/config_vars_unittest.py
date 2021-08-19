@@ -254,6 +254,82 @@ class ConfigVarsTransformTestCase(unittest.TestCase):
                                 'b': 'vvvvv'
                         })
 
+    def testVarExists(self):
+        self.assertDictEqual(
+                TransformJsonText(
+                        """{
+                            "a": "zzz",
+                            "b": [
+                                {
+                                    "AAA": true,
+                                    "value": "aaa"
+                                },
+                                {
+                                    "value": "bbb"
+                                }
+                            ]
+                        }""", {"AAA": ""}), {
+                                'a': 'zzz',
+                                'b': 'aaa'
+                        })
+
+    def testVarExistsNot(self):
+        self.assertDictEqual(
+                TransformJsonText(
+                        """{
+                            "a": "zzz",
+                            "b": [
+                                {
+                                    "BBB": true,
+                                    "value": "aaa"
+                                },
+                                {
+                                    "value": "bbb"
+                                }
+                            ]
+                        }""", {"AAA": ""}), {
+                                'a': 'zzz',
+                                'b': 'bbb'
+                        })
+
+    def testVarNotExists(self):
+        self.assertDictEqual(
+                TransformJsonText(
+                        """{
+                            "a": "zzz",
+                            "b": [
+                                {
+                                    "AAA": false,
+                                    "value": "aaa"
+                                },
+                                {
+                                    "value": "bbb"
+                                }
+                            ]
+                        }""", {"AAA": ""}), {
+                                'a': 'zzz',
+                                'b': 'bbb'
+                        })
+
+    def testVarNotExistsNot(self):
+        self.assertDictEqual(
+                TransformJsonText(
+                        """{
+                            "a": "zzz",
+                            "b": [
+                                {
+                                    "BBB": false,
+                                    "value": "aaa"
+                                },
+                                {
+                                    "value": "bbb"
+                                }
+                            ]
+                        }""", {"AAA": ""}), {
+                                'a': 'zzz',
+                                'b': 'aaa'
+                        })
+
     def testEmptyInput(self):
         self.assertRaises(ValueError, TransformJsonText, '', {"qwe": "asd"})
 

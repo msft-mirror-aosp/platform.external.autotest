@@ -697,6 +697,51 @@ class TastTest(unittest.TestCase):
                                  maybemissingvars=arg)
         self._run_test(maybemissingvars=arg)
 
+    def testFillExtvars(self):
+        with tempfile.NamedTemporaryFile(suffix='.yaml',
+                                         dir=self._temp_dir) as temp_file:
+            yaml.dump({
+                    'var1': 'val1',
+                    'var2': 'val2'
+            },
+                      stream=temp_file,
+                      encoding='utf-8')
+
+            host = FakeHost(self.HOST, self.PORT)
+            host.host_info_store = host_info.InMemoryHostInfoStore(
+                    host_info.HostInfo(labels=[
+                            'plus', 'board:octopus', 'fleex', 'os:cros'
+                    ]))
+            self._test.initialize(
+                    host=host,
+                    test_exprs=self.TEST_PATTERNS,
+                    varsfiles=[temp_file.name],
+                    varslist=['var3=val3', 'var4=val4'],
+                    command_args=['arg1', 'arg2=arg2val', 'arg3:arg3val'])
+            self._test._tests_to_run = ['test1', 'test2']
+
+            self.maxDiff = None
+            self.assertDictEqual(
+                    {
+                            'var:var1': 'val1',
+                            'var:var2': 'val2',
+                            'var:var3': 'val3',
+                            'var:var4': 'val4',
+                            'tests:': 'test1\ntest2',
+                            'test:test1': '',
+                            'test:test2': '',
+                            'args:': 'arg1\narg2=arg2val\narg3:arg3val',
+                            'arg:arg1': 'arg1val',
+                            'arg:arg1': '',
+                            'arg:arg2': 'arg2val',
+                            'arg:arg3': 'arg3val',
+                            'labels:': 'plus\nboard:octopus\nfleex\nos:cros',
+                            'label:plus': '',
+                            'label:board': 'octopus',
+                            'label:fleex': '',
+                            'label:os': 'cros',
+                    }, self._test._fill_config_extvars())
+
 
 class TestInfo:
     """Wraps information about a Tast test.

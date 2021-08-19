@@ -15,8 +15,9 @@ import tempfile
 
 import dateutil.parser
 import six
-
+import yaml
 from autotest_lib.client.common_lib import base_job
+from autotest_lib.client.common_lib import config_vars
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import tpm_utils
@@ -24,12 +25,11 @@ from autotest_lib.server import test
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import wifi_test_context_manager
 from autotest_lib.server.hosts import cros_host
-from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
-from autotest_lib.utils import labellib
+from autotest_lib.server.hosts import servo_host
 from autotest_lib.site_utils.rpm_control_system import rpm_constants
+from autotest_lib.utils import labellib
 from six.moves import urllib
-import yaml
 
 # A datetime.DateTime representing the Unix epoch in UTC.
 _UNIX_EPOCH = dateutil.parser.parse('1970-01-01T00:00:00Z')
@@ -85,6 +85,11 @@ def _encode_json(j):
         return dict((_encode_json(k), _encode_json(v))
                     for k, v in six.iteritems(j))
     return j
+
+
+class TastConfigError(error.AutotestError):
+    """Indicates a problem with configuration files."""
+
 
 class tast(test.test):
     """Autotest server test that runs a Tast test suite.
@@ -249,7 +254,7 @@ class tast(test.test):
         self._shardindex = shardindex
         self._companion_duts = companion_duts
         self._maybemissingvars = maybemissingvars
-        self._pull_varsfiles_from_gs(vars_gs_path)
+        self._vars_gs_path = vars_gs_path
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -285,6 +290,8 @@ class tast(test.test):
         if not self._get_tests_to_run():
             return
 
+        self._pull_varsfile_from_gs()
+
         run_failed = False
         run_failed_msg = None
         try:
@@ -305,37 +312,38 @@ class tast(test.test):
         """
         self._fake_now = now
 
-    def _pull_varsfiles_from_gs(self, vars_gs_path):
-        """Pulls varsfiles from GS, stores it as a local file and appends the
-        file name to varsfiles.
+    def _pull_varsfile_from_gs(self):
+        """Pulls varsfiles from GS, does dynamic values transformation, stores
+        it as a local file and appends the file name to varsfiles.
+
+        Has to be called after _get_tests_to_run since it's using _tests_to_run.
 
         @param varsgspath Path to varsfiles in GS e.g.
             'config/perf_cuj/perf_cuj.config'.
+
+        @raises TastConfigError for config errors.
         """
-        if not vars_gs_path:
+        if not self._vars_gs_path:
             return
 
         devservers = dev_server.ImageServer.get_available_devservers()
         devserver_url = devservers[0][0]
         if not devserver_url:
-            logging.warning("No devserver_url")
-            return
+            raise TastConfigError('No devserver_url')
 
         logging.info('Using devserver: %s', devserver_url)
         labels = self._host.host_info_store.get().labels
         build = labellib.LabelsMapping(labels).get(labellib.Key.CROS_VERSION)
         if not build:
-            logging.warning(
-                    "Not able to detect build, means not running on Moblab.")
-            return
+            raise TastConfigError(
+                    'Not able to detect build, means not running on Moblab.')
 
         ds = dev_server.ImageServer(devserver_url)
         gs_bucket = dev_server._get_image_storage_server()
         if not gs_bucket:
-            logging.warning("No gs_bucket")
-            return
+            raise TastConfigError('No image storage server gs bucket')
 
-        config_path, config_file = os.path.split(vars_gs_path)
+        config_path, config_file = os.path.split(self._vars_gs_path)
         archive_url = os.path.join(gs_bucket, config_path.strip('/'))
         logging.info('Staging configuration from %s.', gs_bucket)
         try:
@@ -343,12 +351,11 @@ class tast(test.test):
                                archive_url=archive_url,
                                files=[config_file])
         except Exception as e:
-            logging.error('Staging artifacts failed: %s', str(e))
-            return
+            raise TastConfigError('Staging artifacts failed: %s', str(e))
 
         logging.info('Parsing configuration from %s.', archive_url)
         config_url = os.path.join(devserver_url, 'static',
-                                  vars_gs_path.strip('/'))
+                                  self._vars_gs_path.strip('/'))
         response = urllib.request.urlopen(config_url)
         vars = json.loads(response.read())
         test_args = dict()
@@ -356,10 +363,66 @@ class tast(test.test):
             test_args[key] = vars[key]
         logging.info('Read %d values from remote configuration.', len(vars))
 
+        extvars = self._fill_config_extvars()
+        test_args = config_vars.TransformConfig(test_args, extvars)
+
         with tempfile.NamedTemporaryFile(suffix='.yaml',
                                          delete=False) as temp_file:
             yaml.dump(test_args, stream=temp_file, default_flow_style=False)
             self._varsfiles.append(temp_file.name)
+
+    def _fill_config_extvars(self):
+        """Fill in external variables map for conditional config processing.
+
+        The sources used (in order of precedence low to high):
+          * --varsfiles.
+          * --varslist.
+          * list of tests to run.
+          * command_args: List of arguments passed on the command line via
+            test_that's --args flag, i.e. |args| in control file.
+          * DUT labels (with and without a value).
+
+        @returns external variables map.
+        """
+        # The latter overwrites the former.
+        extvars = {}
+
+        # Load varsfiles
+        for varsfile in self._varsfiles:
+            with open(varsfile, 'r') as f:
+                for key, val in yaml.load(f).items():
+                    if 'var:' + key in extvars:
+                        logging.info('var:%s overwritten', key)
+                    extvars['var:' + key] = val
+
+        # Load vars
+        for var in self._varslist:
+            key, val = var.split('=', 1)
+            if 'var:' + key in extvars:
+                logging.info('var:%s overwritten', key)
+            extvars['var:' + key] = val
+
+        # Load tests_to_run
+        extvars['tests:'] = '\n'.join(self._tests_to_run)
+        for test_to_run in self._tests_to_run:
+            extvars['test:' + test_to_run] = ''
+
+        # Load command_args
+        extvars['args:'] = '\n'.join(self._command_args)
+        for key, val in utils.args_to_dict(self._command_args).items():
+            extvars['arg:' + key] = val
+        for command_arg in self._command_args:
+            if '=' not in command_arg and ':' not in command_arg:
+                extvars['arg:' + command_arg] = ''
+
+        # Load labels
+        labels = self._host.host_info_store.get().labels
+        extvars['labels:'] = '\n'.join(labels)
+        for label in labels:
+            key, val = (label.split(':', 1) + [''])[0:2]
+            extvars['label:' + key] = val
+
+        return extvars
 
     def _get_path(self, path):
         """Returns the path to an installed Tast-related file or directory.

@@ -12,7 +12,7 @@ CRITERIA = """
 Check if the internal mic can record samples while the headset is also
 recording.
 """
-ATTRIBUTES = "suite:audio, suite:partners"
+ATTRIBUTES = ""
 TIME = 'SHORT'
 TEST_CATEGORY = 'PLAYBACKCAPTURE'
 TEST_CLASS = "audio"

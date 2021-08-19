@@ -93,7 +93,10 @@ class cellular_SafetyDance(test.test):
         if not mm_proxy:
             raise error.TestFail('Could not get mm_proxy')
         modem_proxy = mm_proxy.get_modem()
-        modem_proxy.wait_for_states([mm1_constants.MM_MODEM_STATE_REGISTERED])
+        modem_proxy.wait_for_states([
+                mm1_constants.MM_MODEM_STATE_REGISTERED,
+                mm1_constants.MM_MODEM_STATE_CONNECTED
+        ])
 
         success, reason = self._filterexns(lambda:
                 self.test_env.shill.connect_service_synchronous(

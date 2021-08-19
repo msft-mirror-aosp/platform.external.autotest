@@ -64,7 +64,8 @@ def mm_inhibit(is_inhibit, mm_proxy):
         logging.info('Modem Manager Inhibit/UnInhibit start')
         # This wait prevents inhibit call in middle of slot switches
         # triggered by chromium. They can happen on new build at first boot
-        result = mm_proxy.wait_for_modem(mm1_constants.MM_MODEM_POLL_TIME)
+        if is_inhibit:
+            mm_proxy.wait_for_modem(mm1_constants.MM_MODEM_POLL_TIME)
 
         mm_proxy.inhibit_device(dbus.Boolean(is_inhibit))
     except dbus.exceptions.DBusException as error:

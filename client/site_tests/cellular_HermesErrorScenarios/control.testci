@@ -13,7 +13,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "client"
-DEPENDENCIES = "testesim"
+DEPENDENCIES = "carrier:testesim"
 DOC = """
   Tests that Hermes Profile/Euicc error validation scenarios
 

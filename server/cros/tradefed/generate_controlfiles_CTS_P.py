@@ -216,14 +216,18 @@ _CONFIG_MODULE_COMMAND = "\'modprobe configs\'"
 # TODO(b/126741318): Fix performance regression and remove this.
 _SLEEP_60_COMMAND = "\'sleep 60\'"
 
+_MUTE_COMMAND = "\'cras_test_client --mute 1\'"
+
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
-    'CtsSecurityHostTestCases': [
-        _SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND
-    ],
-    # Tests are performance-sensitive, workaround to avoid CPU load on login.
-    # TODO(b/126741318): Fix performance regression and remove this.
-    'CtsViewTestCases': [_SLEEP_60_COMMAND],
+        'CtsSecurityHostTestCases':
+        [_SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND],
+        # Tests are performance-sensitive, workaround to avoid CPU load on login.
+        # TODO(b/126741318): Fix performance regression and remove this.
+        'CtsViewTestCases': [_SLEEP_60_COMMAND],
+        'CtsMediaStressTestCases': [_MUTE_COMMAND],
+        'CtsMediaTestCases': [_MUTE_COMMAND],
+        'CtsMediaTestCases.audio': [_MUTE_COMMAND],
 }
 CONFIG['LOGIN_PRECONDITION'] = {
     'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],

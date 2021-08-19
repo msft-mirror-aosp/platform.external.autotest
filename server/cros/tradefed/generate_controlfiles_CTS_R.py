@@ -190,8 +190,17 @@ _WIFI_CONNECT_COMMANDS = [
         "'android-sh -c \\'dumpsys wifi transports -eth\\''"
 ]
 
+_MUTE_COMMAND = "\'cras_test_client --mute 1\'"
+
 # Preconditions applicable to public and internal tests.
-CONFIG['PRECONDITION'] = {}
+CONFIG['PRECONDITION'] = {
+        'CtsMediaStressTestCases': [_MUTE_COMMAND],
+        'CtsMediaTestCases': [_MUTE_COMMAND],
+        'CtsMediaTestCases.audio': [_MUTE_COMMAND],
+        'CtsMediaTestCases.exclude-GLView': [_MUTE_COMMAND],
+        'CtsMediaTestCases.video': [_MUTE_COMMAND],
+}
+
 CONFIG['LOGIN_PRECONDITION'] = {
         'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
         'CtsJobSchedulerTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],

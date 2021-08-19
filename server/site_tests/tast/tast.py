@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import datetime
 import json
 import logging
 import os
@@ -41,6 +42,7 @@ _KEY_ERRORS = 'errors'
 _KEY_SKIP_REASON = 'skipReason'
 _KEY_REASON = 'reason'
 _KEY_TIME = 'time'
+_KEY_MISSING_REASON = 'missingReason'
 
 
 def split_arguments(args):
@@ -146,15 +148,18 @@ class tast(test.test):
     _JOB_STATUS_START = 'START'
     _JOB_STATUS_END_GOOD = 'END GOOD'
     _JOB_STATUS_END_FAIL = 'END FAIL'
-    _JOB_STATUS_END_ABORT = 'END ABORT'
+    _JOB_STATUS_END_NOSTATUS = 'END NOSTATUS'
 
     # In-job TKO event status codes from base_client_job._run_test_base in
     # client/bin/job.py and client/common_lib/error.py.
     _JOB_STATUS_GOOD = 'GOOD'
     _JOB_STATUS_FAIL = 'FAIL'
+    _JOB_STATUS_NOSTATUS = 'NOSTATUS'
 
     # Status reason used when an individual Tast test doesn't finish running.
     _TEST_DID_NOT_FINISH_MSG = 'Test did not finish'
+    # Status reason used when an individual Tast test doesn't start running.
+    _TEST_DID_NOT_RUN_MSG = 'Test did not run'
 
     def initialize(self,
                    host,
@@ -281,15 +286,17 @@ class tast(test.test):
             return
 
         run_failed = False
+        run_failed_msg = None
         try:
             self._run_tests()
-        except:
+        except Exception as e:
             run_failed = True
+            run_failed_msg = str(e).split('\n', 1)[0]
             raise
         finally:
             self._read_run_error()
             # Parse partial results even if the tast command didn't finish.
-            self._parse_results(run_failed)
+            self._parse_results(run_failed, run_failed_msg)
 
     def set_fake_now_for_testing(self, now):
         """Sets a fake timestamp to use in place of time.time() for unit tests.
@@ -726,13 +733,15 @@ class tast(test.test):
             with open(path, 'r') as f:
                 self._run_error = f.read().strip()
 
-    def _parse_results(self, ignore_missing_file):
+    def _parse_results(self, ignore_missing_file, run_error_msg):
         """Parses results written by the tast command.
 
         @param ignore_missing_file: If True, return without raising an exception
             if the Tast results file is missing. This is used to avoid raising a
             new error if there was already an earlier error while running the
             tast process.
+        @param run_error_msg: The error message from Tast when there is an
+            error. It will be None if Tast encounters no errors.
 
         @raises error.TestFail if results file is missing and
             ignore_missing_file is False, or one or more tests failed and
@@ -781,6 +790,20 @@ class tast(test.test):
 
         if missing:
             self._record_missing_tests(missing)
+            time_str = '%sZ' % datetime.datetime.utcnow().isoformat()
+            for name in missing:
+                t = {}
+                t[_KEY_NAME] = name
+                t[_KEY_START] = time_str
+                t[_KEY_END] = time_str
+                if self._run_error:
+                    t[_KEY_MISSING_REASON] = '%s due to global error: %s' % (
+                            self._TEST_DID_NOT_RUN_MSG, self._run_error)
+                elif run_error_msg:
+                    t[_KEY_MISSING_REASON] = run_error_msg
+                else:
+                    t[_KEY_MISSING_REASON] = self._TEST_DID_NOT_RUN_MSG
+                self._test_results.append(t)
 
         failure_msg = self._get_failure_message(failed, missing)
         if failure_msg:
@@ -839,6 +862,7 @@ class tast(test.test):
 
         test_reported_errors = bool(test.get(_KEY_ERRORS))
         test_skipped = bool(test.get(_KEY_SKIP_REASON))
+        test_not_run = bool(test.get(_KEY_MISSING_REASON))
         # The test will have a zero (i.e. 0001-01-01 00:00:00 UTC) end time
         # (preceding the Unix epoch) if it didn't report completion.
         test_finished = end_time > 0
@@ -849,7 +873,11 @@ class tast(test.test):
 
         self._log_test_event(self._JOB_STATUS_START, name, start_time)
 
-        if test_finished and not test_reported_errors:
+        if test_not_run:
+            self._log_test_event(self._JOB_STATUS_NOSTATUS, name, end_time,
+                                 test[_KEY_MISSING_REASON])
+            end_status = self._JOB_STATUS_END_NOSTATUS
+        elif test_finished and not test_reported_errors:
             self._log_test_event(self._JOB_STATUS_GOOD, name, end_time)
             end_status = self._JOB_STATUS_END_GOOD
         else:

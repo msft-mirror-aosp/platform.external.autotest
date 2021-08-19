@@ -393,9 +393,8 @@ class TastTest(unittest.TestCase):
                  TestInfo('pkg.Test3', None, None)]
         self._init_tast_commands(tests)
         self._run_test_for_failure([tests[1]], [tests[2]])
-        self.assertEqual(
-                status_string(get_status_entries_from_tests(tests[:2])),
-                status_string(self._job.status_entries))
+        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
+                         status_string(self._job.status_entries))
         self.assertEqual(self._load_job_keyvals(),
                          {'tast_missing_test.0': 'pkg.Test3'})
 
@@ -415,7 +414,7 @@ class TastTest(unittest.TestCase):
 
         self._run_test_for_failure([tests[1]], [tests[2]])
         self.assertEqual(
-                status_string(get_status_entries_from_tests(tests[:2], msg)),
+                status_string(get_status_entries_from_tests(tests, msg)),
                 status_string(self._job.status_entries))
         self.assertEqual(self._load_job_keyvals(),
                          {'tast_missing_test.0': 'pkg.Test3'})
@@ -473,8 +472,12 @@ class TastTest(unittest.TestCase):
                 'not valid JSON data'
         with self.assertRaises(error.TestFail) as _:
             self._run_test()
-        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
-                         status_string(self._job.status_entries))
+        # Missing tests are reported in the _parse_results which is called after
+        # _run_tests, so missing tests is not available and the status_entries
+        # should include only the first test case.
+        self.assertEqual(
+                status_string(get_status_entries_from_tests(tests[:1])),
+                status_string(self._job.status_entries))
 
     def testRunCommandWithSharding(self):
         """Tests that sharding parameter is passing thru without issues."""
@@ -496,7 +499,10 @@ class TastTest(unittest.TestCase):
         self._tast_commands['run'].files_to_write = {}
         with self.assertRaises(error.TestFail) as _:
             self._run_test()
-        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
+        # Missing tests are reported in the _parse_results which is called after
+        # _run_tests, so missing tests is not available and the status_entries
+        # should be empty.
+        self.assertEqual(status_string(get_status_entries_from_tests([])),
                          status_string(self._job.status_entries))
 
     def testNoResultsFileAfterRunCommandFails(self):
@@ -515,7 +521,10 @@ class TastTest(unittest.TestCase):
         first_line = str(cm.exception).split('\n')[0]
         self.assertTrue(FAILURE_MSG in first_line,
                         '"%s" not in "%s"' % (FAILURE_MSG, first_line))
-        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
+        # Missing tests are reported in the _parse_results which is called after
+        # _run_tests, so missing tests is not available and the status_entries
+        # should be empty.
+        self.assertEqual(status_string(get_status_entries_from_tests([])),
                          status_string(self._job.status_entries))
 
     def testMissingTastExecutable(self):
@@ -698,8 +707,16 @@ class TestInfo:
     - get expected base_job.status_log_entry objects that unit tests compare
       against what tast.Tast actually recorded
     """
-    def __init__(self, name, start_offset, end_offset, errors=None,
-                 skip_reason=None, attr=None, timeout_ns=0):
+
+    def __init__(self,
+                 name,
+                 start_offset,
+                 end_offset,
+                 errors=None,
+                 skip_reason=None,
+                 attr=None,
+                 timeout_ns=0,
+                 missing_reason=None):
         """
         @param name: Name of the test, e.g. 'ui.ChromeLogin'.
         @param start_offset: Start time as int seconds offset from BASE_TIME,
@@ -782,20 +799,17 @@ class TestInfo:
         if self._skip_reason and not self._errors:
             return []
 
-        # Tests that weren't even started (e.g. because of an earlier issue)
-        # shouldn't have status entries.
-        if not self._start_time:
-            return []
-
         def make(status_code, dt, msg=''):
             """Makes a base_job.status_log_entry.
 
             @param status_code: String status code.
-            @param dt: datetime.datetime object containing entry time.
+            @param dt: datetime.datetime object containing entry time, and its
+                value should be None if the test is not supposed to be started
             @param msg: String message (typically only set for errors).
             @return: base_job.status_log_entry object.
             """
-            timestamp = int((dt - tast._UNIX_EPOCH).total_seconds())
+            timestamp = int(
+                    (dt - tast._UNIX_EPOCH).total_seconds()) if dt else None
             return base_job.status_log_entry(
                     status_code, None,
                     tast.tast._TEST_NAME_PREFIX + self._name, msg, None,
@@ -803,7 +817,16 @@ class TestInfo:
 
         entries = [make(tast.tast._JOB_STATUS_START, self._start_time)]
 
-        if self._end_time and not self._errors:
+        if not self._start_time:
+            if run_error_msg:
+                reason = '%s due to global error: %s' % (
+                        tast.tast._TEST_DID_NOT_RUN_MSG, run_error_msg)
+            else:
+                reason = tast.tast._TEST_DID_NOT_RUN_MSG
+
+            entries.append(make(tast.tast._JOB_STATUS_NOSTATUS, None, reason))
+            entries.append(make(tast.tast._JOB_STATUS_END_NOSTATUS, None))
+        elif self._end_time and not self._errors:
             entries.append(make(tast.tast._JOB_STATUS_GOOD, self._end_time))
             entries.append(make(tast.tast._JOB_STATUS_END_GOOD, self._end_time))
         else:
@@ -907,17 +930,31 @@ def status_string(entries):
     @param entries: List of base_job.status_log_entry objects.
     @return: String containing space-separated representations of entries.
     """
-    strings = []
+    found_test_strings = []
+    missing_test_strings = []
+
+    # For each missing test, there are three corresponding entries that we want
+    # to put in missing_test_strings: "START", "NOSTATUS" and "END NOSTATUS".
+    # We cannot tell if the test is missing in the "START" entry. Therefore,
+    # we use missing_tests to keep track of all the missing tests.
+    missing_tests = set(entry.operation for entry in entries
+                        if entry.status_code == tast.tast._JOB_STATUS_NOSTATUS)
+
     for entry in entries:
         message = entry.message
         if isinstance(message, six.binary_type):
             message = message.decode('utf-8')
+        # Ignore timestamp for missing entry
         timestamp = entry.fields[base_job.status_log_entry.TIMESTAMP_FIELD]
-        s = '[%s %s %s %s]' % (timestamp, entry.operation, entry.status_code,
-                               repr(message))
-        strings.append(s)
-
-    return ' '.join(strings)
+        if entry.operation not in missing_tests:
+            s = '[%s %s %s %s]' % (timestamp, entry.operation,
+                                   entry.status_code, repr(message))
+            found_test_strings.append(s)
+        else:
+            s = '[%s %s %s]' % (entry.operation, entry.status_code,
+                                repr(message))
+            missing_test_strings.append(s)
+    return ' '.join(found_test_strings + missing_test_strings)
 
 
 if __name__ == '__main__':

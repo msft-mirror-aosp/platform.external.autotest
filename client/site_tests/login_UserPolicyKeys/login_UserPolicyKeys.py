@@ -71,21 +71,19 @@ class login_UserPolicyKeys(test.test):
         super(login_UserPolicyKeys, self).initialize()
         policy.install_protobufs(self.autodir, self.job)
         self._bus_loop = DBusGMainLoop(set_as_default=True)
-        self._cryptohome_proxy = cryptohome.CryptohomeProxy(
-            self._bus_loop, self.autodir, self.job)
 
         # Clear the user's vault, to make sure the test starts without any
         # policy or key lingering around. At this stage the session isn't
         # started and there's no user signed in.
         ownership.restart_ui_to_clear_ownership_files()
-        self._cryptohome_proxy.remove(ownership.TESTUSER)
+        cryptohome.remove_vault(ownership.TESTUSER)
 
 
     def run_once(self):
         # Mount the vault, connect to session_manager and start the session.
-        self._cryptohome_proxy.mount(ownership.TESTUSER,
-                                     ownership.TESTPASS,
-                                     create=True)
+        cryptohome.mount_vault(ownership.TESTUSER,
+                               ownership.TESTPASS,
+                               create=True)
         sm = session_manager.connect(self._bus_loop)
         sm.StartSession(ownership.TESTUSER, '')
 
@@ -122,7 +120,7 @@ class login_UserPolicyKeys(test.test):
         self._verify_key_file(key_file)
 
         # Restart the ui; the key should be deleted.
-        self._cryptohome_proxy.unmount(ownership.TESTUSER)
+        cryptohome.unmount_vault(ownership.TESTUSER)
         cros_ui.restart()
         if os.path.exists(key_file):
             raise error.TestFail('%s exists after restarting ui!' %
@@ -130,9 +128,9 @@ class login_UserPolicyKeys(test.test):
 
         # Starting a new session will restore the key that was previously
         # stored. Reconnect to the session_manager, since the restart killed it.
-        self._cryptohome_proxy.mount(ownership.TESTUSER,
-                                     ownership.TESTPASS,
-                                     create=True)
+        cryptohome.mount_vault(ownership.TESTUSER,
+                               ownership.TESTPASS,
+                               create=True)
         sm = session_manager.connect(self._bus_loop)
         sm.StartSession(ownership.TESTUSER, '')
         self._verify_key_file(key_file)
@@ -140,5 +138,5 @@ class login_UserPolicyKeys(test.test):
 
     def cleanup(self):
         cros_ui.restart()
-        self._cryptohome_proxy.remove(ownership.TESTUSER)
+        cryptohome.remove_vault(ownership.TESTUSER)
         super(login_UserPolicyKeys, self).cleanup()

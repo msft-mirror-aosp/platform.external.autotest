@@ -30,9 +30,6 @@ class login_MultipleSessions(test.test):
                 gobject.MainLoop())
         self._listener.listen_for_new_key_and_policy()
 
-        self._cryptohome_proxy = cryptohome.CryptohomeProxy(
-            self._bus_loop, self.autodir, self.job)
-
 
     def run_once(self):
         expected_owner = 'first_user@nowhere.com'
@@ -73,7 +70,7 @@ class login_MultipleSessions(test.test):
 
         @raises error.TestFail: if the session cannot be started.
         """
-        self._cryptohome_proxy.ensure_clean_cryptohome_for(user)
+        cryptohome.ensure_clean_cryptohome_for(user)
         self._session_manager.StartSession(user, '')
 
 

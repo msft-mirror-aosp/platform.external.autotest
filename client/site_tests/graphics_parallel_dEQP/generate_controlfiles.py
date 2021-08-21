@@ -132,7 +132,7 @@ def get_testname(test, shard=0):
 
 
 def write_controlfile(filename, content):
-    print('Writing %s.' % filename)
+    print(('Writing %s.' % filename))
     with open(filename, 'w+') as f:
         f.write(content)
 

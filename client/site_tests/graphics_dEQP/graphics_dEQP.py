@@ -373,7 +373,7 @@ class graphics_dEQP(graphics_utils.GraphicsTest):
                         log_file, failing_test=failing_test)
                     self._archive_test_results(log_file)
                     if result_counts:
-                        result = result_counts.keys()[0]
+                        result = list(result_counts.keys())[0]
                     else:
                         result = 'Unknown'
                 except error.CmdTimeoutError:
@@ -452,7 +452,7 @@ class graphics_dEQP(graphics_utils.GraphicsTest):
         if self._shard_number + 1 == self._shard_count:
             shard_end = num_test_cases
 
-        for batch in xrange(shard_start, shard_end, self._hasty_batch_size):
+        for batch in range(shard_start, shard_end, self._hasty_batch_size):
             batch_to = min(batch + self._hasty_batch_size, shard_end)
             batch_cases = '\n'.join(test_cases[batch:batch_to])
             # This assumes all tests in the batch are kicked off via the same

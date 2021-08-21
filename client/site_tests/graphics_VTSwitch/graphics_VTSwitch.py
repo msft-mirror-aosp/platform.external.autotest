@@ -85,7 +85,7 @@ class graphics_VTSwitch(graphics_utils.GraphicsTest):
             max_vt2_difference_percent = 0
 
             # Repeatedly switch between VT1 and VT2.
-            for iteration in xrange(num_iterations):
+            for iteration in range(num_iterations):
                 logging.info('Iteration #%d', iteration)
 
                 # Go to VT1 and take a screenshot.

@@ -223,7 +223,7 @@ class GraphicsTest(test.test):
 
         total_failures = 0
         # Report subtests failures
-        for failure in self._failures_by_description.values():
+        for failure in list(self._failures_by_description.values()):
             if len(failure['names']) > 0:
                 logging.debug('GraphicsTest failure: %s' % failure['names'])
                 total_failures += len(failure['names'])
@@ -262,7 +262,7 @@ class GraphicsTest(test.test):
         """
         Get currently recorded failures list.
         """
-        return [name for failure in self._failures_by_description.values()
+        return [name for failure in list(self._failures_by_description.values())
                 for name in failure['names']]
 
     def open_vt1(self):
@@ -829,7 +829,7 @@ def get_external_connector_name():
             Otherwise, return False.
     """
     outputs = get_display_output_state()
-    for output in outputs.iterkeys():
+    for output in outputs.keys():
         if outputs[output] and (output.startswith('HDMI')
                 or output.startswith('DP')
                 or output.startswith('DVI')
@@ -845,7 +845,7 @@ def get_internal_connector_name():
             Otherwise, return False.
     """
     outputs = get_display_output_state()
-    for output in outputs.iterkeys():
+    for output in outputs.keys():
         # reference: chromium_org/chromeos/display/output_util.cc
         if (output.startswith('eDP')
                 or output.startswith('LVDS')
@@ -1167,7 +1167,7 @@ class GraphicsStateChecker(object):
             for line in messages:
                 for hang in self._HANGCHECK:
                     if hang in line:
-                        if not line in self.existing_hangs.keys():
+                        if not line in list(self.existing_hangs.keys()):
                             logging.info(line)
                             for warn in self._HANGCHECK_WARNING:
                                 if warn in line:
@@ -1391,4 +1391,4 @@ def get_max_num_available_drm_planes():
     possible_crtcs = [[int(bit) for bit in bin(crtc)[2:].zfill(16)]
                          for crtc in packed_possible_crtcs]
     # Accumulate the CRTCs indexes and return the maximum number of 'votes'.
-    return max(map(sum, zip(*possible_crtcs)))
+    return max(list(map(sum, list(zip(*possible_crtcs)))))

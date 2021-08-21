@@ -60,10 +60,10 @@ class graphics_KernelConfig(GraphicsTest):
         logging.debug(config._config)
 
         # Run the static checks.
-        map(config.has_builtin, self.IS_BUILTIN)
-        map(config.has_module, self.IS_MODULE)
-        map(config.is_enabled, self.IS_ENABLED)
-        map(config.is_missing, self.IS_MISSING)
+        list(map(config.has_builtin, self.IS_BUILTIN))
+        list(map(config.has_module, self.IS_MODULE))
+        list(map(config.is_enabled, self.IS_ENABLED))
+        list(map(config.is_missing, self.IS_MISSING))
 
         # Raise a failure if anything unexpected was seen.
         if len(config.failures()):

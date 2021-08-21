@@ -297,9 +297,12 @@ class platform_KernelErrorPaths(test.test):
                 'EXCEPTION': (
                         10,
                         True,
-                        # Logs differ slightly between different kernels and archs (v5.4,
-                        # x86, ARM), but all contain 'kernel NULL pointer dereference'.
-                        'kernel NULL pointer dereference'),
+                        # Logs differ slightly between different kernels and archs. Many
+                        # contain 'kernel NULL pointer dereference', but some arm64 think
+                        # a NULL pointer may be a user-space address.
+                        ('kernel NULL pointer dereference',
+                         'Unable to handle kernel access to user memory '
+                         'outside uaccess routines')),
                 'PANIC': (10, True, 'Kernel panic - not syncing:'),
                 'CORRUPT_STACK':
                 (10, True, 'stack-protector: Kernel stack is corrupted in:')

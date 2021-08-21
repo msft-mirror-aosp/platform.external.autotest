@@ -230,10 +230,11 @@ class platform_KernelErrorPaths(test.test):
             raise error.TestFail('Missing interface "%s"' % interface)
 
         # Find out how many cpus we have
-        client_cpus = map(lambda x: int(x),
-            self.client.run(
-                'cat /proc/cpuinfo | grep processor | cut -f 2 -d :')
-                .stdout.split())
+        client_cpus = [
+                int(x) for x in self.client.run(
+                        'cat /proc/cpuinfo | grep processor | cut -f 2 -d :').
+                stdout.split()
+        ]
 
         # Skip any triggers that are undefined for the given interface.
         if trigger == None:

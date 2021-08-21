@@ -223,14 +223,11 @@ class platform_KernelErrorPaths(test.test):
         Test the kernel panic paths.
         """
 
-        # Figure out which kernel crash interface is available.
         interface = "/sys/kernel/debug/provoke-crash/DIRECT"
         trigger = lkdtm
-        breakme, timeout, all_cpu, text = kcrash_tuple
+        timeout, all_cpu, text = kcrash_tuple
         if not self._exists_on_client(interface):
-            interface = "/proc/breakme"
-            trigger = breakme
-            logging.info("Falling back to %s", interface)
+            raise error.TestFail('Missing interface "%s"' % interface)
 
         # Find out how many cpus we have
         client_cpus = map(lambda x: int(x),
@@ -283,31 +280,30 @@ class platform_KernelErrorPaths(test.test):
 
         # kcrash data is given by a dictionary with key lkdtm string to write
         # to /sys/kernel/debug/provoke-crash/DIRECT on the target. The dict
-        # value is a tuple containing 1) the string to write to /proc/breakme.
-        # if lkdtm is not available, 2) the timeout, and 3)whether we run
-        # the tests on all CPUs or not. Some tests take less to run than other
+        # value is a tuple containing 1) the timeout and 2) whether we run the
+        # tests on all CPUs or not. Some tests take less to run than other
         # (null pointer and panic) so it would be best if we would run them on
-        # all the CPUS as it wouldn't add that much time to the total.
-        # The final component is the crash report string to look for in the
-        # crash dump after target restarts.
+        # all the CPUs as it wouldn't add that much time to the total. The
+        # final component is the crash report string to look for in the crash
+        # dump after target restarts.
         kcrash_types = {
-            'BUG' : ('bug', 10, False, ('kernel BUG at', 'BUG: failure at')),
-            'HUNG_TASK' : ('hungtask', 300, False, 'hung_task: blocked tasks'),
-            'SOFTLOCKUP' : (None, 25, False, 'BUG: soft lockup'),
-            'HARDLOCKUP' : ('nmiwatchdog', 50, False,
-                            'Watchdog detected hard LOCKUP'),
-            'SPINLOCKUP' : (None, 25, False, ('softlockup: hung tasks',
-                                             'BUG: scheduling while atomic',
-                                             'BUG: sleeping function called')),
-            'EXCEPTION' : ('nullptr',     10, True,
-             # Logs differ slightly between different kernels and archs (v5.4,
-             # x86, ARM), but all contain 'kernel NULL pointer dereference'.
-                           'kernel NULL pointer dereference'),
-            'PANIC' : ('panic', 10, True, 'Kernel panic - not syncing:'),
-            'CORRUPT_STACK' : (None, 10, True,
-                               'stack-protector: Kernel stack is '
-                               'corrupted in:')
-            }
+                'BUG': (10, False, ('kernel BUG at', 'BUG: failure at')),
+                'HUNG_TASK': (300, False, 'hung_task: blocked tasks'),
+                'SOFTLOCKUP': (25, False, 'BUG: soft lockup'),
+                'HARDLOCKUP': (50, False, 'Watchdog detected hard LOCKUP'),
+                'SPINLOCKUP': (25, False, ('softlockup: hung tasks',
+                                           'BUG: scheduling while atomic',
+                                           'BUG: sleeping function called')),
+                'EXCEPTION': (
+                        10,
+                        True,
+                        # Logs differ slightly between different kernels and archs (v5.4,
+                        # x86, ARM), but all contain 'kernel NULL pointer dereference'.
+                        'kernel NULL pointer dereference'),
+                'PANIC': (10, True, 'Kernel panic - not syncing:'),
+                'CORRUPT_STACK':
+                (10, True, 'stack-protector: Kernel stack is corrupted in:')
+        }
 
         bad_kcrashes = []
 

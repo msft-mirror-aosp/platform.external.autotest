@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -5,6 +6,8 @@
 import logging
 import os
 import time
+
+import six
 
 from autotest_lib.server import test
 from autotest_lib.server.cros import filesystem_util
@@ -376,7 +379,7 @@ class FingerprintTest(test.test):
 
         Example: self.TEST_IMAGE_DEV = /some/path/images/nocturne_fp.dev
         """
-        for key, val in self._TEST_IMAGE_FORMAT_MAP.iteritems():
+        for key, val in six.iteritems(self._TEST_IMAGE_FORMAT_MAP):
             full_path = os.path.join(dut_fw_test_images_dir,
                                      val % self.get_fp_board())
             setattr(self, key, full_path)

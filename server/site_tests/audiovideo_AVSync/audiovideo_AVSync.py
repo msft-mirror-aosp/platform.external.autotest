@@ -9,6 +9,8 @@ import struct
 import tempfile
 import time
 
+import six
+
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.common_lib.cros import arc_common
@@ -113,7 +115,7 @@ class audiovideo_AVSync(test.test):
             dashboard_result['dropped_frame_count'] = [
                     dropped_frame_count, 'frames']
 
-        for key, value in dashboard_result.iteritems():
+        for key, value in six.iteritems(dashboard_result):
             self.output_perf_value(description=prefix+key, value=value[0],
                                    units=value[1], higher_is_better=False)
 

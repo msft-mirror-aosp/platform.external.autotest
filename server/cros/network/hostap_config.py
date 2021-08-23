@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -5,6 +6,8 @@
 import collections
 import copy
 import logging
+
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
@@ -228,7 +231,7 @@ class HostapConfig(object):
         @return int frequency in MHz associated with the channel.
 
         """
-        for frequency, channel_iter in HostapConfig.CHANNEL_MAP.iteritems():
+        for frequency, channel_iter in six.iteritems(HostapConfig.CHANNEL_MAP):
             if channel == channel_iter:
                 return frequency
         else:
@@ -724,7 +727,7 @@ class HostapConfig(object):
         @return True iff the current mode supports the band of the channel.
 
         """
-        for freq, channel in self.CHANNEL_MAP.iteritems():
+        for freq, channel in six.iteritems(self.CHANNEL_MAP):
             if channel == value:
                 return self.supports_frequency(freq)
 

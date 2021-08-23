@@ -11,6 +11,7 @@ ATTRIBUTES = "suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_TYPE = "server"
+PY_VERSION = 3
 
 DOC = """Verify cr50 rsa keygen."""
 

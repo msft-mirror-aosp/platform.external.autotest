@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,6 +7,8 @@ import collections
 import logging
 import re
 import time
+
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -244,7 +247,7 @@ class WpaCliProxy(object):
                                  (network_id, 'scan_ssid', '1'))
 
         sec_config = assoc_params.security_config
-        for field, value in sec_config.get_wpa_cli_properties().iteritems():
+        for field, value in six.iteritems(sec_config.get_wpa_cli_properties()):
             self.run_wpa_cli_cmd('set_network %d %s %s' %
                                  (network_id, field, value))
         self.run_wpa_cli_cmd('select_network %d' % network_id)

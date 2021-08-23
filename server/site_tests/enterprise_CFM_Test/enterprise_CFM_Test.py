@@ -5,6 +5,8 @@
 import random
 import logging
 import time
+
+import six
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.cfm import cfm_base_test
 from autotest_lib.client.common_lib.cros.manual import audio_helper
@@ -398,7 +400,7 @@ class enterprise_CFM_Test(cfm_base_test.CfmBaseTest):
         """
         return True, None
 
-     # TODO(mzhuo): Adding verification for speaker in Hotrod App
+    # TODO(mzhuo): Adding verification for speaker in Hotrod App
     def check_hotrod_pspeaker(self):
         """
         Verify hotrod selects correct preferred speaker.
@@ -583,11 +585,11 @@ class enterprise_CFM_Test(cfm_base_test.CfmBaseTest):
         not_in_meeting_action = ['meeting_test', 'gpio_test', 'reboot_test']
 
         if fixedmode:
-            for action, nof_times in action_config.iteritems():
+            for action, nof_times in six.iteritems(action_config):
                 if not action in not_in_meeting_action:
                     self.action_config.extend(nof_times * [action])
         else:
-            for action, nof_times in action_config.iteritems():
+            for action, nof_times in six.iteritems(action_config):
                 if not action in not_in_meeting_action and nof_times  > 0:
                     dup_test = max(1, random.randrange(0, nof_times))
                     for _ in range(dup_test):
@@ -597,7 +599,7 @@ class enterprise_CFM_Test(cfm_base_test.CfmBaseTest):
         if action_config['meeting_test'] == 1:
             self.action_config.append('meeting_test')
 
-        for action, nof_times in action_config.iteritems():
+        for action, nof_times in six.iteritems(action_config):
             if action == 'meeting_test':
                 continue
             if action in not_in_meeting_action and nof_times  > 0:
@@ -831,11 +833,11 @@ class enterprise_CFM_Test(cfm_base_test.CfmBaseTest):
             logging.info('---Loop %d, Test: %d, Meet: %d, Reboot: %d, Gpio: %s',
                          loop_no, test_no, self.meet_no, self.reboot_no,
                          self.gpio_no)
-            for testname, counter in failed_tests.iteritems():
+            for testname, counter in six.iteritems(failed_tests):
                 logging.info('----Test: %s, Failed times: %d, Total Run: %d',
                            testname, counter,
                            finished_tests_verifications[testname])
-            for veriname, counter in failed_verifications.iteritems():
+            for veriname, counter in six.iteritems(failed_verifications):
                 logging.info('----Verification: %s, Failed times: %d,'
                              'Total Run: %d',
                              veriname, counter,
@@ -843,7 +845,7 @@ class enterprise_CFM_Test(cfm_base_test.CfmBaseTest):
             if self.random:
                 time.sleep(random.randrange(0, test_config['loop_timeout']))
             else:
-                 time.sleep(test_config['loop_timeout'])
+                time.sleep(test_config['loop_timeout'])
         if not test_done:
             if list(set(self.verification_config) & set(LOG_CHECK_LIST)):
                 self.log_checking_point = cfm_helper.find_last_log(self.client,

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -524,7 +525,7 @@ class Cr50Test(FirmwareTest):
         mismatch = {}
         state = self.get_image_and_bid_state()
 
-        for k, expected_val in expected_state.iteritems():
+        for k, expected_val in six.iteritems(expected_state):
             val = state[k]
             if val != expected_val:
                 mismatch[k] = 'expected: %s, current: %s' % (expected_val, val)
@@ -961,6 +962,8 @@ class Cr50Test(FirmwareTest):
         set_pwd_cmd = utils.sh_escape(cmd)
         full_ssh_command = '%s "%s"' % (self.host.ssh_command(options='-tt'),
                                         set_pwd_cmd)
+        if isinstance(password, six.text_type):
+            password = password.encode('utf8')
         logging.info('Running: %s', cmd)
         logging.info('Password: %s', password)
 

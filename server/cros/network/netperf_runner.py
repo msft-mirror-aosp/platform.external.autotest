@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,6 +10,8 @@ import numbers
 import re
 import time
 import os.path
+
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import path_utils
@@ -197,10 +200,10 @@ class NetperfResult(object):
 
     def __repr__(self):
         fields = ['test_type=%s' % self.test_type]
-        fields += ['%s=%0.2f' % item
-                   for item in vars(self).iteritems()
-                   if item[1] is not None
-                   and isinstance(item[1], numbers.Number)]
+        fields += [
+                '%s=%0.2f' % item for item in six.iteritems(vars(self))
+                if item[1] is not None and isinstance(item[1], numbers.Number)
+        ]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(fields))
 
 
@@ -331,10 +334,10 @@ class NetperfAssertion(object):
                   'error_max': self.errors_bounds.upper,
                   'transaction_rate_min': self.transaction_rate_bounds.lower,
                   'transaction_rate_max': self.transaction_rate_bounds.upper}
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(['%s=%r' % item
-                                      for item in fields.iteritems()
-                                      if item[1] is not None]))
+        return '%s(%s)' % (self.__class__.__name__, ', '.join([
+                '%s=%r' % item
+                for item in six.iteritems(fields) if item[1] is not None
+        ]))
 
 
 class NetperfConfig(object):

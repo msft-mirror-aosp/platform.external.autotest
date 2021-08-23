@@ -641,6 +641,11 @@ def _format_modules_cmd(is_public,
                 # We run each module with its own --include-filter option.
                 # https://source.android.com/compatibility/cts/run
                 for module in sorted(modules):
+                    # b/196756614 32-bit jobs should skip [parameter] modules.
+                    if is_parameterized_module(module) and abi_to_run in [
+                            'x86', 'armeabi-v7a'
+                    ]:
+                        continue
                     cmd += ['--include-filter', module]
             else:
                 # CTS-Instant does not support --include-filter due to
@@ -792,6 +797,11 @@ def enable_default_apps(modules):
     if modules.intersection(set(CONFIG['ENABLE_DEFAULT_APPS'])):
         return True
     return False
+
+
+def is_parameterized_module(module):
+    """Determines if the given module is a parameterized module."""
+    return '[' in module
 
 
 def get_controlfile_content(combined,
@@ -1146,7 +1156,7 @@ def write_moblab_controlfiles(modules, abi, revision, build, uri, is_public):
     for module in modules:
         # No need to generate control files with extra suffix, since --module
         # option will cover variants with optional parameters.
-        if "[" in module:
+        if is_parameterized_module(module):
             continue
         write_controlfile(module, set([module]), abi, revision, build, uri,
                           [CONFIG['MOBLAB_SUITE_NAME']], is_public)

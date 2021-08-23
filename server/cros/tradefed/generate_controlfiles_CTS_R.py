@@ -638,6 +638,10 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerHeightDecodeAccuracy',
                 '--exclude-filter',
                 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerWidthDecodeAccuracy',
+                '--exclude-filter',
+                'CtsMediaTestCases android.media.cts.MediaExtractorTest#testProgramStreamExtraction',
+                '--exclude-filter',
+                'CtsMediaTestCases[instant] android.media.cts.MediaExtractorTest#testProgramStreamExtraction',
         ],
         'CtsWindowManager.A': [
                 '--include-filter',

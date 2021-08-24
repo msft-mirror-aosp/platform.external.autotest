@@ -66,32 +66,13 @@ from autotest_lib.client.cros import dhcp_handling_rule
 # From socket.h
 SO_BINDTODEVICE = 25
 
-# These imports are purely for handling of namespaces
-import os
-import subprocess
-from ctypes import CDLL, get_errno
-from ctypes.util import find_library
-
-
-def errcheck(ret, func, args):
-    if ret == -1:
-        e = get_errno()
-        raise OSError(e, os.strerror(e))
-
-
-libc = CDLL(find_library('c'))
-libc.setns.errcheck = errcheck
-CLONE_NEWNET = 0x40000000
-
-
 class DhcpTestServer(threading.Thread):
     def __init__(self,
                  interface=None,
                  ingress_address="<broadcast>",
                  ingress_port=67,
                  broadcast_address="255.255.255.255",
-                 broadcast_port=68,
-                 namespace=None):
+                 broadcast_port=68):
         super(DhcpTestServer, self).__init__()
         self._mutex = threading.Lock()
         self._ingress_address = ingress_address
@@ -100,7 +81,6 @@ class DhcpTestServer(threading.Thread):
         self._broadcast_address = broadcast_address
         self._socket = None
         self._interface = interface
-        self._namespace = namespace
         self._stopped = False
         self._test_in_progress = False
         self._last_test_passed = False
@@ -146,20 +126,9 @@ class DhcpTestServer(threading.Thread):
             return False
         self._logger.info("DhcpTestServer started; opening sockets.")
         try:
-            if self._namespace:
-                self._logger.info("Moving to namespace %s.", self._namespace)
-                # Figure out where is the mount bind is - ChromeOS does not
-                # follow standard /var/run/netns path so lets try to be more
-                # generic and get it from runtime
-                tgtpath = subprocess.check_output('mount | grep "netns/%s"' %
-                                                  self._namespace,
-                                                  shell=True).split()[2]
-                self._tgtns = open(tgtpath)
-                self._myns = open('/proc/self/ns/net')
-                libc.setns(self._tgtns.fileno(), CLONE_NEWNET)
-            self._logger.info("Opening socket on '%s' port %d.",
-                              self._ingress_address, self._ingress_port)
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self._logger.info("Opening socket on '%s' port %d.",
+                              (self._ingress_address, self._ingress_port))
             self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             if self._interface is not None:
@@ -179,16 +148,6 @@ class DhcpTestServer(threading.Thread):
             self._socket = None
             self._logger.error("Failed to open server socket.  Aborting.")
             return
-        except OSError as os_err:
-            self._logger.error("System error: %s.", str(os_err))
-            self._logger.error(traceback.format_exc())
-            self._logger.error("Failed to change namespace.  Aborting.")
-            return
-        finally:
-            if self._namespace:
-                self._tgtns.close()
-                libc.setns(self._myns.fileno(), CLONE_NEWNET)
-                self._myns.close()
         super(DhcpTestServer, self).start()
 
     def stop(self):

@@ -15,6 +15,10 @@ _SUSPEND_TIME = 30
 _UPPER_USB_PORT = 'usb_mux_sel1'
 _WAIT_DELAY = 15
 
+# servo v4.1 controls
+_AUX_USB_PORT = 'aux_usbkey_mux'
+_IMAGE_USB_PORT = 'image_usbkey_mux'
+
 
 class platform_ExternalUsbPeripherals(test.test):
     """Uses servo to repeatedly connect/remove USB devices during boot."""
@@ -293,12 +297,16 @@ class platform_ExternalUsbPeripherals(test.test):
 
         @returns port as string to plug/unplug the specific port
         """
-        port = _LOWER_USB_PORT
-        self.host.servo.switch_usbkey('dut')
-        self.host.servo.set('dut_hub1_rst1','off')
-        self.host.servo.set(_UPPER_USB_PORT, 'servo_sees_usbkey')
-        self.host.servo.set('usb_mux_oe2', 'off')
-        self.host.servo.set('usb_mux_oe4', 'off')
+        if 'servo_v4p1' in self.servo_type:
+            port = _AUX_USB_PORT
+            self.host.servo.set(_IMAGE_USB_PORT, 'servo_sees_usbkey')
+        else:
+            port = _LOWER_USB_PORT
+            self.host.servo.switch_usbkey('dut')
+            self.host.servo.set('dut_hub1_rst1','off')
+            self.host.servo.set(_UPPER_USB_PORT, 'servo_sees_usbkey')
+            self.host.servo.set('usb_mux_oe2', 'off')
+            self.host.servo.set('usb_mux_oe4', 'off')
         time.sleep(_WAIT_DELAY)
         return port
 
@@ -307,7 +315,8 @@ class platform_ExternalUsbPeripherals(test.test):
         """Disconnect servo hub"""
         self.plug_peripherals(False)
         self.action_logout()
-        self.host.servo.set('dut_hub1_rst1','on')
+        if 'servo_v4p1' not in self.servo_type:
+            self.host.servo.set('dut_hub1_rst1','on')
         self.host.run('reboot now', ignore_status=True)
         self.host.test_wait_for_boot()
 
@@ -326,6 +335,8 @@ class platform_ExternalUsbPeripherals(test.test):
         self.login_status = False
         self.fail_reasons = list()
         self.action_step = None
+
+        self.servo_type = self.host.servo.get_servo_type()
 
         self.plug_port = self.prep_servo_for_test()
 

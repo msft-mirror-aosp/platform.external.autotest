@@ -42,7 +42,8 @@ class LogManager(object):
         self.log_contents = []
 
     def _LogErrorToSyslog(self, message):
-        """Log a message to syslog."""
+        """Create a new syslog file and add a message to syslog."""
+        subprocess.call(['reload', 'syslog'])
         subprocess.call(['logger', message])
 
     def _GetSize(self):

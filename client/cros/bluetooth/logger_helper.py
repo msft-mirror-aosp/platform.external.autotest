@@ -133,6 +133,13 @@ class LogManager(object):
                     mf.write(line)
             mf.truncate()
 
+        # Some tracebacks point out here causing /var/log/messages missing but
+        # we don't have many clues. Adding a check and logs here.
+        if not os.path.isfile(self.log_path):
+            msg = '{} does not exist after FilterOut'.format(self.log_path)
+            logging.warning(msg)
+            self._LogErrorToSyslog(msg)
+
         rm_byte = initial_size - self._GetSize()
         logging.info('Removed number of line: %d, Reduced log size: %d byte',
                      rm_line_cnt, rm_byte)

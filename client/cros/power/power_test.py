@@ -65,7 +65,7 @@ class power_Test(test.test):
         self._seconds_period = seconds_period
 
         self._force_discharge_success = force_discharge_utils.process(
-                force_discharge, self.status.battery)
+                force_discharge, self.status)
 
         ifaces = [iface for iface in interface.get_interfaces()
                 if (not iface.is_wifi_device() and

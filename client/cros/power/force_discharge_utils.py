@@ -4,6 +4,7 @@
 """Helper class for power autotests that force DUT to discharge with EC."""
 
 import logging
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import ec
@@ -36,7 +37,24 @@ def _parse(force_discharge):
     return setting
 
 
-def process(force_discharge, battery):
+def _wait_for_battery_discharge(status):
+    """
+    Polling every 100ms for 2 seconds until battery is discharging. This
+    normally would take about 350ms.
+
+    @param status: DUT power status object.
+
+    @return: boolean indicating force discharge success.
+    """
+    for _ in range(20):
+        status.refresh()
+        if status.battery_discharging():
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def process(force_discharge, status):
     """
     Perform force discharge steps.
 
@@ -46,7 +64,7 @@ def process(force_discharge, battery):
             it fails; 'optional' means forcing discharge when possible but not
             raising an error when it fails, which is more friendly to devices
             without a battery.
-    @param battery: DUT battery.
+    @param status: DUT power status object.
 
     @return: bool to indicate whether force discharge steps are successful. Note
             that DUT cannot force discharge if DUT is not connected to AC.
@@ -60,7 +78,7 @@ def process(force_discharge, battery):
     force_discharge = _parse(force_discharge)
 
     if force_discharge == 'true':
-        if not battery:
+        if not status.battery:
             raise error.TestNAError('DUT does not have battery. '
                                     'Could not force discharge.')
         if not ec.has_cros_ec():
@@ -68,9 +86,11 @@ def process(force_discharge, battery):
                                     'Could not force discharge.')
         if not power_utils.charge_control_by_ectool(False):
             raise error.TestError('Could not run battery force discharge.')
+        if not _wait_for_battery_discharge(status):
+            logging.warning('Battery does not report discharging state.')
         return True
     elif force_discharge == 'optional':
-        if not battery:
+        if not status.battery:
             logging.warning('DUT does not have battery. '
                             'Do not force discharge.')
             return False
@@ -82,6 +102,8 @@ def process(force_discharge, battery):
             logging.warning('Could not run battery force discharge. '
                             'Do not force discharge.')
             return False
+        if not _wait_for_battery_discharge(status):
+            logging.warning('Battery does not report discharging state.')
         return True
     elif force_discharge == 'false':
         return False

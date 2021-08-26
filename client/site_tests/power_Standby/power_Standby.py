@@ -52,7 +52,7 @@ class power_Standby(test.test):
         power_stats = power_status.get_status()
 
         self._force_discharge_success = force_discharge_utils.process(
-                force_discharge, power_stats.battery)
+                force_discharge, power_stats)
         if self._force_discharge_success:
             ac_ok = True
 

@@ -144,7 +144,7 @@ class power_LoadTest(arc.ArcTest):
         self._power_status = power_status.get_status()
 
         self._force_discharge_success = force_discharge_utils.process(
-                force_discharge, self._power_status.battery)
+                force_discharge, self._power_status)
         if self._force_discharge_success:
             self._ac_ok = True
 

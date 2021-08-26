@@ -10,6 +10,7 @@ CONFIG = {}
 CONFIG['TEST_NAME'] = 'cheets_CTS_R'
 CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts'
+CONFIG['MOBLAB_HARDWARE_SUITE_NAME'] = 'suite:cts-hardware'
 CONFIG['COPYRIGHT_YEAR'] = 2020
 CONFIG['AUTHKEY'] = ''
 
@@ -34,6 +35,7 @@ CONFIG['INTERNAL_SUITE_NAMES'] = [
         'suite:arc-cts-r', 'suite:arc-cts', 'suite:arc-cts-unibuild'
 ]
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
+CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -275,64 +277,81 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
         'CtsLibcoreTestCases',
 ])
 
+# This list of modules will be used for reduced set of testing for build
+# variant process. Suites: cts_hardware & arc-cts-hardware.
+CONFIG['HARDWARE_MODULES'] = [
+    'CtsPerfettoTestCases', 'CtsSustainedPerformanceHostTestCases',
+    'CtsCameraTestCases', 'CtsMediaStressTestCases', 'CtsAppTestCases',
+    'CtsPermissionTestCases', 'CtsViewTestCases', 'CtsMediaTestCases',
+    'CtsNativeMediaAAudioTestCases', 'CtsNetTestCases', 'CtsWifiTestCases',
+    'CtsUsageStatsTestCases', 'CtsSensorTestCases',
+]
+
+SUITE_ARC_CTS_R = ['suite:arc-cts-r']
+R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
+R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
+R_REGRESSION_QUAL_HARDWARE_SUITES = R_REGRESSION_AND_QUAL_SUITES + [
+        CONFIG['HARDWARE_SUITE_NAME']]
+
 CONFIG['EXTRA_MODULES'] = {
-        'CtsDeqpTestCases': {
-                'SUBMODULES':
-                set([
-                        'CtsDeqpTestCases.dEQP-EGL',
-                        'CtsDeqpTestCases.dEQP-GLES2',
-                        'CtsDeqpTestCases.dEQP-GLES3',
-                        'CtsDeqpTestCases.dEQP-GLES31',
-                        'CtsDeqpTestCases.dEQP-VK'
-                ]),
-                'SUITES': ['suite:arc-cts-r'],
-        },
-        'CtsMediaTestCases': {
-                'SUBMODULES':
-                set([
-                        'CtsMediaTestCases.audio',
-                        'CtsMediaTestCases.perf',
-                        'CtsMediaTestCases.video',
-                        'CtsMediaTestCases.testGLViewDecodeAccuracy',
-                        'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy',
-                        'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy',
-                        'CtsMediaTestCases.exclude-GLView',
-                ]),
-                'SUITES':
-                ['suite:arc-cts-r', 'suite:arc-cts', 'suite:arc-cts-qual'],
-        },
-        'CtsWindowManagerDeviceTestCases': {
-                'SUBMODULES':
-                set([
-                        'CtsWindowManager.A',
-                        'CtsWindowManager.C',
-                        'CtsWindowManager.D',
-                        'CtsWindowManager.F',
-                        'CtsWindowManager.L',
-                        'CtsWindowManager.M',
-                        'CtsWindowManager.Override',
-                        'CtsWindowManager.P',
-                        'CtsWindowManager.R',
-                        'CtsWindowManager.S',
-                        'CtsWindowManager.T',
-                        'CtsWindowManager.Window',
-                        'CtsWindowManager.intent',
-                        'CtsWindowManager.lifecycle',
-                ]),
-                'SUITES': ['suite:arc-cts-r'],
-        },
+    'CtsDeqpTestCases': {
+        'CtsDeqpTestCases.dEQP-EGL': SUITE_ARC_CTS_R,
+        'CtsDeqpTestCases.dEQP-GLES2': SUITE_ARC_CTS_R,
+        'CtsDeqpTestCases.dEQP-GLES3': SUITE_ARC_CTS_R,
+        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
+            CONFIG['HARDWARE_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES31': SUITE_ARC_CTS_R,
+        'CtsDeqpTestCases.dEQP-VK': SUITE_ARC_CTS_R,
+    },
+    'CtsMediaTestCases': {
+        'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.perf': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.video': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.testGLViewDecodeAccuracy': R_REGRESSION_QUAL_HARDWARE_SUITES,
+        'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': R_REGRESSION_QUAL_HARDWARE_SUITES,
+        'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': R_REGRESSION_QUAL_HARDWARE_SUITES,
+        'CtsMediaTestCases.exclude-GLView': R_REGRESSION_QUAL_HARDWARE_SUITES,
+    },
+    'CtsWindowManagerDeviceTestCases': {
+        'CtsWindowManager.A': R_REGRESSION_SUITES,
+        'CtsWindowManager.C': R_REGRESSION_SUITES,
+        'CtsWindowManager.D': R_REGRESSION_SUITES,
+        'CtsWindowManager.F': R_REGRESSION_SUITES,
+        'CtsWindowManager.L': R_REGRESSION_SUITES,
+        'CtsWindowManager.M': R_REGRESSION_SUITES,
+        'CtsWindowManager.Override': R_REGRESSION_SUITES,
+        'CtsWindowManager.P': R_REGRESSION_SUITES,
+        'CtsWindowManager.R': R_REGRESSION_SUITES,
+        'CtsWindowManager.S': R_REGRESSION_SUITES,
+        'CtsWindowManager.T': R_REGRESSION_SUITES,
+        'CtsWindowManager.Window': R_REGRESSION_SUITES,
+        'CtsWindowManager.intent': R_REGRESSION_SUITES,
+        'CtsWindowManager.lifecycle': R_REGRESSION_SUITES,
+    },
 }
 
 # Moblab optionally can reshard modules, this was originally used
 # for deqp but it is no longer required for that module.  Retaining
 # feature in case future slower module needs to be sharded.
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
-        'CtsMediaTestCases': [
-                'CtsMediaTestCases.testGLViewDecodeAccuracy',
-                'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy',
-                'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy',
-                'CtsMediaTestCases.exclude-GLView',
-        ]
+        'CtsDeqpTestCases' : {
+             'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
+                 CONFIG['MOBLAB_HARDWARE_SUITE_NAME']],
+             },
+        'CtsMediaTestCases': {
+             'CtsMediaTestCases.testGLViewDecodeAccuracy': [
+                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
+                        'MOBLAB_HARDWARE_SUITE_NAME']],
+             'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': [
+                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
+                        'MOBLAB_HARDWARE_SUITE_NAME']],
+             'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': [
+                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
+                        'MOBLAB_HARDWARE_SUITE_NAME']],
+             'CtsMediaTestCases.exclude-GLView': [
+                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
+                        'MOBLAB_HARDWARE_SUITE_NAME']],
+        },
 }
 
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
@@ -350,6 +369,11 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         'CtsDeqpTestCases.dEQP-GLES3': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-GLES3.*'
+        ],
+       'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
+                '--include-filter', 'CtsDeqpTestCases', '--module',
+                'CtsDeqpTestCases', '--test',
+                'dEQP-GLES3.functional.prerequisite.*'
         ],
         'CtsDeqpTestCases.dEQP-GLES31': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',

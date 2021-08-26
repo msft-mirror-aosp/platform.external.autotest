@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.11_r5.x86.CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy'
-ATTRIBUTES = 'suite:arc-cts-r, suite:arc-cts, suite:arc-cts-qual'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-r, suite:arc-cts, suite:arc-cts-hardware'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

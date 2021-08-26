@@ -11,6 +11,7 @@ CONFIG = {}
 CONFIG['TEST_NAME'] = 'cheets_CTS_P'
 CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_P, suite:cts'
+CONFIG['MOBLAB_HARDWARE_SUITE_NAME'] = 'suite:cts-hardware'
 CONFIG['COPYRIGHT_YEAR'] = 2018
 CONFIG['AUTHKEY'] = ''
 
@@ -34,6 +35,7 @@ CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 # suite:arc-cts-unibuild on selected models.
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts', 'suite:arc-cts-unibuild']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
+CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -161,15 +163,6 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
 
 # The suite is divided based on the run-time hint in the *.config file.
 CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
-# This is the default suite for all the modules that are not specified below.
-CONFIG['VMTEST_INFO_SUITES']['vmtest-informational1'] = []
-CONFIG['VMTEST_INFO_SUITES']['vmtest-informational2'] = [
-    'CtsMediaTestCases', 'CtsMediaStressTestCases', 'CtsHardwareTestCases'
-]
-CONFIG['VMTEST_INFO_SUITES']['vmtest-informational3'] = [
-    'CtsThemeHostTestCases', 'CtsHardwareTestCases', 'CtsLibcoreTestCases'
-]
-CONFIG['VMTEST_INFO_SUITES']['vmtest-informational4'] = ['']
 
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = [
@@ -308,76 +301,90 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
     'CtsLibcoreTestCases',
 ])
 
+# This list of modules will be used for reduced set of testing for build
+# variant process. Suites: cts_hardware & arc-cts-hardware.
+CONFIG['HARDWARE_MODULES'] = [
+    'CtsPerfettoTestCases', 'CtsSustainedPerformanceHostTestCases',
+    'CtsCameraTestCases', 'CtsMediaStressTestCases', 'CtsAppTestCases',
+    'CtsPermissionTestCases', 'CtsViewTestCases', 'CtsMediaTestCases',
+    'CtsNativeMediaAAudioTestCases', 'CtsNetTestCases', 'CtsUsageStatsTestCases',
+    'CtsSensorTestCases',
+]
+
+SUITES_DEQP_SUBMODULE = [
+    'suite:arc-cts-deqp','suite:graphics_per-week']
+
 CONFIG['EXTRA_MODULES'] = {
     'CtsDeqpTestCases': {
-        'SUBMODULES': set([
-            'CtsDeqpTestCases.dEQP-EGL',
-            'CtsDeqpTestCases.dEQP-GLES2',
-            'CtsDeqpTestCases.dEQP-GLES3',
-            'CtsDeqpTestCases.dEQP-GLES31',
-            'CtsDeqpTestCases.dEQP-VK'
-        ]),
-        'SUITES': ['suite:arc-cts-deqp', 'suite:graphics_per-week'],
+        'CtsDeqpTestCases.dEQP-EGL': SUITES_DEQP_SUBMODULE,
+        'CtsDeqpTestCases.dEQP-GLES2': SUITES_DEQP_SUBMODULE,
+        'CtsDeqpTestCases.dEQP-GLES3': SUITES_DEQP_SUBMODULE,
+        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite':
+            [CONFIG['HARDWARE_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES31': SUITES_DEQP_SUBMODULE,
+        'CtsDeqpTestCases.dEQP-VK': SUITES_DEQP_SUBMODULE,
     },
     'CtsMediaTestCases': {
-        'SUBMODULES': set([
-            'CtsMediaTestCases.audio',
-        ]),
-        'SUITES': ['suite:arc-cts'],
+            'CtsMediaTestCases.audio': ['suite:arc-cts'],
+
     },
     _WM_PRESUBMIT: {
-        'SUBMODULES': set([_WM_PRESUBMIT]),
-        'SUITES': [],
+            _WM_PRESUBMIT: [],
     },
 }
 
 # Moblab wants to shard dEQP really finely. This isn't needed anymore as it got
 # faster, but I guess better safe than sorry.
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
-    'CtsDeqpTestCases' : [
-        'CtsDeqpTestCases.dEQP-EGL',
-        'CtsDeqpTestCases.dEQP-GLES2',
-        'CtsDeqpTestCases.dEQP-GLES3',
-        'CtsDeqpTestCases.dEQP-GLES31',
-        'CtsDeqpTestCases.dEQP-VK.api',
-        'CtsDeqpTestCases.dEQP-VK.binding_model',
-        'CtsDeqpTestCases.dEQP-VK.clipping',
-        'CtsDeqpTestCases.dEQP-VK.compute',
-        'CtsDeqpTestCases.dEQP-VK.device_group',
-        'CtsDeqpTestCases.dEQP-VK.draw',
-        'CtsDeqpTestCases.dEQP-VK.dynamic_state',
-        'CtsDeqpTestCases.dEQP-VK.fragment_operations',
-        'CtsDeqpTestCases.dEQP-VK.geometry',
-        'CtsDeqpTestCases.dEQP-VK.glsl',
-        'CtsDeqpTestCases.dEQP-VK.image',
-        'CtsDeqpTestCases.dEQP-VK.info',
-        'CtsDeqpTestCases.dEQP-VK.memory',
-        'CtsDeqpTestCases.dEQP-VK.multiview',
-        'CtsDeqpTestCases.dEQP-VK.pipeline',
-        'CtsDeqpTestCases.dEQP-VK.protected_memory',
-        'CtsDeqpTestCases.dEQP-VK.query_pool',
-        'CtsDeqpTestCases.dEQP-VK.rasterization',
-        'CtsDeqpTestCases.dEQP-VK.renderpass',
-        'CtsDeqpTestCases.dEQP-VK.renderpass2',
-        'CtsDeqpTestCases.dEQP-VK.robustness',
-        'CtsDeqpTestCases.dEQP-VK.sparse_resources',
-        'CtsDeqpTestCases.dEQP-VK.spirv_assembly',
-        'CtsDeqpTestCases.dEQP-VK.ssbo',
-        'CtsDeqpTestCases.dEQP-VK.subgroups',
-        'CtsDeqpTestCases.dEQP-VK.subgroups.b',
-        'CtsDeqpTestCases.dEQP-VK.subgroups.s',
-        'CtsDeqpTestCases.dEQP-VK.subgroups.vote',
-        'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic',
-        'CtsDeqpTestCases.dEQP-VK.subgroups.clustered',
-        'CtsDeqpTestCases.dEQP-VK.subgroups.quad',
-        'CtsDeqpTestCases.dEQP-VK.synchronization',
-        'CtsDeqpTestCases.dEQP-VK.tessellation',
-        'CtsDeqpTestCases.dEQP-VK.texture',
-        'CtsDeqpTestCases.dEQP-VK.ubo',
-        'CtsDeqpTestCases.dEQP-VK.wsi',
-        'CtsDeqpTestCases.dEQP-VK.ycbcr'
-    ]
+    'CtsDeqpTestCases' : {
+        # moblab cts suite
+        'CtsDeqpTestCases.dEQP-EGL': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES2': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES3': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES31': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.api': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.binding_model': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.clipping': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.compute': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.device_group': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.draw': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.dynamic_state': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.fragment_operations': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.geometry': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.glsl': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.image': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.info': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.memory': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.multiview': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.pipeline': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.protected_memory': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.query_pool': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.rasterization': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.renderpass': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.renderpass2': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.robustness': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.sparse_resources': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.spirv_assembly': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.ssbo': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups.b': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups.s': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups.vote': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups.clustered': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.subgroups.quad': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.synchronization': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.tessellation': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.texture': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.ubo': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.wsi': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK.ycbcr': [CONFIG['MOBLAB_SUITE_NAME']],
+
+        # moblab hardware only cts suite
+        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [CONFIG['MOBLAB_HARDWARE_SUITE_NAME']],
+    }
 }
+
 # TODO(haddowk,kinaba): Hack for b/138622686. Clean up later.
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
     'x86': {
@@ -400,6 +407,10 @@ CONFIG['EXTRA_COMMANDLINE'] = {
     'CtsDeqpTestCases.dEQP-GLES3': [
         '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
         '--test', 'dEQP-GLES3.*'
+    ],
+    'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
+        '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',
+        '--test', 'dEQP-GLES3.functional.prerequisite.*'
     ],
     'CtsDeqpTestCases.dEQP-GLES31': [
         '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases',

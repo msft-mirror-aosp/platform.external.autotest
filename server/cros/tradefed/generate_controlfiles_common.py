@@ -318,9 +318,14 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     # TODO(ihf): Make this work with the "all" and "collect" generation,
     # which currently bypass this function.
     """
+    cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES'))
+
     if is_public:
-        # On moblab everything runs in the same suite.
-        return [CONFIG['MOBLAB_SUITE_NAME']]
+        for module in modules:
+            suites = set([CONFIG['MOBLAB_SUITE_NAME']])
+            if module in cts_hardware_modules:
+                suites.add(CONFIG['MOBLAB_HARDWARE_SUITE_NAME'])
+        return sorted(list(suites))
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
 
@@ -338,6 +343,8 @@ def get_suites(modules, abi, is_public, camera_facing=None):
         if module in CONFIG['HARDWARE_DEPENDENT_MODULES']:
             # CTS modules to be run on all unibuild models.
             suites.add('suite:arc-cts-unibuild-hw')
+        if module in cts_hardware_modules:
+            suites.add(CONFIG['HARDWARE_SUITE_NAME'])
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.
@@ -416,7 +423,7 @@ def get_job_retries(modules, is_public, suites):
         # We don't want job retries for module collection or special cases.
         if (module in get_collect_modules(is_public) or module == _ALL or
             ('CtsDeqpTestCases' in CONFIG['EXTRA_MODULES'] and
-             module in CONFIG['EXTRA_MODULES']['CtsDeqpTestCases']['SUBMODULES']
+             module in CONFIG['EXTRA_MODULES']['CtsDeqpTestCases']
              )):
             retries = 0
     return retries
@@ -710,17 +717,15 @@ def get_extra_modules_dict(is_public, abi):
 
     extra_modules = copy.deepcopy(CONFIG['PUBLIC_EXTRA_MODULES'])
     if abi in CONFIG['EXTRA_SUBMODULE_OVERRIDE']:
-        for _, submodules in extra_modules.items():
+        for _, config in extra_modules.items():
             for old, news in CONFIG['EXTRA_SUBMODULE_OVERRIDE'][abi].items():
-                submodules.remove(old)
-                submodules.extend(news)
-    return {
-        module: {
-            'SUBMODULES': submodules,
-            'SUITES': [CONFIG['MOBLAB_SUITE_NAME']],
-        } for module, submodules in extra_modules.items()
-    }
+                if old in config.keys():
+                    suite = config[old]
+                    config.pop(old)
+                    for module in news:
+                        config[module] = suite
 
+    return extra_modules
 
 def get_extra_artifacts(modules):
     artifacts = []
@@ -840,7 +845,7 @@ def get_controlfile_content(combined,
     if (combined not in get_collect_modules(is_public) and combined != _ALL):
         target_module = combined
     for target, config in get_extra_modules_dict(is_public, abi).items():
-        if combined in config['SUBMODULES']:
+        if combined in config.keys():
             target_module = target
     abi_to_run = {
             ("arm", 32): 'armeabi-v7a',
@@ -1159,7 +1164,7 @@ def write_moblab_controlfiles(modules, abi, revision, build, uri, is_public):
         if is_parameterized_module(module):
             continue
         write_controlfile(module, set([module]), abi, revision, build, uri,
-                          [CONFIG['MOBLAB_SUITE_NAME']], is_public)
+                          None, is_public)
 
 
 def write_regression_controlfiles(modules, abi, revision, build, uri,
@@ -1172,18 +1177,19 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
     became too much in P (more than 300 per ABI). Instead we combine modules
     with similar names and run these in the same job (alphabetically).
     """
+
     if CONFIG.get('SINGLE_CONTROL_FILE'):
-        module_set = set(modules)
-        write_controlfile('all',
-                          module_set,
-                          abi,
-                          revision,
-                          build,
-                          uri,
-                          None,
-                          is_public,
-                          is_latest,
-                          whole_module_set=module_set)
+            module_set = set(modules)
+            write_controlfile('all',
+                module_set,
+                abi,
+                revision,
+                build,
+                uri,
+                None,
+                is_public,
+                is_latest,
+                whole_module_set=module_set)
     else:
         combined = combine_modules_by_common_word(set(modules))
         for key in combined:
@@ -1282,9 +1288,9 @@ def write_extra_controlfiles(_modules, abi, revision, build, uri, is_public,
     during bringup of grunt to split media tests.
     """
     for module, config in get_extra_modules_dict(is_public, abi).items():
-        for submodule in config['SUBMODULES']:
+        for submodule, suites in config.items():
             write_controlfile(submodule, set([submodule]), abi, revision,
-                              build, uri, config['SUITES'], is_public,
+                              build, uri, suites, is_public,
                               is_latest)
 
 

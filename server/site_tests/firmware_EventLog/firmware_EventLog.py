@@ -147,7 +147,7 @@ class firmware_EventLog(FirmwareTest):
         logging.info('Verifying eventlog behavior on suspend/resume')
         self._cutoff_time = self._now()
         self.faft_client.system.run_shell_command(
-                'powerd_dbus_suspend -wakeup_timeout=10')
+                'powerd_dbus_suspend --wakeup_timeout=10')
         time.sleep(5)   # a little slack time for powerd to write the 'Wake'
         self._gather_events()
 
@@ -166,7 +166,7 @@ class firmware_EventLog(FirmwareTest):
             self.disable_suspend_to_idle()
             self._cutoff_time = self._now()
             self.faft_client.system.run_shell_command(
-                'powerd_dbus_suspend -wakeup_timeout=10')
+                    'powerd_dbus_suspend --wakeup_timeout=10')
             time.sleep(5)   # a little slack time for powerd to write the 'Wake'
             self.teardown_powerd_prefs()
             self._gather_events()

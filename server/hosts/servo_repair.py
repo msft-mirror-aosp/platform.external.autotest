@@ -20,6 +20,7 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import repair_utils
+from autotest_lib.server.hosts import constants as hosts_constants
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.cros.servo.topology import servo_topology
 from autotest_lib.site_utils.admin_audit import servo_updater
@@ -1022,7 +1023,13 @@ class _ConnectionVerifier(repair_utils.SshVerifier):
         if not host.is_containerized_servod():
             return super(_ConnectionVerifier, self).verify(host)
 
-        client = docker.from_env(timeout=300)
+        if os.path.exists(hosts_constants.DOCKER_SOCKET):
+            client = docker.from_env(timeout=300)
+        else:
+            tcp_connection = "tcp://{}:{}".format(
+                    hosts_constants.DOCKER_TCP_SERVER_IP,
+                    hosts_constants.DOCKER_TCP_SERVER_PORT)
+            client = docker.DockerClient(base_url=tcp_connection, timeout=300)
         try:
             client.containers.get(host.hostname)
         except docker.errors.NotFound:

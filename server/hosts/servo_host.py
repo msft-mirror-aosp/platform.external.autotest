@@ -40,6 +40,7 @@ from autotest_lib.server import crashcollect
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.hosts import servo_repair
 from autotest_lib.server.hosts import base_servohost
+from autotest_lib.server.hosts import constants as hosts_constants
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.cros.faft.utils import config
 from autotest_lib.client.common_lib import global_config
@@ -637,7 +638,14 @@ class ServoHost(base_servohost.BaseServoHost):
             return
 
         if self.is_containerized_servod():
-            client = docker.from_env(timeout=300)
+            if os.path.exists(hosts_constants.DOCKER_SOCKET):
+                client = docker.from_env(timeout=300)
+            else:
+                tcp_connection = "tcp://{}:{}".format(
+                        hosts_constants.DOCKER_TCP_SERVER_IP,
+                        hosts_constants.DOCKER_TCP_SERVER_PORT)
+                client = docker.DockerClient(base_url=tcp_connection,
+                                             timeout=300)
             try:
                 client.containers.get(self.hostname)
             except docker.errors.NotFound:

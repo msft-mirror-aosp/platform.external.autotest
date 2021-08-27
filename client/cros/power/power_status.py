@@ -30,13 +30,6 @@ from six.moves import range
 
 BatteryDataReportType = autotest_enum.AutotestEnum('CHARGE', 'ENERGY')
 
-# For devices whose full capacity is significantly lower than design full
-# capacity, scale down their design full capacity.
-BATTERY_DESIGN_FULL_SCALE = {
-        'berknip': 0.96,  # b/172625511 (0.94), b/194162890 (0.96)
-        'delbin': 0.96,  # b/177076373
-        'jinlon': 0.95,  # b/161307060
-}
 # battery data reported at 1e6 scale
 BATTERY_DATA_SCALE = 1e6
 # number of times to retry reading the battery in the case of bad data
@@ -333,12 +326,6 @@ class BatteryStat(DevStat):
             raise error.TestError('Failed to determine battery voltage')
 
         battery_design_full_scale = 1
-        model = utils.get_platform()
-        if model in BATTERY_DESIGN_FULL_SCALE:
-            battery_design_full_scale = BATTERY_DESIGN_FULL_SCALE.get(model)
-            logging.info(
-                    'Apply %f scale to design full battery capacity for model '
-                    '%s', battery_design_full_scale, model)
 
         # Since charge data is present, calculate parameters based upon
         # reported charge data.

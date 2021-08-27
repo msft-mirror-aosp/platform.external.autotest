@@ -43,8 +43,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     # exclude can be none if there is no label that shoud be excluded based on
     # the property.
     BOARD_PROPERTIES = [
-        ['BOARD_SLAVE_CONFIG_SPI', 'sps', 'i2cs'],
-        ['BOARD_SLAVE_CONFIG_I2C', 'i2cs', 'sps,sps_ds_resume'],
+        ['BOARD_PERIPH_CONFIG_SPI', 'sps', 'i2cs'],
+        ['BOARD_PERIPH_CONFIG_I2C', 'i2cs', 'sps,sps_ds_resume'],
         ['BOARD_USE_PLT_RESET', 'plt_rst', 'sys_rst'],
         ['BOARD_CLOSED_SOURCE_SET1', 'closed_source_set1', 'open_source_set'],
         ['BOARD_EC_CR50_COMM_SUPPORT', 'ec_comm', 'no_ec_comm'],

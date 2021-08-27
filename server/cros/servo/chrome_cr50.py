@@ -131,9 +131,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     # CR50 Board Properties as defined in platform/ec/board/cr50/scratch-reg1.h
     BOARD_PROP = {
-           'BOARD_SLAVE_CONFIG_SPI'      : 1 << 0,
            'BOARD_PERIPH_CONFIG_SPI'     : 1 << 0,
-           'BOARD_SLAVE_CONFIG_I2C'      : 1 << 1,
+           'BOARD_PERIPH_CONFIG_SPI'     : 1 << 0,
+           'BOARD_PERIPH_CONFIG_I2C'     : 1 << 1,
            'BOARD_PERIPH_CONFIG_I2C'     : 1 << 1,
            'BOARD_NEEDS_SYS_RST_PULL_UP' : 1 << 5,
            'BOARD_USE_PLT_RESET'         : 1 << 6,

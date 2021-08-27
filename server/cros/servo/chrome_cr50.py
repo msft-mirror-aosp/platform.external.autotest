@@ -131,28 +131,29 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     # CR50 Board Properties as defined in platform/ec/board/cr50/scratch-reg1.h
     BOARD_PROP = {
-           'BOARD_PERIPH_CONFIG_SPI'     : 1 << 0,
-           'BOARD_PERIPH_CONFIG_SPI'     : 1 << 0,
-           'BOARD_PERIPH_CONFIG_I2C'     : 1 << 1,
-           'BOARD_PERIPH_CONFIG_I2C'     : 1 << 1,
-           'BOARD_NEEDS_SYS_RST_PULL_UP' : 1 << 5,
-           'BOARD_USE_PLT_RESET'         : 1 << 6,
-           'BOARD_WP_ASSERTED'           : 1 << 8,
-           'BOARD_FORCING_WP'            : 1 << 9,
-           'BOARD_NO_RO_UART'            : 1 << 10,
-           'BOARD_CCD_STATE_MASK'        : 3 << 11,
-           'BOARD_DEEP_SLEEP_DISABLED'   : 1 << 13,
-           'BOARD_DETECT_AP_WITH_UART'   : 1 << 14,
-           'BOARD_ITE_EC_SYNC_NEEDED'    : 1 << 15,
-           'BOARD_WP_DISABLE_DELAY'      : 1 << 16,
-           'BOARD_CLOSED_SOURCE_SET1'    : 1 << 17,
-           'BOARD_CLOSED_LOOP_RESET'     : 1 << 18,
-           'BOARD_NO_INA_SUPPORT'        : 1 << 19,
-           'BOARD_ALLOW_CHANGE_TPM_MODE' : 1 << 20,
-           'BOARD_EC_CR50_COMM_SUPPORT'  : 1 << 21,
-           'BOARD_CCD_REC_LID_PIN_DIOA1' : 0x01 << 22,
-           'BOARD_CCD_REC_LID_PIN_DIOA9' : 0x02 << 22,
-           'BOARD_CCD_REC_LID_PIN_DIOA12': 0x03 << 22,
+            'BOARD_PERIPH_CONFIG_SPI': (1 << 0, None),
+            'BOARD_PERIPH_CONFIG_SPI': (1 << 0, None),
+            'BOARD_PERIPH_CONFIG_I2C': (1 << 1, None),
+            'BOARD_PERIPH_CONFIG_I2C': (1 << 1, None),
+            'BOARD_NEEDS_SYS_RST_PULL_UP': (1 << 5, None),
+            'BOARD_USE_PLT_RESET': (1 << 6, None),
+            'BOARD_WP_ASSERTED': (1 << 8, None),
+            'BOARD_FORCING_WP': (1 << 9, None),
+            'BOARD_NO_RO_UART': (1 << 10, None),
+            'BOARD_CCD_UNLOCKED': (1 << 11, 3 << 11),
+            'BOARD_CCD_OPENED': (2 << 11, 3 << 11),
+            'BOARD_DEEP_SLEEP_DISABLED': (1 << 13, None),
+            'BOARD_DETECT_AP_WITH_UART': (1 << 14, None),
+            'BOARD_ITE_EC_SYNC_NEEDED': (1 << 15, None),
+            'BOARD_WP_DISABLE_DELAY': (1 << 16, None),
+            'BOARD_CLOSED_SOURCE_SET1': (1 << 17, None),
+            'BOARD_CLOSED_LOOP_RESET': (1 << 18, None),
+            'BOARD_NO_INA_SUPPORT': (1 << 19, None),
+            'BOARD_ALLOW_CHANGE_TPM_MODE': (1 << 20, None),
+            'BOARD_EC_CR50_COMM_SUPPORT': (1 << 21, None),
+            'BOARD_CCD_REC_LID_PIN_DIOA1': (1 << 22, 3 << 22),
+            'BOARD_CCD_REC_LID_PIN_DIOA9': (2 << 22, 3 << 22),
+            'BOARD_CCD_REC_LID_PIN_DIOA12': (3 << 22, 3 << 22)
     }
 
     # CR50 reset flags as defined in platform ec_commands.h. These are only the
@@ -505,8 +506,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @param prop_name: a property name in string type.
         """
         brdprop = self.get_board_properties()
-        prop = self.BOARD_PROP[prop_name]
-        return (brdprop & prop) == prop
+        (prop, mask) = self.BOARD_PROP[prop_name]
+        # Use the board property value for the mask if no mask is given.
+        mask = mask or prop
+        return (brdprop & mask) == prop
 
 
     def has_command(self, cmd):

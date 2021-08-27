@@ -175,7 +175,7 @@ class CellularProxy(shill_proxy.ShillProxy):
         success, _, _ = self.wait_for_property_in(new_modem,
                                                   self.DEVICE_PROPERTY_POWERED,
                                                   [self.VALUE_POWERED_ON],
-                                                  timeout_seconds=10)
+                                                  timeout_seconds=15)
         if not success:
             raise shill_proxy.ShillProxyError(
                     'After modem reset, new modem failed to enter powered '

@@ -21,6 +21,7 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=10,
+        needs_push_media=True,
         tag='arm.waivers',
         test_name='cheets_CTS_R.arm.waivers',
         run_template=['run', 'commandAndExit', 'cts', '--subplan', 'waivers'],

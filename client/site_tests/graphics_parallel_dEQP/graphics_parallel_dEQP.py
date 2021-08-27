@@ -260,6 +260,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # run_result, leaving old results.
         run_result = {}
         try:
+            logging.info(command)
             run_result = utils.run(command,
                                    env=self._env,
                                    ignore_status=True,

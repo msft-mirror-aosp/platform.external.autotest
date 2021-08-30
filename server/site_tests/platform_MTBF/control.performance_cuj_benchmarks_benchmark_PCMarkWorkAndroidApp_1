@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'ui_GeekbenchPublicAndroidApp_1'
+NAME = 'benchmark_PCMarkWorkAndroidApp_1'
 ATTRIBUTES = 'suite:performance_cuj_benchmarks'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = 5000
+PRIORITY = 4993
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 2
 REQUIRE_SSP = True
@@ -31,7 +31,7 @@ from autotest_lib.utils import labellib
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
   labels['test_version'] = 1
-  labels['test'] = 'ui.GeekbenchPublicAndroidApp'
+  labels['test'] = 'benchmark.PCMarkWorkAndroidApp'
   labels['test_iteration'] = '1'
   utils.write_keyval(job.resultdir, labels)
 
@@ -40,7 +40,7 @@ def run(machine):
   report_host_info(host)
   job.run_test('tast',
               host=host,
-              test_exprs=['ui.GeekbenchPublicAndroidApp'],
+              test_exprs=['benchmark.PCMarkWorkAndroidApp'],
               ignore_test_failures=False,
               max_run_sec=3600,
               command_args=args,

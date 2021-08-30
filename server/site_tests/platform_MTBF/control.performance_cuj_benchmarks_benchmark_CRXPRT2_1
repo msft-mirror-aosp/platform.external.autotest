@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'ui_CRXPRT2_2'
+NAME = 'benchmark_CRXPRT2_1'
 ATTRIBUTES = 'suite:performance_cuj_benchmarks'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = 4995
+PRIORITY = 4996
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 2
 REQUIRE_SSP = True
@@ -31,8 +31,8 @@ from autotest_lib.utils import labellib
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
   labels['test_version'] = 1
-  labels['test'] = 'ui.CRXPRT2'
-  labels['test_iteration'] = '2'
+  labels['test'] = 'benchmark.CRXPRT2'
+  labels['test_iteration'] = '1'
   utils.write_keyval(job.resultdir, labels)
 
 def run(machine):
@@ -40,7 +40,7 @@ def run(machine):
   report_host_info(host)
   job.run_test('tast',
               host=host,
-              test_exprs=['ui.CRXPRT2'],
+              test_exprs=['benchmark.CRXPRT2'],
               ignore_test_failures=False,
               max_run_sec=3600,
               command_args=args,

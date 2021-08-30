@@ -4,7 +4,6 @@
 
 AUTHOR = 'pstew, quiche, wiley, briannorris'
 NAME = 'network_WlanRegulatory'
-ATTRIBUTES = 'suite:wifi_matfunc'
 TIME = 'SHORT'
 TEST_TYPE = 'client'
 # To be safe, let's avoid setting non-default regulatory domains outside of an

@@ -23,7 +23,7 @@ class firmware_Cr50TpmMode(Cr50Test):
 
         # TODO(mruthven): remove can_set_tpm logic when tpm mode propagates to
         # mp.
-        always_enabled = '0.6.50' in self.cr50.get_active_version_info()
+        always_enabled = '0.6.51' in self.cr50.get_active_version_info()
         logging.info('Running version %s tpm mode based on brdprop',
                      'does not enable' if always_enabled else 'enables')
         self.can_set_tpm = always_enabled or self.cr50.uses_board_property(

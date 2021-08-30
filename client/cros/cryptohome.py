@@ -110,7 +110,7 @@ def get_fwmp(cleared_fwmp=False):
     Raises:
          ChromiumOSError if any expected field is not found in the cryptohome
          output. This would typically happen when FWMP state does not match
-         'clreared_fwmp'
+         'cleared_fwmp'
     """
     out = run_cmd(CRYPTOHOME_CMD +
                     ' --action=get_firmware_management_parameters')
@@ -188,6 +188,39 @@ def get_install_attribute_status():
     return out.strip()
 
 
+def lock_install_attributes(attrs):
+    """Set and lock install attributes for the device.
+
+    @param attrs: dict of install attributes.
+    """
+
+    take_tpm_ownership()
+    wait_for_install_attributes_ready()
+    for name, value in attrs.items():
+        args = [
+                CRYPTOHOME_CMD, '--action=install_attributes_set',
+                '--name="%s"' % name,
+                '--value="%s"' % value
+        ]
+        cmd = ' '.join(args)
+        if (utils.system(cmd, ignore_status=True) != 0):
+            return False
+
+    out = run_cmd(CRYPTOHOME_CMD + ' --action=install_attributes_finalize')
+    return (out.strip() == 'InstallAttributesFinalize(): 1')
+
+
+def wait_for_install_attributes_ready():
+    """Wait until install attributes are ready.
+    """
+    cmd = CRYPTOHOME_CMD + ' --action=install_attributes_is_ready'
+    utils.poll_for_condition(
+            lambda: run_cmd(cmd).strip() == 'InstallAttributesIsReady(): 1',
+            timeout=300,
+            exception=error.TestError(
+                    'Timeout waiting for install attributes to be ready'))
+
+
 def get_tpm_attestation_status():
     """Get the TPM attestation status.  Works similar to get_tpm_status().
     """
@@ -202,7 +235,7 @@ def get_tpm_attestation_status():
 
 
 def take_tpm_ownership(wait_for_ownership=True):
-    """Take TPM owernship.
+    """Take TPM ownership.
 
     Args:
         wait_for_ownership: block until TPM is owned if true
@@ -400,6 +433,7 @@ def __get_user_mount_info(user, allow_fail=False):
             __get_mount_info(mount_point=system_path(user),
                              allow_fail=allow_fail)]
 
+
 def is_vault_mounted(user, regexes=None, allow_fail=False):
     """Check whether a vault is mounted for the given user.
 
@@ -450,28 +484,30 @@ def is_guest_vault_mounted(allow_fail=False):
        or be backed by tmpfs.
     """
     return is_vault_mounted(
-        user=GUEST_USER_NAME,
-        regexes={
-            # Remove tmpfs support when it becomes unnecessary as all guest
-            # modes will use ext4 on a loop device.
-            constants.CRYPTOHOME_FS_REGEX_EXT4 :
-                constants.CRYPTOHOME_DEV_REGEX_LOOP_DEVICE,
-            constants.CRYPTOHOME_FS_REGEX_TMPFS :
-                constants.CRYPTOHOME_DEV_REGEX_GUEST,
-        },
-        allow_fail=allow_fail)
+            user=GUEST_USER_NAME,
+            regexes={
+                    # Remove tmpfs support when it becomes unnecessary as all guest
+                    # modes will use ext4 on a loop device.
+                    constants.CRYPTOHOME_FS_REGEX_EXT4:
+                    constants.CRYPTOHOME_DEV_REGEX_LOOP_DEVICE,
+                    constants.CRYPTOHOME_FS_REGEX_TMPFS:
+                    constants.CRYPTOHOME_DEV_REGEX_GUEST,
+            },
+            allow_fail=allow_fail)
+
 
 def is_permanent_vault_mounted(user, allow_fail=False):
     """Check if user is mounted over ecryptfs or ext4 crypto. """
     return is_vault_mounted(
-        user=user,
-        regexes={
-            constants.CRYPTOHOME_FS_REGEX_ECRYPTFS :
-                constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW,
-            constants.CRYPTOHOME_FS_REGEX_EXT4 :
-                constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE,
-        },
-        allow_fail=allow_fail)
+            user=user,
+            regexes={
+                    constants.CRYPTOHOME_FS_REGEX_ECRYPTFS:
+                    constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW,
+                    constants.CRYPTOHOME_FS_REGEX_EXT4:
+                    constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE,
+            },
+            allow_fail=allow_fail)
+
 
 def get_mounted_vault_path(user, allow_fail=False):
     """Get the path where the decrypted data for the user is located."""
@@ -540,10 +576,13 @@ def create_ecryptfs_homedir(user, password):
             '--ecryptfs',
             '--create']
     logging.info(run_cmd(' '.join(args)))
-    if not is_vault_mounted(user, regexes={
-        constants.CRYPTOHOME_FS_REGEX_ECRYPTFS :
-            constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW
-    }, allow_fail=True):
+    if not is_vault_mounted(
+            user,
+            regexes={
+                    constants.CRYPTOHOME_FS_REGEX_ECRYPTFS:
+                    constants.CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW
+            },
+            allow_fail=True):
         raise ChromiumOSError('Ecryptfs home could not be created')
 
 

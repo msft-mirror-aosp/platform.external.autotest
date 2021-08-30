@@ -7,7 +7,7 @@
 import dbus
 import dbus.mainloop.glib
 import dbus.service
-import gobject
+from gi.repository import GObject
 import logging
 
 from multiprocessing import Process, Pipe
@@ -661,11 +661,11 @@ class AdvMonitorAppMgr():
         @param app_id: the app id of this test app process.
 
         """
-        # Initialize threads in gobject/dbus-glib before creating local threads.
-        gobject.threads_init()
+        # Initialize threads in GObject/dbus-glib before creating local threads.
+        GObject.threads_init()
         dbus.mainloop.glib.threads_init()
 
-        # Arrange for the GLib main loop to be the default.
+        # Arrange for the GObject main loop to be the default.
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
         def get_advmon_mgr(bus):
@@ -681,7 +681,7 @@ class AdvMonitorAppMgr():
             return None
 
         bus = dbus.SystemBus()
-        mainloop = gobject.MainLoop()
+        mainloop = GObject.MainLoop()
         advmon_mgr = get_advmon_mgr(bus)
 
         app = AdvMonitorApp(bus, mainloop, advmon_mgr, app_id)

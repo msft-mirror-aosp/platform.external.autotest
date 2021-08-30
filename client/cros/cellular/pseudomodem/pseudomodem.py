@@ -11,7 +11,7 @@
 import argparse
 import dbus
 import dbus.mainloop.glib
-import gobject
+from gi.repository import GObject
 import imp
 import json
 import logging
@@ -82,7 +82,7 @@ class PseudoModemManager(object):
         context.
 
         """
-        self._mainloop = gobject.MainLoop()
+        self._mainloop = GObject.MainLoop()
         self._mainloop.run()
 
 

@@ -5,7 +5,7 @@
 import dbus
 import dbus.service
 import dbus.types
-import gobject
+from gi.repository import GObject
 import logging
 import random
 
@@ -674,10 +674,10 @@ class Modem(dbus_std_ifaces.DBusProperties,
                         self.Enable(True)
                     return False
 
-                gobject.timeout_add(1000, _DelayedEnable)
+                GObject.timeout_add(1000, _DelayedEnable)
                 return False
 
-            gobject.timeout_add(2000, _DelayedReappear)
+            GObject.timeout_add(2000, _DelayedReappear)
 
         def _ErrorCallback(error):
             raise error
@@ -686,7 +686,7 @@ class Modem(dbus_std_ifaces.DBusProperties,
                 mm1_constants.MM_MODEM_STATE_CONNECTED):
             self.Disconnect('/', _ResetFunc, _ErrorCallback)
         else:
-            gobject.idle_add(_ResetFunc)
+            GObject.idle_add(_ResetFunc)
 
 
     @utils.log_dbus_method()

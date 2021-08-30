@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import gobject
 import logging
 import os
 import time
@@ -14,6 +13,7 @@ from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.cros.graphics import graphics_utils
 
 from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GObject
 
 
 class desktopui_ChromeCheck(test.test):
@@ -41,7 +41,7 @@ class desktopui_ChromeCheck(test.test):
         Runs the test.
         """
         dbus_loop = DBusGMainLoop(set_as_default=True)
-        listener = session_manager.SessionSignalListener(gobject.MainLoop())
+        listener = session_manager.SessionSignalListener(GObject.MainLoop())
         listener.listen_for_session_state_change('started')
 
         logging.info('Logging in...')

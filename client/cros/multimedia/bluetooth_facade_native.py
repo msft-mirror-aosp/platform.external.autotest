@@ -15,7 +15,7 @@ import dbus
 import dbus.mainloop.glib
 import dbus.service
 import glob
-import gobject
+from gi.repository import GObject
 import json
 import logging
 import logging.handlers
@@ -1351,7 +1351,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                 self.BLUETOOTHD_JOB, dbus_interface=self.UPSTART_MANAGER_IFACE)
         self._bluetoothd = self._upstart_conn.get_object(None, bluetoothd_path)
 
-        # Arrange for the GLib main loop to be the default.
+        # Arrange for the GObject main loop to be the default.
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
         # Set up the connection to the D-Bus System Bus, get the object for
@@ -1378,7 +1378,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         self._chrc_property = None
         self._timeout_id = 0
         self._signal_watch = None
-        self._dbus_mainloop = gobject.MainLoop()
+        self._dbus_mainloop = GObject.MainLoop()
 
     @xmlrpc_server.dbus_safe(False)
     def set_debug_log_levels(self, bluez_vb, kernel_vb):
@@ -2492,7 +2492,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         logging.info('Device %s is found.', device.object_path)
 
         self._setup_pairing_agent(pin)
-        mainloop = gobject.MainLoop()
+        mainloop = GObject.MainLoop()
 
         try:
             if not self._is_paired(device):
@@ -3394,7 +3394,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                 signal_name='PropertiesChanged',
                 path=rx_object_path)
 
-        self._timeout_id = gobject.timeout_add(
+        self._timeout_id = GObject.timeout_add(
                 self.PROPERTY_UPDATE_TIMEOUT_MILLI_SECS,
                 self._property_wait_timeout)
 
@@ -3407,7 +3407,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
     def _property_changed(self, *args, **kwargs):
         """Handler for properties changed signal."""
-        gobject.source_remove(self._timeout_id)
+        GObject.source_remove(self._timeout_id)
         self._signal_watch.remove()
         changed_prop = args
 

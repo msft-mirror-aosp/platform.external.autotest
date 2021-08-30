@@ -29,7 +29,7 @@ class OutputRecorder(object):
 
     A thread is dedicated to performing non-blocking reading of the
     command outpt in this class. Other possible approaches include
-    1. using gobject.io_add_watch() to register a callback and
+    1. using GObject.io_add_watch() to register a callback and
        reading the output when available, or
     2. using select.select() with a short timeout, and reading
        the output if available.

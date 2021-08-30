@@ -5,7 +5,7 @@
 import collections
 import dbus
 import dbus.mainloop.glib
-import gobject
+from gi.repository import GObject
 import time
 
 from autotest_lib.client.cros import dbus_util
@@ -517,7 +517,7 @@ class ShillProxy(object):
             except dbus.exceptions.DBusException:
                 return False, '(object reference became invalid)', duration()
 
-            context = gobject.MainLoop().get_context()
+            context = GObject.MainLoop().get_context()
             while duration() < timeout_seconds:
                 # Dispatch all pending events.
                 while context.iteration(False):

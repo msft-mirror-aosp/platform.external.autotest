@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import gobject, os, shutil
+import os, shutil
 from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GObject
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -52,7 +53,7 @@ class platform_SessionManagerBlockDevmodeSetting(test.test):
             raise error.TestFail("Flag got reset for non-owned device.")
 
         # Test whether the flag gets reset when taking ownership.
-        listener = session_manager.OwnershipSignalListener(gobject.MainLoop())
+        listener = session_manager.OwnershipSignalListener(GObject.MainLoop())
         listener.listen_for_new_key_and_policy()
         with chrome.Chrome() as cr:
             listener.wait_for_signals(desc='Ownership files written to disk.')

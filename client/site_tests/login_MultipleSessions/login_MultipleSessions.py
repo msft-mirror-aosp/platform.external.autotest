@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import gobject
 from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GObject
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -27,7 +27,7 @@ class login_MultipleSessions(test.test):
         self._bus_loop = DBusGMainLoop(set_as_default=True)
         self._session_manager = session_manager.connect(self._bus_loop)
         self._listener = session_manager.OwnershipSignalListener(
-                gobject.MainLoop())
+                GObject.MainLoop())
         self._listener.listen_for_new_key_and_policy()
 
 

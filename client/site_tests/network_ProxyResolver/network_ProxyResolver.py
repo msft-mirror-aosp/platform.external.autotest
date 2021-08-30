@@ -7,7 +7,7 @@
 # by tlsdated during time synchronization.
 
 import dbus
-import gobject
+from gi.repository import GObject
 import logging
 import subprocess
 import threading
@@ -217,7 +217,7 @@ class network_ProxyResolver(test.test):
        cros_ui.stop()
        cros_ui.start()
        DBusGMainLoop(set_as_default=True)
-       self._listener = SignalListener(gobject.MainLoop())
+       self._listener = SignalListener(GObject.MainLoop())
        self._shill = shill_proxy.ShillProxy.get_proxy()
        if self._shill is None:
          raise error.TestFail('Could not connect to shill')

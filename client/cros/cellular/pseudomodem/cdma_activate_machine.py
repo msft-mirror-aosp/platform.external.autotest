@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import gobject
 import logging
+
+from gi.repository import GObject
 
 import pm_errors
 import state_machine
@@ -56,7 +57,7 @@ class CdmaActivateMachine(state_machine.StateMachine):
         def _DelayedStep():
             self.Step()
             return False
-        gobject.timeout_add(self._step_delay * 1000, _DelayedStep)
+        GObject.timeout_add(self._step_delay * 1000, _DelayedStep)
 
     def _HandleInvalidState(self):
         state = self._modem.Get(mm1_constants.I_MODEM, 'State')

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import gobject
+from gi.repository import GObject
 import logging
 import time
 
@@ -29,7 +29,7 @@ class DisableTester(GenericTesterMainLoop):
         self.test_kwargs.get('delay_before_disable_ms', 0) +
         self.test.iteration *
         self.test_kwargs.get('disable_delay_per_iteration_ms', 0))
-    gobject.timeout_add(disable_delay_ms, self._start_disable)
+    GObject.timeout_add(disable_delay_ms, self._start_disable)
     self._start_test()
 
   @ExceptionForward
@@ -59,7 +59,7 @@ class DisableTester(GenericTesterMainLoop):
     logging.info('Got status')
     self.requirement_completed('get_status', warn_if_already_completed=False)
     if self.status_delay_ms:
-      gobject.timeout_add(self.status_delay_ms, self._start_get_status)
+      GObject.timeout_add(self.status_delay_ms, self._start_get_status)
 
   def after_main_loop(self):
     """Called by GenericTesterMainLoop after the main loop has exited."""
@@ -188,7 +188,7 @@ class ModemDisableTester(DisableTester):
     if self._is_gobi():
       self.remaining_requirements.add('get_status')
       self.status_delay_ms = self.test_kwargs.get('status_delay_ms', 200)
-      gobject.timeout_add(self.status_delay_ms, self._start_get_status)
+      GObject.timeout_add(self.status_delay_ms, self._start_get_status)
 
     self._start_connect()
 
@@ -262,7 +262,7 @@ class cellular_DisableWhileConnecting(test.test):
   def run_once(self, test_env, **kwargs):
     self.test_env = test_env
     timeout_s = kwargs.get('timeout_s', DEFAULT_TEST_TIMEOUT_S)
-    gobject_main_loop = gobject.MainLoop()
+    gobject_main_loop = GObject.MainLoop()
 
     with test_env:
       logging.info('Shill-level test')

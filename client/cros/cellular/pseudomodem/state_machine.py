@@ -4,7 +4,7 @@
 
 import dbus
 import dbus.service
-import gobject
+from gi.repository import GObject
 import logging
 
 import pm_errors
@@ -189,7 +189,7 @@ class StateMachine(dbus.service.Object):
         delays.
 
         """
-        gobject.idle_add(StateMachine.Step, self)
+        GObject.idle_add(StateMachine.Step, self)
 
 
     def _GetIsmObjectName(self):

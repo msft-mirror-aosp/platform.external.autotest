@@ -39,7 +39,7 @@ from dbus.types import ObjectPath
 from dbus.types import Struct
 from dbus.types import UInt32
 import glib
-import gobject
+from gi.repository import GObject
 import mm1
 
 
@@ -728,7 +728,7 @@ after the pseudo modem is recognized by shill.
                           text=options.sms_text)
                 modem.AddSMS(sms)
 
-        mainloop = gobject.MainLoop()
+        mainloop = GObject.MainLoop()
 
         def SignalHandler(signum, frame):
             logging.info('Signal handler called with signal: %s', signum)

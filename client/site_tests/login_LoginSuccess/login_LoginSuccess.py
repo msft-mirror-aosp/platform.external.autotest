@@ -2,14 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(crbug.com/1237594): revert to a normal import of gobject.
 from autotest_lib.client.common_lib import error
-try:
-    import gobject
-except ImportError:
-    raise error.TestWarn('Unable to import gobject. crbug.com/1237594')
 
 from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GObject
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib.cros import chrome, session_manager
@@ -34,7 +30,7 @@ class login_LoginSuccess(test.test):
         bus_loop = DBusGMainLoop(set_as_default=True)
         self._session_manager = session_manager.connect(bus_loop)
         self._listener = session_manager.SessionSignalListener(
-                gobject.MainLoop())
+                GObject.MainLoop())
 
 
     def run_once(self,

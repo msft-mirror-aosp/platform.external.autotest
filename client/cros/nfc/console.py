@@ -8,7 +8,7 @@ import cmd
 import dbus
 import dbus.exceptions
 import dbus.mainloop.glib
-import gobject
+from gi.repository import GObject
 import threading
 
 from functools import wraps
@@ -87,15 +87,15 @@ class NfcClient(object):
         Starts the D-Bus client.
 
         """
-        # Here we run a GLib MainLoop in its own thread, so that the client can
+        # Here we run a GObject MainLoop in its own thread, so that the client can
         # listen to D-Bus signals while keeping the console interactive.
         self._dbusmainloop = dbus.mainloop.glib.DBusGMainLoop(
                 set_as_default=True)
         dbus.mainloop.glib.threads_init()
-        gobject.threads_init()
+        GObject.threads_init()
 
         def _mainloop_thread_func():
-            self._mainloop = gobject.MainLoop()
+            self._mainloop = GObject.MainLoop()
             context = self._mainloop.get_context()
             self._run_loop = True
             while self._run_loop:

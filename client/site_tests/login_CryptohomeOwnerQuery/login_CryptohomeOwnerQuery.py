@@ -5,8 +5,8 @@
 # Most of this code is based on login_GuestAndActualSession, which performs
 # similar ownership clearing/checking tasks.
 
-import gobject
 from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GObject
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -26,7 +26,7 @@ class login_CryptohomeOwnerQuery(test.test):
         bus_loop = DBusGMainLoop(set_as_default=True)
         self._session_manager = session_manager.connect(bus_loop)
         self._listener = session_manager.OwnershipSignalListener(
-                gobject.MainLoop())
+                GObject.MainLoop())
         self._listener.listen_for_new_key_and_policy()
 
 

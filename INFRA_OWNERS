@@ -18,7 +18,7 @@ xianuowang@google.com
 xixuan@chromium.org
 xixuan@google.com
 
-include chromiumos/chromite:/OWNERS.testplatform
+include chromiumos/chromite:/OWNERS.ci
 
 # ChromeOS Automation Framework
 dbeckett@chromium.org

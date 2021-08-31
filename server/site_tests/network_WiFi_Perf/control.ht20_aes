@@ -32,9 +32,10 @@ def run(machine):
                                           channel=channel, mode=mode,
                                           security_config=wpa_config)
                for channel in (1, 157)]
+    use_iperf = False
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,
-                 additional_params=configs)
+                 additional_params=(configs, use_iperf))
 
 
 parallel_simple(run, machines)

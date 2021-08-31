@@ -72,7 +72,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                 self._governor = None
         else:
             self._governor = None
-        self._ap_configs = additional_params
+        self._ap_configs, self._use_iperf = additional_params
 
     def verify_result(self, result, must_expected_throughput,
                       should_expected_throughput, test_type, failed_test_types,
@@ -178,7 +178,8 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
             config = manager.get_config(test_type)
             pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
                                                  self.context.pcap_host.host)
-            session = manager.get_session(self.context.client,
+            session = manager.get_session(test_type,
+                                          self.context.client,
                                           self.context.pcap_host,
                                           peer_device_interface=pcap_lan_iface)
             ch_width = ap_config.channel_width
@@ -192,14 +193,14 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
             if not results:
                 logging.error('Failed to take measurement for %s', test_type)
                 continue
-            values = [result.throughput for result in results]
+
+            values = [sample.throughput for sample in results]
             self.output_perf_value(test_type,
                                    values,
                                    units='Mbps',
                                    higher_is_better=True,
                                    graph=ap_config_tag)
             result = manager.get_result(results)
-
             self.verify_result(result, expected_throughput[0],
                                expected_throughput[1], test_type,
                                failed_test_types, power_save, ap_config)
@@ -257,7 +258,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
                                         self._router_lan_ip_addr,
                                         self._router_lan_iface_name)
 
-                manager = perf_manager.PerfTestManager()
+                manager = perf_manager.PerfTestManager(self._use_iperf)
                 # Flag a test error if we disconnect for any reason.
                 with self.context.client.assert_no_disconnects():
                     for governor in sorted(set([None, self._governor])):

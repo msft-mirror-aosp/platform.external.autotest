@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import base64
+import binascii
 import collections
 from datetime import datetime
 import dbus
@@ -3618,6 +3619,74 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         """Cleanup before exiting the client xmlrpc process."""
 
         self.advmon_appmgr.destroy()
+
+    def get_sysconfig(self):
+        """Helper function to get default controller parameters
+
+        @returns: dict of type to values, both are in string form,
+                  None if the operation read-sysconfig failed.
+        """
+        tlv_re = re.compile('Type: (0x[0-9A-Fa-f]{4})\s+'
+                            'Length: ([0-9A-Fa-f]{2})\s+'
+                            'Value: ([0-9A-Fa-f]+)')
+
+        cmd = 'btmgmt read-sysconfig'
+        # btmgmt needs stdin, otherwise it won't output anything.
+        # Please refer to
+        # third_party/bluez/current/src/shared/shell.c:bt_shell_printf
+        # for more information
+        output = subprocess.check_output(cmd.split(), stdin=subprocess.PIPE)
+
+        if output is None:
+            logging.warning('Unable to retrieve output of %s', cmd)
+            return None
+
+        sysconfig = dict()
+
+        for line in output.splitlines():
+            try:
+                m = tlv_re.match(line)
+                t, l, v = m.groups()
+                sysconfig[int(t, 16)] = v
+            except Exception as e:
+                logging.warning('Unexpected error %s at "%s"', str(e), line)
+
+        logging.debug("default controller parameters: %s", sysconfig)
+        return sysconfig
+
+    def _le_hex_to_int(self, le_hex):
+        """Convert a little-endian hex-string to an unsigned integer.
+        For example, _le_hex_to_int('0x0102') returns the same value as
+        int('0201', 16)
+        """
+        if le_hex is None:
+            return None
+
+        ba = bytearray.fromhex(le_hex)
+        ba.reverse()
+        return int(binascii.hexlify(ba), 16)
+
+    def get_advmon_interleave_durations(self):
+        """Get durations of allowlist scan and no filter scan
+
+        @returns: a dict of {'allowlist': allowlist_duration,
+                             'no filter': no_filter_duration},
+                  or None if something went wrong
+        """
+
+        sysconfig = self.get_sysconfig()
+
+        if sysconfig is None:
+            return None
+
+        AllowlistScanDuration = self._le_hex_to_int(sysconfig.get(
+                0x001d, None))
+        NoFilterScanDuration = self._le_hex_to_int(sysconfig.get(0x001e, None))
+
+        return {
+                'AllowlistScanDuration': AllowlistScanDuration,
+                'NoFilterScanDuration': NoFilterScanDuration
+        }
 
 
 class FlossFacadeNative(BluetoothBaseFacadeNative):

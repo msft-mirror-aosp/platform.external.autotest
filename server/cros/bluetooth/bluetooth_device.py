@@ -1062,6 +1062,16 @@ class BluetoothDevice(object):
         return self._proxy.advmon_interleave_scan_logger_get_cancel_events()
 
     @proxy_thread_safe
+    def advmon_interleave_scan_get_durations(self):
+        """Get durations of allowlist scan and no filter scan
+
+        @returns: a dict of {'allowlist': allowlist_duration,
+                             'no filter': no_filter_duration},
+                  or None if something went wrong
+        """
+        return self._proxy.get_advmon_interleave_durations()
+
+    @proxy_thread_safe
     def messages_start(self):
         """Start messages monitoring."""
         self._proxy.messages_start()

@@ -375,6 +375,15 @@ class BluetoothAdapterAdvMonitorTests(
                 logging.warning('More than one cancel events found %s', events)
         return event
 
+    def interleave_scan_get_durations(self):
+        """Get durations of allowlist scan and no filter scan
+
+        @returns: a dict of {'allowlist': allowlist_duration,
+                             'no filter': no_filter_duration},
+                  or None if something went wrong
+        """
+        return self.bluetooth_facade.advmon_interleave_scan_get_durations()
+
     @test_retry_and_log(False)
     def test_supported_types(self):
         """Test supported monitor types.
@@ -921,12 +930,14 @@ class BluetoothAdapterAdvMonitorTests(
 
         """
 
-        # TODO(b/171844106): get this parameters via
-        #                    MGMT_OP_READ_DEF_SYSTEM_CONFIG
-        durations = {'allowlist': 300, 'no filter': 500}
+        durations = self.interleave_scan_get_durations()
+        if durations is None:
+            raise error.TestFail(
+                    'Unexpected error: failed to get interleave durations')
 
         # Change the unit from msec to second for future convenience.
         durations = {key: value * 0.001 for key, value in durations.items()}
+
         return durations
 
     @test_retry_and_log(False)

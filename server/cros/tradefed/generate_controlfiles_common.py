@@ -318,7 +318,7 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     # TODO(ihf): Make this work with the "all" and "collect" generation,
     # which currently bypass this function.
     """
-    cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES'))
+    cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
 
     if is_public:
         for module in modules:
@@ -1179,17 +1179,17 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
     """
 
     if CONFIG.get('SINGLE_CONTROL_FILE'):
-            module_set = set(modules)
-            write_controlfile('all',
-                module_set,
-                abi,
-                revision,
-                build,
-                uri,
-                None,
-                is_public,
-                is_latest,
-                whole_module_set=module_set)
+        module_set = set(modules)
+        write_controlfile('all',
+                          module_set,
+                          abi,
+                          revision,
+                          build,
+                          uri,
+                          None,
+                          is_public,
+                          is_latest,
+                          whole_module_set=module_set)
     else:
         combined = combine_modules_by_common_word(set(modules))
         for key in combined:

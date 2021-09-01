@@ -19,6 +19,7 @@ import os
 
 try:
     import docker
+    from autotest_lib.site_utils.docker import utils as docker_utils
 except ImportError:
     logging.info("Docker API is not installed in this environment")
 
@@ -33,7 +34,6 @@ from autotest_lib.client.cros import constants as client_constants
 from autotest_lib.server import autotest
 from autotest_lib.server import site_utils as server_utils
 from autotest_lib.server.cros import provisioner
-from autotest_lib.server.hosts import constants as hosts_constants
 from autotest_lib.server.hosts import ssh_host
 from autotest_lib.site_utils.rpm_control_system import rpm_client
 
@@ -596,14 +596,7 @@ class BaseServoHost(ssh_host.SSHHost):
                                              e.result_obj)
         elif self.is_containerized_servod():
             logging.info("Trying to run the command %s", command)
-            if os.path.exists(hosts_constants.DOCKER_SOCKET):
-                client = docker.from_env(timeout=300)
-            else:
-                tcp_connection = "tcp://{}:{}".format(
-                        hosts_constants.DOCKER_TCP_SERVER_IP,
-                        hosts_constants.DOCKER_TCP_SERVER_PORT)
-                client = docker.DockerClient(base_url=tcp_connection,
-                                             timeout=300)
+            client = docker_utils.get_docker_client()
             container = client.containers.get(self.hostname)
             (exit_code, output) = container.exec_run("bash -c '%s'" % command)
             return utils.CmdResult(command=command,
@@ -674,7 +667,7 @@ class BaseServoHost(ssh_host.SSHHost):
                  False otherwise.
         """
         if self.is_containerized_servod():
-            client = docker.from_env(timeout=300)
+            client = docker_utils.get_docker_client()
             try:
                 client.containers.get(self.hostname)
             except docker.errors.NotFound:

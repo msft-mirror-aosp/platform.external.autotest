@@ -227,8 +227,9 @@ class ServoHost(base_servohost.BaseServoHost):
         # make sure the labstation is up here, in the case of the labstation is
         # in the middle of reboot.
         self._is_locked = False
-        if (self.wait_up(self.REBOOT_TIMEOUT) and self.is_in_lab()
-            and self.is_labstation()):
+        if (not self.is_containerized_servod()
+                    and self.wait_up(self.REBOOT_TIMEOUT) and self.is_in_lab()
+                    and self.is_labstation()):
             self._lock()
             try:
                 self.wait_ready()
@@ -638,58 +639,7 @@ class ServoHost(base_servohost.BaseServoHost):
             return
 
         if self.is_containerized_servod():
-            client = docker_utils.get_docker_client()
-            try:
-                client.containers.get(self.hostname)
-            except docker.errors.NotFound:
-                pass
-            else:
-                logging.warning("Container already exists - not starting")
-                return
-
-            label = os.environ.get("LABEL", "release")
-            registry = os.environ.get("REGISTRY_URI",
-                                      "gcr.io/chromeos-partner-moblab")
-            image = "%s/servod:%s" % (registry, label)
-            logging.info("Servo container image: %s", image)
-
-            try:
-                client.images.pull(image)
-            except docker.errors.APIError:
-                logging.exception("Failed to pull image")
-
-            environment = [
-                    "BOARD=%s" % self.servo_board,
-                    "MODEL=%s" % self.servo_model,
-                    "SERIAL=%s" % self.servo_serial,
-                    "PORT=%s" % self.servo_port,
-            ]
-            container_network = "default_moblab"
-            if socket.gethostname().startswith('satlab'):
-                container_network = "default_satlab"
-            logging.info('Servo container environment: %s', environment)
-            try:
-                client.containers.run(
-                        image,
-                        remove=False,
-                        privileged=True,
-                        name=self.hostname,
-                        hostname=self.hostname,
-                        network=container_network,
-                        cap_add=["NET_ADMIN"],
-                        detach=True,
-                        volumes=["/dev:/dev"],
-                        environment=environment,
-                        command=["bash", "/start_servod.sh"],
-                )
-                time.sleep(servo_constants.SERVOD_STARTUP_TIMEOUT)
-            except docker.errors.ContainerError as e:
-                logging.exception("Failed to start servod")
-                for line in str(e).split(b'\n'):
-                    print(line)
-                raise
-            except docker.errors.ImageNotFound:
-                logging.exception("Image not found")
+            self.start_containerized_servod()
             return
 
         cmd = 'start servod'
@@ -748,20 +698,13 @@ class ServoHost(base_servohost.BaseServoHost):
     def stop_servod(self):
         """Stop the servod process on servohost.
         """
-        if self.is_containerized_servod():
-            client = docker_utils.get_docker_client()
-            try:
-                cont = client.containers.get(self.hostname)
-            except docker.errors.NotFound:
-                logging.info("Container does not exist no need to stop it.")
-            else:
-                cont.stop()
-                cont.remove()
-            return
-
         # Skip if running on the localhost.(crbug.com/1038168)
         if self.is_localhost():
             logging.debug("Servohost is a localhost, skipping stop servod.")
+            return
+
+        if self.is_containerized_servod():
+            self.stop_containerized_servod()
             return
 
         logging.debug('Stopping servod on port %s', self.servo_port)
@@ -770,6 +713,105 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.debug('Wait %s seconds for servod process fully teardown.',
                       servo_constants.SERVOD_TEARDOWN_TIMEOUT)
         time.sleep(servo_constants.SERVOD_TEARDOWN_TIMEOUT)
+
+    def wait_for_init_servod_in_container(self, container):
+        """Waits for servod process to be ready to listen inside container."""
+        ready_output = "Instance associated with id 9999 ready"
+        if not container:
+            logging.debug("Container object is None.")
+            return False
+        try:
+            # Executes servodtool command to wait for servod to be active.
+            exit_code, output = container.exec_run(
+                    cmd="servodtool instance wait-for-active -p 9999",
+                    stdout=True)
+            if exit_code != 0 or ready_output not in output:
+                logging.debug(
+                        'Failed to start servod process inside container,'
+                        'exit_code=%s, output=%s.', exit_code, output)
+                return False
+        except docker.errors.APIError as e:
+            logging.error('%s', e)
+        return True
+
+    def start_containerized_servod(self):
+        """Start the servod process on servohost."""
+        client = docker_utils.get_docker_client()
+        try:
+            container = client.containers.get(self.hostname)
+            if container:
+                if container.status == "running":
+                    logging.info("Servod container %s already up and running.",
+                                 self.hostname)
+                    return
+                else:
+                    # This condition shouldn't happend since we are starting
+                    # container in auto_remove attribute. But if system
+                    # shutdown abruptly there might be some leftovers.
+                    logging.info(
+                            "Found Servod container %s in %s state, removing it.",
+                            self.hostname, container.status)
+                    container.remove()
+        except docker.errors.NotFound:
+            logging.info("Servod container %s not found", self.hostname)
+            pass
+        label = os.environ.get("LABEL", "release")
+        registry = os.environ.get("REGISTRY_URI",
+                                  "gcr.io/chromeos-partner-moblab")
+        image = "%s/servod:%s" % (registry, label)
+        logging.info("Servod container image: %s", image)
+
+        try:
+            client.images.pull(image)
+        except docker.errors.APIError:
+            logging.exception("Failed to pull servod container image.")
+
+        environment = [
+                "BOARD=%s" % self.servo_board,
+                "MODEL=%s" % self.servo_model,
+                "SERIAL=%s" % self.servo_serial,
+                "PORT=%s" % self.servo_port,
+        ]
+        container_network = "default_moblab"
+        if socket.gethostname().startswith('satlab'):
+            container_network = "default_satlab"
+        logging.info('Servod container environment: %s', environment)
+        try:
+            container = client.containers.run(
+                    image,
+                    remove=False,
+                    privileged=True,
+                    name=self.hostname,
+                    hostname=self.hostname,
+                    network=container_network,
+                    cap_add=["NET_ADMIN"],
+                    detach=True,
+                    volumes=["/dev:/dev"],
+                    environment=environment,
+                    command=["bash", "/start_servod.sh"],
+            )
+            # Wait for 60 sec, probing servod ready state fails.
+            if not self.wait_for_init_servod_in_container(container):
+                time.sleep(servo_constants.SERVOD_STARTUP_TIMEOUT)
+            logging.info("Servod container %s up and running.", self.hostname)
+        except docker.errors.ContainerError as e:
+            logging.exception("Failed to start servod container. %s", e)
+            raise
+        except docker.errors.ImageNotFound:
+            logging.exception("Servod container image %s not found.", image)
+
+    def stop_containerized_servod(self):
+        """Stop the container running servod."""
+        logging.info("Stopping servod container %s.", self.hostname)
+        client = docker_utils.get_docker_client()
+        try:
+            cont = client.containers.get(self.hostname)
+        except docker.errors.NotFound:
+            logging.info("Servod container %s not found no need to stop it.",
+                         self.hostname)
+        else:
+            cont.remove(force=True)
+            logging.debug('Servod container instance removed')
 
     def restart_servod(self, quick_startup=False):
         """Restart the servod process on servohost.
@@ -1498,6 +1540,10 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def is_servo_topology_supported(self):
         """Check if servo_topology is supported."""
+        if self.is_containerized_servod():
+            # TODO(otabek@): revisit after stabilize container.
+            logging.info('Servod-container is not supported for now.')
+            return False
         if not self.is_up_fast():
             logging.info('Servo-Host is not reachable.')
             return False
@@ -1772,7 +1818,11 @@ def create_servo_host(dut,
             logging.error('Failed to initialize servo. %s', e)
             return None, servo_constants.SERVO_STATE_BROKEN
 
-    if newhost.use_icmp and not newhost.is_up_fast(count=3):
+    if newhost.is_containerized_servod():
+        # TODO(otabek@): Update for servod-manager.
+        # Servod docker is not available for access.
+        pass
+    elif newhost.use_icmp and not newhost.is_up_fast(count=3):
         # ServoHost has internal check to wait if servo-host is in reboot
         # process. If servo-host still is not available this check will stop
         # further attempts as we do not have any option to recover servo_host.
@@ -1780,8 +1830,12 @@ def create_servo_host(dut,
 
     # Reset or reboot servo device only during AdminRepair tasks.
     if try_servo_repair:
-        if newhost._is_locked:
-            # Print available servos on the host for debugging.
+        if newhost.is_containerized_servod():
+            # TODO(otabek@): Update for servod-manager.
+            # Servod docker is not available for access.
+            pass
+        elif newhost._is_locked:
+            # Print available servos on the host for debuging.
             newhost.print_all_servo_of_host()
             # Reset servo if the servo is locked, as we check if the servohost
             # is up, if the servohost is labstation and if the servohost is in
@@ -1798,7 +1852,8 @@ def create_servo_host(dut,
         newhost.set_dut_hostname(dut.hostname)
     if dut_host_info:
         newhost.set_dut_host_info(dut_host_info)
-    if dut_health_profile and (try_lab_servo or try_servo_repair):
+    if (not newhost.is_containerized_servod() and dut_health_profile
+                and (try_lab_servo or try_servo_repair)):
         try:
             if newhost.is_localhost():
                 logging.info('Servohost is a localhost, skip device'

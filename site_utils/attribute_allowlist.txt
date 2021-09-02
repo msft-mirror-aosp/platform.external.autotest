@@ -9,6 +9,7 @@ suite:appcompat_smoke
 suite:arc-cts
 suite:arc-cts-camera
 suite:arc-cts-deqp
+suite:arc-cts-hardware
 suite:arc-cts-qual
 suite:arc-cts-r
 suite:arc-cts-s
@@ -159,6 +160,7 @@ suite:crosbolt_perf_perbuild
 suite:crosbolt_perf_weekly
 suite:cts_P
 suite:cts
+suite:cts-hardware
 suite:cups_weekly
 suite:debug_kernel_testing
 suite:deqp

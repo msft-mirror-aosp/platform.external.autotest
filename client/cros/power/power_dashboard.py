@@ -196,7 +196,7 @@ class BaseDashboard(object):
                                            test=test,
                                            datetime=datetime)
 
-        if note.startswith('ThermalQual.full'):
+        if re.match('ThermalQual.(full|lab).*', note):
             html_str += _TDASH_LINK_STR.format(note=note)
 
         html_str += '</body></html>'

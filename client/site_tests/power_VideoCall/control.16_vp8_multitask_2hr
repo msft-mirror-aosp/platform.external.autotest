@@ -6,7 +6,6 @@ TIME = "LENGTHY"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:crosbolt_perf_perbuild"
 EXTENDED_TIMEOUT = 7800
 
 DOC = """

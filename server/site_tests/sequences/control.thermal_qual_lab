@@ -4,6 +4,7 @@
 
 AUTHOR = "puthik"
 NAME = "ThermalQual.lab"
+ATTRIBUTES = "suite:crosbolt_perf_perbuild"
 TIME = "LENGTHY"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "suite"

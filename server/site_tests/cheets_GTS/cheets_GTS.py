@@ -23,14 +23,14 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 # Maximum default time allowed for each individual GTS module.
 _GTS_TIMEOUT_SECONDS = 3600
 _PARTNER_GTS_BUCKET = 'gs://chromeos-partner-gts/'
-_PARTNER_GTS_LOCATION = _PARTNER_GTS_BUCKET + 'gts-8-R4-7380330.zip'
+_PARTNER_GTS_LOCATION = _PARTNER_GTS_BUCKET + 'android-gts-9-R1-P-7679548.zip'
 _PARTNER_GTS_AUTHKEY = _PARTNER_GTS_BUCKET + 'gts-arc.json'
 _GTS_MEDIA_URI = ('https://storage.googleapis.com/youtube-test-media/gts/' +
                   'GtsYouTubeTestCases-media-1.2.zip')
 _GTS_MEDIA_LOCALPATH = '/tmp/android-gts-media/GtsYouTubeTestCases'
 
 # Internal uprev for all GTS modules.
-_GTS_LATEST_URI = 'gs://chromeos-arc-images/cts/bundle/android-gts-8-R4-P-7380330.zip'
+_GTS_LATEST_URI = 'gs://chromeos-arc-images/cts/bundle/android-gts-9-R1-P-7679548.zip'
 
 
 class cheets_GTS(tradefed_test.TradefedTest):

@@ -32,6 +32,7 @@ CONFIG['TRADEFED_DISABLE_REBOOT_ON_COLLECTION'] = True
 CONFIG['TRADEFED_MAY_SKIP_DEVICE_INFO'] = False
 CONFIG['NEEDS_DEVICE_INFO'] = []
 CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-gts/tools/gts-tradefed'
+CONFIG['JAVA_EXECUTABLE_PATH'] = 'android-gts/jdk/bin/java'
 
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-gts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-gts-qual']

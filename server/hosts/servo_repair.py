@@ -92,6 +92,10 @@ class _UpdateVerifier(hosts.Verifier):
                         sys.exc_info()[2])
 
     def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            # TODO(otabek@): revisit after stabilize container.
+            logging.info('Servod is running within a container.')
+            return False
         # Run only for servo_v3 host.
         if host.is_labstation():
             return False
@@ -122,6 +126,12 @@ class _StartServodVerifier(hosts.Verifier):
     @property
     def description(self):
         return 'Initial servod start'
+
+    def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            # Servod started on container by default.
+            return False
+        return True
 
 
 class _RootServoPresentVerifier(hosts.Verifier):
@@ -155,6 +165,10 @@ class _RootServoPresentVerifier(hosts.Verifier):
         raise hosts.AutoservVerifyError('Root servo not found!')
 
     def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            # TODO(otabek@): revisit after stabilize container.
+            logging.info('Servod is running within a container.')
+            return False
         # Run only for servos under labstations.
         if not host.is_labstation():
             return False
@@ -184,8 +198,12 @@ class _RootServoV3PresentVerifier(hosts.Verifier):
         raise hosts.AutoservVerifyError('Fail to find servo board!')
 
     def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            logging.info('Servod is running within a container.')
+            return False
         # Do not run for servos under labstations.
         if host.is_labstation():
+            logging.info('Servod is running on labstation.')
             return False
         # Only run if the host is in the physical lab.
         return host.is_in_lab()
@@ -212,6 +230,10 @@ class _ServoFwVerifier(hosts.Verifier):
             )
 
     def _is_applicable(self, host):
+        if host.is_containerized_servod():
+            # TODO(otabek@): revisit after stabilize container.
+            logging.info('Servod is running within a container.')
+            return False
         # Run only for servos under labstations.
         if not host.is_labstation():
             return False
@@ -1020,15 +1042,10 @@ class _ConnectionVerifier(repair_utils.SshVerifier):
     """
 
     def verify(self, host):
-        if not host.is_containerized_servod():
-            return super(_ConnectionVerifier, self).verify(host)
-
-        client = docker_utils.get_docker_client()
-        try:
-            client.containers.get(host.hostname)
-        except docker.errors.NotFound:
-            raise hosts.AutoservVerifyError(
-                    'servo container %s is not running' % host.hostname)
+        if host.is_containerized_servod():
+            # We need start servod container first before check it-is present
+            host.start_containerized_servod()
+        return super(_ConnectionVerifier, self).verify(host)
 
     @property
     def description(self):

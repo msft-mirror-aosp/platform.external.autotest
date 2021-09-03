@@ -84,8 +84,11 @@ class bluetooth_SDP_Test(object):
 
         service_id_attr = ET.Element(
             'attribute', {'id': str(self.SERVICE_CLASS_ID_ATTR_ID)})
-        service_id_attr.append(
-            ET.Element('uuid', {'value': '0x%X' % self.FAKE_SERVICE_CLASS_ID}))
+        sequence = ET.Element('sequence')
+        sequence.append(
+                ET.Element('uuid',
+                           {'value': '0x%X' % self.FAKE_SERVICE_CLASS_ID}))
+        service_id_attr.append(sequence)
         sdp_record.append(service_id_attr)
 
         for attr_id in self.FAKE_GENERAL_ATTRIBUTE_IDS:

@@ -32,6 +32,7 @@ CONFIG['TRADEFED_DISABLE_REBOOT_ON_COLLECTION'] = True
 CONFIG['TRADEFED_MAY_SKIP_DEVICE_INFO'] = False
 CONFIG['NEEDS_DEVICE_INFO'] = []
 CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-gts/tools/gts-tradefed'
+CONFIG['JAVA_EXECUTABLE_PATH'] = 'android-gts/jdk/bin/java'
 
 # For now only run as a part of arc-cts-r.
 # TODO(kinaba): move to arc-gts and arc-gts-qual after R

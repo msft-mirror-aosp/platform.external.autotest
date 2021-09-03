@@ -900,24 +900,40 @@ def get_tradefed_data(path, is_public, abi):
     Notice that the parsing gets broken at times with major new CTS drops.
     """
     tradefed = os.path.join(path, CONFIG['TRADEFED_EXECUTABLE_PATH'])
-    # Forgive me for I have sinned. Same as: chmod +x tradefed.
+    # Python's zipfle module does not set the executable bit.
+    # tradefed and java command need chmod +x.
     os.chmod(tradefed, os.stat(tradefed).st_mode | stat.S_IEXEC)
+    java = CONFIG.get('JAVA_EXECUTABLE_PATH', None)
+    if java:
+        java = os.path.join(path, java)
+        os.chmod(java, os.stat(java).st_mode | stat.S_IEXEC)
     cmd_list = [tradefed, 'list', 'modules']
     logging.info('Calling tradefed for list of modules.')
     with open(os.devnull, 'w') as devnull:
         # tradefed terminates itself if stdin is not a tty.
         tradefed_output = subprocess.check_output(cmd_list, stdin=devnull)
 
-    # TODO(ihf): Get a tradefed command which terminates then refactor.
-    p = subprocess.Popen(cmd_list, stdout=subprocess.PIPE)
+    _ABI_PREFIXES = ('arm', 'x86')
+    _MODULE_PREFIXES = ('Cts', 'cts-', 'signed-Cts', 'vm-tests-tf', 'Sts')
+
+    # Some CTS/GTS versions insert extra linebreaks due to a bug b/196912758.
+    # Below is a heurestical workaround for the situation.
+    lines = []
+    prev_line_abi_prefixed = False
+    for line in tradefed_output.splitlines():
+        abi_prefixed = line.startswith(_ABI_PREFIXES)
+        end_of_modules = (len(line) == 0 or 'Saved log to' in line)
+        if prev_line_abi_prefixed and not end_of_modules and not abi_prefixed:
+            # Merge a line immediately following 'abi XtsModuleName'
+            lines[-1] += line
+        else:
+            lines.append(line)
+        prev_line_abi_prefixed = abi_prefixed
+
     modules = set()
     build = '<unknown>'
-    line = ''
     revision = None
-    is_in_intaractive_mode = True
-    # The process does not terminate, but we know the last test is vm-tests-tf.
-    while True:
-        line = p.stdout.readline().strip()
+    for line in lines:
         # Android Compatibility Test Suite 7.0 (3423912)
         if (line.startswith('Android Compatibility Test Suite ')
                     or line.startswith('Android Google ')
@@ -926,47 +942,18 @@ def get_tradefed_data(path, is_public, abi):
             logging.info('Unpacking: %s.', line)
             build = get_tradefed_build(line)
             revision = get_tradefed_revision(line)
-        elif line.startswith('Non-interactive mode: '):
-            is_in_intaractive_mode = False
-        elif line.startswith('arm') or line.startswith('x86'):
+        elif line.startswith(_ABI_PREFIXES):
             # Newer CTS shows ABI-module pairs like "arm64-v8a CtsNetTestCases"
             line = line.split()[1]
             if line not in CONFIG.get('EXCLUDE_MODULES', []):
                 modules.add(line)
-        elif line.startswith('Cts'):
+        elif line.startswith(_MODULE_PREFIXES):
+            # Old CTS plainly lists up the module name
             modules.add(line)
-        elif line.startswith('Gts'):
-            # Older GTS plainly lists the module names
-            modules.add(line)
-        elif line.startswith('Sts'):
-            modules.add(line)
-        elif line.startswith('cts-'):
-            modules.add(line)
-        elif line.startswith('signed-Cts'):
-            modules.add(line)
-        elif line.startswith('vm-tests-tf'):
-            modules.add(line)
-            break  # TODO(ihf): Fix using this as EOS.
-        elif not line:
-            exit_code = p.poll()
-            if exit_code is not None:
-                # The process has automatically exited.
-                if is_in_intaractive_mode or exit_code != 0:
-                    # The process exited unexpectedly in interactive mode,
-                    # or exited with error in non-interactive mode.
-                    logging.warning(
-                        'The process has exited unexpectedly (exit code: %d)',
-                        exit_code)
-                    modules = set()
-                break
         elif line.isspace() or line.startswith('Use "help"'):
             pass
         else:
             logging.warning('Ignoring "%s"', line)
-    if p.poll() is None:
-        # Kill the process if alive.
-        p.kill()
-    p.wait()
 
     if not modules:
         raise Exception("no modules found.")

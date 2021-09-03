@@ -211,6 +211,8 @@ _SLEEP_60_COMMAND = "\'sleep 60\'"
 
 _MUTE_COMMAND = "\'cras_test_client --mute 1\'"
 
+_START_MDNS_COMMAND = "\'android-sh -c \\\'setprop ctl.start mdnsd\\\'\'"
+
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
         'CtsSecurityHostTestCases':
@@ -221,6 +223,7 @@ CONFIG['PRECONDITION'] = {
         'CtsMediaStressTestCases': [_MUTE_COMMAND],
         'CtsMediaTestCases': [_MUTE_COMMAND],
         'CtsMediaTestCases.audio': [_MUTE_COMMAND],
+        'CtsNetTestCases': [_START_MDNS_COMMAND],
 }
 CONFIG['LOGIN_PRECONDITION'] = {
     'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
@@ -242,7 +245,7 @@ CONFIG['PUBLIC_PRECONDITION'] = {
         _SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND
     ],
     'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
-    'CtsNetTestCases': _WIFI_CONNECT_COMMANDS,
+    'CtsNetTestCases': _WIFI_CONNECT_COMMANDS + [_START_MDNS_COMMAND],
     'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
 }
 

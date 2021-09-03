@@ -28,6 +28,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='LATEST',
+        precondition_commands=['android-sh -c \'setprop ctl.start mdnsd\''],
         timeout=30600)
 
 parallel_simple(run_TS, machines)

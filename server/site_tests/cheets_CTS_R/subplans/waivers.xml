@@ -26,6 +26,7 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_dst_storage_image#1024" />
   <Entry include="CtsDeqpTestCases dEQP-VK.memory.pipeline_barrier.transfer_src_transfer_dst#1024" />
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_array_sparse_sample_implicit_lod.r32ui#11_37_3" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_array_sparse_sample_implicit_lod.r32ui#512_256_6" />
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_sparse_fetch.r32i#512_256_1" />
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_sparse_fetch.r32ui#512_256_1" />
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_sparse_sample_explicit_lod.r32ui#128_128_1" />

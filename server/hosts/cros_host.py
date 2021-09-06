@@ -1657,6 +1657,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 logging.error('Failed to find %s in device.', filename)
         return build_info
 
+    def has_arc_hardware_vulkan(self):
+        """Returns a boolean whether device has hardware vulkan."""
+        return self._get_arc_build_info().get('ro.hardware.vulkan')
+
     def get_arc_primary_abi(self):
         """Returns the primary abi of the host."""
         return self._get_arc_build_info().get('ro.product.cpu.abi')

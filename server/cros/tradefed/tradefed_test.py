@@ -823,6 +823,10 @@ class TradefedTest(test.test):
     def _fail_on_unexpected_media_download(self, media_asset):
         if os.path.isdir(media_asset.localpath):
             contents = os.listdir(media_asset.localpath)
+            # Ignore a table-of-contents file created by newer xTS
+            TOC_FILE = 'contents.toc'
+            if TOC_FILE in contents:
+                contents.remove(TOC_FILE)
             if len(contents) > self._num_media_bundles:
                 raise error.TestFail(
                     'Failed: Unexpected media bundle was added %s' % contents)

@@ -276,6 +276,7 @@ suite:push_to_prod
 suite:pvs-audio
 suite:pvs-staging
 suite:pvs-tast-cq
+suite:pvs-video
 suite:reboot_stress
 suite:regression
 suite:rlz

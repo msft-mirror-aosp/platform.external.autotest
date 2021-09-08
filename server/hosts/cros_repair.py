@@ -991,7 +991,6 @@ class _ResetRepairAction(hosts.RepairAction):
         """Collect logs from a successfully repaired DUT."""
         dirname = 'after_%s' % self.tag
         local_log_dir = crashcollect.get_crashinfo_dir(host, dirname)
-        host.collect_logs('/var/log', local_log_dir, ignore_errors=True)
         # Collect crash info.
         crashcollect.get_crashinfo(host, None)
 

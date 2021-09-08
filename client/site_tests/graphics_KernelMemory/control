@@ -16,7 +16,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "graphics"
 TEST_TYPE = "client"
 
-ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system"
+ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system, suite:pvs-graphics"
 BUG_TEMPLATE = {
     'components': ['OS>Kernel>Graphics'],
 }

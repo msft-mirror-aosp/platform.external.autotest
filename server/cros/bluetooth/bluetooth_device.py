@@ -70,8 +70,6 @@ class BluetoothDevice(object):
         self.bluez_version = properties.get('Name')
         self.address = properties.get('Address')
         self.bluetooth_class = properties.get('Class')
-        self.UUIDs = properties.get('UUIDs')
-
     def _connect_xmlrpc_directly(self):
         """Connects to the bluetooth native facade directly via xmlrpc."""
         proxy = self.host.rpc_server_tracker.xmlrpc_connect(
@@ -324,6 +322,10 @@ class BluetoothDevice(object):
     def get_UUIDs(self):
         """Get the UUIDs.
 
+        The UUIDs can be dynamically changed at run time due to adapter/CRAS
+        services availability. Therefore, always query them from the adapter,
+        not from the cache.
+
         An example of UUIDs:
             [u'00001112-0000-1000-8000-00805f9b34fb',
              u'00001801-0000-1000-8000-00805f9b34fb',
@@ -335,7 +337,8 @@ class BluetoothDevice(object):
         @returns: the list of the UUIDs.
 
         """
-        return self.UUIDs
+        properties = self.get_adapter_properties()
+        return properties.get('UUIDs')
 
 
     @proxy_thread_safe

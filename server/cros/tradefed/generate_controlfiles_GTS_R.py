@@ -56,7 +56,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'GtsBackupHostTestCases': 0.5,
         'GtsExoPlayerTestCases': 1.5,
         'GtsGmscoreHostTestCases': 1.0,
-        'GtsMediaTestCases': 4,
+        'GtsMediaTestCases': 10,
         'GtsYouTubeTestCases': 1.0,
         _ALL: 24,
         _COLLECT: 0.5,
@@ -94,6 +94,13 @@ CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
 CONFIG['MEDIA_MODULES'] = ['GtsYouTubeTestCases']
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [_ALL]
 CONFIG['ENABLE_DEFAULT_APPS'] = []
+
+CONFIG['SPLIT_BY_BITS_MODULES'] = [
+        'GtsMediaTestCases',
+]
+CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
+        'GtsMediaTestCases',
+]
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {}

@@ -29,6 +29,7 @@ def run_TS(machine):
         target_module='GtsYouTubeTestCases',
         target_plan=None,
         uri='LATEST',
+        precondition_commands=['cras_test_client --mute 1'],
         use_jdk9=True,
         timeout=3600)
 

@@ -102,8 +102,14 @@ CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
         'GtsMediaTestCases',
 ]
 
-# Preconditions applicable to public and internal tests.
-CONFIG['PRECONDITION'] = {}
+_MUTE_COMMAND = "\'cras_test_client --mute 1\'"
+
+# Preconditions applicable to internal tests.
+CONFIG['PRECONDITION'] = {
+        'GtsExoPlayerTestCases': [_MUTE_COMMAND],
+        'GtsMediaTestCases': [_MUTE_COMMAND],
+        'GtsYouTubeTestCases': [_MUTE_COMMAND],
+}
 CONFIG['LOGIN_PRECONDITION'] = {}
 
 CONFIG['LAB_DEPENDENCY'] = {}

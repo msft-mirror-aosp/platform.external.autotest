@@ -29,6 +29,7 @@ def run_TS(machine):
         target_module='all.GtsExoPlayerTestCases_-_GtsMbaPrivilegedPermissionTestCases',
         target_plan=None,
         uri='LATEST',
+        precondition_commands=['cras_test_client --mute 1'],
         prerequisites=['bluetooth'],
         use_jdk9=True,
         timeout=86400)

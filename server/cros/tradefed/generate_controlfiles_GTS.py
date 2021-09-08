@@ -101,8 +101,13 @@ CONFIG['MEDIA_MODULES'] = ['GtsYouTubeTestCases']
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [_ALL]
 CONFIG['ENABLE_DEFAULT_APPS'] = []
 
-# Preconditions applicable to public and internal tests.
-CONFIG['PRECONDITION'] = {}
+_MUTE_COMMAND = "\'cras_test_client --mute 1\'"
+# Preconditions applicable to internal tests.
+CONFIG['PRECONDITION'] = {
+        'GtsExoPlayerTestCases': [_MUTE_COMMAND],
+        'GtsMediaTestCases': [_MUTE_COMMAND],
+        'GtsYouTubeTestCases': [_MUTE_COMMAND],
+}
 CONFIG['LOGIN_PRECONDITION'] = {}
 
 CONFIG['LAB_DEPENDENCY'] = {}

@@ -78,13 +78,13 @@ class firmware_ECCharging(FirmwareTest):
         """Get charger and battery information in a single call."""
         output = self._retry_send_cmd("chgstate", [
                 r"chg\.\*:",
-                r"voltage = (\d+)mV",
-                r"current = (\d+)mA",
+                r"voltage = (-?\d+)mV",
+                r"current = (-?\d+)mA",
                 r"batt\.\*:",
-                r"voltage = (\d+)mV",
-                r"current = (\d+)mA",
-                r"desired_voltage = (\d+)mV",
-                r"desired_current = (\d+)mA",
+                r"voltage = (-?\d+)mV",
+                r"current = (-?\d+)mA",
+                r"desired_voltage = (-?\d+)mV",
+                r"desired_current = (-?\d+)mA",
         ])
         result = {
                 "charger_target_voltage": int(output[1][1]),
@@ -156,9 +156,12 @@ class firmware_ECCharging(FirmwareTest):
 
     def _check_battery_discharging(self):
         """Check if AC is attached and if charge control is normal."""
+        # chg_ctl_mode may look like: chg_ctl_mode = 2
+        # or: chg_ctl_mode = DISCHARGE (2)
+        # The regex needs to match either one.
         output = self._retry_send_cmd(
                 "chgstate",
-                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=.*\((\d)\)\s*"])
+                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=.*\(?(\d)\)?\s*"])
         ac_state = int(output[0][1])
         chg_ctl_mode = int(output[1][1])
         if ac_state == 0:

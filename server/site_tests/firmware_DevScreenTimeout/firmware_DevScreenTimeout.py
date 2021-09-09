@@ -63,6 +63,7 @@ class firmware_DevScreenTimeout(FirmwareTest):
         @raise TestError: If the firmware-boot-time file does not exist.
         """
         elapsed_time = 0
+        fw_time = 0
         # Try getting the firmware boot time for 10 seconds at 1 second retry
         # interval. This is required to allow the send_boot_metrics upstart job
         # to create that file.

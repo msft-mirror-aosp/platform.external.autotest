@@ -1896,7 +1896,7 @@ def GetNonUniBuildLabBoardName(board):
             '-arcvm$',
             '-arc-r$',
             '-arc-r-userdebug$',
-            '-blueznext$',
+            '-connectivitynext$',
             '-kernelnext$',
             '-kvm$',
             '-ndktranslation$',

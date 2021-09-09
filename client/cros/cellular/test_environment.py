@@ -341,7 +341,7 @@ class CellularTestEnvironment(object):
         if mm_proxy is None:
             raise error.TestError('Modem manager is not initialized')
 
-        modem_proxy = mm_proxy.get_modem()
+        modem_proxy = mm_proxy.wait_for_modem(mm1_constants.MM_MODEM_POLL_TIME)
         if modem_proxy is None:
             raise error.TestError('Modem not initialized')
 

@@ -64,6 +64,13 @@ class BluetoothDevice(object):
         if not self._remote_proxy:
             self._connect_xmlrpc_directly()
 
+        # Get some static information about the bluetooth adapter.
+        properties = self.get_adapter_properties()
+        self.bluez_version = properties.get('Name')
+        self.address = properties.get('Address')
+        self.bluetooth_class = properties.get('Class')
+        self.UUIDs = properties.get('UUIDs')
+
     def _connect_xmlrpc_directly(self):
         """Connects to the bluetooth native facade directly via xmlrpc."""
         proxy = self.host.rpc_server_tracker.xmlrpc_connect(
@@ -288,8 +295,7 @@ class BluetoothDevice(object):
         @returns: the bluetooth address of the adapter.
 
         """
-        properties = self.get_adapter_properties()
-        return properties.get('Address')
+        return self.address
 
 
     def get_bluez_version(self):
@@ -300,8 +306,7 @@ class BluetoothDevice(object):
         @returns: the bluez version
 
         """
-        properties = self.get_adapter_properties()
-        return properties.get('Name')
+        return self.bluez_version
 
 
     def get_bluetooth_class(self):
@@ -312,8 +317,7 @@ class BluetoothDevice(object):
         @returns: the bluetooth class.
 
         """
-        properties = self.get_adapter_properties()
-        return properties.get('Class')
+        return self.bluetooth_class
 
 
     def get_UUIDs(self):
@@ -330,8 +334,7 @@ class BluetoothDevice(object):
         @returns: the list of the UUIDs.
 
         """
-        properties = self.get_adapter_properties()
-        return properties.get('UUIDs')
+        return self.UUIDs
 
 
     @proxy_thread_safe

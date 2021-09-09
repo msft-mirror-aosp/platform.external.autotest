@@ -6,6 +6,9 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="CtsCameraTestCases android.hardware.cts.CameraTest#testLockUnlock" />
+  <Entry include="CtsCameraTestCases android.hardware.cts.CameraTest#testRecordingHint" />
+  <Entry include="CtsCameraTestCases android.hardware.cts.CameraTest#testVideoSnapshot" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.1d.optimal#r64_sint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.1d.optimal#r64_uint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.image_format_properties.2d.optimal#r64_sint" />

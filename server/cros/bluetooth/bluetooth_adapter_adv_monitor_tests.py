@@ -1902,3 +1902,5 @@ class BluetoothAdapterAdvMonitorTests(
 
         # Terminate the test app instance.
         self.test_exit_app(app1)
+
+        device.AdapterPowerOn()

@@ -43,11 +43,9 @@ class firmware_ECChargingState(FirmwareTest):
         super(firmware_ECChargingState, self).initialize(host, cmdline_args)
         if not self.check_ec_capability(['battery', 'charging']):
             raise error.TestNAError("Nothing needs to be tested on this DUT")
-        if self.servo.get_servo_version() != 'servo_v4_with_ccd_cr50':
+        if not self.servo.is_servo_v4_type_c():
             raise error.TestNAError(
-                    "This test can only be run with servo-v4 "
-                    "+ CCD. If you don't have a Type-C servo-v4, please run "
-                    "the test manually.")
+                    "This test can only be run with servo-v4 Type-C.")
         if host.is_ac_connected() != True:
             raise error.TestFail("This test must be run with AC power.")
         self.switcher.setup_mode('normal')

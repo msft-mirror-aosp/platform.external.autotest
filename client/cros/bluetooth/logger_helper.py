@@ -140,9 +140,13 @@ class LogManager(object):
             logging.warning(msg)
             self._LogErrorToSyslog(msg)
 
-        rm_byte = initial_size - self._GetSize()
+        new_size = self._GetSize()
+        rm_byte = initial_size - new_size
         logging.info('Removed number of line: %d, Reduced log size: %d byte',
                      rm_line_cnt, rm_byte)
+
+        # Note the new size of the log
+        self.ResetLogMarker(new_size)
 
 
 class InterleaveLogger(LogManager):

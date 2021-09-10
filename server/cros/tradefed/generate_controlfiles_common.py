@@ -343,7 +343,7 @@ def get_suites(modules, abi, is_public, camera_facing=None):
         if module in CONFIG['HARDWARE_DEPENDENT_MODULES']:
             # CTS modules to be run on all unibuild models.
             suites.add('suite:arc-cts-unibuild-hw')
-        if module in cts_hardware_modules:
+        if module in cts_hardware_modules and camera_facing is None:
             suites.add(CONFIG['HARDWARE_SUITE_NAME'])
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.

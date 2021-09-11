@@ -266,7 +266,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   skip_models=[],
                                   skip_chipsets=[],
                                   skip_common_errors=False,
-                                  shared_devices_count=0):
+                                  shared_devices_count=0,
+                                  use_all_peers=False):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -295,6 +296,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                       whole test (i.e. advertising) and any
                                       outside failure will cause the test to
                                       fail.
+          @param use_all_peers: Set number of devices to be used to the
+                                maximum available. This is used for tests
+                                like bluetooth_PeerVerify which uses all
+                                available peers. Specify only one device type
+                                if this is set to true
         """
 
         def decorator(test_method):
@@ -359,6 +365,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     return
 
                 try:
+                    if use_all_peers:
+                        if devices != {}:
+                            devices[list(devices.keys())[0]] = len(
+                                    self.host.btpeer_list)
+
                     if not _is_enough_peers_present(self):
                         logging.info('Not enough peer available')
                         raise error.TestNAError('Not enough peer available')

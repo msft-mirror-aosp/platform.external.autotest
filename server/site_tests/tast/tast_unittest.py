@@ -233,6 +233,7 @@ class TastTest(unittest.TestCase):
                   companion_duts={},
                   varslist=[],
                   maybemissingvars='',
+                  use_camera_box=False,
                   vars_gs_path=''):
         """Writes fake_tast.py's configuration and runs the test.
 
@@ -254,6 +255,7 @@ class TastTest(unittest.TestCase):
             arguments. Each string should be formatted as "name=value".
         @param maybemissingvars: a regex to pass to tast run command as
             |-maybemissingvars| arguments.
+        @param use_camera_box: Whether the test run in CameraBox.
         """
         self._test.initialize(self._host,
                               self.TEST_PATTERNS,
@@ -272,6 +274,7 @@ class TastTest(unittest.TestCase):
                               companion_duts=companion_duts,
                               varslist=varslist,
                               maybemissingvars=maybemissingvars,
+                              use_camera_box=use_camera_box,
                               vars_gs_path=vars_gs_path)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
@@ -670,6 +673,12 @@ class TastTest(unittest.TestCase):
 
         args = ['no_ec_sync=true']
         self._run_test(command_args=args)
+
+    def testCameraboxArgs(self):
+        """Tests passing camerabox specific args into Tast runner."""
+        vars = ['chart=0.0.0.0']
+        self._init_tast_commands([TestInfo('pkg.Test', 0, 0)], run_vars=vars)
+        self._run_test(use_camera_box=True)
 
     def testVarsfileOption(self):
         with tempfile.NamedTemporaryFile(

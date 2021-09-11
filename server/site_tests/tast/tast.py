@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import shutil
+import socket
 import tempfile
 
 import dateutil.parser
@@ -185,6 +186,7 @@ class tast(test.test):
                    companion_duts={},
                    varslist=[],
                    maybemissingvars='',
+                   use_camera_box=False,
                    vars_gs_path=''):
         """
         @param host: remote.RemoteHost instance representing DUT.
@@ -227,6 +229,8 @@ class tast(test.test):
         @param vars_gs_path: gs path to load vars from. The vars are loaded
             from gs in json format (key = value), then stored in a local
             yaml file. The local file name is then appended to |-varsfiles|.
+        @param use_camera_box: Bring the IP address of chart device in CameraBox
+            to tast tests.
 
         @raises error.TestFail if the Tast installation couldn't be found.
         """
@@ -255,6 +259,7 @@ class tast(test.test):
         self._companion_duts = companion_duts
         self._maybemissingvars = maybemissingvars
         self._vars_gs_path = vars_gs_path
+        self._use_camera_box = use_camera_box
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -433,6 +438,28 @@ class tast(test.test):
             "/usr/local/tast/usr/bin/tast".
         """
         return os.path.join(self._install_root, os.path.relpath(path, '/'))
+
+    def _get_camerabox_args(self):
+        """Gets camerabox-related arguments to pass to "tast run".
+
+        @returns List of command-line flag strings that should be inserted in
+            the command line after "tast run".
+        """
+        args = []
+        if self._use_camera_box:
+            host_name = self._host.hostname
+
+            # If host name is "FOO.cros", the chart host name should be
+            # "FOO-tablet.cros"
+            chart_host_name = '{}-tablet.cros'.format(host_name[:-5])
+            try:
+                chart_ip = socket.gethostbyname(chart_host_name)
+            except socket.gaierror:
+                logging.error('Chart is not found: %s', chart_host_name)
+                chart_ip = '0.0.0.0'
+            args += ['-var=chart=' + chart_ip]
+        logging.info('Camerabox args: %s', args)
+        return args
 
     def _get_servo_args(self):
         """Gets servo-related arguments to pass to "tast run".
@@ -768,6 +795,7 @@ class tast(test.test):
         args.extend(self._get_wificell_args())
         args.extend(self._get_cloud_storage_info())
         args.extend(self._get_firmware_args())
+        args.extend(self._get_camerabox_args())
 
         for varsfile in self._varsfiles:
             args.append('-varsfile=%s' % varsfile)

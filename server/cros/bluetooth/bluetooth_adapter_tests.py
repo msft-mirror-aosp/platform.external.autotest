@@ -73,6 +73,7 @@ CHIPSET_TO_VIDPID = {
         ],
         'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],
         'Realtek-RTL8822C-UART': [(('0x10ec', '0xc822'), 'UART')],
+        'Realtek-RTL8852A-USB': [(('0x10ec', '0x8852'), 'USB')],
         'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')]
 
         # The following doesn't expose vid:pid
@@ -136,6 +137,11 @@ RECONNECT_PLATFORM_TYPES = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
 #                            reconnect tests are still enabled for that platform
 #                            to check for suspend stability.
 SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
+
+# All realtek chipsets on USB will drop its firmware and reload on
+# suspend-resume unless it is connected to a peer device. This doesn't
+# include RTL8822, which would reset regardless of the peer.
+SUSPEND_RESET_IF_NO_PEER_CHIPSETS = ['Realtek-RTL8852A-USB']
 
 KERNEL_LOG_LEVEL = {
         'EMERG': 0,

@@ -36,7 +36,8 @@ import time
 
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        TABLET_MODELS, SUSPEND_POWER_DOWN_CHIPSETS)
+        TABLET_MODELS, SUSPEND_POWER_DOWN_CHIPSETS,
+        SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -314,7 +315,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Suspend while discovering',
                   devices={'BLE_MOUSE': 1},
                   skip_models=['dru'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
     def sr_while_discovering(self):
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
@@ -370,7 +372,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Suspend while advertising',
                   devices={'MOUSE': 1},
                   skip_models=['dru'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
     def sr_while_advertising(self):
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]

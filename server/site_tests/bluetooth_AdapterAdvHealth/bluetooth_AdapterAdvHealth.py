@@ -5,7 +5,7 @@
 """A Batch of Bluetooth advertising tests"""
 
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        SUSPEND_POWER_DOWN_CHIPSETS)
+        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
@@ -28,11 +28,14 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    # TODO(b/192419579) - RTL8822 can't advertise 4 connectable advertisements
-    @test_wrapper(
-            'Multiple LE advertising test',
-            skip_chipsets=['Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART'],
-            skip_common_errors=True)
+    # TODO(b/192419579) - RTL8822 and 8852 can't advertise 4 connectable
+    #                     advertisements.
+    @test_wrapper('Multiple LE advertising test',
+                  skip_chipsets=[
+                          'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
+                          'Realtek-RTL8852A-USB'
+                  ],
+                  skip_common_errors=True)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
         self.run_le_advertising_test(
@@ -53,7 +56,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Suspend resume LE advertising test',
                   skip_models=['dru', 'druwl', 'dumo', 'winky'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
                   skip_common_errors=True)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for advertisements involving suspend resume."""
@@ -101,7 +105,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Advertising suspend peer test',
                   devices={'BLE_MOUSE': 1},
                   skip_models=['dru', 'druwl', 'dumo'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
                   skip_common_errors=True)
     def adv_suspend_peer_test(self):
         """Verify advertising around suspend from a peer"""

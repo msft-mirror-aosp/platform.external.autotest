@@ -41,6 +41,7 @@ class firmware_ECLidShutdown(FirmwareTest):
             if self.servo.get('lid_open') != 'yes':
                 raise error.TestFail('The device did not stay in a mechanical'
                                      'on state after a lid open.')
+            time.sleep(self.faft_config.firmware_screen)
             self.switcher.simple_reboot(sync_before_boot=False)
             self.switcher.wait_for_client()
             self.clear_set_gbb_flags(vboot.GBB_FLAG_DISABLE_LID_SHUTDOWN, 0)

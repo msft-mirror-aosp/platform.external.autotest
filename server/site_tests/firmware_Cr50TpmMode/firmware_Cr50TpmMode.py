@@ -9,34 +9,14 @@ from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
 
 class firmware_Cr50TpmMode(Cr50Test):
-    """Verify TPM disabling and getting back enabled after reset.
-
-    Attributes:
-        can_set_tpm: True if board property has 'BOARD_ALLOW_CHANGE_TPM_MODE'.
-                     False, otherwise.
-    """
+    """Verify TPM disabling and getting back enabled after reset."""
     version = 1
-
-    def initialize(self, host, cmdline_args, full_args):
-        super(firmware_Cr50TpmMode, self).initialize(host, cmdline_args,
-                full_args)
-
-        # TODO(mruthven): remove can_set_tpm logic when tpm mode propagates to
-        # mp.
-        always_enabled = '0.6.51' in self.cr50.get_active_version_info()
-        logging.info('Running version %s tpm mode based on brdprop',
-                     'does not enable' if always_enabled else 'enables')
-        self.can_set_tpm = always_enabled or self.cr50.uses_board_property(
-                'BOARD_ALLOW_CHANGE_TPM_MODE')
-        logging.info('Board can%s set tpm mode',
-                     '' if self.can_set_tpm else 'not')
 
     def init_tpm_mode(self):
         """Reset the device."""
-        if self.can_set_tpm:
-            logging.info('Reset')
-            self.host.reset_via_servo()
-            self.switcher.wait_for_client()
+        logging.info('Reset')
+        self.host.reset_via_servo()
+        self.switcher.wait_for_client()
 
     def cleanup(self):
         """Initialize TPM mode by resetting CR50"""
@@ -109,20 +89,8 @@ class firmware_Cr50TpmMode(Cr50Test):
         # Change TPM Mode
         logging.info('Set TPM Mode')
 
-        if self.can_set_tpm:
-            output_log = self.set_tpm_mode(disable_tpm, long_opt)
-            logging.info(output_log)
-        else:
-            try:
-                output_log = self.set_tpm_mode(disable_tpm, long_opt)
-            except error.AutoservRunError as e:
-                logging.info('Failed to set TPM mode as expected')
-                logging.info(str(e))
-            else:
-                raise error.TestFail('Setting TPM mode should not be allowed')
-            finally:
-                logging.info(output_log)
-            return
+        output_log = self.set_tpm_mode(disable_tpm, long_opt)
+        logging.info(output_log)
 
         # Check the result of TPM Mode.
         if disable_tpm:

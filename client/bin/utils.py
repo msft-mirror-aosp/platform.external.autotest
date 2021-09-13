@@ -1456,6 +1456,8 @@ def wait_for_idle_cpu(timeout, utilization):
         logging.info('After waiting %.1fs CPU utilization is %.3f.',
                      time_passed, fraction_active_time)
         if time_passed > timeout:
+            if fraction_active_time < utilization:
+                break
             logging.warning('CPU did not become idle.')
             log_process_activity()
             # crosbug.com/37389

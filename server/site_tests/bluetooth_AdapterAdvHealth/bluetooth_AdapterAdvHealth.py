@@ -56,7 +56,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   skip_common_errors=True)
     def adv_suspend_resume_advertising_test(self):
-        """Run all test cases for multiple advertisements."""
+        """Run all test cases for advertisements involving suspend resume."""
         self.run_le_advertising_test(
             self.host, advertisements_data.ADVERTISEMENTS,
             'suspend_resume', num_iterations=1)
@@ -64,7 +64,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('Reboot LE advertising test')
     def adv_reboot_advertising_test(self):
-        """Run all test cases for single advertisements."""
+        """Run all test cases for advertisements involving reboot."""
         self.run_le_advertising_test(
             self.host, advertisements_data.ADVERTISEMENTS,
             'reboot', num_iterations=1)

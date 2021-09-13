@@ -41,7 +41,6 @@ except ImportError as e:
     metrics = common_utils.metrics_mock
     import mock
     cloud_trace = mock.MagicMock()
-_CONFIG = global_config.global_config
 
 # Number of seconds to wait before returning if testing mode is enabled
 TESTING_MODE_SLEEP_SECS = 1
@@ -579,6 +578,12 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
         job_kwargs['parent_job_id'] = int(parser.options.parent_job_id)
     if control_filename:
         job_kwargs['control_filename'] = control_filename
+    if parser.options.image_storage_server:
+        job_kwargs['image_storage_server'] = parser.options.image_storage_server
+        global_config.global_config.override_config_value(
+            'CROS', 'image_storage_server',
+            parser.options.image_storage_server)
+
     job = server_job.server_job(**job_kwargs)
 
     job.logging.start_logging()
@@ -588,7 +593,7 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
 
     # run the job
     exit_code = 0
-    auto_start_servod = _CONFIG.get_config_value(
+    auto_start_servod = global_config.global_config.get_config_value(
             'AUTOSERV', 'auto_start_servod', type=bool, default=False)
 
     if not utils.is_in_container():

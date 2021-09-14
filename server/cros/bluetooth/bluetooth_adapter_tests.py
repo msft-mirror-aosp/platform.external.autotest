@@ -4916,7 +4916,7 @@ class BluetoothAdapterTests(test.test):
 
             if not found:
                 logging.info('Device %s not found', device.address)
-                raise
+                return None
 
             for i in range(MAX_RETRY):
                 rssi = self.bluetooth_facade.get_device_property(
@@ -4927,7 +4927,7 @@ class BluetoothAdapterTests(test.test):
 
             if not rssi:
                 logging.info('RSSI of device %s not found', device.address)
-                raise
+                return None
 
             device.rssi = rssi
             logging.info('Peer {} RSSI {}'.format(device.address, rssi))

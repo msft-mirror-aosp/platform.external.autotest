@@ -89,7 +89,8 @@ class provision_Cr50TOT(FirmwareTest):
             try:
                 return self.get_cr50_build(latest_build, REMOTE_TMPDIR)
             except Exception as e:
-                logging.warn('Unable to find %s cr50 image %s', latest_build, e)
+                logging.warning('Unable to find %s cr50 image %s',
+                                latest_build, e)
         raise error.TestFail('Unable to find latest cr50 image in %s' %
                              latest_builds)
 

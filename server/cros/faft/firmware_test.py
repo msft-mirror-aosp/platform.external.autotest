@@ -218,9 +218,10 @@ class FirmwareTest(test.test):
                 cr50.get_version()
                 self.cr50 = cr50
             except servo.ControlUnavailableError:
-                logging.warn('cr50 console not supported.')
+                logging.warning('cr50 console not supported.')
             except Exception as e:
-                logging.warn('Ignored unknown cr50 version error: %s', str(e))
+                logging.warning('Ignored unknown cr50 version error: %s',
+                                str(e))
 
         if 'power_control' in args:
             self.power_control = args['power_control']
@@ -298,16 +299,17 @@ class FirmwareTest(test.test):
                     self._client.stage_build_to_usb(info.build)
                     return True
                 except error.AutotestError as e:
-                    logging.warn('Stage build to USB failed, tests that require'
-                                 ' test image on Servo USB may fail: {}'.format(e))
+                    logging.warning(
+                            'Stage build to USB failed, tests that require'
+                            ' test image on Servo USB may fail: {}'.format(e))
                     return False
             else:
                 logging.debug('Current build on USB: %s is same as test'
                               ' build, skip download.', current_build)
                 return True
         else:
-            logging.warn('Failed to get build label from the DUT, will use'
-                         ' existing image in Servo USB.')
+            logging.warning('Failed to get build label from the DUT, will use'
+                            ' existing image in Servo USB.')
             return False
 
     def run_once(self, *args, **dargs):
@@ -369,7 +371,7 @@ class FirmwareTest(test.test):
         try:
             self._record_uart_capture()
         except:
-            logging.warn('Failed initial uart capture during cleanup')
+            logging.warning('Failed initial uart capture during cleanup')
 
         try:
             self.faft_client.system.is_available()
@@ -475,7 +477,7 @@ class FirmwareTest(test.test):
             self.switcher.wait_for_client()
             return
         except ConnectionError:
-            logging.warn("Cold reboot didn't help, still connection error.")
+            logging.warning("Cold reboot didn't help, still connection error.")
 
         # DUT may be broken by a corrupted firmware. Restore firmware.
         # We assume the recovery boot still works fine. Since the recovery
@@ -489,8 +491,8 @@ class FirmwareTest(test.test):
                     self.restore_firmware()
                     return
                 except ConnectionError:
-                    logging.warn("Restoring firmware didn't help, still "
-                                 "connection error.")
+                    logging.warning("Restoring firmware didn't help, still "
+                                    "connection error.")
 
         # Perhaps it's kernel that's broken. Let's try restoring it.
         if self.is_kernel_saved():
@@ -501,8 +503,8 @@ class FirmwareTest(test.test):
                     self.restore_kernel()
                     return
                 except ConnectionError:
-                    logging.warn("Restoring kernel didn't help, still "
-                                 "connection error.")
+                    logging.warning("Restoring kernel didn't help, still "
+                                    "connection error.")
 
         # DUT may be broken by a corrupted OS image. Restore OS image.
         self._ensure_client_in_recovery()
@@ -516,8 +518,8 @@ class FirmwareTest(test.test):
             logging.info('Successfully restored OS image.')
             return
         except ConnectionError:
-            logging.warn("Restoring OS image didn't help, still connection "
-                         "error.")
+            logging.warning("Restoring OS image didn't help, still connection "
+                            "error.")
 
     def _ensure_client_in_recovery(self):
         """Ensure client in recovery boot; reboot into it if necessary.
@@ -667,8 +669,8 @@ class FirmwareTest(test.test):
         if pd_tester_device in self.pdtester.FIRST_PD_SETUP_ELEMENT:
             self.servo.set_dts_mode('on' if dts_mode else 'off')
         else:
-            logging.warn('Configuring DTS mode only supported on %s',
-                         pd_tester_device)
+            logging.warning('Configuring DTS mode only supported on %s',
+                            pd_tester_device)
 
         self.pdtester.set('usbc_polarity', 'cc2' if flip_cc else 'cc1')
         # Make it sourcing max voltage.
@@ -865,8 +867,9 @@ class FirmwareTest(test.test):
         for cap in required_cap:
             if cap not in getattr(self.faft_config, target + '_capability'):
                 if not suppress_warning:
-                    logging.warn('Requires %s capability "%s" to run this '
-                                 'test.', target, cap)
+                    logging.warning(
+                            'Requires %s capability "%s" to run this '
+                            'test.', target, cap)
                 return False
 
         return True
@@ -882,7 +885,7 @@ class FirmwareTest(test.test):
         """
         if not self.faft_config.chrome_ec:
             if not suppress_warning:
-                logging.warn('Requires Chrome EC to run this test.')
+                logging.warning('Requires Chrome EC to run this test.')
             return False
         return self._check_capability('ec', required_cap, suppress_warning)
 
@@ -897,7 +900,7 @@ class FirmwareTest(test.test):
         """
         if not hasattr(self, 'cr50'):
             if not suppress_warning:
-                logging.warn('Requires Chrome Cr50 to run this test.')
+                logging.warning('Requires Chrome Cr50 to run this test.')
             return False
         return self._check_capability('cr50', required_cap, suppress_warning)
 
@@ -1186,10 +1189,11 @@ class FirmwareTest(test.test):
             match = self.ec.send_command_get_output("powerinfo", [pattern],
                                                     retries=3)
         except (error.TestFail, expat.ExpatError) as err:
-            logging.warn("powerinfo command encountered an error: %s", err)
+            logging.warning("powerinfo command encountered an error: %s", err)
             return None
         if not match:
-            logging.warn("powerinfo output did not match pattern: %r", pattern)
+            logging.warning("powerinfo output did not match pattern: %r",
+                            pattern)
             return None
         (line, state_num, state_name) = match[0]
         logging.debug("power state info %r", match)
@@ -1257,7 +1261,7 @@ class FirmwareTest(test.test):
         except error.AutoservRunError as e:
             # From the ssh man page, error code 255 indicates ssh errors.
             if e.result_obj.exit_status == 255:
-                logging.warn("Ignoring error from ssh: %s", e)
+                logging.warning("Ignoring error from ssh: %s", e)
             else:
                 raise
         if wait_for_offline:
@@ -1451,7 +1455,7 @@ class FirmwareTest(test.test):
             try:
                 return self._client.blocking_sync(freeze_for_reset)
             except (AttributeError, ImportError, error.AutoservRunError) as e:
-                logging.warn(
+                logging.warning(
                         'Falling back to old sync method due to error: %s', e)
 
         # The double calls to sync fakes a blocking call
@@ -1869,11 +1873,11 @@ class FirmwareTest(test.test):
             try:
                 self._client.run(ec_cmd, timeout=300)
             except error.AutoservSSHTimeout:
-                logging.warn("DUT connection died during EC restore")
+                logging.warning("DUT connection died during EC restore")
                 self.faft_client.disconnect()
 
             except error.GenericHostRunError:
-                logging.warn("DUT command failed during EC restore")
+                logging.warning("DUT command failed during EC restore")
                 logging.debug("Full exception:", exc_info=True)
             if reboot_ec:
                 self.switcher.mode_aware_reboot(
@@ -2231,7 +2235,8 @@ class FirmwareTest(test.test):
         while not self.host.ping_wait_up(
                 self.faft_config.delay_reboot_to_ping * 2):
             if time.time() > end_time:
-                logging.warn('DUT is unresponsive after trying to bring it up')
+                logging.warning(
+                        'DUT is unresponsive after trying to bring it up')
                 return
             self.servo.get_power_state_controller().reset()
             logging.info('DUT did not respond. Resetting it.')

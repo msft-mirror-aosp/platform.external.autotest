@@ -105,7 +105,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         # Check 'rdd_leakage' is marked in cr50 capability.
         if self.check_cr50_capability(['rdd_leakage']):
             self.rdd_leakage = True
-            logging.warn('RDD leakage is marked in cr50 cap config')
+            logging.warning('RDD leakage is marked in cr50 cap config')
         else:
             self.rdd_leakage = False
 

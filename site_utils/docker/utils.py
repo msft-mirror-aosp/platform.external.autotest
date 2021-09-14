@@ -30,3 +30,27 @@ def get_docker_client():
                                               DOCKER_TCP_SERVER_PORT)
         client = docker.DockerClient(base_url=tcp_connection, timeout=300)
     return client
+
+
+def get_running_containers(client=None):
+    """
+    Return the names of running containers
+    """
+    if client is None:
+        client = get_docker_client()
+    containers = client.containers.list()
+    return [c.name for c in containers]
+
+
+def get_container_networks(container_name, client=None):
+    """
+    Return the list of networks of the container. Return [] if container is not found.
+    """
+    if client is None:
+        client = get_docker_client()
+    containers = get_running_containers(client)
+    if container_name not in containers:
+        return []
+    else:
+        container = client.containers.get(container_name)
+        return container.attrs['NetworkSettings']['Networks'].keys()

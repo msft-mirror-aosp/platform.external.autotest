@@ -3,7 +3,8 @@
 Most WiFi tests specify `DEPENDENCIES = 'wificell'` in their control file,
 which means they require not only an autotest server and a DUT, but also a
 special test-enabled Access Point (AP). Additionally, some tests require a
-packet capture (pcap) device or a signal attenuator.
+packet capture (pcap) device or a signal attenuator. For instructions on how
+to set up a wifcell for testing, visit [Setting up a WiFi Test Cell](https://chromeos.google.com/partner/dlm/docs/component-qual/settinguptestcell.html).
 
 The basics of running a wificell autotest are the same as any other, except
 that autotest also needs to know where to find your test AP. For some

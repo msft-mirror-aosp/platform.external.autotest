@@ -17,6 +17,9 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
     """
     version = 1
 
+    TEST_CHALLENGE_DIGEST = hashlib.sha256(b'test_challenge').hexdigest()
+    TEST_APPLICATION_DIGEST = hashlib.sha256(b'test_application').hexdigest()
+
     def _safe_power_short_press(self):
         """Stop powerd before pressing the power button."""
         # Validating U2F requires pressing the power button. If those power button
@@ -52,12 +55,10 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
         self._safe_power_short_press()
 
         # Register to create a new key handle.
-        g2f_reg = g2f_utils.G2fRegister(
-            self.client,
-            cr50_dev,
-            hashlib.sha256('test_challenge').hexdigest(),
-            hashlib.sha256('test_application').hexdigest(),
-            U2F_AUTH_ENFORCE)
+        g2f_reg = g2f_utils.G2fRegister(self.client, cr50_dev,
+                                        self.TEST_CHALLENGE_DIGEST,
+                                        self.TEST_APPLICATION_DIGEST,
+                                        U2F_AUTH_ENFORCE)
 
         # Check that we managed to register.
         if not g2f_reg.exit_status == 0:
@@ -70,13 +71,10 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
         self._safe_power_short_press()
 
         # Check that we can authenticate with the new key handle.
-        g2f_auth = g2f_utils.G2fAuth(
-            self.client,
-            cr50_dev,
-            hashlib.sha256('test_challenge').hexdigest(),
-            hashlib.sha256('test_application').hexdigest(),
-            key_handle,
-            U2F_AUTH_ENFORCE)
+        g2f_auth = g2f_utils.G2fAuth(self.client, cr50_dev,
+                                     self.TEST_CHALLENGE_DIGEST,
+                                     self.TEST_APPLICATION_DIGEST, key_handle,
+                                     U2F_AUTH_ENFORCE)
 
         if not g2f_auth.exit_status == 0:
             raise error.TestError('Authenticate failed.')
@@ -94,13 +92,10 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
 
         # Check the key handle is no longer valid.
         self._safe_power_short_press()
-        g2f_auth_clear = g2f_utils.G2fAuth(
-            self.client,
-            cr50_dev,
-            hashlib.sha256('test_challenge').hexdigest(),
-            hashlib.sha256('test_application').hexdigest(),
-            key_handle,
-            U2F_AUTH_ENFORCE)
+        g2f_auth_clear = g2f_utils.G2fAuth(self.client, cr50_dev,
+                                           self.TEST_CHALLENGE_DIGEST,
+                                           self.TEST_APPLICATION_DIGEST,
+                                           key_handle, U2F_AUTH_ENFORCE)
 
         if g2f_auth_clear.exit_status == 0:
             raise error.TestError('Authenticate succeeded; should have failed')

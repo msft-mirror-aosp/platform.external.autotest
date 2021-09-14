@@ -4,7 +4,7 @@
 
 NAME = "platform_HWwatchdog"
 AUTHOR = "Chrome OS Team"
-ATTRIBUTES = "suite:kernel_per-build_regression"
+ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"

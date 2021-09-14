@@ -767,7 +767,7 @@ class ServoHost(base_servohost.BaseServoHost):
                 "PORT=%s" % self.servo_port,
         ]
         container_network = "default_moblab"
-        if socket.gethostname().startswith('satlab'):
+        if 'drone' in docker_utils.get_running_containers(client=client):
             container_network = "default_satlab"
         logging.info('Servod container environment: %s', environment)
         try:

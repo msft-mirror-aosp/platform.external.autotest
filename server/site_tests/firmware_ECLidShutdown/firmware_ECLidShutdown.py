@@ -37,11 +37,10 @@ class firmware_ECLidShutdown(FirmwareTest):
             self._reset_ec_regexp()
             logging.info('The screen should turn back on now, during cleanup.')
             self.servo.set_nocheck('lid_open', 'yes')
-            time.sleep(self.LID_POWER_STATE_DELAY)
+            time.sleep(self.faft_config.firmware_screen)
             if self.servo.get('lid_open') != 'yes':
                 raise error.TestFail('The device did not stay in a mechanical'
                                      'on state after a lid open.')
-            time.sleep(self.faft_config.firmware_screen)
             self.switcher.simple_reboot(sync_before_boot=False)
             self.switcher.wait_for_client()
             self.clear_set_gbb_flags(vboot.GBB_FLAG_DISABLE_LID_SHUTDOWN, 0)

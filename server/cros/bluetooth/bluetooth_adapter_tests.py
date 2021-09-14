@@ -4877,10 +4877,11 @@ class BluetoothAdapterTests(test.test):
         return ''
 
 
-    def get_device_sample_rssi(self, device):
+    def get_device_sample_rssi(self, device, use_cached_value=True):
         """ Get one RSSI value of the given device.
 
         @param device: the peer device to be examined RSSI
+        @param use_cached_value: Use the cached value
 
         @returns: rssi value if the device is found,
                   None otherwise
@@ -4900,7 +4901,7 @@ class BluetoothAdapterTests(test.test):
         # isinstance(device.rssi, int) instead of hasattr(device, 'rssi')
         # is used as the condition below.
         # Refer to class _Method in client/cros/chameleon/chameleon.py
-        if isinstance(device.rssi, int):
+        if isinstance(device.rssi, int) and use_cached_value:
             return device.rssi
 
         try:

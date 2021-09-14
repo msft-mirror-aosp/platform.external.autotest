@@ -7,7 +7,7 @@ import time
 from xml.parsers import expat
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros import servo
+from autotest_lib.server.cros.servo import servo
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 

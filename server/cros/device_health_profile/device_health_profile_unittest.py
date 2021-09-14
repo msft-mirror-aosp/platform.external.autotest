@@ -49,6 +49,11 @@ def create_device_health_profile():
 class DeviceHealthProfileTestCase(unittest.TestCase):
     dhp = create_device_health_profile()
 
+    def _sleep(self):
+        """Sleep to create a difference in timestamp between updates."""
+        # Set 2 seconds as 1 seconds brought the flakiness of the tests.
+        time.sleep(2)
+
     def test_shows_not_loaded_till_profile_host_provided(self):
         host_info = MockHostInfoStore()
         dhp = device_health_profile.DeviceHealthProfile(
@@ -104,16 +109,14 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_last_update_time(self):
         cached_time = self.dhp.get_last_update_time()
         self.assertRegexpMatches(cached_time, r'\d{4}[-/]\d{2}[-/]\d{2}')
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_update_time()
         self.assertNotEqual(cached_time, self.dhp.get_last_update_time())
 
     def test_last_update_time_epoch(self):
         cached_time_epoch = self.dhp.get_last_update_time_epoch()
         self.assertEqual(type(cached_time_epoch), int)
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_update_time()
         self.assertGreater(self.dhp.get_last_update_time_epoch(),
                            cached_time_epoch)
@@ -121,8 +124,7 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_enter_current_state_time(self):
         cached_time = self.dhp.get_enter_current_state_time()
         self.assertRegexpMatches(cached_time, r'\d{4}[-/]\d{2}[-/]\d{2}')
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.update_dut_state('test_state_2')
         self.assertNotEqual(cached_time,
                             self.dhp.get_enter_current_state_time())
@@ -130,8 +132,7 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_enter_current_state_time_epoch(self):
         cached_time_epoch = self.dhp.get_enter_current_state_time_epoch()
         self.assertEqual(type(cached_time_epoch), int)
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.update_dut_state('test_state_3')
         self.assertGreater(self.dhp.get_enter_current_state_time_epoch(),
                            cached_time_epoch)
@@ -176,16 +177,14 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_get_badblocks_ro_run_time(self):
         cached_time = self.dhp.get_badblocks_ro_run_time()
         self.assertRegexpMatches(cached_time, r'\d{4}[-/]\d{2}[-/]\d{2}')
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_badblocks_ro_run_time()
         self.assertNotEqual(cached_time, self.dhp.get_badblocks_ro_run_time())
 
     def test_get_badblocks_ro_run_time_epoch(self):
         cached_time_epoch = self.dhp.get_badblocks_ro_run_time_epoch()
         self.assertEqual(type(cached_time_epoch), int)
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_badblocks_ro_run_time()
         self.assertGreater(self.dhp.get_badblocks_ro_run_time_epoch(),
                            cached_time_epoch)
@@ -193,16 +192,14 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_get_badblocks_rw_run_time(self):
         cached_time = self.dhp.get_badblocks_rw_run_time()
         self.assertRegexpMatches(cached_time, r'\d{4}[-/]\d{2}[-/]\d{2}')
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_badblocks_rw_run_time()
         self.assertNotEqual(cached_time, self.dhp.get_badblocks_rw_run_time())
 
     def test_get_badblocks_rw_run_time_epoch(self):
         cached_time_epoch = self.dhp.get_badblocks_rw_run_time_epoch()
         self.assertEqual(type(cached_time_epoch), int)
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_badblocks_rw_run_time()
         self.assertGreater(self.dhp.get_badblocks_rw_run_time_epoch(),
                            cached_time_epoch)
@@ -210,8 +207,7 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_get_servo_micro_fw_update_time(self):
         cached_time = self.dhp.get_servo_micro_fw_update_time()
         self.assertRegexpMatches(cached_time, r'\d{4}[-/]\d{2}[-/]\d{2}')
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_servo_miro_fw_update_run_time()
         self.assertNotEqual(cached_time,
                             self.dhp.get_servo_micro_fw_update_time())
@@ -219,8 +215,7 @@ class DeviceHealthProfileTestCase(unittest.TestCase):
     def test_get_servo_micro_fw_update_time_epoch(self):
         cached_time_epoch = self.dhp.get_servo_micro_fw_update_time_epoch()
         self.assertEqual(type(cached_time_epoch), int)
-        # Sleep 1 second so updated timestamp is different than current one.
-        time.sleep(1)
+        self._sleep()
         self.dhp.refresh_servo_miro_fw_update_run_time()
         self.assertGreater(self.dhp.get_servo_micro_fw_update_time_epoch(),
                            cached_time_epoch)

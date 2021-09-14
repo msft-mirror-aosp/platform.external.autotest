@@ -72,6 +72,14 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.ec.update_battery_info()
         return not self.ec.get_battery_charging_allowed(print_result=False)
 
+    def _enable_dps(self, en):
+        """Enable/disable Dynamic PDO Selection
+
+        @param en: a bool, True for enable, disable otherwise.
+
+        """
+        self.usbpd.send_command('dps %s' % ('en' if en else 'dis'))
+
     def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
                    init_power_mode=None):
         super(firmware_PDVbusRequest, self).initialize(host, cmdline_args)
@@ -92,10 +100,14 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.usbpd.send_command('chan 0')
         logging.info('Disallow PR_SWAP request from DUT')
         self.pdtester.allow_pr_swap(False)
+        # Disable dynamic PDO selection for voltage testing
+        self._enable_dps(False)
 
     def cleanup(self):
         logging.info('Allow PR_SWAP request from DUT')
         self.pdtester.allow_pr_swap(True)
+        # Re-enable DPS
+        self._enable_dps(True)
         # Set back to the max 20V SRC mode at the end.
         self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
 

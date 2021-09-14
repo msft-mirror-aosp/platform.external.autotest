@@ -12,6 +12,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "stub"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This is a helper test that can only run on bluetooth devices,

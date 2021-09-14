@@ -31,7 +31,7 @@ def run_TS(machine):
         bundle='x86',
         uri='LATEST',
         use_jdk9=True,
-        load_waivers=False,
+        retry_manual_tests=True,
         timeout=5400)
 
 parallel_simple(run_TS, machines)

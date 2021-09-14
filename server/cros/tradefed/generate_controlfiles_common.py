@@ -126,7 +126,7 @@ _CONTROLFILE_TEMPLATE = Template(
             hard_reboot_on_failure=True,
     {%- endif %}
     {%- if camera_facing %}
-            load_waivers=False,
+            retry_manual_tests=True,
     {%- endif %}
             timeout={{timeout}})
 

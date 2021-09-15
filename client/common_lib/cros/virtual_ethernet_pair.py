@@ -210,6 +210,11 @@ class VirtualEthernetPair(object):
         """@return string MAC address of the peer interface."""
         return interface.Interface(self._peer_interface_name).mac_address
 
+    @property
+    def interface_namespace(self):
+        """@return interface name space if configured, None otherwise."""
+        return self._interface_ns
+
 
     def __enter__(self):
         self.setup()

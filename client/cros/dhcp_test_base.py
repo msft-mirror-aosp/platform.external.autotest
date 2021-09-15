@@ -54,6 +54,10 @@ class DhcpTestBase(test.test):
     """Parent class for tests that work verify DHCP behavior."""
     version = 1
 
+    def __init__(self, job, bindir, outputdir, namespace='autotest'):
+        test.test.__init__(self, job, bindir, outputdir)
+        self._namespace = namespace
+
     @staticmethod
     def rewrite_ip_suffix(subnet_mask, ip_in_subnet, ip_suffix):
         """
@@ -168,9 +172,8 @@ class DhcpTestBase(test.test):
         self._server = None
         self._shill_proxy = shill_proxy.ShillProxy()
         try:
-            namespace = 'autotest'
             self._ethernet_pair = virtual_ethernet_pair.VirtualEthernetPair(
-                    interface_ns=namespace,
+                    interface_ns=self._namespace,
                     peer_interface_name='pseudoethernet0',
                     peer_interface_ip=None)
             self._ethernet_pair.setup()
@@ -180,7 +183,7 @@ class DhcpTestBase(test.test):
             self._server = dhcp_test_server.DhcpTestServer(
                     interface=self._ethernet_pair.interface_name,
                     ingress_address='',
-                    namespace=namespace)
+                    namespace=self._namespace)
             self._server.start()
             if not self._server.is_healthy:
                 raise error.TestFail('Could not start DHCP test server.')

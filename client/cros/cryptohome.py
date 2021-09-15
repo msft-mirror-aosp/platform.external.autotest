@@ -14,6 +14,7 @@ import common
 from autotest_lib.client.cros import constants
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.client.cros.tpm import *
 
 ATTESTATION_CMD = '/usr/bin/attestation_client'
@@ -116,6 +117,8 @@ def get_fwmp(cleared_fwmp=False):
                     ' --action=get_firmware_management_parameters')
 
     if cleared_fwmp:
+        if tpm_utils.FwmpIsAllZero(out):
+            return {}
         fields = ['error']
     else:
         fields = ['flags', 'developer_key_hash']

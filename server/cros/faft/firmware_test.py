@@ -2166,7 +2166,8 @@ class FirmwareTest(test.test):
                             ignore_status=True)
         if res.exit_status and res.exit_status != self.FWMP_CLEARED_EXIT_STATUS:
             raise error.TestError('Could not run cryptohome command %r' % res)
-        return self.FWMP_CLEARED_ERROR_MSG in res.stdout
+        return (self.FWMP_CLEARED_ERROR_MSG in res.stdout
+                or tpm_utils.FwmpIsAllZero(res.stdout))
 
 
     def _tpm_is_owned(self):

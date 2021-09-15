@@ -121,3 +121,14 @@ def CleanupAndReboot(client):
     client.run(full_rm, ignore_status=True)
     client.run('sync', ignore_status=True)
     client.reboot()
+
+
+def FwmpIsAllZero(get_fwmp_output):
+    """Check if firmware management parameters are all zero.
+
+    @param get_fwmp_output: output from the command
+        'cryptohome --action=get_firmware_management_parameters'.
+    """
+    return ('flags=0x00000000' in get_fwmp_output and
+            'hash=0000000000000000000000000000000000000000000000000000000000000000'
+            in get_fwmp_output)

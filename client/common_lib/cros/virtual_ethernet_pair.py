@@ -41,7 +41,7 @@ with virtual_ethernet_pair.VirtualEthernetPair(...) as vif:
 
 import logging
 
-from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import interface
 
 class VirtualEthernetPair(object):
@@ -84,6 +84,14 @@ class VirtualEthernetPair(object):
         if host is not None:
             self._run = host.run
 
+    def _get_ipv4_addr(self, iface):
+        addr_output = utils.system_output("ip -4 addr show dev %s" % iface)
+        for line in addr_output.splitlines():
+            parts = line.lstrip().split()
+            if parts[0] != 'inet' or 'deprecated' in parts:
+                continue
+            return parts[1]
+        return None
 
     def setup(self):
         """
@@ -122,6 +130,36 @@ class VirtualEthernetPair(object):
             if status.exit_status != 0:
                 logging.error('iptables rule addition failed for interface %s: '
                               '%s', name, status.stderr)
+        # In addition to INPUT configure also FORWARD'ing for the case
+        # of interface being moved to its own namespace so that there is
+        # contact with "the world" from within that namespace.
+        if self._interface_ns is not None:
+            command = 'iptables -w -I FORWARD -i %s -j ACCEPT' \
+                      % self._peer_interface_name
+            status = self._run(command, ignore_status=True)
+            if status.exit_status != 0:
+                logging.warning(
+                        'failed to configure forwarding rule for %s: '
+                        '%s', self._peer_interface_name, status.stderr)
+            command = 'iptables -w -t nat -I POSTROUTING ' \
+                      '--src %s -o eth0 -j MASQUERADE' % self._interface_ip
+            status = self._run(command, ignore_status=True)
+            if status.exit_status != 0:
+                logging.warning('failed to configure nat rule for %s: '
+                                '%s', self._peer_interface_name, status.stderr)
+            # Get the addr of eth0 and add default route to it in namespace
+            eth0_addr = self._get_ipv4_addr('eth0')
+            eth0_addr = eth0_addr[:eth0_addr.rfind('/')]  # strip prefix
+            commands = [
+                    'ip r add %s dev %s', 'ip route add default via %s dev %s'
+            ]
+            for command in commands:
+                command = command % (eth0_addr, self._interface_name)
+                status = self._run(self._ns_exec + command, ignore_status=True)
+                if status.exit_status != 0:
+                    logging.warning(
+                            'failed to configure GW route for %s: '
+                            '%s', self._interface_name, status.stderr)
         self._is_healthy = True
 
 
@@ -134,9 +172,16 @@ class VirtualEthernetPair(object):
         for name in (self._interface_name, self._peer_interface_name):
             command = 'iptables -w -D INPUT -i %s -j ACCEPT' % name
             if name == self._interface_name and self._interface_ns:
-                status = self._run(self._ns_exec + command, ignore_status=True)
+                self._run(self._ns_exec + command, ignore_status=True)
             else:
-                status = self._run(command, ignore_status=True)
+                self._run(command, ignore_status=True)
+        if self._interface_ns is not None:
+            self._run('iptables -w -D FORWARD -i %s -j ACCEPT' %
+                      self._peer_interface_name,
+                      ignore_status=True)
+            command = 'iptables -w -t nat -I POSTROUTING ' \
+                      '--src %s -o eth0 -j MASQUERADE' % self._interface_ip
+            self._run(command, ignore_status=True)
         if not self._either_interface_exists():
             logging.warning('VirtualEthernetPair.teardown() called, '
                             'but no interface was found.')
@@ -214,7 +259,6 @@ class VirtualEthernetPair(object):
     def interface_namespace(self):
         """@return interface name space if configured, None otherwise."""
         return self._interface_ns
-
 
     def __enter__(self):
         self.setup()

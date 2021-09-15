@@ -1,9 +1,9 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'wiley, pstew, quiche'
-NAME = 'network_WiFi_AttenuatedPerf.ht40_ch011'
+AUTHOR = 'arowa'
+NAME = 'network_WiFi_AttenuatedPerf.ht40_ch006'
 ATTRIBUTES = "suite:wifi_atten_perf"
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
@@ -22,8 +22,8 @@ from autotest_lib.server.cros.network import hostap_config
 def run(machine):
     host = hosts.create_host(machine)
     ap_config = hostap_config.HostapConfig(
-            channel=11,
-            n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT40_MINUS],
+            channel=6,
+            n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT40_PLUS],
             mode=hostap_config.HostapConfig.MODE_11N_PURE)
     attenuation_increment = 4
     final_attenuation = 100

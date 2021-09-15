@@ -8,14 +8,13 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import interface
-from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.network import expected_performance_results
 from autotest_lib.server.cros.network import ip_config_context_manager
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
-from autotest_lib.server.cros.network import wifi_cell_test_base
+from autotest_lib.server.cros.network import wifi_cell_perf_test_base
 
 
-class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
+class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
     """Test maximal achievable bandwidth on several channels per band.
 
     Conducts a performance test for a set of specified router configurations
@@ -222,20 +221,7 @@ class network_WiFi_Perf(wifi_cell_test_base.WiFiCellTestBase):
 
         for ap_config in self._ap_configs:
             # Set up the router and associate the client with it.
-            self.context.configure(ap_config)
-            # self.context.configure has a similar check - but that one only
-            # errors out if the AP *requires* VHT i.e. AP is requesting
-            # MODE_11AC_PURE and the client does not support it.
-            # For wifi_perf, we don't want to run MODE_11AC_MIXED on the AP if
-            # the client does not support VHT, as we are guaranteed to get the
-            # same results at 802.11n/HT40 in that case.
-            if ap_config.is_11ac and not self.context.client.is_vht_supported():
-                raise error.TestNAError('Client does not have AC support')
-            assoc_params = xmlrpc_datatypes.AssociationParameters(
-                    ssid=self.context.router.get_ssid(),
-                    security_config=ap_config.security_config)
-            self.context.assert_connect_wifi(assoc_params)
-
+            self.configure_and_connect_to_ap(ap_config)
             with ip_config_context_manager.IpConfigContextManager(
             ) as ip_context:
 

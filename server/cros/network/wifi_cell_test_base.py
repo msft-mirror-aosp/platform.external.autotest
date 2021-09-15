@@ -71,6 +71,7 @@ class WiFiCellTestBase(test.test):
                 self.debugdir)
 
         self._wifi_context.setup(pcap_as_router=pcap_as_router)
+        self._verify_additional_setup_requirements()
         self.parse_additional_arguments(cmdline_args, additional_params)
 
         msg = '======= WiFi autotest setup complete. Starting test... ======='
@@ -99,3 +100,9 @@ class WiFiCellTestBase(test.test):
         assoc_params = xmlrpc_datatypes.AssociationParameters(ssid=ap_ssid)
         self.context.assert_connect_wifi(assoc_params)
         return ap_ssid
+
+    def _verify_additional_setup_requirements(self):
+        """Subclasses can override this method to do any additional checking
+        of the physical testing setup that they require.
+        """
+        pass

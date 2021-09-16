@@ -221,6 +221,7 @@ def get_extension(module,
                   is_public=False,
                   led_provision=None,
                   camera_facing=None,
+                  hardware_suite=False,
                   abi_bits=None):
     """Defines a unique string.
 
@@ -251,6 +252,8 @@ def get_extension(module,
         ext_parts += [led_provision]
     if camera_facing:
         ext_parts += ['camerabox', camera_facing]
+    if hardware_suite:
+        ext_parts += ['ctshardware']
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi and abi_bits:
         ext_parts += [str(abi_bits)]
     return '.'.join(ext_parts)
@@ -284,7 +287,8 @@ def get_controlfile_name(module,
                          is_public=False,
                          led_provision=None,
                          camera_facing=None,
-                         abi_bits=None):
+                         abi_bits=None,
+                         hardware_suite=False):
     """Defines the control file name.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -303,14 +307,16 @@ def get_controlfile_name(module,
                     "control.<revision>.<abi>.<module>".
     """
     return 'control.%s' % get_extension(module, abi, revision, is_public,
-                                        led_provision, camera_facing, abi_bits)
+                                        led_provision, camera_facing, hardware_suite,
+                                        abi_bits)
 
 
 def get_sync_count(_modules, _abi, _is_public):
     return 1
 
 
-def get_suites(modules, abi, is_public, camera_facing=None):
+def get_suites(modules, abi, is_public, camera_facing=None,
+               hardware_suite=False):
     """Defines the suites associated with a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -323,8 +329,8 @@ def get_suites(modules, abi, is_public, camera_facing=None):
     if is_public:
         for module in modules:
             suites = set([CONFIG['MOBLAB_SUITE_NAME']])
-            if module in cts_hardware_modules:
-                suites.add(CONFIG['MOBLAB_HARDWARE_SUITE_NAME'])
+            if hardware_suite and module in cts_hardware_modules:
+                suites = set([CONFIG['MOBLAB_HARDWARE_SUITE_NAME']])
         return sorted(list(suites))
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
@@ -343,8 +349,6 @@ def get_suites(modules, abi, is_public, camera_facing=None):
         if module in CONFIG['HARDWARE_DEPENDENT_MODULES']:
             # CTS modules to be run on all unibuild models.
             suites.add('suite:arc-cts-unibuild-hw')
-        if module in cts_hardware_modules and camera_facing is None:
-            suites.add(CONFIG['HARDWARE_SUITE_NAME'])
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.
@@ -364,6 +368,9 @@ def get_suites(modules, abi, is_public, camera_facing=None):
             suites.add('suite:bvt-arc')
         elif module in CONFIG['BVT_PERBUILD'] and (abi == 'arm' or abi == ''):
             suites.add('suite:bvt-perbuild')
+
+    if hardware_suite:
+        suites = set([CONFIG['HARDWARE_SUITE_NAME']])
 
     if camera_facing != None:
         suites.add('suite:arc-cts-camera')
@@ -821,6 +828,7 @@ def get_controlfile_content(combined,
                             abi_bits=None,
                             led_provision=None,
                             camera_facing=None,
+                            hardware_suite=False,
                             whole_module_set=None):
     """Returns the text inside of a control file.
 
@@ -832,13 +840,13 @@ def get_controlfile_content(combined,
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
     tag = '%s' % get_extension(combined, abi, revision, is_public,
-                               led_provision, camera_facing, abi_bits)
+                               led_provision, camera_facing, hardware_suite, abi_bits)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
-        suites = get_suites(modules, abi, is_public, camera_facing)
+        suites = get_suites(modules, abi, is_public, camera_facing, hardware_suite)
     attributes = ', '.join(suites)
     uri = 'LATEST' if is_latest else (None if is_public else uri)
     target_module = None
@@ -1130,6 +1138,7 @@ def write_controlfile(name,
                                       suites,
                                       is_public,
                                       is_latest,
+                                      hardware_suite=False,
                                       whole_module_set=whole_module_set,
                                       abi_bits=abi_bits)
     with open(filename, 'w') as f:
@@ -1301,6 +1310,22 @@ def write_extra_controlfiles(_modules, abi, revision, build, uri, is_public,
                               build, uri, suites, is_public,
                               is_latest)
 
+def write_hardwaresuite_controlfiles(abi, revision, build, uri, is_public,
+                                     is_latest):
+    """Control files for Build variant hardware only tests."""
+    cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
+
+    for module in cts_hardware_modules:
+        name = get_controlfile_name(module, abi, revision, is_public,
+                                    hardware_suite=True)
+
+        content = get_controlfile_content(module, set([module]), abi, revision,
+                                    build, uri, None, is_public, is_latest,
+                                    hardware_suite=True)
+
+        with open(name, 'w') as f:
+            f.write(content)
+
 
 def write_extra_camera_controlfiles(abi, revision, build, uri, is_public,
                                     is_latest):
@@ -1378,6 +1403,9 @@ def run(uris, is_public, is_latest, cache_dir):
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
                 write_extra_controlfiles(None, abi, revision, build, uri,
                                          is_public, is_latest)
+
+            write_hardwaresuite_controlfiles(abi, revision, build, uri,
+                                             is_public, is_latest)
 
 
 def main(config):

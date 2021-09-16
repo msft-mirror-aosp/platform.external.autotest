@@ -4,7 +4,7 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.network import hostap_config
-from autotest_lib.server.cros.network import performance_test_types as test_types
+from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 """
 This file defines the expected throughput values that should be used with the network_WiFi_Perf.*
 tests.
@@ -31,7 +31,7 @@ The expected throughput values depend on the following parameters:
 """
 
 Expected_Throughput_WiFi = {
-        test_types.TEST_TYPE_TCP_BIDIRECTIONAL: {
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
@@ -48,7 +48,7 @@ Expected_Throughput_WiFi = {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: (0, 0)
                 }
         },
-        test_types.TEST_TYPE_UDP_BIDIRECTIONAL: {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
@@ -65,7 +65,7 @@ Expected_Throughput_WiFi = {
                         hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40: (0, 0)
                 }
         },
-        test_types.TEST_TYPE_TCP_RX: {
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (61, 86),
@@ -85,7 +85,7 @@ Expected_Throughput_WiFi = {
                         (153, 221)
                 }
         },
-        test_types.TEST_TYPE_TCP_TX: {
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (61, 86),
@@ -105,7 +105,7 @@ Expected_Throughput_WiFi = {
                         (153, 221)
                 }
         },
-        test_types.TEST_TYPE_UDP_RX: {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (72, 101),
@@ -125,7 +125,7 @@ Expected_Throughput_WiFi = {
                         (180, 260)
                 }
         },
-        test_types.TEST_TYPE_UDP_TX: {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
                         (72, 101),
@@ -151,7 +151,7 @@ Expected_Throughput_WiFi = {
 def get_expected_throughput_wifi(test_type, mode, channel_width):
     """returns the expected throughput for WiFi only performance tests.
 
-    @param test_type: the performance_test_types test type.
+    @param test_type: the PerfTestTypes test type.
 
     @param mode: the WiFi mode such as 80211n.
 

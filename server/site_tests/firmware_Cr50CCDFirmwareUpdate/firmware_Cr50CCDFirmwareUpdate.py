@@ -140,6 +140,14 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             except error.TestFail as e:
                 raise error.TestNAError('cannot change active_v4_device: %s' %
                                         str(e))
+        # TODO(b/196824029): remove when servod supports using the power state
+        # controller with the ccd device.
+        try:
+            self.host.servo.get_power_state_controller().reset()
+        except Exception as e:
+            logging.info(e)
+            raise error.TestNAError('Unable to do power state reset with '
+                                    'active ccd device')
 
         # If it is ITE EC, then ccd reset factory.
         if self.servo.get('ec_chip') == 'it83xx':

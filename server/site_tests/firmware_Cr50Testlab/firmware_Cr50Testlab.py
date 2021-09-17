@@ -30,6 +30,12 @@ class firmware_Cr50Testlab(Cr50Test):
         # any cr50 resets at any point during the test.
         self.start_reset_count = self.cr50.get_reset_count()
 
+    def cleanup(self):
+        """Reenable testlab mode."""
+        try:
+            self.fast_ccd_open(enable_testlab=True)
+        finally:
+            super(firmware_Cr50Testlab, self).cleanup()
 
     def try_testlab(self, mode, err=''):
         """Try to modify ccd testlab mode.

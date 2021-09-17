@@ -11,6 +11,8 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "Bluetooth"
 TEST_TYPE = "client"
+PY_VERSION = 3
+
 DOC = """
 Go to status tray and turn on/off BT
 Command to execute is

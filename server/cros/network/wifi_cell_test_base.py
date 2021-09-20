@@ -97,7 +97,8 @@ class WiFiCellTestBase(test.test):
         """
         self.context.configure(ap_config)
         ap_ssid = self.context.router.get_ssid()
-        assoc_params = xmlrpc_datatypes.AssociationParameters(ssid=ap_ssid)
+        assoc_params = xmlrpc_datatypes.AssociationParameters(
+                ssid=ap_ssid, security_config=ap_config.security_config)
         self.context.assert_connect_wifi(assoc_params)
         return ap_ssid
 

@@ -34,7 +34,7 @@ def run(machine):
                     ac_capabilities=ac_caps)
                for channel, vht_center_channel in [(44, 42), (157, 155)]]
     host = hosts.create_host(machine)
-    use_iperf = False
+    use_iperf = True
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,
                  additional_params=(configs, use_iperf))

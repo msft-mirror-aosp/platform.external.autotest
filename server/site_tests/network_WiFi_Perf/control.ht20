@@ -26,7 +26,7 @@ def run(machine):
     configs = [hostap_config.HostapConfig(n_capabilities=caps,
                                           channel=channel, mode=mode)
                for channel in (1, 157)]
-    use_iperf=False
+    use_iperf=True
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,
                  additional_params=(configs, use_iperf))

@@ -33,7 +33,7 @@ def run(machine):
                         ac_capabilities=[hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7],
                         vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40,
                                           security_config=wpa_config)]
-    use_iperf = False
+    use_iperf = True
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,
                  additional_params=(configs, use_iperf))

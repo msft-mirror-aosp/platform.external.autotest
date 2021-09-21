@@ -5,7 +5,11 @@
 from autotest_lib.client.common_lib import error
 
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GObject
+
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib.cros import chrome, session_manager

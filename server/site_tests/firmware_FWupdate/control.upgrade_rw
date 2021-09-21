@@ -9,6 +9,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
+PY_VERSION = 3
 
 DOC = """
 RO+RW firmware update using chromeos-firmwareupdate --mode=recovery

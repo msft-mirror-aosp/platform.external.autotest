@@ -247,7 +247,7 @@ class firmware_PDPowerSwap(FirmwareTest):
             # DUT is dualrole in dual role mode. Test power role swap
             # operation intiated both by the DUT and PDTester.
             success = 0
-            for attempt in xrange(self.POWER_SWAP_ITERATIONS):
+            for attempt in range(self.POWER_SWAP_ITERATIONS):
                 if attempt & 1:
                     direction = 'rx'
                 else:

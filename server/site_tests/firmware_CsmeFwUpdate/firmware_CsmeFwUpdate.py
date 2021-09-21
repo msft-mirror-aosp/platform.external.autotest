@@ -4,7 +4,7 @@
 
 import logging, re
 import os
-import xmlrpclib
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -83,7 +83,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
             if self.is_firmware_saved() and self.restore_required:
                 logging.info("Restoring Original Image")
                 self.restore_firmware()
-        except (EnvironmentError, xmlrpclib.Fault,
+        except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring firmware:", exc_info=True)
 
@@ -95,7 +95,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                         self._orig_sw_wp['start'],
                         self._orig_sw_wp['length'],
                         self._orig_sw_wp['enabled'])
-        except (EnvironmentError, xmlrpclib.Fault,
+        except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring software write-protect:",
                           exc_info = True)

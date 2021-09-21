@@ -5,8 +5,8 @@
 import logging
 import operator
 import re
+import six
 import sys
-import xmlrpclib
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chip_utils
@@ -17,7 +17,7 @@ NO_ARGS = tuple()
 ONE_INT_ARG = (1, )
 ONE_STR_ARG = ("foo", )
 SAMPLE_FILE = "/tmp/foo"
-CHIP_FW_NAMES = (chip.fw_name for chip in chip_utils.chip_id_map.itervalues())
+CHIP_FW_NAMES = (chip.fw_name for chip in chip_utils.chip_id_map.values())
 SAMPLE_CGPT_A = {
     "UUID": "93EF7B23-606B-014B-A10C-E9D7CF53DFD3",
     "successful": 1,
@@ -178,7 +178,7 @@ class firmware_FAFTRPC(FirmwareTest):
             rpc_name = method
         try:
             result = rpc_function(*params)
-        except xmlrpclib.Fault as e:
+        except six.moves.xmlrpc_client.Fault as e:
             if allow_error_msg is not None and \
                     re.search(allow_error_msg, str(e)):
                 success_msg = "raised an acceptable error during RPC handling"
@@ -223,7 +223,7 @@ class firmware_FAFTRPC(FirmwareTest):
         @param params: A tuple containing params to pass into the RPC function
 
         @raise error.TestFail: If the RPC raises no error, or if it raises any
-                               error other than xmlrpclib.Fault
+                               error other than six.moves.xmlrpc_client.Fault
 
         @return: Not meaningful.
 
@@ -235,7 +235,7 @@ class firmware_FAFTRPC(FirmwareTest):
             rpc_name = method
         try:
             result = rpc_function(*params)
-        except xmlrpclib.Fault as e:
+        except six.moves.xmlrpc_client.Fault as e:
             self._log_success(rpc_name, params, "raised RPC error")
         except:
             error_msg = "Unexpected misc error: %s" % sys.exc_info()[0]

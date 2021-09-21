@@ -35,7 +35,7 @@ class firmware_PDConnect(FirmwareTest):
                              'Unable to set it disconnected; skip this item.')
                 continue
 
-            for attempt in xrange(self.CONNECT_ITERATIONS):
+            for attempt in range(self.CONNECT_ITERATIONS):
                 logging.info('Disconnect/Connect iteration %d', attempt)
                 try:
                     if dev.drp_disconnect_connect(RECONNECT_DELAY) == False:

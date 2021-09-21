@@ -83,7 +83,7 @@ class firmware_Cr50CheckCap(Cr50Test):
                      cap_setting, pprint.pformat(cap_dict))
 
         # Check the accessiblity
-        for cap, cap_info in cap_dict.iteritems():
+        for cap, cap_info in cap_dict.items():
             if cap_info[self.cr50.CAP_IS_ACCESSIBLE] != expect_accessible:
                 raise error.TestFail('%r is %raccessible' % (cap,
                                      'not ' if expect_accessible else ''))

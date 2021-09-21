@@ -94,7 +94,7 @@ class firmware_Cr50InvalidateRW(test.test):
             that isn't corrupt_login or if an attepmt to corrupt the header
             fails.
         """
-        for i in xrange(self.LOGIN_ATTEMPTS):
+        for i in range(self.LOGIN_ATTEMPTS):
             attempt = i + 1
 
             self.login(use_guest)

@@ -31,7 +31,8 @@ class firmware_TPMExtend(FirmwareTest):
                         'cat %s' % pcrs_file))
         logging.debug('Dumping PCRs read from device: \n%s', pcrs)
         extended = hashlib.sha1(b'\0' * 20 + hash_obj.digest()[:20]).hexdigest()
-        spaced = ' '.join(extended[i:i+2] for i in xrange(0, len(extended), 2))
+        spaced = ' '.join(extended[i:i + 2]
+                          for i in range(0, len(extended), 2))
         logging.debug('PCR %d should contain hash: %s', num, spaced)
         return ('PCR-%.2d: %s' % (num, spaced.upper())) in pcrs
 

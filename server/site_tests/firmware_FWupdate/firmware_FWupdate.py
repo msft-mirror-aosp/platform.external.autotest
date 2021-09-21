@@ -4,7 +4,7 @@
 
 import logging
 import os
-import xmlrpclib
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -107,7 +107,7 @@ class firmware_FWupdate(FirmwareTest):
         try:
             if self.flashed and self._want_restore and self.is_firmware_saved():
                 self.restore_firmware()
-        except (EnvironmentError, xmlrpclib.Fault,
+        except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring firmware:", exc_info=True)
 
@@ -118,7 +118,7 @@ class firmware_FWupdate(FirmwareTest):
                         self._orig_sw_wp['start'],
                         self._orig_sw_wp['length'],
                         self._orig_sw_wp['enabled'])
-        except (EnvironmentError, xmlrpclib.Fault,
+        except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring software write-protect:",
                           exc_info=True)

@@ -154,7 +154,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
                 #
                 # Make sure if matches for any keys existed before, they exist
                 # now and if they didn't exist, they don't exist now.
-                for k, v in match.groupdict().iteritems():
+                for k, v in match.groupdict().items():
                     old_val = self.past_matches.get(k, [v, v])[0]
 
                     # If there's an optional key, then the value may or may not

@@ -164,7 +164,7 @@ class firmware_PDDataSwap(FirmwareTest):
 
         @param pd_port: port number of DUT PD connection
         """
-        for attempt in xrange(self.DATA_SWAP_ITERATIONS):
+        for attempt in range(self.DATA_SWAP_ITERATIONS):
             # Use the same direction for every 2 loop iterations
             if attempt & 2:
                 direction = 'tx'
@@ -291,7 +291,7 @@ class firmware_PDDataSwap(FirmwareTest):
             logging.info('***************** Swap Results ********************')
             total_attempts = 0
             total_failures = 0
-            for direction, role in self.swap_attempt.iterkeys():
+            for direction, role in self.swap_attempt.keys():
                 logging.info('%s %s swap attempts = %d, failures = %d',
                              direction, role,
                              self.swap_attempt[(direction, role)],

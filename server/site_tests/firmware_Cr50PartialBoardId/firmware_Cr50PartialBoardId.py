@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cr50_utils
@@ -71,8 +72,7 @@ class firmware_Cr50PartialBoardId(Cr50Test):
         """Returns a string representation of the board id tuple."""
         bid_str_fields = []
         for field in bid:
-            # TODO(mruthven): remove unicode check after switch to python3
-            if isinstance(field, str) or isinstance(field, unicode):
+            if isinstance(field, six.string_types):
                 bid_str_fields.append(field)
             elif isinstance(field, int):
                 bid_str_fields.append(hex(field))

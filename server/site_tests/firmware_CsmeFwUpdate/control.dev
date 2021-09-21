@@ -13,6 +13,8 @@ TEST_CLASS = "platform"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
 TEST_CASE_ID = "CSME_UPDATE"
+PY_VERSION = 3
+
 DOC = """
 This test updates the RW section of the current bios with another image which contain
 a differnt ME RW version and verifies if MW firmware udpate happens successfully.

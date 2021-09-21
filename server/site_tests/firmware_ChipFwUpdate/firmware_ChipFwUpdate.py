@@ -126,7 +126,7 @@ class firmware_ChipFwUpdate(FirmwareTest):
         cbfs_work_dir.
         """
 
-        for chip in self.req_chip_updates.itervalues():
+        for chip in self.req_chip_updates.values():
             logging.info('checking for %s firmware in CBFS', chip.chip_name)
 
             if not self.faft_client.updater.cbfs_extract_chip(

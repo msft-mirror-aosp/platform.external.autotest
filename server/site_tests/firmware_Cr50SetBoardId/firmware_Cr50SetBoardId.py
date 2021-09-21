@@ -142,7 +142,7 @@ class firmware_Cr50SetBoardId(Cr50Test):
         self.run_script(self.ERROR_ALREADY_SET, 'dvt', 'TEST')
 
         # Verify each stage sets the right flags
-        for phase, flags in self.PHASE_FLAGS_DICT.iteritems():
+        for phase, flags in self.PHASE_FLAGS_DICT.items():
             self.eraseflashinfo()
 
             expected_response = self.SUCCESS

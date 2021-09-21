@@ -30,7 +30,7 @@ class firmware_PDResetSoft(FirmwareTest):
         @param port_pair: list of 2 connected PD devices
         """
         for dev in port_pair:
-            for _ in xrange(self.RESET_ITERATIONS):
+            for _ in range(self.RESET_ITERATIONS):
                 try:
                     time.sleep(self.PD_CONNECT_DELAY)
                     if dev.soft_reset() == False:

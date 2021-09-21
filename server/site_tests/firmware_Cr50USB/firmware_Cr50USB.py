@@ -52,7 +52,7 @@ class firmware_Cr50USB(FirmwareTest):
         logging.info("Running Cr50 USB stress test for %d iterations",
                      num_iterations)
 
-        for iteration in xrange(num_iterations):
+        for iteration in range(num_iterations):
             if iteration:
                 time.sleep(self.SLEEP_DELAY)
 

@@ -88,7 +88,7 @@ class firmware_ECUsbPorts(FirmwareTest):
 
     def probe_port_count(self):
         """Probe the EC's gpio pins to determine the number of USB-A ports"""
-        for cnt in xrange(10):
+        for cnt in range(10):
             try:
                 self.__check_usb_enabled(cnt)
             except error.TestFail:
@@ -139,7 +139,7 @@ class firmware_ECUsbPorts(FirmwareTest):
         self.run_shutdown_cmd()
         self.wait_for('shutdown', 'Checking that all USB-A ports are disabled')
         # Check that all USB-A ports are disabled
-        for idx in xrange(self._port_count):
+        for idx in range(self._port_count):
             if self.__check_usb_enabled(idx):
                 raise error.TestFail(
                         'Not all USB-A ports are disabled after shutdown')

@@ -2,8 +2,8 @@
 
 _Self-link: [go/faft-pd](https://goto.google.com/faft-pd)_
 
-PD FAFT is another set of firmware tests (FAFT), which targets testing USB-C and
-PD (Power Delivery) functionalities.
+PD FAFT is another set of firmware tests (FAFT), which targets testing USB-C,
+PD (Power Delivery) functionalities, and ULP (Ultra Low Power) mode.
 
 [TOC]
 
@@ -89,6 +89,11 @@ firmware\_PDVbusRequest, checks:
     to the attached charger capability, like 5V, 9V, 12V, 15V, 20V, etc.
 *   Receiving Source Capability messages from PDTester
 *   If PD Dual role mode is operational in the DUT
+
+firmware\_ECWakefromULP, checks:
+
+*   Ability to wake AP and EC from ULP mode by PB, LID.
+*   Ability to wake EC from ULP mode by AC.
 
 The above tests may have multiple subtests, the same test body but different
 prerequisite.

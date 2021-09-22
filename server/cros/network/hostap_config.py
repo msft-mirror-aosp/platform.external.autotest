@@ -342,7 +342,9 @@ class HostapConfig(object):
         """
         ht_channel_width = self._ht_mode
         if self.vht_channel_width is not None:
-            if self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40:
+            if (
+                    self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40
+                    or self.vht_channel_width == self.VHT_CHANNEL_WIDTH_20):
                 if ht_channel_width == self.HT_CHANNEL_WIDTH_20:
                     return self.VHT_CHANNEL_WIDTH_20
             return self.vht_channel_width
@@ -446,8 +448,9 @@ class HostapConfig(object):
 
         """
 
-        if (not self.vht_channel_width or
-                self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40):
+        if (not self.vht_channel_width
+                    or self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40
+                    or self.vht_channel_width == self.VHT_CHANNEL_WIDTH_20):
             # if it is VHT40, capture packets on the correct 40MHz band since
             # for packet capturing purposes, only the channel width matters
             ht_mode = self._ht_mode
@@ -665,7 +668,8 @@ class HostapConfig(object):
         self._security_config = (copy.copy(security_config) or
                                 xmlrpc_security_types.SecurityConfig())
         self._obss_interval = obss_interval
-        if vht_channel_width == self.VHT_CHANNEL_WIDTH_40:
+        if (vht_channel_width == self.VHT_CHANNEL_WIDTH_40
+                    or vht_channel_width == self.VHT_CHANNEL_WIDTH_20):
             self._vht_oper_chwidth = 0
         elif vht_channel_width == self.VHT_CHANNEL_WIDTH_80:
             self._vht_oper_chwidth = 1

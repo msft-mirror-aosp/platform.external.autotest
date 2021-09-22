@@ -8,12 +8,12 @@ AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_PeerVerify'
 PURPOSE = ('Test to check health of Bluetooth peers')
 CRITERIA = 'Pass all health test'
-ATTRIBUTES = 'suite:bluetooth'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_wifi_testbed_update'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
 DOC = """

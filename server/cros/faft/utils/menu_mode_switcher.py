@@ -1,17 +1,18 @@
+# Lint as: python2, python3
 # Copyright 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import abc
 import logging
+import six
 
 from autotest_lib.client.common_lib import error
 
 
+@six.add_metaclass(abc.ABCMeta)
 class _BaseMenuModeSwitcher:
     """Base class for mode switch with menu navigator."""
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, faft_framework, menu_navigator):
         self.test = faft_framework

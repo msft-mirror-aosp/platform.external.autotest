@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -131,7 +132,7 @@ class RPCProxy(object):
                     self._faft_client, self._client_config.rpc_quit_call)
             remote_quit()
             need_pkill = False
-        except (StandardError, httplib.BadStatusLine, xmlrpclib.Error) as e:
+        except Exception as e:
             logging.warn("Error while telling FAFT RPC server to quit: %s", e)
             # If we failed to tell the RPC server to quit for some reason,
             # fall back to SIGTERM, because it may not have exited.

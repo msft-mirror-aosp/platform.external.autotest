@@ -1,15 +1,16 @@
+# Lint as: python2, python3
 # Copyright 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import abc
 import logging
+import six
 
 
+@six.add_metaclass(abc.ABCMeta)
 class _BaseMenuNavigator:
     """Abstract base class for menu navigator."""
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, test):
         self.test = test

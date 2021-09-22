@@ -253,6 +253,7 @@ suite:nearby-share-remote
 suite:network_nightly
 suite:network_ui
 suite:offloads
+suite:omaha_per-week
 suite:partners
 suite:perfalerts
 suite:performance_cuj

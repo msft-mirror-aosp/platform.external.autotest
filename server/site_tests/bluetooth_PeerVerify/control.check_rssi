@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_PeerVerify'
+NAME = 'bluetooth_PeerVerify.check_rssi'
 PURPOSE = ('Test to check health of Bluetooth peers')
 CRITERIA = 'Pass all health test'
 ATTRIBUTES = 'suite:bluetooth'
@@ -17,16 +17,14 @@ DEPENDENCIES = 'bluetooth'
 PY_VERSION = 3
 
 DOC = """
-      Batch of tests to check health of Bluetooth peers
-      Currently it contain
-      check_rssi : Check RSSI of peers and confirm it is > - 70
+      Test to Check RSSI of peers and confirm it is > - 70
       """
 
 args_dict = utils.args_to_dict(args)
 
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test('bluetooth_PeerVerify', host=host,
-                 num_iterations=1, args_dict=args_dict)
+    job.run_test('bluetooth_PeerVerify', host=host, num_iterations=1,
+		args_dict=args_dict, test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

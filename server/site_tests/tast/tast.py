@@ -449,9 +449,11 @@ class tast(test.test):
         if self._use_camera_box:
             host_name = self._host.hostname
 
-            # If host name is "FOO.cros", the chart host name should be
-            # "FOO-tablet.cros"
-            chart_host_name = '{}-tablet.cros'.format(host_name[:-5])
+            # If host name is "FOO.BAR.BAR2", the chart host name should be
+            # "FOO-tablet.BAR.BAR2"
+            domains = host_name.split('.', 1)
+            domains[0] += '-tablet'
+            chart_host_name = '.'.join(domains)
             try:
                 chart_ip = socket.gethostbyname(chart_host_name)
             except socket.gaierror:

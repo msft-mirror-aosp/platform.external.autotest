@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
 import os
 import re
 import shutil
@@ -26,32 +25,12 @@ class ChromeBinaryTest(test.test):
     CHROME_SANDBOX = '/opt/google/chrome/chrome-sandbox'
     COMPONENT_LIB = '/opt/google/chrome/lib'
     home_dir = None
-    cr_source_dir = None
-    test_binary_dir = None
-
-    def setup(self):
-        """
-        Sets up a test.
-        """
-        self.job.setup_dep([self.CHROME_TEST_DEP])
+    test_binary_dir = '/usr/local/libexec/chrome-binary-tests'
 
     def initialize(self):
         """
         Initializes members after setup().
         """
-        test_dep_dir = os.path.join(self.autodir, 'deps', self.CHROME_TEST_DEP)
-        self.job.install_pkg(self.CHROME_TEST_DEP, 'dep', test_dep_dir)
-
-        self.cr_source_dir = '%s/test_src' % test_dep_dir
-        self.test_binary_dir = '%s/out/Release' % self.cr_source_dir
-        # If chrome is a component build then need to create a symlink such
-        # that the _unittest binaries can find the chrome component libraries.
-        Release_lib = os.path.join(self.test_binary_dir, 'lib')
-        if os.path.isdir(self.COMPONENT_LIB):
-            logging.info('Detected component build. This assumes binary '
-                         'compatibility between chrome and *unittest.')
-            if not os.path.islink(Release_lib):
-                os.symlink(self.COMPONENT_LIB, Release_lib)
         self.home_dir = tempfile.mkdtemp()
 
     def cleanup(self):
@@ -134,7 +113,6 @@ class ChromeBinaryTest(test.test):
         binary_path = self.get_chrome_binary_path(binary_to_run)
         env_vars = ' '.join([
             'HOME=' + self.home_dir,
-            'CR_SOURCE_ROOT=' + self.cr_source_dir,
             'CHROME_DEVEL_SANDBOX=' + self.CHROME_SANDBOX,
             'GTEST_OUTPUT=xml:' + gtest_xml,
             ])

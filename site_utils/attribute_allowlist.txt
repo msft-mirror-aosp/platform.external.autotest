@@ -45,6 +45,7 @@ suite:bluetooth_standalone_cq
 suite:bluetooth_stress
 suite:bluetooth_wifi_coex
 suite:bootup_time
+suite:borealis-cq
 suite:borealis_per-build
 suite:borealis_per-day
 suite:borealis_per-week

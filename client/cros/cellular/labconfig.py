@@ -4,6 +4,10 @@
 # found in the LICENSE file.
 
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import optparse
 import pickle
 import re
@@ -11,6 +15,7 @@ import six
 import subprocess
 
 import common
+
 from autotest_lib.client.cros.cellular import cellular
 from autotest_lib.client.cros.cellular import cellular_logging
 from autotest_lib.client.cros.cellular import labconfig_data
@@ -81,7 +86,7 @@ class Configuration(object):
         if name not in labconfig_data.CELLS:
             raise LabConfigError(
                 'Could not find cell %s, valid cells are %s' % (
-                    name, labconfig_data.CELLS.keys()))
+                    name, list(labconfig_data.CELLS.keys())))
 
         return labconfig_data.CELLS[name]
 

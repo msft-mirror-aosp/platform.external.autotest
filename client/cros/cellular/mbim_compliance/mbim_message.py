@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -27,6 +28,10 @@ MBIMControlMessage|         (mbim_message_request.py)
                                               |
                                               |>MBIMHostError
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import array
 import logging
 import struct
@@ -34,7 +39,11 @@ from collections import namedtuple
 
 import six
 
+from six.moves import map
+from six.moves import zip
+
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors
+
 
 # Type of message classes. The values of each field in the message is stored
 # as an attribute of the object created.
@@ -132,7 +141,7 @@ def message_class_new(cls, **kwargs):
             mbim_errors.log_and_raise(
                     mbim_errors.MBIMComplianceControlMessageError,
                     'Unexpected fields (%s) in %s' % (
-                            kwargs.keys(), cls.__name__))
+                            list(kwargs.keys()), cls.__name__))
         return obj
 
 
@@ -198,7 +207,7 @@ class MBIMControlMessageMeta(type):
                     '%s message must have some fields defined' % name)
 
         attrs['__new__'] = message_class_new
-        _, field_names, _ = zip(*fields)
+        _, field_names, _ = list(zip(*fields))
         message_class = namedtuple(name, field_names)
         # Prepend the class created via namedtuple to |bases| in order to
         # correctly resolve the __new__ method while preserving the class
@@ -314,7 +323,7 @@ class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
         @returns The field names of the message structure.
 
         """
-        _, field_names, _ = zip(*cls.get_fields(get_all=get_all))
+        _, field_names, _ = list(zip(*cls.get_fields(get_all=get_all)))
         return field_names
 
 
@@ -326,7 +335,7 @@ class MBIMControlMessage(six.with_metaclass(MBIMControlMessageMeta, object)):
         @returns The format of fields of the message structure.
 
         """
-        field_formats, _, _ = zip(*cls.get_fields(get_all=get_all))
+        field_formats, _, _ = list(zip(*cls.get_fields(get_all=get_all)))
         return field_formats
 
 

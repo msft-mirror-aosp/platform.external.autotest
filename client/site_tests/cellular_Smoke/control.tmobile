@@ -16,7 +16,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "client"
 DEPENDENCIES = "carrier:tmobile"
-
+PY_VERSION = 3
 JOB_RETRIES=1
 
 DOC = """

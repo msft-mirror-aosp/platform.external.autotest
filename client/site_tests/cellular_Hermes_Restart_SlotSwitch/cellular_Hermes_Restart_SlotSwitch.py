@@ -1,12 +1,19 @@
+# Lint as: python2, python3
 # Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import dbus
 import logging
 import re
 import time
 import subprocess
+
+from six.moves import range
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -92,7 +99,7 @@ class cellular_Hermes_Restart_SlotSwitch(test.test):
         # Read qmi slot status and parse to return current active slot no
         status_cmd = 'qmicli -p -d qrtr://0 --uim-get-slot-status'
         slot_status = subprocess.check_output(status_cmd, shell=True)
-        slot_status_list = re.findall('.*active.*', slot_status, re.I)
+        slot_status_list = re.findall('.*active.*', slot_status.decode('utf-8'), re.I)
         for slot_num, status in enumerate(slot_status_list):
             if "inactive" not in status:
                 logging.info('active slot is %d', slot_num+1)

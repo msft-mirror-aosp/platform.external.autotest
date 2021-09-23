@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -125,7 +126,7 @@ class CellularProxy(shill_proxy.ShillProxy):
         """
         logging.info('Resetting modem')
         # Obtain identifying information about the modem.
-        properties = modem.GetProperties(utf8_strings=True)
+        properties = modem.GetProperties()
         # NOTE: Using the Model ID means that this will break if we have two
         # identical cellular modems in a DUT. Fortunately, we only support one
         # modem at a time.
@@ -266,7 +267,7 @@ class CellularProxy(shill_proxy.ShillProxy):
         device = self.find_cellular_device_object()
         if not device:
             return None
-        properties = device.GetProperties(utf8_strings=True)
+        properties = device.GetProperties()
         if (model_id == properties.get(self.DEVICE_PROPERTY_MODEL_ID)
                     and (mm_reboot or (old_modem_mm_object != properties.get(
                             self.DEVICE_PROPERTY_DBUS_OBJECT)))):

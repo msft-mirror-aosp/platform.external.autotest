@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,11 +7,18 @@ MBIM Data transfer module is responsible for generating valid MBIM NTB frames
 from  IP packets and for extracting IP packets from received MBIM NTB frames.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import array
 import struct
 from collections import namedtuple
 
 import six
+
+from six.moves import range
+from six.moves import zip
 
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_constants
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_data_channel
@@ -384,7 +392,7 @@ def header_class_new(cls, **kwargs):
             mbim_errors.log_and_raise(
                     mbim_errors.MBIMComplianceDataTransferError,
                     'Unexpected fields (%s) in %s' % (
-                            kwargs.keys(), cls.__name__))
+                            list(kwargs.keys()), cls.__name__))
     obj = super(cls, cls).__new__(cls, *field_values)
     return obj
 
@@ -408,7 +416,7 @@ class MBIMNtbHeadersMeta(type):
             mbim_errors.log_and_raise(
                     mbim_errors.MBIMComplianceDataTransfer,
                     '%s header must have some fields defined' % name)
-        _, field_names = zip(*fields)
+        _, field_names = list(zip(*fields))
         attrs['__new__'] = header_class_new
         header_class = namedtuple(name, field_names)
         # Prepend the class created via namedtuple to |bases| in order to
@@ -451,7 +459,7 @@ class MBIMNtbHeaders(six.with_metaclass(MBIMNtbHeadersMeta, object)):
         @returns The field names of the header structure.
 
         """
-        _, field_names = zip(*cls.get_fields())
+        _, field_names = list(zip(*cls.get_fields()))
         return field_names
 
 
@@ -463,7 +471,7 @@ class MBIMNtbHeaders(six.with_metaclass(MBIMNtbHeadersMeta, object)):
         @returns The format of fields of the header structure.
 
         """
-        field_formats, _ = zip(*cls.get_fields())
+        field_formats, _ = list(zip(*cls.get_fields()))
         return field_formats
 
 

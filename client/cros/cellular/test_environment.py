@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -17,7 +18,6 @@ from autotest_lib.client.common_lib.cros import crash_detector
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.cellular import mm
 from autotest_lib.client.cros.cellular import mm1_constants
-from autotest_lib.client.cros.cellular.pseudomodem import pseudomodem_context
 from autotest_lib.client.cros.networking import cellular_proxy
 from autotest_lib.client.cros.networking import mm1_proxy
 from autotest_lib.client.cros.networking import shill_context
@@ -115,7 +115,21 @@ class CellularTestEnvironment(object):
             # between disconnecting the modem in _verify_cellular_service()
             # and shill autoconnect.
             with self._disable_shill_autoconnect():
-                self._nested = contextlib.nested(*self._context_managers)
+                try:
+                    from contextlib import nested # Python 2
+                except ImportError:
+                    from contextlib import ExitStack, contextmanager
+
+                    @contextmanager
+                    def nested(*contexts):
+                        """ Implementation of nested for python3"""
+                        with ExitStack() as stack:
+                            for ctx in contexts:
+                                stack.enter_context(ctx)
+                            yield contexts
+
+                self._nested = nested(*self._context_managers)
+
                 self._nested.__enter__()
 
                 self._initialize_shill()
@@ -422,7 +436,9 @@ class CellularOTATestEnvironment(CellularTestEnvironment):
     def __init__(self, **kwargs):
         super(CellularOTATestEnvironment, self).__init__(**kwargs)
 
-
+# pseudomodem tests disabled with b/180627893, cleaningup all pseudomodem
+# related files and imports through: b/205769777
+'''
 class CellularPseudoMMTestEnvironment(CellularTestEnvironment):
     """Setup and verify cellular pseudomodem test environment. """
 
@@ -438,7 +454,7 @@ class CellularPseudoMMTestEnvironment(CellularTestEnvironment):
         self._context_managers.append(
             pseudomodem_context.PseudoModemManagerContext(
                 True, bus=self.bus, *pseudomm_args))
-
+'''
 
 class CellularESIMTestEnvironment(CellularTestEnvironment):
     """Setup cellular eSIM test environment. """

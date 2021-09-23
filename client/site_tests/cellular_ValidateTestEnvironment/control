@@ -13,6 +13,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
     Verify that the test setup common to all other tests has no failures.

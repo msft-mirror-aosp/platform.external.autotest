@@ -1,6 +1,11 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import collections
 import dbus
@@ -11,9 +16,13 @@ try:
 except ImportError:
     import gobject as GObject
 import time
+import six
+
+from six.moves import map
+from six.moves import range
+from six import PY2
 
 from autotest_lib.client.cros import dbus_util
-
 
 class ShillProxyError(Exception):
     """Exceptions raised by ShillProxy and its children."""
@@ -307,7 +316,7 @@ class ShillProxy(object):
         @return python typed object representing property value or None
 
         """
-        properties = interface.GetProperties(utf8_strings=True)
+        properties = interface.GetProperties()
         if property_key in properties:
             return ShillProxy.dbus2primitive(properties[property_key])
         else:
@@ -323,7 +332,7 @@ class ShillProxy(object):
         @param value string value to set for property on interface from string
 
         """
-        properties = interface.GetProperties(utf8_strings=True)
+        properties = interface.GetProperties()
         if property_key not in properties:
             raise ShillProxyError('No property %s found in %s' %
                     (property_key, interface.object_path))
@@ -513,7 +522,7 @@ class ShillProxy(object):
             # Check to make sure we're not already in a target state.
             try:
                 properties = self.dbus2primitive(
-                        dbus_object.GetProperties(utf8_strings=True))
+                        dbus_object.GetProperties())
                 last_value = properties.get(property_name, '(no value found)')
                 if last_value in expected_values:
                     return True, last_value, duration()
@@ -558,7 +567,7 @@ class ShillProxy(object):
         @return dbus object representing the active profile.
 
         """
-        properties = self.manager.GetProperties(utf8_strings=True)
+        properties = self.manager.GetProperties()
         return self.get_dbus_object(
                 self.DBUS_TYPE_PROFILE,
                 properties[self.MANAGER_PROPERTY_ACTIVE_PROFILE])
@@ -580,14 +589,14 @@ class ShillProxy(object):
 
     def get_devices(self):
         """Return the list of devices as dbus Interface objects"""
-        properties = self.manager.GetProperties(utf8_strings=True)
+        properties = self.manager.GetProperties()
         return [self.get_dbus_object(self.DBUS_TYPE_DEVICE, path)
                 for path in properties[self.MANAGER_PROPERTY_DEVICES]]
 
 
     def get_profiles(self):
         """Return the list of profiles as dbus Interface objects"""
-        properties = self.manager.GetProperties(utf8_strings=True)
+        properties = self.manager.GetProperties()
         return [self.get_dbus_object(self.DBUS_TYPE_PROFILE, path)
                 for path in properties[self.MANAGER_PROPERTY_PROFILES]]
 
@@ -614,7 +623,7 @@ class ShillProxy(object):
                 otherwise.
 
         """
-        properties = self.manager.GetProperties(utf8_strings=True)
+        properties = self.manager.GetProperties()
         all_services = properties.get(self.MANAGER_PROPERTY_ALL_SERVICES,
                                       None)
         if not all_services:
@@ -623,7 +632,7 @@ class ShillProxy(object):
         for service_path in all_services:
             service = self.get_dbus_object(self.DBUS_TYPE_SERVICE,
                                            service_path)
-            properties = service.GetProperties(utf8_strings=True)
+            properties = service.GetProperties()
             device_path = properties.get(self.SERVICE_PROPERTY_DEVICE, None)
             if device_path == device.object_path:
                 return service
@@ -650,11 +659,11 @@ class ShillProxy(object):
             return None
 
         dbus_type, manager_property = self.OBJECT_TYPE_PROPERTY_MAP[object_type]
-        manager_properties = self.manager.GetProperties(utf8_strings=True)
+        manager_properties = self.manager.GetProperties()
         for path in manager_properties[manager_property]:
             try:
                 test_object = self.get_dbus_object(dbus_type, path)
-                object_properties = test_object.GetProperties(utf8_strings=True)
+                object_properties = test_object.GetProperties()
                 for name, value in list(properties.items()):
                     if (name not in object_properties or
                         self.dbus2primitive(object_properties[name]) != value):

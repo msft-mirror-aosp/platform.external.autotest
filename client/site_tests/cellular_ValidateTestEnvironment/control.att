@@ -15,6 +15,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "client"
 DEPENDENCIES = "carrier:att"
+PY_VERSION = 3
 
 DOC = """
     Verify that the test setup common to all other tests has no failures.

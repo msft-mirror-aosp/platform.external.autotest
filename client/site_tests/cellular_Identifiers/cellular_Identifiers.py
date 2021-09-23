@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -91,8 +92,11 @@ class cellular_Identifiers(test.test):
         with test_env:
             device = test_env.shill.find_cellular_device_object()
             service = test_env.shill.find_cellular_service_object()
-            device_props = device.GetProperties(utf8_strings=True)
-            service_props = service.GetProperties(utf8_strings=True)
+            #device_props = device.GetProperties(utf8_strings=True)
+            #service_props = service.GetProperties(utf8_strings=True)
+
+            device_props = device.GetProperties()
+            service_props = service.GetProperties()
             self.is_modemmanager = 'freedesktop' in device_props['DBus.Service']
 
             modem_props = test_env.modem.GetModemProperties()

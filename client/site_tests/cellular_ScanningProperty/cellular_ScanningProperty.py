@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -54,7 +55,7 @@ class cellular_ScanningProperty(test.test):
             raise error.TestFail('Expected one modem object, found %d' %
                                  len(modems))
 
-        modem_path = modems.keys()[0]
+        modem_path = list(modems.keys())[0]
         modem_object = self._bus.get_object(mm1_constants.I_MODEM_MANAGER,
                                             modem_path)
         # Check that this object is valid

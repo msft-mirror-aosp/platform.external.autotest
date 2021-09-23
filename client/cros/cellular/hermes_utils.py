@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -406,7 +407,7 @@ def install_profile_test(euicc_path, hermes_manager):
                                  euicc_path)
 
         profile_path_to_install, profile_to_install = \
-            profiles_pending.items()[0]
+            list(profiles_pending.items())[0]
         logging.debug('First pending profile:%s', profile_path_to_install)
 
         iccid = profile_to_install.iccid
@@ -465,7 +466,7 @@ def install_pending_profile_test(euicc_path, hermes_manager):
         raise error.TestFail('No pending profile found on euicc:',
                              euicc_path)
 
-    profile_path_to_install, profile_to_install = profiles_pending.items()[0]
+    profile_path_to_install, profile_to_install = list(profiles_pending.items())[0]
     iccid = profile_to_install.iccid
     activation_code = profile_to_install.activationcode
 

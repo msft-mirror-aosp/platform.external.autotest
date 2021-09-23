@@ -1,11 +1,19 @@
+# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import socket
 import time
-import urlparse
+
+from six.moves import range
+
+import six.moves.urllib.parse
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -70,7 +78,7 @@ class cellular_Smoke(test.test):
             logging.info('Expected interface for %s: %s',
                          service.object_path, interface)
             network.CheckThatInterfaceCanAccessDestination(
-                    urlparse.urlparse(url_pattern).hostname, interface,
+                    six.moves.urllib.parse.urlparse(url_pattern).hostname, interface,
                     [socket.AF_INET, socket.AF_INET6])
 
             try:

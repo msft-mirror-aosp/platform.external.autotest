@@ -1,11 +1,18 @@
+# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import struct
 from collections import namedtuple
 
 import six
+
+from six.moves import zip
 
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors
 
@@ -105,7 +112,7 @@ class DescriptorMeta(type):
             raise mbim_errors.MBIMComplianceFrameworkError(
                     '%s must define a _FIELDS attribute' % name)
 
-        field_formats, field_names = zip(*attrs['_FIELDS'])
+        field_formats, field_names = list(zip(*attrs['_FIELDS']))
         # USB descriptor data are in the little-endian format.
         data_format = '<' + ''.join(field_formats)
         unpack_length = struct.calcsize(data_format)
@@ -400,8 +407,7 @@ def filter_descriptors(descriptor_type, descriptors):
     """
     if not descriptors:
         return []
-    return filter(lambda descriptor: isinstance(descriptor, descriptor_type),
-                  descriptors)
+    return [descriptor for descriptor in descriptors if isinstance(descriptor, descriptor_type)]
 
 
 def has_distinct_descriptors(descriptors):
@@ -464,8 +470,7 @@ def filter_interface_descriptors(descriptors, interface_type):
                 return False
         return True
 
-    return filter(lambda descriptor: _match_all_fields(descriptor),
-                  descriptors)
+    return [descriptor for descriptor in descriptors if _match_all_fields(descriptor)]
 
 
 def has_bulk_in_and_bulk_out(endpoints):

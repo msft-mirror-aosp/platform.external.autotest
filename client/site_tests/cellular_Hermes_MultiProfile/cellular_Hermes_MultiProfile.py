@@ -1,9 +1,16 @@
+# Lint as: python2, python3
 # Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import random
+
+from six.moves import range
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -53,8 +60,8 @@ class cellular_Hermes_MultiProfile(test.test):
                 raise error.TestError('Two distinct profiles need to be '
                 'installed before test begins but count is '+ profiles_count)
 
-            first_iccid = installed_profiles.values()[0].iccid
-            second_iccid = installed_profiles.values()[1].iccid
+            first_iccid = list(installed_profiles.values())[0].iccid
+            second_iccid = list(installed_profiles.values())[1].iccid
 
         if not first_iccid or not second_iccid :
             fail_iccid = 'first' if not first_iccid else 'second'

@@ -1,11 +1,18 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import dbus
 import logging
 import random
 import time
+
+from six.moves import range
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -34,7 +41,7 @@ class cellular_SafetyDance(test.test):
         v = None
         try:
             v = fn()
-        except dbus.exceptions.DBusException, error:
+        except dbus.exceptions.DBusException as error:
             if error.get_dbus_name() in self.okerrors:
                 return v, error.get_dbus_message()
             else:
@@ -149,7 +156,7 @@ class cellular_SafetyDance(test.test):
         self._disable()
         logging.info('Seed: %d', seed)
         random.seed(seed)
-        for _ in xrange(ops):
+        for _ in range(ops):
             self._op()
 
     def run_once(self, test_env, ops=30, seed=None):

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -189,7 +190,7 @@ class ModemManager1Proxy(object):
             raise ModemManager1ProxyError(
                 'Expected one modem object, found %d', len(modems))
 
-        modem_proxy = ModemProxy(self._bus, modems.keys()[0])
+        modem_proxy = ModemProxy(self._bus, list(modems.keys())[0])
         # Check that this object is valid
         try:
             modem_proxy.modem.GetAll(mm1_constants.I_MODEM,

@@ -573,6 +573,8 @@ class power_LoadTest(arc.ArcTest):
         # Add audio/docs/email/web fail load to power dashboard
         for task in ('audio', 'docs', 'email', 'web'):
             key = 'ext_%s_failed_loads' % task
+            if key not in keyvals:
+                continue
             vals = (int(x) for x in keyvals[key].split('_'))
             for index, val in enumerate(vals):
                 log_name = 'loop%02d_%s_failed_load' % (index, task)

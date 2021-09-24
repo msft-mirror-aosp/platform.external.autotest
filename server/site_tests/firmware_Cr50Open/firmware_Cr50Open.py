@@ -68,7 +68,8 @@ class firmware_Cr50Open(Cr50Test):
         self.cr50.set_ccd_level('lock')
 
         if not batt_pres:
-            cr50_utils.GSCTool(self.host, ['-a', '-o'])
+            cr50_utils.GSCTool(self.host, ['-a', '-o'],
+                               expect_reboot=not batt_pres)
             # Wait long enough for cr50 to open ccd and wipe the tpm.
             time.sleep(10)
             if self.cr50.OPEN != self.cr50.get_ccd_level():

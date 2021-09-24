@@ -218,12 +218,14 @@ def StopTrunksd(client):
         client.run('stop trunksd')
 
 
-def GSCTool(client, args, ignore_status=False):
+def GSCTool(client, args, ignore_status=False, expect_reboot=False):
     """Run gsctool with the given args.
 
     Args:
         client: the object to run commands on
         args: a list of strings that contiain the gsctool args
+        ignore_status: Ignore the exit status
+        expect_reboot: Expect a reboot
 
     Returns:
         the result of gsctool
@@ -237,8 +239,9 @@ def GSCTool(client, args, ignore_status=False):
     # status so we should ignore it.
     ignore_status = not options.info_cmd or ignore_status
     # immediate reboots are only honored if the command is sent using /dev/tpm0
-    expect_reboot = ((options.systemdev or options.universal) and
-            not options.post_reset and not options.info_cmd)
+    expect_reboot = expect_reboot or ((options.systemdev or options.universal)
+                                      and not options.post_reset
+                                      and not options.info_cmd)
 
     result = client.run('gsctool %s' % ' '.join(args),
                         ignore_status=ignore_status,

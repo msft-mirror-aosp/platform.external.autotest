@@ -734,6 +734,9 @@ def get_extra_modules_dict(is_public, abi):
 
     return extra_modules
 
+def get_extra_hardware_modules_dict(is_public, abi):
+    return CONFIG['HARDWAREONLY_EXTRA_MODULES']
+
 def get_extra_artifacts(modules):
     artifacts = []
     for module in modules:
@@ -1314,7 +1317,6 @@ def write_hardwaresuite_controlfiles(abi, revision, build, uri, is_public,
                                      is_latest):
     """Control files for Build variant hardware only tests."""
     cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
-
     for module in cts_hardware_modules:
         name = get_controlfile_name(module, abi, revision, is_public,
                                     hardware_suite=True)
@@ -1325,6 +1327,16 @@ def write_hardwaresuite_controlfiles(abi, revision, build, uri, is_public,
 
         with open(name, 'w') as f:
             f.write(content)
+
+    for module, config in get_extra_hardware_modules_dict(is_public, abi).items():
+        for submodule, suites in config.items():
+            name = get_controlfile_name(submodule, abi, revision, is_public,
+                                        hardware_suite=True)
+            content = get_controlfile_content(submodule, set([module]), abi,
+                                              revision, build, uri, None, is_public,
+                                              is_latest, hardware_suite=True)
+            with open(name, 'w') as f:
+                f.write(content)
 
 
 def write_extra_camera_controlfiles(abi, revision, build, uri, is_public,

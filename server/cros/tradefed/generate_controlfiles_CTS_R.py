@@ -290,16 +290,12 @@ CONFIG['HARDWARE_MODULES'] = [
 SUITE_ARC_CTS_R = ['suite:arc-cts-r']
 R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
 R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
-R_REGRESSION_QUAL_HARDWARE_SUITES = R_REGRESSION_AND_QUAL_SUITES + [
-        CONFIG['HARDWARE_SUITE_NAME']]
 
 CONFIG['EXTRA_MODULES'] = {
     'CtsDeqpTestCases': {
         'CtsDeqpTestCases.dEQP-EGL': SUITE_ARC_CTS_R,
         'CtsDeqpTestCases.dEQP-GLES2': SUITE_ARC_CTS_R,
         'CtsDeqpTestCases.dEQP-GLES3': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
-            CONFIG['HARDWARE_SUITE_NAME']],
         'CtsDeqpTestCases.dEQP-GLES31': SUITE_ARC_CTS_R,
         'CtsDeqpTestCases.dEQP-VK': SUITE_ARC_CTS_R,
     },
@@ -307,10 +303,10 @@ CONFIG['EXTRA_MODULES'] = {
         'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,
         'CtsMediaTestCases.perf': R_REGRESSION_AND_QUAL_SUITES,
         'CtsMediaTestCases.video': R_REGRESSION_AND_QUAL_SUITES,
-        'CtsMediaTestCases.testGLViewDecodeAccuracy': R_REGRESSION_QUAL_HARDWARE_SUITES,
-        'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': R_REGRESSION_QUAL_HARDWARE_SUITES,
-        'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': R_REGRESSION_QUAL_HARDWARE_SUITES,
-        'CtsMediaTestCases.exclude-GLView': R_REGRESSION_QUAL_HARDWARE_SUITES,
+        'CtsMediaTestCases.testGLViewDecodeAccuracy': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.exclude-GLView': R_REGRESSION_AND_QUAL_SUITES,
     },
     'CtsWindowManagerDeviceTestCases': {
         'CtsWindowManager.A': R_REGRESSION_SUITES,
@@ -330,27 +326,37 @@ CONFIG['EXTRA_MODULES'] = {
     },
 }
 
+# In addition to EXTRA_MODULES, these modules do require separate control files
+# for internal and moblab.
+CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
+        'CtsDeqpTestCases' : {
+            'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
+        },
+        'CtsMediaTestCases': {
+             'CtsMediaTestCases.testGLViewDecodeAccuracy': [],
+             'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': [],
+             'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': [],
+             'CtsMediaTestCases.exclude-GLView': [],
+        },
+}
+
 # Moblab optionally can reshard modules, this was originally used
 # for deqp but it is no longer required for that module.  Retaining
 # feature in case future slower module needs to be sharded.
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
         'CtsDeqpTestCases' : {
              'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
-                 CONFIG['MOBLAB_HARDWARE_SUITE_NAME']],
+                 CONFIG['MOBLAB_SUITE_NAME']],
              },
         'CtsMediaTestCases': {
              'CtsMediaTestCases.testGLViewDecodeAccuracy': [
-                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
-                        'MOBLAB_HARDWARE_SUITE_NAME']],
+                 CONFIG['MOBLAB_SUITE_NAME']],
              'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': [
-                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
-                        'MOBLAB_HARDWARE_SUITE_NAME']],
+                 CONFIG['MOBLAB_SUITE_NAME']],
              'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': [
-                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
-                        'MOBLAB_HARDWARE_SUITE_NAME']],
+                 CONFIG['MOBLAB_SUITE_NAME']],
              'CtsMediaTestCases.exclude-GLView': [
-                  CONFIG['MOBLAB_SUITE_NAME']] + [CONFIG[
-                        'MOBLAB_HARDWARE_SUITE_NAME']],
+                 CONFIG['MOBLAB_SUITE_NAME']],
         },
 }
 

@@ -336,6 +336,10 @@ CONFIG['EXTRA_MODULES'] = {
     },
 }
 
+# In addition to EXTRA_MODULES, these modules do require separate control files
+# requiring separate declaration.
+CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {}
+
 # Moblab wants to shard dEQP really finely. This isn't needed anymore as it got
 # faster, but I guess better safe than sorry.
 CONFIG['PUBLIC_EXTRA_MODULES'] = {

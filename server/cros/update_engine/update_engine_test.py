@@ -744,7 +744,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return build_name, payload_file
 
 
-    def _restore_stateful(self):
+    def _update_stateful(self):
+        # Tries to update stateful without clobbering it.
+        return self._restore_stateful(clobber_stateful=False)
+
+    def _restore_stateful(self, clobber_stateful=True):
         """Restore the stateful partition after a destructive test."""
         # Test failed before job_repo_url was set. No need to fix stateful.
         if not self._job_repo_url:
@@ -780,7 +784,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # Touch a file so changes are picked up after reboot.
         update_file = '/mnt/stateful_partition/.update_available'
-        self._run(['echo', '-n', 'clobber', '>', update_file])
+        if clobber_stateful:
+            self._run(['echo', '-n', 'clobber', '>', update_file])
+        else:
+            self._run(['touch', update_file])
         self._host.reboot()
 
         # Make sure python is available again.
@@ -1091,6 +1098,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         delta_type = 'OMAHA'
         stable_paygen_data = self._paygen_json_lookup(board, channel,
                                                       delta_type)
+        if not stable_paygen_data:
+            # Some unibuild boards can have ALL of their stable serving builds
+            # also be an FSI. When this happens we will not find an OMAHA
+            # payload to use because GE only publishes one for a channel+build
+            # pair. So try to get the latest FSI on stable channel.
+            logging.info('No OMAHA payloads found. Falling back to FSI')
+            stable_paygen_data = self._paygen_json_lookup(
+                    board, channel, 'FSI')
         if not stable_paygen_data:
             raise error.TestFail(
                     'No stable build found in paygen.json for %s' % board)

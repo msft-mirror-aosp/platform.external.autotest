@@ -16,9 +16,6 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
 
     def cleanup(self):
         super(autoupdate_Basic, self).cleanup()
-        if self._m2n:
-            # Ensure rootfs and stateful are on the same version.
-            self._restore_stateful()
 
 
     def run_once(self,
@@ -79,6 +76,10 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
 
+        if self._m2n:
+            # Bring stateful version to the same version as rootfs.
+            logging.info('Restoring stateful partition to ToT version')
+            self._update_stateful()
         # Check we can login with the same user after update.
         self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                tag='after',

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "shengjun, msta"
-NAME = "inputs-upstream"
+NAME = "input-tools-upstream"
 PURPOSE = "This suite is a baseline set of tests that act as a pre-cq of Essential Inputs."
 TIME = "LONG"
 TEST_CLASS = "suite"

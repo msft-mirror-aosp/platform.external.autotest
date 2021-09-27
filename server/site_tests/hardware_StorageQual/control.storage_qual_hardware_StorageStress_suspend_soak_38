@@ -16,6 +16,7 @@ TIME = "long"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "Hardware"
 TEST_TYPE = "server"
+PY_VERSION = 3
 REQUIRE_SSP = True
 PRIORITY = 90
 DEPENDENCIES = "suspend"

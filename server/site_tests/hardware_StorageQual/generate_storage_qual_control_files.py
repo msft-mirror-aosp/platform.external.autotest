@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -305,6 +306,7 @@ TIME = "{length}"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "Hardware"
 TEST_TYPE = "server"
+PY_VERSION = 3
 REQUIRE_SSP = {ssp}
 PRIORITY = {priority}
 DEPENDENCIES = "{label}"
@@ -346,7 +348,7 @@ def _get_control_file_name(suite, label, test, i=None):
 
 def _get_args(test):
     args = []
-    for key, value in test['args'].items():
+    for key, value in list(test['args'].items()):
         args.append('%s=%s' % (key, repr(value)))
     return ', '.join(args)
 

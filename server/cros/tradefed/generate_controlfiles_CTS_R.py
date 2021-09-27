@@ -194,8 +194,13 @@ _WIFI_CONNECT_COMMANDS = [
 
 _MUTE_COMMAND = "\'cras_test_client --mute 1\'"
 
+_DISPLAY_REFRESH_COMMAND = (
+        "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/aquarium/aquarium.html\\''"
+)
+
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
+        'CtsCameraTestCases.NativeCameraDeviceTest': [_DISPLAY_REFRESH_COMMAND],
         'CtsMediaStressTestCases': [_MUTE_COMMAND],
         'CtsMediaTestCases': [_MUTE_COMMAND],
         'CtsMediaTestCases.audio': [_MUTE_COMMAND],
@@ -292,6 +297,9 @@ R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
 R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
 
 CONFIG['EXTRA_MODULES'] = {
+    'CtsCameraTestCases': {
+        'CtsCameraTestCases.NativeCameraDeviceTest': R_REGRESSION_AND_QUAL_SUITES,
+    },
     'CtsDeqpTestCases': {
         'CtsDeqpTestCases.dEQP-EGL': SUITE_ARC_CTS_R,
         'CtsDeqpTestCases.dEQP-GLES2': SUITE_ARC_CTS_R,
@@ -329,6 +337,9 @@ CONFIG['EXTRA_MODULES'] = {
 # In addition to EXTRA_MODULES, these modules do require separate control files
 # for internal and moblab.
 CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
+        'CtsCameraTestCases': {
+            'CtsCameraTestCases.NativeCameraDeviceTest': [],
+        },
         'CtsDeqpTestCases' : {
             'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
         },
@@ -344,10 +355,14 @@ CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
 # for deqp but it is no longer required for that module.  Retaining
 # feature in case future slower module needs to be sharded.
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
+        'CtsCameraTestCases': {
+             'CtsCameraTestCases.NativeCameraDeviceTest':
+                [CONFIG['MOBLAB_SUITE_NAME']],
+        },
         'CtsDeqpTestCases' : {
              'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
                  CONFIG['MOBLAB_SUITE_NAME']],
-             },
+        },
         'CtsMediaTestCases': {
              'CtsMediaTestCases.testGLViewDecodeAccuracy': [
                  CONFIG['MOBLAB_SUITE_NAME']],
@@ -364,6 +379,10 @@ CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
 }
 
 CONFIG['EXTRA_COMMANDLINE'] = {
+        'CtsCameraTestCases.NativeCameraDeviceTest': [
+                '--include-filter',
+                'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest',
+        ],
         'CtsDeqpTestCases.dEQP-EGL': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-EGL.*'
@@ -376,7 +395,7 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-GLES3.*'
         ],
-       'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
+        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test',
                 'dEQP-GLES3.functional.prerequisite#*'

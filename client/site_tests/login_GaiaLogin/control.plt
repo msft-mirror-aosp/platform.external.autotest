@@ -11,6 +11,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "login"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This test verifies that logging into production Gaia works correctly.

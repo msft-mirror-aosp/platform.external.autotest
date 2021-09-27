@@ -276,7 +276,7 @@ class ShillProxy(object):
 
         """
         dbus_dict = {}
-        for key, value in in_dict.iteritems():
+        for key, value in list(in_dict.items()):
             if key not in ShillProxy.SERVICE_PROPERTY_MAP:
                 raise ShillProxyError('Unsupported property %s' % (key))
             (dbus_type, kwargs) = ShillProxy.SERVICE_PROPERTY_MAP[key]
@@ -524,8 +524,8 @@ class ShillProxy(object):
                     pass
 
                 while update_queue:
-                    updated_property, value = map(self.dbus2primitive,
-                                                  update_queue.popleft())
+                    updated_property, value = list(
+                            map(self.dbus2primitive, update_queue.popleft()))
                     if property_name != updated_property:
                         continue
 
@@ -651,14 +651,14 @@ class ShillProxy(object):
             try:
                 test_object = self.get_dbus_object(dbus_type, path)
                 object_properties = test_object.GetProperties(utf8_strings=True)
-                for name, value in properties.iteritems():
+                for name, value in list(properties.items()):
                     if (name not in object_properties or
                         self.dbus2primitive(object_properties[name]) != value):
                         break
                 else:
                     return test_object
 
-            except dbus.exceptions.DBusException, _:
+            except dbus.exceptions.DBusException as _:
                 # This could happen if for instance, you're enumerating services
                 # and test_object was removed in shill between the call to get
                 # the manager properties and the call to get the service

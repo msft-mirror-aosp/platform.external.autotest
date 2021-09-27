@@ -13,6 +13,7 @@ ATTRIBUTES = "suite:bvt-perbuild"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "security"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
     Ensures the mount-encrypted helper for mounting the encrypted statful

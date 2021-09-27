@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -192,8 +193,9 @@ class EncryptedStateful(object):
         start = None
         size = 0
         while True:
-            k = long(utils.system_output("du -sk %s" % (self.block),
-                                         retain_output = True).split()[0])
+            k = int(
+                    utils.system_output("du -sk %s" % (self.block),
+                                        retain_output=True).split()[0])
             if start == None:
                 start = k
             if k == size:

@@ -13,5 +13,6 @@ Fails if kill daemons are not automatically restarted after they are killed.
 TEST_CLASS = "platform"
 TEST_CATEGORY = 'Functional'
 TEST_TYPE = 'client'
+PY_VERSION = 3
 
 job.run_test('platform_DaemonsRespawn')

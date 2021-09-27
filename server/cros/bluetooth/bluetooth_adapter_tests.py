@@ -3255,7 +3255,7 @@ class BluetoothAdapterTests(test.test):
 
         # Verify new APIs were used
         new_apis_used = self.bluetooth_le_facade.btmon_find(
-                'Add Ext Adv Params')
+                'Add Extended Advertising Parameters')
 
         tx_power_correct = self._verify_adv_tx_power(advertisement_data)
 

@@ -11,6 +11,7 @@ TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
+PY_VERSION = 3
 PRIORITY = 81
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0
@@ -39,7 +40,7 @@ utils.write_keyval(job.resultdir, keyval)
 def run(machine):
     args_dict = globals().get('args_dict', dict())
 
-    with tempfile.NamedTemporaryFile(suffix='.yaml') as temp_file:
+    with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
         # Writing test arguments to yaml file except for wrapper-related arguments.
         test_args = dict()
         for key in args_dict:

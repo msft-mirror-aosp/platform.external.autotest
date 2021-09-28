@@ -3685,8 +3685,8 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         NoFilterScanDuration = self._le_hex_to_int(sysconfig.get(0x001e, None))
 
         return {
-                'AllowlistScanDuration': AllowlistScanDuration,
-                'NoFilterScanDuration': NoFilterScanDuration
+                'allowlist': AllowlistScanDuration,
+                'no filter': NoFilterScanDuration
         }
 
 

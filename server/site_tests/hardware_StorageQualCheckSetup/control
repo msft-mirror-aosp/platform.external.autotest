@@ -10,6 +10,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "dummy"
 TEST_TYPE = "server"
+PY_VERSION = 3
 REQUIRE_SSP = False
 FAST = False
 

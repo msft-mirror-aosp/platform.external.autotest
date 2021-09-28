@@ -12,6 +12,7 @@ AUTHOR = 'puthik'
 PURPOSE = 'Perform data integrity trim test on internal disk.'
 TIME = 'LENGTHY'
 TEST_TYPE = 'client'
+PY_VERSION = 3
 ATTRIBUTES = "suite:mmc_qual"
 
 DOC = """

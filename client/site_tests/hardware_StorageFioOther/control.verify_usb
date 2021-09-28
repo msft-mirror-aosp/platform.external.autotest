@@ -9,6 +9,7 @@ TIME = 'MEDIUM'
 TEST_CLASS = 'hardware'
 TEST_CATEGORY = 'Performance'
 TEST_TYPE = 'client'
+PY_VERSION = 3
 DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """

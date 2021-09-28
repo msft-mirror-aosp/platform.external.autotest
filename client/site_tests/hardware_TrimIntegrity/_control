@@ -12,6 +12,7 @@ AUTHOR = 'puthik'
 PURPOSE = 'Perform data integrity trim test on an unmounted partition.'
 TIME = 'LENGTHY'
 TEST_TYPE = 'client'
+PY_VERSION = 3
 
 DOC = """
 Performs data integrity trim test on an unmounted partition.

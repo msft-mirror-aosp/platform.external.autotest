@@ -7,6 +7,7 @@ AUTHOR = 'jcasse, grundler'
 PURPOSE = 'Short integrity test to verify the integrity test'
 TIME = 'LENGTHY'
 TEST_TYPE = 'client'
+PY_VERSION = 3
 ATTRIBUTES = "suite:storagequal"
 PY_VERSION = 3
 

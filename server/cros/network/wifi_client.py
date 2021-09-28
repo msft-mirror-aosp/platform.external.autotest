@@ -709,12 +709,10 @@ class WiFiClient(site_linux_system.LinuxSystem):
         @return stdout and stderror returns passed from wpa_cli command.
 
         """
-        # TODO b:169251326 terms below are set outside of this codebase and
-        # should be updated when possible ("blacklist" -> "blocklist").
-        result = self._wpa_cli_proxy.run_wpa_cli_cmd('blacklist clear',
-                                                     check_result=False);
-        logging.info('wpa_cli blacklist clear: out:%r err:%r', result.stdout,
-                     result.stderr)
+        result = self._wpa_cli_proxy.run_wpa_cli_cmd('bssid_ignore clear',
+                                                     check_result=False)
+        logging.info('wpa_cli bssid_ignore clear: out:%r err:%r',
+                     result.stdout, result.stderr)
         return result.stdout, result.stderr
 
 

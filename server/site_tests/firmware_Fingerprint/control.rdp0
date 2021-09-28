@@ -20,6 +20,7 @@ TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
 JOB_RETRIES = 0
+PY_VERSION = 3
 
 DOC = """
 The test setup ensures that neither hardware or software write protect is

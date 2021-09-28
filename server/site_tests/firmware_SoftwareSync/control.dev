@@ -14,6 +14,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 DEPENDENCIES = "ec:cros, servo_state:WORKING"
+PY_VERSION = 3
 
 DOC = """
 This test corrupts EC RW firmware body and checks software sync restores it.

@@ -11,6 +11,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
+PY_VERSION = 3
 
 DOC = """
 This test uses trunks_client to verify that Cr50 can handle short ECC keys.

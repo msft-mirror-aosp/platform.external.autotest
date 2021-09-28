@@ -19,6 +19,7 @@ TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 DEPENDENCIES = "fingerprint, servo_state:WORKING"
 JOB_RETRIES = 0
+PY_VERSION = 3
 
 DOC = """
 This variant of firmware_FingerprintSigner requires the on-disk firmware image

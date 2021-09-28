@@ -17,6 +17,7 @@ PURPOSE = "Verify Deferred EC Reset."
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
+PY_VERSION = 3
 
 DOC = """
 Verify EC_RST_L stays asserted while RDD is plugged in until the power button

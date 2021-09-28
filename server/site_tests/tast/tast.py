@@ -457,7 +457,7 @@ class tast(test.test):
             try:
                 chart_ip = socket.gethostbyname(chart_host_name)
             except socket.gaierror:
-                logging.error('Chart is not found: %s', chart_host_name)
+                logging.exception('Failed to get IP: %s.', chart_host_name)
                 chart_ip = '0.0.0.0'
             args += ['-var=chart=' + chart_ip]
         logging.info('Camerabox args: %s', args)

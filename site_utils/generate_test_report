@@ -393,10 +393,16 @@ class ResultCollector(object):
         if not timestamp:
             timestamp, localtime = self._CollectEndTimes(status_raw,
                                                          is_end=False)
-        if not top_level:
+
+        full_status = False
+        for r in results:
+            # Already logged results for this test.
+            if r['testdir'] in testdir:
+                full_status, err = None, None
+                break
+
+        if full_status is not None:
             full_status, err = self._get_full_status(status_raw)
-        else:
-            full_status, err = None, None
 
         results.append({
                 'testdir': testdir,
@@ -414,7 +420,10 @@ class ResultCollector(object):
                 'full_err': err
                 })
 
-    def RecursivelyCollectResults(self, resdir, parent_experimental_tag=False):
+    def RecursivelyCollectResults(self,
+                                  resdir,
+                                  parent_experimental_tag=False,
+                                  results=[]):
         """Recursively collect results into a list of dictionaries.
 
         Only recurses into directories that possess a 'debug' subdirectory
@@ -432,7 +441,6 @@ class ResultCollector(object):
         @return List of dictionaries of results.
 
         """
-        results = []
         is_experimental = (parent_experimental_tag or
                            self._CheckExperimental(resdir))
         self._CollectResult(resdir, results, is_experimental)
@@ -441,8 +449,7 @@ class ResultCollector(object):
             if not os.path.exists(os.path.join(testdir, 'debug')):
                 continue
 
-            results.extend(self.RecursivelyCollectResults(
-                    testdir, is_experimental))
+            self.RecursivelyCollectResults(testdir, is_experimental, results)
         return results
 
 
@@ -905,15 +912,29 @@ class ReportGenerator(object):
             sys.stderr.flush()
             sys.stdout.flush()
 
+    def _test_name_from_dir(self, test_dir):
+        """Return the name from the test_dir.
+
+        Examples:
+        /tmp/test_that_latest/something/else/results-n-testname
+            returns `testname`
+
+        /tmp/TTL/something/results-n-test-name-here
+            returns `test-name-here`
+
+        """
+        test_name = test_dir.split('/')[-1]
+        return '-'.join(test_name.split('-')[2:])
+
     def _translate_to_dict(self):
-        """Retrun the full_status, testname, and err to a json dict."""
+        """Return the full_status, testname, and err to a json dict."""
         res = {'tests': []}
         for test_info in self._results:
             if test_info['full_status'] is None:
                 continue
             res['tests'].append(
                 {'verdict': test_info['full_status'],
-                 'testname': test_info['testdir'].split('/')[-1],
+                 'testname': self._test_name_from_dir(test_info['testdir']),
                  'errmsg': test_info['full_err']})
         return res
 

@@ -39,8 +39,11 @@
   <!-- Remove needs_push_media=True in control files when the case below is removed. -->
   <Entry include="CtsMediaTestCases android.media.cts.MediaExtractorTest#testProgramStreamExtraction" />
   <Entry include="CtsMediaTestCases[instant] android.media.cts.MediaExtractorTest#testProgramStreamExtraction" />
+  <Entry include="CtsNativeEncryptionTestCases FileBasedEncryptionPolicyTest#allowedPolicy" />
+  <Entry include="CtsNativeEncryptionTestCases[instant] FileBasedEncryptionPolicyTest#allowedPolicy" />
   <Entry include="CtsOsTestCases android.os.cts.EnvironmentTest#testHidePid2" />
   <Entry include="CtsOsTestCases[instant] android.os.cts.EnvironmentTest#testHidePid2" />
+  <Entry include="CtsSecurityHostTestCases android.security.cts.MetadataEncryptionTest#testMetadataEncryptionIsEnabled" />
   <Entry include="CtsSecurityTestCases android.security.cts.EncryptionTest#testEncryption" />
   <Entry include="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiScanTimestamp" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackFinishToPreviousApp" />

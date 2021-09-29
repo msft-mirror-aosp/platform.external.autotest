@@ -30,7 +30,7 @@ The expected throughput values depend on the following parameters:
     c) 80 MHz
 """
 
-Expected_Throughput_WiFi = {
+expected_throughput_wifi = {
         perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
@@ -160,10 +160,10 @@ def get_expected_throughput_wifi(test_type, mode, channel_width):
     @return a tuple of two integers (must,should) of the expected throughputs in Mbps.
 
     """
-    if test_type in Expected_Throughput_WiFi:
-        if mode in Expected_Throughput_WiFi[test_type]:
-            if channel_width in Expected_Throughput_WiFi[test_type][mode]:
-                return Expected_Throughput_WiFi[test_type][mode][channel_width]
+    if test_type in expected_throughput_wifi:
+        if mode in expected_throughput_wifi[test_type]:
+            if channel_width in expected_throughput_wifi[test_type][mode]:
+                return expected_throughput_wifi[test_type][mode][channel_width]
     ret_mode = hostap_config.HostapConfig.VHT_NAMES[channel_width]
     if ret_mode is None:
         ret_mode = hostap_config.HostapConfig.HT_NAMES[channel_width]

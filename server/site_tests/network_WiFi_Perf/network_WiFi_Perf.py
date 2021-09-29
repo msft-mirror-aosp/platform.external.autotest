@@ -89,6 +89,14 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         """
         must_tput_failed = False
         should_tput_failed = False
+
+        # If the must requirement is greater than our maximum expecation for a
+        # board, use the maximum expectation instead of the must requirement.
+        board_max_expectation = expected_performance_results.get_board_max_expectation(
+                test_type, self.context.client.board)
+        if board_max_expectation and board_max_expectation < must_expected_throughput:
+            must_expected_throughput = board_max_expectation
+
         if result.throughput < must_expected_throughput:
             logging.error(
                     'Throughput is too low for %s. Expected (must) %0.2f Mbps, got %0.2f.',
@@ -218,6 +226,7 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         """Test body."""
         start_time = time.time()
         low_throughput_tests = set()
+        logging.info(self.context.client.board)
 
         for ap_config in self._ap_configs:
             # Set up the router and associate the client with it.

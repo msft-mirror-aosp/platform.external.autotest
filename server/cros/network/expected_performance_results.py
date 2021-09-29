@@ -170,3 +170,38 @@ def get_expected_throughput_wifi(test_type, mode, channel_width):
     raise error.TestFail(
             'Failed to find the expected throughput from the key values, test type = %s, mode = %s, channel width = %s'
             % (test_type, mode, ret_mode))
+
+
+"""These are special exceptions for specific boards that define the maximum
+throughput in Mbps that we expect boards to be able to achieve. Generally, these
+boards were qualified before the advent of platform throughput requirements, and
+therefore are exempted from meeting certain requirements. Each board must be
+annotated with a bug which includes the history on why the specific expectations
+for that board.
+"""
+max_throughput_expectation_for_boards = {
+        # veyron_fievel throughput results tracked in b:199946512.
+        "veyron_fievel": {
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: 130,
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: 70,
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: 130,
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 130
+        }
+}
+
+
+def get_board_max_expectation(test_type, board_name):
+    """Returns the maximum throughput expectation for a given board in a given
+    test type, or None if the board has no exception for that test type.
+
+    @param test_type: the PerfTestTypes test type.
+    @param board_name: string name of the board, as defined by
+    SiteLinuxSystem.board field.
+
+    @return integer value for maximum throughput expectation (in Mbps) for the
+    given boardand test type, or None if the maximum is not defined.
+    """
+    board_maximums = max_throughput_expectation_for_boards.get(board_name)
+    if not board_maximums:
+        return None
+    return board_maximums.get(test_type)

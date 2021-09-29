@@ -26,6 +26,10 @@ class ChartFixture:
     def initialize(self):
         """Prepare scene file and display it on chart host."""
         logging.info('Prepare scene file')
+        if utils.is_in_container():
+            # Reboot chart to clean the dirty state from last test. See
+            # b/201032899.
+            self.host.reboot()
         tmpdir = self.host.get_tmp_dir()
         scene_path = os.path.join(
                 tmpdir, self.scene_uri[self.scene_uri.rfind('/') + 1:])

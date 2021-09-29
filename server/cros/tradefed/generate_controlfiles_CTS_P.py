@@ -177,6 +177,7 @@ CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
 CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
         'CtsMediaTestCases',
+        'CtsViewTestCases',
 ]
 
 # See b/149889853. Non-media test basically does not require dynamic

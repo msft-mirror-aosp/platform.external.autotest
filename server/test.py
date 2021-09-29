@@ -15,6 +15,7 @@ import tempfile
 from autotest_lib.client.common_lib import log
 from autotest_lib.client.common_lib import test as common_test
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server import hosts, autotest
 
 
 class test(common_test.base_test):
@@ -111,7 +112,6 @@ class _sysinfo_logger(object):
 
     def _install(self):
         if not self.host:
-            from autotest_lib.server import hosts, autotest
             self.host = hosts.create_target_machine(
                     self.job.machine_dict_list[0])
             try:
@@ -233,6 +233,22 @@ class _sysinfo_logger(object):
         self._pull_sysinfo_keyval(host, outputdir, mytest)
 
 
+    @log.log_and_ignore_errors("post-test server crossystem error:")
+    def after_hook_crossystem_fast(self, mytest):
+        """Collects crossystem log file in fast mode
+
+        This is used in place of after_hook in fast mode. This function will
+        grab output of crossystem but not process other sysinfo logs.
+        """
+        if not self.host:
+            self.host = hosts.create_target_machine(
+                    self.job.machine_dict_list[0])
+        output_path = '%s/sysinfo' % mytest.outputdir
+        utils.run('mkdir -p %s' % output_path)
+        crossystem_output = self.host.run_output('crossystem')
+        with open('%s/crossystem' % output_path, 'w') as f:
+            f.write(crossystem_output)
+
     def cleanup(self, host_close=True):
         if self.host and self.autotest:
             try:
@@ -270,15 +286,14 @@ def runtest(job, url, tag, args, dargs):
             'disable_after_iteration_sysinfo', False)
 
     disable_sysinfo = dargs.pop('disable_sysinfo', False)
+    logger = _sysinfo_logger(job)
     if job.fast and not disable_sysinfo:
         # Server job will be executed in fast mode, which means
         # 1) if job succeeds, no hook will be executed.
         # 2) if job failed, after_hook will be executed.
-        logger = _sysinfo_logger(job)
         logging_args = [None, logger.after_hook, None,
                         logger.after_iteration_hook]
     elif not disable_sysinfo:
-        logger = _sysinfo_logger(job)
         logging_args = [
             logger.before_hook if not disable_before_test_hook else None,
             logger.after_hook if not disable_after_test_hook else None,
@@ -288,8 +303,7 @@ def runtest(job, url, tag, args, dargs):
                  if not disable_after_iteration_hook else None),
         ]
     else:
-        logger = None
-        logging_args = [None, None, None, None]
+        logging_args = [None, logger.after_hook_crossystem_fast, None, None]
 
     # add in a hook that calls host.log_kernel if we can
     def log_kernel_hook(mytest, existing_hook=logging_args[0]):

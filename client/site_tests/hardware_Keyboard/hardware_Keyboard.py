@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import glob, logging, os, commands
+import glob, logging, os, subprocess
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -33,7 +33,9 @@ class hardware_Keyboard(test.test):
     def _supported(self, event, key_name):
         cmd = os.path.join(self.srcdir, 'evtest') + ' ' + event
         cmd += ' -s ' + key_name
-        (status, output) = commands.getstatusoutput(cmd)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        output, _ = proc.communicate()
+        status = proc.returncode
         if status:
             logging.error('Unsupported Key : %s', key_name)
             return False
@@ -47,7 +49,9 @@ class hardware_Keyboard(test.test):
             # Find the event file with the most keys
             cmd = os.path.join(self.srcdir, 'evtest') + ' ' + event
             cmd += ' -n'
-            (status, output) = commands.getstatusoutput(cmd)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+            output, _ = proc.communicate()
+            status = proc.returncode
             if status:  ## bad event, log the command's output as a warning
                 logging.warning("Bad event. cmd : %s", cmd)
                 logging.warning(output)
@@ -68,7 +72,9 @@ class hardware_Keyboard(test.test):
         # Test one live keystroke. Test will wait on user input.
         cmd = os.path.join(self.srcdir, 'evtest') + ' ' + high_key_event
         cmd += ' -k'
-        (status, output) = commands.getstatusoutput(cmd)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        output, _ = proc.communicate()
+        status = proc.returncode
         if status:
             raise error.TestError('Key Capture Test failed : %s' % output);
         if (output != hardware_Keyboard.live_test_key):

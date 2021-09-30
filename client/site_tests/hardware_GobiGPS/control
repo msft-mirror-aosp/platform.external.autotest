@@ -15,6 +15,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "hardware"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This is a an automated test that checks the basic functionality of the

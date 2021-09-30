@@ -10,6 +10,7 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This test will run for 200 seconds.

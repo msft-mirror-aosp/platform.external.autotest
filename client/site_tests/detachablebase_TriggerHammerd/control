@@ -12,6 +12,7 @@ TEST_CLASS = "detachablebase"
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:bvt-perbuild"
 DEPENDENCIES = "detachablebase"
+PY_VERSION = 3
 
 DOC = """
 The test checks hammerd upstart job is triggered on boot and exits normally.

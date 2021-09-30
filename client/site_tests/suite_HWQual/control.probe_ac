@@ -21,6 +21,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This is a sample test that probes sysfs and makes sure that AC driver

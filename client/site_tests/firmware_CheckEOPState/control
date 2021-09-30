@@ -11,6 +11,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Security"
 TEST_CLASS = "firmware"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 Intel x86 CPUs come with a Management Engine (going by more complicated
@@ -38,4 +39,3 @@ This test reports NA if any of the following is true:
 """
 
 job.run_test('firmware_CheckEOPState')
-

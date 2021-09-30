@@ -6,6 +6,8 @@ TIME = 'SHORT'
 TEST_CLASS = 'Hardware'
 TEST_CATEGORY = 'Functional'
 TEST_TYPE = 'Client'
+PY_VERSION = 3
+
 DOC = """
 This test uses a modified version of evtest to probe for and test the keyboard.
 The test finds the keyboard event in /dev/input/, and queries to ensure that

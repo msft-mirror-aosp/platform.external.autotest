@@ -11,6 +11,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "Hardware"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
     A basic confidence check of the state of the TPM (Trusted Platform Module)

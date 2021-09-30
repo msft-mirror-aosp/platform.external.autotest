@@ -1074,7 +1074,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         Boot device in recovery mode and verify that device booted from
         external storage as expected.
- 
+
         @param usb_boot_timeout:    The usb_boot_timeout to use wait the host
                                     to boot. Factory images need a longer
                                     usb_boot_timeout than regular cros images.
@@ -1660,6 +1660,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def has_arc_hardware_vulkan(self):
         """Returns a boolean whether device has hardware vulkan."""
         return self._get_arc_build_info().get('ro.hardware.vulkan')
+
+    def get_arc_build_type(self):
+        """Returns the ARC build type of the host."""
+        return self._get_arc_build_info().get('ro.build.type')
 
     def get_arc_primary_abi(self):
         """Returns the primary abi of the host."""

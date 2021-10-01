@@ -281,6 +281,7 @@ suite:power_requirements
 suite:powerplay
 suite:push_to_prod
 suite:pvs-audio
+suite:pvs-display
 suite:pvs-graphics
 suite:pvs-kernel
 suite:pvs-staging

@@ -18,6 +18,7 @@ BUG_TEMPLATE = {
     'labels': ['OS-Chrome', 'VideoTestFailure'],
     'cc': ['chromeos-video-test-failures@google.com'],
 }
+PY_VERSION = 3
 
 DOC = """
 This test utilizes the cros_camera_test to measure the performance of the

@@ -180,6 +180,10 @@ annotated with a bug which includes the history on why the specific expectations
 for that board.
 """
 max_throughput_expectation_for_boards = {
+        # trogdor throughput results tracked in b:201807655.
+        "trogdor": {
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 250
+        },
         # veyron_fievel throughput results tracked in b:199946512.
         "veyron_fievel": {
                 perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: 130,

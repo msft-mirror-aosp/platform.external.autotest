@@ -180,6 +180,11 @@ annotated with a bug which includes the history on why the specific expectations
 for that board.
 """
 max_throughput_expectation_for_boards = {
+        # elm throughput results tracked in b:201806809.
+        "elm": {
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: 200,
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 300
+        },
         # trogdor throughput results tracked in b:201807655.
         "trogdor": {
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 250

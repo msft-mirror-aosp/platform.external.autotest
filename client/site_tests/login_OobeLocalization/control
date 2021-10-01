@@ -2,14 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'michaelpg, alemate'
+AUTHOR = 'rsorokin, alemate'
 NAME = 'login_OobeLocalization'
 PURPOSE = 'Tests different region configurations at OOBE.'
 CRITERIA = """
 Fails if the language or keyboard dropdowns in OOBE under a supported region
 configuration do not include the desired values.
 """
-ATTRIBUTES = "suite:experimental"
+ATTRIBUTES = "suite:bvt-perbuild"
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'login'

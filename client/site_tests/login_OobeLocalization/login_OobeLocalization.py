@@ -14,8 +14,9 @@ class login_OobeLocalization(test.test):
     """Tests different region configurations at OOBE."""
     version = 1
 
-    _LANGUAGE_SELECT = 'language-select'
-    _KEYBOARD_SELECT = 'keyboard-select'
+    _LANGUAGE_SELECT = "document.getElementById('connect').$.languageSelect.$.select"
+    _KEYBOARD_SELECT = "document.getElementById('connect').$.keyboardSelect.$.select"
+    _KEYBOARD_ITEMS = "document.getElementById('connect').$.keyboardSelect.items"
     _FALLBACK_KEYBOARD = 'xkb:us::eng'
 
     # dump_vpd_log reads the VPD cache in lieu of running `vpd -l`.
@@ -68,9 +69,11 @@ class login_OobeLocalization(test.test):
 
     def _run_with_chrome(self, func, *args):
         with chrome.Chrome(auto_login=False) as self._chrome:
-            utils.poll_for_condition(
-                    self._is_oobe_ready,
-                    exception=error.TestFail('OOBE not ready'))
+            self._chrome.browser.oobe.WaitForJavaScriptCondition(
+                    "typeof Oobe == 'function' && "
+                    "typeof OobeAPI == 'object' && "
+                    "Oobe.readyForTesting",
+                    timeout=30)
             return func(*args)
 
 
@@ -116,7 +119,7 @@ class login_OobeLocalization(test.test):
         # Check that the fallback keyboard is present.
         if self._FALLBACK_KEYBOARD not in keyboards:
             if not self._verify_option_exists(
-                    self._KEYBOARD_SELECT,
+                    self._KEYBOARD_ITEMS,
                     self._comp_ime_prefix + self._FALLBACK_KEYBOARD):
                 raise error.TestFail(
                         'Fallback keyboard layout not found for region "%s".\n'
@@ -177,7 +180,7 @@ class login_OobeLocalization(test.test):
         """
         js_expression = """
                 (function () {
-                  var select = document.querySelector('#%s');
+                  var select = %s;
                   if (!select || select.selectedIndex)
                     return false;
                   var values = '%s'.split(',');
@@ -193,9 +196,7 @@ class login_OobeLocalization(test.test):
                         'OPTGROUP';
                   }
                   return true;
-                })()""" % (select_id,
-                           values,
-                           alternate_values,
+                })()""" % (select_id, values, alternate_values,
                            check_separator)
 
         return self._chrome.browser.oobe.EvaluateJavaScript(js_expression)
@@ -213,8 +214,7 @@ class login_OobeLocalization(test.test):
         """
         js_expression = """
                 (function () {
-                  return !!document.querySelector(
-                      '#%s option[value=\\'%s\\']');
+                  return !!%s.find(el => el.value == '%s');
                 })()""" % (select_id, value)
 
         return self._chrome.browser.oobe.EvaluateJavaScript(js_expression)
@@ -234,7 +234,6 @@ class login_OobeLocalization(test.test):
 
 
     def _get_regions(self):
-        regions = {}
         with open(self._REGIONS_FILENAME, 'r') as regions_file:
             return json.load(regions_file).values()
 
@@ -243,8 +242,9 @@ class login_OobeLocalization(test.test):
         """Finds the xkb values' component extension id prefix, if any.
         @returns the prefix if found, or an empty string
         """
-        return self._chrome.browser.oobe.EvaluateJavaScript("""
-                var value = document.getElementById('%s').value;
+        return self._chrome.browser.oobe.EvaluateJavaScript(
+                """
+                var value = %s.value;
                 value.substr(0, value.lastIndexOf('xkb:'))""" %
                 self._KEYBOARD_SELECT)
 
@@ -274,23 +274,13 @@ class login_OobeLocalization(test.test):
         return ''
 
 
-    def _is_oobe_ready(self):
-        return (self._chrome.browser.oobe and
-                self._chrome.browser.oobe.EvaluateJavaScript(
-                        "var select = document.getElementById('%s');"
-                        "select && select.children.length >= 2" %
-                                self._LANGUAGE_SELECT))
-
-
     def _dump_options(self, select_id):
         js_expression = """
                 (function () {
-                  var selector = '#%s';
                   var divider = ',';
-                  var select = document.querySelector(selector);
+                  var select = %s
                   if (!select)
-                    return 'document.querySelector(\\'' + selector +
-                        '\\') failed.';
+                    return 'selector failed.';
                   var dumpOptgroup = function(group) {
                     var result = '';
                     for (var i = 0; i < group.children.length; i++) {

@@ -119,7 +119,7 @@ class ServoHost(base_servohost.BaseServoHost):
     # The log format starts with a timestamp
     MCU_RE = (r'[\d\-]+ [\d:,]+ '
               # The mcu that is logging this is next.
-              r'- (?P<%s>\w+) - '
+              r'- (?P<%s>[\w/]+) - '
               # Next, we have more log outputs before the actual line.
               # Information about the file line, logging function etc.
               # Anchor on EC3PO Console, LogConsoleOutput and dev/pts.
@@ -1023,6 +1023,9 @@ class ServoHost(base_servohost.BaseServoHost):
                 match = self.MCU_EXTRACTOR.match(line)
                 if match:
                     mcu = match.group(self.MCU_GROUP).lower()
+                    # The |mcu| might contain a '/' in it. Replace it with '.'
+                    # to avoid generating bad filepaths.
+                    mcu = mcu.replace('/', '.')
                     line = match.group(self.LINE_GROUP)
                     if mcu not in mcu_files:
                         mcu_file = os.path.join(log_subdir,

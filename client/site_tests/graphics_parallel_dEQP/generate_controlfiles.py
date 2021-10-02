@@ -19,15 +19,15 @@ Test = namedtuple(
         'filter, suite, shards, time, tag, api, caselist, perf_failure_description'
 )
 
-ATTRIBUTES_BVT_PB = ('suite:deqp, suite:graphics_per-day, suite:graphics_system')
+ATTRIBUTES_PVS = ('suite:deqp, suite:graphics_per-day, suite:graphics_system, '
+                  'suite:pvs-graphics')
 ATTRIBUTES_DAILY = 'suite:deqp, suite:graphics_per-day, suite:graphics_system'
 
 
 class Suite(Enum):
     none = 1
     daily = 2
-    bvtcq = 3
-    bvtpb = 4
+    pvs = 3
 
 
 deqp_dir = '/usr/local/deqp'
@@ -39,7 +39,7 @@ VK_FILE = os.path.join(deqp_dir, caselists, 'vk.txt')
 
 tests = [
         Test('dEQP-GLES2',
-             Suite.bvtpb,
+             Suite.pvs,
              shards=1,
              time='MEDIUM',
              tag='gles2',
@@ -47,7 +47,7 @@ tests = [
              caselist=GLES2_FILE,
              perf_failure_description='Failures_GLES2'),
         Test('dEQP-GLES3',
-             Suite.bvtpb,
+             Suite.pvs,
              shards=1,
              time='LONG',
              tag='gles3',
@@ -55,7 +55,7 @@ tests = [
              caselist=GLES3_FILE,
              perf_failure_description='Failures_GLES3'),
         Test('dEQP-GLES31',
-             Suite.bvtpb,
+             Suite.pvs,
              shards=1,
              time='LONG',
              tag='gles31',
@@ -63,7 +63,7 @@ tests = [
              caselist=GLES31_FILE,
              perf_failure_description='Failures_GLES31'),
         Test('dEQP-VK',
-             Suite.bvtpb,
+             Suite.daily,
              shards=4,
              time='LONG',
              tag='vk',
@@ -110,8 +110,8 @@ def get_controlfilename(test, shard=0):
 
 
 def get_attributes(test):
-    if test.suite == Suite.bvtpb:
-        return ATTRIBUTES_BVT_PB
+    if test.suite == Suite.pvs:
+        return ATTRIBUTES_PVS
     if test.suite == Suite.daily:
         return ATTRIBUTES_DAILY
     return ''

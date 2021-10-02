@@ -8,6 +8,7 @@
 # Example:
 # test_that --args="filter=dEQP-GLES3.info" <ip> graphics_dEQP.filter_args
 
+PY_VERSION = 3
 NAME = 'graphics_dEQP.filter_args'
 AUTHOR = 'chromeos-gfx'
 PURPOSE = 'Run the drawElements Quality Program test suite.'

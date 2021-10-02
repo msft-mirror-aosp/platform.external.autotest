@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -829,7 +830,7 @@ def get_external_connector_name():
             Otherwise, return False.
     """
     outputs = get_display_output_state()
-    for output in outputs.keys():
+    for output in list(outputs.keys()):
         if outputs[output] and (output.startswith('HDMI')
                 or output.startswith('DP')
                 or output.startswith('DVI')
@@ -845,7 +846,7 @@ def get_internal_connector_name():
             Otherwise, return False.
     """
     outputs = get_display_output_state()
-    for output in outputs.keys():
+    for output in list(outputs.keys()):
         # reference: chromium_org/chromeos/display/output_util.cc
         if (output.startswith('eDP')
                 or output.startswith('LVDS')

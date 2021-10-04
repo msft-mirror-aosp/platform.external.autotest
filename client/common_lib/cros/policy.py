@@ -3,7 +3,11 @@
 # found in the LICENSE file.
 
 import dbus, os, sys
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 import common
 from autotest_lib.client.common_lib import error

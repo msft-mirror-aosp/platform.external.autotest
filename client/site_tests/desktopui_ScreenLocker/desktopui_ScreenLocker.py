@@ -12,8 +12,11 @@ from autotest_lib.client.cros.input_playback import input_playback
 
 from datetime import datetime
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GObject
-
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 class desktopui_ScreenLocker(test.test):
     """This is a client side test that exercises the screenlocker."""

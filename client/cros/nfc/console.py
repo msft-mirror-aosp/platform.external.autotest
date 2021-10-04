@@ -8,7 +8,11 @@ import cmd
 import dbus
 import dbus.exceptions
 import dbus.mainloop.glib
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 import threading
 
 from functools import wraps

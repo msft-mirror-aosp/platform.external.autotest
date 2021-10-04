@@ -4,7 +4,11 @@
 
 import os, shutil
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error

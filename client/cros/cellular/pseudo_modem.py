@@ -39,7 +39,11 @@ from dbus.types import ObjectPath
 from dbus.types import Struct
 from dbus.types import UInt32
 import glib
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 import mm1
 
 

@@ -4,7 +4,11 @@
 # found in the LICENSE file.
 
 import logging, sys, traceback
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 import common
 

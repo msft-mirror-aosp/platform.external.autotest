@@ -13,8 +13,11 @@ from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.cros.graphics import graphics_utils
 
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GObject
-
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 class desktopui_ChromeCheck(test.test):
     """Performs basic integration testing for Chrome.

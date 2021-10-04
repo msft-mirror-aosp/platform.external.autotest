@@ -7,7 +7,11 @@ import threading
 
 import dbus
 import dbus.mainloop.glib
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 import os
 
 from autotest_lib.client.cros.input_playback import keyboard

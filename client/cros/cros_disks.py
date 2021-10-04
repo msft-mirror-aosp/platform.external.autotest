@@ -10,7 +10,11 @@ from __future__ import absolute_import
 
 import dbus, logging, os, stat
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GObject
+# AU tests use ToT client code, but ToT -3 client version.
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 import six
 from six.moves import zip
 

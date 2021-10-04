@@ -12,6 +12,7 @@ TEST_CATEGORY = "General"
 TEST_CLASS = "stub"
 TEST_TYPE = "server"
 MAX_RESULT_SIZE_KB = 6000
+PY_VERSION = 3
 
 DOC = """
 This is a helper test that will succeed.

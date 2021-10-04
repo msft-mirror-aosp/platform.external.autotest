@@ -18,6 +18,7 @@ TEST_CLASS = "stub"
 TEST_TYPE = "server"
 # Force not to use server side package for this test.
 REQUIRE_SSP = False
+PY_VERSION = 3
 
 DOC = """
 This is a helper test that will succeed and force not to use server side

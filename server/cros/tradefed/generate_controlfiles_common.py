@@ -735,7 +735,8 @@ def get_extra_modules_dict(is_public, abi):
     return extra_modules
 
 def get_extra_hardware_modules_dict(is_public, abi):
-    return CONFIG['HARDWAREONLY_EXTRA_MODULES']
+    return CONFIG.get('HARDWAREONLY_EXTRA_MODULES', {})
+
 
 def get_extra_artifacts(modules):
     artifacts = []

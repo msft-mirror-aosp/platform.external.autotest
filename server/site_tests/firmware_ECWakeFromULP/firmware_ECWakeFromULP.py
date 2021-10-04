@@ -131,8 +131,15 @@ class firmware_ECWakeFromULP(FirmwareTest):
         wake_src = 'AC on'
         self.charge_manager.stop_charging()
         logging.info('Hibernate and wake by %s.', wake_src)
+        if self.faft_config.ac_on_can_wake_ap_from_ulp:
+            logging.info('AC on event can wake AP from ULP.')
+            wake_state = self.POWER_STATE_S0
+        else:
+            logging.info('AC on event cannot wake AP from ULP.')
+            wake_state = self.POWER_STATE_G3
         self.hibernate_and_wake(host, self.charge_manager.start_charging,
-                                self.POWER_STATE_G3)
+                                wake_state)
 
-        # Put AP back to S0
-        self.servo.power_short_press()
+        if not self.faft_config.ac_on_can_wake_ap_from_ulp:
+            # Put AP back to S0
+            self.servo.power_short_press()

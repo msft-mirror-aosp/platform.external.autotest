@@ -163,6 +163,7 @@ suite:crosbolt_perf_parallels_perbuild
 suite:crosbolt_perf_parallels_weekly
 suite:crosbolt_perf_perbuild
 suite:crosbolt_perf_weekly
+suite:cross-device
 suite:cts
 suite:cts-hardware
 suite:cts_P

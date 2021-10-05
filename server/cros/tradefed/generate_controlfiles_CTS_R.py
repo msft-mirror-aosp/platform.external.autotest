@@ -194,13 +194,14 @@ _WIFI_CONNECT_COMMANDS = [
 
 _MUTE_COMMAND = "\'cras_test_client --mute 1\'"
 
-_DISPLAY_REFRESH_COMMAND = (
+_DISPLAY_REFRESH_COMMANDS = [
+        "'sleep 20'",  # Wait for the intent helper mojo connection established
         "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/aquarium/aquarium.html\\''"
-)
+]
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
-        'CtsCameraTestCases.NativeCameraDeviceTest': [_DISPLAY_REFRESH_COMMAND],
+        'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
         'CtsMediaStressTestCases': [_MUTE_COMMAND],
         'CtsMediaTestCases': [_MUTE_COMMAND],
         'CtsMediaTestCases.audio': [_MUTE_COMMAND],
@@ -218,6 +219,7 @@ CONFIG['LOGIN_PRECONDITION'] = {
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
+        'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
         'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS,
         'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
         'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS,

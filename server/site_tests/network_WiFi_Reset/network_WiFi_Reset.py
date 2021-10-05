@@ -148,7 +148,8 @@ class network_WiFi_Reset(wifi_cell_test_base.WiFiCellTestBase):
         """
         Simulate iwlwifi firmware crash.
         """
-        self.context.client.host.run('echo 1 > ' + self.iwlwifi_reset_path())
+        self.context.client.host.run("echo nolog > " +
+                                     self.iwlwifi_reset_path())
 
 
     def mtkwifi_reset_path(self):

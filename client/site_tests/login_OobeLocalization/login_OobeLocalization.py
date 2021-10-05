@@ -50,6 +50,10 @@ class login_OobeLocalization(test.test):
                              region['region_code'])
                 continue
 
+            # TODO(https://crbug.com/1256723): Reenable when the bug is fixed.
+            if region['region_code'] == 'kz':
+                continue
+
             # TODO(hungte) When OOBE supports cros-regions.json
             # (crosbug.com/p/34536) we can remove initial_locale,
             # initial_timezone, and keyboard_layout.
@@ -87,12 +91,12 @@ class login_OobeLocalization(test.test):
                 initial_locale,
                 alternate_values = self._resolve_language(initial_locale),
                 check_separator = True):
-            raise error.TestFail(
-                    'Language not found for region "%s".\n'
-                    'Actual value of %s:\n%s' % (
-                            region['region_code'],
-                            self._LANGUAGE_SELECT,
-                            self._dump_options(self._LANGUAGE_SELECT)))
+            raise error.TestFail('Language not found for region "%s".\n'
+                                 'Expected: %s\n.'
+                                 'Actual value of %s:\n%s' %
+                                 (region['region_code'], initial_locale,
+                                  self._LANGUAGE_SELECT,
+                                  self._dump_options(self._LANGUAGE_SELECT)))
 
         # We expect to see only login keyboards at OOBE.
         keyboards = region['keyboards']

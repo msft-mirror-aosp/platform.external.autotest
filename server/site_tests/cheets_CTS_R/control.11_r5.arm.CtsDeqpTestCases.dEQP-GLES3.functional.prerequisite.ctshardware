@@ -10,9 +10,9 @@ ATTRIBUTES = 'suite:arc-cts-hardware'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
-TIME = 'LONG'
-MAX_RESULT_SIZE_KB = 1024000
-DOC = 'Run module CtsDeqpTestCases of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'Run module CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
@@ -22,13 +22,13 @@ def run_TS(machine):
         iterations=1,
         tag='11_r5.arm.CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite.ctshardware',
         test_name='cheets_CTS_R.11_r5.arm.CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsDeqpTestCases'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases', '--test', 'dEQP-GLES3.functional.prerequisite#*', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite',
         target_plan=None,
         bundle='arm',
         uri='LATEST',
         use_jdk9=True,
-        timeout=108000)
+        timeout=3600)
 
 parallel_simple(run_TS, machines)

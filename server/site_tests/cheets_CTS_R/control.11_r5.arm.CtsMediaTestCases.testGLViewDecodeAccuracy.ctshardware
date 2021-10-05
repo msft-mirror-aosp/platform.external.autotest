@@ -10,9 +10,9 @@ ATTRIBUTES = 'suite:arc-cts-hardware'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
-TIME = 'LONG'
+TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
-DOC = 'Run module CtsMediaTestCases of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
+DOC = 'Run module CtsMediaTestCases.testGLViewDecodeAccuracy of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
@@ -23,15 +23,13 @@ def run_TS(machine):
         needs_push_media=True,
         tag='11_r5.arm.CtsMediaTestCases.testGLViewDecodeAccuracy.ctshardware',
         test_name='cheets_CTS_R.11_r5.arm.CtsMediaTestCases.testGLViewDecodeAccuracy.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaTestCases', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewDecodeAccuracy', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaTestCases',
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
-        precondition_commands=['cras_test_client --mute 1'],
         use_jdk9=True,
-        timeout=36000)
+        timeout=3600)
 
 parallel_simple(run_TS, machines)

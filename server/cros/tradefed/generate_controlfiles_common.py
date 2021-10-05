@@ -1333,9 +1333,16 @@ def write_hardwaresuite_controlfiles(abi, revision, build, uri, is_public,
         for submodule, suites in config.items():
             name = get_controlfile_name(submodule, abi, revision, is_public,
                                         hardware_suite=True)
-            content = get_controlfile_content(submodule, set([module]), abi,
-                                              revision, build, uri, None, is_public,
-                                              is_latest, hardware_suite=True)
+            content = get_controlfile_content(submodule,
+                                              set([submodule]),
+                                              abi,
+                                              revision,
+                                              build,
+                                              uri,
+                                              None,
+                                              is_public,
+                                              is_latest,
+                                              hardware_suite=True)
             with open(name, 'w') as f:
                 f.write(content)
 

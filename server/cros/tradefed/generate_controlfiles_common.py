@@ -145,6 +145,9 @@ CONFIG = None
 
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
+_CTSHARDWARE_COLLECT = 'tradefed-run-collect-tests-only-hardware-internal'
+_PUBLIC_CTSHARDWARE_COLLECT = 'tradefed-run-collect-tests-only-hardware'
+
 
 _TEST_LENGTH = {1: 'FAST', 2: 'SHORT', 3: 'MEDIUM', 4: 'LONG', 5: 'LENGTHY'}
 
@@ -252,7 +255,8 @@ def get_extension(module,
         ext_parts += [led_provision]
     if camera_facing:
         ext_parts += ['camerabox', camera_facing]
-    if hardware_suite:
+    if hardware_suite and module not in get_collect_modules(
+            is_public, hardware_suite):
         ext_parts += ['ctshardware']
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi and abi_bits:
         ext_parts += [str(abi_bits)]
@@ -336,7 +340,7 @@ def get_suites(modules, abi, is_public, camera_facing=None,
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
 
     for module in modules:
-        if module in get_collect_modules(is_public):
+        if module in get_collect_modules(is_public, hardware_suite):
             # We collect all tests both in arc-gts and arc-gts-qual as both have
             # a chance to be complete (and used for submission).
             suites |= set(CONFIG['QUAL_SUITE_NAMES'])
@@ -599,13 +603,16 @@ def get_authkey(is_public):
     return CONFIG['AUTHKEY']
 
 
-def _format_collect_cmd(is_public, abi_to_run, retry):
+def _format_collect_cmd(is_public, abi_to_run, retry, is_hardware=False):
     """Returns a list specifying tokens for tradefed to list all tests."""
     if retry:
         return None
     cmd = ['run', 'commandAndExit', 'collect-tests-only']
     if CONFIG['TRADEFED_DISABLE_REBOOT_ON_COLLECTION']:
         cmd += ['--disable-reboot']
+    if is_hardware:
+        cmd.append('--subplan')
+        cmd.append('cts-hardware')
     for m in CONFIG['MEDIA_MODULES']:
         cmd.append('--module-arg')
         cmd.append('%s:skip-media-download:true' % m)
@@ -629,7 +636,8 @@ def _format_modules_cmd(is_public,
                         abi_to_run,
                         modules=None,
                         retry=False,
-                        whole_module_set=None):
+                        whole_module_set=None,
+                        is_hardware=False):
     """Returns list of command tokens for tradefed."""
     if retry:
         assert(CONFIG['TRADEFED_RETRY_COMMAND'] == 'cts' or
@@ -698,19 +706,25 @@ def get_run_template(modules,
                      is_public,
                      retry=False,
                      abi_to_run=None,
-                     whole_module_set=None):
+                     whole_module_set=None,
+                     is_hardware=False):
     """Command to run the modules specified by a control file."""
-    no_intersection = not modules.intersection(get_collect_modules(is_public))
-    collect_present = (_COLLECT in modules or _PUBLIC_COLLECT in modules)
+    no_intersection = not modules.intersection(get_collect_modules(is_public,
+                          is_hardware))
+    collect_present = (_COLLECT in modules or _PUBLIC_COLLECT in modules or
+                       _CTSHARDWARE_COLLECT in modules or
+                       _PUBLIC_CTSHARDWARE_COLLECT in modules)
     all_present = _ALL in modules
     if no_intersection or (all_present and not collect_present):
         return _format_modules_cmd(is_public,
                                    abi_to_run,
                                    modules,
                                    retry=retry,
-                                   whole_module_set=whole_module_set)
+                                   whole_module_set=whole_module_set,
+                                   is_hardware=is_hardware)
     elif collect_present:
-        return _format_collect_cmd(is_public, abi_to_run, retry=retry)
+        return _format_collect_cmd(is_public, abi_to_run, retry=retry,
+                   is_hardware=is_hardware)
     return None
 
 def get_retry_template(modules, is_public):
@@ -865,6 +879,9 @@ def get_controlfile_content(combined,
             ("x86", 32): 'x86',
             ("x86", 64): 'x86_64'
     }.get((abi, abi_bits), None)
+    subplan = None
+    if _CTSHARDWARE_COLLECT in modules or _PUBLIC_CTSHARDWARE_COLLECT in modules:
+        subplan = 'cts-hardware'
     return _CONTROLFILE_TEMPLATE.render(
             year=CONFIG['COPYRIGHT_YEAR'],
             name=name,
@@ -894,10 +911,11 @@ def get_controlfile_content(combined,
                                           abi_to_run=CONFIG.get(
                                                   'REPRESENTATIVE_ABI',
                                                   {}).get(abi, abi_to_run),
-                                          whole_module_set=whole_module_set),
+                                          whole_module_set=whole_module_set,
+                                          is_hardware=hardware_suite),
             retry_template=get_retry_template(modules, is_public),
             target_module=target_module,
-            target_plan=None,
+            target_plan=subplan,
             test_length=get_test_length(modules),
             priority=get_test_priority(modules, is_public),
             extra_args=get_extra_args(modules, is_public),
@@ -1003,10 +1021,15 @@ def unzip(filename, destination):
             zf.extractall()
 
 
-def get_collect_modules(is_public):
+def get_collect_modules(is_public, is_hardware=False):
     if is_public:
+        if is_hardware:
+            return set([_PUBLIC_CTSHARDWARE_COLLECT])
         return set([_PUBLIC_COLLECT])
-    return set([_COLLECT])
+    else:
+        if is_hardware:
+            return set([_CTSHARDWARE_COLLECT])
+        return set([_COLLECT])
 
 
 @contextlib.contextmanager
@@ -1126,6 +1149,7 @@ def write_controlfile(name,
                       is_public,
                       is_latest=False,
                       whole_module_set=None,
+                      hardware_suite=False,
                       abi_bits=None):
     """Write a single control file."""
     filename = get_controlfile_name(name,
@@ -1142,7 +1166,7 @@ def write_controlfile(name,
                                       suites,
                                       is_public,
                                       is_latest,
-                                      hardware_suite=False,
+                                      hardware_suite=hardware_suite,
                                       whole_module_set=whole_module_set,
                                       abi_bits=abi_bits)
     with open(filename, 'w') as f:
@@ -1285,19 +1309,26 @@ def write_qualification_and_regression_controlfile(modules, abi, revision,
 
 
 def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public,
-                               is_latest):
+                               is_latest, is_hardware=False):
     """Write all control files for test collection used as reference to
 
     compute completeness (missing tests) on the CTS dashboard.
     """
     if is_public:
-        suites = [CONFIG['MOBLAB_SUITE_NAME']]
+        if is_hardware:
+            suites = [CONFIG['MOBLAB_HARDWARE_SUITE_NAME']]
+        else:
+            suites = [CONFIG['MOBLAB_SUITE_NAME']]
     else:
-        suites = CONFIG['INTERNAL_SUITE_NAMES'] \
-               + CONFIG.get('QUAL_SUITE_NAMES', [])
-    for module in get_collect_modules(is_public):
+        if is_hardware:
+            suites = [CONFIG['HARDWARE_SUITE_NAME']]
+        else:
+            suites = CONFIG['INTERNAL_SUITE_NAMES'] \
+                   + CONFIG.get('QUAL_SUITE_NAMES', [])
+    for module in get_collect_modules(is_public, is_hardware=is_hardware):
         write_controlfile(module, set([module]), abi, revision, build, uri,
-                          suites, is_public, is_latest)
+                          suites, is_public, is_latest, 
+                          hardware_suite=is_hardware)
 
 
 def write_extra_controlfiles(_modules, abi, revision, build, uri, is_public,
@@ -1418,7 +1449,11 @@ def run(uris, is_public, is_latest, cache_dir):
 
             if CONFIG.get('CONTROLFILE_WRITE_COLLECT', True):
                 write_collect_controlfiles(modules, abi, revision, build, uri,
-                                           is_public, is_latest)
+                                           is_public, is_latest,
+                                           is_hardware=False)
+                write_collect_controlfiles(modules, abi, revision, build, uri,
+                                           is_public, is_latest,
+                                            is_hardware=True)
 
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
                 write_extra_controlfiles(None, abi, revision, build, uri,

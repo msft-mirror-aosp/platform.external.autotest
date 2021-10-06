@@ -312,6 +312,7 @@ def get_cpu_soc_family():
 # When adding entries here, also add them at the right spot in the
 # INTEL_*_ORDER lists below.
 INTEL_UARCH_TABLE = {
+    '06_9A': 'Alder Lake',
     '06_4C': 'Airmont',
     '06_1C': 'Atom',
     '06_26': 'Atom',
@@ -374,7 +375,7 @@ INTEL_BIGCORE_ORDER = [
         'Prescott', 'Presler', 'Dothan', 'Merom', 'Nehalem', 'Westmere',
         'Sandy Bridge', 'Ivy Bridge', 'Ivy Bridge-E', 'Haswell', 'Haswell-E',
         'Broadwell', 'Skylake', 'Kaby Lake', 'Coffee Lake', 'Whiskey Lake',
-        'Cannon Lake', 'Comet Lake', 'Ice Lake', 'Tiger Lake'
+        'Cannon Lake', 'Comet Lake', 'Ice Lake', 'Tiger Lake', 'Alder Lake'
 ]
 
 

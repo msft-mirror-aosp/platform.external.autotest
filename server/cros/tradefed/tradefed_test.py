@@ -609,7 +609,7 @@ class TradefedTest(test.test):
         # the uris are supposed to contain version information and an object is
         # not supposed to be changed once created.
         output_dir = os.path.join(self._tradefed_cache,
-                                  hashlib.md5(uri).hexdigest())
+                                  hashlib.md5(uri.encode()).hexdigest())
         # Check for existence of cache entry. We check for directory existence
         # instead of file existence, so that _install_bundle can delete original
         # zip files to save disk space.

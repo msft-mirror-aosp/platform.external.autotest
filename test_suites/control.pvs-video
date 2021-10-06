@@ -19,7 +19,7 @@ and includes a collection of Video tests that run without additional hardware.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['max_runtime_mins'] = 120
+args_dict['max_runtime_mins'] = 240
 args_dict['add_experimental'] = True
 args_dict['name'] = NAME
 args_dict['job'] = job

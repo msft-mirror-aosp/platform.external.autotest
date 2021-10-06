@@ -23,6 +23,11 @@ def run(machine):
               test_exprs=['('
                 '!"name:*_lacros*" && ' # b/198181442
                 '!"name:video.EncodeAccel.h264_2160p" && ' # b/198181442
+                '!"name:video.DecodeAccel.vp8_odd_dimensions" && ' # http://b/202188074
+                '!"name:video.DecodeAccel.vp9_odd_dimensions" && ' # http://b/202188074
+                '!"name:video.DecodeAccelVD.vp8_odd_dimension" && ' # http://b/202188074
+                '!"name:video.DecodeAccelVD.vp9_odd_dimension" && ' # http://b/202188074
+                '!"name:video.PlatformDecoding.vaapi_vp9_0_svc" && ' # http://b/202188074
                 '('
                   ' "name:video.Capability" || '
                   ' "name:video.CDMOEMCrypto.*" || '
@@ -56,7 +61,7 @@ def run(machine):
                 ')'
               ')'],
               ignore_test_failures=False,
-              max_run_sec=7200,
+              max_run_sec=14200,
               command_args=args,
               clear_tmp=True)
 parallel_simple(run, machines)

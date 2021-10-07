@@ -290,6 +290,7 @@ suite:regression
 suite:rlz
 suite:runtime_probe_perbuild
 suite:sanity
+suite:satlab-qual-bvt-cq
 suite:sb65-presubmit
 suite:security
 suite:servo_lab

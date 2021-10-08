@@ -39,7 +39,7 @@ class touch_StylusTaps(touch_playback_test_base.touch_playback_test_base):
         self._filepaths = self._find_test_files('stylus', [self._CLICK_NAME])
         if not self._filepaths:
             logging.info('Missing gesture files, Aborting test.')
-            return
+            raise error.TestNAError('Missing input data for this board name.')
 
         # Log in and start test.
         with chrome.Chrome(init_network_controller=True) as cr:

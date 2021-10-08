@@ -87,7 +87,7 @@ class touch_TabSwitch(touch_playback_test_base.touch_playback_test_base):
     def run_once(self):
         """Entry point of this test."""
         if not self._is_testable():
-            return
+            raise error.TestNAError('Missing input data for this board name.')
 
         # Log in and start test.
         with chrome.Chrome(autotest_ext=True,

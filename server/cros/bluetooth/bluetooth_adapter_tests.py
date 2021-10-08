@@ -1773,6 +1773,9 @@ class BluetoothAdapterTests(test.test):
         initially_ok = self.bluetooth_facade.is_bluetoothd_valid()
         bluez_started = initially_ok or self.bluetooth_facade.start_bluetoothd()
 
+        if not initially_ok:
+            self.bluetooth_facade.update_adapter_properties()
+
         self.results = {
                 'initially_ok': initially_ok,
                 'bluez_started': bluez_started

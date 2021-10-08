@@ -70,6 +70,19 @@ class BluetoothDevice(object):
         self.bluez_version = properties.get('Name')
         self.address = properties.get('Address')
         self.bluetooth_class = properties.get('Class')
+
+    def update_adapter_properties(self):
+        """Refresh the cached adapter properties"""
+        properties = self.get_adapter_properties()
+
+        if not properties:
+            logging.error('Failed to get DUT adapter properties')
+            return
+
+        self.bluez_version = properties.get('Name')
+        self.address = properties.get('Address')
+        self.bluetooth_class = properties.get('Class')
+
     def _connect_xmlrpc_directly(self):
         """Connects to the bluetooth native facade directly via xmlrpc."""
         proxy = self.host.rpc_server_tracker.xmlrpc_connect(

@@ -291,6 +291,8 @@ suite:rlz
 suite:runtime_probe_perbuild
 suite:sanity
 suite:satlab-qual-bvt-cq
+suite:satlab-qual-bvt-inline
+suite:satlab-qual-bvt-installer
 suite:sb65-presubmit
 suite:security
 suite:servo_lab

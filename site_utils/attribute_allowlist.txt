@@ -194,7 +194,6 @@ suite:faft_cr50_pvt
 suite:faft_cr50_tot
 suite:faft_dev
 suite:faft_ec
-suite:faft_ec3po
 suite:faft_ec_fw_qual
 suite:faft_ec_tot
 suite:faft_ec_wp

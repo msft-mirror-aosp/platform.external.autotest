@@ -168,6 +168,11 @@ def _parse_arguments_internal(argv):
                         action='store',
                         default=None,
                         help='Companion duts for the test.')
+    parser.add_argument('--minus',
+                        dest='minus',
+                        nargs='*',
+                        help='List of tests to not use.',
+                        default=[''])
     return parser.parse_args(argv), remote_argv
 
 
@@ -330,7 +335,8 @@ def _main_for_local_run(argv, arguments):
                 allow_chrome_crashes=arguments.allow_chrome_crashes,
                 pretend=arguments.pretend,
                 job_retry=arguments.retry,
-                companion_hosts=arguments.companion_hosts)
+                companion_hosts=arguments.companion_hosts,
+                minus=arguments.minus)
 
 
 def _main_for_lab_run(argv, arguments):

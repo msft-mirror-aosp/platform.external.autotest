@@ -33,6 +33,18 @@ class TypeMatcher(object):
         return isinstance(other, self.expected_type)
 
 
+class JobMatcher(object):
+    """Matcher for JobObject + Name."""
+
+    def __init__(self, expected_type, name):
+        self.expected_type = expected_type
+        self.name = name
+
+    def __eq__(self, other):
+        return (isinstance(other, self.expected_type)
+                and self.name in other.name)
+
+
 class ContainsMatcher:
     """Matcher for object contains attr."""
 
@@ -61,7 +73,7 @@ class FakeTests(object):
         self.text = text
         self.test_type = 'client'
         self.dependencies = deps
-        self.name = None
+        self.name = text
         self.py_version = py_version
 
 
@@ -229,7 +241,9 @@ class TestRunnerUnittests(unittest.TestCase):
                                             args=self.args,
                                             results_directory=self.results_dir,
                                             job_retry=self.retry,
-                                            ignore_deps=False)
+                                            ignore_deps=False,
+                                            minus=[])
+
         run_job_mock.assert_called_with(
                 TypeMatcher(test_runner_utils.SimpleJob),
                 self.remote,
@@ -273,10 +287,72 @@ class TestRunnerUnittests(unittest.TestCase):
                 args=self.args,
                 results_directory=self.results_dir,
                 job_retry=self.retry,
-                ignore_deps=False)
+                ignore_deps=False,
+                minus=[])
 
         # Verify when the deps are not met, the tests are not run.
         self.assertEquals(res, [])
+
+    def test_minus_flag(self):
+        """Verify the minus flag skips tests."""
+        patcher = patch.object(test_runner_utils, '_auto_detect_labels')
+        getter = patcher.start()
+        self.addCleanup(patcher.stop)
+
+        getter.return_value = ['os:cros', 'has_chameleon:True']
+
+        patcher2 = patch.object(test_runner_utils, 'get_all_control_files')
+        test_runner_utils_mock = patcher2.start()
+        self.addCleanup(patcher2.stop)
+
+        patcher3 = patch.object(test_runner_utils, 'run_job')
+        run_job_mock = patcher3.start()
+        self.addCleanup(patcher3.stop)
+
+        minus_tests = [FakeTests(self.suite_control_files[0])]
+        all_tests = [
+                FakeTests(test, deps=[]) for test in self.suite_control_files
+        ]
+
+        test_runner_utils_mock.side_effect = [minus_tests, all_tests]
+        run_job_mock.side_effect = [(0, 'fakedir') for _ in range(3)]
+        res = test_runner_utils.perform_local_run(
+                self.autotest_path, ['suite:' + self.suite_name],
+                self.remote,
+                self.fast_mode,
+                build=self.build,
+                board=self.board,
+                ssh_verbosity=self.ssh_verbosity,
+                ssh_options=self.ssh_options,
+                args=self.args,
+                results_directory=self.results_dir,
+                job_retry=self.retry,
+                ignore_deps=False,
+                minus=[self.suite_control_files[0]])
+
+        from mock import call
+
+        calls = []
+        for name in self.suite_control_files[1:]:
+            calls.append(
+                    call(
+                            JobMatcher(test_runner_utils.SimpleJob, name=name),
+                            self.remote,
+                            TypeMatcher(host_info.HostInfo),
+                            self.autotest_path,
+                            self.results_dir,
+                            self.fast_mode,
+                            self.id_digits,
+                            self.ssh_verbosity,
+                            self.ssh_options,
+                            TypeMatcher(str),
+                            False,
+                            False,
+                            None,
+                    ))
+
+        run_job_mock.assert_has_calls(calls, any_order=True)
+        assert run_job_mock.call_count == len(calls)
 
     def test_set_pyversion(self):
         """Test the tests can properly set the python version."""

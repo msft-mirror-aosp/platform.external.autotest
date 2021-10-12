@@ -475,7 +475,8 @@ def perform_local_run(autotest_path,
                       iterations=1,
                       host_attributes={},
                       job_retry=True,
-                      companion_hosts=None):
+                      companion_hosts=None,
+                      minus=[]):
     """Perform local run of tests.
 
     This method enforces satisfaction of test dependencies for tests that are
@@ -529,6 +530,12 @@ def perform_local_run(autotest_path,
     job_queue = []
     test_num = 0
 
+    m_queue = []
+    for m in minus:
+        ctrl_files = get_all_control_files(m, autotest_path)
+        for ctrl in ctrl_files:
+            m_queue.append(ctrl)
+
     if iterations > 1:
         logging.info("Scheduling for %s iterations", iterations)
     for _ in range(iterations):
@@ -537,6 +544,8 @@ def perform_local_run(autotest_path,
             if len(ctrl_files) == 0:
                 get_possible_tests(test, autotest_path)
             for control in ctrl_files:
+                if any([control.name == no_run.name for no_run in m_queue]):
+                    continue
                 test_num += 1
                 job = SimpleJob(name="adhoc/{}".format(control.name),
                                 owner='autotest_system',
@@ -723,7 +732,8 @@ def perform_run_from_autotest_root(autotest_path,
                                    allow_chrome_crashes=False,
                                    host_attributes={},
                                    job_retry=True,
-                                   companion_hosts=None):
+                                   companion_hosts=None,
+                                   minus=[]):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -795,7 +805,8 @@ def perform_run_from_autotest_root(autotest_path,
                               iterations=iterations,
                               host_attributes=host_attributes,
                               job_retry=job_retry,
-                              companion_hosts=companion_hosts)
+                              companion_hosts=companion_hosts,
+                              minus=minus)
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0

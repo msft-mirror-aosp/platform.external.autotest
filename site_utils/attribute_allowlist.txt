@@ -53,7 +53,6 @@ suite:borealis_per-week
 suite:brillo-presubmit
 suite:bvt-arc
 suite:bvt-cq
-suite:bvt-faft
 suite:bvt-inline
 suite:bvt-installer
 suite:bvt-perbuild

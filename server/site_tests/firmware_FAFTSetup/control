@@ -10,7 +10,7 @@ PURPOSE = "Servo based diagnose of FAFT hardware setup"
 CRITERIA = "This test will fail if FAFT hardware is not set up correctly."
 # This test cannot be added to suite:infra_qual due to unreliability of
 # interaction with USB sticks in the ChromeOS CQ device environment.
-ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lab, suite:faft_lv2, suite:faft_normal, suite:faft_bios_tot, suite:faft_setup, suite:bvt-faft, suite:labqual, suite:servo_lab"
+ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lab, suite:faft_lv2, suite:faft_normal, suite:faft_bios_tot, suite:faft_setup, suite:labqual, suite:servo_lab"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

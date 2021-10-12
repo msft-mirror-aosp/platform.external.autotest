@@ -1,4 +1,5 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
+# Lint as: python2, python3
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -510,7 +511,7 @@ def get_extra_args(modules, is_public):
     preconditions = []
     login_preconditions = []
     prerequisites = []
-    for module in modules:
+    for module in sorted(modules):
         # Remove this once JDK9 is the base JDK for lab.
         if CONFIG.get('USE_JDK9', False):
             extra_args.add('use_jdk9=True')
@@ -672,7 +673,7 @@ def _format_modules_cmd(is_public,
             else:
                 # CTS-Instant does not support --include-filter due to
                 # its implementation detail. Instead, exclude the complement.
-                for module in whole_module_set - set(modules):
+                for module in sorted(whole_module_set - set(modules)):
                     cmd += ['--exclude-filter', module]
 
         # For runs create a logcat file for each individual failure.
@@ -941,7 +942,8 @@ def get_tradefed_data(path, is_public, abi):
     logging.info('Calling tradefed for list of modules.')
     with open(os.devnull, 'w') as devnull:
         # tradefed terminates itself if stdin is not a tty.
-        tradefed_output = subprocess.check_output(cmd_list, stdin=devnull)
+        tradefed_output = subprocess.check_output(cmd_list,
+                                                  stdin=devnull).decode()
 
     _ABI_PREFIXES = ('arm', 'x86')
     _MODULE_PREFIXES = ('Cts', 'cts-', 'signed-Cts', 'vm-tests-tf', 'Sts')

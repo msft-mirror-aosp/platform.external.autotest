@@ -31,7 +31,7 @@ def run_TS(machine):
         bundle='x86',
         uri='LATEST',
         login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
-        prerequisites=['region_us', 'bluetooth'],
+        prerequisites=['bluetooth', 'region_us'],
         timeout=113400)
 
 parallel_simple(run_TS, machines)

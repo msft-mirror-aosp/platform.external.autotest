@@ -366,7 +366,7 @@ def get_supported_key_policies():
     logging.info(out)
     policies = {}
     for line in out.splitlines():
-        match = re.search('  ([^:]+): (true|false)', line)
+        match = re.search('([^:]+): (true|false)', line)
         if match:
             policies[match.group(1)] = match.group(2) == 'true'
     return policies

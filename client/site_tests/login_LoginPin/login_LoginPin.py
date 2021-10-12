@@ -11,6 +11,8 @@ from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome, session_manager
 
+LCE_KEY = 'low_entropy_credentials_supported'
+
 
 class login_LoginPin(test.test):
     """Sets up a PIN for user and then logs in using the pin."""
@@ -19,6 +21,11 @@ class login_LoginPin(test.test):
     def run_once(self, username, password, pin, setup_pin=True,
                  login_pin=True):
         """Test body."""
+        key_policies = cryptohome.get_supported_key_policies()
+        if LCE_KEY not in key_policies or not key_policies[LCE_KEY]:
+            raise error.TestNAError(
+                    'Skip test: No hardware support for PIN login')
+
         username = chrome.NormalizeEmail(username)
         if setup_pin:
             with chrome.Chrome(username=username, password=password) as cr:

@@ -51,7 +51,7 @@ class bluetooth_PeerVerify(BluetoothAdapterQuickTests):
     @batch_wrapper('Verify Peer RSSI')
     def verify_peer_batch_run(self, num_iterations=1, test_name=None):
         """ Batch of checks for btpeer. """
-        self.test_check_rssi()
+        self.check_rssi()
 
     def run_once(self,
                  host,

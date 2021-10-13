@@ -154,6 +154,7 @@ CONFIG['MEDIA_MODULES'] = [
 ]
 
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
+        'CtsMediaStressTestCases.camera',
         'CtsMediaTestCases.audio',
         'CtsMediaTestCases.perf',
         'CtsMediaTestCases.video',
@@ -287,11 +288,16 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 # This list of modules will be used for reduced set of testing for build
 # variant process. Suites: cts_hardware & arc-cts-hardware.
 CONFIG['HARDWARE_MODULES'] = [
-    'CtsPerfettoTestCases', 'CtsSustainedPerformanceHostTestCases',
-    'CtsCameraTestCases', 'CtsMediaStressTestCases', 'CtsAppTestCases',
-    'CtsPermissionTestCases', 'CtsViewTestCases', 'CtsMediaTestCases',
-    'CtsNativeMediaAAudioTestCases', 'CtsNetTestCases', 'CtsWifiTestCases',
-    'CtsUsageStatsTestCases', 'CtsSensorTestCases',
+        'CtsPerfettoTestCases',
+        'CtsSustainedPerformanceHostTestCases',
+        'CtsCameraTestCases',
+        'CtsViewTestCases',
+        'CtsMediaTestCases',
+        'CtsNativeMediaAAudioTestCases',
+        'CtsNetTestCases',
+        'CtsWifiTestCases',
+        'CtsUsageStatsTestCases',
+        'CtsSensorTestCases',
 ]
 
 SUITE_ARC_CTS_R = ['suite:arc-cts-r']
@@ -339,17 +345,26 @@ CONFIG['EXTRA_MODULES'] = {
 # In addition to EXTRA_MODULES, these modules do require separate control files
 # for internal and moblab.
 CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
-        'CtsCameraTestCases': {
-            'CtsCameraTestCases.NativeCameraDeviceTest': [],
+        'CtsAppTestCases': {
+                'CtsAppTestCases.feature': [],
         },
-        'CtsDeqpTestCases' : {
-            'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
+        'CtsCameraTestCases': {
+                'CtsCameraTestCases.NativeCameraDeviceTest': [],
+        },
+        'CtsDeqpTestCases': {
+                'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
+        },
+        'CtsMediaStressTestCases': {
+                'CtsMediaStressTestCases.camera': [],
         },
         'CtsMediaTestCases': {
-             'CtsMediaTestCases.testGLViewDecodeAccuracy': [],
-             'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': [],
-             'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': [],
-             'CtsMediaTestCases.exclude-GLView': [],
+                'CtsMediaTestCases.testGLViewDecodeAccuracy': [],
+                'CtsMediaTestCases.testGLViewLargerHeightDecodeAccuracy': [],
+                'CtsMediaTestCases.testGLViewLargerWidthDecodeAccuracy': [],
+                'CtsMediaTestCases.exclude-GLView': [],
+        },
+        'CtsPermissionTestCases': {
+                'CtsPermissionTestCases.camera': [],
         },
 }
 
@@ -360,10 +375,6 @@ CONFIG['PUBLIC_EXTRA_MODULES'] = {
         'CtsCameraTestCases': {
              'CtsCameraTestCases.NativeCameraDeviceTest':
                 [CONFIG['MOBLAB_SUITE_NAME']],
-        },
-        'CtsDeqpTestCases' : {
-             'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
-                 CONFIG['MOBLAB_SUITE_NAME']],
         },
         'CtsMediaTestCases': {
              'CtsMediaTestCases.testGLViewDecodeAccuracy': [
@@ -381,6 +392,10 @@ CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
 }
 
 CONFIG['EXTRA_COMMANDLINE'] = {
+        'CtsAppTestCases.feature': [
+                '--module', 'CtsAppTestCases', '--test',
+                'android.app.cts.SystemFeaturesTest'
+        ],
         'CtsCameraTestCases.NativeCameraDeviceTest': [
                 '--include-filter',
                 'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest',
@@ -581,6 +596,12 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-VK.ycbcr.*'
         ],
+        'CtsMediaStressTestCases.camera': [
+                '--module',
+                'CtsMediaStressTestCases',
+                '--test',
+                'android.mediastress.cts.MediaRecorderStressTest',
+        ],
         'CtsMediaTestCases.audio': [
                 '--include-filter',
                 'CtsMediaTestCases android.media.cts.AudioAttributesTest',
@@ -702,6 +723,12 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsMediaTestCases android.media.cts.MediaExtractorTest#testProgramStreamExtraction',
                 '--exclude-filter',
                 'CtsMediaTestCases[instant] android.media.cts.MediaExtractorTest#testProgramStreamExtraction',
+        ],
+        'CtsPermissionTestCases.camera': [
+                '--include-filter',
+                'CtsPermissionTestCases android.permission.cts.CameraPermissionTest',
+                '--include-filter',
+                'CtsPermissionTestCases android.permission.cts.Camera2PermissionTest',
         ],
         'CtsWindowManager.A': [
                 '--include-filter',

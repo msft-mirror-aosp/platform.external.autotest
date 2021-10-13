@@ -31,7 +31,7 @@ CONFIG = global_config.global_config
 # Default ssh options used in creating a host.
 DEFAULT_SSH_USER = 'root'
 DEFAULT_SSH_PASS = ''
-DEFAULT_SSH_PORT = 22
+DEFAULT_SSH_PORT = None
 DEFAULT_SSH_VERBOSITY = ''
 DEFAULT_SSH_OPTIONS = ''
 
@@ -94,14 +94,15 @@ def _get_host_arguments(machine):
 
     hostname, user, password, port = server_utils.parse_machine(hostname, user,
                                                                 password, port)
-
+    if port:
+        port = int(port)
     host_args = {
             'hostname': hostname,
             'afe_host': afe_host,
             'host_info_store': host_info_store,
             'user': user,
             'password': password,
-            'port': int(port),
+            'port': port,
             'ssh_verbosity_flag': ssh_verbosity_flag,
             'ssh_options': ssh_options,
             'connection_pool': connection_pool,

@@ -172,7 +172,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
                     '--output-dir=%s' % output_dir,
                     '--remote=%s' % self._host.hostname,
             ])
-            if self._host.host_port != self._host.hostname:
+            if self._host.host_port != self._host.hostname and self._host.host_port:
                 # If the user specify a different port for the DUT, we should
                 # use different telemetry argument to set it up.
                 #

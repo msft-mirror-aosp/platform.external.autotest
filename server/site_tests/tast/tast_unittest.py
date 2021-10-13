@@ -145,7 +145,8 @@ class TastTest(unittest.TestCase):
                             totalshards=1,
                             shardindex=0,
                             companion_duts={},
-                            maybemissingvars=''):
+                            maybemissingvars='',
+                            port=True):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
         @param tests: List of TestInfo objects.
@@ -160,14 +161,15 @@ class TastTest(unittest.TestCase):
         @param companion_duts: mapping between roles and DUTs.
         """
         list_args = [
-            'build=%s' % build,
-            'patterns=%s' % self.TEST_PATTERNS,
-            'sshretries=%d' % tast.tast._SSH_CONNECT_RETRIES,
-            'downloaddata=%s' % ('lazy' if download_data_lazily else 'batch'),
-            'totalshards=%d' % totalshards,
-            'shardindex=%d' % shardindex,
-            'target=%s:%d' % (self.HOST, self.PORT),
-            'verbose=True',
+                'build=%s' % build,
+                'patterns=%s' % self.TEST_PATTERNS,
+                'sshretries=%d' % tast.tast._SSH_CONNECT_RETRIES,
+                'downloaddata=%s' %
+                ('lazy' if download_data_lazily else 'batch'),
+                'totalshards=%d' % totalshards,
+                'shardindex=%d' % shardindex,
+                'target=%s%s' % (self.HOST, ':%d' % self.PORT if port else ''),
+                'verbose=True',
         ]
         if build:
             list_args.extend([
@@ -198,7 +200,9 @@ class TastTest(unittest.TestCase):
         if companion_duts:
             role_dut_pairs = []
             for role, dut in sorted(companion_duts.items()):
-                role_dut_pairs.append('%s:%s:%d' % (role, dut.hostname, dut.port))
+                role_dut_pairs.append('%s:%s%s' %
+                                      (role, dut.hostname,
+                                       ':%d' % dut.port if dut.port else ''))
             run_args.append('companiondut=%s' % role_dut_pairs)
         test_list = json.dumps([t.test() for t in tests])
         run_files = {
@@ -321,6 +325,20 @@ class TastTest(unittest.TestCase):
                  TestInfo('pkg.Test2', 3, 5),
                  TestInfo('pkg.Test3', 6, 8)]
         self._init_tast_commands(tests)
+        self._run_test()
+        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
+                         status_string(self._job.status_entries))
+        self.assertIs(self._load_job_keyvals(), None)
+
+    def testPassingTestsNoPort(self):
+        """Tests that passing tests are reported correctly."""
+        self._host = FakeHost(self.HOST, None)
+        tests = [
+                TestInfo('pkg.Test1', 0, 2),
+                TestInfo('pkg.Test2', 3, 5),
+                TestInfo('pkg.Test3', 6, 8)
+        ]
+        self._init_tast_commands(tests, port=None)
         self._run_test()
         self.assertEqual(status_string(get_status_entries_from_tests(tests)),
                          status_string(self._job.status_entries))
@@ -492,6 +510,16 @@ class TastTest(unittest.TestCase):
         """Tests that companion dut parameter is passing thru without issues."""
         tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
         companion_duts = {'role1': FakeHost('dut1', 22), 'role2':FakeHost('dut2', 22)}
+        self._init_tast_commands(tests=tests, companion_duts=companion_duts)
+        self._run_test(companion_duts=companion_duts)
+
+    def testRunCommandWithCompanionDUTsNoPort(self):
+        """Tests that companion dut parameter is passing thru without issues."""
+        tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
+        companion_duts = {
+                'role1': FakeHost('dut1', 22),
+                'role2': FakeHost('dut2', None)
+        }
         self._init_tast_commands(tests=tests, companion_duts=companion_duts)
         self._run_test(companion_duts=companion_duts)
 

@@ -337,12 +337,13 @@ class TradefedTest(test.test):
         This method is slightly different from host.host_port as we need to
         explicitly specify the port so the serial name of adb target would
         match."""
+        port = 22 if host.port is None else host.port
         if re.search(r':.*:', host.hostname):
             # Add [] for raw IPv6 addresses, stripped for ssh.
             # In the Python >= 3.3 future, 'import ipaddress' will parse
             # addresses.
-            return '[{}]:{}'.format(host.hostname, host.port)
-        return '{}:{}'.format(host.hostname, host.port)
+            return '[{}]:{}'.format(host.hostname, port)
+        return '{}:{}'.format(host.hostname, port)
 
     def _run_adb_cmd(self, host=None, **kwargs):
         """Running adb command.

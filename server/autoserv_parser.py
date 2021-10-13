@@ -113,8 +113,11 @@ class autoserv_parser(object):
         self.parser.add_argument('--ssh-user', action='store',
                                  type=str, dest='ssh_user', default='root',
                                  help='specify the user for ssh connections')
-        self.parser.add_argument('--ssh-port', action='store',
-                                 type=int, dest='ssh_port', default=22,
+        self.parser.add_argument('--ssh-port',
+                                 action='store',
+                                 type=int,
+                                 dest='ssh_port',
+                                 default=None,
                                  help=('specify the port to use for ssh '
                                        'connections'))
         self.parser.add_argument('--ssh-pass', action='store',

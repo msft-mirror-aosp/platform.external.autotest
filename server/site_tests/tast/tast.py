@@ -662,7 +662,8 @@ class tast(test.test):
                 cmd.append('-downloadprivatebundles=true')
         cmd.extend(self._devserver_args)
         cmd.extend(extra_subcommand_args)
-        cmd.append('%s:%d' % (self._host.hostname, self._host.port))
+        cmd.append('%s%s' % (self._host.hostname, ':%d' %
+                             self._host.port if self._host.port else ''))
         cmd.extend(test_exprs)
 
         logging.info('Running %s',
@@ -703,8 +704,9 @@ class tast(test.test):
                     '-o BatchMode=yes '
                     '-o ConnectTimeout=10 '
                     '-o ConnectionAttempts=3 '
-                    '-l root -p %d %s true' %
-                    (self._host.port, self._host.hostname),
+                    '-l root %s%s true' %
+                    ('-p %d ' % self._host.port if self._host.port else '',
+                     self._host.hostname),
                     timeout=60,
                     ignore_status=True,
                     stdout_tee=utils.TEE_TO_LOGS,
@@ -809,7 +811,9 @@ class tast(test.test):
             args.append('-maybemissingvars=%s' % self._maybemissingvars)
 
         for role, dut in sorted(self._companion_duts.items()):
-            args.append('-companiondut=%s:%s:%d' % (role, dut.hostname, dut.port))
+            args.append(
+                    '-companiondut=%s:%s%s' %
+                    (role, dut.hostname, ':%d' % dut.port if dut.port else ''))
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
         self._run_tast('run',

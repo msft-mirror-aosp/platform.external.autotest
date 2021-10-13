@@ -1965,9 +1965,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 raise
 
 
-    def make_ssh_command(self, user='root', port=22, opts='', hosts_file=None,
-                         connect_timeout=None, alive_interval=None,
-                         alive_count_max=None, connection_attempts=None):
+    def make_ssh_command(self,
+                         user='root',
+                         port=None,
+                         opts='',
+                         hosts_file=None,
+                         connect_timeout=None,
+                         alive_interval=None,
+                         alive_count_max=None,
+                         connection_attempts=None):
         """Override default make_ssh_command to use options tuned for Chrome OS.
 
         Tuning changes:

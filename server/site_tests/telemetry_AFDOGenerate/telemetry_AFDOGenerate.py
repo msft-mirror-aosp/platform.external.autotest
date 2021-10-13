@@ -139,8 +139,11 @@ class telemetry_AFDOGenerate(test.test):
         cmd = []
         src = ('root@%s:%s/%s' % (dut.hostname, DUT_CHROME_RESULTS_DIR,
                                   'perf.data'))
-        cmd.extend(['scp', DUT_SCP_OPTIONS, RSA_KEY, '-P', str(dut.port), '-v',
-                    src, host_dir])
+        cmd.extend([
+                'scp', DUT_SCP_OPTIONS, RSA_KEY,
+                '-P %s' % str(dut.port) if dut.port else '', '-v', src,
+                host_dir
+        ])
         command = ' '.join(cmd)
 
         logging.debug('Retrieving Perf Data: %s', command)

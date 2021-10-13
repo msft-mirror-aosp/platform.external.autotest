@@ -950,6 +950,21 @@ class SystemServicer(object):
         if count:
             self._os_if.cs.fw_try_count = count
 
+    def get_minios_priority(self):
+        """Get minios_priority value, which denotes the minios image to try
+        first. (A or B)
+
+        @return: 'A' or 'B'
+        """
+        return self._os_if.cs.minios_priority
+
+    def set_minios_priority(self, priority):
+        """Set minios_priority to A or B.
+
+        @param priority: MiniOS partition to try first (A or B)
+        """
+        self._os_if.cs.minios_priority = priority
+
     def get_fw_vboot2(self):
         """Get fw_vboot2."""
         try:

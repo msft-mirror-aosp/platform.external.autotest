@@ -411,6 +411,7 @@ RPC_CATEGORIES = [
                                         "get_boot_mode",
                                         "get_root_dev",
                                         "get_root_part",
+                                        "get_minios_priority",
                                         "get_fw_vboot2",
                                         "request_recovery_boot",
                                         "is_removable_device_boot",
@@ -509,6 +510,17 @@ RPC_CATEGORIES = [
                                 "failing_args": [
                                         NO_ARGS,
                                         ("A", 1, "B"),
+                                ],
+                        },
+                        {
+                                "method_name": "set_minios_priority",
+                                "passing_args": [
+                                        ("A"),
+                                        ("B"),
+                                ],
+                                "failing_args": [
+                                        NO_ARGS,
+                                        ("A", 1),
                                 ],
                         },
                         {

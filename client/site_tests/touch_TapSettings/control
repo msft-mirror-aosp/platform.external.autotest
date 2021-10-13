@@ -15,6 +15,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "touch"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
+PY_VERSION = 3
 
 DOC = """
 Uses javascript page to listen for mouse clicks and drags.  If tap-to-click is

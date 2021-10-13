@@ -15,6 +15,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "touch"
 TEST_TYPE = "client"
 DEPENDENCIES = "stylus"
+PY_VERSION = 3
 
 DOC = """
 Uses kernel playback and a javascript page to play and listen for stylus taps.

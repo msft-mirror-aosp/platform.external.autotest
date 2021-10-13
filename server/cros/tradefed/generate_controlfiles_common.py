@@ -1326,8 +1326,15 @@ def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public,
             suites = CONFIG['INTERNAL_SUITE_NAMES'] \
                    + CONFIG.get('QUAL_SUITE_NAMES', [])
     for module in get_collect_modules(is_public, is_hardware=is_hardware):
-        write_controlfile(module, set([module]), abi, revision, build, uri,
-                          suites, is_public, is_latest, 
+        write_controlfile(module,
+                          set([module]),
+                          abi,
+                          revision,
+                          build,
+                          uri,
+                          suites,
+                          is_public,
+                          is_latest,
                           hardware_suite=is_hardware)
 
 
@@ -1451,9 +1458,15 @@ def run(uris, is_public, is_latest, cache_dir):
                 write_collect_controlfiles(modules, abi, revision, build, uri,
                                            is_public, is_latest,
                                            is_hardware=False)
-                write_collect_controlfiles(modules, abi, revision, build, uri,
-                                           is_public, is_latest,
-                                            is_hardware=True)
+                if 'HARDWARE_MODULES' in CONFIG:
+                    write_collect_controlfiles(modules,
+                                               abi,
+                                               revision,
+                                               build,
+                                               uri,
+                                               is_public,
+                                               is_latest,
+                                               is_hardware=True)
 
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
                 write_extra_controlfiles(None, abi, revision, build, uri,

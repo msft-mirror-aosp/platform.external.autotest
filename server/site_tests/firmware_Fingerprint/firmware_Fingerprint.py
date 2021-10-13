@@ -34,6 +34,8 @@ class firmware_Fingerprint(FingerprintTest):
             enable_software_write_protect, force_firmware_flashing,
             init_entropy)
 
+        # Check if FPMCU firmware needs to be re-flashed during cleanup
+        self._need_fw_restore = True
         self._test_exe = test_exe
 
         # Convert the arguments (test image names) to the actual filenames of

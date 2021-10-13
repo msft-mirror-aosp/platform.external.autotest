@@ -300,11 +300,13 @@ class FingerprintTest(test.test):
 
     def cleanup(self):
         """Restores original state."""
-        # Once the tests complete we need to make sure we're running the
-        # original firmware (not dev version) and potentially reset rollback.
-        self._initialize_running_fw_version(use_dev_signed_fw=False,
-                                            force_firmware_flashing=False)
-        self._initialize_fw_entropy()
+        if hasattr(self, '_need_fw_restore') and self._need_fw_restore:
+            # Once the tests complete we need to make sure we're running the
+            # original firmware (not dev version) and potentially reset rollback.
+            self._initialize_running_fw_version(use_dev_signed_fw=False,
+                                                force_firmware_flashing=False)
+            self._initialize_fw_entropy()
+
         # Re-enable biod and updater after flashing and initializing entropy so
         # that they don't interfere if there was a reboot.
         if hasattr(self, '_dut_needs_reboot') and self._dut_needs_reboot:
@@ -821,6 +823,8 @@ class FingerprintTest(test.test):
 
     def flash_rw_ro_firmware(self, fw_path):
         """Flashes *all* firmware (both RO and RW)."""
+        # Check if FPMCU firmware needs to be re-flashed during cleanup
+        self._need_fw_restore = True
         self.set_hardware_write_protect(False)
         flash_cmd = 'flash_fp_mcu' + ' --noservices ' + fw_path
         logging.info('Running flash cmd: %s', flash_cmd)

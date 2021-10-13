@@ -10,7 +10,7 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_test
 
-URL = 'https://browserbench.org/Speedometer2.0/'
+URL = 'http://crospower.page.link/power_Speedometer2'
 RESULT = 'result'
 CONFIDENCE = 'confidence'
 

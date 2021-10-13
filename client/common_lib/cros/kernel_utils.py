@@ -93,22 +93,27 @@ def get_kernel_tries(kernel, host=None):
     """
     return _cgpt('-T', kernel, host)
 
-def verify_kernel_state_after_update(host=None):
+
+def verify_kernel_state_after_update(host=None, inactive_kernel=True):
     """
-    Ensure the next kernel to boot is the currently inactive kernel.
+    Ensure the next kernel to boot is the expected kernel.
 
     This is useful for checking after completing an update.
 
     @param host: The DUT to execute the command on. None to execute locally.
-    @returns the inactive kernel.
+    @param inactive_kernel: Indicates if the expected kernel is the inactive
+                            kernel (True) or the active kernel (False).
+    @returns the next kernel.
 
     """
-    inactive_kernel = get_kernel_state(host)[1]
+    expected_kernel = get_kernel_state(host)[1 if inactive_kernel else 0]
     next_kernel = get_next_kernel(host)
-    if next_kernel != inactive_kernel:
-        raise Exception('The kernel for next boot is %s, but %s was expected.'
-                        % (next_kernel['name'], inactive_kernel['name']))
-    return inactive_kernel
+    if next_kernel != expected_kernel:
+        raise Exception(
+                'The kernel for next boot is %s, but %s was expected.' %
+                (next_kernel['name'], expected_kernel['name']))
+    return next_kernel
+
 
 def verify_boot_expectations(expected_kernel, error_message=_BOOT_ERR_MSG,
                              host=None):

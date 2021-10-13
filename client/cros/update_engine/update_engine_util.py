@@ -204,6 +204,28 @@ class UpdateEngineUtil(object):
                     self._host if hasattr(self, '_host') else None)
 
 
+    def _wait_for_update_to_idle(self,
+                                 check_kernel_after_update=False,
+                                 inactive_kernel=False):
+        """
+        Wait for update status to reach IDLE.
+
+        @param check_kernel_after_update: True to also verify kernel state after
+                                          the update is the expected kernel.
+        @param inactive_kernel: True to indicate the expected kernel is the
+                                inactive kernel.
+
+        """
+        while True:
+            status = self._get_update_engine_status()
+            if self._is_update_engine_idle(status):
+                break
+            time.sleep(1)
+        if check_kernel_after_update:
+            kernel_utils.verify_kernel_state_after_update(
+                    self._host if hasattr(self, '_host') else None,
+                    inactive_kernel)
+
     def _wait_for_update_status(self, status_to_wait_for):
         """
         Wait for the update to reach a certain status.

@@ -109,6 +109,7 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('coral', 'nasher360', ''),
         BoardInfo('coral', 'rabbid', ''),
         BoardInfo('coral', 'robo360', ''),
+        BoardInfo('dedede', 'boten', ''),
         BoardInfo('grunt', 'treeya360', '175'),
         BoardInfo('hatch', 'kohaku', ''),
         BoardInfo('octopus', 'ampton', ''),

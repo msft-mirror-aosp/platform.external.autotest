@@ -119,14 +119,6 @@ def serialized_test_case_metadata_list(data):
     return serialized_meta_data_list
 
 
-def skip_control(data):
-    """If the test has no attribute(suite), it should not be exported."""
-    for item in data.attributes:
-        if 'suite:' in item:
-            return False
-    return True
-
-
 def main():
     """Generate the metadata, and if an output path is given, save it."""
     args = parse_local_arguments(sys.argv[1:])
@@ -139,9 +131,6 @@ def main():
         test = control_data.parse_control_string(text,
                                                  raise_warnings=True,
                                                  path=path)
-        if skip_control(test):
-            continue
-
         serialized_metadata.append(serialized_test_case_metadata(test))
 
     serialized = serialized_test_case_metadata_list(serialized_metadata)

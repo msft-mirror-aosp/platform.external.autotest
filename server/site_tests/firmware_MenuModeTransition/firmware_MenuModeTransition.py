@@ -17,15 +17,14 @@ class firmware_MenuModeTransition(FirmwareTest):
     def initialize(self, host, cmdline_args, ec_wp=None):
         super(firmware_MenuModeTransition, self).initialize(
                 host, cmdline_args, ec_wp=ec_wp)
+        if not self.menu_switcher:
+            raise error.TestNAError('Test skipped for menuless UI')
         self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=False)
 
     def run_once(self):
         """Method which actually runs the test."""
         self.check_state((self.checkers.mode_checker, 'normal'))
-
-        if not self.menu_switcher:
-            raise error.TestNAError('Test skipped for menuless UI')
 
         # Trigger to-dev by menu navigation
         logging.info('Trigger to-dev by menu navigation.')

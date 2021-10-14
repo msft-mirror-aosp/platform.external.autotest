@@ -20,30 +20,27 @@ special hardware to run.
 '''
 
 def run(machine):
-    host=hosts.create_host(machine)
     job.run_test('tast',
-                 host=host,
+                 host=hosts.create_host(machine),
                  test_exprs=['('
                    ' "name:graphics.IGT.kms_*" && '
-                   '('
-                     ' !"name:graphics.IGT.kms_addfb_basic" && '
-                     ' !"name:graphics.IGT.kms_atomic" && '
-                     ' !"name:graphics.IGT.kms_atomic_transition" && '
-                     ' !"name:graphics.IGT.kms_concurrent" && '
-                     ' !"name:graphics.IGT.kms_content_protection" && '
-                     ' !"name:graphics.IGT.kms_cursor_legacy" && '
-                     ' !"name:graphics.IGT.kms_dp_dsc" && '
-                     ' !"name:graphics.IGT.kms_flip" && '
-                     ' !"name:graphics.IGT.kms_panel_fitting" && '
-                     ' !"name:graphics.IGT.kms_plane" && '
-                     ' !"name:graphics.IGT.kms_plane_alpha_blend" && '
-                     ' !"name:graphics.IGT.kms_plane_cursor" && '
-                     ' !"name:graphics.IGT.kms_plane_multiple" && '
-                     ' !"name:graphics.IGT.kms_plane_scaling" && '
-                     ' !"name:graphics.IGT.kms_prime" && '
-                     ' !"name:graphics.IGT.kms_setmode" && '
-                     ' !"name:graphics.IGT.kms_vblank" '
-                   ')'
+                   ' !"name:graphics.IGT.kms_addfb_basic" && '
+                   ' !"name:graphics.IGT.kms_atomic" && '
+                   ' !"name:graphics.IGT.kms_atomic_transition" && '
+                   ' !"name:graphics.IGT.kms_concurrent" && '
+                   ' !"name:graphics.IGT.kms_content_protection" && '
+                   ' !"name:graphics.IGT.kms_cursor_legacy" && '
+                   ' !"name:graphics.IGT.kms_dp_dsc" && '
+                   ' !"name:graphics.IGT.kms_flip" && '
+                   ' !"name:graphics.IGT.kms_panel_fitting" && '
+                   ' !"name:graphics.IGT.kms_plane" && '
+                   ' !"name:graphics.IGT.kms_plane_alpha_blend" && '
+                   ' !"name:graphics.IGT.kms_plane_cursor" && '
+                   ' !"name:graphics.IGT.kms_plane_multiple" && '
+                   ' !"name:graphics.IGT.kms_plane_scaling" && '
+                   ' !"name:graphics.IGT.kms_prime" && '
+                   ' !"name:graphics.IGT.kms_setmode" && '
+                   ' !"name:graphics.IGT.kms_vblank" '
                  ')'],
                  ignore_test_failures=True, max_run_sec=21600,
                  command_args=args)

@@ -23,3 +23,5 @@ args_dict['max_runtime_mins'] = 240
 args_dict['add_experimental'] = True
 args_dict['name'] = NAME
 args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

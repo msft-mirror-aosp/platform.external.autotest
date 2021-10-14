@@ -7,6 +7,7 @@
     of test cases is confused. See b/151779432.
   -->
   <Entry include="CtsAppSecurityHostTestCases android.appsecurity.cts.DocumentsTest#testRestrictStorageAccessFrameworkDisabled_notBlockFromTree" />
+  <Entry include="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.host_visible#import_multiple_times" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.image#bind_export_import_bind" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.image#export_bind_import_bind" />

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS Display team'
-NAME = 'tast.graphics-igt-nightly'
+NAME = 'tast.graphics-igt-perbuild'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:graphics_per-build'
